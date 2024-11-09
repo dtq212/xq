@@ -41,14 +41,9 @@ class MoiTruong:
 
         self.thoidiembattattheosaunhomgannhat = time.time() - 0.5
 
-        self.danhsachdiachicosothongtinnhanvats = []
-
     def __del__(self):
         if self.is_dasetupautoassemblebattattheosaunhom:
             self.tientrinh.free(self.diachiautoassemblebattattheosaunhom)
-
-    def get_danhsachdiachicosothongtinnhanvats(self):
-        return self.danhsachdiachicosothongtinnhanvats
 
     def get_diachicosothongtingame(self):
         return read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
@@ -56,21 +51,12 @@ class MoiTruong:
     def get_diachicosothongtinnhanvat1(self):
         return read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVAT1)
 
+    def get_diachicosothongtinnhanvatx(self, x):
+        return read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVATX + x * 0x4)
+
     def action_lammoitrangthaimoitruong(self):
-        i = 0
-        danhsachdiachicosothongtinnhanvats = []
-        while True:
-            diachicoso = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVATX + i * 0x4)
-            if not diachicoso:
-                break
+        pass
 
-            is_nhanvattontai = self.get_is_nhanvattontai(diachicoso)
-            if is_nhanvattontai:
-                danhsachdiachicosothongtinnhanvats.append(diachicoso)
-
-            i+= 1
-
-        self.danhsachdiachicosothongtinnhanvats = danhsachdiachicosothongtinnhanvats
     def get_is_cuasogametontai(self):
         tencuaso = str(win32gui.GetWindowText(self.idcuaso))
         return "(" in tencuaso
@@ -168,8 +154,9 @@ class MoiTruong:
         for i in range(SOLUONGHIEUUNGNHANVATTOIDA):
             is_hieuungtontai = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT) > 0
             if not is_hieuungtontai:
-                break
+                continue
             idhieuung = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT + 0x4), read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT + 0x8)
+
             # idhieuung = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT), read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT + 0x4)
             # thoigiancohieuluc = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT + 0x8)
 
@@ -234,6 +221,9 @@ class MoiTruong:
         """
         return read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0x28)
 
+    def get_is_npc(self, diachicosothongtinnhanvat):
+        return read_int(self.tientrinh, diachicosothongtinnhanvat) == 12 and self.get_phantramsinhlucconlai() in (0, 120)
+
     def get_is_cothetancong(self, diachicosothongtinnhanvat):
         if not diachicosothongtinnhanvat:
             return False
@@ -249,8 +239,7 @@ class MoiTruong:
         if idloainhanvat == LOAIMUCTIEU_NGUOICHOIKHONGTHETANCONG:
             return False
 
-        phantramsinhlucconlai = self.get_phantramsinhlucconlai(diachicosothongtinnhanvat)
-        if phantramsinhlucconlai > 100:
+        if self.get_is_npc(diachicosothongtinnhanvat):
             return False
 
         return True
@@ -338,6 +327,14 @@ class MoiTruong:
             write_bytes(self.tientrinh, self.diachiautoassemblebattattheosaunhom + 47, bytes.fromhex("C3"), 1)
 
             self.is_dasetupautoassemblebattattheosaunhom = True
+
+        x = read_int(self.tientrinh, self.diachixq + 0x3A531C)
+        if not x:
+            return
+        x = read_int(self.tientrinh, x + 0x2C)
+        if not x:
+            phatam("Vui lòng mở menu bất kỳ")
+            return
 
         self.tientrinh.start_thread(self.diachiautoassemblebattattheosaunhom)
 

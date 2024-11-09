@@ -65,7 +65,15 @@ class TacTu:
 
     def action_tudongtimkiemmuctieu(self):
         if self._is_tudongtimkiemmuctieu:
-            for diachicosothongtinnhanvatmuctieuxemxet in self.moitruong.get_danhsachdiachicosothongtinnhanvats():
+
+            i = 0
+            while True:
+                diachicosothongtinnhanvatmuctieuxemxet = self.moitruong.get_diachicosothongtinnhanvatx(i)
+                if not diachicosothongtinnhanvatmuctieuxemxet:
+                    break
+
+                i += 1
+
                 if not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieuxemxet):
                     continue
 
