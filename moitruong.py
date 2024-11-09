@@ -236,7 +236,7 @@ class MoiTruong:
         phantramsinhlucconlai = self.get_phantramsinhlucconlai(diachicosothongtinnhanvat)
         if phantramsinhlucconlai > 100:
             return True
-        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1414) == 12 and not phantramsinhlucconlai
+        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1414) in (7, 12) and not phantramsinhlucconlai
 
     def get_is_cothetancong(self, diachicosothongtinnhanvat):
         if not diachicosothongtinnhanvat:
