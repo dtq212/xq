@@ -3,7 +3,7 @@ import time
 
 import pymem
 
-from hangso import LOAIMUCTIEU_NGUOICHOICOTHETANCONG
+from hangso import *
 from moitruong import MoiTruong
 from tienich import taithietlap as util_taithietlap
 from tienich import luuthietlap as util_luuthietlap
@@ -14,6 +14,7 @@ class TacTu:
 
         self._is_tudongtheosaunhom = True
         self._is_tudongtimkiemmuctieu = True
+        self._is_tudongsudungkynang = True
 
         self._is_uutiennguoichoi = True
 
@@ -29,6 +30,7 @@ class TacTu:
         thietlap = {
             "_is_tudongtheosaunhom": self._is_tudongtheosaunhom,
             "_is_tudongtimkiemmuctieu": self._is_tudongtimkiemmuctieu,
+            "_is_tudongsudungkynang": self._is_tudongsudungkynang,
             "_is_uutiennguoichoi": self._is_uutiennguoichoi,
         }
 
@@ -41,6 +43,9 @@ class TacTu:
 
             if "_is_tudongtimkiemmuctieu" in thietlap:
                 self._is_tudongtimkiemmuctieu = thietlap["_is_tudongtimkiemmuctieu"]
+
+            if "_is_tudongsudungkynang" in thietlap:
+                self._is_tudongsudungkynang = thietlap["_is_tudongsudungkynang"]
 
             if "_is_uutiennguoichoi" in thietlap:
                 self._is_uutiennguoichoi = thietlap["_is_uutiennguoichoi"]
@@ -65,7 +70,6 @@ class TacTu:
 
     def action_tudongtimkiemmuctieu(self):
         if self._is_tudongtimkiemmuctieu:
-
             i = 0
             while True:
                 diachicosothongtinnhanvatmuctieuxemxet = self.moitruong.get_diachicosothongtinnhanvatx(i)
@@ -97,3 +101,13 @@ class TacTu:
                 if self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieuxemxet) < self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon):
                     self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(diachicosothongtinnhanvatmuctieuxemxet)
                     continue
+
+    def action_tudongsudungkynang(self):
+        if self._is_tudongsudungkynang:
+            diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+            if not diachicosothongtinnhanvatmuctieudangchon:
+                return
+            if not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
+                return
+
+            self.moitruong.action_sudungkynangphimtat(VITRIKYNANG_Q)
