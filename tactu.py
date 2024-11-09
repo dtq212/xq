@@ -110,4 +110,5 @@ class TacTu:
             if not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
                 return
 
-            self.moitruong.action_sudungkynangphimtat(VITRIKYNANG_Q)
+            for vitrikynang in (VITRIKYNANG_Q, VITRIKYNANG_W, VITRIKYNANG_E, VITRIKYNANG_R):
+                self.moitruong.action_sudungkynangphimtat(*vitrikynang, delay = 1)
