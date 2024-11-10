@@ -81,6 +81,7 @@ class LoopPhu:
         try:
             self.moitruong.action_tatvohieuhoatuthedelaysautancong()
             self.moitruong.action_tatvohieuhoaxoamuctieu()
+            self.moitruong.action_tatvohieuhoalongclick()
         except (pymem.exception.PymemError, pymem.exception.WinAPIError):
             pass
 
@@ -107,3 +108,4 @@ class LoopPhu:
         self.moitruong.action_vohieuhoatuthedelaysautancong()
         self.moitruong.set_is_batalt(True)
         self.moitruong.action_vohieuhoaxoamuctieu()
+        self.moitruong.action_vohieuhoalongclick()
