@@ -92,9 +92,9 @@ class TacTu:
 
                 idloainhanvatmuctieudangchon = self.moitruong.get_idloainhanvat(diachicosothongtinnhanvatmuctieudangchon)
 
-                if self._is_uutiennguoichoi and idloainhanvatmuctieudangchon != LOAIMUCTIEU_NGUOICHOICOTHETANCONG:
+                if self._is_uutiennguoichoi:
                     idloainhanvatmuctieuxemxet = self.moitruong.get_idloainhanvat(diachicosothongtinnhanvatmuctieuxemxet)
-                    if idloainhanvatmuctieuxemxet == LOAIMUCTIEU_NGUOICHOICOTHETANCONG:
+                    if idloainhanvatmuctieuxemxet == LOAIMUCTIEU_NGUOICHOICOTHETANCONG and idloainhanvatmuctieudangchon != LOAIMUCTIEU_NGUOICHOICOTHETANCONG:
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(diachicosothongtinnhanvatmuctieuxemxet)
                         continue
 
@@ -108,12 +108,8 @@ class TacTu:
                 return
             if self.moitruong.get_idtrangthaichuot() == TRANGTHAICHUOT_KHOANHVUNGKYNANG:
                 return
-
-            diachicosothongtinnhanvatdoitruong = self.moitruong.get_diachicosothongtintruongnhom()
-            if diachicosothongtinnhanvatdoitruong:
-                khoangcachdoitruong = self.moitruong.get_khoangcach(diachicosothongtinnhanvatdoitruong)
-                if khoangcachdoitruong >= 6:
-                    return
+            if self.moitruong.get_is_dangclickchuottrai():
+                return
 
             diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
             if not diachicosothongtinnhanvatmuctieudangchon:
