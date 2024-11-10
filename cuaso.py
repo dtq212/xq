@@ -40,7 +40,8 @@ class CuaSo:
         self.systray = SysTrayIcon(os.path.join("_internal", "icon", "icon.ico"), CHUACHONHANVAT, on_quit = self.tatauto)
         self.systray.start()
 
-        keyboard.add_hotkey("f", self.battat_tudongsudungkynang)
+        keyboard.add_hotkey("ctrl + f", self.battat_tudongsudungkynang)
+        keyboard.add_hotkey("ctrl + c", self.thietlaptenmuctieutancong)
         keyboard.add_hotkey("ctrl + alt + f", self.battat_tudongtheosaunhom)
 
         self.thoidiemluuthietlapgannhat = time.time()
@@ -84,3 +85,8 @@ class CuaSo:
     def battat_tudongtheosaunhom(self):
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.battat_is_tudongtheosaunhom()
+
+    def thietlaptenmuctieutancong(self):
+        if self.moitruong.get_is_cuasogamekichhoat():
+            tenmuctieutancong = self.moitruong.get_tennhanvatchichuot()
+            self.tactu.set_tenmuctieutancong(tenmuctieutancong)

@@ -18,6 +18,8 @@ class TacTu:
 
         self._is_uutiennguoichoi = True
 
+        self._tenmuctieutancong = False
+
         self.thoidiembattattheosaunhomgannhat = time.time() - 0.5
 
     def __del__(self):
@@ -81,6 +83,10 @@ class TacTu:
                 if not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieuxemxet):
                     continue
 
+                if self._tenmuctieutancong:
+                    if self.moitruong.get_tennhanvat(diachicosothongtinnhanvatmuctieuxemxet) != self._tenmuctieutancong:
+                        continue
+
                 diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
 
                 if diachicosothongtinnhanvatmuctieuxemxet == diachicosothongtinnhanvatmuctieudangchon:
@@ -140,3 +146,7 @@ class TacTu:
             phatam("Bật tự động theo sau nhóm")
         else:
             phatam("Tắt tự động theo sau nhóm")
+
+    def set_tenmuctieutancong(self, tenmuctieutancong):
+        if self._tenmuctieutancong != tenmuctieutancong:
+            self._tenmuctieutancong = tenmuctieutancong

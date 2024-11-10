@@ -98,8 +98,8 @@ class MoiTruong:
     def get_is_cuasogamekichhoat(self):
         return win32gui.GetForegroundWindow() == self.idcuaso
 
-    # def get_diachicosothongtinnhanvatdangchichuot(self):
-    #     return read_int(self.tientrinh, self.diachixq + 0x37FA54)
+    def get_diachicosothongtinnhanvatdangchichuot(self):
+        return read_int(self.tientrinh, self.diachixq + 0x37FA54)
 
     def get_idnhanvat(self, diachicosothongtinnhanvat = False):
         if not diachicosothongtinnhanvat:
@@ -396,7 +396,7 @@ class MoiTruong:
         # if read_bytes(self.tientrinh, self.diachixq + 0x41721, 1) != bytes.fromhex("90"):
         #     write_bytes(self.tientrinh, self.diachixq + 0x41721, bytes.fromhex("90 90 90 90 90 90 90"), 7)
         if read_bytes(self.tientrinh, self.diachixq + 0x41721 + 6, 1) != bytes.fromhex("00"):
-            write_bytes(self.tientrinh, self.diachixq + 0x41721 + 6, bytes.fromhex("00"), 7)
+            write_bytes(self.tientrinh, self.diachixq + 0x41721 + 6, bytes.fromhex("00"), 1)
     def action_tatvohieuhoalongclick2(self):
         #Dưới đây là long click thực hiện được khi vừa dí chuột vừa đưa chuột ra khỏi màn hình cần disable nó thì hàm di chuyển mới dùng được, nếu không mỗi lần gọi nó đều bị dính long click này
         # if read_bytes(self.tientrinh, self.diachixq + 0x41721, 1) == bytes.fromhex("90"):
@@ -528,3 +528,9 @@ class MoiTruong:
             return
         self.thoidiemsudungkynangphimtatgannhat_map[idvitriphimtat] = time.time()
         self.auto_assemble_sudungkynangphimtat(idvitriphimtat)
+
+    def get_tennhanvatchichuot(self):
+        diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvatdangchichuot()
+        if not diachicosothongtinnhanvat:
+            return False
+        return self.get_tennhanvat(diachicosothongtinnhanvat)
