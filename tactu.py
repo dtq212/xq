@@ -61,7 +61,7 @@ class TacTu:
             if not self.moitruong.get_is_dangotrongnhom():
                 return
 
-            if self.moitruong.get_is_doitruong():
+            if self.moitruong.get_is_truongnhom():
                 return
 
             self.thoidiembattattheosaunhomgannhat = time.time()
@@ -108,21 +108,28 @@ class TacTu:
                 return
             if self.moitruong.get_idtrangthaichuot() == TRANGTHAICHUOT_KHOANHVUNGKYNANG:
                 return
+
+            diachicosothongtinnhanvatdoitruong = self.moitruong.get_diachicosothongtintruongnhom()
+            if diachicosothongtinnhanvatdoitruong:
+                khoangcachdoitruong = self.moitruong.get_khoangcach(diachicosothongtinnhanvatdoitruong)
+                if khoangcachdoitruong >= 6:
+                    return
+
             diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
             if not diachicosothongtinnhanvatmuctieudangchon:
                 return
             if not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
                 return
 
-            khoangcach = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon)
-            if khoangcach <= 1:
-                for vitrikynang in (VITRIKYNANG_Q, VITRIKYNANG_W, VITRIKYNANG_E, VITRIKYNANG_R):
-                    self.moitruong.action_sudungkynangphimtat(vitrikynang)
-                    time.sleep(0.05)
-            else:
-                for vitrikynang in (VITRIKYNANG_Q, VITRIKYNANG_A, VITRIKYNANG_S, VITRIKYNANG_D, VITRIKYNANG_F):
-                    self.moitruong.action_sudungkynangphimtat(vitrikynang)
-                    time.sleep(0.05)
+            # khoangcach = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon)
+            # if khoangcach <= 2:
+            for vitrikynang in (VITRIKYNANG_Q, VITRIKYNANG_W, VITRIKYNANG_E, VITRIKYNANG_R):
+                self.moitruong.action_sudungkynangphimtat(vitrikynang)
+                time.sleep(0.05)
+            # else:
+            #     for vitrikynang in (VITRIKYNANG_Q, VITRIKYNANG_A, VITRIKYNANG_S, VITRIKYNANG_D, VITRIKYNANG_F):
+            #         self.moitruong.action_sudungkynangphimtat(vitrikynang)
+            #         time.sleep(0.05)
 
     def battat_is_tudongsudungkynang(self):
         self._is_tudongsudungkynang = not self._is_tudongsudungkynang
@@ -130,3 +137,10 @@ class TacTu:
             phatam("Bật tự động sử dụng kỹ năng")
         else:
             phatam("Tắt tự động sử dụng kỹ năng")
+
+    def battat_is_tudongtheosaunhom(self):
+        self._is_tudongtheosaunhom = not self._is_tudongtheosaunhom
+        if self._is_tudongtheosaunhom:
+            phatam("Bật tự động theo sau nhóm")
+        else:
+            phatam("Tắt tự động theo sau nhóm")

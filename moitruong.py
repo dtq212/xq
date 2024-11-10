@@ -44,6 +44,8 @@ class MoiTruong:
         self.thoidiembattattheosaunhomgannhat = time.time() - 0.5
         self.thoidiemsudungkynangphimtatgannhat_map = {}
 
+        self.diachicosothongtinnhanvatnguoichoi_map = {}
+
     def __del__(self):
         if self.is_dasetupautoassemblebattattheosaunhom:
             self.tientrinh.free(self.diachiautoassemblebattattheosaunhom)
@@ -64,7 +66,25 @@ class MoiTruong:
         return read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVATX + x * 0x4)
 
     def action_lammoitrangthaimoitruong(self):
-        pass
+        diachicosothongtinnhanvatnguoichoi_map = {}
+        i = 0
+        while True:
+            diachicosothongtinnhanvatmuctieuxemxet = self.get_diachicosothongtinnhanvatx(i)
+            if not diachicosothongtinnhanvatmuctieuxemxet:
+                break
+
+            i += 1
+
+            if self.get_is_nhanvatdachet(diachicosothongtinnhanvatmuctieuxemxet):
+                continue
+
+            idnhanvat = self.get_idnhanvat(diachicosothongtinnhanvatmuctieuxemxet)
+            if not idnhanvat:
+                continue
+
+            diachicosothongtinnhanvatnguoichoi_map[idnhanvat] = diachicosothongtinnhanvatmuctieuxemxet
+
+        self.diachicosothongtinnhanvatnguoichoi_map = diachicosothongtinnhanvatnguoichoi_map
 
     def get_is_cuasogametontai(self):
         tencuaso = str(win32gui.GetWindowText(self.idcuaso))
@@ -207,13 +227,18 @@ class MoiTruong:
             return False
         return x
 
-    def get_is_doitruong(self, diachicosothongtinnhanvat = False):
-        if not diachicosothongtinnhanvat:
-            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+    def get_diachicosothongtintruongnhom(self):
         diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
         if not diachicosothanhviennhom:
             return False
-        return self.get_idnhanvat(diachicosothongtinnhanvat) == read_int(self.tientrinh, diachicosothanhviennhom)
+        idnhanvattruongnhom = read_int(self.tientrinh, diachicosothanhviennhom)
+        return self.diachicosothongtinnhanvatnguoichoi_map.get(idnhanvattruongnhom, False)
+
+    def get_is_truongnhom(self):
+        diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
+        if not diachicosothanhviennhom:
+            return False
+        return self.get_idnhanvat(self.get_diachicosothongtinnhanvat1()) == read_int(self.tientrinh, diachicosothanhviennhom)
 
     def get_danhsachidthanhviennhoms(self):
         idthanhviens = []
@@ -287,6 +312,19 @@ class MoiTruong:
 
         write_boolean(self.tientrinh, x, is_batalt)
 
+    def get_is_bathanhtrang(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x37FA34)
+        if not x:
+            return False
+
+        x = read_int(self.tientrinh, x + 0xADFE0C)
+
+        if not x:
+            return False
+
+        return read_boolean(self.tientrinh, x + 0x34)
+
+
     def get_is_batspace(self):
         x = read_int(self.tientrinh, self.diachixq + 0x37FA34)
         if not x:
@@ -297,7 +335,7 @@ class MoiTruong:
         return read_boolean(self.tientrinh, x + 0x8140)
 
     def get_diachicosothongtinnhanvatmuctieudangchon(self):
-        return read_int(self.tientrinh, self.diachixq + 0x1BC3E0)
+        return read_int(self.tientrinh, self.diachixq + 0x1BC440)
 
     def set_diachicosothongtinnhanvatmuctieudangchon(self, diachicosothongtinnhanvat):
         if not diachicosothongtinnhanvat:
