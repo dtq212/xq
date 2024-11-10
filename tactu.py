@@ -111,5 +111,5 @@ class TacTu:
                 return
 
             for vitrikynang in (VITRIKYNANG_Q, VITRIKYNANG_W, VITRIKYNANG_E, VITRIKYNANG_R):
-                self.moitruong.action_sudungkynangphimtat(*vitrikynang, delay = 0)
+                self.moitruong.action_sudungkynangphimtat(vitrikynang)
                 time.sleep(0.05)
