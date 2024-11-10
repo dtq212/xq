@@ -134,6 +134,15 @@ class MoiTruong:
     def get_toadoy(self, diachicosothongtinnhanvat = False):
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C)
 
+    def get_idtrangthaichuot(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x37FA34)
+        if not x:
+            return False
+        x = read_int(self.tientrinh, x + 0xADFDA8)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0x1A4)
+
     def get_khoangcach(self, diachicosothongtinnhanvat2, diachicosothongtinnhanvat1 = False):
         if not diachicosothongtinnhanvat1:
             diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
@@ -325,6 +334,30 @@ class MoiTruong:
     def action_tatvohieuhoalongclick(self):
         if read_bytes(self.tientrinh, self.diachixq + 0x4984C, 1) == bytes.fromhex("90"):
             write_bytes(self.tientrinh, self.diachixq + 0x4984C, bytes.fromhex("C7 82 10 16 00 00 01 00 00 00"), 10)
+
+    def action_vohieuhoatrangthaichuotchonmuctieukynang(self):
+        if read_bytes(self.tientrinh, self.diachixq + 0x5405C, 1) != bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + 0x5405C, bytes.fromhex("90 90 90 90 90 90 90 90 90 90"), 10)
+
+    def action_tatvohieuhoatrangthaichuotchonmuctieukynang(self):
+        if read_bytes(self.tientrinh, self.diachixq + 0x5405C, 1) == bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + 0x5405C, bytes.fromhex("C7 86 A4 01 00 00 02 00 00 00"), 10)
+
+    def action_vohieuhoakhoanhvungkynang(self):
+        if read_bytes(self.tientrinh, self.diachixq + 0x76148, 1) != bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + 0x76148, bytes.fromhex("90 90"), 2)
+
+    def action_tatvohieuhoakhoanhvungkynang(self):
+        if read_bytes(self.tientrinh, self.diachixq + 0x76148, 1) == bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + 0x76148, bytes.fromhex("88 01"), 2)
+
+    def action_vohieuhoaphimspace(self):
+        if read_bytes(self.tientrinh, self.diachixq + 0x3D8CB, 1) != bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + 0x3D8CB, bytes.fromhex("90 90 90 90 90 90 90"), 7)
+
+    def action_tatvohieuhoaphimspace(self):
+        if read_bytes(self.tientrinh, self.diachixq + 0x3D8CB, 1) == bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + 0x3D8CB, bytes.fromhex("C6 80 40 81 00 00 01"), 7)
 
     def auto_assemble_mocuasoluachonnhanvatchinh(self):
         if not self.is_dasetupautoassemblemocuasoluachonnhanvatchinh:
