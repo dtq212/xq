@@ -28,7 +28,7 @@ def read_short_int(process, address, n_bytes = 1):
     return int.from_bytes(process.read_bytes(address, n_bytes), sys.byteorder)
 
 
-def write_shortid(process, address, value, n_bytes = 1):
+def write_short_int(process, address, value, n_bytes = 1):
     process.write_bytes(address, value.to_bytes(n_bytes, sys.byteorder), n_bytes)
 
 
