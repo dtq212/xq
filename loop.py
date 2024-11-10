@@ -82,6 +82,7 @@ class LoopPhu:
             self.moitruong.action_tatvohieuhoatuthedelaysautancong()
             self.moitruong.action_tatvohieuhoaxoamuctieu()
             self.moitruong.action_tatvohieuhoalongclick()
+            self.moitruong.action_tatvohieuhoalongclick2()
             self.moitruong.action_tatvohieuhoatrangthaichuotchonmuctieukynang()
             self.moitruong.action_tatvohieuhoakhoanhvungkynang()
             self.moitruong.action_tatvohieuhoaphimspace()
@@ -115,6 +116,12 @@ class LoopPhu:
             self.moitruong.set_is_batalt(True)
         self.moitruong.action_vohieuhoaxoamuctieu()
         self.moitruong.action_vohieuhoalongclick()
+
+        if not self.moitruong.get_is_dangclickchuottrai():
+            self.moitruong.action_vohieuhoalongclick2()
+        else:
+            self.moitruong.action_tatvohieuhoalongclick2()
+
         self.moitruong.action_vohieuhoatrangthaichuotchonmuctieukynang()
         self.moitruong.action_vohieuhoakhoanhvungkynang()
         self.moitruong.action_vohieuhoaphimspace()
