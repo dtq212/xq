@@ -70,6 +70,9 @@ class MoiTruong:
         tencuaso = str(win32gui.GetWindowText(self.idcuaso))
         return "(" in tencuaso
 
+    def get_is_cuasogamekichhoat(self):
+        return win32gui.GetForegroundWindow() == self.idcuaso
+
     # def get_diachicosothongtinnhanvatdangchichuot(self):
     #     return read_int(self.tientrinh, self.diachixq + 0x37FA54)
 
@@ -245,7 +248,8 @@ class MoiTruong:
         phantramsinhlucconlai = self.get_phantramsinhlucconlai(diachicosothongtinnhanvat)
         if phantramsinhlucconlai > 100:
             return True
-        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1414) in (7, 12) and not phantramsinhlucconlai
+
+        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1414) in (1, 7, 12) and not phantramsinhlucconlai #1 hình như là nguyên liệu, 7 nó là con thỏ của PYK, 60 là mấy con thú cưng
 
     def get_is_cothetancong(self, diachicosothongtinnhanvat):
         if not diachicosothongtinnhanvat:
@@ -282,6 +286,15 @@ class MoiTruong:
             return
 
         write_boolean(self.tientrinh, x, is_batalt)
+
+    def get_is_batspace(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x37FA34)
+        if not x:
+            return False
+        x = read_int(self.tientrinh, x + 0xADFD60)
+        if not x:
+            return False
+        return read_boolean(self.tientrinh, x + 0x8140)
 
     def get_diachicosothongtinnhanvatmuctieudangchon(self):
         return read_int(self.tientrinh, self.diachixq + 0x1BC3E0)
@@ -440,7 +453,7 @@ class MoiTruong:
 
             self.is_dasetupautoassemblesudungkynangphimtat = True
         else:
-            write_int(self.tientrinh, self.diachiautoassemblesudungkynangphimtat + 2, idvitriphimtat)
+            write_int(self.tientrinh, self.diachiautoassemblesudungkynangphimtat + 1, idvitriphimtat)
 
         self.tientrinh.start_thread(self.diachiautoassemblesudungkynangphimtat)
 
@@ -453,7 +466,7 @@ class MoiTruong:
         self.auto_assemble_battattheosaunhom()
     
     def action_sudungkynangphimtat(self, idvitriphimtat, delay = 0.05):
-        if time.time() - self.thoidiemsudungkynangphimtatgannhat_map.get(idvitriphimtat, time.time() - delay) < delay:
+        if idvitriphimtat in self.thoidiemsudungkynangphimtatgannhat_map and time.time() - self.thoidiemsudungkynangphimtatgannhat_map[idvitriphimtat] < delay:
             return
         self.thoidiemsudungkynangphimtatgannhat_map[idvitriphimtat] = time.time()
         self.auto_assemble_sudungkynangphimtat(idvitriphimtat)

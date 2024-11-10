@@ -5,7 +5,7 @@ import pymem
 
 from hangso import *
 from moitruong import MoiTruong
-from tienich import taithietlap as util_taithietlap
+from tienich import taithietlap as util_taithietlap, phatam
 from tienich import luuthietlap as util_luuthietlap
 
 class TacTu:
@@ -104,12 +104,29 @@ class TacTu:
 
     def action_tudongsudungkynang(self):
         if self._is_tudongsudungkynang:
+            if self.moitruong.get_is_batspace():
+                return
+            if self.moitruong.get_idtrangthaichuot() == TRANGTHAICHUOT_KHOANHVUNGKYNANG:
+                return
             diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
             if not diachicosothongtinnhanvatmuctieudangchon:
                 return
             if not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
                 return
 
-            for vitrikynang in (VITRIKYNANG_Q, VITRIKYNANG_W, VITRIKYNANG_E, VITRIKYNANG_R):
-                self.moitruong.action_sudungkynangphimtat(vitrikynang)
-                time.sleep(0.05)
+            khoangcach = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon)
+            if khoangcach <= 1:
+                for vitrikynang in (VITRIKYNANG_Q, VITRIKYNANG_W, VITRIKYNANG_E, VITRIKYNANG_R):
+                    self.moitruong.action_sudungkynangphimtat(vitrikynang)
+                    time.sleep(0.05)
+            else:
+                for vitrikynang in (VITRIKYNANG_Q, VITRIKYNANG_A, VITRIKYNANG_S, VITRIKYNANG_D, VITRIKYNANG_F):
+                    self.moitruong.action_sudungkynangphimtat(vitrikynang)
+                    time.sleep(0.05)
+
+    def battat_is_tudongsudungkynang(self):
+        self._is_tudongsudungkynang = not self._is_tudongsudungkynang
+        if self._is_tudongsudungkynang:
+            phatam("Bật tự động sử dụng kỹ năng")
+        else:
+            phatam("Tắt tự động sử dụng kỹ năng")

@@ -40,6 +40,8 @@ class CuaSo:
         self.systray = SysTrayIcon(os.path.join("_internal", "icon", "icon.ico"), CHUACHONHANVAT, on_quit = self.tatauto)
         self.systray.start()
 
+        keyboard.add_hotkey("f", self.battat_tudongsudungkynang)
+
         self.thoidiemluuthietlapgannhat = time.time()
 
     def tatauto(self, *args, **kwargs):
@@ -73,3 +75,7 @@ class CuaSo:
             self.systray.shutdown()
         except:
             pass
+
+    def battat_tudongsudungkynang(self):
+        if self.moitruong.get_is_cuasogamekichhoat():
+            self.tactu.battat_is_tudongsudungkynang()
