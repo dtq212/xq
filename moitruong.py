@@ -318,6 +318,14 @@ class MoiTruong:
             write_int(self.tientrinh, self.diachixq + 0x9519B + 2, self.diachixq + 0x37173C)
             write_int(self.tientrinh, self.diachixq + 0x9519B + 6, 0)
 
+    def action_vohieuhoalongclick(self):
+        if read_bytes(self.tientrinh, self.diachixq + 0x4984C, 1) != bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + 0x4984C, bytes.fromhex("90 90 90 90 90 90 90 90 90 90"), 10)
+
+    def action_tatvohieuhoalongclick(self):
+        if read_bytes(self.tientrinh, self.diachixq + 0x4984C, 1) == bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + 0x4984C, bytes.fromhex("C7 82 10 16 00 00 01 00 00 00"), 10)
+
     def auto_assemble_mocuasoluachonnhanvatchinh(self):
         if not self.is_dasetupautoassemblemocuasoluachonnhanvatchinh:
             self.diachiautoassemblemocuasoluachonnhanvatchinh = self.tientrinh.allocate(64)
