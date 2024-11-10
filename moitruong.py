@@ -339,7 +339,7 @@ class MoiTruong:
         return read_int(self.tientrinh, self.diachixq + 0x1BC440)
 
     def get_is_dangclickchuottrai(self):
-        #0x371788 or 0x37FA6D
+        #0x371788 or 0x37FA6D nhưng chúng ta sẽ disable thay đổi 0x37FA6D vì nó gây long click
         return read_int(self.tientrinh, self.diachixq + 0x371788)
 
     def set_diachicosothongtinnhanvatmuctieudangchon(self, diachicosothongtinnhanvat):
@@ -386,10 +386,18 @@ class MoiTruong:
     def action_vohieuhoalongclick(self):
         if read_bytes(self.tientrinh, self.diachixq + 0x4984C, 1) != bytes.fromhex("90"):
             write_bytes(self.tientrinh, self.diachixq + 0x4984C, bytes.fromhex("90 90 90 90 90 90 90 90 90 90"), 10)
+        #Dưới đây là long click thực hiện được khi vừa dí chuột vừa đưa chuột ra khỏi màn hình
+        if read_bytes(self.tientrinh, self.diachixq + 0x41721, 1) != bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + 0x41721, bytes.fromhex("90 90 90 90 90 90 90"), 7)
 
     def action_tatvohieuhoalongclick(self):
         if read_bytes(self.tientrinh, self.diachixq + 0x4984C, 1) == bytes.fromhex("90"):
             write_bytes(self.tientrinh, self.diachixq + 0x4984C, bytes.fromhex("C7 82 10 16 00 00 01 00 00 00"), 10)
+        #Dưới đây là long click thực hiện được khi vừa dí chuột vừa đưa chuột ra khỏi màn hình
+        if read_bytes(self.tientrinh, self.diachixq + 0x41721, 1) == bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + 0x41721, bytes.fromhex("C6 05 01"), 2)
+            write_int(self.tientrinh, self.diachixq + 0x41721 + 2, self.diachixq + 0x37FA6D)
+            write_bytes(self.tientrinh, self.diachixq + 0x41721 + 6, bytes.fromhex("01"), 1)
 
     def action_vohieuhoatrangthaichuotchonmuctieukynang(self):
         if read_bytes(self.tientrinh, self.diachixq + 0x5405C, 1) != bytes.fromhex("90"):
