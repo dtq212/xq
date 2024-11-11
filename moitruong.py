@@ -1,5 +1,6 @@
 import ctypes
 import datetime
+import random
 import time
 
 import pymem
@@ -706,8 +707,8 @@ class MoiTruong:
         targetx = round(centerx + deltax * 75)
         targety = round(centery + deltay * 75)
 
-        targetx = min(max(150, targetx), xmax - 150)
-        targety = min(max(150, targety), ymax - 150)
+        targetx = min(max(150, targetx), xmax - 150) + 25 * random.randint(-1, 1)
+        targety = min(max(150, targety), ymax - 150) + 25 * random.randint(-1, 1)
 
         self.action_dichuyen(targetx, targety)
 
