@@ -14,6 +14,9 @@ OFFSET_DIACHICOSOTHONGTINNHANVAT1 = 0x37F9E8
 OFFSET_DIACHICOSOHIEUUNGNHANVAT = 0x1638
 OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT = 0x13C
 
+
+OFFSET_DIACHICOSOMOIKYNANG = 0x224
+
 OFFSET_DIACHICOSOTHONGTINNHANVATX = 0x1BC950
 
 class MoiTruong:
@@ -41,10 +44,12 @@ class MoiTruong:
         self.is_dasetupautoassemblemocuasoluachonnhanvatchinh = False
         self.is_dasetupautoassemblesudungkynangphimtat = False
         self.is_dasetupautoassembledichuyen = False
+        self.is_dasetupautoassemblesudungkynangvitri = False
 
         self.thoidiembattattheosaunhomgannhat = time.time() - 0.5
         self.thoidiemdichuyengannhat = time.time() - 0.05
         self.thoidiemsudungkynangphimtatgannhat_map = {}
+        self.thoidiemsudungkynangvitrigannhat_map = {}
 
         self.diachicosothongtinnhanvattruongnhom = False
         self._is_tamngungtancong = False
@@ -62,6 +67,9 @@ class MoiTruong:
         if self.is_dasetupautoassembledichuyen:
             self.tientrinh.free(self.diachiautoassembledichuyen)
 
+        if self.is_dasetupautoassemblesudungkynangvitri:
+            self.tientrinh.free(self.diachiautoassemblesudungkynangvitri)
+
     def get_diachicosothongtingame(self):
         return read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
 
@@ -70,6 +78,12 @@ class MoiTruong:
 
     def get_diachicosothongtinnhanvatx(self, x):
         return read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVATX + x * 0x4)
+
+    def get_diachicosothongtinkynang(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x37FA34)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0xADFE18)
 
     def action_lammoitrangthaimoitruong(self):
         diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
@@ -278,6 +292,7 @@ class MoiTruong:
 
     def get_is_tamngungtancong(self):
         return self._is_tamngungtancong
+
     def set_is_tamngungtancong(self, is_tamngungtancong):
         if self._is_tamngungtancong != is_tamngungtancong:
             self._is_tamngungtancong = is_tamngungtancong
@@ -295,7 +310,30 @@ class MoiTruong:
         if phantramsinhlucconlai > 100:
             return True
 
-        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1414) in (1, 7, 12) and not phantramsinhlucconlai #1 hình như là nguyên liệu, 7 nó là con thỏ của PYK, 60 là mấy con thú cưng
+        # return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1414) in (1, 7, 12) and not phantramsinhlucconlai #1 hình như là nguyên liệu, 7 nó là con thỏ của PYK, 60 là mấy con thú cưng
+        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x155C) == 40
+
+    def get_idkynang(self, idvitriX, idvitriY):
+        """
+        :param idvitriX: Số thứ tự cuốn sách bắt đầu từ 0
+        :param idvitriY: Số thứ tự kỹ năng ở trong cuốn sách ấy bắt đầu từ 0
+        """
+        diachicosothongtinkynang = self.get_diachicosothongtinkynang()
+        if not diachicosothongtinkynang:
+            return False
+
+        idvitrikynang = 14 * idvitriY + idvitriX #Vì mỗi cuốn nó chỉ có tối đa 12 kỹ năng cho nên nó nhích lên 14 để không bao giờ trùng nhau
+
+        return read_int(self.tientrinh, diachicosothongtinkynang + idvitrikynang * OFFSET_DIACHICOSOMOIKYNANG + 0x6830)
+
+    def get_is_kynangsansang(self, idvitriX, idvitriY):
+        diachicosothongtinkynang = self.get_diachicosothongtinkynang()
+        if not diachicosothongtinkynang:
+            return False
+
+        idvitrikynang = 14 * idvitriY + idvitriX #Vì mỗi cuốn nó chỉ có tối đa 12 kỹ năng cho nên nó nhích lên 14 để không bao giờ trùng nhau
+
+        return read_int(self.tientrinh, diachicosothongtinkynang + idvitrikynang * OFFSET_DIACHICOSOMOIKYNANG + 0x6A4C) == 0
 
     def get_is_cothetancong(self, diachicosothongtinnhanvat):
         if not diachicosothongtinnhanvat:
@@ -472,7 +510,6 @@ class MoiTruong:
         self.tientrinh.start_thread(self.diachiautoassemblemocuasoluachonnhanvatchinh)
 
     def auto_assemble_battattheosaunhom(self):
-        print("auto_assemble_battattheosaunhom: {}".format(datetime.datetime.now()))
         if not self.is_dasetupautoassemblebattattheosaunhom:
             self.diachiautoassemblebattattheosaunhom = self.tientrinh.allocate(64)
 
@@ -502,7 +539,7 @@ class MoiTruong:
             return
         x = read_int(self.tientrinh, x + 0x2C)
         if x <= 10:
-            self.auto_assemble_mocuasoluachonnhanvatchinh()
+            phatam("Bật tắt theo sau nhóm thất bại")
             return
 
         self.tientrinh.start_thread(self.diachiautoassemblebattattheosaunhom)
@@ -534,8 +571,39 @@ class MoiTruong:
 
         self.tientrinh.start_thread(self.diachiautoassemblesudungkynangphimtat)
 
+
+    def auto_assemble_sudungkynangvitri(self, idvitriX, idvitriY):
+        idkynang = self.get_idkynang(idvitriX, idvitriY)
+        if not idkynang:
+            return
+        if not self.is_dasetupautoassemblesudungkynangvitri:
+            self.diachiautoassemblesudungkynangvitri = self.tientrinh.allocate(64)
+
+            write_bytes(self.tientrinh, self.diachiautoassemblesudungkynangvitri, bytes.fromhex("B8"), 1)
+            write_int(self.tientrinh, self.diachiautoassemblesudungkynangvitri + 1, idkynang)
+
+            write_bytes(self.tientrinh, self.diachiautoassemblesudungkynangvitri + 5, bytes.fromhex("8B 0D"), 2)
+            write_int(self.tientrinh, self.diachiautoassemblesudungkynangvitri + 7, self.diachixq + 0x37FA34)
+
+            write_bytes(self.tientrinh, self.diachiautoassemblesudungkynangvitri + 11, bytes.fromhex("BA"), 1)
+            write_int(self.tientrinh, self.diachiautoassemblesudungkynangvitri + 12, 3)
+
+            write_bytes(self.tientrinh, self.diachiautoassemblesudungkynangvitri + 16, bytes.fromhex("52"), 1)
+
+            write_bytes(self.tientrinh, self.diachiautoassemblesudungkynangvitri + 17, bytes.fromhex("50"), 1)
+
+            write_bytes(self.tientrinh, self.diachiautoassemblesudungkynangvitri + 18, bytes.fromhex("E8"), 1)
+            write_int(self.tientrinh, self.diachiautoassemblesudungkynangvitri + 19, self.diachixq + 0x53D60 - (self.diachiautoassemblesudungkynangvitri + 18) - 5)
+
+            write_bytes(self.tientrinh, self.diachiautoassemblesudungkynangvitri + 23, bytes.fromhex("C3"), 1)
+
+            self.is_dasetupautoassemblesudungkynangvitri = True
+        else:
+            write_int(self.tientrinh, self.diachiautoassemblesudungkynangvitri + 1, idkynang)
+
+        self.tientrinh.start_thread(self.diachiautoassemblesudungkynangvitri)
+
     def auto_assemble_dichuyen(self, x, y):
-        print("auto_assemble_dichuyen: {}, {}".format(x, y))
         if not self.is_dasetupautoassembledichuyen:
             self.diachiautoassembledichuyen = self.tientrinh.allocate(64)
 
@@ -572,19 +640,27 @@ class MoiTruong:
 
         self.tientrinh.start_thread(self.diachiautoassembledichuyen)
 
-    def action_battattheosaunhom(self, delay = 2):
+    def action_battattheosaunhom(self, delay = 1):
         if time.time() - self.thoidiembattattheosaunhomgannhat < delay:
             return
 
         self.thoidiembattattheosaunhomgannhat = time.time()
 
+        self.auto_assemble_mocuasoluachonnhanvatchinh()
         self.auto_assemble_battattheosaunhom()
     
-    def action_sudungkynangphimtat(self, idvitriphimtat, delay = 0.05):
+    def action_sudungkynangphimtat(self, idvitriphimtat, delay = 0.25):
         if idvitriphimtat in self.thoidiemsudungkynangphimtatgannhat_map and time.time() - self.thoidiemsudungkynangphimtatgannhat_map[idvitriphimtat] < delay:
             return
         self.thoidiemsudungkynangphimtatgannhat_map[idvitriphimtat] = time.time()
         self.auto_assemble_sudungkynangphimtat(idvitriphimtat)
+
+    def action_sudungkynangvitri(self, idvitriX, idvitriY, delay = 0.25):
+        idvitri = (idvitriX, idvitriY)
+        if idvitri in self.thoidiemsudungkynangvitrigannhat_map and time.time() - self.thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
+            return
+        self.thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
+        self.auto_assemble_sudungkynangvitri(idvitriX, idvitriY)
 
     def action_dichuyen(self, x, y, delay = 0.2):
         if time.time() - self.thoidiemdichuyengannhat < delay:
