@@ -669,6 +669,9 @@ class MoiTruong:
 
         self.auto_assemble_dichuyen(x, y)
 
+    def action_dichuyentiepcan(self, diachicosothongtinnhanvat2):
+        self.action_dichuyen(self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2))
+
     def action_dichuyengiukhoangcachtoida(self, diachicosothongtinnhanvat2, khoangcachtoida):
         khoangcach = self.get_khoangcach(diachicosothongtinnhanvat2)
 
