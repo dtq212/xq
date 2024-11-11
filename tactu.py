@@ -116,7 +116,7 @@ class TacTu:
                     self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_0, delay = 2)
 
                 if self.moitruong.get_idtrangthaichuot() == TRANGTHAICHUOT_KHOANHVUNGKYNANG:
-                    self.moitruong.action_chonvungkynangvuotqua(diachicosothongtintruongnhom)
+                    self.moitruong.action_chonvungsudungkynangphudau(diachicosothongtintruongnhom)
                     if self.thoidiemchokhoanhvungkynanggannhat > 1:
                         self.moitruong.set_idtrangthaichuot(TRANGTHAICHUOT_BINHTHUONG)
                     self.thoidiemsudungkynangkhaithientichdiagannhat = time.time()
@@ -198,7 +198,7 @@ class TacTu:
             idloainhanvatmuctieu = self.moitruong.get_idloainhanvat(diachicosothongtinnhanvatmuctieudangchon)
 
             if self.moitruong.get_idtrangthaichuot() == TRANGTHAICHUOT_KHOANHVUNGKYNANG:
-                self.moitruong.action_chonvungkynangvuotqua(diachicosothongtinnhanvatmuctieudangchon)
+                self.moitruong.action_chonvungsudungkynangphudau(diachicosothongtinnhanvatmuctieudangchon)
                 if self.thoidiemchokhoanhvungkynanggannhat > 1:
                     self.moitruong.set_idtrangthaichuot(TRANGTHAICHUOT_BINHTHUONG)
                 self.thoidiemsudungkynangkhaithientichdiagannhat = time.time()
