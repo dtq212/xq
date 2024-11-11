@@ -67,10 +67,11 @@ class LoopChinh:
         if self.moitruong.get_is_dangmatketnoi():
             return
 
-        self.tactu.action_tudongbattheosaunhom()
-        self.tactu.action_tudonggiukhoangcachtruongnhom()
+        # self.tactu.action_tudongbattheosaunhom()
+        self.tactu.action_tudongtheosautruongnhom()
         self.tactu.action_tudongtimkiemmuctieu()
         self.tactu.action_tudongsudungkynang()
+
 
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):

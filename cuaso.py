@@ -42,7 +42,7 @@ class CuaSo:
 
         keyboard.add_hotkey("ctrl + f", self.battat_tudongsudungkynang)
         keyboard.add_hotkey("ctrl + c", self.thietlaptenmuctieutancong)
-        keyboard.add_hotkey("ctrl + alt + f", self.battat_tudongbattheosaunhom)
+        keyboard.add_hotkey("ctrl + alt + f", self.battat_tudongtheosautruongnhom)
 
         self.thoidiemluuthietlapgannhat = time.time()
 
@@ -82,9 +82,9 @@ class CuaSo:
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.battat_is_tudongsudungkynang()
 
-    def battat_tudongbattheosaunhom(self):
+    def battat_tudongtheosautruongnhom(self):
         if self.moitruong.get_is_cuasogamekichhoat():
-            self.tactu.battat_is_tudongbattheosaunhom()
+            self.tactu.battat_is_tudongtheosautruongnhom()
 
     def thietlaptenmuctieutancong(self):
         if self.moitruong.get_is_cuasogamekichhoat():
