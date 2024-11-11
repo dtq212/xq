@@ -120,7 +120,13 @@ class TacTu:
     def action_tudongtimkiemmuctieu(self):
         if self._is_tudongtimkiemmuctieu:
             i = 0
+
+            diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+            if not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
+                self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
+
             while True:
+
                 diachicosothongtinnhanvatmuctieuxemxet = self.moitruong.get_diachicosothongtinnhanvatx(i)
                 if not diachicosothongtinnhanvatmuctieuxemxet:
                     break
@@ -133,8 +139,6 @@ class TacTu:
                 if self._tenmuctieutancong:
                     if self.moitruong.get_tennhanvat(diachicosothongtinnhanvatmuctieuxemxet) != self._tenmuctieutancong:
                         continue
-
-                diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
 
                 if diachicosothongtinnhanvatmuctieuxemxet == diachicosothongtinnhanvatmuctieudangchon:
                     continue
@@ -181,7 +185,9 @@ class TacTu:
 
             khoangcach = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon)
 
-            if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG):
+            if khoangcach <= 8 and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NGUKIEMPHITIEN) and self.moitruong.get_idloainhanvat(diachicosothongtinnhanvatmuctieudangchon) == LOAIMUCTIEU_QUAIVATHOACNPC:
+                self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_NGUKIEMPHITIEN, is_khongcanmuctieu = True)
+            elif khoangcach <= 8 and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG):
                 self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_LUUTINHTRUYMANG)
             elif khoangcach <= 1:
                 if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUCPHACHHOASON):
@@ -192,7 +198,7 @@ class TacTu:
                     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_PHAMATRAM)
                 elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHAKHONGKICH):
                     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_PHAKHONGKICH)
-            else:
+            elif khoangcach <= 8:
                 if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LANGKHONGCHIHUYET):
                     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_LANGKHONGCHIHUYET)
                 elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_BANGTAMTHUC):
@@ -203,6 +209,8 @@ class TacTu:
                     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_VANVUTIEUDIEU)
                 elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NGUKIEMTHUAT):
                     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_NGUKIEMTHUAT)
+            else:
+                self.moitruong.action_dichuyentiepcan(diachicosothongtinnhanvatmuctieudangchon)
 
             # if self.moitruong.get_idloainhanvat(diachicosothongtinnhanvatmuctieudangchon) == LOAIMUCTIEU_NGUOICHOICOTHETANCONG and self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon) >= 5:
             #     for vitrikynang in (VITRIPHIMTATKYNANG_A, VITRIPHIMTATKYNANG_S, VITRIPHIMTATKYNANG_D, VITRIPHIMTATKYNANG_Q):
