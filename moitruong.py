@@ -421,7 +421,7 @@ class MoiTruong:
     def get_diachicosothongtinnhanvatmuctieudangchon(self):
         return read_int(self.tientrinh, self.diachixq + 0x1BC440)
 
-    def get_is_dangchonvungsudungkynang(self):
+    def get_is_dangclickchuottrai(self):
         return read_boolean(self.tientrinh, self.diachixq + 0x37FA6D)
 
     def set_diachicosothongtinnhanvatmuctieudangchon(self, diachicosothongtinnhanvat):
