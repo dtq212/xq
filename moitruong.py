@@ -713,11 +713,13 @@ class MoiTruong:
 
         self.action_dichuyen(centerx, centery)
 
-    def action_dichuyengiukhoangcachtoida(self, diachicosothongtinnhanvat2, khoangcachtoida):
+    def action_dichuyengiukhoangcachtoida(self, diachicosothongtinnhanvat2, khoangcachtoida = 2):
         khoangcach = self.get_khoangcach(diachicosothongtinnhanvat2)
 
         if khoangcach <= khoangcachtoida:
             return
+
+        khoangcachtoida = max(1., khoangcachtoida - 1.)
 
         diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
 
@@ -727,16 +729,22 @@ class MoiTruong:
         deltax = x2 - x1
         deltay = y1 - y2
 
-        deltax = khoangcachtoida * deltax / khoangcach
-        deltay = khoangcachtoida * deltay / khoangcach
+        khoangcachdichuyen = khoangcach - khoangcachtoida
+
+        deltax = khoangcachdichuyen * deltax / khoangcach
+        deltay = khoangcachdichuyen * deltay / khoangcach
 
         if abs(deltax) > KHOANGCACHNUAMANHINH:
-            deltax = KHOANGCACHNUAMANHINH
-            deltay = deltax * KHOANGCACHNUAMANHINH / deltax
+            old_deltax = deltax
+            old_deltay = deltay
+            deltax = old_deltax / abs(old_deltax) * KHOANGCACHNUAMANHINH
+            deltay = old_deltay * deltax / old_deltax
 
         if abs(deltay) > KHOANGCACHNUAMANHINH:
-            deltay = KHOANGCACHNUAMANHINH
-            deltax = deltay * KHOANGCACHNUAMANHINH / deltay
+            old_deltax = deltax
+            old_deltay = deltay
+            deltay = old_deltay / abs(old_deltay) * KHOANGCACHNUAMANHINH
+            deltax = old_deltax * deltay / old_deltay
 
         xmax = self.kichthuoccuasogame[0]
         ymax = self.kichthuoccuasogame[1]
@@ -750,9 +758,12 @@ class MoiTruong:
         xclick = round(centerx + deltax * toadomoidonvikhoangcachx)
         yclick = round(centery + deltay * toadomoidonvikhoangcachy)
 
+        xclick = min(max(160, xclick), xmax - 160)
+        yclick = min(max(120, yclick), ymax - 120)
+
         self.action_dichuyen(xclick, yclick)
 
-    def action_dichuyenvuotqua(self, diachicosothongtinnhanvat2, khoangcachtoida = 1):
+    def action_dichuyenvuotqua(self, diachicosothongtinnhanvat2, khoangcachtoida = 2):
         khoangcach = self.get_khoangcach(diachicosothongtinnhanvat2)
 
         diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
@@ -760,32 +771,42 @@ class MoiTruong:
         x1, y1 = self.get_toadox(diachicosothongtinnhanvat1), self.get_toadoy(diachicosothongtinnhanvat1)
         x2, y2 = self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2)
 
-        deltax = x2 - x1
+        deltax = x1 - x2
         deltay = y1 - y2
 
         khoangcachdichuyen = khoangcach + khoangcachtoida
 
-        deltax = khoangcachdichuyen * deltax / (khoangcach or 1.)
-        deltay = khoangcachdichuyen * deltay / (khoangcach or 1.)
+        deltax = khoangcachdichuyen * deltax / khoangcach
+        deltay = khoangcachdichuyen * deltay / khoangcach
+
+        if abs(deltax) > KHOANGCACHNUAMANHINH:
+            old_deltax = deltax
+            old_deltay = deltay
+            deltax = old_deltax / abs(old_deltax) * KHOANGCACHNUAMANHINH
+            deltay = old_deltay * deltax / old_deltax
+
+        if abs(deltay) > KHOANGCACHNUAMANHINH:
+            old_deltax = deltax
+            old_deltay = deltay
+            deltay = old_deltay / abs(old_deltay) * KHOANGCACHNUAMANHINH
+            deltax = old_deltax * deltay / old_deltay
 
         xmax = self.kichthuoccuasogame[0]
         ymax = self.kichthuoccuasogame[1]
 
+        toadomoidonvikhoangcachx = xmax / KHOANGCACHTOANMANHINH
+        toadomoidonvikhoangcachy = ymax / KHOANGCACHTOANMANHINH
+
         centerx = xmax / 2
         centery = ymax / 2
 
-        tongdelta = abs(deltax) + abs(deltay)
+        xclick = round(centerx + deltax * toadomoidonvikhoangcachx)
+        yclick = round(centery + deltay * toadomoidonvikhoangcachy)
 
-        deltax = deltax / tongdelta * xmax
-        deltay = deltay / tongdelta * ymax
+        xclick = min(max(160, xclick), xmax - 160)
+        yclick = min(max(120, yclick), ymax - 120)
 
-        targetx = round(centerx + deltax)
-        targety = round(centery + deltay)
-
-        targetx = min(max(175, targetx), xmax - 175)
-        targety = min(max(150, targety), ymax - 150)
-
-        self.action_dichuyen(targetx, targety)
+        self.action_dichuyen(xclick, yclick)
 
     def action_dichuyentiepcan(self, diachicosothongtinnhanvat2):
-        self.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvat2, khoangcachtoida = 1)
+        self.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvat2, khoangcachtoida = 2)

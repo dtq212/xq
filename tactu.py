@@ -131,12 +131,6 @@ class TacTu:
 
             while True:
                 diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
-                if diachicosothongtinnhanvatmuctieudangchon:
-                    print(self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon), end = ", ")
-
-                    self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, 3)
-                    print()
-                break
 
                 if not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
                     self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
@@ -214,7 +208,7 @@ class TacTu:
             elif khoangcach <= KHOANGCACHHIEUQUAKYNANGKHAITHIENTICHDIA and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA) and time.time() - self.thoidiemsudungkynangkhaithientichdiagannhat > 2:
                 self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_KHAITHIENTICHDIA, HINHTHUCSUDUNGKYNANG_CANKHOANHVUNG)
                 self.thoidiemchokhoanhvungkynanggannhat = time.time()
-            elif khoangcach <= 1:
+            elif khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN:
                 if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUCPHACHHOASON):
                     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_LUCPHACHHOASON)
                 elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_DONDAOTRUCNHAP):
