@@ -719,43 +719,42 @@ class MoiTruong:
         if khoangcach <= khoangcachtoida:
             return
 
+        khoangcach = max(khoangcach, 9.)
+
         diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
 
         x1, y1 = self.get_toadox(diachicosothongtinnhanvat1), self.get_toadoy(diachicosothongtinnhanvat1)
         x2, y2 = self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2)
 
-        deltax = x2 - x1
+        deltax = x1 - x2
         deltay = y1 - y2
 
-        khoangcachdichuyen = khoangcach - khoangcachtoida
+        print("deltax: ", deltax, "deltay: ", deltay, end = ", ")
 
-        deltax = khoangcachdichuyen * deltax / khoangcach
-        deltay =  khoangcachdichuyen * deltay / khoangcach
+        deltax = -khoangcachtoida * deltax / khoangcach
+        deltay = -khoangcachtoida * deltay / khoangcach
 
         xmax = self.kichthuoccuasogame[0]
         ymax = self.kichthuoccuasogame[1]
 
+        toadomoidonvikhoangcachx = xmax / 9.
+        toadomoidonvikhoangcachy = ymax / 9.
+
         centerx = xmax / 2
         centery = ymax / 2
 
-        tongdelta = abs(deltax) + abs(deltay)
+        xclick = round(centerx + deltax * toadomoidonvikhoangcachx)
+        yclick = round(centery + deltay * toadomoidonvikhoangcachy)
 
-        deltax = deltax / tongdelta * xmax
-        deltay = deltay / tongdelta * ymax
+        xclick = min(max(175, xclick), xmax - 175)
+        yclick = min(max(150, yclick), ymax - 150)
 
-        targetx = round(centerx + deltax)
-        targety = round(centery + deltay)
+        print("xclick: ", xclick, "yclick: ", yclick)
 
-        targetx = min(max(175, targetx), xmax - 175)
-        targety = min(max(150, targety), ymax - 150)
+        self.action_dichuyen(xclick, yclick)
 
-        self.action_dichuyen(targetx, targety)
-
-    def action_dichuyenvuotqua(self, diachicosothongtinnhanvat2, khoangcachtoithieu = 1):
+    def action_dichuyenvuotqua(self, diachicosothongtinnhanvat2, khoangcachtoida = 1):
         khoangcach = self.get_khoangcach(diachicosothongtinnhanvat2)
-
-        if not khoangcach:
-            return
 
         diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
 
@@ -765,10 +764,10 @@ class MoiTruong:
         deltax = x2 - x1
         deltay = y1 - y2
 
-        khoangcachdichuyen = khoangcach + khoangcachtoithieu
+        khoangcachdichuyen = khoangcach + khoangcachtoida
 
-        deltax = khoangcachdichuyen * deltax / khoangcach
-        deltay = khoangcachdichuyen * deltay / khoangcach
+        deltax = khoangcachdichuyen * deltax / (khoangcach or 1.)
+        deltay = khoangcachdichuyen * deltay / (khoangcach or 1.)
 
         xmax = self.kichthuoccuasogame[0]
         ymax = self.kichthuoccuasogame[1]
