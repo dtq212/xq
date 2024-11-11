@@ -89,9 +89,6 @@ class TacTu:
                 if self.moitruong.get_is_dangclickchuottrai():
                     break
 
-                # if not self.moitruong.get_is_dangtheosaunhom():
-                #     break
-
                 if not self.moitruong.get_is_dangotrongnhom():
                     break
 
@@ -193,6 +190,8 @@ class TacTu:
                 if self.moitruong.get_is_dangclickchuottrai():
                     break
                 if self.moitruong.get_is_tamngungtancong():
+                    break
+                if self.moitruong.get_is_nhanvatdachet():
                     break
 
                 diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
