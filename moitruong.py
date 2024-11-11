@@ -330,7 +330,6 @@ class MoiTruong:
         diachicosothongtinkynang = self.get_diachicosothongtinkynang()
         if not diachicosothongtinkynang:
             return False
-
         idvitrikynang = 14 * idvitriY + idvitriX #Vì mỗi cuốn nó chỉ có tối đa 12 kỹ năng cho nên nó nhích lên 14 để không bao giờ trùng nhau
 
         return read_int(self.tientrinh, diachicosothongtinkynang + idvitrikynang * OFFSET_DIACHICOSOMOIKYNANG + 0x6A4C) == 0

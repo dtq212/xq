@@ -179,20 +179,31 @@ class TacTu:
             if not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
                 return
 
-            if self.moitruong.get_idloainhanvat(diachicosothongtinnhanvatmuctieudangchon) == LOAIMUCTIEU_NGUOICHOICOTHETANCONG and self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon) >= 5:
-                for vitrikynang in (VITRIPHIMTATKYNANG_A, VITRIPHIMTATKYNANG_S, VITRIPHIMTATKYNANG_D, VITRIPHIMTATKYNANG_Q):
-                    if vitrikynang in self.thoidiemsudungkynangphimtatgannhat_map and time.time() - self.thoidiemsudungkynangphimtatgannhat_map[vitrikynang] < 0.5:
-                        continue
-                    self.thoidiemsudungkynangphimtatgannhat_map[vitrikynang] = time.time()
-                    self.moitruong.action_sudungkynangphimtat(vitrikynang)
-                    break
-            else:
-                for vitrikynang in (VITRIPHIMTATKYNANG_Q, VITRIPHIMTATKYNANG_W, VITRIPHIMTATKYNANG_E, VITRIPHIMTATKYNANG_R):
-                    if vitrikynang in self.thoidiemsudungkynangphimtatgannhat_map and time.time() - self.thoidiemsudungkynangphimtatgannhat_map[vitrikynang] < 0.5:
-                        continue
-                    self.thoidiemsudungkynangphimtatgannhat_map[vitrikynang] = time.time()
-                    self.moitruong.action_sudungkynangphimtat(vitrikynang)
-                    break
+            if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG):
+                self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_LUUTINHTRUYMANG)
+            elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUCPHACHHOASON):
+                self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_LUCPHACHHOASON)
+            elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_DONDAOTRUCNHAP):
+                self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_DONDAOTRUCNHAP)
+            elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHAMATRAM):
+                self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_PHAMATRAM)
+            elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHAKHONGKICH):
+                self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_PHAKHONGKICH)
+
+            # if self.moitruong.get_idloainhanvat(diachicosothongtinnhanvatmuctieudangchon) == LOAIMUCTIEU_NGUOICHOICOTHETANCONG and self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon) >= 5:
+            #     for vitrikynang in (VITRIPHIMTATKYNANG_A, VITRIPHIMTATKYNANG_S, VITRIPHIMTATKYNANG_D, VITRIPHIMTATKYNANG_Q):
+            #         if vitrikynang in self.thoidiemsudungkynangphimtatgannhat_map and time.time() - self.thoidiemsudungkynangphimtatgannhat_map[vitrikynang] < 0.5:
+            #             continue
+            #         self.thoidiemsudungkynangphimtatgannhat_map[vitrikynang] = time.time()
+            #         self.moitruong.action_sudungkynangphimtat(vitrikynang)
+            #         break
+            # else:
+            #     for vitrikynang in (VITRIPHIMTATKYNANG_Q, VITRIPHIMTATKYNANG_W, VITRIPHIMTATKYNANG_E, VITRIPHIMTATKYNANG_R):
+            #         if vitrikynang in self.thoidiemsudungkynangphimtatgannhat_map and time.time() - self.thoidiemsudungkynangphimtatgannhat_map[vitrikynang] < 0.5:
+            #             continue
+            #         self.thoidiemsudungkynangphimtatgannhat_map[vitrikynang] = time.time()
+            #         self.moitruong.action_sudungkynangphimtat(vitrikynang)
+            #         break
 
     def battat_is_tudongsudungkynang(self):
         self._is_tudongsudungkynang = not self._is_tudongsudungkynang
