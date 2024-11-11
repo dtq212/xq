@@ -56,7 +56,7 @@ class MoiTruong:
         self._is_tamngungtancong = False
 
         self._idtrangthaichuot = 0
-        self.thoidiemchokhoanhvungkynanggannhat = time.time()
+        # self.thoidiemchokhoanhvungkynanggannhat = time.time()
 
     def __del__(self):
         if self.is_dasetupautoassemblebattattheosaunhom:
@@ -118,8 +118,8 @@ class MoiTruong:
         idtrangthaichuot = self.get_idtrangthaichuot()
 
         if idtrangthaichuot != self._idtrangthaichuot:
-            if idtrangthaichuot == TRANGTHAICHUOT_KHOANHVUNGKYNANG:
-                self.thoidiemchokhoanhvungkynanggannhat = time.time()
+            # if idtrangthaichuot == TRANGTHAICHUOT_KHOANHVUNGKYNANG:
+            #     self.thoidiemchokhoanhvungkynanggannhat = time.time()
             self._idtrangthaichuot = idtrangthaichuot
 
     def get_is_cuasogametontai(self):
@@ -226,7 +226,7 @@ class MoiTruong:
         x1, y1 = self.get_toadox(diachicosothongtinnhanvat1), self.get_toadoy(diachicosothongtinnhanvat1)
         x2, y2 = self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2)
 
-        return round(math.dist((x1, y1), (x2, y2)))
+        return round(math.dist((x1, y1), (x2, y2)), 2)
 
     def get_idtuthenhanvat(self, diachicosothongtinnhanvat = False):
         """
@@ -354,8 +354,16 @@ class MoiTruong:
             return False
         idvitrikynang = 14 * idvitriY + idvitriX #Vì mỗi cuốn nó chỉ có tối đa 12 kỹ năng cho nên nó nhích lên 14 để không bao giờ trùng nhau
 
-        return read_int(self.tientrinh, diachicosothongtinkynang + idvitrikynang * OFFSET_DIACHICOSOMOIKYNANG + 0x6A4C) == 0
-
+        is_kynangsansang = read_int(self.tientrinh, diachicosothongtinkynang + idvitrikynang * OFFSET_DIACHICOSOMOIKYNANG + 0x6A4C) == 0
+        return is_kynangsansang
+        # if not is_kynangsansang:
+        #     return False
+        #
+        # idvitri = (idvitriX, idvitriY)
+        # if idvitri in self.thoidiemsudungkynangvitrigannhat_map and 0.5 <= self.thoidiemsudungkynangvitrigannhat_map[idvitri] <= 1.:
+        #     return False
+        #
+        # return True
     def get_is_cothetancong(self, diachicosothongtinnhanvat):
         if not diachicosothongtinnhanvat:
             return False
@@ -680,7 +688,7 @@ class MoiTruong:
         self.thoidiemsudungkynangphimtatgannhat_map[idvitriphimtat] = time.time()
         self.auto_assemble_sudungkynangphimtat(idvitriphimtat)
 
-    def action_sudungkynangvitri(self, idvitriX, idvitriY, hinhthucsudungkynang = HINHTHUCSUDUNGKYNANG_CANMUCTIEU, delay = 0.25):
+    def action_sudungkynangvitri(self, idvitriX, idvitriY, hinhthucsudungkynang = HINHTHUCSUDUNGKYNANG_CANMUCTIEU, delay = 0.5):
         idvitri = (idvitriX, idvitriY)
         if idvitri in self.thoidiemsudungkynangvitrigannhat_map and time.time() - self.thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
             return
@@ -710,6 +718,7 @@ class MoiTruong:
 
         if khoangcach <= khoangcachtoida:
             return
+
         diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
 
         x1, y1 = self.get_toadox(diachicosothongtinnhanvat1), self.get_toadoy(diachicosothongtinnhanvat1)
@@ -718,15 +727,10 @@ class MoiTruong:
         deltax = x2 - x1
         deltay = y1 - y2
 
-        khoangcach = round(math.sqrt(deltax ** 2 + deltay ** 2))
-
-        if not khoangcach:
-            return
-
         khoangcachdichuyen = khoangcach - khoangcachtoida
 
-        deltax = round( khoangcachdichuyen * deltax / khoangcach)
-        deltay = round( khoangcachdichuyen * deltay / khoangcach)
+        deltax = khoangcachdichuyen * deltax / khoangcach
+        deltay =  khoangcachdichuyen * deltay / khoangcach
 
         xmax = self.kichthuoccuasogame[0]
         ymax = self.kichthuoccuasogame[1]
@@ -736,11 +740,46 @@ class MoiTruong:
 
         tongdelta = abs(deltax) + abs(deltay)
 
-        deltax = deltax / tongdelta
-        deltay = deltay / tongdelta
+        deltax = deltax / tongdelta * xmax
+        deltay = deltay / tongdelta * ymax
 
-        deltax = deltax * xmax
-        deltay = deltay * ymax
+        targetx = round(centerx + deltax)
+        targety = round(centery + deltay)
+
+        targetx = min(max(175, targetx), xmax - 175)
+        targety = min(max(150, targety), ymax - 150)
+
+        self.action_dichuyen(targetx, targety)
+
+    def action_dichuyenvuotqua(self, diachicosothongtinnhanvat2, khoangcachtoithieu = 1):
+        khoangcach = self.get_khoangcach(diachicosothongtinnhanvat2)
+
+        if not khoangcach:
+            return
+
+        diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
+
+        x1, y1 = self.get_toadox(diachicosothongtinnhanvat1), self.get_toadoy(diachicosothongtinnhanvat1)
+        x2, y2 = self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2)
+
+        deltax = x2 - x1
+        deltay = y1 - y2
+
+        khoangcachdichuyen = khoangcach + khoangcachtoithieu
+
+        deltax = khoangcachdichuyen * deltax / khoangcach
+        deltay = khoangcachdichuyen * deltay / khoangcach
+
+        xmax = self.kichthuoccuasogame[0]
+        ymax = self.kichthuoccuasogame[1]
+
+        centerx = xmax / 2
+        centery = ymax / 2
+
+        tongdelta = abs(deltax) + abs(deltay)
+
+        deltax = deltax / tongdelta * xmax
+        deltay = deltay / tongdelta * ymax
 
         targetx = round(centerx + deltax)
         targety = round(centery + deltay)

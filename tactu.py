@@ -26,7 +26,9 @@ class TacTu:
 
         self.thoidiemsudungkynangphimtatgannhat_map = {}
         self.thoidiembattattheosaunhomgannhat = time.time() - 0.5
-        self.thoidiemvohieuhoakynangkhaithientichdiagannhat = time.time() - 2
+        self.thoidiemsudungkynangkhaithientichdiagannhat = time.time() - 2
+        self.thoidiemsudungkynangluutinhtruymanggannhat = time.time() - 2
+        self.thoidiemchokhoanhvungkynanggannhat = time.time() - 1
     def __del__(self):
         try:
             pass
@@ -109,7 +111,12 @@ class TacTu:
                 if idtuthenhanvat == 6:
                     self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_0)
 
-                if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA) and time.time() - self.thoidiemvohieuhoakynangkhaithientichdiagannhat > 2:
+                if self.moitruong.get_idtrangthaichuot() == TRANGTHAICHUOT_KHOANHVUNGKYNANG:
+                    self.moitruong.action_dichuyenvuotqua(diachicosothongtintruongnhom)
+                    if self.moitruong.thoidiemchokhoanhvungkynanggannhat > 1:
+                        self.moitruong.set_idtrangthaichuot(TRANGTHAICHUOT_BINHTHUONG)
+                    self.thoidiemsudungkynangkhaithientichdiagannhat = time.time()
+                elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA) and time.time() - self.thoidiemsudungkynangkhaithientichdiagannhat > 2:
                     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_KHAITHIENTICHDIA, HINHTHUCSUDUNGKYNANG_CANKHOANHVUNG)
                 else:
                     self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtintruongnhom, khoangcachtoidatruongnhom)
@@ -186,15 +193,20 @@ class TacTu:
             khoangcach = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon)
 
             if self.moitruong.get_idtrangthaichuot() == TRANGTHAICHUOT_KHOANHVUNGKYNANG:
-                self.moitruong.action_dichuyentiepcan(diachicosothongtinnhanvatmuctieudangchon)
-                self.thoidiemvohieuhoakynangkhaithientichdiagannhat = time.time()
-
-            elif khoangcach <= 8 and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NGUKIEMPHITIEN) and self.moitruong.get_idloainhanvat(diachicosothongtinnhanvatmuctieudangchon) == LOAIMUCTIEU_QUAIVATHOACNPC and self.moitruong.get_idtuthenhanvat() != TUTHENHANVAT_DICHUYEN:
-                self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_NGUKIEMPHITIEN, HINHTHUCSUDUNGKYNANG_KHONGCANMUCTIEU)
-            elif khoangcach <= 8 and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG):
+                self.moitruong.action_dichuyenvuotqua(diachicosothongtinnhanvatmuctieudangchon)
+                if self.thoidiemchokhoanhvungkynanggannhat > 1:
+                    self.moitruong.set_idtrangthaichuot(TRANGTHAICHUOT_BINHTHUONG)
+                self.thoidiemsudungkynangkhaithientichdiagannhat = time.time()
+            # elif khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NGUKIEMPHITIEN) and self.moitruong.get_idloainhanvat(diachicosothongtinnhanvatmuctieudangchon) == LOAIMUCTIEU_QUAIVATHOACNPC and self.moitruong.get_idtuthenhanvat() != TUTHENHANVAT_DICHUYEN:
+            #     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_NGUKIEMPHITIEN, HINHTHUCSUDUNGKYNANG_KHONGCANMUCTIEU)
+            elif khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG) and time.time() - self.thoidiemsudungkynangluutinhtruymanggannhat > 2:
                 if khoangcach == 0:
                     self.moitruong.action_dichuyenrachutxiu()
                 self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_LUUTINHTRUYMANG)
+                self.thoidiemsudungkynangluutinhtruymanggannhat = time.time()
+            elif khoangcach <= KHOANGCACHHIEUQUAKYNANGKHAITHIENTICHDIA and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA) and time.time() - self.thoidiemsudungkynangkhaithientichdiagannhat > 2:
+                self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_KHAITHIENTICHDIA, HINHTHUCSUDUNGKYNANG_CANKHOANHVUNG)
+                self.thoidiemchokhoanhvungkynanggannhat = time.time()
             elif khoangcach <= 1:
                 if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUCPHACHHOASON):
                     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_LUCPHACHHOASON)
@@ -204,7 +216,7 @@ class TacTu:
                     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_PHAMATRAM)
                 elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHAKHONGKICH):
                     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_PHAKHONGKICH)
-            elif khoangcach <= 8:
+            elif khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
                 if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LANGKHONGCHIHUYET):
                     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_LANGKHONGCHIHUYET)
                 elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_BANGTAMTHUC):
@@ -216,8 +228,9 @@ class TacTu:
                 elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NGUKIEMTHUAT):
                     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_NGUKIEMTHUAT)
             elif khoangcach <= KHOANGCACHTOIDAHOPLE:
-                if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA) and time.time() - self.thoidiemvohieuhoakynangkhaithientichdiagannhat > 2:
+                if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA) and time.time() - self.thoidiemsudungkynangkhaithientichdiagannhat > 2:
                     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_KHAITHIENTICHDIA, HINHTHUCSUDUNGKYNANG_CANKHOANHVUNG)
+                    self.thoidiemchokhoanhvungkynanggannhat = time.time()
                 else:
                     self.moitruong.action_dichuyentiepcan(diachicosothongtinnhanvatmuctieudangchon)
 
