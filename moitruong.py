@@ -719,37 +719,36 @@ class MoiTruong:
         if khoangcach <= khoangcachtoida:
             return
 
-        khoangcach = max(khoangcach, 9.)
-
         diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
 
         x1, y1 = self.get_toadox(diachicosothongtinnhanvat1), self.get_toadoy(diachicosothongtinnhanvat1)
         x2, y2 = self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2)
 
-        deltax = x1 - x2
+        deltax = x2 - x1
         deltay = y1 - y2
 
-        print("deltax: ", deltax, "deltay: ", deltay, end = ", ")
+        deltax = khoangcachtoida * deltax / khoangcach
+        deltay = khoangcachtoida * deltay / khoangcach
 
-        deltax = -khoangcachtoida * deltax / khoangcach
-        deltay = -khoangcachtoida * deltay / khoangcach
+        if abs(deltax) > KHOANGCACHNUAMANHINH:
+            deltax = KHOANGCACHNUAMANHINH
+            deltay = deltax * KHOANGCACHNUAMANHINH / deltax
+
+        if abs(deltay) > KHOANGCACHNUAMANHINH:
+            deltay = KHOANGCACHNUAMANHINH
+            deltax = deltay * KHOANGCACHNUAMANHINH / deltay
 
         xmax = self.kichthuoccuasogame[0]
         ymax = self.kichthuoccuasogame[1]
 
-        toadomoidonvikhoangcachx = xmax / 9.
-        toadomoidonvikhoangcachy = ymax / 9.
+        toadomoidonvikhoangcachx = xmax / KHOANGCACHTOANMANHINH
+        toadomoidonvikhoangcachy = ymax / KHOANGCACHTOANMANHINH
 
         centerx = xmax / 2
         centery = ymax / 2
 
         xclick = round(centerx + deltax * toadomoidonvikhoangcachx)
         yclick = round(centery + deltay * toadomoidonvikhoangcachy)
-
-        xclick = min(max(175, xclick), xmax - 175)
-        yclick = min(max(150, yclick), ymax - 150)
-
-        print("xclick: ", xclick, "yclick: ", yclick)
 
         self.action_dichuyen(xclick, yclick)
 

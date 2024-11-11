@@ -134,7 +134,8 @@ class TacTu:
                 if diachicosothongtinnhanvatmuctieudangchon:
                     print(self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon), end = ", ")
 
-                self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, 3)
+                    self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, 3)
+                    print()
                 break
 
                 if not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
