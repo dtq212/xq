@@ -771,7 +771,7 @@ class MoiTruong:
         x1, y1 = self.get_toadox(diachicosothongtinnhanvat1), self.get_toadoy(diachicosothongtinnhanvat1)
         x2, y2 = self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2)
 
-        deltax = x1 - x2
+        deltax = x2 - x1
         deltay = y1 - y2
 
         khoangcachdichuyen = khoangcach + khoangcachtoida

@@ -253,3 +253,8 @@ class TacTu:
     def set_tenmuctieutancong(self, tenmuctieutancong):
         if self._tenmuctieutancong != tenmuctieutancong:
             self._tenmuctieutancong = tenmuctieutancong
+
+            if self._tenmuctieutancong:
+                phatam("Thiết lập tên mục tiêu tấn công")
+            else:
+                phatam("Bỏ thiết lập tên mục tiêu tấn công")
