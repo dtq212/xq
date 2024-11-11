@@ -113,7 +113,7 @@ class TacTu:
 
                 if self.moitruong.get_idtrangthaichuot() == TRANGTHAICHUOT_KHOANHVUNGKYNANG:
                     self.moitruong.action_dichuyenvuotqua(diachicosothongtintruongnhom)
-                    if self.moitruong.thoidiemchokhoanhvungkynanggannhat > 1:
+                    if self.thoidiemchokhoanhvungkynanggannhat > 1:
                         self.moitruong.set_idtrangthaichuot(TRANGTHAICHUOT_BINHTHUONG)
                     self.thoidiemsudungkynangkhaithientichdiagannhat = time.time()
                 elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA) and time.time() - self.thoidiemsudungkynangkhaithientichdiagannhat > 2:
