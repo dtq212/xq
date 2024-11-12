@@ -158,7 +158,7 @@ class MoiTruong:
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x24)
 
     def get_is_dangmatketnoi(self):
-        return not self.get_tennhanvat()
+        return not self.get_is_nhanvattontai()
 
     def get_x(self, diachicosothongtinnhanvat = False):
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x20)
