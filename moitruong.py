@@ -39,7 +39,9 @@ class MoiTruong:
         if not kichthuoccuaso:
             raise Exception("Lấy kích thước cửa sổ game không thành công")
 
-        self.kichthuoccuasogame = kichthuoccuaso[2] - kichthuoccuaso[0], kichthuoccuaso[3] - kichthuoccuaso[1]
+        #self.kichthuoccuasogame = kichthuoccuaso[2] - kichthuoccuaso[0], kichthuoccuaso[3] - kichthuoccuaso[1]
+        self.kichthuoccuasogame = 800., 600.
+        self.centerx, self.centery = 430., 300.
 
         self.is_dasetupautoassemblebattattheosaunhom = False
         self.is_dasetupautoassemblemocuasotuychonnhanvatchinh = False
@@ -786,23 +788,13 @@ class MoiTruong:
 
         self.auto_assemble_chonvungsudungkynang(x, y)
 
-
-    def action_dichuyenrachutxiu(self):
-        xmax = self.kichthuoccuasogame[0]
-        ymax = self.kichthuoccuasogame[1]
-
-        centerx = round(xmax / 2)
-        centery = round(ymax / 2)
-
-        self.action_dichuyen(centerx, centery)
-
     def action_dichuyengiukhoangcachtoida(self, diachicosothongtinnhanvat2, khoangcachtoida):
         khoangcach = self.get_khoangcach(diachicosothongtinnhanvat2)
 
         if khoangcach <= khoangcachtoida:
             return
 
-        khoangcachtoida = max(0., khoangcachtoida - 1.)
+        khoangcachtoida = max(0., khoangcachtoida - 1.) #Đi gần vào hơn khoangcachtoida 1 chút
 
         diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
 
@@ -824,17 +816,17 @@ class MoiTruong:
         if not deltax and not deltay:
             return
 
-        if abs(deltax) > KHOANGCACHNUAMANHINH:
-            old_deltax = deltax
-            old_deltay = deltay
-            deltax = old_deltax / abs(old_deltax) * KHOANGCACHNUAMANHINH
-            deltay = old_deltay * deltax / old_deltax
-
-        if abs(deltay) > KHOANGCACHNUAMANHINH:
-            old_deltax = deltax
-            old_deltay = deltay
-            deltay = old_deltay / abs(old_deltay) * KHOANGCACHNUAMANHINH
-            deltax = old_deltax * deltay / old_deltay
+        # if abs(deltax) > KHOANGCACHNUAMANHINH:
+        #     old_deltax = deltax
+        #     old_deltay = deltay
+        #     deltax = old_deltax / abs(old_deltax) * KHOANGCACHNUAMANHINH
+        #     deltay = old_deltay * deltax / old_deltax
+        #
+        # if abs(deltay) > KHOANGCACHNUAMANHINH:
+        #     old_deltax = deltax
+        #     old_deltay = deltay
+        #     deltay = old_deltay / abs(old_deltay) * KHOANGCACHNUAMANHINH
+        #     deltax = old_deltax * deltay / old_deltay
 
         xmax = self.kichthuoccuasogame[0]
         ymax = self.kichthuoccuasogame[1]
@@ -842,11 +834,10 @@ class MoiTruong:
         toadomoidonvikhoangcachx = xmax / KHOANGCACHTOANMANHINH
         toadomoidonvikhoangcachy = ymax / KHOANGCACHTOANMANHINH
 
-        centerx = xmax / 2
-        centery = ymax / 2
+        xclick = round(self.centerx + deltax * toadomoidonvikhoangcachx)
+        yclick = round(self.centery + deltay * toadomoidonvikhoangcachy)
 
-        xclick = round(centerx + deltax * toadomoidonvikhoangcachx)
-        yclick = round(centery + deltay * toadomoidonvikhoangcachy)
+        print(xclick, yclick, khoangcach, khoangcachdichuyen)
 
         self.action_dichuyen(xclick, yclick)
 
@@ -879,17 +870,17 @@ class MoiTruong:
         if not deltax and not deltay:
             return
 
-        if abs(deltax) > KHOANGCACHNUAMANHINH:
-            old_deltax = deltax
-            old_deltay = deltay
-            deltax = old_deltax / abs(old_deltax) * KHOANGCACHNUAMANHINH
-            deltay = old_deltay * deltax / old_deltax
-
-        if abs(deltay) > KHOANGCACHNUAMANHINH:
-            old_deltax = deltax
-            old_deltay = deltay
-            deltay = old_deltay / abs(old_deltay) * KHOANGCACHNUAMANHINH
-            deltax = old_deltax * deltay / old_deltay
+        # if abs(deltax) > KHOANGCACHNUAMANHINH:
+        #     old_deltax = deltax
+        #     old_deltay = deltay
+        #     deltax = old_deltax / abs(old_deltax) * KHOANGCACHNUAMANHINH
+        #     deltay = old_deltay * deltax / old_deltax
+        #
+        # if abs(deltay) > KHOANGCACHNUAMANHINH:
+        #     old_deltax = deltax
+        #     old_deltay = deltay
+        #     deltay = old_deltay / abs(old_deltay) * KHOANGCACHNUAMANHINH
+        #     deltax = old_deltax * deltay / old_deltay
 
         xmax = self.kichthuoccuasogame[0]
         ymax = self.kichthuoccuasogame[1]
@@ -897,11 +888,8 @@ class MoiTruong:
         toadomoidonvikhoangcachx = xmax / KHOANGCACHTOANMANHINH
         toadomoidonvikhoangcachy = ymax / KHOANGCACHTOANMANHINH
 
-        centerx = xmax / 2
-        centery = ymax / 2
-
-        xclick = round(centerx + deltax * toadomoidonvikhoangcachx)
-        yclick = round(centery + deltay * toadomoidonvikhoangcachy)
+        xclick = round(self.centerx + deltax * toadomoidonvikhoangcachx)
+        yclick = round(self.centery + deltay * toadomoidonvikhoangcachy)
 
         self.action_chonvungsudungkynang(xclick, yclick)
 
