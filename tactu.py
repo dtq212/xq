@@ -18,6 +18,7 @@ class TacTu:
         self._is_tudongsudungkynang = True
         self._is_tudongtheosautruongnhom = True
         self._is_tudongsudungvatpham = True
+        self._is_tudongnhatdo = True
 
         self._khoangcachtoidatruongnhom = 4
 
@@ -34,6 +35,10 @@ class TacTu:
 
         self.thoidiemtudongsudungvatphamgannhat = time.time()
         self.thoidiemtudongsudungvatphamgannhat_map = {}
+
+        self._diemdanhxungquanh = False
+        self._khoangcachdiemdanhxungquanh = 27.
+        self._is_vuotquadiemdanhxungquanh = False
 
     def __del__(self):
         try:
@@ -85,7 +90,7 @@ class TacTu:
             self.moitruong.action_battattheosaunhom(delay = 1)
 
     def action_tudongtheosautruongnhom(self):
-        is_tamngungtancong = False
+        is_tamngungtancongtheosautruongnhom = False
         if self._is_tudongtheosautruongnhom:
             while True:
                 if self.moitruong.get_is_batenter():
@@ -113,7 +118,7 @@ class TacTu:
                 if khoangcachtruongnhom >= KHOANGCACHTOIDAHOPLE:
                     break
 
-                is_tamngungtancong = True
+                is_tamngungtancongtheosautruongnhom = True
 
                 if idtuthenhanvat == TUTHENHANVAT_TANCONG and self.moitruong.get_is_thietlapkynangphimtat(VITRIPHIMTATKYNANG_THUCUOI):
                     self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_THUCUOI, delay = 2)
@@ -125,7 +130,7 @@ class TacTu:
                     self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtintruongnhom, self._khoangcachtoidatruongnhom)
 
                 break
-        self.moitruong.set_is_tamngungtancong(is_tamngungtancong)
+        self._is_tamngungtancongtheosautruongnhom = is_tamngungtancongtheosautruongnhom
 
 
     def action_tudongtimkiemmuctieu(self):
@@ -191,30 +196,26 @@ class TacTu:
 
             self.thoidiemkiemtrahieuunggannhat = time.time()
 
-            if VITRIPHIMTATKYNANG_HUYETTHACH not in self.thoidiemtudongsudungvatphamgannhat_map:
-                if not self.moitruong.get_is_cohieuung(HIEUUNGKYNANG_TIEUHUYETTHACH, True) and self.moitruong.get_is_thietlapkynangphimtat(VITRIPHIMTATKYNANG_HUYETTHACH):
-                    self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_HUYETTHACH)
-                    self.thoidiemtudongsudungvatphamgannhat_map[VITRIPHIMTATKYNANG_HUYETTHACH] = time.time()
-                    self.thoidiemtudongsudungvatphamgannhat = time.time()
-                    return
+            if not self.moitruong.get_is_cohieuung(HIEUUNGKYNANG_TIEUHUYETTHACH, True) and self.moitruong.get_is_thietlapkynangphimtat(VITRIPHIMTATKYNANG_HUYETTHACH):
+                self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_HUYETTHACH)
+                return
 
-            if VITRIPHIMTATKYNANG_PHAPLUCTHACH not in self.thoidiemtudongsudungvatphamgannhat_map:
-                if not self.moitruong.get_is_cohieuung(HIEUUNGKYNANG_TIEUPHAPLUCTHACH, True) and self.moitruong.get_is_thietlapkynangphimtat(VITRIPHIMTATKYNANG_PHAPLUCTHACH):
-                    self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_PHAPLUCTHACH)
-                    self.thoidiemtudongsudungvatphamgannhat_map[VITRIPHIMTATKYNANG_PHAPLUCTHACH] = time.time()
-                    self.thoidiemtudongsudungvatphamgannhat = time.time()
-                    return
+            if not self.moitruong.get_is_cohieuung(HIEUUNGKYNANG_TIEUPHAPLUCTHACH, True) and self.moitruong.get_is_thietlapkynangphimtat(VITRIPHIMTATKYNANG_PHAPLUCTHACH):
+                self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_PHAPLUCTHACH)
+                return
 
 
     def action_tudongsudungkynang(self):
         is_sudungkynangtieuchuthien = False
         if self._is_tudongsudungkynang:
             while True:
+                if self._is_tamngungtancongtheosautruongnhom:
+                    break
+                if self._is_vuotquadiemdanhxungquanh:
+                    break
                 if self.moitruong.get_is_batenter():
                     break
                 if self.moitruong.get_is_dangclickchuottrai():
-                    break
-                if self.moitruong.get_is_tamngungtancong():
                     break
                 if self.moitruong.get_is_nhanvatdachet():
                     break
@@ -301,3 +302,28 @@ class TacTu:
                 phatam("Thiết lập tên mục tiêu tấn công")
             else:
                 phatam("Bỏ thiết lập tên mục tiêu tấn công")
+
+    def action_tudongnhatdo(self):
+        if self._is_tudongnhatdo:
+            self.moitruong.action_nhatdo()
+
+    def action_tudongdichuyenxungquanhdiem(self):
+        is_vuotquadiemdanhxungquanh = False
+        if self._diemdanhxungquanh:
+            while True:
+                khoangcach = self.moitruong.get_khoangcachdiem(self._diemdanhxungquanh)
+                if khoangcach <= self._khoangcachdiemdanhxungquanh:
+                    break
+
+                is_vuotquadiemdanhxungquanh = True
+
+                break
+        self._is_vuotquadiemdanhxungquanh = is_vuotquadiemdanhxungquanh
+
+    def thietlap_diemdanhxungquanh(self, diemdanhxungquanh):
+        if not diemdanhxungquanh:
+            self._diemdanhxungquanh = False
+            phatam("Bỏ thiết lập thành công điểm đánh xung quanh")
+        else:
+            self._diemdanhxungquanh = diemdanhxungquanh
+            phatam("Thiết lập thành công điểm đánh xung quanh")

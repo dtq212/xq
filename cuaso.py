@@ -11,6 +11,11 @@ from hangso import *
 def khoidong_looplammoitrangthaimoitruong(moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
     luong = LoopLamMoiTrangThaiMoiTruong(moitruong, tactu, stop)
     luong.loop()
+
+def khoidong_looptimkiemmuctieu(moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
+    luong = LoopTimKiemMucTieu(moitruong, tactu, stop)
+    luong.loop()
+
 def khoidong_loopchinh(moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
     luong = LoopChinh(moitruong, tactu, stop)
     luong.loop()
@@ -30,6 +35,7 @@ class CuaSo:
 
         self.luongs = (
             threading.Thread(target = khoidong_looplammoitrangthaimoitruong, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_looptimkiemmuctieu, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopchinh, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopphu, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
         )
@@ -43,6 +49,9 @@ class CuaSo:
         keyboard.add_hotkey("ctrl + f", self.battat_tudongsudungkynang)
         keyboard.add_hotkey("ctrl + c", self.thietlaptenmuctieutancong)
         keyboard.add_hotkey("ctrl + alt + f", self.battat_tudongtheosautruongnhom)
+
+        keyboard.add_hotkey("ctrl + p", self.themdiemdanhxungquanh)
+        keyboard.add_hotkey("ctrl + alt + p", self.xoatoanbodiemdanhxungquanh)
 
         self.thoidiemluuthietlapgannhat = time.time()
 
@@ -90,3 +99,11 @@ class CuaSo:
         if self.moitruong.get_is_cuasogamekichhoat():
             tenmuctieutancong = self.moitruong.get_tennhanvatchichuot()
             self.tactu.set_tenmuctieutancong(tenmuctieutancong)
+
+    def themdiemdanhxungquanh(self):
+        if self.moitruong.get_is_cuasogamekichhoat():
+            self.tactu.thietlap_diemdanhxungquanh((self.moitruong.get_toadox(), self.moitruong.get_toadoy()))
+
+    def xoatoanbodiemdanhxungquanh(self):
+        if self.moitruong.get_is_cuasogamekichhoat():
+            self.tactu.thietlap_diemdanhxungquanh(False)
