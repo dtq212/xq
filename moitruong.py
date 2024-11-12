@@ -89,7 +89,7 @@ class MoiTruong:
     def get_diachicosothongtinnhanvat1(self):
         return read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVAT1)
 
-    def get_diachicosothongtinnhanvatx(self, x):
+    def get_diachicosothongtindoituongx(self, x):
         return read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVATX + x * 0x4)
 
     def get_diachicosothongtinkynang(self):
@@ -113,7 +113,7 @@ class MoiTruong:
             else:
                 i = 0
                 while True:
-                    diachicosothongtinnhanvatxemxet = self.get_diachicosothongtinnhanvatx(i)
+                    diachicosothongtinnhanvatxemxet = self.get_diachicosothongtindoituongx(i)
                     if not diachicosothongtinnhanvatxemxet:
                         break
                     i += 1
@@ -179,13 +179,28 @@ class MoiTruong:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return self.get_x(diachicosothongtinnhanvat) != -1 and self.get_idloaidoituong(diachicosothongtinnhanvat) == LOAIDOITUONG_VATPHAMDUOIDAT
 
+    def get_vatphamxungquanhs(self, khoangcachtoida = 2):
+        i = 0
+        vatphams = []
+        while True:
+            diachicosothongtinvatphamxemxet = self.get_diachicosothongtindoituongx(i)
+            if not diachicosothongtinvatphamxemxet:
+                break
+            i += 1
+            if not self.get_is_vatphamtontai(diachicosothongtinvatphamxemxet):
+                continue
+            if self.get_khoangcach(diachicosothongtinvatphamxemxet) <= khoangcachtoida:
+                vatphams.append(self.get_tendoituong(diachicosothongtinvatphamxemxet))
+
+        return vatphams
+
     def get_is_nhanvatdachet(self, diachicosothongtinnhanvat = False):
         if not diachicosothongtinnhanvat:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
         return read_boolean(self.tientrinh, diachicosothongtinnhanvat + 0x1424)
 
-    def get_tennhanvat(self, diachicosothongtinnhanvat = False):
+    def get_tendoituong(self, diachicosothongtinnhanvat = False):
         if not diachicosothongtinnhanvat:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return read_string(self.tientrinh, diachicosothongtinnhanvat + 0x10AC)
@@ -194,7 +209,7 @@ class MoiTruong:
         diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvatdangchichuot()
         if not diachicosothongtinnhanvat:
             return False
-        return self.get_tennhanvat(diachicosothongtinnhanvat)
+        return self.get_tendoituong(diachicosothongtinnhanvat)
 
     def get_sinhlucconlai(self):
         return read_int(self.tientrinh, self.get_diachicosothongtingame() + 0x152C)

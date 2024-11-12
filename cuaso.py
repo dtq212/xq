@@ -56,7 +56,7 @@ class CuaSo:
     def loop(self):
         while not self.main_stop.is_set() and self.moitruong.get_is_cuasogametontai():
             if not self.moitruong.get_is_dangmatketnoi():
-                tennhanvat = self.moitruong.get_tennhanvat()
+                tennhanvat = self.moitruong.get_tendoituong()
                 if tennhanvat:
                     self.systray.update(hover_text = tennhanvat)
 
