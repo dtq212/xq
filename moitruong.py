@@ -284,14 +284,32 @@ class MoiTruong:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x2EE8)
 
-    def get_is_cohieuung(self, idhieuung, diachicosothongtinnhanvat = False):
+    def get_is_cohieuung(self, idhieuung, macdinh, diachicosothongtinnhanvat = False):
         if not diachicosothongtinnhanvat:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
-        diachicosohieuungnhanvat = diachicosothongtinnhanvat + OFFSET_DIACHICOSOHIEUUNGNHANVAT
-        hieuungs = set()
+        if not self.get_is_nhanvattontai(diachicosothongtinnhanvat):
+            return macdinh
 
-        for i in range(SOLUONGHIEUUNGNHANVATTOIDA):
+        diachicosohieuungnhanvat = diachicosothongtinnhanvat + OFFSET_DIACHICOSOHIEUUNGNHANVAT
+        soluonghieuungnhanvat = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
+        soluonghieuungdemduoc = 0
+        i = -1
+
+        while True:
+            if not self.get_is_nhanvattontai(diachicosothongtinnhanvat):
+                return macdinh
+
+            soluonghieuungnhanvatmoinhat = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
+            if soluonghieuungnhanvat != soluonghieuungnhanvatmoinhat:
+                soluonghieuungnhanvat = soluonghieuungnhanvatmoinhat
+                soluonghieuungdemduoc = 0
+                i = -1
+
+            i += 1
+            if i >= SOLUONGHIEUUNGNHANVATTOIDA:
+                return macdinh
+
             idvitrihieuungxemxet = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT)
             is_hieuungcoloi = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT + 0x4) #1 là có lợi, 0 là có hại
             thoigianhieuluctoida = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT + 0x8)
@@ -303,20 +321,20 @@ class MoiTruong:
             if not idvitrihieuungxemxet and not is_hieuungcoloi and not thoigianhieuluctoida:
                 continue
 
-            # print("#i: {}, idvitrihieuungxemxet: {}".format(i, idvitrihieuungxemxet))
-
             idhieuungxemxet = read_int(self.tientrinh, self.diachixq + 0x1BF4D0 + idvitrihieuungxemxet * 4)  # Dò bằng cách tắt bật hiệu ứng theo sau nhóm và check xem ai write vào idvitrihieuung ở 0x1638
 
             if idhieuungxemxet == idhieuung:
                 return True
 
-            hieuungs.add(idhieuungxemxet)
-            if len(hieuungs) >= self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat):
-                break
+            soluonghieuungdemduoc += 1
 
-        return False
+            if soluonghieuungdemduoc >= soluonghieuungnhanvatmoinhat:
+                return False
+
+        return macdinh
+
     def get_is_dangtheosaunhom(self):
-        return self.get_is_cohieuung(HIEUUNGKYNANG_THEOSAUNHOM)
+        return self.get_is_cohieuung(HIEUUNGKYNANG_THEOSAUNHOM, False)
 
     def get_diachicosoidthanhviennhom(self):
         #Trong nhóm còn nhìn thấy máu của nhau nữa nhé
@@ -816,18 +834,6 @@ class MoiTruong:
         if not deltax and not deltay:
             return
 
-        # if abs(deltax) > KHOANGCACHNUAMANHINH:
-        #     old_deltax = deltax
-        #     old_deltay = deltay
-        #     deltax = old_deltax / abs(old_deltax) * KHOANGCACHNUAMANHINH
-        #     deltay = old_deltay * deltax / old_deltax
-        #
-        # if abs(deltay) > KHOANGCACHNUAMANHINH:
-        #     old_deltax = deltax
-        #     old_deltay = deltay
-        #     deltay = old_deltay / abs(old_deltay) * KHOANGCACHNUAMANHINH
-        #     deltax = old_deltax * deltay / old_deltay
-
         xmax = self.kichthuoccuasogame[0]
         ymax = self.kichthuoccuasogame[1]
 
@@ -837,7 +843,7 @@ class MoiTruong:
         xclick = round(self.centerx + deltax * toadomoidonvikhoangcachx)
         yclick = round(self.centery + deltay * toadomoidonvikhoangcachy)
 
-        print(xclick, yclick, khoangcach, khoangcachdichuyen)
+        # print(xclick, yclick, khoangcach, khoangcachdichuyen)
 
         self.action_dichuyen(xclick, yclick)
 
@@ -870,18 +876,6 @@ class MoiTruong:
         if not deltax and not deltay:
             return
 
-        # if abs(deltax) > KHOANGCACHNUAMANHINH:
-        #     old_deltax = deltax
-        #     old_deltay = deltay
-        #     deltax = old_deltax / abs(old_deltax) * KHOANGCACHNUAMANHINH
-        #     deltay = old_deltay * deltax / old_deltax
-        #
-        # if abs(deltay) > KHOANGCACHNUAMANHINH:
-        #     old_deltax = deltax
-        #     old_deltay = deltay
-        #     deltay = old_deltay / abs(old_deltay) * KHOANGCACHNUAMANHINH
-        #     deltax = old_deltax * deltay / old_deltay
-
         xmax = self.kichthuoccuasogame[0]
         ymax = self.kichthuoccuasogame[1]
 
@@ -902,3 +896,12 @@ class MoiTruong:
             return False
 
         return True
+
+    def get_is_thietlapkynangphimtat(self, idvitriphimtat):
+        x = read_int(self.tientrinh, self.diachixq + 0x37FA34)
+        if not x:
+            return False
+
+        x = read_short_int(self.tientrinh, x + 0xADFEA6 + idvitriphimtat)
+
+        return x in (LOAIDOITUONGPHIMTAT_KYNANG, LOAIDOITUONGPHIMTAT_VATPHAM)

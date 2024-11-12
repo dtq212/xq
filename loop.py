@@ -40,7 +40,6 @@ class LoopChinh:
         self.moitruong = moitruong
         self.tactu = tactu
         self.stop = stop
-        self.a = 0
 
     def __del__(self):
         try:
@@ -70,16 +69,12 @@ class LoopChinh:
 
         # self.tactu.action_tudongbattheosaunhom()
 
+        self.tactu.action_tudongtheosautruongnhom()
+        self.tactu.action_tudongtimkiemmuctieu()
+        self.tactu.action_tudongsudungkynang()
+        self.tactu.action_tudongsudungvatpham()
 
-        # self.tactu.action_tudongtheosautruongnhom()
-        # self.tactu.action_tudongtimkiemmuctieu()
-        # self.tactu.action_tudongsudungkynang()
 
-        diachicosomuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
-        if diachicosomuctieudangchon:
-            if self.a == 0:
-                self.moitruong.action_dichuyentiepcan(diachicosomuctieudangchon, )
-                self.a += 1
 
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
