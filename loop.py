@@ -105,7 +105,6 @@ class LoopChinh:
         self.tactu.action_tudongtheosautruongnhom()
         self.tactu.action_tudongsudungkynang()
 
-
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
         self.moitruong = moitruong

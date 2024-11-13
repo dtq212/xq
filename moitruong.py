@@ -60,10 +60,6 @@ class MoiTruong:
 
         self.diachicosothongtinnhanvattruongnhom = False
         self._is_tamngungtancong = False
-
-        self._idtrangthaichuot = 0
-        # self.thoidiemchokhoanhvungkynanggannhat = time.time()
-        # self.thoidiemlammoicuasotuychonnhanvatchinh = time.time()
         
 
     def __del__(self):
@@ -113,9 +109,10 @@ class MoiTruong:
         idnhanvattruongnhom = read_int(self.tientrinh, diachicosothanhviennhom)
 
         if idnhanvattruongnhom:
-            if self.diachicosothongtinnhanvattruongnhom and self.get_idnhanvat(self.diachicosothongtinnhanvattruongnhom) == idnhanvattruongnhom and self.get_is_nhanvattontai(self.diachicosothongtinnhanvattruongnhom):
+            if self.diachicosothongtinnhanvattruongnhom and self.get_idnguoichoi(self.diachicosothongtinnhanvattruongnhom) == idnhanvattruongnhom and self.get_is_nhanvattontai(self.diachicosothongtinnhanvattruongnhom):
                 diachicosothongtinnhanvattruongnhom = self.diachicosothongtinnhanvattruongnhom
             else:
+
                 i = 0
                 while True:
                     diachicosothongtinnhanvatxemxet = self.get_diachicosothongtindoituongx(i)
@@ -124,7 +121,7 @@ class MoiTruong:
                     i += 1
                     if not self.get_is_nhanvattontai(diachicosothongtinnhanvatxemxet):
                         continue
-                    idnhanvat = self.get_idnhanvat(diachicosothongtinnhanvatxemxet)
+                    idnhanvat = self.get_idnguoichoi(diachicosothongtinnhanvatxemxet)
                     if not idnhanvat:
                         continue
                     if idnhanvat == idnhanvattruongnhom:
@@ -132,20 +129,6 @@ class MoiTruong:
                         break
 
         self.diachicosothongtinnhanvattruongnhom = diachicosothongtinnhanvattruongnhom
-
-        idtrangthaichuot = self.get_idtrangthaichuot()
-
-        if idtrangthaichuot != self._idtrangthaichuot:
-            # if idtrangthaichuot == TRANGTHAICHUOT_KHOANHVUNGKYNANG:
-            #     self.thoidiemchokhoanhvungkynanggannhat = time.time()
-            self._idtrangthaichuot = idtrangthaichuot
-
-
-        # if time.time() - self.thoidiemlammoicuasotuychonnhanvatchinh > 2:
-        #     x = read_int(self.tientrinh, self.diachixq + 0x3A531C)
-        #     if x:
-        #         write_int(self.tientrinh, x + 0x2C, 0)
-        #         self.thoidiemlammoicuasotuychonnhanvatchinh = time.time()
 
     def get_is_cuasogametontai(self):
         tencuaso = str(win32gui.GetWindowText(self.idcuaso))
@@ -157,7 +140,7 @@ class MoiTruong:
     def get_diachicosothongtinnhanvatdangchichuot(self):
         return read_int(self.tientrinh, self.diachixq + 0x37FA54)
 
-    def get_idnhanvat(self, diachicosothongtinnhanvat = False):
+    def get_idnguoichoi(self, diachicosothongtinnhanvat = False):
         if not diachicosothongtinnhanvat:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x24)
@@ -165,7 +148,7 @@ class MoiTruong:
     def get_is_dangmatketnoi(self):
         return not self.get_is_nhanvattontai()
 
-    def get_x(self, diachicosothongtinnhanvat = False):
+    def get_iddoituong(self, diachicosothongtinnhanvat = False):
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x20)
 
     def get_idloaidoituong(self, diachicosothongtinnhanvat = False):
@@ -177,12 +160,12 @@ class MoiTruong:
     def get_is_nhanvattontai(self, diachicosothongtinnhanvat = False):
         if not diachicosothongtinnhanvat:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
-        return self.get_x(diachicosothongtinnhanvat) != -1 and self.get_idloaidoituong(diachicosothongtinnhanvat) != LOAIDOITUONG_VATPHAMDUOIDAT
+        return self.get_iddoituong(diachicosothongtinnhanvat) != -1 and self.get_idloaidoituong(diachicosothongtinnhanvat) != LOAIDOITUONG_VATPHAMDUOIDAT
 
     def get_is_vatphamtontai(self, diachicosothongtinnhanvat = False):
         if not diachicosothongtinnhanvat:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
-        return self.get_x(diachicosothongtinnhanvat) != -1 and self.get_idloaidoituong(diachicosothongtinnhanvat) == LOAIDOITUONG_VATPHAMDUOIDAT
+        return self.get_iddoituong(diachicosothongtinnhanvat) != -1 and self.get_idloaidoituong(diachicosothongtinnhanvat) == LOAIDOITUONG_VATPHAMDUOIDAT
 
     def get_is_nhanvatdachet(self, diachicosothongtinnhanvat = False):
         if not diachicosothongtinnhanvat:
@@ -302,6 +285,56 @@ class MoiTruong:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x2EE8)
 
+    def get_danhsachhieuungs(self, diachicosothongtinnhanvat = False):
+        if not diachicosothongtinnhanvat:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+
+        hieuungs = []
+
+        if not self.get_is_nhanvattontai(diachicosothongtinnhanvat):
+            return hieuungs
+
+        diachicosohieuungnhanvat = diachicosothongtinnhanvat + OFFSET_DIACHICOSOHIEUUNGNHANVAT
+        soluonghieuungnhanvat = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
+        soluonghieuungdemduoc = 0
+        i = -1
+
+        while True:
+            if not self.get_is_nhanvattontai(diachicosothongtinnhanvat):
+                return hieuungs
+
+            soluonghieuungnhanvatmoinhat = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
+            if soluonghieuungnhanvat != soluonghieuungnhanvatmoinhat:
+                soluonghieuungnhanvat = soluonghieuungnhanvatmoinhat
+                soluonghieuungdemduoc = 0
+                i = -1
+
+            i += 1
+            if i >= SOLUONGHIEUUNGNHANVATTOIDA:
+                return hieuungs
+
+            idvitrihieuungxemxet = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT)
+            is_hieuungcoloi = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT + 0x4) #1 là có lợi, 0 là có hại
+            thoigianhieuluctoida = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT + 0x8)
+
+            if idvitrihieuungxemxet < 0:
+                continue
+            if is_hieuungcoloi < 0:
+                continue
+            if not idvitrihieuungxemxet and not is_hieuungcoloi and not thoigianhieuluctoida:
+                continue
+
+            idhieuungxemxet = read_int(self.tientrinh, self.diachixq + 0x1BF4D0 + idvitrihieuungxemxet * 4)  # Dò bằng cách tắt bật hiệu ứng theo sau nhóm và check xem ai write vào idvitrihieuung ở 0x1638
+
+            hieuungs.append(idhieuungxemxet)
+
+            soluonghieuungdemduoc += 1
+
+            if soluonghieuungdemduoc >= soluonghieuungnhanvatmoinhat:
+                break
+
+        return hieuungs
+
     def get_is_cohieuung(self, idhieuung, macdinh, diachicosothongtinnhanvat = False):
         if not diachicosothongtinnhanvat:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
@@ -346,7 +379,7 @@ class MoiTruong:
 
             soluonghieuungdemduoc += 1
 
-            if soluonghieuungdemduoc >= soluonghieuungnhanvatmoinhat:
+            if soluonghieuungdemduoc >= soluonghieuungnhanvat:
                 return False
 
         return macdinh
@@ -371,7 +404,7 @@ class MoiTruong:
         diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
         if not diachicosothanhviennhom:
             return False
-        return self.get_idnhanvat(self.get_diachicosothongtinnhanvat1()) == read_int(self.tientrinh, diachicosothanhviennhom)
+        return self.get_idnguoichoi(self.get_diachicosothongtinnhanvat1()) == read_int(self.tientrinh, diachicosothanhviennhom)
 
     def get_danhsachidthanhviennhoms(self):
         idthanhviens = []
@@ -380,9 +413,8 @@ class MoiTruong:
             return idthanhviens
         for i in range(SOLUONGTHANHVIENNHOMTOIDA):
             idthanhvien = read_int(self.tientrinh, diachicosothanhviennhom + i * 0x4)
-            if not idthanhvien:
-                break
-            idthanhviens.append(idthanhviens)
+            if idthanhvien:
+                idthanhviens.append(idthanhvien)
 
         return idthanhviens
     def get_is_dangotrongnhom(self):
@@ -418,7 +450,7 @@ class MoiTruong:
             return True
 
         # return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1414) in (1, 7, 12) and not phantramsinhlucconlai #1 hình như là nguyên liệu, 7 nó là con thỏ của PYK, 60 là mấy con thú cưng
-        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x155C) == 40
+        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x155C) in (25, 40) #25 có vẻ như là ở xa tít chưa thấy gì hay còn gọi là Chưa xác định, còn 40 là thấy rồi
 
     def get_idkynang(self, idvitriX, idvitriY):
         """
@@ -440,6 +472,7 @@ class MoiTruong:
         idvitrikynang = 14 * idvitriY + idvitriX #Vì mỗi cuốn nó chỉ có tối đa 12 kỹ năng cho nên nó nhích lên 14 để không bao giờ trùng nhau
 
         return read_int(self.tientrinh, diachicosothongtinkynang + idvitrikynang * OFFSET_DIACHICOSOMOIKYNANG + 0x6830) and read_int(self.tientrinh, diachicosothongtinkynang + idvitrikynang * OFFSET_DIACHICOSOMOIKYNANG + 0x6A4C) == 0
+
     def get_is_cothetancong(self, diachicosothongtinnhanvat):
         if not diachicosothongtinnhanvat:
             return False
@@ -525,18 +558,18 @@ class MoiTruong:
 
         if not diachicosothongtinnhanvat:
             diachicosothongtinnhanvat = 0
-            x = 0
+            iddoituong = 0
         else:
-            x = self.get_x(diachicosothongtinnhanvat)
-            if x == -1:
+            iddoituong = self.get_iddoituong(diachicosothongtinnhanvat)
+            if iddoituong == -1:
                 diachicosothongtinnhanvat = 0
-                x = 0
+                iddoituong = 0
 
         write_int(self.tientrinh, self.diachixq + 0x1BC3E0, diachicosothongtinnhanvat)
-        write_int(self.tientrinh, self.diachixq + 0x37173C, x)
+        write_int(self.tientrinh, self.diachixq + 0x37173C, iddoituong)
 
         write_int(self.tientrinh, self.diachixq + 0x1BC440, diachicosothongtinnhanvat)
-        write_int(self.tientrinh, self.diachixq + 0x1BC444, x)
+        write_int(self.tientrinh, self.diachixq + 0x1BC444, iddoituong)
 
     def action_vohieuhoatuthedelaysautancong(self):
         if read_bytes(self.tientrinh, self.diachixq + 0x1AF43, 1) != bytes.fromhex("90"):
