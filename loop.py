@@ -112,6 +112,8 @@ class LoopPhu:
         self.tactu = tactu
         self.stop = stop
 
+        self.thoidiemthongbaochetgannhat = time.time()
+
     def __del__(self):
         try:
             self.moitruong.action_tatvohieuhoatuthedelaysautancong()
@@ -157,3 +159,6 @@ class LoopPhu:
 
         self.tactu.action_tudongsudungvatpham()
         self.tactu.action_tudongnhatdo()
+
+        if self.moitruong.get_is_nhanvatdachet() and time.time() - self.thoidiemthongbaochetgannhat > 5.:
+            phatam("Nhân vật đã chết")
