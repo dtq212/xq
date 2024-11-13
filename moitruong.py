@@ -1,5 +1,6 @@
 import ctypes
 import datetime
+import math
 import random
 import time
 
@@ -58,9 +59,11 @@ class MoiTruong:
         self.thoidiemsudungkynangvitrigannhat_map = {}
         self.thoidiemnhatdogannhat = time.time() - 2.
 
-        self.diachicosothongtinnhanvattruongnhom = False
+        # self.diachicosothongtinnhanvattruongnhom = False
         self._is_tamngungtancong = False
-        
+
+        self._thoidiemkhongcomuctieugannhat = time.time()
+        self._diachicosothongtinnhanvatmuctieutruocdo = False
 
     def __del__(self):
         if self.is_dasetupautoassemblebattattheosaunhom:
@@ -100,35 +103,41 @@ class MoiTruong:
         return read_int(self.tientrinh, x + 0xADFE18)
 
     def action_lammoitrangthaimoitruong(self):
-        diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
-        if not diachicosothanhviennhom:
-            return False
+        diachicosothongtinnhanvatmuctieuhientai = self.get_diachicosothongtinnhanvatmuctieudangchon()
 
-        diachicosothongtinnhanvattruongnhom = False
+        if diachicosothongtinnhanvatmuctieuhientai:
+            self._thoidiemkhongcomuctieugannhat = time.time()
 
-        idnhanvattruongnhom = read_int(self.tientrinh, diachicosothanhviennhom)
+        if self._diachicosothongtinnhanvatmuctieutruocdo != diachicosothongtinnhanvatmuctieuhientai:
+            self._diachicosothongtinnhanvatmuctieutruocdo = diachicosothongtinnhanvatmuctieuhientai
 
-        if idnhanvattruongnhom:
-            if self.diachicosothongtinnhanvattruongnhom and self.get_idnguoichoi(self.diachicosothongtinnhanvattruongnhom) == idnhanvattruongnhom and self.get_is_nhanvattontai(self.diachicosothongtinnhanvattruongnhom):
-                diachicosothongtinnhanvattruongnhom = self.diachicosothongtinnhanvattruongnhom
-            else:
-
-                i = 0
-                while True:
-                    diachicosothongtinnhanvatxemxet = self.get_diachicosothongtindoituongx(i)
-                    if not diachicosothongtinnhanvatxemxet:
-                        break
-                    i += 1
-                    if not self.get_is_nhanvattontai(diachicosothongtinnhanvatxemxet):
-                        continue
-                    idnhanvat = self.get_idnguoichoi(diachicosothongtinnhanvatxemxet)
-                    if not idnhanvat:
-                        continue
-                    if idnhanvat == idnhanvattruongnhom:
-                        diachicosothongtinnhanvattruongnhom = diachicosothongtinnhanvatxemxet
-                        break
-
-        self.diachicosothongtinnhanvattruongnhom = diachicosothongtinnhanvattruongnhom
+        # diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
+        # if diachicosothanhviennhom:
+        #     diachicosothongtinnhanvattruongnhom = False
+        #
+        #     idnhanvattruongnhom = read_int(self.tientrinh, diachicosothanhviennhom)
+        #
+        #     if idnhanvattruongnhom:
+        #         if self.diachicosothongtinnhanvattruongnhom and self.get_idnguoichoi(self.diachicosothongtinnhanvattruongnhom) == idnhanvattruongnhom and self.get_is_nhanvattontai(self.diachicosothongtinnhanvattruongnhom):
+        #             diachicosothongtinnhanvattruongnhom = self.diachicosothongtinnhanvattruongnhom
+        #         else:
+        #
+        #             i = 0
+        #             while True:
+        #                 diachicosothongtinnhanvatxemxet = self.get_diachicosothongtindoituongx(i)
+        #                 if not diachicosothongtinnhanvatxemxet:
+        #                     break
+        #                 i += 1
+        #                 if not self.get_is_nhanvattontai(diachicosothongtinnhanvatxemxet):
+        #                     continue
+        #                 idnhanvat = self.get_idnguoichoi(diachicosothongtinnhanvatxemxet)
+        #                 if not idnhanvat:
+        #                     continue
+        #                 if idnhanvat == idnhanvattruongnhom:
+        #                     diachicosothongtinnhanvattruongnhom = diachicosothongtinnhanvatxemxet
+        #                     break
+        #
+        #     self.diachicosothongtinnhanvattruongnhom = diachicosothongtinnhanvattruongnhom
 
     def get_is_cuasogametontai(self):
         tencuaso = str(win32gui.GetWindowText(self.idcuaso))
@@ -157,6 +166,7 @@ class MoiTruong:
 
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0xF0)
 
+    #Gọi là không tồn tại nó không đúng. Mà là nó ngoài tầm mà nhân vật thấy được nên không có thông tin về nó nữa
     def get_is_nhanvattontai(self, diachicosothongtinnhanvat = False):
         if not diachicosothongtinnhanvat:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
@@ -258,12 +268,11 @@ class MoiTruong:
 
         return round(math.dist((x1, y1), (x2, y2)), 2)
 
-    def get_khoangcachdiem(self, diem, diachicosothongtinnhanvat1 = False):
+    def get_khoangcachdiem(self, x2, y2, diachicosothongtinnhanvat1 = False):
         if not diachicosothongtinnhanvat1:
             diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
 
         x1, y1 = self.get_toadox(diachicosothongtinnhanvat1), self.get_toadoy(diachicosothongtinnhanvat1)
-        x2, y2 = diem
 
         return round(math.dist((x1, y1), (x2, y2)), 2)
 
@@ -397,8 +406,19 @@ class MoiTruong:
             return False
         return x
 
-    def get_diachicosothongtintruongnhom(self):
-        return self.diachicosothongtinnhanvattruongnhom
+    def get_toadoxtruongnhom(self):
+        diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
+        if not diachicosothanhviennhom:
+            return False
+
+        return read_int(self.tientrinh, diachicosothanhviennhom + 0xBD0)
+
+    def get_toadoytruongnhom(self):
+        diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
+        if not diachicosothanhviennhom:
+            return False
+
+        return read_int(self.tientrinh, diachicosothanhviennhom + 0xC00)
 
     def get_is_truongnhom(self):
         diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
@@ -537,7 +557,7 @@ class MoiTruong:
         return read_boolean(self.tientrinh, x + 0x34)
 
 
-    def get_is_batenter(self):
+    def get_is_dangbatenter(self):
         x = read_int(self.tientrinh, self.diachixq + 0x37FA34)
         if not x:
             return False
@@ -545,6 +565,9 @@ class MoiTruong:
         if not x:
             return False
         return read_boolean(self.tientrinh, x + 0x8140)
+
+    def get_thoidiemkhongcomuctieugannhat(self):
+        return self._thoidiemkhongcomuctieugannhat
 
     def get_diachicosothongtinnhanvatmuctieudangchon(self):
         return read_int(self.tientrinh, self.diachixq + 0x1BC440)
@@ -882,17 +905,21 @@ class MoiTruong:
         self.auto_assemble_chonvungsudungkynang(x, y)
 
     def action_dichuyengiukhoangcachtoida(self, diachicosothongtinnhanvat2, khoangcachtoida):
-        khoangcach = self.get_khoangcach(diachicosothongtinnhanvat2)
+        if not diachicosothongtinnhanvat2:
+            return
+        return self.action_dichuyengiukhoangcachtoidadiem(self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2), khoangcachtoida = khoangcachtoida)
+
+    def action_dichuyengiukhoangcachtoidadiem(self, x2, y2, khoangcachtoida):
+        diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
+
+        x1, y1 = self.get_toadox(diachicosothongtinnhanvat1), self.get_toadoy(diachicosothongtinnhanvat1)
+
+        khoangcach = round(math.dist((x1, y1), (x2, y2)), 2)
 
         if khoangcach <= khoangcachtoida:
             return
 
-        khoangcachtoida = max(0., khoangcachtoida - 1.) #Đi gần vào hơn khoangcachtoida 1 chút
-
-        diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
-
-        x1, y1 = self.get_toadox(diachicosothongtinnhanvat1), self.get_toadoy(diachicosothongtinnhanvat1)
-        x2, y2 = self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2)
+        khoangcachtoida = max(0., khoangcachtoida - 1.) #Đi gần vào hơn khoảng cách tối đa 1 chút
 
         deltax = x2 - x1
         deltay = y1 - y2
@@ -918,23 +945,25 @@ class MoiTruong:
         xclick = round(self.centerx + deltax * toadomoidonvikhoangcachx)
         yclick = round(self.centery + deltay * toadomoidonvikhoangcachy)
 
-        # print(xclick, yclick, khoangcach, khoangcachdichuyen)
-
         self.action_dichuyen(xclick, yclick)
 
     def action_dichuyentiepcan(self, diachicosothongtinnhanvat2):
         self.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvat2, khoangcachtoida = 0)
 
     def action_chonvungsudungkynangphudau(self, diachicosothongtinnhanvat2, khoangcachphudau = 2):
-        khoangcach = self.get_khoangcach(diachicosothongtinnhanvat2)
+        if not diachicosothongtinnhanvat2:
+            return
+        return self.action_chonvungsudungkynangphudaudiem(self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2), khoangcachphudau = khoangcachphudau)
 
+    def action_chonvungsudungkynangphudaudiem(self, x2, y2, khoangcachphudau = 2):
         diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
 
         x1, y1 = self.get_toadox(diachicosothongtinnhanvat1), self.get_toadoy(diachicosothongtinnhanvat1)
-        x2, y2 = self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2)
 
         deltax = x2 - x1
         deltay = y1 - y2
+
+        khoangcach = round(math.dist((x1, y1), (x2, y2)), 2)
 
         khoangcachdichuyen = khoangcach + khoangcachphudau
 
