@@ -245,15 +245,15 @@ class TacTu:
                     break
                 elif not self.moitruong.get_is_cohieuung(HIEUUNGKYNANG_NGOAIKHANG, True) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIEUCHUTHIEN):
                     is_sudungkynanglenbanthan = True
-                    if diachicosothongtinnhanvatmuctieudangchon and diachicosothongtinnhanvatmuctieudangchon == self.moitruong.get_diachicosothongtinnhanvat1():
-                        is_tamngungdichuyensudungkynang = True
-                        if idtuthenhanvat != TUTHENHANVAT_DICHUYEN:
-                            self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TIEUCHUTHIEN)
+                    self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(self.moitruong.get_diachicosothongtinnhanvat1())
+                    is_tamngungdichuyensudungkynang = True
+                    if idtuthenhanvat != TUTHENHANVAT_DICHUYEN:
+                        self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TIEUCHUTHIEN)
                     break
                 elif self.moitruong.get_phantramsinhlucconlai() <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENKHI):
                     is_sudungkynanglenbanthan = True
-                    if diachicosothongtinnhanvatmuctieudangchon and diachicosothongtinnhanvatmuctieudangchon == self.moitruong.get_diachicosothongtinnhanvat1():
-                        self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TIENKHI)
+                    self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(self.moitruong.get_diachicosothongtinnhanvat1())
+                    self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TIENKHI)
                     break
 
                 if not diachicosothongtinnhanvatmuctieudangchon:
