@@ -209,8 +209,6 @@ class TacTu:
 
             self.thoidiemkiemtrahieuunggannhat = time.time()
 
-            print(self.moitruong.get_danhsachhieuungs())
-
             if not self.moitruong.get_is_cohieuung(HIEUUNGKYNANG_TIEUHUYETTHACH, True) and self.moitruong.get_is_thietlapkynangphimtat(VITRIPHIMTATKYNANG_HUYETTHACH):
                 self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_HUYETTHACH)
                 return
