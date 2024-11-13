@@ -13,16 +13,20 @@ class TacTu:
     def __init__(self, moitruong: MoiTruong):
         self.moitruong = moitruong
 
+        #Thiết lập không lưu
+        self._is_tudongtheosautruongnhom = True
+        #Thiết lập có lưu
         self._is_tudongbattheosaunhom = True
         self._is_tudongtimkiemmuctieu = True
         self._is_tudongsudungkynang = True
-        self._is_tudongtheosautruongnhom = True
         self._is_tudongsudungvatpham = True
         self._is_tudongnhatdo = True
+        self._is_chidanhnguoichoi = False
 
-        self._khoangcachtoidatruongnhom = 4
 
         self._is_uutiennguoichoi = True
+
+        self._khoangcachtoidatruongnhom = 4
 
         self._tenmuctieutancong = False
 
@@ -52,6 +56,9 @@ class TacTu:
             "_is_tudongtimkiemmuctieu": self._is_tudongtimkiemmuctieu,
             "_is_tudongsudungkynang": self._is_tudongsudungkynang,
             "_is_uutiennguoichoi": self._is_uutiennguoichoi,
+            "_is_tudongsudungvatpham": self._is_tudongsudungvatpham,
+            "_is_tudongnhatdo": self._is_tudongnhatdo,
+            "_is_chidanhnguoichoi": self._is_chidanhnguoichoi,
         }
 
         util_luuthietlap(tennhanvat, thietlap)
@@ -70,6 +77,15 @@ class TacTu:
 
             if "_is_uutiennguoichoi" in thietlap:
                 self._is_uutiennguoichoi = thietlap["_is_uutiennguoichoi"]
+
+            if "_is_tudongsudungvatpham" in thietlap:
+                self._is_tudongsudungvatpham = thietlap["_is_tudongsudungvatpham"]
+
+            if "_is_tudongnhatdo" in thietlap:
+                self._is_tudongnhatdo = thietlap["_is_tudongnhatdo"]
+
+            if "_is_chidanhnguoichoi" in thietlap:
+                self._is_chidanhnguoichoi = thietlap["_is_chidanhnguoichoi"]
 
     def action_tudongbattheosaunhom(self):
         if self._is_tudongbattheosaunhom:
@@ -265,7 +281,7 @@ class TacTu:
                         self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_PHAMATRAM)
                     elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHAKHONGKICH):
                         self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_PHAKHONGKICH)
-                elif khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LANGKHONGCHIHUYET):
+                elif khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and self.moitruong.get_idtuthenhanvat() != TUTHENHANVAT_DICHUYEN and  self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LANGKHONGCHIHUYET):
                     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_LANGKHONGCHIHUYET)
                 elif khoangcach <= KHOANGCACHTOIDAHOPLE:
                     if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA) and time.time() - self.thoidiemsudungkynangkhaithientichdiagannhat > 1.0:
@@ -328,7 +344,14 @@ class TacTu:
     def thietlap_diemdanhxungquanh(self, diemdanhxungquanh):
         if not diemdanhxungquanh:
             self._diemdanhxungquanh = False
-            phatam("Bỏ thiết lập thành công điểm đánh xung quanh")
+            phatam("Bỏ thiết lập điểm đánh xung quanh")
         else:
             self._diemdanhxungquanh = diemdanhxungquanh
-            phatam("Thiết lập thành công điểm đánh xung quanh")
+            phatam("Thiết lập điểm đánh xung quanh")
+
+    def thietlap_chidanhnguoichoi(self, is_chidanhnguoichoi):
+        self._is_chidanhnguoichoi = is_chidanhnguoichoi
+        if not is_chidanhnguoichoi:
+            phatam("Bỏ thiết lập chỉ đánh người chơi")
+        else:
+            phatam("Thiết lập chỉ đánh người chơi")
