@@ -44,8 +44,9 @@ class TacTu:
         self._khoangcachdiemdanhxungquanh = 27.
         self._is_vuotquakhoangcachdiemdanhxungquanh = False
         self._is_tamngungtancongtheosautruongnhom = False
+        self._is_tamngungtancongdichuyenxungquanh = False
         self._is_tamngungdichuyensudungkynang = False
-        self._khoangcachtimkiemmuctieu = 14.
+        self._khoangcachtimkiemmuctieu = 18.
 
     def __del__(self):
         try:
