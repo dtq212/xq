@@ -458,6 +458,9 @@ class TacTu:
                         break
 
                     if "team + {}".format(idnhanvattruongnhom) == self.moitruong.get_caulenhthucthi():
+                        if self.moitruong.get_is_danghiencuasoyesno():
+                            self.moitruong.set_is_danghiencuasoyesno(False)
+
                         self.moitruong.action_thucthicaulenhhientai()
 
                 break

@@ -697,16 +697,30 @@ class MoiTruong:
         if read_bytes(self.tientrinh, self.diachixq + 0x3D8CB, 1) == bytes.fromhex("90"):
             write_bytes(self.tientrinh, self.diachixq + 0x3D8CB, bytes.fromhex("C6 80 40 81 00 00 01"), 7)
 
-    # def get_is_danghiencuasoyesno(self):
-    #     x = read_int(self.tientrinh, self.diachixq + 0x37FA34)
-    #     if not x:
-    #         return False
-    #
-    #     x = read_int(self.tientrinh, x + 0xADFE10)
-    #     if not x:
-    #         return False
-    #
-    #     return read_boolean(self.tientrinh, x + 0x34)
+    def get_is_danghiencuasoyesno(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x37FA34)
+        if not x:
+            return False
+
+        x = read_int(self.tientrinh, x + 0xADFE10)
+        if not x:
+            return False
+
+        return read_boolean(self.tientrinh, x + 0x34)
+
+    def set_is_danghiencuasoyesno(self, is_danghiencuasoyesno):
+        if self.get_is_danghiencuasoyesno() == is_danghiencuasoyesno:
+            return
+
+        x = read_int(self.tientrinh, self.diachixq + 0x37FA34)
+        if not x:
+            return
+
+        x = read_int(self.tientrinh, x + 0xADFE10)
+        if not x:
+            return
+
+        return write_boolean(self.tientrinh, x + 0x34, is_danghiencuasoyesno)
 
     def get_caulenhthucthi(self):
         x = read_int(self.tientrinh, self.diachixq + 0x37FA34)
@@ -741,7 +755,7 @@ class MoiTruong:
         self.set_caulenhthucthi(caulenh)
         self.auto_assemble_thucthicaulenh()
 
-    def action_thucthicaulenhhientai(self, delay = 0.5):
+    def action_thucthicaulenhhientai(self, delay = 1.):
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return
 
@@ -750,8 +764,6 @@ class MoiTruong:
         self.auto_assemble_thucthicaulenh()
 
     def auto_assemble_thucthicaulenh(self):
-        print("auto_assemble_dongycuasoyesno: {}".format(self.get_caulenhthucthi()))
-
         self.tientrinh.start_thread(self.diachixq + 0x131560)
 
     def auto_assemble_mocuasotuychonnhanvatchinh(self):
