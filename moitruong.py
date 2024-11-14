@@ -65,6 +65,8 @@ class MoiTruong:
         self._thoidiemkhongcomuctieugannhat = time.time()
         self._diachicosothongtinnhanvatmuctieutruocdo = False
 
+
+
     def __del__(self):
         if self._is_dasetupautoassemblebattattheosaunhom:
             self.tientrinh.free(self._diachiautoassemblebattattheosaunhom)
@@ -110,6 +112,8 @@ class MoiTruong:
 
         if self._diachicosothongtinnhanvatmuctieutruocdo != diachicosothongtinnhanvatmuctieuhientai:
             self._diachicosothongtinnhanvatmuctieutruocdo = diachicosothongtinnhanvatmuctieuhientai
+
+        # print(self.get_danhsachhieuungnhanvats())
 
     def get_is_cuasogametontai(self):
         tencuaso = str(win32gui.GetWindowText(self.idcuaso))
@@ -266,10 +270,6 @@ class MoiTruong:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x2EE8)
 
-    def get_soluonghieuungcoloinhanvat(self, diachicosothongtinnhanvat = False):
-        if not diachicosothongtinnhanvat:
-            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
-        return sum([1 for _, is_coloi, _ in self.get_danhsachhieuungnhanvats(diachicosothongtinnhanvat) if is_coloi])
 
     def get_danhsachhieuungnhanvats(self, diachicosothongtinnhanvat = False):
         if not diachicosothongtinnhanvat:
@@ -321,7 +321,13 @@ class MoiTruong:
 
         return hieuungs
 
-    def get_is_cohieuung(self, idhieuung, macdinh, diachicosothongtinnhanvat = False):
+    def get_is_cohieuungcoloinhanvat(self, diachicosothongtinnhanvat = False):
+        return self.get_is_cohieuungs((HIEUUNGKYNANG_NGOAIKHANG, HIEUUNGKYNANG_NOIKHANG, ), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvat, is_hieuungcoloi = 1)
+
+    def get_is_cohieuungbatloinhanvat(self, diachicosothongtinnhanvat = False):
+        return self.get_is_cohieuungs((HIEUUNGKYNANG_TRONGTHUONG, HIEUUNGKYNANG_CHOANG, ), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvat, is_hieuungcoloi = 0)
+
+    def get_is_cohieuungs(self, idhieuungs, macdinh, diachicosothongtinnhanvat = False, is_hieuungcoloi: int = None): #is_loihai: Kiểm tra lợi hại nữa
         if not diachicosothongtinnhanvat:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
@@ -330,6 +336,10 @@ class MoiTruong:
 
         diachicosohieuungnhanvat = diachicosothongtinnhanvat + OFFSET_DIACHICOSOHIEUUNGNHANVAT
         soluonghieuungnhanvat = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
+
+        if not soluonghieuungnhanvat:
+            return macdinh
+
         soluonghieuungdemduoc = 0
         i = -1
 
@@ -345,35 +355,41 @@ class MoiTruong:
                 soluonghieuungdemduoc = 0
                 i = -1
 
+
             i += 1
             if i >= SOLUONGHIEUUNGNHANVATTOIDA:
+                if soluonghieuungdemduoc >= soluonghieuungnhanvat:
+                    return False
                 return macdinh
 
             idvitrihieuungxemxet = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT)
-            is_hieuungcoloi = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT + 0x4) #1 là có lợi, 0 là có hại
+            is_hieuungcoloixemxet = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT + 0x4) #1 là có lợi, 0 là có hại
             thoigianhieuluctoida = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT + 0x8)
+
 
             if idvitrihieuungxemxet < 0:
                 continue
-            if is_hieuungcoloi < 0:
+            if is_hieuungcoloixemxet < 0:
                 continue
-            if not idvitrihieuungxemxet and not is_hieuungcoloi and not thoigianhieuluctoida:
+            if not idvitrihieuungxemxet and not is_hieuungcoloixemxet and not thoigianhieuluctoida:
                 continue
 
             idhieuungxemxet = read_int(self.tientrinh, self.diachixq + 0x1BF4D0 + idvitrihieuungxemxet * 4)  # Dò bằng cách tắt bật hiệu ứng theo sau nhóm và check xem ai write vào idvitrihieuung ở 0x1638
 
-            if idhieuungxemxet == idhieuung:
+            if idhieuungxemxet in idhieuungs:
                 return True
 
             soluonghieuungdemduoc += 1
 
             if soluonghieuungdemduoc >= soluonghieuungnhanvat:
+                if is_hieuungcoloi is not None:
+                    return is_hieuungcoloixemxet == is_hieuungcoloi
                 return False
 
         return macdinh
 
     def get_is_dangtheosaunhom(self):
-        return self.get_is_cohieuung(HIEUUNGKYNANG_THEOSAUNHOM, False)
+        return self.get_is_cohieuungs(HIEUUNGKYNANG_THEOSAUNHOM, False)
 
     def get_diachicosoidthanhviennhom(self):
         #Trong nhóm còn nhìn thấy máu của nhau nữa nhé
