@@ -344,14 +344,14 @@ class MoiTruong:
         if not self.get_is_nhanvattontai(diachicosothongtinnhanvat):
             return macdinh
 
-        if time.time() - self._thoidiemsoluonghieuungbangkhonggannhat_map.get(diachicosothongtinnhanvat, time.time() - 1.) < 0.5:
-            return macdinh
-
         diachicosohieuungnhanvat = diachicosothongtinnhanvat + OFFSET_DIACHICOSOHIEUUNGNHANVAT
 
         soluonghieuungnhanvat = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
         soluonghieuungdemduoc = 0
         i = -1
+
+        if time.time() - self._thoidiemsoluonghieuungbangkhonggannhat_map.get(diachicosothongtinnhanvat, time.time() - 2.) < 1:
+            return macdinh
 
         if soluonghieuungdemduoc >= soluonghieuungnhanvat:
             return False
@@ -360,7 +360,7 @@ class MoiTruong:
             if not self.get_is_nhanvattontai(diachicosothongtinnhanvat):
                 return macdinh
 
-            if time.time() - self._thoidiemsoluonghieuungbangkhonggannhat_map.get(diachicosothongtinnhanvat, time.time() - 1.) < 0.5:
+            if time.time() - self._thoidiemsoluonghieuungbangkhonggannhat_map.get(diachicosothongtinnhanvat, time.time() - 2.) < 1:
                 return macdinh
 
             soluonghieuungnhanvatmoinhat = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
@@ -368,6 +368,9 @@ class MoiTruong:
                 soluonghieuungnhanvat = soluonghieuungnhanvatmoinhat
                 soluonghieuungdemduoc = 0
                 i = -1
+
+            if time.time() - self._thoidiemsoluonghieuungbangkhonggannhat_map.get(diachicosothongtinnhanvat, time.time() - 2.) < 1:
+                return macdinh
 
             if soluonghieuungdemduoc >= soluonghieuungnhanvat:
                 return False
