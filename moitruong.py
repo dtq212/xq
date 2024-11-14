@@ -65,7 +65,8 @@ class MoiTruong:
         self._thoidiemkhongcomuctieugannhat = time.time()
         self._diachicosothongtinnhanvatmuctieutruocdo = False
 
-
+        self._soluonghieuungnhanvattruocdo_map = {}
+        self._thoidiemsoluonghieuungbangkhonggannhat_map = {}
 
     def __del__(self):
         if self._is_dasetupautoassemblebattattheosaunhom:
@@ -268,8 +269,17 @@ class MoiTruong:
     def get_soluonghieuungnhanvat(self, diachicosothongtinnhanvat = False):
         if not diachicosothongtinnhanvat:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
-        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x2EE8)
 
+        soluonghieuungnhanvat = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x2EE8)
+
+        soluonghieuungnhanvattruocdo = self._soluonghieuungnhanvattruocdo_map.get(diachicosothongtinnhanvat, -1)
+
+        if soluonghieuungnhanvattruocdo > 0 and soluonghieuungnhanvat == 0:
+            self._thoidiemsoluonghieuungbangkhonggannhat_map[diachicosothongtinnhanvat] = time.time()
+
+        self._soluonghieuungnhanvattruocdo_map[diachicosothongtinnhanvat] = soluonghieuungnhanvat
+
+        return soluonghieuungnhanvat
 
     def get_danhsachhieuungnhanvats(self, diachicosothongtinnhanvat = False):
         if not diachicosothongtinnhanvat:
@@ -334,6 +344,9 @@ class MoiTruong:
         if not self.get_is_nhanvattontai(diachicosothongtinnhanvat):
             return macdinh
 
+        if time.time() - self._thoidiemsoluonghieuungbangkhonggannhat_map.get(diachicosothongtinnhanvat, time.time() - 1.) < 0.5:
+            return macdinh
+
         diachicosohieuungnhanvat = diachicosothongtinnhanvat + OFFSET_DIACHICOSOHIEUUNGNHANVAT
         soluonghieuungnhanvat = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
 
@@ -344,10 +357,11 @@ class MoiTruong:
             if not self.get_is_nhanvattontai(diachicosothongtinnhanvat):
                 return macdinh
 
+            if time.time() - self._thoidiemsoluonghieuungbangkhonggannhat_map.get(diachicosothongtinnhanvat, time.time() - 1.) < 0.5:
+                return macdinh
+
             soluonghieuungnhanvatmoinhat = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
             if soluonghieuungnhanvat != soluonghieuungnhanvatmoinhat:
-                if not soluonghieuungnhanvatmoinhat:
-                    return macdinh
                 soluonghieuungnhanvat = soluonghieuungnhanvatmoinhat
                 soluonghieuungdemduoc = 0
                 i = -1
