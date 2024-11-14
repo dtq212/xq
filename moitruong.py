@@ -337,9 +337,6 @@ class MoiTruong:
         diachicosohieuungnhanvat = diachicosothongtinnhanvat + OFFSET_DIACHICOSOHIEUUNGNHANVAT
         soluonghieuungnhanvat = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
 
-        if not soluonghieuungnhanvat:
-            return macdinh
-
         soluonghieuungdemduoc = 0
         i = -1
 
@@ -377,13 +374,13 @@ class MoiTruong:
             idhieuungxemxet = read_int(self.tientrinh, self.diachixq + 0x1BF4D0 + idvitrihieuungxemxet * 4)  # Dò bằng cách tắt bật hiệu ứng theo sau nhóm và check xem ai write vào idvitrihieuung ở 0x1638
 
             if idhieuungxemxet in idhieuungs:
+                if is_hieuungcoloi is not None:
+                    return is_hieuungcoloixemxet == is_hieuungcoloi
                 return True
 
             soluonghieuungdemduoc += 1
 
             if soluonghieuungdemduoc >= soluonghieuungnhanvat:
-                if is_hieuungcoloi is not None:
-                    return is_hieuungcoloixemxet == is_hieuungcoloi
                 return False
 
         return macdinh
