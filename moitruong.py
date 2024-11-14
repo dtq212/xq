@@ -58,6 +58,7 @@ class MoiTruong:
         self._thoidiemsudungkynangphimtatgannhat_map = {}
         self._thoidiemsudungkynangvitrigannhat_map = {}
         self._thoidiemnhatdogannhat = time.time() - 2.
+        self._thoidiemthucthicaulenhgannhat = time.time() - 0.5
 
         # self.diachicosothongtinnhanvattruongnhom = False
         self._is_tamngungtancong = False
@@ -435,7 +436,7 @@ class MoiTruong:
             return False
         return self.get_idnguoichoi(self.get_diachicosothongtinnhanvat1()) == read_int(self.tientrinh, diachicosothanhviennhom)
 
-    def get_danhsachidthanhviennhoms(self):
+    def get_danhsachidnhanvatthanhviennhoms(self):
         idthanhviens = []
         diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
         if not diachicosothanhviennhom:
@@ -673,6 +674,61 @@ class MoiTruong:
     def action_tatvohieuhoaphimspace(self):
         if read_bytes(self.tientrinh, self.diachixq + 0x3D8CB, 1) == bytes.fromhex("90"):
             write_bytes(self.tientrinh, self.diachixq + 0x3D8CB, bytes.fromhex("C6 80 40 81 00 00 01"), 7)
+
+    # def get_is_danghiencuasoyesno(self):
+    #     x = read_int(self.tientrinh, self.diachixq + 0x37FA34)
+    #     if not x:
+    #         return False
+    #
+    #     x = read_int(self.tientrinh, x + 0xADFE10)
+    #     if not x:
+    #         return False
+    #
+    #     return read_boolean(self.tientrinh, x + 0x34)
+
+    def get_caulenhthucthi(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x37FA34)
+        if not x:
+            return False
+
+        x = read_int(self.tientrinh, x + 0xADFE10)
+        if not x:
+            return False
+
+        return read_string(self.tientrinh, x + 0x7C)
+
+    def set_caulenhthucthi(self, caulenh):
+        if self.get_caulenhthucthi() == caulenh:
+            return
+        x = read_int(self.tientrinh, self.diachixq + 0x37FA34)
+        if not x:
+            return
+
+        x = read_int(self.tientrinh, x + 0xADFE10)
+        if not x:
+            return
+
+        return write_string(self.tientrinh, x + 0x7C, caulenh)
+
+    def action_thucthicaulenh(self, caulenh, delay = 0.5):
+        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
+            return
+
+        self._thoidiemthucthicaulenhgannhat = time.time()
+
+        self.set_caulenhthucthi(caulenh)
+        self.auto_assemble_dongycuasoyesno()
+
+    def action_thucthicaulenhhientai(self, delay = 0.5):
+        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
+            return
+
+        self._thoidiemthucthicaulenhgannhat = time.time()
+
+        self.auto_assemble_dongycuasoyesno()
+
+    def auto_assemble_dongycuasoyesno(self):
+        self.tientrinh.start_thread(self.diachixq + 0x131560)
 
     def auto_assemble_mocuasotuychonnhanvatchinh(self):
         if not self._is_dasetupautoassemblemocuasotuychonnhanvatchinh:

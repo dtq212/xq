@@ -43,6 +43,12 @@ def write_bytes(process, address, value, n_bytes):
 def read_string(process, address, sobytes = 32):
     return process.read_string(address, sobytes, encoding = STRING_ENCODING)
 
+
+def write_string(process, address, sobytes = 32):
+    return process.write_string(address, sobytes, encoding = STRING_ENCODING)
+
+
+
 def slugify(value, allow_unicode = False):
     value = str(value)
     if allow_unicode:

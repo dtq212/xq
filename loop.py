@@ -160,6 +160,8 @@ class LoopPhu:
         self.tactu.action_tudongsudungvatpham()
         self.tactu.action_tudongnhatdo()
 
+        self.tactu.action_tudongnhanloimoitodoi()
+
         if self.moitruong.get_is_nhanvatdachet() and time.time() - self.thoidiemthongbaochetgannhat > 5.:
             self.thoidiemthongbaochetgannhat = time.time()
             phatam("Nhân vật đã chết")
