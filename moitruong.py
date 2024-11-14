@@ -995,6 +995,19 @@ class MoiTruong:
         self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
         self.auto_assemble_sudungkynangvitri(idvitriX, idvitriY, hinhthucsudungkynang)
 
+    def action_sudungkynangvitrilenbanthan(self, idvitriX, idvitriY, delay = 0.25):
+        idvitri = (idvitriX, idvitriY)
+        if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
+            return
+
+        self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
+
+        idkynang = self.get_idkynang(idvitriX, idvitriY)
+        if not idkynang:
+            return
+
+        self.action_thucthicaulenh("pf {} {}".format(idkynang, self.get_idnguoichoi()))
+
     def action_dichuyen(self, x, y, delay = 0.5):
         if time.time() - self._thoidiemdichuyengannhat < delay:
             return
