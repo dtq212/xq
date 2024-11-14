@@ -348,10 +348,13 @@ class MoiTruong:
             return macdinh
 
         diachicosohieuungnhanvat = diachicosothongtinnhanvat + OFFSET_DIACHICOSOHIEUUNGNHANVAT
-        soluonghieuungnhanvat = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
 
+        soluonghieuungnhanvat = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
         soluonghieuungdemduoc = 0
         i = -1
+
+        if soluonghieuungdemduoc >= soluonghieuungnhanvat:
+            return False
 
         while True:
             if not self.get_is_nhanvattontai(diachicosothongtinnhanvat):
@@ -366,11 +369,11 @@ class MoiTruong:
                 soluonghieuungdemduoc = 0
                 i = -1
 
+            if soluonghieuungdemduoc >= soluonghieuungnhanvat:
+                return False
 
             i += 1
             if i >= SOLUONGHIEUUNGNHANVATTOIDA:
-                if soluonghieuungdemduoc >= soluonghieuungnhanvat:
-                    return False
                 return macdinh
 
             idvitrihieuungxemxet = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT)
@@ -393,9 +396,6 @@ class MoiTruong:
                 return True
 
             soluonghieuungdemduoc += 1
-
-            if soluonghieuungdemduoc >= soluonghieuungnhanvat:
-                return False
 
         return macdinh
 
