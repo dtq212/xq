@@ -111,34 +111,6 @@ class MoiTruong:
         if self._diachicosothongtinnhanvatmuctieutruocdo != diachicosothongtinnhanvatmuctieuhientai:
             self._diachicosothongtinnhanvatmuctieutruocdo = diachicosothongtinnhanvatmuctieuhientai
 
-        # diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
-        # if diachicosothanhviennhom:
-        #     diachicosothongtinnhanvattruongnhom = False
-        #
-        #     idnhanvattruongnhom = read_int(self.tientrinh, diachicosothanhviennhom)
-        #
-        #     if idnhanvattruongnhom:
-        #         if self.diachicosothongtinnhanvattruongnhom and self.get_idnguoichoi(self.diachicosothongtinnhanvattruongnhom) == idnhanvattruongnhom and self.get_is_nhanvattontai(self.diachicosothongtinnhanvattruongnhom):
-        #             diachicosothongtinnhanvattruongnhom = self.diachicosothongtinnhanvattruongnhom
-        #         else:
-        #
-        #             i = 0
-        #             while True:
-        #                 diachicosothongtinnhanvatxemxet = self.get_diachicosothongtindoituongx(i)
-        #                 if not diachicosothongtinnhanvatxemxet:
-        #                     break
-        #                 i += 1
-        #                 if not self.get_is_nhanvattontai(diachicosothongtinnhanvatxemxet):
-        #                     continue
-        #                 idnhanvat = self.get_idnguoichoi(diachicosothongtinnhanvatxemxet)
-        #                 if not idnhanvat:
-        #                     continue
-        #                 if idnhanvat == idnhanvattruongnhom:
-        #                     diachicosothongtinnhanvattruongnhom = diachicosothongtinnhanvatxemxet
-        #                     break
-        #
-        #     self.diachicosothongtinnhanvattruongnhom = diachicosothongtinnhanvattruongnhom
-
     def get_is_cuasogametontai(self):
         tencuaso = str(win32gui.GetWindowText(self.idcuaso))
         return "(" in tencuaso
@@ -294,7 +266,12 @@ class MoiTruong:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x2EE8)
 
-    def get_danhsachhieuungs(self, diachicosothongtinnhanvat = False):
+    def get_soluonghieuungcoloinhanvat(self, diachicosothongtinnhanvat = False):
+        if not diachicosothongtinnhanvat:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+        return sum([1 for _, is_coloi, _ in self.get_danhsachhieuungnhanvats(diachicosothongtinnhanvat) if is_coloi])
+
+    def get_danhsachhieuungnhanvats(self, diachicosothongtinnhanvat = False):
         if not diachicosothongtinnhanvat:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
@@ -335,7 +312,7 @@ class MoiTruong:
 
             idhieuungxemxet = read_int(self.tientrinh, self.diachixq + 0x1BF4D0 + idvitrihieuungxemxet * 4)  # Dò bằng cách tắt bật hiệu ứng theo sau nhóm và check xem ai write vào idvitrihieuung ở 0x1638
 
-            hieuungs.append(idhieuungxemxet)
+            hieuungs.append((idhieuungxemxet, is_hieuungcoloi, thoigianhieuluctoida))
 
             soluonghieuungdemduoc += 1
 
@@ -362,6 +339,8 @@ class MoiTruong:
 
             soluonghieuungnhanvatmoinhat = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
             if soluonghieuungnhanvat != soluonghieuungnhanvatmoinhat:
+                if not soluonghieuungnhanvatmoinhat:
+                    return macdinh
                 soluonghieuungnhanvat = soluonghieuungnhanvatmoinhat
                 soluonghieuungdemduoc = 0
                 i = -1
@@ -437,7 +416,7 @@ class MoiTruong:
                 idthanhviens.append(idthanhvien)
 
         return idthanhviens
-    def get_is_dangotrongnhom(self):
+    def get_is_dangnamtrongnhom(self):
         diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
         if not diachicosothanhviennhom:
             return False
@@ -1012,3 +991,15 @@ class MoiTruong:
         x = read_short_int(self.tientrinh, x + 0xADFEA6 + idvitriphimtat)
 
         return x in (LOAIDOITUONGPHIMTAT_KYNANG, LOAIDOITUONGPHIMTAT_VATPHAM)
+
+    def get_is_dangvankhi(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x37FA34)
+        if not x:
+            return False
+
+        x = read_int(self.tientrinh, x + 0xADFDE8)
+
+        if not x:
+            return False
+
+        return read_int(self.tientrinh, x + 0xD8) == TRANGTHAIVANKHI_DANGVANKHI
