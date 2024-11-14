@@ -106,6 +106,23 @@ class MoiTruong:
             return False
         return read_int(self.tientrinh, x + 0xADFE18)
 
+    def get_danhsachidnguoichoixungquanhs(self):
+        i = -1
+        danhsachidnguoichoixungquanhs = []
+        while True:
+            i += 1
+            diachicosothongtinnhanvatxemxet = self.get_diachicosothongtindoituongx(i)
+            if not diachicosothongtinnhanvatxemxet:
+                break
+            if not self.get_is_nhanvattontai(diachicosothongtinnhanvatxemxet):
+                continue
+            idnguoichoi = self.get_idnguoichoi(diachicosothongtinnhanvatxemxet)
+            if not idnguoichoi:
+                continue
+            danhsachidnguoichoixungquanhs.append(idnguoichoi)
+
+        return danhsachidnguoichoixungquanhs
+
     def action_lammoitrangthaimoitruong(self):
         diachicosothongtinnhanvatmuctieuhientai = self.get_diachicosothongtinnhanvatmuctieudangchon()
 
@@ -136,6 +153,8 @@ class MoiTruong:
         return not self.get_is_nhanvattontai()
 
     def get_iddoituong(self, diachicosothongtinnhanvat = False):
+        if not diachicosothongtinnhanvat:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x20)
 
     def get_idloaidoituong(self, diachicosothongtinnhanvat = False):
@@ -436,7 +455,7 @@ class MoiTruong:
             return False
         return self.get_idnguoichoi(self.get_diachicosothongtinnhanvat1()) == read_int(self.tientrinh, diachicosothanhviennhom)
 
-    def get_danhsachidnhanvatthanhviennhoms(self):
+    def get_danhsachidnguoichoithanhviennhoms(self):
         idthanhviens = []
         diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
         if not diachicosothanhviennhom:
@@ -511,6 +530,9 @@ class MoiTruong:
             return False
 
         if self.get_is_nhanvatdachet(diachicosothongtinnhanvat):
+            return False
+
+        if self.get_idnguoichoi(diachicosothongtinnhanvat) in NHANVATTODOITUDONGs:
             return False
 
         idloainhanvat = self.get_idloainhanvat(diachicosothongtinnhanvat)
@@ -695,7 +717,7 @@ class MoiTruong:
         if not x:
             return False
 
-        return read_string(self.tientrinh, x + 0x7C)
+        return read_string(self.tientrinh, x + 0x7C).strip()
 
     def set_caulenhthucthi(self, caulenh):
         if self.get_caulenhthucthi() == caulenh:
@@ -710,14 +732,14 @@ class MoiTruong:
 
         return write_string(self.tientrinh, x + 0x7C, caulenh)
 
-    def action_thucthicaulenh(self, caulenh, delay = 0.5):
+    def action_thucthicaulenh(self, caulenh, delay = 1.):
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return
 
         self._thoidiemthucthicaulenhgannhat = time.time()
 
         self.set_caulenhthucthi(caulenh)
-        self.auto_assemble_dongycuasoyesno()
+        self.auto_assemble_thucthicaulenh()
 
     def action_thucthicaulenhhientai(self, delay = 0.5):
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
@@ -725,9 +747,11 @@ class MoiTruong:
 
         self._thoidiemthucthicaulenhgannhat = time.time()
 
-        self.auto_assemble_dongycuasoyesno()
+        self.auto_assemble_thucthicaulenh()
 
-    def auto_assemble_dongycuasoyesno(self):
+    def auto_assemble_thucthicaulenh(self):
+        print("auto_assemble_dongycuasoyesno: {}".format(self.get_caulenhthucthi()))
+
         self.tientrinh.start_thread(self.diachixq + 0x131560)
 
     def auto_assemble_mocuasotuychonnhanvatchinh(self):

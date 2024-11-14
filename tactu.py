@@ -22,7 +22,7 @@ class TacTu:
         self._is_tudongsudungvatpham = True
         self._is_tudongnhatdo = True
         self._is_chidanhnguoichoi = False
-        self._is_tudongnhanloimoitodoi = True
+        self._is_tudongtodoi = True
 
 
         self._is_uutiennguoichoi = True
@@ -58,7 +58,7 @@ class TacTu:
             "_is_tudongsudungvatpham": self._is_tudongsudungvatpham,
             "_is_tudongnhatdo": self._is_tudongnhatdo,
             "_is_chidanhnguoichoi": self._is_chidanhnguoichoi,
-            "_is_tudongnhanloimoitodoi": self._is_tudongnhanloimoitodoi,
+            "_is_tudongtodoi": self._is_tudongtodoi,
         }
 
         util_luuthietlap(tennhanvat, thietlap)
@@ -87,8 +87,8 @@ class TacTu:
             if "_is_chidanhnguoichoi" in thietlap:
                 self._is_chidanhnguoichoi = thietlap["_is_chidanhnguoichoi"]
 
-            if "_is_tudongnhanloimoitodoi" in thietlap:
-                self._is_tudongnhanloimoitodoi = thietlap["_is_tudongnhanloimoitodoi"]
+            if "_is_tudongtodoi" in thietlap:
+                self._is_tudongtodoi = thietlap["_is_tudongtodoi"]
 
     def action_tudongtheosautruongnhom(self):
         is_tamngungtancongtheosautruongnhom = False
@@ -427,34 +427,37 @@ class TacTu:
         else:
             phatam("Thiết lập chỉ đánh người chơi")
 
-    def action_tudongnhanloimoitodoi(self):
-        if self._is_tudongnhanloimoitodoi:
+    def action_tudongmoitodoi(self):
+        if self._is_tudongtodoi:
             while True:
                 if not NHANVATTODOITUDONGs:
                     break
 
                 idnhanvattruongnhom = NHANVATTODOITUDONGs[0]
 
-                if self.moitruong.get_iddoituong() == idnhanvattruongnhom:
+                idnguoichoi = self.moitruong.get_idnguoichoi()
+
+                if idnguoichoi == idnhanvattruongnhom:
                     if self.moitruong.get_is_dangnamtrongnhom():
                         if len(NHANVATTODOITUDONGs) <= 1:
                             break
                         if not self.moitruong.get_is_truongnhom():
                             break
 
-                        danhsachidthanhviennhoms = self.moitruong.get_danhsachidnhanvatthanhviennhoms()
+                        danhsachidthanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms()
+                        danhsachidnguoichoixungquanhs = self.moitruong.get_danhsachidnguoichoixungquanhs()
 
-                        for iddoituongthanhvien in NHANVATTODOITUDONGs[1:]:
-                            if iddoituongthanhvien not in danhsachidthanhviennhoms:
-                                self.moitruong.action_thucthicaulenh("team + {}".format(iddoituongthanhvien))
+                        for idnguoichoithanhvien in NHANVATTODOITUDONGs[1:]:
+                            if idnguoichoithanhvien in danhsachidnguoichoixungquanhs and idnguoichoithanhvien not in danhsachidthanhviennhoms:
+                                self.moitruong.action_thucthicaulenh("team + {}".format(idnguoichoithanhvien))
                                 break
-
                     else:
                         self.moitruong.action_thucthicaulenh("team + {}".format(idnhanvattruongnhom))
-
                 else:
                     if self.moitruong.get_is_dangnamtrongnhom():
                         break
 
                     if "team + {}".format(idnhanvattruongnhom) == self.moitruong.get_caulenhthucthi():
                         self.moitruong.action_thucthicaulenhhientai()
+
+                break

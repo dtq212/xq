@@ -45,8 +45,7 @@ def read_string(process, address, sobytes = 32):
 
 
 def write_string(process, address, sobytes = 32):
-    return process.write_string(address, sobytes, encoding = STRING_ENCODING)
-
+    return process.write_string(address, sobytes)
 
 
 def slugify(value, allow_unicode = False):
