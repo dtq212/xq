@@ -162,6 +162,9 @@ class LoopPhu:
 
         self.tactu.action_tudongmoitodoi()
 
-        if self.moitruong.get_is_nhanvatdachet() and time.time() - self.thoidiemthongbaochetgannhat > 5.:
-            self.thoidiemthongbaochetgannhat = time.time()
-            phatam("Nhân vật đã chết")
+        if self.moitruong.get_is_nhanvatdachet():
+            if time.time() - self.thoidiemthongbaochetgannhat > 5.:
+                self.thoidiemthongbaochetgannhat = time.time()
+                phatam("Nhân vật đã chết")
+
+        self.tactu.action_tudongphucsinh()

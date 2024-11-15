@@ -62,6 +62,7 @@ class MoiTruong:
         self._thoidiemthaotacnhomgannhat = time.time() - 1.
         self._thoidiemkhoitaothongtinbandogannhat = time.time() - 0.5
         self._thoidiemtudongtimduonggannhat = time.time() - 1.
+        self._thoidiemtudongphucsinhgannhat = time.time() - 1.
 
         self._is_tamngungtancong = False
 
@@ -993,16 +994,14 @@ class MoiTruong:
             write_int(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 25, self.diachixq + 0x37FA34)
 
             write_bytes(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 29, bytes.fromhex("8B B6"), 2)
-            write_int(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 31, self.diachixq + 0xADFDEC)
+            write_int(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 31, 0xADFDEC)
 
             write_bytes(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 35, bytes.fromhex("B0 00 88 06"), 4)
 
             write_bytes(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 39, bytes.fromhex("C3"), 1)
             self._is_dasetupautoassemblekhoitaothongtinbando = True
 
-            print(hex(self._diachiautoassemblekhoitaothongtinbando))
-
-        # self.tientrinh.start_thread(self._diachiautoassemblekhoitaothongtinbando)
+        self.tientrinh.start_thread(self._diachiautoassemblekhoitaothongtinbando)
 
     def auto_assemble_tudongtimduong(self, x, y, idbando):
         if not self._is_dasetupautoassembletudongtimduong:
@@ -1012,7 +1011,7 @@ class MoiTruong:
             write_int(self.tientrinh, self._diachiautoassembletudongtimduong + 2, self.diachixq + 0x37FA34)
 
             write_bytes(self.tientrinh, self._diachiautoassembletudongtimduong + 6, bytes.fromhex("8B B6"), 2)
-            write_int(self.tientrinh, self._diachiautoassembletudongtimduong + 8, self.diachixq + 0xADFDEC)
+            write_int(self.tientrinh, self._diachiautoassembletudongtimduong + 8, 0xADFDEC)
 
             write_bytes(self.tientrinh, self._diachiautoassembletudongtimduong + 12, bytes.fromhex("B9"), 1)
             write_int(self.tientrinh, self._diachiautoassembletudongtimduong + 13, y)
@@ -1036,9 +1035,7 @@ class MoiTruong:
 
             self._is_dasetupautoassembletudongtimduong = True
 
-            print(hex(self._diachiautoassembletudongtimduong))
-
-        # self.tientrinh.start_thread(self._diachiautoassembletudongtimduong)
+        self.tientrinh.start_thread(self._diachiautoassembletudongtimduong)
 
     def action_nhatdo(self, delay = 2):
         if time.time() - self._thoidiemnhatdogannhat < delay:
@@ -1077,22 +1074,6 @@ class MoiTruong:
 
         self.auto_assemble_sudungkynangvitri(idvitriX, idvitriY, hinhthucsudungkynang)
 
-    # def action_sudungkynangvitrimuctieu(self, idvitriX, idvitriY, iddoituong, delay = 0.25):
-    #     idvitri = (idvitriX, idvitriY)
-    #     if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
-    #         return
-    #
-    #     idkynang = self.get_idkynang(idvitriX, idvitriY)
-    #     if not idkynang:
-    #         return
-    #
-    #     if not iddoituong:
-    #         return
-    #
-    #     self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
-    #
-    #     self.action_thucthicaulenh("pf {} {}#".format(idkynang, hex(iddoituong)).replace("0x", ""), delay = 0)
-
     def action_sudungkynangvitrilenbanthan(self, idvitriX, idvitriY, delay = 0.25):
         idvitri = (idvitriX, idvitriY)
         if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
@@ -1114,12 +1095,12 @@ class MoiTruong:
 
         self.auto_assemble_dichuyen(x, y)
 
-    def action_dichuyengiukhoangcachtoida(self, diachicosothongtinnhanvat2, khoangcachtoida):
+    def action_dichuyengiukhoangcachtoida(self, diachicosothongtinnhanvat2, khoangcachtoida, khoangcachdichuyentoida = 0):
         if not diachicosothongtinnhanvat2:
             return
-        return self.action_dichuyengiukhoangcachtoidadiem(self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2), khoangcachtoida = khoangcachtoida)
+        return self.action_dichuyengiukhoangcachtoidadiem(self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2), khoangcachtoida = khoangcachtoida, khoangcachdichuyentoida = khoangcachdichuyentoida)
 
-    def action_dichuyengiukhoangcachtoidadiem(self, x2, y2, khoangcachtoida):
+    def action_dichuyengiukhoangcachtoidadiem(self, x2, y2, khoangcachtoida, khoangcachdichuyentoida = 0):
         diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
 
         x1, y1 = self.get_toadox(diachicosothongtinnhanvat1), self.get_toadoy(diachicosothongtinnhanvat1)
@@ -1129,7 +1110,7 @@ class MoiTruong:
         if khoangcach <= khoangcachtoida:
             return
 
-        khoangcachtoida = max(0., khoangcachtoida - 1.) #Đi gần vào hơn khoảng cách tối đa 1 chút
+        khoangcachtoida = max(0., khoangcachtoida - 0.5) #Đi gần vào hơn khoảng cách tối đa 1 chút
 
         deltax = x2 - x1
         deltay = y1 - y2
@@ -1139,9 +1120,12 @@ class MoiTruong:
         if not khoangcachdichuyen:
             return
 
+        if khoangcachdichuyentoida:
+            khoangcachdichuyen = min(khoangcachdichuyentoida * 1., khoangcachdichuyen)
+
         if khoangcach > 0.:
-            deltax = round(khoangcachdichuyen * deltax / khoangcach, 2)
-            deltay = round(khoangcachdichuyen * deltay / khoangcach, 2)
+            deltax = int(khoangcachdichuyen * deltax / khoangcach)
+            deltay = int(khoangcachdichuyen * deltay / khoangcach)
 
         if not deltax and not deltay:
             return
@@ -1152,13 +1136,13 @@ class MoiTruong:
         toadomoidonvikhoangcachx = xmax / KHOANGCACHTOANMANHINH
         toadomoidonvikhoangcachy = ymax / KHOANGCACHTOANMANHINH
 
-        xclick = round(self._centerx + deltax * toadomoidonvikhoangcachx)
-        yclick = round(self._centery + deltay * toadomoidonvikhoangcachy)
+        xclick = int(self._centerx + deltax * toadomoidonvikhoangcachx)
+        yclick = int(self._centery + deltay * toadomoidonvikhoangcachy)
 
         self.action_dichuyen(xclick, yclick)
 
-    def action_dichuyentiepcan(self, diachicosothongtinnhanvat2):
-        self.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvat2, khoangcachtoida = 0)
+    def action_dichuyentiepcan(self, diachicosothongtinnhanvat2, khoangcachdichuyentoida = 0):
+        self.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvat2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida)
 
     def action_sudungkynangvitriphudau(self, idvitriX, idvitriY, diachicosothongtinnhanvat2, khoangcachphudau = 2, delay = 0.25):
         if not diachicosothongtinnhanvat2:
@@ -1256,3 +1240,14 @@ class MoiTruong:
             return
 
         self.auto_assemble_tudongtimduong(x, y, idbando)
+
+    def action_tudongphucsinh(self, delay = 1.):
+        if time.time() - self._thoidiemtudongphucsinhgannhat < delay:
+            return
+
+        if not self.get_is_nhanvatdachet():
+            return
+
+        self._thoidiemtudongphucsinhgannhat = time.time()
+
+        self.action_thucthicaulenh("desc revive")
