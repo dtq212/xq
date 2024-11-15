@@ -1074,22 +1074,21 @@ class MoiTruong:
 
         self.auto_assemble_sudungkynangvitri(idvitriX, idvitriY, hinhthucsudungkynang)
 
-    def action_sudungkynangvitricanchien(self, idvitriX, idvitriY, delay = 0.25):
-        idvitri = (idvitriX, idvitriY)
-        if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
-            return
-
-        idkynang = self.get_idkynang(idvitriX, idvitriY)
-        if not idkynang:
-            return
-
-        iddoituong = self.get_iddoituongmuctieudangchon()
-        if not iddoituong:
-            return
-
-        self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
-
-        self.action_thucthicaulenh("pf {} {}#".format(idkynang, hex(iddoituong)).replace("0x", ""), delay = 0)
+    # def action_sudungkynangvitrimuctieu(self, idvitriX, idvitriY, iddoituong, delay = 0.25):
+    #     idvitri = (idvitriX, idvitriY)
+    #     if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
+    #         return
+    #
+    #     idkynang = self.get_idkynang(idvitriX, idvitriY)
+    #     if not idkynang:
+    #         return
+    #
+    #     if not iddoituong:
+    #         return
+    #
+    #     self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
+    #
+    #     self.action_thucthicaulenh("pf {} {}#".format(idkynang, hex(iddoituong)).replace("0x", ""), delay = 0)
 
     def action_sudungkynangvitrilenbanthan(self, idvitriX, idvitriY, delay = 0.25):
         idvitri = (idvitriX, idvitriY)

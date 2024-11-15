@@ -269,25 +269,29 @@ class TacTu:
                 if khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN:
                     if is_muctieudangchonlanguoichoi:
                         if not is_muctieudangchonbichoang and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUCPHACHHOASON):
-                            self.moitruong.action_sudungkynangvitricanchien(*VITRIKYNANG_LUCPHACHHOASON)
+                            self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_LUCPHACHHOASON)
                             break
                         if self.moitruong.get_is_cohieuungcoloinhanvat(diachicosothongtinnhanvatmuctieudangchon) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHAMATRAM):
-                            self.moitruong.action_sudungkynangvitricanchien(*VITRIKYNANG_PHAMATRAM)
+                            self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_PHAMATRAM)
                             break
                     else:
                         if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_DONDAOTRUCNHAP):
-                            self.moitruong.action_sudungkynangvitricanchien(*VITRIKYNANG_DONDAOTRUCNHAP)
+                            self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_DONDAOTRUCNHAP)
                             break
                         if self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRONGTHUONG, ), False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHAKHONGKICH):
-                            self.moitruong.action_sudungkynangvitricanchien(*VITRIKYNANG_PHAKHONGKICH)
+                            self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_PHAKHONGKICH)
                             break
 
                     if self.moitruong.get_is_cohieuungbatloinhanvat():
                         if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TINHTAMQUYET):
                             is_tamngungdichuyensudungkynang = True
                             if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG):
-                                    self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TINHTAMQUYET, hinhthucsudungkynang = HINHTHUCSUDUNGKYNANG_KHONGCANMUCTIEU)
+                                    self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TINHTAMQUYET, HINHTHUCSUDUNGKYNANG_KHONGCANMUCTIEU)
                             break
+
+                    if idtuthenhanvat == TUTHENHANVAT_DUNGIM:
+                        self.moitruong.action_dichuyentiepcan(diachicosothongtinnhanvatmuctieudangchon)
+                    break
 
                 if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
                     if not is_muctieudangchonbichoang and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LANGKHONGCHIHUYET):
@@ -313,12 +317,17 @@ class TacTu:
                                     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TINHTAMQUYET, HINHTHUCSUDUNGKYNANG_KHONGCANMUCTIEU)
                             break
 
+                    if khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN:
+                        if idtuthenhanvat == TUTHENHANVAT_DUNGIM:
+                            self.moitruong.action_dichuyentiepcan(diachicosothongtinnhanvatmuctieudangchon) #Tiếp cận luôn thay vì chỉ chạy đến khoảng cách sử dụng kỹ năng cận chiến vì nhiều khi nó bị treo lắm
+                        break
+
                 if khoangcach <= KHOANGCACHTOIDAHOPLE:
                     if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA) and time.time() - self.moitruong.get_thoidiemsudungkynangvitrigannhat(*VITRIKYNANG_KHAITHIENTICHDIA, time.time() - 2.0) > 1.0:
                         self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_KHAITHIENTICHDIA, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = 2)
                         break
                     if idtuthenhanvat == TUTHENHANVAT_DUNGIM:
-                        self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, khoangcachtoida = KHOANGCACHSUDUNGKYNANGCANCHIEN) #Tiếp cận luôn thay vì chỉ chạy đến khoảng cách sử dụng kỹ năng tầm xa vì nhiều khi nó bị treo lắm
+                        self.moitruong.action_dichuyentiepcan(diachicosothongtinnhanvatmuctieudangchon) #Tiếp cận luôn thay vì chỉ chạy đến khoảng cách sử dụng kỹ năng tầm xa vì nhiều khi nó bị treo lắm
                     break
 
                 break
