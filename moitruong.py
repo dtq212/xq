@@ -62,7 +62,8 @@ class MoiTruong:
         self._thoidiemthaotacnhomgannhat = time.time() - 1.
         self._thoidiemkhoitaothongtinbandogannhat = time.time() - 0.5
         self._thoidiemtudongtimduonggannhat = time.time() - 1.
-        self._thoidiemtudongphucsinhgannhat = time.time() - 1.
+        self._thoidiemphucsinhgannhat = time.time() - 1.
+        self._thoidiemmaupkgannhat = time.time() - 1.
 
         self._is_tamngungtancong = False
 
@@ -228,11 +229,21 @@ class MoiTruong:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C)
 
-    def get_idloaipk(self):
+    def get_idmaupk(self):
         x = read_int(self.tientrinh, self.diachixq + 0x37FA34)
         if not x:
             return False
         return read_int(self.tientrinh, x + 0xAED6CC)
+
+    def set_idmaupk(self, idmaupk):
+        if self.get_idmaupk() == idmaupk:
+            return
+
+        x = read_int(self.tientrinh, self.diachixq + 0x37FA34)
+        if not x:
+            return False
+
+        write_int(self.tientrinh, x + 0xAED6CC, idmaupk)
 
     def get_tenbang(self, diachicosothongtinnhanvat = False):
         if not diachicosothongtinnhanvat:
@@ -553,18 +564,18 @@ class MoiTruong:
         if self.get_is_npc(diachicosothongtinnhanvat):
             return False
 
-        idloaipk = self.get_idloaipk()
+        idmaupk = self.get_idmaupk()
 
-        if idloaipk == LOAIPK_HOABINH:
+        if idmaupk == MAUPK_HOABINH:
             if idloainhanvat in (LOAIMUCTIEU_NGUOICHOIKHACNHOM, LOAIMUCTIEU_NGUOICHOICUNGNHOM):
                 return False
-        elif idloaipk == LOAIPK_NHOM:
+        elif idmaupk == MAUPK_NHOM:
             if idloainhanvat == LOAIMUCTIEU_NGUOICHOICUNGNHOM:
                 return False
-        elif idloaipk == LOAIPK_BANG:
+        elif idmaupk == MAUPK_BANG:
             if idloainhanvat == LOAIMUCTIEU_NGUOICHOIKHACNHOM and self.get_is_cungbang(diachicosothongtinnhanvat):
                 return False
-        elif idloaipk == LOAIPK_TUDO:
+        elif idmaupk == MAUPK_TUDO:
             if idloainhanvat == LOAIMUCTIEU_NGUOICHOIKHACNHOM and self.get_is_cungbang(diachicosothongtinnhanvat):
                 return False
 
@@ -1241,13 +1252,25 @@ class MoiTruong:
 
         self.auto_assemble_tudongtimduong(x, y, idbando)
 
-    def action_tudongphucsinh(self, delay = 1.):
-        if time.time() - self._thoidiemtudongphucsinhgannhat < delay:
+    def action_phucsinh(self, delay = 1.):
+        if time.time() - self._thoidiemphucsinhgannhat < delay:
             return
 
         if not self.get_is_nhanvatdachet():
             return
 
-        self._thoidiemtudongphucsinhgannhat = time.time()
+        self._thoidiemphucsinhgannhat = time.time()
 
         self.action_thucthicaulenh("desc revive")
+
+    def action_doimaupk(self, idmaupk, delay = 1.):
+        if time.time() - self._thoidiemmaupkgannhat < delay:
+            return
+
+        if self.get_idmaupk() == idmaupk:
+            return
+
+        self._thoidiemmaupkgannhat = time.time()
+
+        self.set_idmaupk(idmaupk)
+        self.action_thucthicaulenh("set !attack {}".format(idmaupk))

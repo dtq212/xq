@@ -168,3 +168,4 @@ class LoopPhu:
                 phatam("Nhân vật đã chết")
 
         self.tactu.action_tudongphucsinh()
+        self.tactu.action_tudongdoimaupk()

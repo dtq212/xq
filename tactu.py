@@ -291,7 +291,7 @@ class TacTu:
                             break
 
                     if idtuthenhanvat != TUTHENHANVAT_TANCONG:
-                        self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, khoangcachtoida = KHOANGCACHSUDUNGKYNANGCANCHIEN, khoangcachdichuyentoida = max(khoangcach, KHOANGCACHSUDUNGKYNANGCANCHIEN) * 0.9)
+                        self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, khoangcachtoida = KHOANGCACHSUDUNGKYNANGCANCHIEN, khoangcachdichuyentoida = max(khoangcach, KHOANGCACHSUDUNGKYNANGCANCHIEN) * 0.95)
                     break
 
                 if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
@@ -320,7 +320,7 @@ class TacTu:
 
                     if khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN:
                         if idtuthenhanvat != TUTHENHANVAT_TANCONG:
-                            self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, khoangcachtoida = KHOANGCACHSUDUNGKYNANGCANCHIEN, khoangcachdichuyentoida = max(khoangcach, KHOANGCACHSUDUNGKYNANGCANCHIEN) * 0.9)
+                            self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, khoangcachtoida = KHOANGCACHSUDUNGKYNANGCANCHIEN, khoangcachdichuyentoida = max(khoangcach, KHOANGCACHSUDUNGKYNANGCANCHIEN) * 0.95)
 
                 if khoangcach <= KHOANGCACHTOIDAHOPLE:
                     if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA) and time.time() - self.moitruong.get_thoidiemsudungkynangvitrigannhat(*VITRIKYNANG_KHAITHIENTICHDIA, time.time() - 2.0) > 1.0:
@@ -328,7 +328,7 @@ class TacTu:
                         break
 
                     if idtuthenhanvat != TUTHENHANVAT_TANCONG:
-                        self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, khoangcachtoida = KHOANGCACHSUDUNGKYNANGCANCHIEN, khoangcachdichuyentoida = max(khoangcach, KHOANGCACHSUDUNGKYNANGCANCHIEN) * 0.9)
+                        self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, khoangcachtoida = KHOANGCACHSUDUNGKYNANGCANCHIEN, khoangcachdichuyentoida = max(khoangcach, KHOANGCACHSUDUNGKYNANGCANCHIEN) * 0.95)
                     break
 
                 break
@@ -462,6 +462,13 @@ class TacTu:
                 if not self.moitruong.get_is_nhanvatdachet():
                     break
 
-                self.moitruong.action_tudongphucsinh()
+                self.moitruong.action_phucsinh()
 
+                break
+
+    def action_tudongdoimaupk(self):
+        if self._is_tudongphucsinh:
+            while True:
+                if self.moitruong.get_idmaupk() != MAUPK_TUDO:
+                    self.moitruong.action_doimaupk(MAUPK_TUDO)
                 break
