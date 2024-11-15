@@ -35,10 +35,8 @@ class TacTu:
         self.thoidiembattattheosaunhomgannhat = time.time()
         self.thoidiemkiemtrahieuunggannhat = time.time()
 
-        # self._is_sudungkynanglenbanthan = False
         self._diemdanhxungquanh = False
         self._khoangcachdiemdanhxungquanh = 27.
-        self._is_vuotquakhoangcachdiemdanhxungquanh = False
         self._is_tamngungtancongtheosautruongnhom = False
         self._is_tamngungtancongdichuyenxungquanh = False
         self._is_tamngungdichuyensudungkynang = False
@@ -370,15 +368,10 @@ class TacTu:
             self.moitruong.action_nhatdo()
 
     def action_tudongdichuyenxungquanhdiem(self):
-        is_vuotquakhoangcachdiemdanhxungquanh = False
         is_tamngungtancongdichuyenxungquanh = False
 
         if self._diemdanhxungquanh:
             while True:
-                khoangcach = self.moitruong.get_khoangcachdiem(*self._diemdanhxungquanh[:-1])
-                if khoangcach > self._khoangcachdiemdanhxungquanh:
-                    is_vuotquakhoangcachdiemdanhxungquanh = True
-
                 if self._is_tamngungdichuyensudungkynang:
                     break
 
@@ -397,11 +390,14 @@ class TacTu:
 
                 elif not self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon() and time.time() - self.moitruong.get_thoidiemkhongcomuctieugannhat() > 2.5:
                     is_tamngungtancongdichuyenxungquanh = True
-                    self.moitruong.action_dichuyengiukhoangcachtoidadiem(*self._diemdanhxungquanh[:-1], khoangcachtoida = 0)
+
+                    if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA) and time.time() - self.moitruong.get_thoidiemsudungkynangvitrigannhat(*VITRIKYNANG_KHAITHIENTICHDIA, time.time() - 2.0) > 1.0:
+                        self.moitruong.action_sudungkynangvitriphudaudiem(*VITRIKYNANG_KHAITHIENTICHDIA, *self._diemdanhxungquanh[:-1], khoangcachphudau = 0)
+                    else:
+                        self.moitruong.action_dichuyengiukhoangcachtoidadiem(*self._diemdanhxungquanh[:-1], khoangcachtoida = 0)
 
                 break
 
-        self._is_vuotquakhoangcachdiemdanhxungquanh = is_vuotquakhoangcachdiemdanhxungquanh
         self._is_tamngungtancongdichuyenxungquanh = is_tamngungtancongdichuyenxungquanh
 
     def thietlap_diemdanhxungquanh(self, diemdanhxungquanh):

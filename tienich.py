@@ -75,19 +75,26 @@ def phatam(noidung):
 def luuthietlap(tennhanvat, thietlap):
     tenfile = slugify(tennhanvat)
 
-    thumuc = os.path.join(".", "_internal", "thietlap")
-    if not os.path.exists(thumuc):
-        os.makedirs(thumuc)
-    with open(os.path.join(thumuc, str(tenfile)), "wb") as file:
-        pickle.dump(thietlap, file)
+    try:
+        thumuc = os.path.join(".", "_internal", "thietlap")
+        if not os.path.exists(thumuc):
+            os.makedirs(thumuc)
+        with open(os.path.join(thumuc, str(tenfile)), "wb") as file:
+            pickle.dump(thietlap, file)
+
+    except Exception as err:
+        print(err)
 
 def taithietlap(tennhanvat):
     tenfile = slugify(tennhanvat)
     filepath = os.path.join(".", "_internal", "thietlap", str(tenfile))
 
-    if os.path.exists(filepath):
-        with open(filepath, "rb") as file:
-            return pickle.load(file)
+    try:
+        if os.path.exists(filepath):
+            with open(filepath, "rb") as file:
+                return pickle.load(file)
+    except Exception as err:
+        print(err)
 
 def tinhkhoangcach(x1, y1, x2, y2):
     return round(math.dist((x1, y1), (x2, y2), ))
