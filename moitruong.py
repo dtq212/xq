@@ -1240,6 +1240,8 @@ class MoiTruong:
         if self.get_is_dakhoitaothongtinbando():
             return
 
+        self._thoidiemkhoitaothongtinbandogannhat = time.time()
+
         self.auto_assemble_khoitaothongtinbando()
 
     def action_tudongtimduong(self, x, y, idbando, delay = 1.):
@@ -1249,6 +1251,8 @@ class MoiTruong:
         if not self.get_is_dakhoitaothongtinbando():
             self.action_khoitaothongtinbando()
             return
+
+        self._thoidiemtudongtimduonggannhat = time.time()
 
         self.auto_assemble_tudongtimduong(x, y, idbando)
 
