@@ -392,24 +392,27 @@ class TacTu:
                     self._thoidiemdichuyenkhacbandodichuyenxungquanhgannhat = time.time()
                 elif time.time() - self._thoidiemdichuyenkhacbandodichuyenxungquanhgannhat > 2.5:
                     is_tamngungtancongdichuyenxungquanh = True
-                    self.moitruong.action_tudongtimduong(*self._diemdanhxungquanh)
 
-                    if time.time() - self._thoidiemthongbaotudongtimduonggannhat > 5:
-                        self._thoidiemthongbaotudongtimduonggannhat = time.time()
-                        phatam("Tự động tìm đường về điểm đánh xung quanh")
-                    break
+                    if self.moitruong.get_idtuthenhanvat() != TUTHENHANVAT_DICHUYEN:
+                        self.moitruong.action_tudongtimduong(*self._diemdanhxungquanh)
+
+                        if time.time() - self._thoidiemthongbaotudongtimduonggannhat > 5:
+                            self._thoidiemthongbaotudongtimduonggannhat = time.time()
+                            phatam("Tự động tìm đường về điểm đánh xung quanh")
+                        break
 
                 if not self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon() and time.time() - self.moitruong.get_thoidiemkhongcomuctieugannhat() > 2.5:
                     is_tamngungtancongdichuyenxungquanh = True
 
-                    if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA) and time.time() - self.moitruong.get_thoidiemsudungkynangvitrigannhat(*VITRIKYNANG_KHAITHIENTICHDIA, time.time() - 2.0) > 1.0:
-                        self.moitruong.action_sudungkynangvitriphudaudiem(*VITRIKYNANG_KHAITHIENTICHDIA, *self._diemdanhxungquanh[:-1], khoangcachphudau = 0)
-                    else:
-                        self.moitruong.action_tudongtimduong(*self._diemdanhxungquanh)
+                    if self.moitruong.get_idtuthenhanvat() != TUTHENHANVAT_DICHUYEN:
+                        if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA) and time.time() - self.moitruong.get_thoidiemsudungkynangvitrigannhat(*VITRIKYNANG_KHAITHIENTICHDIA, time.time() - 2.0) > 1.0:
+                            self.moitruong.action_sudungkynangvitriphudaudiem(*VITRIKYNANG_KHAITHIENTICHDIA, *self._diemdanhxungquanh[:-1], khoangcachphudau = 0)
+                        else:
+                            self.moitruong.action_tudongtimduong(*self._diemdanhxungquanh)
 
-                    if time.time() - self._thoidiemthongbaotudongtimduonggannhat > 5:
-                        self._thoidiemthongbaotudongtimduonggannhat = time.time()
-                        phatam("Tự động tìm đường về điểm đánh xung quanh")
+                        if time.time() - self._thoidiemthongbaotudongtimduonggannhat > 5:
+                            self._thoidiemthongbaotudongtimduonggannhat = time.time()
+                            phatam("Tự động tìm đường về điểm đánh xung quanh")
                 break
 
         self._is_tamngungtancongdichuyenxungquanh = is_tamngungtancongdichuyenxungquanh
