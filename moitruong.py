@@ -979,7 +979,7 @@ class MoiTruong:
             write_int(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 2, self.diachixq + 0x37FA34)
 
             write_bytes(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 6, bytes.fromhex("BF"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 7, 64)
+            write_int(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 7, 100)
 
             write_bytes(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 11, bytes.fromhex("BE 01002020"), 5)
 
@@ -1000,9 +1000,9 @@ class MoiTruong:
             write_bytes(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 39, bytes.fromhex("C3"), 1)
             self._is_dasetupautoassemblekhoitaothongtinbando = True
 
-            # print(hex(self._diachiautoassemblekhoitaothongtinbando))
+            print(hex(self._diachiautoassemblekhoitaothongtinbando))
 
-        self.tientrinh.start_thread(self._diachiautoassemblekhoitaothongtinbando)
+        # self.tientrinh.start_thread(self._diachiautoassemblekhoitaothongtinbando)
 
     def auto_assemble_tudongtimduong(self, x, y, idbando):
         if not self._is_dasetupautoassembletudongtimduong:
@@ -1036,9 +1036,9 @@ class MoiTruong:
 
             self._is_dasetupautoassembletudongtimduong = True
 
-            # print(hex(self._diachiautoassembletudongtimduong))
+            print(hex(self._diachiautoassembletudongtimduong))
 
-        self.tientrinh.start_thread(self._diachiautoassembletudongtimduong)
+        # self.tientrinh.start_thread(self._diachiautoassembletudongtimduong)
 
     def action_nhatdo(self, delay = 2):
         if time.time() - self._thoidiemnhatdogannhat < delay:
