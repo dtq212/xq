@@ -220,11 +220,8 @@ class TacTu:
             if time.time() - self._thoidiemkiemtrahieuunggannhat > 2.5:
                 self._thoidiemkiemtrahieuunggannhat = time.time()
 
-                if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TIEUHUYETTHACH, ), True, is_hieuungcoloi = 1) and self.moitruong.get_is_thietlapkynangphimtat(VITRIPHIMTATKYNANG_HUYETTHACH):
-                    self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_HUYETTHACH)
-
-                elif not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TIEUPHAPLUCTHACH, ), True, is_hieuungcoloi = 1) and self.moitruong.get_is_thietlapkynangphimtat(VITRIPHIMTATKYNANG_PHAPLUCTHACH):
-                    self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_PHAPLUCTHACH)
+                if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_HUYETTHACH,), True, is_hieuungcoloi = 1) or not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_PHAPLUCTHACH,), True, is_hieuungcoloi = 1):
+                    self.moitruong.action_sudungchucnangmorong5()
 
             if self.moitruong.get_diempk() > 0 and self.moitruong.get_is_thietlapkynangphimtat(VITRIPHIMTATKYNANG_ANXAPHU):
                 self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_ANXAPHU)

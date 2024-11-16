@@ -66,6 +66,7 @@ class MoiTruong:
         self._thoidiemphucsinhgannhat = time.time() - 1.
         self._thoidiemmaupkgannhat = time.time() - 1.
         self._thoidiemsuadogannhat = time.time() - 1.
+        self._thoidiemsudungchucnangmorong5 = time.time() - 2.5
 
         self._is_tamngungtancong = False
 
@@ -237,19 +238,29 @@ class MoiTruong:
         if not diachicosothongtinnhanvat:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
-        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
-            return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18)
+        toadox = read_int(self.tientrinh, diachicosothongtinnhanvat)
 
-        return read_int(self.tientrinh, diachicosothongtinnhanvat)
+        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
+            toadoxsaptoi = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18)
+            deltax = toadoxsaptoi - toadox
+            if deltax > 0:
+                toadox += deltax / abs(deltax)
+
+        return toadox
 
     def get_toadoy(self, diachicosothongtinnhanvat = False):
         if not diachicosothongtinnhanvat:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
-        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
-            return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C)
+        toadoy = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
 
-        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
+        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
+            toadoysaptoi = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C)
+            deltay = toadoysaptoi - toadoy
+            if deltay > 0:
+                toadoy += deltay / abs(deltay)
+
+        return toadoy
 
     def get_toadoxbandochichuot(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
@@ -1465,3 +1476,12 @@ class MoiTruong:
         if not x.isnumeric():
             return False
         return int(x)
+
+    def action_sudungchucnangmorong5(self, delay = 2.5):
+        if time.time() - self._thoidiemsudungchucnangmorong5 < delay:
+            return
+
+        self._thoidiemsudungchucnangmorong5 = time.time()
+        caulenh = "auto 5 1"
+
+        self.action_thucthicaulenh(caulenh, delay = 0)
