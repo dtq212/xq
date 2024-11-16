@@ -120,6 +120,7 @@ class LoopPhu:
     def __del__(self):
         try:
             self.moitruong.action_tatvohieuhoatuthedelaysautancong()
+            self.moitruong.action_tatvohieuhoathietlapmuctieu()
             self.moitruong.action_tatvohieuhoaxoamuctieu()
             self.moitruong.action_tatvohieuhoalongclick()
             self.moitruong.action_tatvohieuhoatrangthaichuotchonmuctieukynang()
@@ -149,6 +150,7 @@ class LoopPhu:
             return
 
         self.moitruong.action_vohieuhoatuthedelaysautancong()
+        self.moitruong.action_vohieuhoathietlapmuctieu()
         if self.moitruong.get_is_bathanhtrang():
             self.moitruong.set_is_batalt(False)
         else:
@@ -172,3 +174,4 @@ class LoopPhu:
 
         self.tactu.action_tudongphucsinh()
         self.tactu.action_tudongdoimaupk()
+        self.tactu.action_tudongsuado()
