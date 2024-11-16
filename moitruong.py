@@ -239,11 +239,20 @@ class MoiTruong:
         # return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18)
         return read_int(self.tientrinh, diachicosothongtinnhanvat)
 
+    def get_toadoxsaptoi(self, diachicosothongtinnhanvat = False):
+        if not diachicosothongtinnhanvat:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18)
+
     def get_toadoy(self, diachicosothongtinnhanvat = False):
         if not diachicosothongtinnhanvat:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
-        # return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C)
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
+
+    def get_toadoysaptoi(self, diachicosothongtinnhanvat = False):
+        if not diachicosothongtinnhanvat:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C)
 
     def get_toadoxbandochichuot(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
