@@ -105,7 +105,7 @@ class CuaSo:
 
     def themdiemdanhxungquanh(self):
         if self.moitruong.get_is_cuasogamekichhoat():
-            self.tactu.thietlap_diemdanhxungquanh((self.moitruong.get_toadoxbandochichuot(), self.moitruong.get_toadoybandochichuot(), self.moitruong.get_idbandohientai()))
+            self.tactu.thietlap_diemdanhxungquanh((self.moitruong.get_toadoxbandochichuot(), self.moitruong.get_toadoybandochichuot(), self.moitruong.get_idbandochichuot()))
 
     def xoatoanbodiemdanhxungquanh(self):
         if self.moitruong.get_is_cuasogamekichhoat():

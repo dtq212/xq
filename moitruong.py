@@ -269,6 +269,21 @@ class MoiTruong:
             return False
         return read_int(self.tientrinh, x + 0x371C84)
 
+    def get_idbandochichuot(self):
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not x:
+            return False
+        x = read_int(self.tientrinh, x + 0xADFDEC)
+        if not x:
+            return False
+
+        y = read_int(self.tientrinh, x + 0x11F10)
+
+        if not y:
+            return False
+
+        return read_int(self.tientrinh, x + 0x23C + 0x16C * y)
+
     def get_idmaupk(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
@@ -593,9 +608,6 @@ class MoiTruong:
         if self.get_is_nhanvatdachet(diachicosothongtinnhanvat):
             return False
 
-        if self.get_idnguoichoi(diachicosothongtinnhanvat) in NHANVATTODOITUDONGs:
-            return False
-
         idloainhanvat = self.get_idloainhanvat(diachicosothongtinnhanvat)
 
         if idloainhanvat == LOAIMUCTIEU_NGUOICHOICUNGNHOM:
@@ -812,6 +824,31 @@ class MoiTruong:
             return
 
         return write_boolean(self.tientrinh, x + 0x34, is_danghiencuasoyesno)
+
+    def get_is_danghiencuasotuychon(self):
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not x:
+            return False
+
+        x = read_int(self.tientrinh, x + 0xADFD74)
+        if not x:
+            return False
+
+        return read_boolean(self.tientrinh, x + 0x1E38)
+
+    def set_is_danghiencuasotuychon(self, is_danghiencuasotuychon):
+        if self.get_is_danghiencuasotuychon() == is_danghiencuasotuychon:
+            return
+
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not x:
+            return
+
+        x = read_int(self.tientrinh, x + 0xADFD74)
+        if not x:
+            return
+
+        return write_boolean(self.tientrinh, x + 0x1E38, is_danghiencuasotuychon)
 
     def get_caulenhthucthihientai(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
@@ -1161,7 +1198,6 @@ class MoiTruong:
             return
 
         self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
-
         self.auto_assemble_sudungkynangvitri(idvitriX, idvitriY, hinhthucsudungkynang)
 
     def action_sudungkynangvitrilenbanthan(self, idvitriX, idvitriY, delay = 0.25):
@@ -1185,6 +1221,11 @@ class MoiTruong:
 
         self.auto_assemble_dichuyen(x, y)
 
+    def action_dichuyengiukhoangcachtoithieu(self, diachicosothongtinnhanvat2, khoangcachtoithieu, khoangcachdichuyentoida = 0):
+        if not diachicosothongtinnhanvat2:
+            return
+        return self.action_dichuyengiukhoangcachtoithieudiem(self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2), khoangcachtoithieu = khoangcachtoithieu, khoangcachdichuyentoida = khoangcachdichuyentoida)
+
     def action_dichuyengiukhoangcachtoida(self, diachicosothongtinnhanvat2, khoangcachtoida, khoangcachdichuyentoida = 0):
         if not diachicosothongtinnhanvat2:
             return
@@ -1200,14 +1241,14 @@ class MoiTruong:
         if khoangcach <= khoangcachtoida:
             return
 
-        khoangcachtoida = max(0., khoangcachtoida - 0.5) #Đi gần vào hơn khoảng cách tối đa 1 chút
+        khoangcachtoida = max(0., khoangcachtoida - 0.25) #Đi gần vào hơn khoảng cách tối đa 1 chút
 
         deltax = x2 - x1
         deltay = y1 - y2
 
         khoangcachdichuyen = khoangcach - khoangcachtoida
 
-        if not khoangcachdichuyen:
+        if not round(khoangcachdichuyen):
             return
 
         if khoangcachdichuyentoida:
@@ -1216,6 +1257,47 @@ class MoiTruong:
         if khoangcach > 0.:
             deltax = int(khoangcachdichuyen * deltax / khoangcach)
             deltay = int(khoangcachdichuyen * deltay / khoangcach)
+
+        if not deltax and not deltay:
+            return
+
+        xmax = self._kichthuoccuasogame[0]
+        ymax = self._kichthuoccuasogame[1]
+
+        toadomoidonvikhoangcachx = xmax / KHOANGCACHTOANMANHINH
+        toadomoidonvikhoangcachy = ymax / KHOANGCACHTOANMANHINH
+
+        xclick = int(self._centerx + deltax * toadomoidonvikhoangcachx)
+        yclick = int(self._centery + deltay * toadomoidonvikhoangcachy)
+
+        self.action_dichuyen(xclick, yclick)
+
+    def action_dichuyengiukhoangcachtoithieudiem(self, x2, y2, khoangcachtoithieu, khoangcachdichuyentoida = 0):
+        diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
+
+        x1, y1 = self.get_toadox(diachicosothongtinnhanvat1), self.get_toadoy(diachicosothongtinnhanvat1)
+
+        khoangcach = round(math.dist((x1, y1), (x2, y2)), 2)
+
+        if khoangcach >= khoangcachtoithieu:
+            return
+
+        khoangcachtoithieu = max(0., khoangcachtoithieu + 0.25) #Đi xa hơn khoảng cách tối thiểu 1 chút
+
+        deltax = x2 - x1
+        deltay = y1 - y2
+
+        khoangcachdichuyen = khoangcachtoithieu
+
+        if not round(khoangcachdichuyen):
+            return
+
+        if khoangcachdichuyentoida:
+            khoangcachdichuyen = min(khoangcachdichuyentoida * 1., khoangcachdichuyen)
+
+        if khoangcach > 0.:
+            deltax = int(-1 * khoangcachdichuyen * deltax / khoangcach)
+            deltay = int(-1 * khoangcachdichuyen * deltay / khoangcach)
 
         if not deltax and not deltay:
             return
@@ -1347,13 +1429,13 @@ class MoiTruong:
 
         self._thoidiemphucsinhgannhat = time.time()
 
+        if self.get_is_danghiencuasotuychon():
+            self.set_is_danghiencuasotuychon(False)
+
         self.action_thucthicaulenh("desc revive")
 
     def action_doimaupk(self, idmaupk, delay = 1.):
         if time.time() - self._thoidiemmaupkgannhat < delay:
-            return
-
-        if self.get_idmaupk() == idmaupk:
             return
 
         self._thoidiemmaupkgannhat = time.time()
@@ -1372,3 +1454,14 @@ class MoiTruong:
         self._thoidiemsuadogannhat = time.time()
 
         self.action_thucthicaulenh("repair ! {}# all".format(hex(idthosuado).replace("0x", "")))
+
+    def get_diempk(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x371754)
+        if not x:
+            return False
+        x = read_string(self.tientrinh, x + 0xC0)
+        if not x:
+            return False
+        if not x.isnumeric():
+            return False
+        return int(x)

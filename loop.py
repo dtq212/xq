@@ -91,7 +91,6 @@ class LoopChinh:
                 self.step()
             except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
                 print("Luồng chính: {}".format(err))
-                raise Exception(err)
                 time.sleep(1)
 
             time.sleep(0.02)
@@ -109,6 +108,10 @@ class LoopChinh:
         self.moitruong.action_khoitaothongtinbando()
 
         self.tactu.action_tudongdichuyenxungquanhdiem()
+
+        # muctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+        # if muctieudangchon:
+        #     self.moitruong.action_dichuyengiukhoangcachtoithieu(muctieudangchon, 2)
 
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
