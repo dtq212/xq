@@ -236,23 +236,20 @@ class MoiTruong:
     def get_toadox(self, diachicosothongtinnhanvat = False):
         if not diachicosothongtinnhanvat:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
-        # return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18)
-        return read_int(self.tientrinh, diachicosothongtinnhanvat)
 
-    def get_toadoxsaptoi(self, diachicosothongtinnhanvat = False):
-        if not diachicosothongtinnhanvat:
-            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
-        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18)
+        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
+            return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18)
+
+        return read_int(self.tientrinh, diachicosothongtinnhanvat)
 
     def get_toadoy(self, diachicosothongtinnhanvat = False):
         if not diachicosothongtinnhanvat:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
-        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
 
-    def get_toadoysaptoi(self, diachicosothongtinnhanvat = False):
-        if not diachicosothongtinnhanvat:
-            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
-        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C)
+        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
+            return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C)
+
+        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
 
     def get_toadoxbandochichuot(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
@@ -1122,7 +1119,7 @@ class MoiTruong:
         if time.time() - self._thoidiemnhatdogannhat < delay:
             return
 
-        if time.time() - self._thoidiemnhatdogannhat_map.get(diachicosothongtinvatpham, time.time() - 2.) > 1.:
+        if time.time() - self._thoidiemnhatdogannhat_map.get(diachicosothongtinvatpham, time.time() - 2.) < 1.:
             return
 
         x = self.get_toadox(diachicosothongtinvatpham)
