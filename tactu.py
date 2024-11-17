@@ -31,7 +31,7 @@ class TacTu:
 
         self._khoangcachtoidatruongnhom = 6
 
-        self._tenmuctieutancong = False
+        self._tenmuctieutancongs = set()
 
         self._thoidiembattattheosaunhomgannhat = time.time()
         self._thoidiemkiemtrahieuunggannhat = time.time()
@@ -43,7 +43,7 @@ class TacTu:
         self._thoidiemdoimaupkgannhat = time.time()
         self._thoidiemdichuyengiukhoangcachtoithieugannhat = time.time()
 
-        self._diemdanhxungquanhs = []
+        self._diemdanhxungquanhs = set()
         self._khoangcachdiemdanhxungquanh = 27.
         self._is_tamngungtancongtheosautruongnhom = False
         self._is_tamngungtancongdichuyenxungquanh = False
@@ -166,7 +166,7 @@ class TacTu:
 
                 if not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
                     self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
-                elif self._tenmuctieutancong and self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon) != self._tenmuctieutancong:
+                elif self._tenmuctieutancongs and self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon) not in self._tenmuctieutancongs:
                     self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
                 elif self._is_chidanhnguoichoi and not self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon):
                     self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
@@ -180,8 +180,8 @@ class TacTu:
                 if not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieuxemxet):
                     continue
 
-                if self._tenmuctieutancong:
-                    if self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieuxemxet) != self._tenmuctieutancong:
+                if self._tenmuctieutancongs:
+                    if self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieuxemxet) not in self._tenmuctieutancongs:
                         continue
                 if self._is_chidanhnguoichoi and not self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieuxemxet):
                     continue
@@ -371,14 +371,16 @@ class TacTu:
         else:
             phatam("Tắt tự động theo sau trưởng nhóm")
 
-    def set_tenmuctieutancong(self, tenmuctieutancong):
-        if self._tenmuctieutancong != tenmuctieutancong:
-            self._tenmuctieutancong = tenmuctieutancong
+    def them_tenmuctieutancong(self, tenmuctieutancong):
+        if tenmuctieutancong and tenmuctieutancong not in self._tenmuctieutancongs:
+            self._tenmuctieutancongs.add(tenmuctieutancong)
 
-            if self._tenmuctieutancong:
-                phatam("Thiết lập tên mục tiêu tấn công")
-            else:
-                phatam("Bỏ thiết lập tên mục tiêu tấn công")
+            if self._tenmuctieutancongs:
+                phatam("Thêm tên mục tiêu tấn công. Tổng cộng {}".format(len(self._tenmuctieutancongs)))
+    def botoanbo_tenmuctieutancong(self):
+        self._tenmuctieutancongs.clear()
+
+        phatam("Bỏ thiết lập tên mục tiêu tấn công".format(len(self._tenmuctieutancongs)))
 
     def action_tudongnhatdo(self):
         is_tamngungdichuyendenhatdo = False
@@ -472,13 +474,14 @@ class TacTu:
 
         self._is_tamngungtancongdichuyenxungquanh = is_tamngungtancongdichuyenxungquanh
 
-    def thietlap_diemdanhxungquanh(self, diemdanhxungquanh):
-        if not diemdanhxungquanh:
-            self._diemdanhxungquanhs.clear()
-            phatam("Bỏ thiết lập điểm đánh xung quanh")
-        else:
-            self._diemdanhxungquanhs.append(diemdanhxungquanh)
-            phatam("Thêm điểm đánh xung quanh. Tổng hiện tại {}".format(len(self._diemdanhxungquanhs)))
+    def them_diemdanhxungquanh(self, diemdanhxungquanh):
+        if diemdanhxungquanh and diemdanhxungquanh not in self._diemdanhxungquanhs:
+            self._diemdanhxungquanhs.add(diemdanhxungquanh)
+            phatam("Thêm điểm đánh xung quanh. Tổng cộng {}".format(len(self._diemdanhxungquanhs)))
+
+    def botoanbo_diemdanhxungquanh(self):
+        self._diemdanhxungquanhs.clear()
+        phatam("Bỏ toàn bộ điểm đánh xung quanh")
 
     def thietlap_chidanhnguoichoi(self, is_chidanhnguoichoi):
         self._is_chidanhnguoichoi = is_chidanhnguoichoi

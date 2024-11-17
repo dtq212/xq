@@ -47,14 +47,15 @@ class CuaSo:
         self.systray.start()
 
         keyboard.add_hotkey("ctrl + f", self.battat_tudongsudungkynang)
-        keyboard.add_hotkey("ctrl + c", self.thietlaptenmuctieutancong)
+        keyboard.add_hotkey("ctrl + c", self.themtenmuctieutancong)
+        keyboard.add_hotkey("ctrl + alt+ c", self.botoanbotenmuctieutancong)
         keyboard.add_hotkey("ctrl + alt + f", self.battat_tudongtheosautruongnhom)
 
         keyboard.add_hotkey("ctrl + d", self.thietlapchidanhnguoichoi)
         keyboard.add_hotkey("ctrl + a", self.bothietlapchidanhnguoichoi)
 
         keyboard.add_hotkey("ctrl + p", self.themdiemdanhxungquanh)
-        keyboard.add_hotkey("ctrl + alt + p", self.xoatoanbodiemdanhxungquanh)
+        keyboard.add_hotkey("ctrl + alt + p", self.botoanbodiemdanhxungquanh)
 
         self.thoidiemluuthietlapgannhat = time.time()
 
@@ -98,18 +99,22 @@ class CuaSo:
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.battat_is_tudongtheosautruongnhom()
 
-    def thietlaptenmuctieutancong(self):
+    def themtenmuctieutancong(self):
         if self.moitruong.get_is_cuasogamekichhoat():
             tenmuctieutancong = self.moitruong.get_tennhanvatchichuot()
-            self.tactu.set_tenmuctieutancong(tenmuctieutancong)
+            self.tactu.them_tenmuctieutancong(tenmuctieutancong)
+
+    def botoanbotenmuctieutancong(self):
+        if self.moitruong.get_is_cuasogamekichhoat():
+            self.tactu.botoanbo_tenmuctieutancong()
 
     def themdiemdanhxungquanh(self):
         if self.moitruong.get_is_cuasogamekichhoat():
-            self.tactu.thietlap_diemdanhxungquanh((self.moitruong.get_toadoxbandochichuot(), self.moitruong.get_toadoybandochichuot(), self.moitruong.get_idbandochichuot()))
+            self.tactu.them_diemdanhxungquanh((self.moitruong.get_toadoxbandochichuot(), self.moitruong.get_toadoybandochichuot(), self.moitruong.get_idbandochichuot()))
 
-    def xoatoanbodiemdanhxungquanh(self):
+    def botoanbodiemdanhxungquanh(self):
         if self.moitruong.get_is_cuasogamekichhoat():
-            self.tactu.thietlap_diemdanhxungquanh(False)
+            self.tactu.botoanbo_diemdanhxungquanh()
 
     def thietlapchidanhnguoichoi(self):
         if self.moitruong.get_is_cuasogamekichhoat():

@@ -107,6 +107,28 @@ class MoiTruong:
     def get_diachicosothongtindoituongx(self, x):
         return read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVATX + x * 0x4)
 
+
+    def get_diachicosothongtinvatphamhanhtrang(self):
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not x:
+            return False
+
+        x = read_int(self.tientrinh, x + 0xADFD78)
+
+        return x
+
+    def get_iddoituongvatphamhanhtrang(self, idvitri):
+        x = self.get_diachicosothongtinvatphamhanhtrang()
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + idvitri * 0x4)
+
+    def get_tenvatphamhanhtrang(self, idvitri):
+        x = self.get_diachicosothongtinvatphamhanhtrang()
+        if not x:
+            return False
+        return read_string(self.tientrinh, x + idvitri * 0x4 + 0x1A8)
+
     def get_diachicosothongtinkynang(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
