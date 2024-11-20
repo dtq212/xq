@@ -103,15 +103,16 @@ class LoopChinh:
             return
 
         self.tactu.action_tudongtheosautruongnhom()
-        self.tactu.action_tudongsudungkynang()
+
+        tenmonphai = MONPHAI_MAP.get(self.moitruong.get_idkynang(0, 0))
+        if hasattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai)):
+            getattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai))()
 
         self.moitruong.action_khoitaothongtinbando()
 
         self.tactu.action_tudongdichuyenxungquanhdiem()
 
-        # muctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
-        # if muctieudangchon:
-        #     self.moitruong.action_dichuyengiukhoangcachtoithieu(muctieudangchon, 2)
+        # print(self.moitruong.get_danhsachhieuungnhanvats())
 
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
@@ -169,7 +170,7 @@ class LoopPhu:
         self.tactu.action_tudongsudungvatpham()
         self.tactu.action_tudongnhatdo()
 
-        self.tactu.action_tudongmoitodoi()
+        # self.tactu.action_tudongmoitodoi()
 
         if self.moitruong.get_is_nhanvatdachet():
             if time.time() - self.thoidiemthongbaochetgannhat > 5.:
