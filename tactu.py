@@ -428,10 +428,6 @@ class TacTu:
 
                 if khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN:
                     if is_muctieudangchonlanguoichoi:
-                        if idtuthenhanvat == TUTHENHANVAT_DUNGIM and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUCPHACHHOASON):
-                            self._thoidiemdichuyengiukhoangcachtoithieugannhat = time.time()
-                            self.moitruong.action_dichuyenngaunhien()
-                            break
                         if not is_muctieudangchonbichoang and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUCPHACHHOASON):
                             self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_LUCPHACHHOASON)
                             break
@@ -442,10 +438,6 @@ class TacTu:
                             self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_PHAKHONGKICH)
                             break
                     else:
-                        if idtuthenhanvat == TUTHENHANVAT_DUNGIM and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_DONDAOTRUCNHAP):
-                            self._thoidiemdichuyengiukhoangcachtoithieugannhat = time.time()
-                            self.moitruong.action_dichuyenngaunhien()
-                            break
                         if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_DONDAOTRUCNHAP):
                             self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_DONDAOTRUCNHAP)
                             break
