@@ -1539,14 +1539,14 @@ class MoiTruong:
     def action_dichuyentiepcandiem(self, x2, y2, khoangcachdichuyentoida = 0):
         self.action_dichuyengiukhoangcachtoidadiem(x2, y2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida)
 
-    def action_sudungkynangvitriphudau(self, idvitriX, idvitriY, diachicosothongtinnhanvat2, khoangcachphudau = 2, delay = 0.25):
+    def action_sudungkynangvitriphudau(self, idvitriX, idvitriY, diachicosothongtinnhanvat2, khoangcachphudau, delay = 0.25):
         if not diachicosothongtinnhanvat2:
             return
         if not self.get_is_nhanvattontai(diachicosothongtinnhanvat2):
             return
         return self.action_sudungkynangvitriphudaudiem(idvitriX, idvitriY, self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2), khoangcachphudau = khoangcachphudau, delay = delay)
 
-    def action_sudungkynangvitriphudaudiem(self, idvitriX, idvitriY, x2, y2, khoangcachphudau = 2, delay = 0.25):
+    def action_sudungkynangvitriphudaudiem(self, idvitriX, idvitriY, x2, y2, khoangcachphudau, delay = 0.25):
         idvitri = (idvitriX, idvitriY)
         if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
             return
@@ -1566,14 +1566,12 @@ class MoiTruong:
 
         khoangcach = round(math.sqrt(deltax ** 2 + deltay ** 2), 2)
 
-        if khoangcachphudau:
-            if khoangcach:
-                khoangcachdichuyen = khoangcach + khoangcachphudau
-                deltax = deltax * khoangcachdichuyen / khoangcach
-                deltay = deltay * khoangcachdichuyen / khoangcach
-            else:
-                deltax = khoangcachphudau
-                deltay = khoangcachphudau
+        if khoangcach:
+            deltax = deltax * khoangcachphudau / khoangcach
+            deltay = deltay * khoangcachphudau / khoangcach
+        else:
+            deltax = khoangcachphudau
+            deltay = khoangcachphudau
 
         targetx = round(x1 + deltax)
         targety = round(y1 + deltay)
@@ -1630,7 +1628,7 @@ class MoiTruong:
 
         self.auto_assemble_khoitaothongtinbando()
 
-    def action_tudongtimduong(self, x, y, idbando, delay = 5.):
+    def action_tudongtimduong(self, x, y, idbando, delay = 1.):
         if time.time() - self._thoidiemtudongtimduonggannhat < delay:
             return
 

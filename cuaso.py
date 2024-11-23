@@ -59,6 +59,20 @@ class CuaSo:
 
         self.thoidiemluuthietlapgannhat = time.time()
 
+    def __del__(self):
+        self.main_stop.set()
+
+        keyboard.remove_hotkey("ctrl + f")
+        keyboard.remove_hotkey("ctrl + c")
+        keyboard.remove_hotkey("ctrl + alt+ c")
+        keyboard.remove_hotkey("ctrl + alt + f")
+
+        keyboard.remove_hotkey("ctrl + d")
+        keyboard.remove_hotkey("ctrl + a")
+
+        keyboard.remove_hotkey("ctrl + p")
+        keyboard.remove_hotkey("ctrl + alt + p")
+
     def tatauto(self, *args, **kwargs):
         self.main_stop.set()
         try:
