@@ -6,7 +6,7 @@ KHOANGCACHTOANMANHINH = 18.
 
 KHOANGCACHTOIDAHOPLE = 255.
 KHOANGCACHSUDUNGKYNANGCANCHIEN = 1.5
-KHOANGCACHSUDUNGKYNANGTAMXA = 7.5 #7.5 # 12.
+KHOANGCACHSUDUNGKYNANGTAMXA = 9. #7.5 # 12.
 KHOANGCACHHIEUQUAKYNANGKHAITHIENTICHDIA = 6.5 #7.
 
 SOLUONGTHANHVIENNHOMTOIDA = 5
@@ -139,10 +139,21 @@ NHANVATTODOITUDONGs = (3680, 3681, 3682) #ID đầu tiên sẽ được sử d�
 
 CHUTIEMSUACHUA = "Chá»§ Tiá»‡m Sá»­a Chá»¯a"
 
-VATPHAMTUDONGNHATs = ("Tá»­ SÃ¢m ÄÆ¡n - Trung", "ChÃ©n Báº¡c", "Máº£nh GhÃ©p Ngá»c Bá»™i", "SÆ¡ Cáº¥p Äoáº¡n Tháº¡ch", "Huyáº¿t Long Chiáº¿u ThÆ°", "Tiá»n Tá»‡", )
+VATPHAMTUDONGNHATs = ("Tá»­ SÃ¢m ÄÆ¡n - Trung", "ChÃ©n Báº¡c", "Máº£nh GhÃ©p Ngá»c Bá»™i", "SÆ¡ Cáº¥p Äoáº¡n Tháº¡ch", "Huyáº¿t Long Chiáº¿u ThÆ°", "Tiá»n Tá»‡", "TÃ¡i Táº¡o HoÃ n", "Äá»“ng Háº¡ng LiÃªn", "Bá»‘ YÃªu Äá»›i")
 
 MONPHAI_MAP = {
     2811: "vanmongcoc",
     2210: "thucson",
     2612: "duongmon",
+}
+
+GOs = {
+    (1, 0): 1,
+    (1, 1): 2,
+    (0, 1): 3,
+    (-1, 1): 4,
+    (-1, 0): 5,
+    (-1, -1): 6,
+    (0, -1): 7,
+    (1, -1): 8,
 }
