@@ -135,11 +135,11 @@ TRANGTHAIVANKHI_VANKHITHATBAI = 3
 
 SOLUONGVATPHAMHANHTRANGTOIDA = 24
 
-NHANVATTODOITUDONGs = (3680, 3681, 3682) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
+NHANVATTODOITUDONGs = (3705, 3706, 3707) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
 
 CHUTIEMSUACHUA = "Chá»§ Tiá»‡m Sá»­a Chá»¯a"
 
-VATPHAMTUDONGNHATs = ("Tá»­ SÃ¢m ÄÆ¡n - Trung", "ChÃ©n Báº¡c", "Máº£nh GhÃ©p Ngá»c Bá»™i", "SÆ¡ Cáº¥p Äoáº¡n Tháº¡ch", "Huyáº¿t Long Chiáº¿u ThÆ°", "Tiá»n Tá»‡", "TÃ¡i Táº¡o HoÃ n", "Äá»“ng Háº¡ng LiÃªn", "Bá»‘ YÃªu Äá»›i", "MiÃªn Bá»‘ Y")
+VATPHAMTUDONGNHATs = ("Tá»­ SÃ¢m ÄÆ¡n - Trung", "ChÃ©n Báº¡c", "Máº£nh GhÃ©p Ngá»c Bá»™i", "SÆ¡ Cáº¥p Äoáº¡n Tháº¡ch", "Huyáº¿t Long Chiáº¿u ThÆ°", "Tiá»n Tá»‡", "TÃ¡i Táº¡o HoÃ n", "Äá»“ng Háº¡ng LiÃªn", "Bá»‘ YÃªu Äá»›i", "MiÃªn Bá»‘ Y", "MiÃªn Bá»‘ MÃ£o")
 
 MONPHAI_MAP = {
     2811: "vanmongcoc",

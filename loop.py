@@ -112,6 +112,16 @@ class LoopChinh:
 
         self.tactu.action_tudongdichuyenxungquanhdiem()
 
+        # while True:
+        #     self.moitruong.action_thucthicaulenh("talk fc96# info.10050")
+        #     time.sleep(0.1)
+        #     self.moitruong.action_thucthicaulenh("talk fc96# info.11")
+        #     time.sleep(0.1)
+        #     self.moitruong.action_thucthicaulenh("talk fc96# info.200")
+        #     time.sleep(0.1)
+        #     self.moitruong.action_thucthicaulenh("talk fc96# info.210")
+        #     time.sleep(0.1)
+
         # print(self.moitruong.get_danhsachhieuungnhanvats())
 
 class LoopPhu:

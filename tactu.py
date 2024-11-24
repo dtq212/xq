@@ -182,6 +182,9 @@ class TacTu:
                 if not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieuxemxet):
                     continue
 
+                if self.moitruong.get_idnguoichoi(diachicosothongtinnhanvatmuctieuxemxet) in NHANVATTODOITUDONGs:
+                    continue
+
                 if self._tenmuctieutancongs:
                     if self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieuxemxet) not in self._tenmuctieutancongs:
                         continue
@@ -572,7 +575,7 @@ class TacTu:
                     iddiemdanhxungquanhtieptheo = (iddiemdanhxungquanhgannhat + 1) % len(diemdanhxungquanhbandos)
                     diemdanhxungquanhtieptheo = diemdanhxungquanhbandos[iddiemdanhxungquanhtieptheo]
 
-                    if not self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon() and time.time() - self.moitruong.get_thoidiemkhongcomuctieugannhat() > 5.:
+                    if not self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon() and time.time() - self.moitruong.get_thoidiemkhongcomuctieugannhat() > 2.5:
                         is_tamngungtancongdichuyenxungquanh = True
 
                         if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
@@ -581,12 +584,10 @@ class TacTu:
                                 self.moitruong.action_tudongtimduong(*diemdanhxungquanhtieptheo)
                             else:
                                 thoigiantuthenhanvatdungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimgannhat()
-                                if thoigiantuthenhanvatdungim > 4.:
+                                if thoigiantuthenhanvatdungim > 5.:
                                     self.moitruong.action_tudongtimduong(*diemdanhxungquanhtieptheo)
-                                elif thoigiantuthenhanvatdungim > 2.:
+                                elif thoigiantuthenhanvatdungim > 2.5:
                                     self.moitruong.action_dichuyentiepcandiem(*diemdanhxungquanhtieptheo[:-1])
-
-                                self.moitruong.action_dichuyentiepcandiem(*diemdanhxungquanhtieptheo[:-1])
                             if time.time() - self._thoidiemthongbaotudongtimduonggannhat > 5:
                                 self._thoidiemthongbaotudongtimduonggannhat = time.time()
                                 phatam("Tự động tìm đường về điểm đánh xung quanh")
