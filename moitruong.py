@@ -203,7 +203,7 @@ class MoiTruong:
     def get_is_nhanvattontai(self, diachicosothongtinnhanvat = None):
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
-        return self.get_iddoituong(diachicosothongtinnhanvat) != -1 and self.get_idloaidoituong(diachicosothongtinnhanvat) in (LOAIDOITUONG_NHANVAT1, LOAIDOITUONG_NHANVATKHAC1)
+        return self.get_iddoituong(diachicosothongtinnhanvat) > 0 and self.get_idloaidoituong(diachicosothongtinnhanvat) in (LOAIDOITUONG_NHANVAT1, LOAIDOITUONG_NHANVATKHAC1)
 
     def get_is_vatphamtontai(self, diachicosothongtinnhanvat = None):
         if diachicosothongtinnhanvat is None:
@@ -767,17 +767,19 @@ class MoiTruong:
         if self.get_diachicosothongtinnhanvatmuctieudangchon() == diachicosothongtinnhanvat:
             return
 
-        # print("set_diachicosothongtinnhanvatmuctieudangchon: ", hex(diachicosothongtinnhanvat), self.get_tendoituong(self._diachicosothongtinnhanvatmuctieudangchon) if self._diachicosothongtinnhanvatmuctieudangchon and not diachicosothongtinnhanvat else "")
-
         self._diachicosothongtinnhanvatmuctieudangchon = diachicosothongtinnhanvat
 
         if diachicosothongtinnhanvat:
             iddoituong = self.get_iddoituong(diachicosothongtinnhanvat)
-            if iddoituong > 0:
-                write_int(self.tientrinh, self.diachixq + 0x1BC3E0, diachicosothongtinnhanvat)
-                write_int(self.tientrinh, self.diachixq + 0x37173C, iddoituong)
-                write_int(self.tientrinh, self.diachixq + 0x1BC440, diachicosothongtinnhanvat)
-                write_int(self.tientrinh, self.diachixq + 0x1BC444, iddoituong)
+            write_int(self.tientrinh, self.diachixq + 0x1BC3E0, diachicosothongtinnhanvat)
+            write_int(self.tientrinh, self.diachixq + 0x37173C, iddoituong)
+            write_int(self.tientrinh, self.diachixq + 0x1BC440, diachicosothongtinnhanvat)
+            write_int(self.tientrinh, self.diachixq + 0x1BC444, iddoituong)
+        else:
+            write_int(self.tientrinh, self.diachixq + 0x1BC3E0, 0)
+            write_int(self.tientrinh, self.diachixq + 0x37173C, 0)
+            write_int(self.tientrinh, self.diachixq + 0x1BC440, 0)
+            write_int(self.tientrinh, self.diachixq + 0x1BC444, 0)
 
     def action_vohieuhoatuthedelaysautancong(self):
         if read_bytes(self.tientrinh, self.diachixq + 0x1AF43, 1) != bytes.fromhex("90"):
