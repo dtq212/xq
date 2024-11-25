@@ -15,6 +15,7 @@ class TacTu:
 
         #Thiết lập không lưu
         self._is_tudongtheosautruongnhom = True
+        self._is_vohieuhoadichuyen = False
         #Thiết lập có lưu
         self._is_tudongbattheosaunhom = True
         self._is_tudongtimkiemmuctieu = True
@@ -507,6 +508,15 @@ class TacTu:
             phatam("Bật tự động theo sau trưởng nhóm")
         else:
             phatam("Tắt tự động theo sau trưởng nhóm")
+
+    def battat_is_vohieuhoadichuyen(self):
+
+        if not self.moitruong.get_is_vohieuhoadichuyen():
+            self.moitruong.set_is_vohieuhoadichuyen(True)
+            phatam("Bật vô hiệu hóa di chuyển")
+        else:
+            self.moitruong.set_is_vohieuhoadichuyen(False)
+            phatam("Tắt vô hiệu hóa di chuyển")
 
     def them_tenmuctieutancong(self, tenmuctieutancong):
         if tenmuctieutancong and tenmuctieutancong not in self._tenmuctieutancongs:

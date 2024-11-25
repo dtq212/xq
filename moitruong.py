@@ -73,6 +73,8 @@ class MoiTruong:
 
         self._is_tamngungtancong = False
 
+        self._is_vohieuhoadichuyen = False
+
         self._thoidiemkhongcomuctieugannhat = time.time()
 
         self._soluonghieuungnhanvattruocdo_map = {}
@@ -1345,6 +1347,9 @@ class MoiTruong:
         self.action_thucthicaulenh("pf {} {}".format(idkynang, self.get_idnguoichoi()), delay = 0)
 
     def action_dichuyen(self, x, y, delay = 0.25):
+        if self._is_vohieuhoadichuyen:
+            return
+
         if time.time() - self._thoidiemdichuyengannhat < delay:
             return
 
@@ -1712,3 +1717,10 @@ class MoiTruong:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1184)
+
+    def get_is_vohieuhoadichuyen(self):
+        return self._is_vohieuhoadichuyen
+    def set_is_vohieuhoadichuyen(self, is_vohieuhoadichuyen):
+        if self._is_vohieuhoadichuyen == is_vohieuhoadichuyen:
+            return
+        self._is_vohieuhoadichuyen = is_vohieuhoadichuyen
