@@ -422,11 +422,12 @@ class TacTu:
 
                 is_muctieudangchonbichoang = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0)
 
-                if is_muctieudangchonlanguoichoi and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and not is_muctieudangchonbichoang and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG):
-                    self.moitruong.action_sudungkynangvitrimuctieukhongtrihoan(*VITRIKYNANG_LUUTINHTRUYMANG)
+                if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and not is_muctieudangchonbichoang and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG):
+                    if is_muctieudangchonlanguoichoi or (idtuthenhanvat == TUTHENHANVAT_DICHUYEN and khoangcach < KHOANGCACHSUDUNGKYNANGTAMXA - 3.):
+                        self.moitruong.action_sudungkynangvitrimuctieukhongtrihoan(*VITRIKYNANG_LUUTINHTRUYMANG)
 
                 if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
-                    if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NGUKIEMPHITIEN):
+                    if khoangcach <= KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NGUKIEMPHITIEN):
                         is_tamngungdichuyensudungkynang = True
                         if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
                             self.moitruong.action_sudungkynangvitrikhongtrihoan(*VITRIKYNANG_NGUKIEMPHITIEN)
