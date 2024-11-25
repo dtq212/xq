@@ -75,6 +75,7 @@ class CuaSo:
 
     def tatauto(self, *args, **kwargs):
         self.main_stop.set()
+
         try:
             self.systray.shutdown()
         except:

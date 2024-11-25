@@ -180,7 +180,7 @@ class LoopPhu:
         self.tactu.action_tudongsudungvatpham()
         self.tactu.action_tudongnhatdo()
 
-        # self.tactu.action_tudongmoitodoi()
+        self.tactu.action_tudongmoitodoi()
 
         if self.moitruong.get_is_nhanvatdachet():
             if time.time() - self.thoidiemthongbaochetgannhat > 5.:
