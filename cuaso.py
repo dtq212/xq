@@ -57,6 +57,8 @@ class CuaSo:
         keyboard.add_hotkey("ctrl + p", self.themdiemdanhxungquanh)
         keyboard.add_hotkey("ctrl + alt + p", self.botoanbodiemdanhxungquanh)
 
+        keyboard.add_hotkey("ctrl + alt + m", self.battat_tudongvohieuhoadichuyen)
+
         self.thoidiemluuthietlapgannhat = time.time()
 
     def __del__(self):
@@ -72,6 +74,8 @@ class CuaSo:
 
         keyboard.remove_hotkey("ctrl + p")
         keyboard.remove_hotkey("ctrl + alt + p")
+
+        keyboard.remove_hotkey("ctrl + alt + m")
 
     def tatauto(self, *args, **kwargs):
         self.main_stop.set()
@@ -113,6 +117,10 @@ class CuaSo:
     def battat_tudongtheosautruongnhom(self):
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.battat_is_tudongtheosautruongnhom()
+
+    def battat_tudongvohieuhoadichuyen(self):
+        if self.moitruong.get_is_cuasogamekichhoat():
+            self.tactu.battat_is_vohieuhoadichuyen()
 
     def themtenmuctieutancong(self):
         if self.moitruong.get_is_cuasogamekichhoat():

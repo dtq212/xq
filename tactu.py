@@ -514,6 +514,7 @@ class TacTu:
 
             if self._tenmuctieutancongs:
                 phatam("Thêm tên mục tiêu tấn công. Tổng cộng {}".format(len(self._tenmuctieutancongs)))
+
     def botoanbo_tenmuctieutancong(self):
         self._tenmuctieutancongs.clear()
 
