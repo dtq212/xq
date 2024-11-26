@@ -568,7 +568,9 @@ class TacTu:
             if not diachicosothongtinnhanvatsugiamonphai or self.moitruong.get_khoangcach(diachicosothongtinnhanvatsugiamonphai) >= 4.:
                 self.moitruong.action_tudongtimduong(X_SUGIAMONPHAI_CHU, Y_SUGIAMONPHAI_CHU, BANDO_CHU)
             else:
-                self.moitruong.action_thucthicaulenh("talk {}# 1".format(hex(diachicosothongtinnhanvatsugiamonphai)).replace("0x", ""))
+                iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvatsugiamonphai)
+                if iddoituong:
+                    self.moitruong.action_thucthicaulenh("talk {}# 1".format(hex(iddoituong)).replace("0x", ""))
 
             return
         elif idbandohientai == BANDO_THUCSON:
@@ -578,9 +580,11 @@ class TacTu:
                 self.moitruong.action_tudongtimduong(X_TANTHUTIENCO_THUCSON, Y_TANTHUTIENCO_THUCSON, BANDO_THUCSON)
             else:
                 if idbando in DICHUYENTANTHUTIENCO_MAP:
-                    for caulenh in DICHUYENTANTHUTIENCO_MAP[idbando]:
-                        self.moitruong.action_thucthicaulenh(caulenh)
-                        time.sleep(0.25)
+                    iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvattanthutienco)
+                    if iddoituong:
+                        for caulenh in DICHUYENTANTHUTIENCO_MAP[idbando]:
+                            self.moitruong.action_thucthicaulenh(caulenh.format(hex(iddoituong)).replace("0x", ""))
+                            time.sleep(0.25)
 
                 if self.moitruong.get_is_danghiencuasotuychon():
                     self.moitruong.set_is_danghiencuasotuychon(False)

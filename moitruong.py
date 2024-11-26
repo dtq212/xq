@@ -991,6 +991,8 @@ class MoiTruong:
 
         self._thoidiemthucthicaulenhgannhat = time.time()
 
+        print("action_thucthicaulenh: {}".format(caulenh))
+
         self.auto_assemble_thucthicaulenh(caulenh)
 
     def action_moihoacxinvaonhom(self, idnguoichoi, delay = 1.):
