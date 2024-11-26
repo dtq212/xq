@@ -145,6 +145,14 @@ NHANVATTODOITUDONGs = (3705, 3706, 3707, 3735, 3736) #ID đầu tiên sẽ đư�
 CHUTIEMSUACHUA = "Chá»§ Tiá»‡m Sá»­a Chá»¯a"
 TANTHUTIENCO = "TÃ¢n Thá»§ TiÃªn CÃ´"
 SUGIAMONPHAI = "Sá»© Giáº£ MÃ´n PhÃ¡i"
+TRUONGQUALAO = "TrÆ°Æ¡ng Quáº£ LÃ£o"
+BACHKHOI = "RBáº¡ch Khá»Ÿi"
+LIEMPHA = "BLiÃªm Pha"
+VUONGMAT = "RVÆ°Æ¡ng Ngáº­t"
+TRIEUQUAT = "RBáº¡ch Khá»Ÿi"
+
+PHEBACHKHOI = 1
+PHELIEMPHA = 2
 
 VATPHAMTUDONGNHATs = ("Tá»­ SÃ¢m ÄÆ¡n - Trung", "ChÃ©n Báº¡c", "Máº£nh GhÃ©p Ngá»c Bá»™i", "SÆ¡ Cáº¥p Äoáº¡n Tháº¡ch", "Huyáº¿t Long Chiáº¿u ThÆ°", "Tiá»n Tá»‡", "TÃ¡i Táº¡o HoÃ n", "Äá»“ng Háº¡ng LiÃªn", "Bá»‘ YÃªu Äá»›i", "MiÃªn Bá»‘ Y", "MiÃªn Bá»‘ MÃ£o")
 
@@ -154,6 +162,7 @@ MONPHAI_MAP = {
     2612: "duongmon",
 }
 
+BANDO_TANTHUTHON = 1
 BANDO_CHU = 80
 BANDO_THUCSON = 273
 BANDO_RANHGIOIDAMLAY = 163
@@ -162,12 +171,21 @@ BANDO_DONGHAINGUTHON = 11
 BANDO_KENHTRINHQUOC1 = 151
 BANDO_KENHTRINHQUOC2 = 152
 BANDO_KENHTRINHQUOC3 = 153
+BANDO_CHIENTRUONG = 903
 
 X_SUGIAMONPHAI_CHU = 280
 Y_SUGIAMONPHAI_CHU = 180
 
 X_TANTHUTIENCO_THUCSON = 198
 Y_TANTHUTIENCO_THUCSON = 154
+
+X_TRUONGQUALAO = 245
+Y_TRUONGQUALAO = 158
+
+X_BACHKHOI = 63
+Y_BACHKHOI = 49
+X_LIEMPHA = 188
+Y_LIEMPHA = 146
 
 DICHUYENTANTHUTIENCO_MAP = {
     BANDO_RANHGIOIDAMLAY: [

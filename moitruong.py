@@ -950,7 +950,7 @@ class MoiTruong:
 
         return write_boolean(self.tientrinh, x + 0x1E38, is_danghiencuasotuychon)
 
-    def get_caulenhthucthihientai(self):
+    def get_caulenhmoinhomhientai(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
@@ -961,37 +961,12 @@ class MoiTruong:
 
         return read_string(self.tientrinh, x + 0x7C).strip()
 
-    def set_caulenhthucthihientai(self, caulenh):
-        if self.get_caulenhthucthihientai() == caulenh:
-            return
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
-        if not x:
-            return
-
-        x = read_int(self.tientrinh, x + 0xADFE10)
-        if not x:
-            return
-
-        return write_string(self.tientrinh, x + 0x7C, caulenh)
-
-    def action_thucthicaulenhhientai(self, delay = 1.):
-        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
-            return
-
-        self._thoidiemthucthicaulenhgannhat = time.time()
-
-        if not self.get_caulenhthucthihientai():
-            return
-
-        self.tientrinh.start_thread(self.diachixq + 0x131560)
 
     def action_thucthicaulenh(self, caulenh, delay = 0.05):
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return
 
         self._thoidiemthucthicaulenhgannhat = time.time()
-
-        print("action_thucthicaulenh: {}".format(caulenh))
 
         self.auto_assemble_thucthicaulenh(caulenh)
 
@@ -1021,13 +996,11 @@ class MoiTruong:
         if not idnguoichoitruongnhom:
             return
 
-        if "team + {}".format(idnguoichoitruongnhom) == self.get_caulenhthucthihientai():
+        if "team + {}".format(idnguoichoitruongnhom) == self.get_caulenhmoinhomhientai():
             self._thoidiemthaotacnhomgannhat = time.time()
-
+            self.action_thucthicaulenh("team + {}".format(idnguoichoitruongnhom), delay = 0)
             if self.get_is_danghiencuasoyesno():
                 self.set_is_danghiencuasoyesno(False)
-
-            self.action_thucthicaulenhhientai()
 
     def auto_assemble_thucthicaulenh(self, caulenh):
         if not self._is_dasetupautoassemblethucthicaulenh:
@@ -1567,8 +1540,8 @@ class MoiTruong:
 
         self.action_thucthicaulenh("go {},{} 0 {}".format(x1, y1, int(time.time())), delay = 0)
 
-    def action_dichuyentiepcandiem(self, x2, y2, khoangcachdichuyentoida = 0):
-        self.action_dichuyengiukhoangcachtoidadiem(x2, y2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida)
+    def action_dichuyentiepcandiem(self, x2, y2, khoangcachdichuyentoida = 0, delay = 0.25):
+        self.action_dichuyengiukhoangcachtoidadiem(x2, y2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
 
     def action_sudungkynangvitriphudau(self, idvitriX, idvitriY, diachicosothongtinnhanvat2, khoangcachphudau, delay = 0.25):
         if not diachicosothongtinnhanvat2:
