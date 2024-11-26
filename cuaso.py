@@ -133,7 +133,10 @@ class CuaSo:
 
     def themdiemdanhxungquanh(self):
         if self.moitruong.get_is_cuasogamekichhoat():
-            self.tactu.them_diemdanhxungquanh((self.moitruong.get_toadoxbandochichuot(), self.moitruong.get_toadoybandochichuot(), self.moitruong.get_idbandochichuot()))
+            if self.moitruong.get_is_dangmobando():
+                self.tactu.them_diemdanhxungquanh((self.moitruong.get_toadoxbandochichuot(), self.moitruong.get_toadoybandochichuot(), self.moitruong.get_idbandochichuot()))
+            else:
+                self.tactu.them_diemdanhxungquanh((self.moitruong.get_toadox(is_vitrihientai = True), self.moitruong.get_toadoy(is_vitrihientai = True), self.moitruong.get_idbandohientai()))
 
     def botoanbodiemdanhxungquanh(self):
         if self.moitruong.get_is_cuasogamekichhoat():

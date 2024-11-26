@@ -102,15 +102,12 @@ class LoopChinh:
         if self.moitruong.get_is_dangmatketnoi():
             return
 
+        self.moitruong.action_khoitaothongtinbando()
         self.tactu.action_tudongtheosautruongnhom()
 
         tenmonphai = MONPHAI_MAP.get(self.moitruong.get_idkynang(0, 0))
         if hasattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai)):
             getattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai))()
-
-        self.moitruong.action_khoitaothongtinbando()
-
-        self.tactu.action_tudongdichuyenxungquanhdiem()
 
         # while True:
         #     self.moitruong.action_thucthicaulenh("talk fc96# info.10050")
@@ -121,10 +118,6 @@ class LoopChinh:
         #     time.sleep(0.1)
         #     self.moitruong.action_thucthicaulenh("talk fc96# info.210")
         #     time.sleep(0.1)
-        self.moitruong.action_thucthicaulenh("talk 17cd# welcome.500")
-        time.sleep(0.25)
-        self.moitruong.action_thucthicaulenh("talk 17cd# welcome.502")
-        time.sleep(55555)
 
         # print(self.moitruong.get_danhsachhieuungnhanvats())
 
@@ -194,3 +187,5 @@ class LoopPhu:
         self.tactu.action_tudongphucsinh()
         self.tactu.action_tudongdoimaupk()
         self.tactu.action_tudongsuado()
+
+        self.tactu.action_tudongdichuyenxungquanhdiem()

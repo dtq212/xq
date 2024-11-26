@@ -72,6 +72,7 @@ class TacTu:
             "_is_tudongnhatdo": self._is_tudongnhatdo,
             "_is_chidanhnguoichoi": self._is_chidanhnguoichoi,
             "_is_tudongtodoi": self._is_tudongtodoi,
+            "_diemdanhxungquanhs": self._diemdanhxungquanhs,
         }
 
         util_luuthietlap(tennhanvat, thietlap)
@@ -102,6 +103,9 @@ class TacTu:
 
             if "_is_tudongtodoi" in thietlap:
                 self._is_tudongtodoi = thietlap["_is_tudongtodoi"]
+
+            if "_diemdanhxungquanhs" in thietlap:
+                self._diemdanhxungquanhs = thietlap["_diemdanhxungquanhs"]
 
     def action_tudongtheosautruongnhom(self):
         is_tamngungtancongtheosautruongnhom = False
@@ -565,6 +569,8 @@ class TacTu:
                 self.moitruong.action_tudongtimduong(X_SUGIAMONPHAI_CHU, Y_SUGIAMONPHAI_CHU, BANDO_CHU)
             else:
                 self.moitruong.action_thucthicaulenh("talk {}# 1".format(hex(diachicosothongtinnhanvatsugiamonphai)).replace("0x", ""))
+
+            return
         elif idbandohientai == BANDO_THUCSON:
             diachicosothongtinnhanvattanthutienco = self.moitruong.action_timkiemnhanvat(TANTHUTIENCO)
 
@@ -579,6 +585,7 @@ class TacTu:
                 if self.moitruong.get_is_danghiencuasotuychon():
                     self.moitruong.set_is_danghiencuasotuychon(False)
 
+            return
         self.moitruong.action_tudongtimduong(x, y, idbando)
 
     def action_tudongdichuyenxungquanhdiem(self):
@@ -619,7 +626,7 @@ class TacTu:
                     if not self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon() and time.time() - self.moitruong.get_thoidiemkhongcomuctieugannhat() > 1.:
                         is_tamngungtancongdichuyenxungquanh = True
 
-                        if time.time() - self._thoidiemdichuyendiemdanhxungquanhgannhat < 2.:
+                        if time.time() - self._thoidiemdichuyendiemdanhxungquanhgannhat < 1.:
                             break
 
                         if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
@@ -638,7 +645,7 @@ class TacTu:
                 else:
                     is_tamngungtancongdichuyenxungquanh = True
 
-                    if time.time() - self._thoidiemdichuyendiemdanhxungquanhgannhat < 2.:
+                    if time.time() - self._thoidiemdichuyendiemdanhxungquanhgannhat < 1.:
                         break
 
                     if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
