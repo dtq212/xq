@@ -72,7 +72,7 @@ class TacTu:
             "_is_tudongnhatdo": self._is_tudongnhatdo,
             "_is_chidanhnguoichoi": self._is_chidanhnguoichoi,
             "_is_tudongtodoi": self._is_tudongtodoi,
-            "_diemdanhxungquanhs": self._diemdanhxungquanhs,
+            # "_diemdanhxungquanhs": self._diemdanhxungquanhs,
         }
 
         util_luuthietlap(tennhanvat, thietlap)
@@ -104,8 +104,8 @@ class TacTu:
             if "_is_tudongtodoi" in thietlap:
                 self._is_tudongtodoi = thietlap["_is_tudongtodoi"]
 
-            if "_diemdanhxungquanhs" in thietlap:
-                self._diemdanhxungquanhs = thietlap["_diemdanhxungquanhs"]
+            # if "_diemdanhxungquanhs" in thietlap:
+            #     self._diemdanhxungquanhs = thietlap["_diemdanhxungquanhs"]
 
     def action_tudongtheosautruongnhom(self):
         is_tamngungtancongtheosautruongnhom = False
