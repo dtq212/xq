@@ -121,6 +121,10 @@ class LoopChinh:
         #     time.sleep(0.1)
         #     self.moitruong.action_thucthicaulenh("talk fc96# info.210")
         #     time.sleep(0.1)
+        self.moitruong.action_thucthicaulenh("talk 17cd# welcome.500")
+        time.sleep(0.25)
+        self.moitruong.action_thucthicaulenh("talk 17cd# welcome.502")
+        time.sleep(55555)
 
         # print(self.moitruong.get_danhsachhieuungnhanvats())
 

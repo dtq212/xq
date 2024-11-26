@@ -1681,6 +1681,25 @@ class MoiTruong:
 
         self.set_idmaupk(idmaupk)
         self.action_thucthicaulenh("set !attack {}".format(idmaupk))
+    
+    def action_timkiemnhanvat(self, tennhanvat):
+        i = 0
+
+        while True:
+            diachicosothongtinnhanvatxemxet = self.get_diachicosothongtindoituongx(i)
+            if not diachicosothongtinnhanvatxemxet:
+                break
+            i += 1
+
+            if not self.get_is_nhanvattontai(diachicosothongtinnhanvatxemxet):
+                continue
+
+            tennhanvatxemxet = self.get_tendoituong(diachicosothongtinnhanvatxemxet)
+
+            if tennhanvatxemxet == tennhanvat:
+                return diachicosothongtinnhanvatxemxet
+
+        return False
 
     def action_suado(self, diachicosonhanvatthosuado, delay = 1.):
         if time.time() - self._thoidiemsuadogannhat < delay:

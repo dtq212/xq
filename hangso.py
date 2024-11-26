@@ -140,9 +140,11 @@ TRANGTHAIVANKHI_VANKHITHATBAI = 3
 
 SOLUONGVATPHAMHANHTRANGTOIDA = 24
 
-NHANVATTODOITUDONGs = (3705, 3706, 3707) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
+NHANVATTODOITUDONGs = (3705, 3706, 3707, 3735, 3736) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
 
 CHUTIEMSUACHUA = "Chá»§ Tiá»‡m Sá»­a Chá»¯a"
+TANTHUTIENCO = "TÃ¢n Thá»§ TiÃªn CÃ´"
+SUGIAMONPHAI = "Sá»© Giáº£ MÃ´n PhÃ¡i"
 
 VATPHAMTUDONGNHATs = ("Tá»­ SÃ¢m ÄÆ¡n - Trung", "ChÃ©n Báº¡c", "Máº£nh GhÃ©p Ngá»c Bá»™i", "SÆ¡ Cáº¥p Äoáº¡n Tháº¡ch", "Huyáº¿t Long Chiáº¿u ThÆ°", "Tiá»n Tá»‡", "TÃ¡i Táº¡o HoÃ n", "Äá»“ng Háº¡ng LiÃªn", "Bá»‘ YÃªu Äá»›i", "MiÃªn Bá»‘ Y", "MiÃªn Bá»‘ MÃ£o")
 
@@ -150,6 +152,48 @@ MONPHAI_MAP = {
     2811: "vanmongcoc",
     2210: "thucson",
     2612: "duongmon",
+}
+
+BANDO_CHU = 80
+BANDO_THUCSON = 273
+BANDO_RANHGIOIDAMLAY = 163
+BANDO_DIAGIOIDAMLAY = 164
+BANDO_DONGHAINGUTHON = 11
+BANDO_KENHTRINHQUOC1 = 151
+BANDO_KENHTRINHQUOC2 = 152
+BANDO_KENHTRINHQUOC3 = 153
+
+X_SUGIAMONPHAI_CHU = 280
+Y_SUGIAMONPHAI_CHU = 180
+
+X_TANTHUTIENCO_THUCSON = 198
+Y_TANTHUTIENCO_THUCSON = 154
+
+DICHUYENTANTHUTIENCO_MAP = {
+    BANDO_RANHGIOIDAMLAY: [
+        "talk {}# welcome.500",
+        "talk {}# welcome.501"
+    ],
+    BANDO_DIAGIOIDAMLAY: [
+        "talk {}# welcome.500",
+        "talk {}# welcome.502"
+    ],
+    BANDO_DONGHAINGUTHON: [
+        "talk {}# welcome.600",
+        "talk {}# welcome.601"
+    ],
+    BANDO_KENHTRINHQUOC1: [
+        "talk {}# welcome.600",
+        "talk {}# welcome.606"
+    ],
+    BANDO_KENHTRINHQUOC2: [
+        "talk {}# welcome.600",
+        "talk {}# welcome.607"
+    ],
+    BANDO_KENHTRINHQUOC3: [
+        "talk {}# welcome.600",
+        "talk {}# welcome.608"
+    ],
 }
 
 GOs = {
@@ -162,7 +206,5 @@ GOs = {
     (0, -1): 7,
     (1, -1): 8,
 }
-
-TENDOITUONGKHONGTONTAIs = ("²âÊÔÃû×Ö", )
 
 PHIHANHPHU = "Phi HÃ nh PhÃ¹"
