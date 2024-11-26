@@ -421,7 +421,6 @@ class TacTu:
 
                 if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TIENTHANVODICH, ), macdinh = True, is_hieuungcoloi = 1) and not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENTHANVODICH) and (is_muctieudangchonlanguoichoi or self.moitruong.get_phantramsinhlucconlai() < 10.):
                     self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_PHIHANHPHU, HINHTHUCSUDUNGKYNANG_KHONGCANMUCTIEU)
-                    break
 
                 is_muctieudangchonbichoang = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0)
 
