@@ -573,6 +573,7 @@ class TacTu:
                 iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvatsugiamonphai)
                 if iddoituong:
                     self.moitruong.action_thucthicaulenh("talk {}# 1".format(hex(iddoituong)).replace("0x", ""))
+                    time.sleep(0.5)
 
             return
         elif idbandohientai == BANDO_THUCSON:
@@ -580,6 +581,7 @@ class TacTu:
 
             if not diachicosothongtinnhanvattanthutienco or self.moitruong.get_khoangcach(diachicosothongtinnhanvattanthutienco) >= 4.:
                 self.moitruong.action_tudongtimduong(X_TANTHUTIENCO_THUCSON, Y_TANTHUTIENCO_THUCSON, BANDO_THUCSON)
+                time.sleep(0.5)
             else:
                 if idbando in DICHUYENTANTHUTIENCO_MAP:
                     iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvattanthutienco)
