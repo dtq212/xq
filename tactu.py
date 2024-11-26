@@ -45,6 +45,7 @@ class TacTu:
         self._thoidiemdichuyengiukhoangcachtoithieugannhat = time.time()
         self._thoidiemdichuyendiemdanhxungquanhgannhat = time.time() - 10
         self._thoidiemdichuyentiepcangannhat = time.time()
+        self._thoidiemyeucauroikhoichientruonggannhat = time.time()
 
         self._diemdanhxungquanhs = []
         self._khoangcachdiemdanhxungquanh = 27.
@@ -184,6 +185,16 @@ class TacTu:
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
                     elif self._is_chidanhnguoichoi and not self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon):
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
+                    elif idbandohientai == BANDO_CHIENTRUONG:
+                        tendoituongmuctieudangchon = self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon)
+                        if self._phehientai == PHEBACHKHOI:
+                            if tendoituongmuctieudangchon not in (LIEMPHA, TRIEUQUAT):
+                                self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
+                        elif self._phehientai == PHELIEMPHA:
+                            if tendoituongmuctieudangchon not in (BACHKHOI, VUONGMAT):
+                                self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
+                        else:
+                            self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
 
                 diachicosothongtinnhanvatmuctieuxemxet = self.moitruong.get_diachicosothongtindoituongx(i)
                 if not diachicosothongtinnhanvatmuctieuxemxet:
@@ -196,9 +207,11 @@ class TacTu:
 
                 if idbandohientai == BANDO_CHIENTRUONG:
                     tendoituongmuctieuxemxet = self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieuxemxet)
-                    if self._phehientai == PHEBACHKHOI and tendoituongmuctieuxemxet not in (LIEMPHA, VUONGMAT):
+                    if self._phehientai == PHEBACHKHOI and tendoituongmuctieuxemxet not in (LIEMPHA, TRIEUQUAT):
                         continue
-                    elif self._phehientai == PHELIEMPHA and tendoituongmuctieuxemxet not in (BACHKHOI, TRIEUQUAT):
+                    elif self._phehientai == PHELIEMPHA and tendoituongmuctieuxemxet not in (BACHKHOI, VUONGMAT):
+                        continue
+                    else:
                         continue
 
                 if self.moitruong.get_idnguoichoi(diachicosothongtinnhanvatmuctieuxemxet) in NHANVATTODOITUDONGs:
@@ -590,14 +603,14 @@ class TacTu:
                 diachicosothongtinnhanvattruongqualao = self.moitruong.action_timkiemnhanvat(TRUONGQUALAO)
 
                 if not diachicosothongtinnhanvattruongqualao:
-                    self.moitruong.action_tudongtimduong(X_TRUONGQUALAO, Y_TRUONGQUALAO, BANDO_CHU)
+                    self.moitruong.action_dichuyentiepcandiem(X_TRUONGQUALAO, Y_TRUONGQUALAO, BANDO_CHU)
                 else:
                     iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvattruongqualao)
                     if iddoituong:
                         if self.moitruong.get_is_dangnamtrongnhom() and self.moitruong.get_is_truongnhom():
                             self.moitruong.action_thucthicaulenh("talk {}# welcome.102".format(hex(iddoituong)).replace("0x", ""))
                         elif self.moitruong.get_idnguoichoi() not in NHANVATTODOITUDONGs:
-                            self.moitruong.action_thucthicaulenh("talk {}# welcome.101".format(hex(iddoituong)).replace("0x", ""))
+                            self.moitruong.action_thucthicaulenh("talk {}# welcome.1".format(hex(iddoituong)).replace("0x", ""))
 
                         time.sleep(0.25)
                         self.moitruong.action_thucthicaulenh("talk {}# welcome.17".format(hex(iddoituong)).replace("0x", ""))
@@ -605,22 +618,36 @@ class TacTu:
 
                         if self.moitruong.get_is_danghiencuasotuychon():
                             self.moitruong.set_is_danghiencuasotuychon(False)
+
             elif idbandohientai == BANDO_CHIENTRUONG:
                 if self._idbandohientai == BANDO_CHU or not self._phehientai:
+                    time.sleep(0.5)
                     if self.moitruong.get_khoangcachdiem(X_BACHKHOI, Y_BACHKHOI) <= self.moitruong.get_khoangcachdiem(X_LIEMPHA, Y_LIEMPHA):
                         self._phehientai = PHEBACHKHOI
                     else:
                         self._phehientai = PHELIEMPHA
 
-                    print("self.moitruong.get_khoangcachdiem(X_BACHKHOI, Y_BACHKHOI): {}. self.moitruong.get_khoangcachdiem(X_LIEMPHA, Y_LIEMPHA): {}".format(self.moitruong.get_khoangcachdiem(X_BACHKHOI, Y_BACHKHOI), self.moitruong.get_khoangcachdiem(X_LIEMPHA, Y_LIEMPHA)))
+                diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
 
                 if self._phehientai == PHEBACHKHOI:
-                    if not self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
+                    if not diachicosothongtinnhanvatmuctieudangchon or self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon) not in (LIEMPHA, TRIEUQUAT):
                         self.moitruong.action_dichuyentiepcandiem(X_LIEMPHA, Y_LIEMPHA, delay = 2.)
 
+                    if self.moitruong.get_khoangcachdiem(X_LIEMPHA, Y_LIEMPHA) <= KHOANGCACHNUAMANHINH and not diachicosothongtinnhanvatmuctieudangchon:
+                        if time.time() - self._thoidiemyeucauroikhoichientruonggannhat > 2.:
+                            self._thoidiemyeucauroikhoichientruonggannhat = time.time()
+                            self.moitruong.action_thucthicaulenh("desc changping leave", delay = 0.)
+
                 elif self._phehientai == PHELIEMPHA:
-                    if not self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
+                    if not diachicosothongtinnhanvatmuctieudangchon or self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon) not in (BACHKHOI, VUONGMAT):
                         self.moitruong.action_dichuyentiepcandiem(X_BACHKHOI, Y_BACHKHOI, delay = 2.)
+
+                    if self.moitruong.get_khoangcachdiem(X_BACHKHOI, Y_BACHKHOI) <= KHOANGCACHNUAMANHINH and not diachicosothongtinnhanvatmuctieudangchon:
+                        if time.time() - self._thoidiemyeucauroikhoichientruonggannhat > 2.:
+                            self._thoidiemyeucauroikhoichientruonggannhat = time.time()
+                            self.moitruong.action_thucthicaulenh("desc changping leave", delay = 0.)
+
+
 
         self._idbandohientai = idbandohientai
 
