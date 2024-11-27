@@ -1730,3 +1730,6 @@ class MoiTruong:
         if self._is_vohieuhoadichuyen == is_vohieuhoadichuyen:
             return
         self._is_vohieuhoadichuyen = is_vohieuhoadichuyen
+
+    def get_is_daketthucchientruong(self):
+        if
