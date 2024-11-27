@@ -802,13 +802,19 @@ class TacTu:
                             if idnguoichoithanhvien in danhsachidnguoichoixungquanhs and idnguoichoithanhvien not in danhsachidthanhviennhoms:
                                 self.moitruong.action_moihoacxinvaonhom(idnguoichoithanhvien)
                                 time.sleep(0.25)
+
+                                if self.moitruong.get_is_danghiencuasoyesno():
+                                    self.moitruong.set_is_danghiencuasoyesno(False)
+
                                 break
                     else:
                         self.moitruong.action_moihoacxinvaonhom(idnhanvattruongnhom)
                         time.sleep(0.25)
 
-                    if self.moitruong.get_is_danghiencuasoyesno():
-                        self.moitruong.set_is_danghiencuasoyesno(False)
+                        if self.moitruong.get_is_danghiencuasoyesno():
+                            self.moitruong.set_is_danghiencuasoyesno(False)
+
+                        break
                 else:
                     if self.moitruong.get_is_dangnamtrongnhom():
                         idnguoichoitruongnhomhientai = self.moitruong.get_idnguoichoitruongnhom()
