@@ -17,7 +17,7 @@ class TacTu:
         self._is_tudongtheosautruongnhom = True
         self._is_vohieuhoadichuyen = False
         #Thiết lập có lưu
-        self._is_tudongbattheosaunhom = True
+        self._is_tudongbattheosaunhom = False
         self._is_tudongtimkiemmuctieu = True
         self._is_tudongsudungkynang = True
         self._is_tudongsudungvatpham = True
@@ -27,6 +27,7 @@ class TacTu:
         self._is_tudongphucsinh = True
         self._is_tudongsuado = True
         self._is_tudongdichientruong = False
+        self._is_tudongtrieuhoibaothudautien = True
 
         self._is_uutiennguoichoi = True
 
@@ -43,9 +44,11 @@ class TacTu:
         self._thoidiemnhatdogannhat_map = {}
         self._thoidiemdoimaupkgannhat = time.time()
         self._thoidiemdichuyengiukhoangcachtoithieugannhat = time.time()
-        self._thoidiemdichuyendiemdanhxungquanhgannhat = time.time() - 10
+        self._thoidiemdichuyendiemdanhxungquanhgannhat = time.time()
         self._thoidiemdichuyentiepcangannhat = time.time()
         self._thoidiemyeucauroikhoichientruonggannhat = time.time()
+        self._thoidiemtudongtrieuhoibaothudautien = time.time()
+        self._thoidiemthietlapbaothuchodoigannhat = time.time()
 
         self._diemdanhxungquanhs = []
         self._khoangcachdiemdanhxungquanh = 27.
@@ -610,7 +613,7 @@ class TacTu:
                 if self.moitruong.get_is_daketthucchientruong():
                     self.moitruong.set_is_daketthucchientruong(False)
                 self._phehientai = False
-                diachicosothongtinnhanvattruongqualao = self.moitruong.action_timkiemnhanvat(TRUONGQUALAO)
+                diachicosothongtinnhanvattruongqualao = self.moitruong.action_timkiemnhanvat(tennhanvat = TRUONGQUALAO)
 
                 if not diachicosothongtinnhanvattruongqualao or self.moitruong.get_khoangcach(diachicosothongtinnhanvattruongqualao) > 4.:
                     self.moitruong.action_dichuyentiepcandiem(X_TRUONGQUALAO, Y_TRUONGQUALAO, BANDO_CHU)
@@ -659,7 +662,7 @@ class TacTu:
     def action_tudongtimduong(self, x, y, idbando):
         idbandohientai = self.moitruong.get_idbandohientai()
         if idbandohientai == BANDO_CHU:
-            diachicosothongtinnhanvatsugiamonphai = self.moitruong.action_timkiemnhanvat(SUGIAMONPHAI)
+            diachicosothongtinnhanvatsugiamonphai = self.moitruong.action_timkiemnhanvat(tennhanvat = SUGIAMONPHAI)
 
             if not diachicosothongtinnhanvatsugiamonphai or self.moitruong.get_khoangcach(diachicosothongtinnhanvatsugiamonphai) >= 4.:
                 self.moitruong.action_tudongtimduong(X_SUGIAMONPHAI_CHU, Y_SUGIAMONPHAI_CHU, BANDO_CHU)
@@ -671,7 +674,7 @@ class TacTu:
 
             return
         elif idbandohientai == BANDO_THUCSON:
-            diachicosothongtinnhanvattanthutienco = self.moitruong.action_timkiemnhanvat(TANTHUTIENCO)
+            diachicosothongtinnhanvattanthutienco = self.moitruong.action_timkiemnhanvat(tennhanvat = TANTHUTIENCO)
 
             if not diachicosothongtinnhanvattanthutienco or self.moitruong.get_khoangcach(diachicosothongtinnhanvattanthutienco) >= 4.:
                 self.moitruong.action_tudongtimduong(X_TANTHUTIENCO_THUCSON, Y_TANTHUTIENCO_THUCSON, BANDO_THUCSON)
@@ -860,3 +863,24 @@ class TacTu:
             if diachicosothongtinnhanvatchutiemsuachua and self.moitruong.get_khoangcach(diachicosothongtinnhanvatchutiemsuachua) <= 4:
                 self.moitruong.action_suado(diachicosothongtinnhanvatchutiemsuachua)
 
+    def action_tudongtrieuhoibaothudautien(self):
+        if self._is_tudongtrieuhoibaothudautien:
+            while True:
+                iddoituongbaothudautien = self.moitruong.get_iddoituongbaothudautien()
+
+                if not iddoituongbaothudautien:
+                    break
+
+                diachicosonhanvatbaothudautien = self.moitruong.action_timkiemnhanvat(iddoituong = iddoituongbaothudautien)
+
+                if diachicosonhanvatbaothudautien:
+                    if time.time() - self._thoidiemthietlapbaothuchodoigannhat > 1.:
+                        self.moitruong.action_thucthicaulenh("pet {}# 3".format(hex(iddoituongbaothudautien)).replace("0x", ""))
+                    break
+
+                if time.time() - self._thoidiemtudongtrieuhoibaothudautien > 0.5:
+                    self._thoidiemtudongtrieuhoibaothudautien = time.time()
+
+                    self.moitruong.action_thucthicaulenh("pet {}# show".format(hex(iddoituongbaothudautien)).replace("0x", ""))
+
+                    break

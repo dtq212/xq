@@ -16,7 +16,6 @@ OFFSET_DIACHICOSOTHONGTINNHANVAT1 = 0x37F9E8
 OFFSET_DIACHICOSOHIEUUNGNHANVAT = 0x1638
 OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT = 0x13C
 
-
 OFFSET_DIACHICOSOMOIKYNANG = 0x224
 
 OFFSET_DIACHICOSOTHONGTINNHANVATX = 0x1BC950
@@ -1669,7 +1668,10 @@ class MoiTruong:
         self.set_idmaupk(idmaupk)
         self.action_thucthicaulenh("set !attack {}".format(idmaupk))
     
-    def action_timkiemnhanvat(self, tennhanvat):
+    def action_timkiemnhanvat(self, tennhanvat = None, iddoituong = None):
+        if not tennhanvat and not iddoituong:
+            return False
+
         i = 0
 
         while True:
@@ -1681,10 +1683,19 @@ class MoiTruong:
             if not self.get_is_nhanvattontai(diachicosothongtinnhanvatxemxet):
                 continue
 
-            tennhanvatxemxet = self.get_tendoituong(diachicosothongtinnhanvatxemxet)
+            if tennhanvat:
+                tennhanvatxemxet = self.get_tendoituong(diachicosothongtinnhanvatxemxet)
 
-            if tennhanvatxemxet == tennhanvat:
-                return diachicosothongtinnhanvatxemxet
+                if tennhanvatxemxet != tennhanvat:
+                    continue
+
+            if iddoituong:
+                iddoituongxemxet = self.get_iddoituong(diachicosothongtinnhanvatxemxet)
+
+                if iddoituongxemxet != iddoituong:
+                    continue
+
+            return diachicosothongtinnhanvatxemxet
 
         return False
 
@@ -1751,3 +1762,13 @@ class MoiTruong:
         if not x:
             return
         return write_boolean(self.tientrinh, x + 0x34, is_daketthucchientruong)
+
+    def get_iddoituongbaothudautien(self):
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not x:
+            return False
+        x = read_int(self.tientrinh, x + 0xADFDDC)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0x47C)
+
