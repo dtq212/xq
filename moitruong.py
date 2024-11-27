@@ -1725,6 +1725,7 @@ class MoiTruong:
 
     def get_is_vohieuhoadichuyen(self):
         return self._is_vohieuhoadichuyen
+
     def set_is_vohieuhoadichuyen(self, is_vohieuhoadichuyen):
         if self._is_vohieuhoadichuyen == is_vohieuhoadichuyen:
             return
