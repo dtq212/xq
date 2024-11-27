@@ -162,6 +162,7 @@ class LoopPhu:
             return
 
         self.moitruong.action_vohieuhoatuthedelaysautancong()
+
         self.moitruong.action_vohieuhoathietlapmuctieu()
         if self.moitruong.get_is_bathanhtrang():
             self.moitruong.set_is_batalt(False)
@@ -177,7 +178,7 @@ class LoopPhu:
         self.tactu.action_tudongsudungvatpham()
         self.tactu.action_tudongnhatdo()
 
-        self.tactu.action_tudongmoitodoi()
+        self.tactu.action_tudongtodoi()
 
         if self.moitruong.get_is_nhanvatdachet():
             if time.time() - self.thoidiemthongbaochetgannhat > 5.:

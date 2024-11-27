@@ -54,6 +54,7 @@ class TacTu:
         self._is_tamngungdichuyensudungkynang = False
         self._is_tamngungtancongdenhatdo = False
         self._is_tamngungdichuyendenhatdo = False
+        self._is_tamngungnhatdodetheosautruongnhom = False
         self._khoangcachtimkiemmuctieu = 18.
 
         self._idbandohientai = False
@@ -112,6 +113,7 @@ class TacTu:
 
     def action_tudongtheosautruongnhom(self):
         is_tamngungtancongtheosautruongnhom = False
+        is_tamngungnhatdodetheosautruongnhom = False
         if self._is_tudongtheosautruongnhom:
             while True:
                 if self._is_tamngungdichuyensudungkynang:
@@ -154,6 +156,7 @@ class TacTu:
                     break
 
                 is_tamngungtancongtheosautruongnhom = True
+                is_tamngungnhatdodetheosautruongnhom = True
 
                 if idtuthenhanvat == TUTHENHANVAT_TANCONG and self.moitruong.get_is_thietlapkynangphimtat(VITRIPHIMTATKYNANG_THUCUOI):
                     self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_THUCUOI, delay = 2)
@@ -165,7 +168,7 @@ class TacTu:
                 break
 
         self._is_tamngungtancongtheosautruongnhom = is_tamngungtancongtheosautruongnhom
-
+        self._is_tamngungnhatdodetheosautruongnhom = is_tamngungnhatdodetheosautruongnhom
 
     def action_tudongtimkiemmuctieu(self):
         if self._is_tudongtimkiemmuctieu:
@@ -573,6 +576,9 @@ class TacTu:
             i = 0
 
             while True:
+                if self._is_tamngungnhatdodetheosautruongnhom:
+                    break
+
                 diachicosothongtinvatphamxemxet = self.moitruong.get_diachicosothongtindoituongx(i)
                 if not diachicosothongtinvatphamxemxet:
                     break
@@ -601,10 +607,12 @@ class TacTu:
 
         if self._is_tudongdichientruong:
             if idbandohientai == BANDO_CHU:
+                if self.moitruong.get_is_daketthucchientruong():
+                    self.moitruong.set_is_daketthucchientruong(False)
                 self._phehientai = False
                 diachicosothongtinnhanvattruongqualao = self.moitruong.action_timkiemnhanvat(TRUONGQUALAO)
 
-                if not diachicosothongtinnhanvattruongqualao:
+                if not diachicosothongtinnhanvattruongqualao or self.moitruong.get_khoangcach(diachicosothongtinnhanvattruongqualao) > 4.:
                     self.moitruong.action_dichuyentiepcandiem(X_TRUONGQUALAO, Y_TRUONGQUALAO, BANDO_CHU)
                 else:
                     iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvattruongqualao)
@@ -772,7 +780,7 @@ class TacTu:
         else:
             phatam("Thiết lập chỉ đánh người chơi")
 
-    def action_tudongmoitodoi(self):
+    def action_tudongtodoi(self):
         if self._is_tudongtodoi:
             while True:
                 if not NHANVATTODOITUDONGs:

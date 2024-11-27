@@ -784,10 +784,14 @@ class MoiTruong:
     def action_vohieuhoatuthedelaysautancong(self):
         if read_bytes(self.tientrinh, self.diachixq + 0x1AF43, 1) != bytes.fromhex("90"):
             write_bytes(self.tientrinh, self.diachixq + 0x1AF43, bytes.fromhex("90 90 90 90 90 90 90 90 90 90"), 10)
+        if read_bytes(self.tientrinh, self.diachixq + 0x1B2D7, 1) != bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + 0x1B2D7, bytes.fromhex("90 90 90 90 90 90 90 90 90 90"), 10)
 
     def action_tatvohieuhoatuthedelaysautancong(self):
         if read_bytes(self.tientrinh, self.diachixq + 0x1AF43, 1) == bytes.fromhex("90"):
             write_bytes(self.tientrinh, self.diachixq + 0x1AF43, bytes.fromhex("C7 86 B8 11 00 00 0B 00 00 00"), 10)
+        if read_bytes(self.tientrinh, self.diachixq + 0x1B2D7, 1) == bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + 0x1B2D7, bytes.fromhex("C7 86 B8 11 00 00 0B 00 00 00"), 10)
 
     def action_vohieuhoathietlapmuctieu(self):
         if read_bytes(self.tientrinh, self.diachixq + 0xA1E30, 1) != bytes.fromhex("90"):
@@ -996,11 +1000,10 @@ class MoiTruong:
         if not idnguoichoitruongnhom:
             return
 
-        if "team + {}".format(idnguoichoitruongnhom) == self.get_caulenhmoinhomhientai():
+        if "team + {}".format(idnguoichoitruongnhom) == self.get_caulenhmoinhomhientai() and self.get_is_danghiencuasoyesno():
             self._thoidiemthaotacnhomgannhat = time.time()
             self.action_thucthicaulenh("team + {}".format(idnguoichoitruongnhom), delay = 0)
-            if self.get_is_danghiencuasoyesno():
-                self.set_is_danghiencuasoyesno(False)
+            self.set_is_danghiencuasoyesno(False)
 
     def auto_assemble_thucthicaulenh(self, caulenh):
         if not self._is_dasetupautoassemblethucthicaulenh:
@@ -1732,4 +1735,19 @@ class MoiTruong:
         self._is_vohieuhoadichuyen = is_vohieuhoadichuyen
 
     def get_is_daketthucchientruong(self):
-        if
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not x:
+            return False
+        x = read_int(self.tientrinh, x + 0xADFE9C)
+        if not x:
+            return False
+        return read_boolean(self.tientrinh, x + 0x34)
+
+    def set_is_daketthucchientruong(self, is_daketthucchientruong):
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not x:
+            return
+        x = read_int(self.tientrinh, x + 0xADFE9C)
+        if not x:
+            return
+        return write_boolean(self.tientrinh, x + 0x34, is_daketthucchientruong)
