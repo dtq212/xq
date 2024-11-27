@@ -140,7 +140,7 @@ TRANGTHAIVANKHI_VANKHITHATBAI = 3
 
 SOLUONGVATPHAMHANHTRANGTOIDA = 24
 
-NHANVATTODOITUDONGs = (3705, 3706, 3707, 3735, 3736) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
+NHANVATTODOITUDONGs = (3705, 3706, ) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
 
 CHUTIEMSUACHUA = "Chá»§ Tiá»‡m Sá»­a Chá»¯a"
 TANTHUTIENCO = "TÃ¢n Thá»§ TiÃªn CÃ´"
@@ -148,8 +148,6 @@ SUGIAMONPHAI = "Sá»© Giáº£ MÃ´n PhÃ¡i"
 TRUONGQUALAO = "TrÆ°Æ¡ng Quáº£ LÃ£o"
 BACHKHOI = "RBáº¡ch Khá»Ÿi"
 LIEMPHA = "BLiÃªm Pha"
-VUONGMAT = "RVÆ°Æ¡ng Ngáº­t"
-TRIEUQUAT = "RBáº¡ch Khá»Ÿi"
 
 PHEBACHKHOI = 1
 PHELIEMPHA = 2
