@@ -874,11 +874,14 @@ class TacTu:
                 diachicosonhanvatbaothudautien = self.moitruong.action_timkiemnhanvat(iddoituong = iddoituongbaothudautien)
 
                 if diachicosonhanvatbaothudautien:
-                    if time.time() - self._thoidiemthietlapbaothuchodoigannhat > 1.:
+                    if time.time() - self._thoidiemthietlapbaothuchodoigannhat > 2.:
                         self.moitruong.action_thucthicaulenh("pet {}# 3".format(hex(iddoituongbaothudautien)).replace("0x", ""))
                     break
 
-                if time.time() - self._thoidiemtudongtrieuhoibaothudautien > 0.5:
+                if self.moitruong.get_is_datrieuhoibaothu():
+                    break
+
+                if time.time() - self._thoidiemtudongtrieuhoibaothudautien > 1. and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
                     self._thoidiemtudongtrieuhoibaothudautien = time.time()
 
                     self.moitruong.action_thucthicaulenh("pet {}# show".format(hex(iddoituongbaothudautien)).replace("0x", ""))

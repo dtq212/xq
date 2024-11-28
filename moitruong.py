@@ -1772,3 +1772,12 @@ class MoiTruong:
             return False
         return read_int(self.tientrinh, x + 0x47C)
 
+    def get_is_datrieuhoibaothu(self):
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not x:
+            return False
+        x = read_int(self.tientrinh, x + 0xADFDDC)
+        if not x:
+            return False
+        return read_boolean(self.tientrinh, x + 0x1AE8)
+

@@ -57,7 +57,7 @@ class CuaSo:
         keyboard.add_hotkey("ctrl + p", self.themdiemdanhxungquanh)
         keyboard.add_hotkey("ctrl + alt + p", self.botoanbodiemdanhxungquanh)
 
-        keyboard.add_hotkey("ctrl + alt + m", self.battat_vohieuhoadichuyen)
+        keyboard.add_hotkey("ctrl + m", self.battat_vohieuhoadichuyen)
         keyboard.add_hotkey("ctrl + alt + y", self.battat_tudongdichientruong)
         keyboard.add_hotkey("ctrl + alt + t", self.battat_tudongbattheosaunhom)
 
@@ -77,7 +77,7 @@ class CuaSo:
         keyboard.remove_hotkey("ctrl + p")
         keyboard.remove_hotkey("ctrl + alt + p")
 
-        keyboard.remove_hotkey("ctrl + alt + m")
+        keyboard.remove_hotkey("ctrl + m")
 
         keyboard.remove_hotkey("ctrl + alt + y")
 
