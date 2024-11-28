@@ -1690,8 +1690,8 @@ class MoiTruong:
         return False
 
 
-    def action_timkiemnhanvat(self, tennhanvat = None, iddoituong = None):
-        if not tennhanvat and not iddoituong:
+    def action_timkiemnhanvat(self, tennhanvat = None, iddoituong = None, tennhanvatchua = None):
+        if not tennhanvat and not iddoituong and not tennhanvatchua:
             return False
 
         i = 0
@@ -1715,6 +1715,12 @@ class MoiTruong:
                 iddoituongxemxet = self.get_iddoituong(diachicosothongtinnhanvatxemxet)
 
                 if iddoituongxemxet != iddoituong:
+                    continue
+
+            if tennhanvatchua:
+                tennhanvatxemxet = self.get_tendoituong(diachicosothongtinnhanvatxemxet)
+
+                if tennhanvatxemxet or tennhanvatchua not in tennhanvatxemxet:
                     continue
 
             return diachicosothongtinnhanvatxemxet
@@ -1795,13 +1801,4 @@ class MoiTruong:
         return read_int(self.tientrinh, x + 0x47C)
 
     def get_is_datrieuhoibaothu(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
-        if not x:
-            return False
-        x = read_int(self.tientrinh, x + 0xADFDDC)
-        if not x:
-            return False
-        return read_boolean(self.tientrinh, x + 0x1AE8)
-
-    def get_is_chuatrieuhoithanthu(self):
-        return read_int(self.tientrinh, self.diachixq + 0x375934) == 10
+        return True

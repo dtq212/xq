@@ -144,7 +144,7 @@ TRANGTHAIVANKHI_VANKHITHATBAI = 3
 
 SOLUONGVATPHAMHANHTRANGTOIDA = 24
 
-NHANVATTODOITUDONGs = (3705, 3706, ) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
+NHANVATTODOITUDONGs = (3705, 3706, 3735) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
 
 CHUTIEMSUACHUA = "Chá»§ Tiá»‡m Sá»­a Chá»¯a"
 TANTHUTIENCO = "TÃ¢n Thá»§ TiÃªn CÃ´"

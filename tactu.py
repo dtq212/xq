@@ -916,6 +916,8 @@ class TacTu:
             if not self.moitruong.get_is_dathietlapkynangphimtat(VITRIPHIMTATKYNANG_THANTHU):
                 return
 
-            if self.moitruong.get_is_chuatrieuhoithanthu():
-                self._thoidiemkiemtradatrieuhoithanthugannhat = time.time()
-                self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_THANTHU)
+            if self.moitruong.get_is_datrieuhoithanthu():
+                return
+
+            self._thoidiemkiemtradatrieuhoithanthugannhat = time.time()
+            self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_THANTHU)
