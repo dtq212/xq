@@ -134,6 +134,9 @@ class MoiTruong:
             return False
         return read_string(self.tientrinh, x + idvitri * 0x4 + 0x1A8)
 
+
+
+
     def get_diachicosothongtinkynang(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
@@ -1667,7 +1670,29 @@ class MoiTruong:
 
         self.set_idmaupk(idmaupk)
         self.action_thucthicaulenh("set !attack {}".format(idmaupk))
-    
+
+    def action_timkiemvatphamhanhtrang(self, tenvatpham = None):
+        if not tenvatpham:
+            return False
+
+        i = -1
+
+        while True:
+            if i >= SOLUONGVATPHAMHANHTRANGTOIDA:
+                break
+
+            i += 1
+
+            if tenvatpham:
+                tenvatphamxemxet = self.get_tenvatphamhanhtrang(i)
+                if tenvatphamxemxet != tenvatpham:
+                    continue
+
+            return self.get_iddoituongvatphamhanhtrang(i)
+
+        return False
+
+
     def action_timkiemnhanvat(self, tennhanvat = None, iddoituong = None):
         if not tennhanvat and not iddoituong:
             return False
