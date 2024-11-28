@@ -161,11 +161,11 @@ TUSAMDONTRUNG = "Tá»­ SÃ¢m ÄÆ¡n - Trung"
 CHENBAC = "ChÃ©n Báº¡c"
 MANHGHEPNGOCBOI = "Máº£nh GhÃ©p Ngá»c Bá»™i"
 SOCAPDOANTHACH = "SÆ¡ Cáº¥p Äoáº¡n Tháº¡ch"
-DOANTHACHDACBIETSOCAP = "Äoáº¡n Tháº¡ch Äáº·c Biá»‡t SÆ"
+DOANTHACHDACBIETSOCAP = "Äoáº¡n Tháº¡ch Äáº·c Biá»‡t S"
 HUYETLONGCHIENTHU = "Huyáº¿t Long Chiáº¿u ThÆ°"
 TAITAOHOAN = "TÃ¡i Táº¡o HoÃ n"
 TIENTE = "Tiá»n Tá»‡"
-CAOCAPBAOTHUTHUCPHAM = "Cao Cáº¥p Báº£o ThÃº Thá»±c Pháº"
+CAOCAPBAOTHUTHUCPHAM = "Cao Cáº¥p Báº£o ThÃº Thá»±c Phá"
 
 VATPHAMTUDONGNHATs = (TUSAMDONTRUNG, CHENBAC, MANHGHEPNGOCBOI, SOCAPDOANTHACH, DOANTHACHDACBIETSOCAP, HUYETLONGCHIENTHU, TIENTE, TAITAOHOAN,)
 

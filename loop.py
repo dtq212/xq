@@ -109,6 +109,8 @@ class LoopChinh:
         if hasattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai)):
             getattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai))()
 
+        print(self.moitruong.get_tenvatphamhanhtrang(3))
+
         # while True:
         #     self.moitruong.action_thucthicaulenh("talk fc96# info.10050")
         #     time.sleep(0.1)
@@ -118,7 +120,9 @@ class LoopChinh:
         #     time.sleep(0.1)
         #     self.moitruong.action_thucthicaulenh("talk fc96# info.210")
         #     time.sleep(0.1)
-
+        # time.sleep(1)
+        # self.tactu.action_sudungvatphamhanhtrang(PHIHANHPHU)
+        # time.sleep(555)
         # print(self.moitruong.get_danhsachhieuungnhanvats())
 
 class LoopPhu:

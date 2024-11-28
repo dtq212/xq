@@ -871,11 +871,13 @@ class TacTu:
         if time.time() - self._thoidiemsudungvatphamgannhat < delay:
             return
 
-        self._thoidiemsudungvatphamgannhat = time.time()
         iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(tenvatpham)
-        if iddoituongvatpham:
-            self._thoidiemsudungthucanbaothugannhat = time.time()
-            self.moitruong.action_thucthicaulenh("use {}#".format(hex(iddoituongvatpham)).replace("0x", ""), delay = 0.)
+
+        if not iddoituongvatpham:
+            return
+
+        self._thoidiemsudungvatphamgannhat = time.time()
+        self.moitruong.action_thucthicaulenh("use {}#".format(hex(iddoituongvatpham)).replace("0x", ""), delay = 0.)
 
     def action_tudongtrieuhoibaothudautien(self):
         if self._is_tudongtrieuhoibaothudautien:

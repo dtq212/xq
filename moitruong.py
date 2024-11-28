@@ -126,7 +126,7 @@ class MoiTruong:
         x = self.get_diachicosothongtinvatphamhanhtrang()
         if not x:
             return False
-        return read_int(self.tientrinh, x + idvitri * 0x20)
+        return read_int(self.tientrinh, x + idvitri * 0x4)
 
     def get_tenvatphamhanhtrang(self, idvitri):
         x = self.get_diachicosothongtinvatphamhanhtrang()
@@ -1682,10 +1682,11 @@ class MoiTruong:
 
             if tenvatpham:
                 tenvatphamxemxet = self.get_tenvatphamhanhtrang(i)
-                print(tenvatphamxemxet)
                 if tenvatphamxemxet != tenvatpham:
                     continue
 
+
+                print(tenvatphamxemxet)
 
             return self.get_iddoituongvatphamhanhtrang(i)
 
