@@ -1594,7 +1594,7 @@ class MoiTruong:
 
         return True
 
-    def get_is_thietlapkynangphimtat(self, idvitriphimtat):
+    def get_is_dathietlapkynangphimtat(self, idvitriphimtat):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
@@ -1684,9 +1684,6 @@ class MoiTruong:
                 tenvatphamxemxet = self.get_tenvatphamhanhtrang(i)
                 if tenvatphamxemxet != tenvatpham:
                     continue
-
-
-                print(tenvatphamxemxet)
 
             return self.get_iddoituongvatphamhanhtrang(i)
 
@@ -1806,3 +1803,5 @@ class MoiTruong:
             return False
         return read_boolean(self.tientrinh, x + 0x1AE8)
 
+    def get_is_datrieuhoithanthu(self):
+        return read_boolean(self.tientrinh, self.diachixq + 0x375934)

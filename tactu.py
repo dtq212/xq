@@ -11,8 +11,6 @@ from tienich import luuthietlap as util_luuthietlap
 
 class TacTu:
     def __init__(self, moitruong: MoiTruong):
-        self._thoidiemsudungvatphamgannhat = time.time()
-        self._thoidiemsudungthucanbaothugannhat = time.time()
         self.moitruong = moitruong
 
         #Thiết lập không lưu
@@ -51,6 +49,9 @@ class TacTu:
         self._thoidiemyeucauroikhoichientruonggannhat = time.time()
         self._thoidiemtudongtrieuhoibaothudautien = time.time()
         self._thoidiemthietlapbaothuchodoigannhat = time.time()
+        self._thoidiemkiemtradatrieuhoithanthugannhat = time.time()
+        self._thoidiemsudungvatphamgannhat = time.time()
+        self._thoidiemsudungthucanbaothugannhat = time.time()
 
         self._diemdanhxungquanhs = []
         self._khoangcachdiemdanhxungquanh = 27.
@@ -61,6 +62,7 @@ class TacTu:
         self._is_tamngungdichuyendenhatdo = False
         self._is_tamngungnhatdodetheosautruongnhom = False
         self._khoangcachtimkiemmuctieu = 18.
+        self._is_tudongtrieuhoithanthu = True
 
         self._idbandohientai = False
         self._phehientai = False
@@ -904,3 +906,16 @@ class TacTu:
                     self._thoidiemtudongtrieuhoibaothudautien = time.time()
                     self.moitruong.action_thucthicaulenh("pet {}# show".format(hex(iddoituongbaothudautien)).replace("0x", ""), delay = 0.)
                     break
+
+    def action_tudongtrieuhoithanthu(self):
+        if self._is_tudongtrieuhoithanthu:
+            if time.time() - self._thoidiemkiemtradatrieuhoithanthugannhat < 1.:
+                return
+
+            self._thoidiemkiemtradatrieuhoithanthugannhat = time.time()
+
+            if not self.moitruong.get_is_dathietlapkynangphimtat(VITRIPHIMTATKYNANG_THANTHU):
+                return
+
+            if not self.moitruong.get_is_datrieuhoithanthu():
+                self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_THANTHU)
