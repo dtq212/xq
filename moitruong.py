@@ -1803,5 +1803,5 @@ class MoiTruong:
             return False
         return read_boolean(self.tientrinh, x + 0x1AE8)
 
-    def get_is_datrieuhoithanthu(self):
-        return read_boolean(self.tientrinh, self.diachixq + 0x375934)
+    def get_is_chuatrieuhoithanthu(self):
+        return read_int(self.tientrinh, self.diachixq + 0x375934) == 10

@@ -603,10 +603,10 @@ class TacTu:
                     if khoangcach <= KHOANGCACHNUAMANHINH:
                         is_tamngungdichuyendenhatdo = True
                         is_tamngungtancongdenhatdo = True
-                        if khoangcach <= 3:
+                        if khoangcach <= 2.:
                             self.moitruong.action_nhatdo(diachicosothongtinvatphamxemxet)
                         else:
-                            self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinvatphamxemxet, 3)
+                            self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinvatphamxemxet, max(0, 2. - time.time() + self.moitruong.get_thoidiemtuthenhanvatdungimgannhat()))
                         break
         self._is_tamngungdichuyendenhatdo = is_tamngungdichuyendenhatdo
         self._is_tamngungtancongdenhatdo = is_tamngungtancongdenhatdo
@@ -899,6 +899,7 @@ class TacTu:
                     diachicosonhanvatbaothudautien = self.moitruong.action_timkiemnhanvat(iddoituong = iddoituongbaothudautien)
 
                     if diachicosonhanvatbaothudautien and time.time() - self._thoidiemthietlapbaothuchodoigannhat > 2.:
+                        self._thoidiemthietlapbaothuchodoigannhat = time.time()
                         self.moitruong.action_thucthicaulenh("pet {}# 3".format(hex(iddoituongbaothudautien)).replace("0x", ""), delay = 0.)
                     break
 
@@ -912,10 +913,10 @@ class TacTu:
             if time.time() - self._thoidiemkiemtradatrieuhoithanthugannhat < 1.:
                 return
 
-            self._thoidiemkiemtradatrieuhoithanthugannhat = time.time()
-
             if not self.moitruong.get_is_dathietlapkynangphimtat(VITRIPHIMTATKYNANG_THANTHU):
                 return
 
-            if not self.moitruong.get_is_datrieuhoithanthu():
+
+            if self.moitruong.get_is_chuatrieuhoithanthu():
+                self._thoidiemkiemtradatrieuhoithanthugannhat = time.time()
                 self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_THANTHU)
