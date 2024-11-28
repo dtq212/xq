@@ -11,6 +11,7 @@ from tienich import luuthietlap as util_luuthietlap
 
 class TacTu:
     def __init__(self, moitruong: MoiTruong):
+        self._thoidiemsudungvatphamgannhat = time.time()
         self._thoidiemsudungthucanbaothugannhat = time.time()
         self.moitruong = moitruong
 
@@ -866,6 +867,15 @@ class TacTu:
             if diachicosothongtinnhanvatchutiemsuachua and self.moitruong.get_khoangcach(diachicosothongtinnhanvatchutiemsuachua) <= 4:
                 self.moitruong.action_suado(diachicosothongtinnhanvatchutiemsuachua)
 
+    def action_sudungvatphamhanhtrang(self, tenvatpham, delay = 0.25):
+        if time.time() - self._thoidiemsudungvatphamgannhat < delay:
+            return
+        self._thoidiemsudungvatphamgannhat = time.time()
+        iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(CAOCAPBAOTHUTHUCPHAM)
+        if iddoituongvatpham:
+            self._thoidiemsudungthucanbaothugannhat = time.time()
+            self.moitruong.action_thucthicaulenh("use {}#".format(hex(iddoituongvatpham)).replace("0x", ""), delay = 0.)
+
     def action_tudongtrieuhoibaothudautien(self):
         if self._is_tudongtrieuhoibaothudautien:
             while True:
@@ -885,12 +895,9 @@ class TacTu:
 
                     if diachicosonhanvatbaothudautien and time.time() - self._thoidiemthietlapbaothuchodoigannhat > 2.:
                         self.moitruong.action_thucthicaulenh("pet {}# 3".format(hex(iddoituongbaothudautien)).replace("0x", ""), delay = 0.)
-
                     break
 
                 if time.time() - self._thoidiemtudongtrieuhoibaothudautien > 1. and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
                     self._thoidiemtudongtrieuhoibaothudautien = time.time()
-
-                    self.moitruong.action_thucthicaulenh("pet {}# show".format(hex(iddoituongbaothudautien)).replace("0x", ""), delay = 0)
-
+                    self.moitruong.action_thucthicaulenh("pet {}# show".format(hex(iddoituongbaothudautien)).replace("0x", ""), delay = 0.)
                     break

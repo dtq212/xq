@@ -153,12 +153,21 @@ TRUONGQUALAO = "TrÆ°Æ¡ng Quáº£ LÃ£o"
 BACHKHOI = "RBáº¡ch Khá»Ÿi"
 LIEMPHA = "BLiÃªm Pha"
 
-CAOCAPBAOTHUTHUCPHAM = "Cao Cáº¥p Báº£o ThÃº Thá»±c Pháº©m"
 
 PHEBACHKHOI = 1
 PHELIEMPHA = 2
 
-VATPHAMTUDONGNHATs = ("Tá»­ SÃ¢m ÄÆ¡n - Trung", "ChÃ©n Báº¡c", "Máº£nh GhÃ©p Ngá»c Bá»™i", "SÆ¡ Cáº¥p Äoáº¡n Tháº¡ch", "Huyáº¿t Long Chiáº¿u ThÆ°", "Tiá»n Tá»‡", "TÃ¡i Táº¡o HoÃ n", "Äá»“ng Háº¡ng LiÃªn", "Bá»‘ YÃªu Äá»›i", "MiÃªn Bá»‘ Y", "MiÃªn Bá»‘ MÃ£o")
+TUSAMDONTRUNG = "Tá»­ SÃ¢m ÄÆ¡n - Trung"
+CHENBAC = "ChÃ©n Báº¡c"
+MANHGHEPNGOCBOI = "Máº£nh GhÃ©p Ngá»c Bá»™i"
+SOCAPDOANTHACH = "SÆ¡ Cáº¥p Äoáº¡n Tháº¡ch"
+DOANTHACHDACBIETSOCAP = "Äoáº¡n Tháº¡ch Äáº·c Biá»‡t SÆ"
+HUYETLONGCHIENTHU = "Huyáº¿t Long Chiáº¿u ThÆ°"
+TAITAOHOAN = "TÃ¡i Táº¡o HoÃ n"
+TIENTE = "Tiá»n Tá»‡"
+CAOCAPBAOTHUTHUCPHAM = "Cao Cáº¥p Báº£o ThÃº Thá»±c Pháº"
+
+VATPHAMTUDONGNHATs = (TUSAMDONTRUNG, CHENBAC, MANHGHEPNGOCBOI, SOCAPDOANTHACH, DOANTHACHDACBIETSOCAP, HUYETLONGCHIENTHU, TIENTE, TAITAOHOAN,)
 
 MONPHAI_MAP = {
     2811: "vanmongcoc",
