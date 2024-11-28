@@ -273,8 +273,8 @@ class TacTu:
                 if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_HUYETTHACH,), True, is_hieuungcoloi = 1) or not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_PHAPLUCTHACH,), True, is_hieuungcoloi = 1):
                     self.moitruong.action_sudungchucnangmorong5()
 
-            if self.moitruong.get_diempk() > 0 and self.moitruong.get_is_thietlapkynangphimtat(VITRIPHIMTATKYNANG_ANXAPHU):
-                self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_ANXAPHU)
+            if self.moitruong.get_diempk() > 0:
+                self.action_sudungvatphamhanhtrang(PHIHANHPHU)
 
     def action_tudongsudungkynang_vanmongcoc(self):
         is_tamngungdichuyensudungkynang = False
@@ -458,7 +458,7 @@ class TacTu:
                         break
 
                 if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TIENTHANVODICH, ), macdinh = True, is_hieuungcoloi = 1) and not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENTHANVODICH) and (is_muctieudangchonlanguoichoi or self.moitruong.get_phantramsinhlucconlai() < 10.):
-                    self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_PHIHANHPHU, HINHTHUCSUDUNGKYNANG_KHONGCANMUCTIEU)
+                    self.action_sudungvatphamhanhtrang(PHIHANHPHU)
 
                 is_muctieudangchonbichoang = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0)
 
@@ -870,8 +870,9 @@ class TacTu:
     def action_sudungvatphamhanhtrang(self, tenvatpham, delay = 0.25):
         if time.time() - self._thoidiemsudungvatphamgannhat < delay:
             return
+
         self._thoidiemsudungvatphamgannhat = time.time()
-        iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(CAOCAPBAOTHUTHUCPHAM)
+        iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(tenvatpham)
         if iddoituongvatpham:
             self._thoidiemsudungthucanbaothugannhat = time.time()
             self.moitruong.action_thucthicaulenh("use {}#".format(hex(iddoituongvatpham)).replace("0x", ""), delay = 0.)
