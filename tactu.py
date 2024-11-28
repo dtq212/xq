@@ -878,7 +878,7 @@ class TacTu:
                     break
 
                 if self.moitruong.get_is_datrieuhoibaothu():
-                    if time.time() - self._thoidiemsudungthucanbaothugannhat > 10.:
+                    if time.time() - self._thoidiemsudungthucanbaothugannhat > 30.:
                         self._thoidiemsudungthucanbaothugannhat = time.time()
                         iddoituongcaocapbaothuthucpham = self.moitruong.action_timkiemvatphamhanhtrang(CAOCAPBAOTHUTHUCPHAM)
                         if iddoituongcaocapbaothuthucpham:
