@@ -67,8 +67,8 @@ class MoiTruong:
         self._thoidiemsuadogannhat = time.time() - 1.
         self._thoidiemsudungchucnangmorong5 = time.time() - 2.5
         self._thoidiemtuthenhanvatdungimgannhat = time.time()
+        self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
         self._thoidiemngungdichuyengannhat = time.time() - 0.25
-        self.thoidiemdichuyen1buocgannhat = time.time() - 0.25
 
         self._is_tamngungtancong = False
 
@@ -160,6 +160,9 @@ class MoiTruong:
     def get_thoidiemtuthenhanvatdungimgannhat(self):
         return self._thoidiemtuthenhanvatdungimgannhat
 
+    def get_thoidiemtuthenhanvatdungimcomuctieugannhat(self):
+        return self._thoidiemtuthenhanvatdungimcomuctieugannhat
+
     def action_lammoitrangthaimoitruong(self):
         diachicosothongtinnhanvatmuctieuhientai = self.get_diachicosothongtinnhanvatmuctieudangchon()
 
@@ -168,6 +171,10 @@ class MoiTruong:
 
         if self.get_idtuthenhanvat() != TUTHENHANVAT_DUNGIM:
             self._thoidiemtuthenhanvatdungimgannhat = time.time()
+            self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
+
+        if not diachicosothongtinnhanvatmuctieuhientai:
+            self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
 
     def get_is_cuasogametontai(self):
         tencuaso = str(win32gui.GetWindowText(self.idcuaso))
@@ -1504,34 +1511,6 @@ class MoiTruong:
     def action_dichuyentiepcan(self, diachicosothongtinnhanvat2, khoangcachdichuyentoida = 0):
         self.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvat2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida)
 
-    def action_dichuyen1buoc(self, diachicosothongtinnhanvat2, delay = 0.25):
-        if time.time() - self.thoidiemdichuyen1buocgannhat < delay:
-            return
-
-        if not diachicosothongtinnhanvat2:
-            return
-        if not self.get_iddoituong(diachicosothongtinnhanvat2):
-            return
-
-        x1, y1 = self.get_toadox(is_vitrihientai = True), self.get_toadoy(is_vitrihientai = True)
-        x2, y2 = self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2)
-
-        deltax = x2 - x1
-        deltay = y1 - y2
-
-        deltax = int(deltax / abs(deltax or 1))
-        deltay = int(deltay / abs(deltay or 1))
-
-        go = GOs.get((deltax, deltay), False)
-        if not go:
-            return
-
-        self.thoidiemdichuyen1buocgannhat = time.time()
-
-        self.action_thucthicaulenh("go {},{} {} {}".format(x1, y1, go, int(time.time())), delay = 0)
-
-        self.set_idtuthenhanvat(TUTHENHANVAT_DICHUYEN)
-
     def action_ngungdichuyen(self, delay = 0.25):
         if time.time() - self._thoidiemngungdichuyengannhat < delay:
             return
@@ -1689,6 +1668,8 @@ class MoiTruong:
 
         return False
 
+    def get_is_datrieuhoithanthu(self):
+        return True
 
     def action_timkiemnhanvat(self, tennhanvat = None, iddoituong = None, tennhanvatchua = None):
         if not tennhanvat and not iddoituong and not tennhanvatchua:
@@ -1719,7 +1700,6 @@ class MoiTruong:
 
             if tennhanvatchua:
                 tennhanvatxemxet = self.get_tendoituong(diachicosothongtinnhanvatxemxet)
-
                 if tennhanvatxemxet or tennhanvatchua not in tennhanvatxemxet:
                     continue
 
@@ -1801,4 +1781,10 @@ class MoiTruong:
         return read_int(self.tientrinh, x + 0x47C)
 
     def get_is_datrieuhoibaothu(self):
-        return True
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not x:
+            return False
+        x = read_int(self.tientrinh, x + 0xADFDDC)
+        if not x:
+            return False
+        return read_boolean(self.tientrinh, x + 0x1AE8)

@@ -276,7 +276,7 @@ class TacTu:
                     self.moitruong.action_sudungchucnangmorong5()
 
             if self.moitruong.get_diempk() > 0:
-                self.action_sudungvatphamhanhtrang(PHIHANHPHU)
+                self.action_sudungvatphamhanhtrang(ANXAPHU)
 
     def action_tudongsudungkynang_vanmongcoc(self):
         is_tamngungdichuyensudungkynang = False
@@ -516,7 +516,7 @@ class TacTu:
 
                 if khoangcach <= KHOANGCACHTOIDAHOPLE:
                     if idtuthenhanvat == TUTHENHANVAT_DUNGIM:
-                        thoigiantuthenhanvatdungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimgannhat()
+                        thoigiantuthenhanvatdungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat()
                         if thoigiantuthenhanvatdungim > 0.5:
                             if thoigiantuthenhanvatdungim > 8.:
                                 self.action_tudongtimduong(self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieudangchon), self.moitruong.get_toadoy(diachicosothongtinnhanvatmuctieudangchon), self.moitruong.get_idbandohientai())
@@ -911,6 +911,9 @@ class TacTu:
     def action_tudongtrieuhoithanthu(self):
         if self._is_tudongtrieuhoithanthu:
             if time.time() - self._thoidiemkiemtradatrieuhoithanthugannhat < 1.:
+                return
+
+            if self.moitruong.get_idbandohientai() not in BANDOKHONGTANCONGs:
                 return
 
             if not self.moitruong.get_is_dathietlapkynangphimtat(VITRIPHIMTATKYNANG_THANTHU):
