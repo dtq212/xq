@@ -119,11 +119,13 @@ class LoopChinh:
         #     self.moitruong.action_thucthicaulenh("talk ea03# info.210")
         #     time.sleep(0.1)
 
-        # solan = 20
+        # solan = 300
         #
-        # for _ in range(solan + 1):
-        #     self.moitruong.action_thucthicaulenh("move ! 15423# 1")
+        # for i in range(1, solan + 1):
+        #     self.moitruong.action_thucthicaulenh("move ! 1a28f# 1")
         #     time.sleep(0.05)
+        #     if not i % 10:
+        #         time.sleep(2)
         # time.sleep(5555)
         # time.sleep(1)
         # self.tactu.action_sudungvatphamhanhtrang(PHIHANHPHU)
