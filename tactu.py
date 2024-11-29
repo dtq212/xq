@@ -470,6 +470,10 @@ class TacTu:
 
                 is_muctieudangchonbichoang = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0)
 
+                if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and not is_muctieudangchonbichoang and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG):
+                    if is_muctieudangchonlanguoichoi:
+                        self.moitruong.action_sudungkynangvitrimuctieukhongtrihoan(*VITRIKYNANG_LUUTINHTRUYMANG)
+
                 if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
                     if khoangcach <= KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NGUKIEMPHITIEN):
                         is_tamngungdichuyensudungkynang = True
