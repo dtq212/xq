@@ -166,7 +166,7 @@ class TacTu:
                 if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA) and time.time() - self.moitruong.get_thoidiemsudungkynangvitrigannhat(*VITRIKYNANG_KHAITHIENTICHDIA, time.time() - 2.0) > 1.0:
                     self.moitruong.action_sudungkynangvitriphudaudiem(*VITRIKYNANG_KHAITHIENTICHDIA, xtruongnhom, ytruongnhom, khoangcachphudau = khoangcachtruongnhom)
                 else:
-                    self.moitruong.action_dichuyentiepcandiem(xtruongnhom, ytruongnhom)
+                    self.moitruong.action_dichuyengiukhoangcachtoida(xtruongnhom, ytruongnhom, max(0, self._khoangcachtoidatruongnhom - time.time() + self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat()))
 
                 break
 
