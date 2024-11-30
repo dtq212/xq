@@ -417,6 +417,15 @@ class MoiTruong:
 
         write_int(self.tientrinh, diachicosothongtinnhanvat + 0x1178, idtuthenhanvat)
 
+    def get_is_muctieudichuyenraxa(self, diachicosothongtinnhanvat):
+        if self.get_idtuthenhanvat() != TUTHENHANVAT_DICHUYEN:
+            return False
+
+        x1, y1 = self.get_toadox(diachicosothongtinnhanvat, is_vitrihientai = True), self.get_toadoy(diachicosothongtinnhanvat, is_vitrihientai = True)
+        x2, y2 = self.get_toadox(diachicosothongtinnhanvat, is_vitrihientai = False), self.get_toadoy(diachicosothongtinnhanvat, is_vitrihientai = False)
+
+        return self.get_khoangcachdiem(x2, y2) > self.get_khoangcachdiem(x1, y1)
+
     def get_is_dangdelaysautancong(self, diachicosothongtinnhanvat = None):
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
@@ -712,6 +721,9 @@ class MoiTruong:
         elif idmaupk == MAUPK_TUDO:
             if idloainhanvat == LOAIMUCTIEU_NGUOICHOIKHACNHOM and self.get_is_cungbang(diachicosothongtinnhanvat):
                 return False
+
+        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_NAMDUOIDAT:
+            return False
 
         return True
 
