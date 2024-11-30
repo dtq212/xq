@@ -54,6 +54,7 @@ class TacTu:
         self._thoidiemsudungthucanbaothugannhat = time.time()
         self._thoidiemmochangiabaoruonggannhat = time.time()
         self._thoidiemsudungsinhkhitangannhat = time.time() - 300.
+        self._thoidiemsudungsotriduocgannhat = time.time()
 
         self._diemdanhxungquanhs = []
         self._khoangcachdiemdanhxungquanh = 27.
@@ -287,6 +288,10 @@ class TacTu:
             if time.time() - self._thoidiemsudungsinhkhitangannhat > 300.:
                 self._thoidiemsudungsinhkhitangannhat = time.time()
                 self.action_sudungvatphamhanhtrang(SINHKHITAN, delay = 0.)
+
+            if time.time() - self._thoidiemsudungsotriduocgannhat > 1. and self.moitruong.get_phantramsinhlucconlai() < 10.:
+                self._thoidiemsudungsotriduocgannhat = time.time()
+                self.action_sudungvatphamhanhtrang(SOTRIDUOC, delay = 0.)
 
     def action_tudongsudungkynang_vanmongcoc(self):
         is_tamngungdichuyensudungkynang = False
