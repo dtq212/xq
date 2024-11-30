@@ -52,6 +52,7 @@ class TacTu:
         self._thoidiemkiemtradatrieuhoithanthugannhat = time.time()
         self._thoidiemsudungvatphamgannhat = time.time()
         self._thoidiemsudungthucanbaothugannhat = time.time()
+        self._thoidiemmochangiabaoruonggannhat = time.time()
 
         self._diemdanhxungquanhs = []
         self._khoangcachdiemdanhxungquanh = 27.
@@ -606,22 +607,24 @@ class TacTu:
                     break
                 i += 1
 
-
-                if not self.moitruong.get_is_vatphamtontai(diachicosothongtinvatphamxemxet):
-                    continue
-
                 tenvatpham = self.moitruong.get_tendoituong(diachicosothongtinvatphamxemxet)
 
-                if tenvatpham in VATPHAMTUDONGNHATs:
-                    khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
-                    if khoangcach <= KHOANGCACHNUAMANHINH:
-                        is_tamngungdichuyendenhatdo = True
-                        is_tamngungtancongdenhatdo = True
-                        if khoangcach <= 2.5:
-                            self.moitruong.action_nhatdo(diachicosothongtinvatphamxemxet)
-                        else:
-                            self.moitruong.action_dichuyentiepcan(diachicosothongtinvatphamxemxet)
-                        break
+                if self.moitruong.get_is_nhanvattontai(diachicosothongtinvatphamxemxet) and tenvatpham == CHANGIABAORUONG:
+                    if time.time() - self._thoidiemmochangiabaoruonggannhat > 1.:
+                        self._thoidiemmochangiabaoruonggannhat = time.time()
+                        self.moitruong.action_thucthicaulenh("look {}#".format(hex(self.moitruong.get_iddoituong(diachicosothongtinvatphamxemxet))).replace("0x", ""), delay = 0.)
+                    break
+                elif self.moitruong.get_is_vatphamtontai(diachicosothongtinvatphamxemxet):
+                    if tenvatpham in VATPHAMTUDONGNHATs:
+                        khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
+                        if khoangcach <= KHOANGCACHNUAMANHINH:
+                            is_tamngungdichuyendenhatdo = True
+                            is_tamngungtancongdenhatdo = True
+                            if khoangcach <= 2.5:
+                                self.moitruong.action_nhatdo(diachicosothongtinvatphamxemxet)
+                            else:
+                                self.moitruong.action_dichuyentiepcan(diachicosothongtinvatphamxemxet)
+                            break
         self._is_tamngungdichuyendenhatdo = is_tamngungdichuyendenhatdo
         self._is_tamngungtancongdenhatdo = is_tamngungtancongdenhatdo
 
