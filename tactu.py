@@ -286,8 +286,7 @@ class TacTu:
 
             if time.time() - self._thoidiemsudungsinhkhitangannhat > 300.:
                 self._thoidiemsudungsinhkhitangannhat = time.time()
-                self.action_sudungvatphamhanhtrang(SINHKHITAN)
-
+                self.action_sudungvatphamhanhtrang(SINHKHITAN, delay = 0.)
 
     def action_tudongsudungkynang_vanmongcoc(self):
         is_tamngungdichuyensudungkynang = False
@@ -460,7 +459,7 @@ class TacTu:
                                 self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TINHTAMQUYET, HINHTHUCSUDUNGKYNANG_KHONGCANMUCTIEU)
                                 break
 
-                    if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NGOAIKHANG,), True, is_hieuungcoloi = 1) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIEUCHUTHIEN):
+                    if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NOIKHANG,), True, is_hieuungcoloi = 1) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIEUCHUTHIEN):
                         is_tamngungdichuyensudungkynang = True
                         if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
                             self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_TIEUCHUTHIEN)
