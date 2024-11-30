@@ -607,6 +607,15 @@ class TacTu:
                 if self._is_tamngungnhatdodetheosautruongnhom:
                     break
 
+                if self.moitruong.get_is_dangclickchuottrai():
+                    break
+
+                if self.moitruong.get_is_dangvankhi():
+                    break
+
+                if self.moitruong.get_is_nhanvatdachet():
+                    break
+
                 diachicosothongtinvatphamxemxet = self.moitruong.get_diachicosothongtindoituongx(i)
                 if not diachicosothongtinvatphamxemxet:
                     break
@@ -628,7 +637,10 @@ class TacTu:
                             if khoangcach <= 2.5:
                                 self.moitruong.action_nhatdo(diachicosothongtinvatphamxemxet)
                             else:
-                                self.moitruong.action_dichuyentiepcan(diachicosothongtinvatphamxemxet)
+                                if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA):
+                                    self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_KHAITHIENTICHDIA, diachicosothongtinvatphamxemxet, khoangcachphudau = khoangcach)
+                                else:
+                                    self.moitruong.action_dichuyentiepcan(diachicosothongtinvatphamxemxet)
                             break
         self._is_tamngungdichuyendenhatdo = is_tamngungdichuyendenhatdo
         self._is_tamngungtancongdenhatdo = is_tamngungtancongdenhatdo
