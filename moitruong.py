@@ -81,6 +81,9 @@ class MoiTruong:
 
         self._diachicosothongtinnhanvatmuctieudangchon = False
 
+        self._thoidiemthaydoibandogannhat = time.time()
+        self._idbandohientai = False
+
     def __del__(self):
         if self._is_dasetupautoassemblemocuasotuychonnhanvatchinh:
             self.tientrinh.free(self._diachiautoassemblemocuasotuychonnhanvatchinh)
@@ -175,6 +178,16 @@ class MoiTruong:
 
         if not diachicosothongtinnhanvatmuctieuhientai:
             self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
+
+        idbandohientai = self.get_idbandohientai()
+
+        if idbandohientai != self._idbandohientai:
+            self._thoidiemthaydoibandogannhat = time.time()
+
+        self._idbandohientai = idbandohientai
+
+    def get_thoidiemthaydoibandogannhat(self):
+        return self._thoidiemthaydoibandogannhat
 
     def get_is_cuasogametontai(self):
         tencuaso = str(win32gui.GetWindowText(self.idcuaso))
@@ -687,7 +700,7 @@ class MoiTruong:
         is_dahockynang = True
         thoigiangiancach = read_int(self.tientrinh, diachicosothongtinkynang + idvitrikynang * OFFSET_DIACHICOSOMOIKYNANG + 0x6A4C) == 0
 
-        return idkynang and is_dahockynang and thoigiangiancach and self._thoidiemsudungkynangvitrigannhat_map.get((idvitriX, idvitriY), time.time() - 2) > 1.0
+        return idkynang and is_dahockynang and thoigiangiancach and time.time() - self._thoidiemsudungkynangvitrigannhat_map.get((idvitriX, idvitriY), time.time() - 2) > 1.0
 
     def get_is_cothetancong(self, diachicosothongtinnhanvat):
         if not diachicosothongtinnhanvat:
@@ -989,7 +1002,6 @@ class MoiTruong:
             return
 
         self._thoidiemthucthicaulenhgannhat = time.time()
-
         self.auto_assemble_thucthicaulenh(caulenh)
 
     def action_moihoacxinvaonhom(self, idnguoichoi, delay = 1.):
@@ -1324,6 +1336,7 @@ class MoiTruong:
             caulenh = "pf {} {}#".format(idkynang, hex(iddoituong)).replace("0x", "")
 
         self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
+
         self.action_thucthicaulenh(caulenh, delay = 0)
 
     def action_sudungkynangvitrikhongtrihoan(self, idvitriX, idvitriY, delay = 0.25):
