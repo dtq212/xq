@@ -491,7 +491,7 @@ class TacTu:
                     if is_muctieudangchonlanguoichoi and not is_muctieudangchonbichoang and is_muctieudichuyenraxa and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG) and not self.moitruong.get_is_vohieuhoadichuyen():
                         self.moitruong.action_sudungkynangvitrimuctieukhongtrihoan(*VITRIKYNANG_LUUTINHTRUYMANG)
 
-                    if khoangcach <= KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NGUKIEMPHITIEN):
+                    if not is_muctieudangchonlanguoichoi and khoangcach <= KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NGUKIEMPHITIEN):
                         is_tamngungdichuyensudungkynang = True
                         if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
                             self.moitruong.action_sudungkynangvitrikhongtrihoan(*VITRIKYNANG_NGUKIEMPHITIEN)
@@ -500,6 +500,11 @@ class TacTu:
                         is_tamngungdichuyensudungkynang = True
                         if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
                             self.moitruong.action_sudungkynangvitrimuctieukhongtrihoan(*VITRIKYNANG_NGUKIEMTHUAT)
+
+                    elif is_muctieudangchonlanguoichoi and khoangcach <= KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NGUKIEMPHITIEN):
+                        is_tamngungdichuyensudungkynang = True
+                        if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
+                            self.moitruong.action_sudungkynangvitrikhongtrihoan(*VITRIKYNANG_NGUKIEMPHITIEN)
 
                     elif is_muctieudangchonlanguoichoi and not is_muctieudangchonbichoang and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LANGKHONGCHIHUYET):
                         is_tamngungdichuyensudungkynang = True
@@ -526,11 +531,6 @@ class TacTu:
                         is_tamngungdichuyensudungkynang = True
                         if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
                             self.moitruong.action_sudungkynangvitrimuctieukhongtrihoan(*VITRIKYNANG_VANKIEMXUYENTAM)
-
-                    elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENNHANCHILO):
-                        is_tamngungdichuyensudungkynang = True
-                        if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
-                            self.moitruong.action_sudungkynangvitrimuctieukhongtrihoan(*VITRIKYNANG_TIENNHANCHILO)
 
                 if khoangcach <= KHOANGCACHTOIDAHOPLE:
                     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_DICHUYEN) and khoangcach > KHOANGCACHSUDUNGKYNANGTAMXA and (not is_muctieudangchonlanguoichoi or is_muctieudichuyenraxa) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA) and not self.moitruong.get_is_vohieuhoadichuyen():
@@ -638,7 +638,7 @@ class TacTu:
                                 self.moitruong.action_nhatdo(diachicosothongtinvatphamxemxet)
                             else:
                                 if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA):
-                                    self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_KHAITHIENTICHDIA, diachicosothongtinvatphamxemxet, khoangcachphudau = khoangcach)
+                                    self.moitruong.action_sudungkynangvitriphudaudiem(*VITRIKYNANG_KHAITHIENTICHDIA, self.moitruong.get_toadox(diachicosothongtinvatphamxemxet, is_vitrihientai = True), self.moitruong.get_toadoy(diachicosothongtinvatphamxemxet, is_vitrihientai = True), khoangcachphudau = khoangcach)
                                 else:
                                     self.moitruong.action_dichuyentiepcan(diachicosothongtinvatphamxemxet)
                             break
