@@ -606,6 +606,7 @@ class TacTu:
                     break
                 i += 1
 
+
                 if not self.moitruong.get_is_vatphamtontai(diachicosothongtinvatphamxemxet):
                     continue
 
