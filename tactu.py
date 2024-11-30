@@ -285,6 +285,7 @@ class TacTu:
                 self.action_sudungvatphamhanhtrang(ANXAPHU)
 
             if time.time() - self._thoidiemsudungsinhkhitangannhat > 300.:
+                self._thoidiemsudungsinhkhitangannhat = time.time()
                 self.action_sudungvatphamhanhtrang(SINHKHITAN)
 
 
