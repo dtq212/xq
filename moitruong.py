@@ -315,6 +315,23 @@ class MoiTruong:
 
         return round(toadoy)
 
+    def get_toadoxsaptoi(self, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+
+        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
+            return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18)
+        return read_int(self.tientrinh, diachicosothongtinnhanvat)
+
+    def get_toadoysaptoi(self, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+
+        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
+            return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C)
+
+        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
+
     def get_toadoxbandochichuot(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
@@ -430,12 +447,12 @@ class MoiTruong:
 
         write_int(self.tientrinh, diachicosothongtinnhanvat + 0x1178, idtuthenhanvat)
 
-    def get_is_muctieudichuyenraxa(self, diachicosothongtinnhanvat):
-        if self.get_idtuthenhanvat() != TUTHENHANVAT_DICHUYEN:
+    def get_is_muctieuchaytron(self, diachicosothongtinnhanvat):
+        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) != TUTHENHANVAT_DICHUYEN:
             return False
 
         x1, y1 = self.get_toadox(diachicosothongtinnhanvat, is_vitrihientai = True), self.get_toadoy(diachicosothongtinnhanvat, is_vitrihientai = True)
-        x2, y2 = self.get_toadox(diachicosothongtinnhanvat, is_vitrihientai = False), self.get_toadoy(diachicosothongtinnhanvat, is_vitrihientai = False)
+        x2, y2 = self.get_toadoxsaptoi(diachicosothongtinnhanvat), self.get_toadoysaptoi(diachicosothongtinnhanvat)
 
         return self.get_khoangcachdiem(x2, y2) > self.get_khoangcachdiem(x1, y1)
 
@@ -690,7 +707,7 @@ class MoiTruong:
 
         return read_int(self.tientrinh, diachicosothongtinkynang + idvitrikynang * OFFSET_DIACHICOSOMOIKYNANG + 0x6830)
 
-    def get_is_kynangsansang(self, idvitriX, idvitriY):
+    def get_is_kynangsansang(self, idvitriX, idvitriY, delay = 0.):
         diachicosothongtinkynang = self.get_diachicosothongtinkynang()
         if not diachicosothongtinkynang:
             return False
@@ -700,7 +717,7 @@ class MoiTruong:
         is_dahockynang = True
         thoigiangiancach = read_int(self.tientrinh, diachicosothongtinkynang + idvitrikynang * OFFSET_DIACHICOSOMOIKYNANG + 0x6A4C) == 0
 
-        return idkynang and is_dahockynang and thoigiangiancach and time.time() - self._thoidiemsudungkynangvitrigannhat_map.get((idvitriX, idvitriY), time.time() - 2) > 1.0
+        return idkynang and is_dahockynang and thoigiangiancach and time.time() - self._thoidiemsudungkynangvitrigannhat_map.get((idvitriX, idvitriY), time.time() - delay - 1.) > delay
 
     def get_is_cothetancong(self, diachicosothongtinnhanvat):
         if not diachicosothongtinnhanvat:
@@ -1002,6 +1019,10 @@ class MoiTruong:
             return
 
         self._thoidiemthucthicaulenhgannhat = time.time()
+
+        # if self.get_idnguoichoi() == 3705:
+        #     print(datetime.datetime.now(), caulenh)
+
         self.auto_assemble_thucthicaulenh(caulenh)
 
     def action_moihoacxinvaonhom(self, idnguoichoi, delay = 1.):
@@ -1374,6 +1395,9 @@ class MoiTruong:
             return
 
         self._thoidiemdichuyengannhat = time.time()
+
+        # if self.get_idnguoichoi() == 3705:
+        #     print(datetime.datetime.now(), "Di chuyển: {}".format((x, y)))
 
         self.auto_assemble_dichuyen(x, y)
 
