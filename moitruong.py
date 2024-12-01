@@ -1042,8 +1042,7 @@ class MoiTruong:
 
         self._thoidiemthucthicaulenhgannhat = time.time()
 
-        # if self.get_idnguoichoi() == 3705:
-        #     print(datetime.datetime.now(), caulenh)
+        # print(datetime.datetime.now(), caulenh)
 
         self.auto_assemble_thucthicaulenh(caulenh)
 
@@ -1355,7 +1354,7 @@ class MoiTruong:
         self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
         self.auto_assemble_sudungkynangvitri(idvitriX, idvitriY, hinhthucsudungkynang)
 
-    def action_sudungkynangvitrimuctieukhongtrihoan(self, idvitriX, idvitriY, delay = 0.25):
+    def action_sudungkynangvitrimuctieukhongtrihoan(self, idvitriX, idvitriY, diachicosothongtinnhanvatmuctieu = False, is_khongkiemtracothetancong = False, delay = 0.25):
         idvitri = (idvitriX, idvitriY)
         if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
             return
@@ -1364,13 +1363,13 @@ class MoiTruong:
         if not idkynang:
             return
 
-        diachicosomuctieudangchon = self.get_diachicosothongtinnhanvatmuctieudangchon()
+        diachicosothongtinnhanvatmuctieudangchon = diachicosothongtinnhanvatmuctieu if diachicosothongtinnhanvatmuctieu else self.get_diachicosothongtinnhanvatmuctieudangchon()
 
-        if not diachicosomuctieudangchon or not self.get_is_cothetancong(diachicosomuctieudangchon):
+        if not diachicosothongtinnhanvatmuctieudangchon or (not is_khongkiemtracothetancong and not self.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon)):
             return
 
-        if self.get_is_nguoichoi(diachicosomuctieudangchon):
-            idnguoichoi = self.get_idnguoichoi(diachicosomuctieudangchon)
+        if self.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon):
+            idnguoichoi = self.get_idnguoichoi(diachicosothongtinnhanvatmuctieudangchon)
             caulenh = "pf {} {}".format(idkynang, idnguoichoi)
         else:
             iddoituong = self.get_iddoituongmuctieudangchon()
