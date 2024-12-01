@@ -55,6 +55,7 @@ class TacTu:
         self._thoidiemmochangiabaoruonggannhat = time.time()
         self._thoidiemsudungsinhkhitangannhat = time.time() - 300.
         self._thoidiemsudungsotriduocgannhat = time.time()
+        self._thoidiemsudungphihanhphugannhat = time.time()
 
         self._diemdanhxungquanhs = []
         self._khoangcachdiemdanhxungquanh = 27.
@@ -480,7 +481,8 @@ class TacTu:
                         self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TIENTHANVODICH, HINHTHUCSUDUNGKYNANG_KHONGCANMUCTIEU)
                         break
 
-                if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TIENTHANVODICH, ), macdinh = True, is_hieuungcoloi = 1) and not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENTHANVODICH) and self.moitruong.get_phantramsinhlucconlai() < 5.:
+                if time.time() - self._thoidiemsudungphihanhphugannhat > 1. and not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENTHANVODICH) and self.moitruong.get_phantramsinhlucconlai() < 10. and self.moitruong.get_thoigianconlaihieuungtienthanvodich(macdinh = 2.5) < 2.:
+                    self._thoidiemsudungphihanhphugannhat = time.time()
                     self.action_sudungvatphamhanhtrang(PHIHANHPHU)
 
                 is_muctieudangchonbichoang = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0)
