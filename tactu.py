@@ -394,25 +394,22 @@ class TacTu:
                         is_tamngungdichuyensudungkynang = True
                         if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
                             self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_DONGIAPTRAN, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach - 1)
-                            break
 
-                    if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KYMONTRAN):
+                    elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KYMONTRAN):
                         is_tamngungdichuyensudungkynang = True
                         if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
                             self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_KYMONTRAN, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach + 1)
                             break
 
-                    if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_PHONGVUKINHTHIEN, diachicosothongtinnhanvatmuctieudangchon), macdinh = True, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHONGVUKINHTHIEN):
+                    elif not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_PHONGVUKINHTHIEN, diachicosothongtinnhanvatmuctieudangchon), macdinh = True, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHONGVUKINHTHIEN):
                         is_tamngungdichuyensudungkynang = True
                         if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
                             self.moitruong.action_sudungkynangvitrimuctieukhongtrihoan(*VITRIKYNANG_PHONGVUKINHTHIEN)
-                            break
 
-                    if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LIETPHONGQUYET):
+                    elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LIETPHONGQUYET):
                         is_tamngungdichuyensudungkynang = True
                         if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
                             self.moitruong.action_sudungkynangvitrimuctieukhongtrihoan(*VITRIKYNANG_LIETPHONGQUYET)
-                            break
 
                 if khoangcach <= KHOANGCACHTOIDAHOPLE:
                     thoigiantuthenhanvatdungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat() if idtuthenhanvat == TUTHENHANVAT_DUNGIM else 0.
