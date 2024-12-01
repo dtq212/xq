@@ -475,7 +475,7 @@ class TacTu:
                         if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_BANGPHACHNGANTAM,), True, is_hieuungcoloi = 1) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_BANGPHACHNGANTAM):
                             is_tamngungdichuyensudungkynang = True
                             if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
-                                self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_BANGPHACHNGANTAM)
+                                self.moitruong.action_sudungkynangvitrikhongtrihoan(*VITRIKYNANG_BANGPHACHNGANTAM)
                                 break
 
                     break
