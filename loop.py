@@ -110,13 +110,13 @@ class LoopChinh:
             getattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai))()
 
         # while True:
-        #     self.moitruong.action_thucthicaulenh("talk 1082f# info.10050")
+        #     self.moitruong.action_thucthicaulenh("talk 6c8d0# info.10050")
         #     time.sleep(0.1)
-        #     self.moitruong.action_thucthicaulenh("talk 1082f# info.11")
+        #     self.moitruong.action_thucthicaulenh("talk 6c8d0# info.11")
         #     time.sleep(0.1)
-        #     self.moitruong.action_thucthicaulenh("talk 1082f# info.200")
+        #     self.moitruong.action_thucthicaulenh("talk 6c8d0# info.200")
         #     time.sleep(0.1)
-        #     self.moitruong.action_thucthicaulenh("talk 1082f# info.210")
+        #     self.moitruong.action_thucthicaulenh("talk 6c8d0# info.210")
         #     time.sleep(0.1)
 
         # solan = 300

@@ -805,9 +805,9 @@ class TacTu:
                                     self.action_tudongtimduong(*diemdanhxungquanhtieptheo)
                                 elif thoigiantuthenhanvatdungim > 3.:
                                     self.moitruong.action_dichuyentiepcandiem(*diemdanhxungquanhtieptheo[:-1])
-                            if time.time() - self._thoidiemthongbaotudongtimduonggannhat > 6.:
+                            if time.time() - self._thoidiemthongbaotudongtimduonggannhat > 5.:
                                 self._thoidiemthongbaotudongtimduonggannhat = time.time()
-                                phatam("Tự động tìm đường về điểm đánh xung quanh")
+                                phatam("Di chuyển")
                 else:
                     is_tamngungtancongdichuyenxungquanh = True
 
@@ -820,9 +820,9 @@ class TacTu:
                         diemdanhxungquanhbatky = self._diemdanhxungquanhs[0]
                         self.action_tudongtimduong(*diemdanhxungquanhbatky)
 
-                        if time.time() - self._thoidiemthongbaotudongtimduonggannhat > 6.:
+                        if time.time() - self._thoidiemthongbaotudongtimduonggannhat > 5.:
                             self._thoidiemthongbaotudongtimduonggannhat = time.time()
-                            phatam("Tự động tìm đường về điểm đánh xung quanh")
+                            phatam("Di chuyển")
                         break
                 break
 
