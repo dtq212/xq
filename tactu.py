@@ -994,7 +994,8 @@ class TacTu:
                 else:
                     if time.time() - self._thoidiemnhanvatchetgannhat > 0.5:
                         self._idbandovuachet = self.moitruong.get_idbandohientai()
-                    if time.time() - self._thoidiemnhanvatchetgannhat > 2.5:
+                        self.moitruong.action_phucsinh(is_duoccuu = True)
+                    if time.time() - self._thoidiemnhanvatchetgannhat > 5.:
                         self.moitruong.action_phucsinh()
                 break
 

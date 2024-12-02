@@ -1694,7 +1694,7 @@ class MoiTruong:
         self._thoidiemtudongtimduonggannhat = time.time()
         self.auto_assemble_tudongtimduong(x, y, idbando)
 
-    def action_phucsinh(self, delay = 1.):
+    def action_phucsinh(self, is_duoccuu = False, delay = 1.):
         if time.time() - self._thoidiemphucsinhgannhat < delay:
             return
 
@@ -1706,6 +1706,8 @@ class MoiTruong:
         if self.get_is_danghiencuasotuychon():
             self.set_is_danghiencuasotuychon(False)
 
+        if is_duoccuu:
+            self.action_thucthicaulenh("desc revive$")
         self.action_thucthicaulenh("desc revive")
 
     def action_doimaupk(self, idmaupk, delay = 1.):
