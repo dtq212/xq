@@ -109,8 +109,6 @@ class LoopChinh:
         if hasattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai)):
             getattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai))()
 
-
-
         # while True:
         #     self.moitruong.action_thucthicaulenh("talk 1082f# info.10050")
         #     time.sleep(0.1)
@@ -147,9 +145,10 @@ class LoopChinh:
         # time.sleep(1)
         # self.tactu.action_sudungvatphamhanhtrang(PHIHANHPHU)
         # time.sleep(555)
-        # muctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+
+        # muctieu = self.moitruong.get_diachicosothongtinnhanvatdangchichuot()
         # if muctieu:
-        #     print(self.moitruong.get_danhsachhieuungnhanvats(muctieu))
+        #     print(self.moitruong.get_tendoituong(muctieu))
 
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
@@ -207,6 +206,7 @@ class LoopPhu:
 
         self.tactu.action_tudongsudungvatpham()
         self.tactu.action_tudongnhatdo()
+        self.tactu.action_tudongxepchongdo()
 
         self.tactu.action_tudongtodoi()
 

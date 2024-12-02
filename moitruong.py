@@ -1740,6 +1740,26 @@ class MoiTruong:
 
         return False
 
+    def get_danhsachvatphamhanhtrang_map(self):
+        i = -1
+        vatphamhanhtrang_map = {}
+        while True:
+            if i >= SOLUONGVATPHAMHANHTRANGTOIDA:
+                break
+
+            i += 1
+
+            tenvatphamxemxet = self.get_tenvatphamhanhtrang(i)
+
+            if tenvatphamxemxet not in vatphamhanhtrang_map:
+                vatphamhanhtrang_map[tenvatphamxemxet] = []
+
+            vatphamhanhtrang_map[tenvatphamxemxet].append(
+                (i, self.get_iddoituongvatphamhanhtrang(i)),
+            )
+
+        return vatphamhanhtrang_map
+
     def get_is_datrieuhoithanthu(self):
         return True
 
