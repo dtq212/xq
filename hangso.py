@@ -152,8 +152,10 @@ SOLUONGVATPHAMHANHTRANGTOIDA = 24
 NHANVATTODOITUDONGs = (3735, 3736, 3705, 3706, 3818, 3819) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
 
 CHUTIEMSUACHUA = "Chá»§ Tiá»‡m Sá»­a Chá»¯a"
+PHITACDOATNGANTRUYENTONG = "Phá»‰ Táº·c-Äoáº¡t NgÃ¢n Truyá»"
 TANTHUTIENCO = "TÃ¢n Thá»§ TiÃªn CÃ´"
 SUGIAMONPHAI = "Sá»© Giáº£ MÃ´n PhÃ¡i"
+XAPHU = "Xa Phu"
 TRUONGQUALAO = "TrÆ°Æ¡ng Quáº£ LÃ£o"
 BACHKHOI = "RBáº¡ch Khá»Ÿi"
 LIEMPHA = "BLiÃªm Pha"
@@ -204,13 +206,33 @@ BANDO_KENHTRINHQUOC2 = 152
 BANDO_KENHTRINHQUOC3 = 153
 BANDO_CHIENTRUONG = 903
 
+BANDO_BACHVANPHONG = 173
+BANDO_YENTRUONGTHANH2 = 72
+BANDO_TRIEUTRUONGTHANH2 = 32
+BANDO_TANTRUONGTHANH2 = 52
+BANDO_LINHCOCDONG1 = 311
+BANDO_LINHCOCDONG2 = 312
+BANDO_LOANDAO1 = 321
+BANDO_LOANDAO2 = 322
+BANDO_KHONMATRAN1 = 291
+BANDO_KHONMATRAN2 = 292
+
 BANDOKHONGTANCONGs = (BANDO_TANTHUTHON, BANDO_CHU, BANDO_THUCSON)
 
 X_SUGIAMONPHAI_CHU = 280
 Y_SUGIAMONPHAI_CHU = 180
 
+X_PHITACDOATNGANTRUYENTONG_CHU = 322
+Y_PHITACDOATNGANTRUYENTONG_CHU = 132
+
 X_TANTHUTIENCO_THUCSON = 198
 Y_TANTHUTIENCO_THUCSON = 154
+
+X_XAPHU_THUCSON = 186
+Y_XAPHU_THUCSON = 145
+
+X_TANTHUTIENCO_CHU = 322
+Y_TANTHUTIENCO_CHU = 132
 
 X_TRUONGQUALAO = 245
 Y_TRUONGQUALAO = 158
@@ -244,6 +266,65 @@ DICHUYENTANTHUTIENCO_MAP = {
     BANDO_KENHTRINHQUOC3: [
         "talk {}# welcome.600",
         "talk {}# welcome.608"
+    ],
+}
+
+DICHUYENPHITACDOATNGUYENTRUYENTONG_MAP = {
+    BANDO_RANHGIOIDAMLAY: [
+        "talk {}# welcome.3",
+        "talk {}# welcome.10 RGDL"
+    ],
+    BANDO_DIAGIOIDAMLAY: [
+        "talk {}# welcome.3",
+        "talk {}# welcome.10 DGDL"
+    ],
+    BANDO_DONGHAINGUTHON: [
+        "talk {}# welcome.4",
+        "talk {}# welcome.10 DHNT"
+    ],
+    BANDO_KENHTRINHQUOC1: [
+        "talk {}# welcome.4",
+        "talk {}# welcome.10 KTQ1"
+    ],
+    BANDO_BACHVANPHONG: [
+        "talk {}# welcome.5",
+        "talk {}# welcome.10 BVP"
+    ],
+    BANDO_YENTRUONGTHANH2: [
+        "talk {}# welcome.5",
+        "talk {}# welcome.10 YTT2"
+    ],
+    BANDO_TRIEUTRUONGTHANH2: [
+        "talk {}# welcome.6",
+        "talk {}# welcome.10 TTT2"
+    ],
+    BANDO_TANTRUONGTHANH2: [
+        "talk {}# welcome.6",
+        "talk {}# welcome.10 TANTT2"
+    ],
+    BANDO_LINHCOCDONG1: [
+        "talk {}# welcome.7",
+        "talk {}# welcome.10 LCD1"
+    ],
+    BANDO_LINHCOCDONG2: [
+        "talk {}# welcome.7",
+        "talk {}# welcome.10 LCD2"
+    ],
+    BANDO_LOANDAO1: [
+        "talk {}# welcome.8",
+        "talk {}# welcome.10 LD1"
+    ],
+    BANDO_LOANDAO2: [
+        "talk {}# welcome.8",
+        "talk {}# welcome.10 LD2"
+    ],
+    BANDO_KHONMATRAN1: [
+        "talk {}# welcome.9",
+        "talk {}# welcome.10 KMT1"
+    ],
+    BANDO_KHONMATRAN2: [
+        "talk {}# welcome.9",
+        "talk {}# welcome.10 KMT2"
     ],
 }
 

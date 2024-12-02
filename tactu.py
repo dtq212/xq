@@ -28,6 +28,7 @@ class TacTu:
         self._is_tudongsuado = True
         self._is_tudongdichientruong = False
         self._is_tudongtrieuhoibaothudautien = True
+        self._is_tudongchaylenbandovuachet = True
 
         self._is_uutiennguoichoi = True
 
@@ -56,6 +57,7 @@ class TacTu:
         self._thoidiemsudungsinhkhitangannhat = time.time() - 300.
         self._thoidiemsudungsotriduocgannhat = time.time()
         self._thoidiemsudungphihanhphugannhat = time.time()
+        self._thoidiemdichuyenlenbandovuachetgannhat = time.time()
 
         self._diemdanhxungquanhs = []
         self._khoangcachdiemdanhxungquanh = 27.
@@ -68,9 +70,12 @@ class TacTu:
         self._khoangcachtimkiemmuctieu = 18.
         self._is_tudongtrieuhoithanthu = True
         self._is_tamngungtancongdebuffchothanhviennhom = False
+        self._is_tamngungtancongdichuyenlenbandovuachet = False
 
         self._idbandohientai = False
         self._phehientai = False
+
+        self._idbandovuachet = False
 
     def __del__(self):
         try:
@@ -301,6 +306,8 @@ class TacTu:
             while True:
                 if self._is_tamngungtancongdebuffchothanhviennhom:
                     break
+                if self._is_tamngungtancongdichuyenlenbandovuachet:
+                    break
                 if self._is_tamngungtancongtheosautruongnhom:
                     break
                 if self._is_tamngungtancongdenhatdo:
@@ -446,6 +453,8 @@ class TacTu:
                 if self._is_tamngungtancongdenhatdo:
                     break
                 if self._is_tamngungtancongdichuyenxungquanh:
+                    break
+                if self._is_tamngungtancongdichuyenlenbandovuachet:
                     break
                 if self.moitruong.get_is_dangclickchuottrai():
                     break
@@ -732,47 +741,71 @@ class TacTu:
 
         self._idbandohientai = idbandohientai
 
-    def action_tudongtimduong(self, x, y, idbando):
+    def action_tudongtimduong(self, x = False, y = False, idbando = False):
+        if not x and not y and not idbando:
+            return
+
         idbandohientai = self.moitruong.get_idbandohientai()
         if idbandohientai == BANDO_CHU:
-            diachicosothongtinnhanvatsugiamonphai = self.moitruong.action_timkiemnhanvat(tennhanvat = SUGIAMONPHAI)
+            if self.moitruong.get_khoangcachdiem(X_SUGIAMONPHAI_CHU, Y_SUGIAMONPHAI_CHU) < self.moitruong.get_khoangcachdiem(X_PHITACDOATNGANTRUYENTONG_CHU, Y_PHITACDOATNGANTRUYENTONG_CHU):
+                diachicosothongtinnhanvatsugiamonphai = self.moitruong.action_timkiemnhanvat(tennhanvat = SUGIAMONPHAI)
 
-            if not diachicosothongtinnhanvatsugiamonphai or self.moitruong.get_khoangcach(diachicosothongtinnhanvatsugiamonphai) >= 4.:
-                self.moitruong.action_tudongtimduong(X_SUGIAMONPHAI_CHU, Y_SUGIAMONPHAI_CHU, BANDO_CHU)
-            else:
-                iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvatsugiamonphai)
-                if iddoituong:
-                    self.moitruong.action_thucthicaulenh("talk {}# 1".format(hex(iddoituong)).replace("0x", ""))
-                    time.sleep(0.5)
-
-            return
-        elif idbandohientai == BANDO_THUCSON:
-            diachicosothongtinnhanvattanthutienco = self.moitruong.action_timkiemnhanvat(tennhanvat = TANTHUTIENCO)
-
-            if not diachicosothongtinnhanvattanthutienco or self.moitruong.get_khoangcach(diachicosothongtinnhanvattanthutienco) >= 4.:
-                self.moitruong.action_tudongtimduong(X_TANTHUTIENCO_THUCSON, Y_TANTHUTIENCO_THUCSON, BANDO_THUCSON)
-                time.sleep(0.5)
-            else:
-                if idbando in DICHUYENTANTHUTIENCO_MAP:
-                    iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvattanthutienco)
+                if not diachicosothongtinnhanvatsugiamonphai or self.moitruong.get_khoangcach(diachicosothongtinnhanvatsugiamonphai) >= 4.:
+                    self.moitruong.action_tudongtimduong(X_SUGIAMONPHAI_CHU, Y_SUGIAMONPHAI_CHU, BANDO_CHU)
+                else:
+                    iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvatsugiamonphai)
                     if iddoituong:
-                        for caulenh in DICHUYENTANTHUTIENCO_MAP[idbando]:
+                        self.moitruong.action_thucthicaulenh("talk {}# 1".format(hex(iddoituong)).replace("0x", ""))
+                        time.sleep(0.5)
+
+                        if self.moitruong.get_is_danghiencuasotuychon():
+                            self.moitruong.set_is_danghiencuasotuychon(False)
+                return
+            else:
+                diachicosothongtinnhanvatphitacdoatngantruyentong = self.moitruong.action_timkiemnhanvat(tennhanvat = PHITACDOATNGANTRUYENTONG)
+
+                if not diachicosothongtinnhanvatphitacdoatngantruyentong or self.moitruong.get_khoangcach(diachicosothongtinnhanvatphitacdoatngantruyentong) >= 4.:
+                    self.moitruong.action_tudongtimduong(X_PHITACDOATNGANTRUYENTONG_CHU, Y_PHITACDOATNGANTRUYENTONG_CHU, BANDO_CHU)
+                elif idbando in DICHUYENPHITACDOATNGUYENTRUYENTONG_MAP:
+                    iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvatphitacdoatngantruyentong)
+                    if iddoituong:
+                        for caulenh in DICHUYENPHITACDOATNGUYENTRUYENTONG_MAP[idbando]:
                             self.moitruong.action_thucthicaulenh(caulenh.format(hex(iddoituong)).replace("0x", ""))
                             time.sleep(0.25)
 
-                if self.moitruong.get_is_danghiencuasotuychon():
-                    self.moitruong.set_is_danghiencuasotuychon(False)
+                        if self.moitruong.get_is_danghiencuasotuychon():
+                            self.moitruong.set_is_danghiencuasotuychon(False)
+
+                return
+        elif idbandohientai == BANDO_THUCSON:
+            diachicosothongtinnhanvatxaphu = self.moitruong.action_timkiemnhanvat(tennhanvat = XAPHU)
+
+            if not diachicosothongtinnhanvatxaphu or self.moitruong.get_khoangcach(diachicosothongtinnhanvatxaphu) >= 4.:
+                self.moitruong.action_tudongtimduong(X_XAPHU_THUCSON, Y_XAPHU_THUCSON, BANDO_THUCSON)
+                time.sleep(0.5)
+            else:
+
+                iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvatxaphu)
+                if iddoituong:
+                    self.moitruong.action_thucthicaulenh("talk {}# go".format(hex(iddoituong)).replace("0x", ""))
+                    time.sleep(0.5)
+
+                    if self.moitruong.get_is_danghiencuasotuychon():
+                        self.moitruong.set_is_danghiencuasotuychon(False)
 
             return
-        self.moitruong.action_tudongtimduong(x, y, idbando)
 
-    def action_tudongdichuyenxungquanhdiem(self):
-        is_tamngungtancongdichuyenxungquanh = False
+        if x and y:
+            self.moitruong.action_tudongtimduong(x, y, idbando)
 
-        if self._is_tudongsudungkynang and self._diemdanhxungquanhs:
+    def action_tudongdichuyenlenbandovuachet(self):
+        is_tamngungtancongdichuyenlenbandovuachet = False
+
+        if self._is_tudongchaylenbandovuachet and self._idbandovuachet:
             while True:
                 if self._is_tamngungdichuyensudungkynang:
                     break
+
                 if self._is_tamngungdichuyendenhatdo:
                     break
 
@@ -783,6 +816,51 @@ class TacTu:
                     break
 
                 if self.moitruong.get_is_nhanvatdachet():
+                    break
+
+                idbandohientai = self.moitruong.get_idbandohientai()
+
+                if idbandohientai == self._idbandovuachet:
+                    self._idbandovuachet = False
+                else:
+                    is_tamngungtancongdichuyenlenbandovuachet = True
+
+                    if time.time() - self._thoidiemdichuyenlenbandovuachetgannhat < 1.:
+                        break
+
+                    if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
+                        self._thoidiemdichuyenlenbandovuachetgannhat = time.time()
+
+                        self.action_tudongtimduong(idbando = self._idbandovuachet)
+
+                        if time.time() - self._thoidiemthongbaotudongtimduonggannhat > 5.:
+                            self._thoidiemthongbaotudongtimduonggannhat = time.time()
+                            phatam("Di chuyển lên bản đồ vừa chết")
+                        break
+
+        self._is_tamngungtancongdichuyenlenbandovuachet = is_tamngungtancongdichuyenlenbandovuachet
+
+    def action_tudongdichuyenxungquanhdiem(self):
+        is_tamngungtancongdichuyenxungquanh = False
+
+        if self._is_tudongsudungkynang and self._diemdanhxungquanhs:
+            while True:
+                if self._is_tamngungdichuyensudungkynang:
+                    break
+
+                if self._is_tamngungdichuyendenhatdo:
+                    break
+
+                if self.moitruong.get_is_dangclickchuottrai():
+                    break
+
+                if self.moitruong.get_is_dangvankhi():
+                    break
+
+                if self.moitruong.get_is_nhanvatdachet():
+                    break
+
+                if self._idbandovuachet and self._is_tudongchaylenbandovuachet:
                     break
 
                 idbandohientai = self.moitruong.get_idbandohientai()
@@ -913,8 +991,11 @@ class TacTu:
             while True:
                 if not self.moitruong.get_is_nhanvatdachet():
                     self._thoidiemnhanvatchetgannhat = time.time()
-                elif time.time() - self._thoidiemnhanvatchetgannhat > 2.5:
-                    self.moitruong.action_phucsinh()
+                else:
+                    if time.time() - self._thoidiemnhanvatchetgannhat > 0.5:
+                        self._idbandovuachet = self.moitruong.get_idbandohientai()
+                    if time.time() - self._thoidiemnhanvatchetgannhat > 2.5:
+                        self.moitruong.action_phucsinh()
                 break
 
     def action_tudongdoimaupk(self):

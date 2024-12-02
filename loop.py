@@ -109,6 +109,8 @@ class LoopChinh:
         if hasattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai)):
             getattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai))()
 
+
+
         # while True:
         #     self.moitruong.action_thucthicaulenh("talk 1082f# info.10050")
         #     time.sleep(0.1)
@@ -214,6 +216,7 @@ class LoopPhu:
                 phatam("Nhân vật đã chết")
 
         self.tactu.action_tudongphucsinh()
+        self.tactu.action_tudongdichuyenlenbandovuachet()
         self.tactu.action_tudongdoimaupk()
         self.tactu.action_tudongsuado()
 
