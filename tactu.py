@@ -61,7 +61,6 @@ class TacTu:
         self._thoidiemsudungsotriduocgannhat = time.time()
         self._thoidiemsudungphihanhphugannhat = time.time()
         self._thoidiemdichuyenlenbandovuachetgannhat = time.time()
-        # self._thoidiemaoanhmadaoconsonggannhat = time.time() - 30.
 
         self._diemdanhxungquanhs = []
         self._khoangcachdiemdanhxungquanh = 27.
@@ -220,16 +219,15 @@ class TacTu:
                                 self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
                         else:
                             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
-                    # elif idbandohientai == BANDO_BATQUAITRAN:
-                    #     tendoituongmuctieudangchon = self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon)
-                    #     if tendoituongmuctieudangchon == AOANHMADAO:
-                    #         self._thoidiemaoanhmadaoconsonggannhat = time.time()
                     elif idbandohientai == BANDO_BATQUAITRAN:
                         tendoituongmuctieudangchon = self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon)
                         if tendoituongmuctieudangchon and tendoituongmuctieudangchon != self._tenmuctieubatquaitranhientai:
                             self._tenmuctieubatquaitrantruocdo = self._tenmuctieubatquaitranhientai
                             self._tenmuctieubatquaitranhientai = tendoituongmuctieudangchon
-
+                    else: #Tức là bản đồ không phải bát quái trận
+                        self._tenmuctieubatquaitranhientai = False
+                        self._tenmuctieubatquaitrantruocdo = False
+                    
                 if is_bandokhongtancong:
                     break
 
@@ -710,7 +708,7 @@ class TacTu:
                                 self.moitruong.action_dichuyentiepcan(diachicosothongtinvatphamxemxet)
                         break
 
-            if not is_cododenhat:
+            if not is_cododenhat and self.moitruong.get_idbandohientai() == BANDO_BATQUAITRAN:
                 i = 0
 
                 while True:
@@ -737,18 +735,7 @@ class TacTu:
                     if self.moitruong.get_tendoituong(diachicosothongtinvatphamxemxet) != CHANGIABAORUONG:
                         continue
 
-                    # if time.time() - self._thoidiemaoanhmadaoconsonggannhat >= 20.:
-                    #     khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
-                    #     if khoangcach <= 2.5:
-                    #         if time.time() - self._thoidiemmochangiabaoruonggannhat >= 2.5:
-                    #             self._thoidiemmochangiabaoruonggannhat = time.time()
-                    #             self.moitruong.action_thucthicaulenh("look {}#".format(hex(self.moitruong.get_iddoituong(diachicosothongtinvatphamxemxet))).replace("0x", ""), delay = 0.)
-                    #     else:
-                    #         self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinvatphamxemxet, khoangcachtoida = 1.5)
-                    # elif time.time() - self._thoidiemaoanhmadaoconsonggannhat >= 10.:
-                    #     self.action_sudungvatphamhanhtrang(HOITHANHPHU, delay = 0.5)
-
-                    if self._tenmuctieubatquaitrantruocdo != "S19" and self._tenmuctieubatquaitranhientai != AOANHMADAO:
+                    if self._tenmuctieubatquaitrantruocdo != "S19" or self._tenmuctieubatquaitranhientai != AOANHMADAO:
                         khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
                         if khoangcach <= 2.5:
                             if time.time() - self._thoidiemmochangiabaoruonggannhat >= 2.5:
@@ -767,9 +754,6 @@ class TacTu:
     def action_tudongdibatquaitran(self):
         if self._is_tudongdibatquaitran:
             if self.moitruong.get_idbandohientai() == BANDO_CHU:
-                # self._thoidiemaoanhmadaoconsonggannhat = time.time() - 30.
-                self._tenmuctieubatquaitranhientai = False
-                self._tenmuctieubatquaitrantruocdo = False
                 diachicosothongtinnhanvatbatquaitran = self.moitruong.action_timkiemnhanvat(tennhanvat = BATQUAITRAN)
 
                 if not diachicosothongtinnhanvatbatquaitran or self.moitruong.get_khoangcach(diachicosothongtinnhanvatbatquaitran) > 4.:
