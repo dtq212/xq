@@ -206,6 +206,11 @@ class LoopPhu:
         self.moitruong.action_vohieuhoaphimspace()
 
         self.tactu.action_tudongsudungvatpham()
+
+        self.tactu.action_tudongdichuyenxungquanhdiem()
+        self.tactu.action_tudongdichientruong()
+        self.tactu.action_tudongdibatquaitran()
+
         self.tactu.action_tudongnhatdo()
         self.tactu.action_tudongxepchongdo()
 
@@ -221,8 +226,5 @@ class LoopPhu:
         self.tactu.action_tudongdoimaupk()
         self.tactu.action_tudongsuado()
 
-        self.tactu.action_tudongdichuyenxungquanhdiem()
-        self.tactu.action_tudongdichientruong()
-        self.tactu.action_tudongdibatquaitran()
         self.tactu.action_tudongtrieuhoibaothudautien()
         self.tactu.action_tudongtrieuhoithanthu()
