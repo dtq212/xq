@@ -57,6 +57,7 @@ class LoopTimKiemMucTieu:
                 self.step()
             except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
                 print("Luồng tìm kiếm mục tiêu: {}".format(err))
+                # raise Exception(err)
                 time.sleep(1)
 
             time.sleep(0.02)
@@ -222,5 +223,6 @@ class LoopPhu:
 
         self.tactu.action_tudongdichuyenxungquanhdiem()
         self.tactu.action_tudongdichientruong()
+        self.tactu.action_tudongdibatquaitran()
         self.tactu.action_tudongtrieuhoibaothudautien()
         self.tactu.action_tudongtrieuhoithanthu()

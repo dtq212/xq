@@ -61,6 +61,7 @@ class TacTu:
         self._thoidiemsudungsotriduocgannhat = time.time()
         self._thoidiemsudungphihanhphugannhat = time.time()
         self._thoidiemdichuyenlenbandovuachetgannhat = time.time()
+        self._thoidiemaoanhmadaochetgannhat = time.time() - 300.
 
         self._diemdanhxungquanhs = []
         self._khoangcachdiemdanhxungquanh = 27.
@@ -79,6 +80,7 @@ class TacTu:
         self._phehientai = False
 
         self._idbandovuachet = False
+        self._tenmuctieuhientai = False
 
     def __del__(self):
         try:
@@ -224,6 +226,12 @@ class TacTu:
                     break
 
                 i += 1
+
+                if idbandohientai == BANDO_BATQUAITRAN:
+                    tendoituongmuctieuxemxet = self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieuxemxet)
+                    if tendoituongmuctieuxemxet == AOANHMADAO:
+                        if self.moitruong.get_is_nhanvatdachet(diachicosothongtinnhanvatmuctieuxemxet):
+                            self._thoidiemaoanhmadaochetgannhat = time.time()
 
                 if not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieuxemxet):
                     continue
@@ -623,6 +631,13 @@ class TacTu:
         else:
             phatam("Tắt tự động đi chiến trường")
 
+    def battat_is_tudongdibatquaitran(self):
+        self._is_tudongdibatquaitran = not self._is_tudongdibatquaitran
+        if self._is_tudongdibatquaitran:
+            phatam("Bật tự động đi bát quái trận")
+        else:
+            phatam("Tắt tự động đi bát quái trận")
+
     def battat_is_vohieuhoadichuyen(self):
 
         if not self.moitruong.get_is_vohieuhoadichuyen():
@@ -663,6 +678,7 @@ class TacTu:
 
                 if self.moitruong.get_is_nhanvatdachet():
                     break
+
                 diachicosothongtinvatphamxemxet = self.moitruong.get_diachicosothongtindoituongx(i)
                 if not diachicosothongtinvatphamxemxet:
                     break
@@ -715,22 +731,25 @@ class TacTu:
                     if self.moitruong.get_tendoituong(diachicosothongtinvatphamxemxet) != CHANGIABAORUONG:
                         continue
 
-                    khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
-                    if khoangcach >= 2.5:
-                        self.moitruong.action_dichuyentiepcan(diachicosothongtinvatphamxemxet)
-                    elif time.time() - self._thoidiemmochangiabaoruonggannhat > 1.:
-                        self._thoidiemmochangiabaoruonggannhat = time.time()
-                        self.moitruong.action_thucthicaulenh("look {}#".format(hex(self.moitruong.get_iddoituong(diachicosothongtinvatphamxemxet))).replace("0x", ""), delay = 0.)
+                    if time.time() - self._thoidiemaoanhmadaochetgannhat >= 20.:
+                        khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
+                        if khoangcach <= 2.5:
+                            if time.time() - self._thoidiemmochangiabaoruonggannhat >= 2.5:
+                                self._thoidiemmochangiabaoruonggannhat = time.time()
+                                self.moitruong.action_thucthicaulenh("look {}#".format(hex(self.moitruong.get_iddoituong(diachicosothongtinvatphamxemxet))).replace("0x", ""), delay = 0.)
+                        else:
+                            self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinvatphamxemxet, khoangcachtoida = 1.5)
+                    elif time.time() - self._thoidiemaoanhmadaochetgannhat >= 15.:
+                        self._thoidiemaoanhmadaochetgannhat = time.time()
+                        self.action_sudungvatphamhanhtrang(HOITHANHPHU, delay = 0.5)
                     break
 
         self._is_tamngungdichuyendenhatdo = is_tamngungdichuyendenhatdo
         self._is_tamngungtancongdenhatdo = is_tamngungtancongdenhatdo
 
     def action_tudongdibatquaitran(self):
-        idbandohientai = self.moitruong.get_idbandohientai()
-
         if self._is_tudongdibatquaitran:
-            if idbandohientai == BANDO_CHU:
+            if self.moitruong.get_idbandohientai() == BANDO_CHU:
                 diachicosothongtinnhanvatbatquaitran = self.moitruong.action_timkiemnhanvat(tennhanvat = BATQUAITRAN)
 
                 if not diachicosothongtinnhanvatbatquaitran or self.moitruong.get_khoangcach(diachicosothongtinnhanvatbatquaitran) > 4.:
@@ -739,21 +758,13 @@ class TacTu:
                     iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvatbatquaitran)
                     if iddoituong:
                         if self.moitruong.get_is_dangnamtrongnhom() and self.moitruong.get_is_truongnhom():
-                            self.moitruong.action_thucthicaulenh("talk {}# welcome.102".format(hex(iddoituong)).replace("0x", ""))
-                            time.sleep(0.25)
-                            self.moitruong.action_thucthicaulenh("talk {}# welcome.17".format(hex(iddoituong)).replace("0x", ""))
-                            time.sleep(0.25)
-                        elif self.moitruong.get_idnguoichoi() not in NHANVATTODOITUDONGs:
                             self.moitruong.action_thucthicaulenh("talk {}# welcome.1".format(hex(iddoituong)).replace("0x", ""))
                             time.sleep(0.25)
-                            self.moitruong.action_thucthicaulenh("talk {}# welcome.3".format(hex(iddoituong)).replace("0x", ""))
+                            self.moitruong.action_thucthicaulenh("talk {}# welcome.11".format(hex(iddoituong)).replace("0x", ""))
                             time.sleep(0.25)
+                            if self.moitruong.get_is_danghiencuasotuychon():
+                                self.moitruong.set_is_danghiencuasotuychon(False)
 
-                        if self.moitruong.get_is_danghiencuasotuychon():
-                            self.moitruong.set_is_danghiencuasotuychon(False)
-
-
-        self._idbandohientai = idbandohientai
 
     def action_tudongdichientruong(self):
         idbandohientai = self.moitruong.get_idbandohientai()
