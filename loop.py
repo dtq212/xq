@@ -119,13 +119,19 @@ class LoopChinh:
         #     self.moitruong.action_thucthicaulenh("talk 1082f# info.210")
         #     time.sleep(0.1)
 
-        # solan = 300
+
+        # while True:
+        #     iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(DOANTHACHDACBIETSOCAP)
         #
-        # for i in range(1, solan + 1):
-        #     self.moitruong.action_thucthicaulenh("move ! 1a28f# 1")
-        #     time.sleep(0.05)
-        #     if not i % 10:
-        #         time.sleep(2)
+        #     if not iddoituongvatpham:
+        #         print("khong tim thay")
+        #         break
+        #
+        #     caulenh = "move ! {}# 1".format(hex(iddoituongvatpham)).replace("0x", "")
+        #
+        #     self.moitruong.action_thucthicaulenh(caulenh)
+        #
+        #     time.sleep(0.25)
 
         # solan = 100
         #
