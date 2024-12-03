@@ -1039,11 +1039,8 @@ class MoiTruong:
     def action_thucthicaulenh(self, caulenh, delay = 0.05):
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return
-
+        time.sleep(0.1)
         self._thoidiemthucthicaulenhgannhat = time.time()
-
-        time.sleep(0.05)
-
         self.auto_assemble_thucthicaulenh(caulenh)
 
     def action_moihoacxinvaonhom(self, idnguoichoi, delay = 1.):
