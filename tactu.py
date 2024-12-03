@@ -61,6 +61,7 @@ class TacTu:
         self._thoidiemsudungsotriduocgannhat = time.time()
         self._thoidiemsudungphihanhphugannhat = time.time()
         self._thoidiemdichuyenlenbandovuachetgannhat = time.time()
+        self._thoidiemepdogannhat = time.time()
 
         self._diemdanhxungquanhs = []
         self._khoangcachdiemdanhxungquanh = 27.
@@ -1117,6 +1118,33 @@ class TacTu:
         self._thoidiemsudungvatphamgannhat = time.time()
         self.moitruong.action_thucthicaulenh("use {}#".format(hex(iddoituongvatpham)).replace("0x", ""), delay = 0.)
 
+    def action_tudongepdo(self, delay = 0.25):
+        if time.time() - self._thoidiemepdogannhat < delay:
+            return
+
+        iddoituongvatphamhanhtrang1 = self.moitruong.get_iddoituongvatphamhanhtrang(0)
+        if not iddoituongvatphamhanhtrang1:
+            return
+
+        tenvatpham2 = self.moitruong.get_tenvatphamhanhtrang(1)
+
+        if not tenvatpham2:
+            return
+
+        self._thoidiemsudungvatphamgannhat = time.time()
+
+        while True:
+            iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(tenvatpham2)
+
+            if not iddoituongvatpham:
+                break
+
+            caulenh = "move ! {}# 1".format(hex(iddoituongvatpham)).replace("0x", "")
+
+            self.moitruong.action_thucthicaulenh(caulenh)
+
+            time.sleep(0.25)
+
     def action_tudongxepchongdo(self):
         if self._is_tudongxepchongdo and VATPHAMXEPCHONGs:
             while True:
@@ -1181,3 +1209,4 @@ class TacTu:
 
             self._thoidiemkiemtradatrieuhoithanthugannhat = time.time()
             self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_THANTHU)
+

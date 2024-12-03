@@ -62,6 +62,8 @@ class CuaSo:
         keyboard.add_hotkey("ctrl + alt + b", self.battat_tudongdibatquaitran)
         keyboard.add_hotkey("ctrl + alt + t", self.battat_tudongbattheosaunhom)
 
+        keyboard.add_hotkey("ctrl + alt + e", self.action_tudongepdo)
+
         self.thoidiemluuthietlapgannhat = time.time()
 
     def __del__(self):
@@ -138,6 +140,10 @@ class CuaSo:
     def battat_tudongbattheosaunhom(self):
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.battat_is_tudongbattheosaunhom()
+
+    def action_tudongepdo(self):
+        if self.moitruong.get_is_cuasogamekichhoat():
+            self.tactu.action_tudongepdo()
 
     def themtenmuctieutancong(self):
         if self.moitruong.get_is_cuasogamekichhoat():
