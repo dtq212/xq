@@ -739,6 +739,7 @@ class TacTu:
                         khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
                         if khoangcach <= 2.5:
                             if time.time() - self._thoidiemmochangiabaoruonggannhat >= 2.5:
+                                time.sleep(2.5)
                                 self._thoidiemmochangiabaoruonggannhat = time.time()
                                 self.moitruong.action_thucthicaulenh("look {}#".format(hex(self.moitruong.get_iddoituong(diachicosothongtinvatphamxemxet))).replace("0x", ""), delay = 0.)
                         else:
