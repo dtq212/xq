@@ -777,11 +777,12 @@ class TacTu:
                             time.sleep(0.5)
                             if self.moitruong.get_is_danghiencuasotuychon():
                                 self.moitruong.set_is_danghiencuasotuychon(False)
-        if self.moitruong.get_idbandohientai() == BANDO_BATQUAITRAN:
-            if time.time() - self.moitruong.get_thoidiemkhongcomuctieugannhat() > 5.:
-                if time.time() - self._thoidiemsudunghoithanhphugannhat > 5.:
-                    self._thoidiemsudunghoithanhphugannhat = time.time()
-                    self.action_sudungvatphamhanhtrang(HOITHANHPHU, delay = 0.)
+        if self.moitruong._idbandohientai == BANDO_BATQUAITRAN:
+            if self.moitruong.get_thoidiemthaydoibandogannhat() > 2.5:
+                if time.time() - self.moitruong.get_thoidiemkhongcomuctieugannhat() > 5.:
+                    if time.time() - self._thoidiemsudunghoithanhphugannhat > 5.:
+                        self._thoidiemsudunghoithanhphugannhat = time.time()
+                        self.action_sudungvatphamhanhtrang(HOITHANHPHU, delay = 0.)
 
     def action_tudongdichientruong(self):
         idbandohientai = self.moitruong.get_idbandohientai()
