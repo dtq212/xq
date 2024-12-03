@@ -843,6 +843,7 @@ class TacTu:
                 else:
                     iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvatsugiamonphai)
                     if iddoituong:
+                        time.sleep(0.5)
                         self.moitruong.action_thucthicaulenh("talk {}# 1".format(hex(iddoituong)).replace("0x", ""))
                         time.sleep(0.5)
 
@@ -858,6 +859,7 @@ class TacTu:
                     iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvatphitacdoatngantruyentong)
                     if iddoituong:
                         for caulenh in DICHUYENPHITACDOATNGUYENTRUYENTONG_MAP[idbando]:
+                            time.sleep(0.25)
                             self.moitruong.action_thucthicaulenh(caulenh.format(hex(iddoituong)).replace("0x", ""))
                             time.sleep(0.25)
 
@@ -874,6 +876,7 @@ class TacTu:
             else:
                 iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvatxaphu)
                 if iddoituong:
+                    time.sleep(0.5)
                     self.moitruong.action_thucthicaulenh("talk {}# go".format(hex(iddoituong)).replace("0x", ""))
                     time.sleep(0.5)
 
@@ -1159,9 +1162,9 @@ class TacTu:
 
                     for vitrivatpham in vitrivatphams[1:]:
                         caulenh = "move {}# {}".format(hex(vitrivatpham[1]), vitrivatphams[0][0] + 1).replace("0x", "")
-                        time.sleep(0.25)
+                        time.sleep(0.5)
                         self.moitruong.action_thucthicaulenh(caulenh)
-                        time.sleep(0.25)
+                        time.sleep(0.5)
                 break
 
     def action_tudongtrieuhoibaothudautien(self):
