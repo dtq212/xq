@@ -831,7 +831,10 @@ class TacTu:
 
         idbandohientai = self.moitruong.get_idbandohientai()
         if idbandohientai == BANDO_CHU:
-            if self.moitruong.get_khoangcachdiem(X_SUGIAMONPHAI_CHU, Y_SUGIAMONPHAI_CHU) < self.moitruong.get_khoangcachdiem(X_PHITACDOATNGANTRUYENTONG_CHU, Y_PHITACDOATNGANTRUYENTONG_CHU):
+            a = self.moitruong.get_khoangcachdiem(X_SUGIAMONPHAI_CHU, Y_SUGIAMONPHAI_CHU)
+            b = self.moitruong.get_khoangcachdiem(X_PHITACDOATNGANTRUYENTONG_CHU, Y_PHITACDOATNGANTRUYENTONG_CHU)
+            print(a, " ", b)
+            if a < b:
                 diachicosothongtinnhanvatsugiamonphai = self.moitruong.action_timkiemnhanvat(tennhanvat = SUGIAMONPHAI)
 
                 if not diachicosothongtinnhanvatsugiamonphai or self.moitruong.get_khoangcach(diachicosothongtinnhanvatsugiamonphai) >= 4.:
@@ -868,7 +871,6 @@ class TacTu:
                 self.moitruong.action_tudongtimduong(X_XAPHU_THUCSON, Y_XAPHU_THUCSON, BANDO_THUCSON)
                 time.sleep(0.5)
             else:
-
                 iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvatxaphu)
                 if iddoituong:
                     self.moitruong.action_thucthicaulenh("talk {}# go".format(hex(iddoituong)).replace("0x", ""))
@@ -1078,8 +1080,9 @@ class TacTu:
                 else:
                     if time.time() - self._thoidiemnhanvatchetgannhat > 0.5:
                         self._idbandovuachet = self.moitruong.get_idbandohientai()
+                    if time.time() - self._thoidiemnhanvatchetgannhat > 2.5:
                         self.moitruong.action_phucsinh(is_duoccuu = True)
-                    if time.time() - self._thoidiemnhanvatchetgannhat > 10.:
+                    elif time.time() - self._thoidiemnhanvatchetgannhat > 10.:
                         self.moitruong.action_phucsinh()
                 break
 

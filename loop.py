@@ -76,6 +76,7 @@ class LoopChinh:
         self.moitruong = moitruong
         self.tactu = tactu
         self.stop = stop
+        self.i = 0
 
     def __del__(self):
         try:
@@ -150,6 +151,11 @@ class LoopChinh:
         # muctieu = self.moitruong.get_diachicosothongtinnhanvatdangchichuot()
         # if muctieu:
         #     print(self.moitruong.get_tendoituong(muctieu))
+
+        if not self.i:
+            pass
+            # self.i = 1
+            # self.tactu.action_tudongtimduong(BANDO_KHONMATRAN1)
 
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
