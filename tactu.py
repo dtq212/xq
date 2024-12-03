@@ -62,6 +62,7 @@ class TacTu:
         self._thoidiemsudungphihanhphugannhat = time.time()
         self._thoidiemdichuyenlenbandovuachetgannhat = time.time()
         self._thoidiemepdogannhat = time.time()
+        self._thoidiemsudunghoithanhphugannhat = time.time()
 
         self._diemdanhxungquanhs = []
         self._khoangcachdiemdanhxungquanh = 27.
@@ -746,7 +747,7 @@ class TacTu:
                         khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
                         if khoangcach <= 2.5:
                             if time.time() - self._thoidiemmochangiabaoruonggannhat >= 2.5:
-                                time.sleep(2.5)
+                                time.sleep(1.)
                                 self._thoidiemmochangiabaoruonggannhat = time.time()
                                 self.moitruong.action_thucthicaulenh("look {}#".format(hex(self.moitruong.get_iddoituong(diachicosothongtinvatphamxemxet))).replace("0x", ""), delay = 0.)
                         else:
@@ -776,7 +777,11 @@ class TacTu:
                             time.sleep(0.5)
                             if self.moitruong.get_is_danghiencuasotuychon():
                                 self.moitruong.set_is_danghiencuasotuychon(False)
-
+        if self.moitruong.get_idbandohientai() == BANDO_BATQUAITRAN:
+            if time.time() - self.moitruong.get_thoidiemkhongcomuctieugannhat() > 5.:
+                if time.time() - self._thoidiemsudunghoithanhphugannhat > 5.:
+                    self._thoidiemsudunghoithanhphugannhat = time.time()
+                    self.action_sudungvatphamhanhtrang(HOITHANHPHU, delay = 0.)
 
     def action_tudongdichientruong(self):
         idbandohientai = self.moitruong.get_idbandohientai()

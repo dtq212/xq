@@ -111,16 +111,15 @@ class LoopChinh:
         if hasattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai)):
             getattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai))()
 
+        # i = 0
+        #
         # while True:
-        #     self.moitruong.action_thucthicaulenh("talk 1082f# info.10050")
-        #     time.sleep(0.1)
-        #     self.moitruong.action_thucthicaulenh("talk 1082f# info.11")
-        #     time.sleep(0.1)
-        #     self.moitruong.action_thucthicaulenh("talk 1082f# info.200")
-        #     time.sleep(0.1)
-        #     self.moitruong.action_thucthicaulenh("talk 1082f# info.210")
-        #     time.sleep(0.1)
-
+        #     self.moitruong.action_thucthicaulenh("talk aa14# info.143")
+        #     time.sleep(0.05)
+        #     i += 1
+        #     if i % 10 == 0:
+        #         self.tactu.action_sudungvatphamhanhtrang(TUSAMDONTRUNG)
+        #         time.sleep(0.5)
 
         # while True:
         #     iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(DOANTHACHDACBIETSOCAP)
