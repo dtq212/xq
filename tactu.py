@@ -35,7 +35,7 @@ class TacTu:
 
         self._is_uutiennguoichoi = True
 
-        self._khoangcachtoidatruongnhom = 9
+        self._khoangcachtoidatruongnhom = 6
 
         self._tenmuctieutancongs = set()
 
@@ -741,7 +741,7 @@ class TacTu:
                         khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
                         if khoangcach <= 2.5:
                             if time.time() - self._thoidiemmochangiabaoruonggannhat >= 2.5:
-                                time.sleep(1.)
+                                time.sleep(1.5)
                                 self._thoidiemmochangiabaoruonggannhat = time.time()
                                 self.moitruong.action_thucthicaulenh("look {}#".format(hex(self.moitruong.get_iddoituong(diachicosothongtinvatphamxemxet))).replace("0x", ""), delay = 0.)
                         else:
@@ -1125,6 +1125,8 @@ class TacTu:
         if time.time() - self._thoidiemepdogannhat < delay:
             return
 
+        print("-----------------------")
+
         iddoituongvatphamhanhtrang1 = self.moitruong.get_iddoituongvatphamhanhtrang(0)
         if not iddoituongvatphamhanhtrang1:
             return
@@ -1134,7 +1136,17 @@ class TacTu:
         if not tenvatpham2:
             return
 
+        iddoituongvatphamhanhtrang2 = self.moitruong.get_iddoituongvatphamhanhtrang(1)
+        if not iddoituongvatphamhanhtrang2:
+            return
+
         self._thoidiemsudungvatphamgannhat = time.time()
+
+        self.moitruong.action_thucthicaulenh("move {}# 1".format(hex(iddoituongvatphamhanhtrang2)).replace("0x", ""))
+        time.sleep(0.25)
+
+        if self.moitruong.get_is_danghiencuasotuychon():
+            self.moitruong.set_is_danghiencuasotuychon(False)
 
         while True:
             iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(tenvatpham2)
@@ -1142,11 +1154,12 @@ class TacTu:
             if not iddoituongvatpham:
                 break
 
-            caulenh = "move ! {}# 1".format(hex(iddoituongvatpham)).replace("0x", "")
+            caulenh = "mix40262 0# {}# {}#".format(hex(iddoituongvatphamhanhtrang1), hex(iddoituongvatpham)).replace("0x", "")
 
             self.moitruong.action_thucthicaulenh(caulenh)
 
             time.sleep(0.25)
+
 
     def action_tudongxepchongdo(self):
         if self._is_tudongxepchongdo and VATPHAMXEPCHONGs:
