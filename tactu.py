@@ -224,9 +224,9 @@ class TacTu:
                         if tendoituongmuctieudangchon and tendoituongmuctieudangchon != self._tenmuctieubatquaitranhientai:
                             self._tenmuctieubatquaitrantruocdo = self._tenmuctieubatquaitranhientai
                             self._tenmuctieubatquaitranhientai = tendoituongmuctieudangchon
-                    else: #Tức là bản đồ không phải bát quái trận
-                        self._tenmuctieubatquaitranhientai = False
-                        self._tenmuctieubatquaitrantruocdo = False
+                if idbandohientai != BANDO_BATQUAITRAN: #Tức là bản đồ không phải bát quái trận
+                    self._tenmuctieubatquaitranhientai = False
+                    self._tenmuctieubatquaitrantruocdo = False
                     
                 if is_bandokhongtancong:
                     break

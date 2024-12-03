@@ -1042,7 +1042,7 @@ class MoiTruong:
 
         self._thoidiemthucthicaulenhgannhat = time.time()
 
-        # print(datetime.datetime.now(), caulenh)
+        time.sleep(0.05)
 
         self.auto_assemble_thucthicaulenh(caulenh)
 
