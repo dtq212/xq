@@ -222,7 +222,9 @@ class TacTu:
                             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
                     elif idbandohientai == BANDO_BATQUAITRAN:
                         tendoituongmuctieudangchon = self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon)
-                        if tendoituongmuctieudangchon and tendoituongmuctieudangchon != self._tenmuctieubatquaitranhientai:
+                        if tendoituongmuctieudangchon == AOANHMADAO:
+                            self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
+                        elif tendoituongmuctieudangchon and tendoituongmuctieudangchon != self._tenmuctieubatquaitranhientai:
                             self._tenmuctieubatquaitrantruocdo = self._tenmuctieubatquaitranhientai
                             self._tenmuctieubatquaitranhientai = tendoituongmuctieudangchon
                 if idbandohientai != BANDO_BATQUAITRAN: #Tức là bản đồ không phải bát quái trận
@@ -250,6 +252,10 @@ class TacTu:
                         if tendoituongmuctieuxemxet != BACHKHOI:
                             continue
                     else:
+                        continue
+
+                if idbandohientai == BANDO_BATQUAITRAN:
+                    if self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieuxemxet) == AOANHMADAO:
                         continue
 
                 if self.moitruong.get_idnguoichoi(diachicosothongtinnhanvatmuctieuxemxet) in NHANVATTODOITUDONGs:
