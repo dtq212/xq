@@ -1159,6 +1159,7 @@ class TacTu:
 
                     for vitrivatpham in vitrivatphams[1:]:
                         caulenh = "move {}# {}".format(hex(vitrivatpham[1]), vitrivatphams[0][0] + 1).replace("0x", "")
+                        time.sleep(0.25)
                         self.moitruong.action_thucthicaulenh(caulenh)
                         time.sleep(0.25)
                 break
