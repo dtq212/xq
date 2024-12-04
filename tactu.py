@@ -928,6 +928,7 @@ class TacTu:
                             phatam("Di chuyển lên bản đồ vừa chết")
                         break
 
+                break
         self._is_tamngungtancongdichuyenlenbandovuachet = is_tamngungtancongdichuyenlenbandovuachet
 
     def action_tudongdichuyenxungquanhdiem(self):
@@ -1184,7 +1185,10 @@ class TacTu:
         if self._is_tudongtrieuhoibaothudautien:
             while True:
                 if self.moitruong.get_idbandohientai() not in BANDOKHONGTANCONGs:
-                    return
+                    break
+
+                if self.moitruong.get_is_dangvankhi():
+                    break
 
                 iddoituongbaothudautien = self.moitruong.get_iddoituongbaothudautien()
 
@@ -1209,6 +1213,8 @@ class TacTu:
                     self._thoidiemtudongtrieuhoibaothudautien = time.time()
                     self.moitruong.action_thucthicaulenh("pet {}# show".format(hex(iddoituongbaothudautien)).replace("0x", ""), delay = 0.)
                     break
+
+                break
 
     def action_tudongtrieuhoithanthu(self):
         if self._is_tudongtrieuhoithanthu:
