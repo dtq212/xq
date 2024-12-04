@@ -609,6 +609,54 @@ class TacTu:
                 break
         self._is_tamngungdichuyensudungkynang = is_tamngungdichuyensudungkynang
 
+    def action_tudongsudungkynang_daohoanguyen(self):
+        is_tamngungdichuyensudungkynang = False
+        if self._is_tudongsudungkynang:
+            while True:
+                if self._is_tamngungtancongtheosautruongnhom:
+                    break
+                if self._is_tamngungtancongdenhatdo:
+                    break
+                if self._is_tamngungtancongdichuyenxungquanh:
+                    break
+                if self._is_tamngungtancongdichuyenlenbandovuachet:
+                    break
+                if self.moitruong.get_is_dangclickchuottrai():
+                    break
+                if self.moitruong.get_is_nhanvatdachet():
+                    break
+                if self.moitruong.get_is_dangvankhi():
+                    break
+                if time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() < 1.:
+                    break
+
+                idtuthenhanvat = self.moitruong.get_idtuthenhanvat()
+
+                diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+
+                if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRANCOTHANUY,), True, is_hieuungcoloi = 1) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TRANCOTHANUY):
+                    is_tamngungdichuyensudungkynang = True
+                    self.moitruong.action_sudungkynangvitrikhongtrihoan(*VITRIKYNANG_TRANCOTHANUY)
+                    break
+
+                if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KIMTRUNGCHAO,), True, is_hieuungcoloi = 1) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KIMTRUNGCHAO):
+                    is_tamngungdichuyensudungkynang = True
+                    self.moitruong.action_sudungkynangvitrikhongtrihoan(*VITRIKYNANG_KIMTRUNGCHAO)
+                    break
+
+                if not diachicosothongtinnhanvatmuctieudangchon or not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
+                    if self.moitruong.get_idbandohientai() in BANDOKHONGTANCONGs:
+                        if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KIMCUONGTHANPHAP,), True, is_hieuungcoloi = 1) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KIMCUONGTHANPHAP):
+                            is_tamngungdichuyensudungkynang = True
+                            if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
+                                self.moitruong.action_sudungkynangvitrikhongtrihoan(*VITRIKYNANG_KIMCUONGTHANPHAP)
+                                break
+
+                    break
+
+                break
+        self._is_tamngungdichuyensudungkynang = is_tamngungdichuyensudungkynang
+
     def battat_is_tudongsudungkynang(self):
         self._is_tudongsudungkynang = not self._is_tudongsudungkynang
         if self._is_tudongsudungkynang:
@@ -1143,24 +1191,23 @@ class TacTu:
 
         self._thoidiemsudungvatphamgannhat = time.time()
 
-        self.moitruong.action_thucthicaulenh("move {}# 1".format(hex(iddoituongvatphamhanhtrang2)).replace("0x", ""))
-        time.sleep(0.5)
-
-        if self.moitruong.get_is_danghiencuasotuychon():
-            self.moitruong.set_is_danghiencuasotuychon(False)
-
         while True:
             iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(tenvatpham2)
 
             if not iddoituongvatpham:
                 break
 
+            self.moitruong.action_thucthicaulenh("move {}# 1".format(hex(iddoituongvatpham)).replace("0x", ""))
+            time.sleep(0.25)
+
             caulenh = "mix40262 0# {}# {}#".format(hex(iddoituongvatphamhanhtrang1), hex(iddoituongvatpham)).replace("0x", "")
 
             self.moitruong.action_thucthicaulenh(caulenh)
 
-            time.sleep(1.)
+            time.sleep(0.25)
 
+        if self.moitruong.get_is_danghiencuasotuychon():
+            self.moitruong.set_is_danghiencuasotuychon(False)
 
     def action_tudongxepchongdo(self):
         if self._is_tudongxepchongdo and VATPHAMXEPCHONGs:

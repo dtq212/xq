@@ -156,6 +156,8 @@ class LoopChinh:
             # self.i = 1
             # self.tactu.action_tudongtimduong(BANDO_KHONMATRAN1)
 
+        # print(self.moitruong.get_danhsachhieuungnhanvats())
+
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
         self.moitruong = moitruong
