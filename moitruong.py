@@ -1038,11 +1038,12 @@ class MoiTruong:
 
     def action_thucthicaulenh(self, caulenh, delay = 0.05):
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
-            return
+            return False
         time.sleep(0.01)
         self._thoidiemthucthicaulenhgannhat = time.time()
         self.auto_assemble_thucthicaulenh(caulenh)
         time.sleep(0.01)
+        return True
 
     def action_moihoacxinvaonhom(self, idnguoichoi, delay = 1.):
         if time.time() - self._thoidiemthaotacnhomgannhat < delay:

@@ -304,7 +304,7 @@ class TacTu:
                 diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
                 if diachicosothongtinnhanvatmuctieudangchon and self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon) and self.moitruong.get_idbandohientai() not in BANDOKHONGTANCONGs:
                     if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NHANSAMVUONG, ), True, is_hieuungcoloi = 1):
-                        self.action_sudungvatphamhanhtrang(NHANSAMVUONG)
+                        self.action_sudungvatphamhanhtrang(NHANSAMVUONG, delay = 0.5)
 
             if self.moitruong.get_diempk() > 0:
                 self.action_sudungvatphamhanhtrang(ANXAPHU)
@@ -315,7 +315,7 @@ class TacTu:
 
             if time.time() - self._thoidiemsudungsotriduocgannhat > 1. and self.moitruong.get_phantramsinhlucconlai() <= 15.:
                 self._thoidiemsudungsotriduocgannhat = time.time()
-                self.action_sudungvatphamhanhtrang(SOTRIDUOC, delay = 0.)
+                self.action_sudungvatphamhanhtrang(SOTRIDUOC, delay = 0.5)
 
     def action_tudongsudungkynang_vanmongcoc(self):
         is_tamngungdichuyensudungkynang = False
@@ -789,9 +789,8 @@ class TacTu:
                         khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
                         if khoangcach <= 2.5:
                             if time.time() - self._thoidiemmochangiabaoruonggannhat >= 2.5:
-                                time.sleep(1.5)
                                 self._thoidiemmochangiabaoruonggannhat = time.time()
-                                self.moitruong.action_thucthicaulenh("look {}#".format(hex(self.moitruong.get_iddoituong(diachicosothongtinvatphamxemxet))).replace("0x", ""), delay = 0.)
+                                self.moitruong.action_thucthicaulenh("look {}#".format(hex(self.moitruong.get_iddoituong(diachicosothongtinvatphamxemxet))).replace("0x", ""), delay = 0.5)
                         else:
                             self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinvatphamxemxet, khoangcachtoida = 1.5)
                     elif time.time() - self.moitruong.get_thoidiemkhongcomuctieugannhat() > 5.:
@@ -870,7 +869,7 @@ class TacTu:
                 if self.moitruong.get_is_daketthucchientruong():
                     if time.time() - self._thoidiemyeucauroikhoichientruonggannhat > 2.:
                         self._thoidiemyeucauroikhoichientruonggannhat = time.time()
-                        self.moitruong.action_thucthicaulenh("desc changping leave", delay = 0.)
+                        self.moitruong.action_thucthicaulenh("desc changping leave", delay = 0.5)
 
         self._idbandohientai = idbandohientai
 
@@ -1174,12 +1173,6 @@ class TacTu:
         if time.time() - self._thoidiemepdogannhat < delay:
             return
 
-        print("-----------------------")
-
-        iddoituongvatphamhanhtrang1 = self.moitruong.get_iddoituongvatphamhanhtrang(0)
-        if not iddoituongvatphamhanhtrang1:
-            return
-
         tenvatpham2 = self.moitruong.get_tenvatphamhanhtrang(1)
 
         if not tenvatpham2:
@@ -1192,6 +1185,10 @@ class TacTu:
         self._thoidiemsudungvatphamgannhat = time.time()
 
         while True:
+            iddoituongvatphamhanhtrang1 = self.moitruong.get_iddoituongvatphamhanhtrang(0)
+            if not iddoituongvatphamhanhtrang1:
+                return
+
             iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(tenvatpham2)
 
             if not iddoituongvatpham:
@@ -1223,9 +1220,9 @@ class TacTu:
 
                     for vitrivatpham in vitrivatphams[1:]:
                         caulenh = "move {}# {}".format(hex(vitrivatpham[1]), vitrivatphams[0][0] + 1).replace("0x", "")
-                        time.sleep(0.5)
-                        self.moitruong.action_thucthicaulenh(caulenh)
-                        time.sleep(0.5)
+                        time.sleep(0.25)
+                        self.moitruong.action_thucthicaulenh(caulenh, delay = 1.0)
+                        time.sleep(0.25)
                 break
 
     def action_tudongtrieuhoibaothudautien(self):
@@ -1247,18 +1244,18 @@ class TacTu:
                         iddoituongcaocapbaothuthucpham = self.moitruong.action_timkiemvatphamhanhtrang(CAOCAPBAOTHUTHUCPHAM)
                         if iddoituongcaocapbaothuthucpham:
                             self._thoidiemsudungthucanbaothugannhat = time.time()
-                            self.moitruong.action_thucthicaulenh("use {}# pet {}#".format(hex(iddoituongcaocapbaothuthucpham), hex(iddoituongbaothudautien)).replace("0x", ""), delay = 0.)
+                            self.moitruong.action_thucthicaulenh("use {}# pet {}#".format(hex(iddoituongcaocapbaothuthucpham), hex(iddoituongbaothudautien)).replace("0x", ""), delay = 0.5)
 
                     diachicosonhanvatbaothudautien = self.moitruong.action_timkiemnhanvat(iddoituong = iddoituongbaothudautien)
 
                     if diachicosonhanvatbaothudautien and time.time() - self._thoidiemthietlapbaothuchodoigannhat > 2.:
                         self._thoidiemthietlapbaothuchodoigannhat = time.time()
-                        self.moitruong.action_thucthicaulenh("pet {}# 3".format(hex(iddoituongbaothudautien)).replace("0x", ""), delay = 0.)
+                        self.moitruong.action_thucthicaulenh("pet {}# 3".format(hex(iddoituongbaothudautien)).replace("0x", ""), delay = 0.5)
                     break
 
                 if time.time() - self._thoidiemtudongtrieuhoibaothudautien > 1. and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
                     self._thoidiemtudongtrieuhoibaothudautien = time.time()
-                    self.moitruong.action_thucthicaulenh("pet {}# show".format(hex(iddoituongbaothudautien)).replace("0x", ""), delay = 0.)
+                    self.moitruong.action_thucthicaulenh("pet {}# show".format(hex(iddoituongbaothudautien)).replace("0x", ""), delay = 0.5)
                     break
 
                 break
