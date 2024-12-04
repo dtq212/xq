@@ -1144,7 +1144,7 @@ class TacTu:
         self._thoidiemsudungvatphamgannhat = time.time()
 
         self.moitruong.action_thucthicaulenh("move {}# 1".format(hex(iddoituongvatphamhanhtrang2)).replace("0x", ""))
-        time.sleep(0.25)
+        time.sleep(0.5)
 
         if self.moitruong.get_is_danghiencuasotuychon():
             self.moitruong.set_is_danghiencuasotuychon(False)
@@ -1159,7 +1159,7 @@ class TacTu:
 
             self.moitruong.action_thucthicaulenh(caulenh)
 
-            time.sleep(0.25)
+            time.sleep(1.)
 
 
     def action_tudongxepchongdo(self):
