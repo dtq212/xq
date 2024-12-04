@@ -743,7 +743,7 @@ class TacTu:
 
                 tenvatpham = self.moitruong.get_tendoituong(diachicosothongtinvatphamxemxet)
 
-                if tenvatpham in VATPHAMTUDONGNHATs or (tenvatpham == TIENTE and not self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()):
+                if tenvatpham in VATPHAMTUDONGNHATs:
                     khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
                     if khoangcach <= KHOANGCACHNUAMANHINH:
                         is_tamngungdichuyendenhatdo = True
