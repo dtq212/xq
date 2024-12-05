@@ -212,13 +212,10 @@ class LoopPhu:
         self.moitruong.action_vohieuhoakhoanhvungkynang()
         self.moitruong.action_vohieuhoaphimspace()
 
-        self.tactu.action_tudongsudungvatpham()
-
         self.tactu.action_tudongdichuyenxungquanhdiem()
         self.tactu.action_tudongdichientruong()
         self.tactu.action_tudongdibatquaitran()
 
-        self.tactu.action_tudongnhatdo()
         self.tactu.action_tudongxepchongdo()
 
         self.tactu.action_tudongtodoi()
@@ -235,3 +232,39 @@ class LoopPhu:
 
         self.tactu.action_tudongtrieuhoibaothudautien()
         self.tactu.action_tudongtrieuhoithanthu()
+
+        self.tactu.action_tudongnhatdo()
+
+class LoopSuDungVatPham:
+    def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
+        self.moitruong = moitruong
+        self.tactu = tactu
+        self.stop = stop
+
+    def __del__(self):
+        try:
+            pass
+        except (pymem.exception.PymemError, pymem.exception.WinAPIError):
+            pass
+
+        if not self.stop.is_set():
+            self.stop.set()
+
+    def loop(self):
+        while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():
+            try:
+                self.step()
+            except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
+                print("Luồng sử dụng vật phẩm: {}".format(err))
+                time.sleep(1)
+
+            time.sleep(0.02)
+
+    def step(self):
+        if not self.moitruong.get_is_nhanvattontai():
+            return
+
+        if self.moitruong.get_is_dangmatketnoi():
+            return
+
+        self.tactu.action_tudongsudungvatpham()

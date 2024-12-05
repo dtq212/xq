@@ -46,7 +46,7 @@ class TroChoi:
         idcuasohethans = set()
 
         for idcuaso, cuaso in self.cuasos.items():
-            if cuaso.main_stop.is_set():
+            if cuaso.main_stop.is_set() or not cuaso.moitruong.get_is_cuasogametontai():
                 idcuasohethans.add(idcuaso)
 
         for idcuasohethan in idcuasohethans:
