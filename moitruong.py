@@ -1343,10 +1343,9 @@ class MoiTruong:
         if idvitriphimtat in self._thoidiemsudungkynangphimtatgannhat_map and time.time() - self._thoidiemsudungkynangphimtatgannhat_map[idvitriphimtat] < delay:
             return
 
-        time.sleep(0.01)
+        time.sleep(0.02)
         self._thoidiemsudungkynangphimtatgannhat_map[idvitriphimtat] = time.time()
         self.auto_assemble_sudungkynangphimtat(idvitriphimtat)
-        time.sleep(0.01)
 
     def get_thoidiemsudungkynangvitrigannhat(self, idvitriX, idvitriY, macdinh = None):
         return self._thoidiemsudungkynangvitrigannhat_map.get((idvitriX, idvitriY), macdinh)
@@ -1356,10 +1355,9 @@ class MoiTruong:
         if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
             return
 
-        time.sleep(0.01)
+        time.sleep(0.02)
         self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
         self.auto_assemble_sudungkynangvitri(idvitriX, idvitriY, hinhthucsudungkynang)
-        time.sleep(0.01)
 
     def action_sudungkynangvitrimuctieukhongtrihoan(self, idvitriX, idvitriY, diachicosothongtinnhanvatmuctieu = False, is_khongkiemtracothetancong = False, delay = 0.25):
         idvitri = (idvitriX, idvitriY)
@@ -1422,10 +1420,9 @@ class MoiTruong:
         if time.time() - self._thoidiemdichuyengannhat < delay:
             return
 
-        time.sleep(0.01)
+        time.sleep(0.02)
         self._thoidiemdichuyengannhat = time.time()
         self.auto_assemble_dichuyen(x, y)
-        time.sleep(0.01)
 
     def action_dichuyengiukhoangcachtoithieu(self, diachicosothongtinnhanvat2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 0.5):
         if not diachicosothongtinnhanvat2:
@@ -1697,10 +1694,9 @@ class MoiTruong:
             self.action_khoitaothongtinbando()
             return
 
-        time.sleep(0.01)
+        time.sleep(0.02)
         self._thoidiemtudongtimduonggannhat = time.time()
         self.auto_assemble_tudongtimduong(x, y, idbando)
-        time.sleep(0.01)
 
     def action_phucsinh(self, is_duoccuu = False, delay = 1.):
         if time.time() - self._thoidiemphucsinhgannhat < delay:

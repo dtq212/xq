@@ -1273,10 +1273,13 @@ class TacTu:
 
     def action_tudongcuoithu(self):
         if self._is_tudongtrieuhoithanthu:
-            if time.time() - self._thoidiemkiemtracuoithugannhat < 1.:
+            if time.time() - self._thoidiemkiemtracuoithugannhat < 2.:
                 return
 
             if self.moitruong.get_idthucuoi():
+                return
+
+            if not self.moitruong.get_is_dathietlapkynangphimtat(VITRIPHIMTATKYNANG_THUCANTHUCUOI):
                 return
 
             self._thoidiemkiemtracuoithugannhat = time.time()
