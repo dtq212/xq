@@ -53,7 +53,7 @@ class TacTu:
         self._thoidiemyeucauroikhoichientruonggannhat = time.time()
         self._thoidiemtudongtrieuhoibaothudautien = time.time()
         self._thoidiemthietlapbaothuchodoigannhat = time.time()
-        self._thoidiemkiemtradatrieuhoithanthugannhat = time.time()
+        self._thoidiemkiemtracuoithugannhat = time.time()
         self._thoidiemsudungvatphamgannhat = time.time()
         self._thoidiemsudungthucanbaothugannhat = time.time()
         self._thoidiemmochangiabaoruonggannhat = time.time()
@@ -1271,19 +1271,13 @@ class TacTu:
 
                 break
 
-    def action_tudongtrieuhoithanthu(self):
+    def action_tudongcuoithu(self):
         if self._is_tudongtrieuhoithanthu:
-            if time.time() - self._thoidiemkiemtradatrieuhoithanthugannhat < 1.:
+            if time.time() - self._thoidiemkiemtracuoithugannhat < 1.:
                 return
 
-            if self.moitruong.get_idbandohientai() not in BANDOKHONGTANCONGs:
+            if self.moitruong.get_idthucuoi():
                 return
 
-            if not self.moitruong.get_is_dathietlapkynangphimtat(VITRIPHIMTATKYNANG_THANTHU):
-                return
-
-            if self.moitruong.get_is_datrieuhoithanthu():
-                return
-
-            self._thoidiemkiemtradatrieuhoithanthugannhat = time.time()
-            self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_THANTHU)
+            self._thoidiemkiemtracuoithugannhat = time.time()
+            self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_THUCANTHUCUOI)

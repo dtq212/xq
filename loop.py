@@ -231,7 +231,7 @@ class LoopPhu:
         self.tactu.action_tudongsuado()
 
         self.tactu.action_tudongtrieuhoibaothudautien()
-        self.tactu.action_tudongtrieuhoithanthu()
+        self.tactu.action_tudongcuoithu()
 
         self.tactu.action_tudongnhatdo()
 

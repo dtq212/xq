@@ -433,6 +433,11 @@ class MoiTruong:
 
         return round(math.dist((x1, y1), (x2, y2)), 2)
 
+    def get_idthucuoi(self, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1198)
+
     def get_idtuthenhanvat(self, diachicosothongtinnhanvat = None):
         """
             1: đứng yên, 2: di chuyển, 6: tấn công, 11: delay sau tấn công
