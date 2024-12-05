@@ -1069,6 +1069,7 @@ class TacTu:
     def them_diemdanhxungquanh(self, diemdanhxungquanh):
         if diemdanhxungquanh and diemdanhxungquanh not in self._diemdanhxungquanhs:
             self._diemdanhxungquanhs.append(diemdanhxungquanh)
+            print(self._diemdanhxungquanhs)
             phatam("Thêm điểm đánh xung quanh. Tổng cộng {}".format(len(self._diemdanhxungquanhs)))
 
     def botoanbo_diemdanhxungquanh(self):
