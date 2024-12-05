@@ -103,7 +103,6 @@ class TacTu:
             "_is_tudongnhatdo": self._is_tudongnhatdo,
             "_is_chidanhnguoichoi": self._is_chidanhnguoichoi,
             "_is_tudongtodoi": self._is_tudongtodoi,
-            # "_diemdanhxungquanhs": self._diemdanhxungquanhs,
         }
 
         util_luuthietlap(tennhanvat, thietlap)
@@ -134,9 +133,6 @@ class TacTu:
 
             if "_is_tudongtodoi" in thietlap:
                 self._is_tudongtodoi = thietlap["_is_tudongtodoi"]
-
-            # if "_diemdanhxungquanhs" in thietlap:
-            #     self._diemdanhxungquanhs = thietlap["_diemdanhxungquanhs"]
 
     def action_tudongtheosautruongnhom(self):
         is_tamngungtancongtheosautruongnhom = False
@@ -825,7 +821,7 @@ class TacTu:
                             self.moitruong.action_thucthicaulenh("talk {}# welcome.1".format(hex(iddoituong)).replace("0x", ""))
                             time.sleep(2.5)
                             self.moitruong.action_thucthicaulenh("talk {}# welcome.11".format(hex(iddoituong)).replace("0x", ""))
-                            time.sleep(0.5)
+                            time.sleep(0.25)
                             if self.moitruong.get_is_danghiencuasotuychon():
                                 self.moitruong.set_is_danghiencuasotuychon(False)
 
@@ -897,9 +893,9 @@ class TacTu:
                 else:
                     iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvatsugiamonphai)
                     if iddoituong:
-                        time.sleep(0.5)
+                        time.sleep(0.25)
                         self.moitruong.action_thucthicaulenh("talk {}# 1".format(hex(iddoituong)).replace("0x", ""))
-                        time.sleep(0.5)
+                        time.sleep(0.25)
 
                         if self.moitruong.get_is_danghiencuasotuychon():
                             self.moitruong.set_is_danghiencuasotuychon(False)
@@ -926,13 +922,13 @@ class TacTu:
 
             if not diachicosothongtinnhanvatxaphu or self.moitruong.get_khoangcach(diachicosothongtinnhanvatxaphu) >= 4.:
                 self.moitruong.action_tudongtimduong(X_XAPHU_THUCSON, Y_XAPHU_THUCSON, BANDO_THUCSON)
-                time.sleep(0.5)
+                time.sleep(0.25)
             else:
                 iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvatxaphu)
                 if iddoituong:
-                    time.sleep(0.5)
+                    time.sleep(0.25)
                     self.moitruong.action_thucthicaulenh("talk {}# go".format(hex(iddoituong)).replace("0x", ""))
-                    time.sleep(0.5)
+                    time.sleep(0.25)
 
                     if self.moitruong.get_is_danghiencuasotuychon():
                         self.moitruong.set_is_danghiencuasotuychon(False)
@@ -991,7 +987,10 @@ class TacTu:
         if self._is_tudongdichuyendiemdanhxungquanh:
             while True:
                 idbandohientai = self.moitruong.get_idbandohientai()
-                diemdanhxungnquanhs = DIEMDANHXUNGQUANH_MAP.get(idbandohientai)
+                diemdanhxungnquanhs = self._diemdanhxungquanhs
+                if not self._diemdanhxungquanhs:
+                    diemdanhxungnquanhs = DIEMDANHXUNGQUANH_MAP.get(idbandohientai)
+
                 if not diemdanhxungnquanhs:
                     break
 
@@ -1144,9 +1143,9 @@ class TacTu:
                 else:
                     if time.time() - self._thoidiemnhanvatchetgannhat > 0.5:
                         self._idbandovuachet = self.moitruong.get_idbandohientai()
-                    if time.time() - self._thoidiemnhanvatchetgannhat > 2.5:
+                    if time.time() - self._thoidiemnhanvatchetgannhat > 4.:
                         self.moitruong.action_phucsinh(is_duoccuu = True)
-                    elif time.time() - self._thoidiemnhanvatchetgannhat > 10.:
+                    elif time.time() - self._thoidiemnhanvatchetgannhat > 8.:
                         self.moitruong.action_phucsinh()
                 break
 
@@ -1233,7 +1232,7 @@ class TacTu:
                     for vitrivatpham in vitrivatphams[1:]:
                         caulenh = "move {}# {}".format(hex(vitrivatpham[1]), vitrivatphams[0][0] + 1).replace("0x", "")
                         time.sleep(0.25)
-                        self.moitruong.action_thucthicaulenh(caulenh, delay = 1.0)
+                        self.moitruong.action_thucthicaulenh(caulenh, delay = 0.25)
                         time.sleep(0.25)
                 break
 
