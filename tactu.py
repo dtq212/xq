@@ -76,7 +76,7 @@ class TacTu:
         self._is_tudongtrieuhoithanthu = True
         self._is_tamngungtancongdebuffchothanhviennhom = False
         self._is_tamngungtancongdichuyenlenbandovuachet = False
-        self._is_tudongdichuyendiemdanhxungquanh = True
+        self._is_tudongdichuyendiemdanhxungquanh = False
 
         self._idbandohientai = False
         self._phehientai = False
@@ -755,7 +755,7 @@ class TacTu:
 
                 if tenvatpham in VATPHAMTUDONGNHATs:
                     khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
-                    if khoangcach <= KHOANGCACHNUAMANHINH:
+                    if khoangcach <= KHOANGCACHTOANMANHINH:
                         is_tamngungdichuyendenhatdo = True
                         is_tamngungtancongdenhatdo = True
                         is_cododenhat = True
@@ -988,8 +988,13 @@ class TacTu:
     def action_tudongdichuyenxungquanhdiem(self):
         is_tamngungtancongdichuyenxungquanh = False
 
-        if self._is_tudongdichuyendiemdanhxungquanh and self._diemdanhxungquanhs:
+        if self._is_tudongdichuyendiemdanhxungquanh:
             while True:
+                idbandohientai = self.moitruong.get_idbandohientai()
+                diemdanhxungnquanhs = DIEMDANHXUNGQUANH_MAP.get(idbandohientai)
+                if not diemdanhxungnquanhs:
+                    break
+
                 if self._is_tamngungdichuyensudungkynang:
                     break
 
@@ -1008,9 +1013,8 @@ class TacTu:
                 if self._idbandovuachet and self._is_tudongchaylenbandovuachet:
                     break
 
-                idbandohientai = self.moitruong.get_idbandohientai()
 
-                diemdanhxungquanhbandos = [diemdanhxungquanh for diemdanhxungquanh in self._diemdanhxungquanhs if diemdanhxungquanh[2] == idbandohientai]
+                diemdanhxungquanhbandos = [diemdanhxungquanh for diemdanhxungquanh in diemdanhxungnquanhs if diemdanhxungquanh[2] == idbandohientai]
 
                 if diemdanhxungquanhbandos:
                     khoangcachgannhat = KHOANGCACHTOIDAHOPLE
@@ -1052,7 +1056,7 @@ class TacTu:
                     if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
                         self._thoidiemdichuyendiemdanhxungquanhgannhat = time.time()
 
-                        diemdanhxungquanhbatky = self._diemdanhxungquanhs[0]
+                        diemdanhxungquanhbatky = diemdanhxungnquanhs[0]
                         self.action_tudongtimduong(*diemdanhxungquanhbatky)
 
                         if time.time() - self._thoidiemthongbaotudongtimduonggannhat > 5.:
@@ -1228,7 +1232,9 @@ class TacTu:
 
                     for vitrivatpham in vitrivatphams[1:]:
                         caulenh = "move {}# {}".format(hex(vitrivatpham[1]), vitrivatphams[0][0] + 1).replace("0x", "")
+                        time.sleep(0.5)
                         self.moitruong.action_thucthicaulenh(caulenh, delay = 1.0)
+                        time.sleep(0.5)
                 break
 
     def action_tudongtrieuhoibaothudautien(self):
