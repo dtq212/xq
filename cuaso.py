@@ -55,6 +55,7 @@ class CuaSo:
         keyboard.add_hotkey("ctrl + a", self.bothietlapchidanhnguoichoi)
 
         keyboard.add_hotkey("ctrl + p", self.themdiemdanhxungquanh)
+        keyboard.add_hotkey("ctrl + alt + shift + p", self.battat_tudongdichuyendiemdanhxungquanh)
         keyboard.add_hotkey("ctrl + alt + p", self.botoanbodiemdanhxungquanh)
 
         keyboard.add_hotkey("ctrl + m", self.battat_vohieuhoadichuyen)
@@ -69,6 +70,7 @@ class CuaSo:
     def __del__(self):
         self.main_stop.set()
 
+
         keyboard.remove_hotkey("ctrl + f")
         keyboard.remove_hotkey("ctrl + c")
         keyboard.remove_hotkey("ctrl + alt+ c")
@@ -81,8 +83,12 @@ class CuaSo:
         keyboard.remove_hotkey("ctrl + alt + p")
 
         keyboard.remove_hotkey("ctrl + m")
-
         keyboard.remove_hotkey("ctrl + alt + y")
+        keyboard.remove_hotkey("ctrl + alt + b")
+        keyboard.remove_hotkey("ctrl + alt + t")
+
+        keyboard.remove_hotkey("ctrl + alt + e")
+
 
     def tatauto(self, *args, **kwargs):
         self.main_stop.set()
@@ -140,6 +146,10 @@ class CuaSo:
     def battat_tudongbattheosaunhom(self):
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.battat_is_tudongbattheosaunhom()
+
+    def battat_tudongdichuyendiemdanhxungquanh(self):
+        if self.moitruong.get_is_cuasogamekichhoat():
+            self.tactu.battat_is_tudongdichuyendiemdanhxungquanh()
 
     def action_tudongepdo(self):
         if self.moitruong.get_is_cuasogamekichhoat():

@@ -76,6 +76,7 @@ class TacTu:
         self._is_tudongtrieuhoithanthu = True
         self._is_tamngungtancongdebuffchothanhviennhom = False
         self._is_tamngungtancongdichuyenlenbandovuachet = False
+        self._is_tudongdichuyendiemdanhxungquanh = True
 
         self._idbandohientai = False
         self._phehientai = False
@@ -664,6 +665,15 @@ class TacTu:
         else:
             phatam("Tắt tự động sử dụng kỹ năng")
 
+    def battat_is_tudongdichuyendiemdanhxungquanh(self):
+        self._is_tudongdichuyendiemdanhxungquanh = not self._is_tudongdichuyendiemdanhxungquanh
+        if self._is_tudongdichuyendiemdanhxungquanh:
+            phatam("Bật tự động di chuyển điểm đánh xung quanh")
+        else:
+            phatam("Tắt tự động di chuyển điểm đánh xung quanh")
+
+
+
     def battat_is_tudongbattheosaunhom(self):
         self._is_tudongbattheosaunhom = not self._is_tudongbattheosaunhom
         if self._is_tudongbattheosaunhom:
@@ -981,7 +991,7 @@ class TacTu:
     def action_tudongdichuyenxungquanhdiem(self):
         is_tamngungtancongdichuyenxungquanh = False
 
-        if self._is_tudongsudungkynang and self._diemdanhxungquanhs:
+        if self._is_tudongdichuyendiemdanhxungquanh and self._diemdanhxungquanhs:
             while True:
                 if self._is_tamngungdichuyensudungkynang:
                     break
@@ -1274,4 +1284,3 @@ class TacTu:
 
             self._thoidiemkiemtradatrieuhoithanthugannhat = time.time()
             self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_THANTHU)
-
