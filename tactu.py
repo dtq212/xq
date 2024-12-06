@@ -1197,7 +1197,7 @@ class TacTu:
         self._thoidiemsudungvatphamgannhat = time.time()
         self.moitruong.action_thucthicaulenh("use {}#".format(hex(iddoituongvatpham)).replace("0x", ""), delay = 0.)
 
-    def action_tudongepdo(self, delay = 0.25):
+    def action_tudongepdo78910(self, delay = 0.25):
         if time.time() - self._thoidiemepdogannhat < delay:
             return
 
@@ -1226,6 +1226,43 @@ class TacTu:
             time.sleep(0.25)
 
             caulenh = "mix40262 0# {}# {}#".format(hex(iddoituongvatphamhanhtrang1), hex(iddoituongvatpham)).replace("0x", "")
+
+            self.moitruong.action_thucthicaulenh(caulenh)
+
+            time.sleep(0.25)
+
+        if self.moitruong.get_is_danghiencuasotuychon():
+            self.moitruong.set_is_danghiencuasotuychon(False)
+
+    def action_tudongepdo1112(self, delay = 0.25):
+        if time.time() - self._thoidiemepdogannhat < delay:
+            return
+
+        tenvatpham2 = self.moitruong.get_tenvatphamhanhtrang(1)
+
+        if not tenvatpham2:
+            return
+
+        iddoituongvatphamhanhtrang2 = self.moitruong.get_iddoituongvatphamhanhtrang(1)
+        if not iddoituongvatphamhanhtrang2:
+            return
+
+        self._thoidiemepdogannhat = time.time()
+
+        while True:
+            iddoituongvatphamhanhtrang1 = self.moitruong.get_iddoituongvatphamhanhtrang(0)
+            if not iddoituongvatphamhanhtrang1:
+                break
+
+            iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(tenvatpham2)
+
+            if not iddoituongvatpham:
+                break
+
+            self.moitruong.action_thucthicaulenh("move {}# 1".format(hex(iddoituongvatpham)).replace("0x", ""))
+            time.sleep(0.25)
+
+            caulenh = "mix111255 12# {}# {}#".format(hex(iddoituongvatphamhanhtrang1), hex(iddoituongvatpham)).replace("0x", "")
 
             self.moitruong.action_thucthicaulenh(caulenh)
 

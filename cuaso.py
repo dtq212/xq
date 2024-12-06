@@ -69,7 +69,9 @@ class CuaSo:
         keyboard.add_hotkey("ctrl + alt + b", self.battat_tudongdibatquaitran)
         keyboard.add_hotkey("ctrl + alt + t", self.battat_tudongbattheosaunhom)
 
-        keyboard.add_hotkey("ctrl + alt + e", self.action_tudongepdo)
+        keyboard.add_hotkey("ctrl + alt + e", self.action_tudongepdo78910)
+        keyboard.add_hotkey("ctrl + alt + w", self.action_tudongepdo1112)
+        keyboard.add_hotkey("ctrl + alt + ư", self.action_tudongepdo1112)
         keyboard.add_hotkey("ctrl + e", self.action_tudongepdomotlan)
 
         self.thoidiemluuthietlapgannhat = time.time()
@@ -159,9 +161,13 @@ class CuaSo:
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.battat_is_tudongdichuyendiemdanhxungquanh()
 
-    def action_tudongepdo(self):
+    def action_tudongepdo78910(self):
         if self.moitruong.get_is_cuasogamekichhoat():
-            self.tactu.action_tudongepdo()
+            self.tactu.action_tudongepdo78910()
+
+    def action_tudongepdo1112(self):
+        if self.moitruong.get_is_cuasogamekichhoat():
+            self.tactu.action_tudongepdo1112()
 
     def action_tudongepdomotlan(self):
         if self.moitruong.get_is_cuasogamekichhoat():
