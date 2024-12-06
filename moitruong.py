@@ -548,12 +548,6 @@ class MoiTruong:
             return 0.
         return thoigianhieuluctoida - (time.time() - self._thoidiemcohieuungtienthanvodichgannhat)
 
-    def get_is_cohieuungcoloinhanvat(self, diachicosothongtinnhanvat = None):
-        return self.get_is_cohieuungs((HIEUUNGKYNANG_NGOAIKHANG, HIEUUNGKYNANG_NOIKHANG, ), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvat, is_hieuungcoloi = 1)
-
-    def get_is_cohieuungbatloinhanvat(self, diachicosothongtinnhanvat = None):
-        return self.get_is_cohieuungs((HIEUUNGKYNANG_TRONGTHUONG, HIEUUNGKYNANG_CHOANG, ), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvat, is_hieuungcoloi = 0)
-
     def get_is_cohieuungs(self, idhieuungs, macdinh, diachicosothongtinnhanvat = None, is_hieuungcoloi: int = None, is_travethoigianhieuluctoida = False): #is_loihai: Kiểm tra lợi hại nữa
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
