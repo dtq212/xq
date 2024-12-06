@@ -1262,7 +1262,7 @@ class TacTu:
             self.moitruong.action_thucthicaulenh("move {}# 1".format(hex(iddoituongvatpham)).replace("0x", ""))
             time.sleep(0.25)
 
-            caulenh = "mix111255 12# {}# {}#".format(hex(iddoituongvatphamhanhtrang1), hex(iddoituongvatpham)).replace("0x", "")
+            caulenh = "mix111255 0# {}# {}#".format(hex(iddoituongvatphamhanhtrang1), hex(iddoituongvatpham)).replace("0x", "")
 
             self.moitruong.action_thucthicaulenh(caulenh)
 

@@ -96,6 +96,7 @@ class CuaSo:
         keyboard.remove_hotkey("ctrl + alt + t")
 
         keyboard.remove_hotkey("ctrl + alt + e")
+        keyboard.remove_hotkey("ctrl + alt + w")
         keyboard.remove_hotkey("ctrl + e")
 
 
