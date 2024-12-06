@@ -71,7 +71,6 @@ class CuaSo:
 
         keyboard.add_hotkey("ctrl + alt + e", self.action_tudongepdo78910)
         keyboard.add_hotkey("ctrl + alt + w", self.action_tudongepdo1112)
-        keyboard.add_hotkey("ctrl + alt + ư", self.action_tudongepdo1112)
         keyboard.add_hotkey("ctrl + e", self.action_tudongepdomotlan)
 
         self.thoidiemluuthietlapgannhat = time.time()
