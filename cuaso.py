@@ -70,6 +70,7 @@ class CuaSo:
         keyboard.add_hotkey("ctrl + alt + t", self.battat_tudongbattheosaunhom)
 
         keyboard.add_hotkey("ctrl + alt + e", self.action_tudongepdo)
+        keyboard.add_hotkey("ctrl + e", self.action_tudongepdomotlan)
 
         self.thoidiemluuthietlapgannhat = time.time()
 
@@ -94,6 +95,7 @@ class CuaSo:
         keyboard.remove_hotkey("ctrl + alt + t")
 
         keyboard.remove_hotkey("ctrl + alt + e")
+        keyboard.remove_hotkey("ctrl + e")
 
 
     def tatauto(self, *args, **kwargs):
@@ -160,6 +162,10 @@ class CuaSo:
     def action_tudongepdo(self):
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.action_tudongepdo()
+
+    def action_tudongepdomotlan(self):
+        if self.moitruong.get_is_cuasogamekichhoat():
+            self.tactu.action_tudongepdomotlan()
 
     def themtenmuctieutancong(self):
         if self.moitruong.get_is_cuasogamekichhoat():
