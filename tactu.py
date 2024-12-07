@@ -760,6 +760,9 @@ class TacTu:
                             is_tamngungdichuyendenhatdo = True
                             is_tamngungtancongdenhatdo = True
                             is_cododenhat = True
+
+                            self._diachicosovatphamdangnhat = diachicosothongtinvatphamxemxet
+
                             if khoangcach <= 2.5:
                                 self.moitruong.action_nhatdo(diachicosothongtinvatphamxemxet)
                             else:
