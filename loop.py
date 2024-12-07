@@ -104,7 +104,9 @@ class LoopChinh:
         if self.moitruong.get_is_dangmatketnoi():
             return
 
-        self.moitruong.action_khoitaothongtinbando()
+        if time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() < 0.5:
+            return
+
         self.tactu.action_tudongtheosautruongnhom()
 
         tenmonphai = MONPHAI_MAP.get(self.moitruong.get_idkynang(0, 0))
@@ -112,13 +114,13 @@ class LoopChinh:
             getattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai))()
 
         # while True:
-        #     self.moitruong.action_thucthicaulenh("talk b2fc# info.10050")
+        #     self.moitruong.action_thucthicaulenh("talk 94e9# info.10050")
         #     time.sleep(0.1)
-        #     self.moitruong.action_thucthicaulenh("talk b2fc# info.11")
+        #     self.moitruong.action_thucthicaulenh("talk 94e9# info.11")
         #     time.sleep(0.1)
-        #     self.moitruong.action_thucthicaulenh("talk b2fc# info.200")
+        #     self.moitruong.action_thucthicaulenh("talk 94e9# info.200")
         #     time.sleep(0.1)
-        #     self.moitruong.action_thucthicaulenh("talk b2fc# info.210")
+        #     self.moitruong.action_thucthicaulenh("talk 94e9# info.210")
         #     time.sleep(0.1)
 
         # i = 0
@@ -210,6 +212,9 @@ class LoopPhu:
         if self.moitruong.get_is_dangmatketnoi():
             return
 
+        if time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() < 0.5:
+            return
+
         self.moitruong.action_vohieuhoatuthedelaysautancong()
 
         self.moitruong.action_vohieuhoathietlapmuctieu()
@@ -277,6 +282,9 @@ class LoopSuDungVatPham:
             return
 
         if self.moitruong.get_is_dangmatketnoi():
+            return
+
+        if time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() < 0.5:
             return
 
         self.tactu.action_tudongsudungvatpham()
