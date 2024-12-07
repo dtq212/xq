@@ -755,8 +755,8 @@ class TacTu:
 
                 if tenvatpham in VATPHAMTUDONGNHATs:
                     khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
-                    if not self._diachicosovatphamdangnhat or not self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) or self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat) > khoangcach:
-                        if khoangcach <= KHOANGCACHTOIDAHOPLE:
+                    if khoangcach <= KHOANGCACHNUAMANHINH * 3:
+                        if not self._diachicosovatphamdangnhat or not self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) or khoangcach < self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat):
                             is_tamngungdichuyendenhatdo = True
                             is_tamngungtancongdenhatdo = True
                             is_cododenhat = True
