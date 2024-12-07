@@ -765,7 +765,11 @@ class TacTu:
                     # if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA, delay = 1.):
                     #     self.moitruong.action_sudungkynangvitriphudaudiem(*VITRIKYNANG_KHAITHIENTICHDIA, self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True), self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True), khoangcachphudau = khoangcach)
                     # else:
-                    self.moitruong.action_dichuyentiepcan(self._diachicosovatphamdangnhat)
+                    thoigiantuthenhanvatdungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimgannhat()
+                    if thoigiantuthenhanvatdungim > 3.:
+                        self.moitruong.action_tudongtimduong(self.moitruong.get_toadox(self._diachicosovatphamdangnhat), self.moitruong.get_toadoy(self._diachicosovatphamdangnhat), self.moitruong.get_idbandohientai())
+                    else:
+                        self.moitruong.action_dichuyentiepcan(self._diachicosovatphamdangnhat)
 
 
             elif self.moitruong.get_idbandohientai() == BANDO_BATQUAITRAN:
