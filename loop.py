@@ -121,15 +121,17 @@ class LoopChinh:
         #     self.moitruong.action_thucthicaulenh("talk b2fc# info.210")
         #     time.sleep(0.1)
 
-        i = 0
-
-        while True:
-            self.moitruong.action_thucthicaulenh("talk aa14# info.143")
-            time.sleep(0.05)
-            i += 1
-            if i % 10 == 0:
-                self.tactu.action_sudungvatphamhanhtrang(TUSAMDONTRUNG)
-                time.sleep(0.5)
+        # i = 0
+        #
+        # while True:
+        #     #noi cong 143
+        #     #bao kich 146
+        #     self.moitruong.action_thucthicaulenh("talk b2fb# info.143")
+        #     time.sleep(0.05)
+        #     i += 1
+        #     if i % 10 == 0:
+        #         self.tactu.action_sudungvatphamhanhtrang(TUSAMDONTRUNG)
+        #         time.sleep(0.5)
 
         # while True:
         #     iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(DOANTHACHDACBIETSOCAP)
