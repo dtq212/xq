@@ -799,7 +799,7 @@ class TacTu:
                     if self.moitruong.get_tendoituong(diachicosothongtinvatphamxemxet) != CHANGIABAORUONG:
                         continue
 
-                    if 1 or self._tenmuctieubatquaitrantruocdo != "S19" or self._tenmuctieubatquaitranhientai != AOANHMADAO:
+                    if self._tenmuctieubatquaitrantruocdo != "S19" or self._tenmuctieubatquaitranhientai != AOANHMADAO:
                         khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
                         if khoangcach <= 2.5:
                             if time.time() - self._thoidiemmochangiabaoruonggannhat >= 2.5:
@@ -1041,8 +1041,8 @@ class TacTu:
 
                 if diemdanhxungquanhbandos:
                     iddiemdanhxungquanhtieptheo = ((self._iddiemdanhxungquanhhientai + 1) % len(diemdanhxungquanhbandos)) if (self._iddiemdanhxungquanhhientai < 0 or not self._diemdanhxungquanhhientai or self.moitruong.get_khoangcachdiem(*self._diemdanhxungquanhhientai[:-1]) <= 3.) else self._iddiemdanhxungquanhhientai
-                    diemdanhxungquanhtieptheo = diemdanhxungquanhbandos[iddiemdanhxungquanhtieptheo]
 
+                    diemdanhxungquanhtieptheo = diemdanhxungquanhbandos[iddiemdanhxungquanhtieptheo]
                     if not self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon() and time.time() - self.moitruong.get_thoidiemkhongcomuctieugannhat() > 1.:
                         is_tamngungtancongdichuyenxungquanh = True
 
@@ -1059,10 +1059,12 @@ class TacTu:
                                 self.action_tudongtimduong(*diemdanhxungquanhtieptheo)
                             else:
                                 thoigiantuthenhanvatdungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimgannhat()
-                                if thoigiantuthenhanvatdungim > 6. or iddiemdanhxungquanhtieptheo == 0:
-                                    self.action_tudongtimduong(*diemdanhxungquanhtieptheo)
-                                elif thoigiantuthenhanvatdungim > 3.:
-                                    self.moitruong.action_dichuyentiepcandiem(*diemdanhxungquanhtieptheo[:-1])
+
+                                # if thoigiantuthenhanvatdungim > 6. or iddiemdanhxungquanhtieptheo == 0:
+                                #     self.action_tudongtimduong(*diemdanhxungquanhtieptheo)
+                                # el
+                                if thoigiantuthenhanvatdungim > 3.:
+                                    self.moitruong.action_dichuyentiepcandiem(*diemdanhxungquanhtieptheo[:-1], khoangcachdichuyentoida = KHOANGCACHTOANMANHINH, delay = 0.5)
                             if time.time() - self._thoidiemthongbaotudongtimduonggannhat > 5.:
                                 self._thoidiemthongbaotudongtimduonggannhat = time.time()
                                 # phatam("Di chuyển")

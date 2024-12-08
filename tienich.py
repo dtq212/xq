@@ -14,7 +14,7 @@ from hangso import STRING_ENCODING
 
 log_formatter = logging.Formatter('%(asctime)s %(levelname)s %(funcName)s(%(lineno)d) %(message)s')
 
-log_handler = RotatingFileHandler("_internal/log/log.log", mode = "a", maxBytes = 5 * 1024 * 1024, backupCount = 5, encoding = None, delay = 0)
+log_handler = RotatingFileHandler("_internal/log/log.log", mode = "a", maxBytes = 512 * 1024, backupCount = 5, encoding = None, delay = 0)
 log_handler.setFormatter(log_formatter)
 
 def read_boolean(process, address):

@@ -1040,15 +1040,10 @@ class MoiTruong:
     def action_thucthicaulenh(self, caulenh, delay = 0.05):
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
+
         self._thoidiemthucthicaulenhgannhat = time.time()
 
-        # if "look" in caulenh or "move" in caulenh or ("use" in caulenh and "pet" in caulenh):
-        #     time.sleep(0.5)
-
         self.auto_assemble_thucthicaulenh(caulenh)
-
-        # if "look" in caulenh or "move" in caulenh or ("use" in caulenh and "pet" in caulenh):
-        #     time.sleep(0.5)
 
         return True
 
@@ -1110,7 +1105,6 @@ class MoiTruong:
             write_int(self.tientrinh, self._diachiautoassemblethucthicaulenh + 1, len(caulenh))
             write_string(self.tientrinh, self._diachiautoassemblethucthicaulenh + 21, caulenh)
 
-        logger.error("{}: auto_assemble_thucthicaulenh: {}".format(self.get_tendoituong(), caulenh))
         self.tientrinh.start_thread(self._diachiautoassemblethucthicaulenh)
 
 
@@ -1139,7 +1133,6 @@ class MoiTruong:
         else:
             write_int(self.tientrinh, self._diachiautoassemblesudungkynangphimtat + 1, idvitriphimtat)
 
-        logger.error("{}: auto_assemble_sudungkynangphimtat: {}".format(self.get_tendoituong(), idvitriphimtat))
         self.tientrinh.start_thread(self._diachiautoassemblesudungkynangphimtat)
 
 
@@ -1174,8 +1167,6 @@ class MoiTruong:
         else:
             write_int(self.tientrinh, self._diachiautoassemblesudungkynangvitri + 12, hinhthucsudungkynang)
             write_int(self.tientrinh, self._diachiautoassemblesudungkynangvitri + 1, idkynang)
-
-        logger.error("{}: auto_assemble_sudungkynangvitri: {} {}".format(self.get_tendoituong(), idvitriX, idvitriY))
 
         self.tientrinh.start_thread(self._diachiautoassemblesudungkynangvitri)
 
