@@ -114,6 +114,20 @@ class LoopChinh:
             getattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai))()
 
         # while True:
+        #     self.tactu.action_sudungvatphamhanhtrang(TUILINHTHACHCAP1)
+        #     time.sleep(0.25)
+        #     self.tactu.action_sudungvatphamhanhtrang(TUILINHTHACHCAP2)
+        #     time.sleep(0.25)
+        #     self.tactu.action_tudonghopthanhlinhthach()
+        #     time.sleep(0.25)
+
+        # while True:
+        #     self.moitruong.action_thucthicaulenh("noichuyen 257# gift.30", delay = 0.25)
+        #     time.sleep(0.25)
+        #     self.tactu.action_tudongxepchongdo()
+        #     time.sleep(0.25)
+
+        # while True:
         #     self.moitruong.action_thucthicaulenh("talk 94e9# info.10050")
         #     time.sleep(0.1)
         #     self.moitruong.action_thucthicaulenh("talk 94e9# info.11")
