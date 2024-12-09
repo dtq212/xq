@@ -66,7 +66,6 @@ class MoiTruong:
         self._thoidiemthucthicaulenhgannhat = time.time() - 0.5
         self._thoidiemthaotacnhomgannhat = time.time() - 1.
         self._thoidiemkhoitaothongtinbandogannhat = time.time() - 0.5
-        self._thoidiemtudongtimduonggannhat = time.time() - 1.
         self._thoidiemphucsinhgannhat = time.time() - 1.
         self._thoidiemmaupkgannhat = time.time() - 1.
         self._thoidiemsuadogannhat = time.time() - 1.
@@ -1050,7 +1049,7 @@ class MoiTruong:
 
         return True
 
-    def action_moihoacxinvaonhom(self, idnguoichoi, delay = 1.):
+    def action_moihoacxinvaonhom(self, idnguoichoi, delay = 2.):
         if time.time() - self._thoidiemthaotacnhomgannhat < delay:
             return
         if not idnguoichoi:
@@ -1060,7 +1059,7 @@ class MoiTruong:
 
         self.action_thucthicaulenh("team + {}".format(idnguoichoi))
 
-    def action_thoatkhoinhom(self, idnguoichoitruongnhom, delay = 1.):
+    def action_thoatkhoinhom(self, idnguoichoitruongnhom, delay = 2.):
         if time.time() - self._thoidiemthaotacnhomgannhat < delay:
             return
         if not idnguoichoitruongnhom:
@@ -1070,7 +1069,7 @@ class MoiTruong:
 
         self.action_thucthicaulenh("team x {}".format(idnguoichoitruongnhom))
 
-    def action_kiemtravadongyloimoinhom(self, idnguoichoitruongnhom, delay = 1.):
+    def action_kiemtravadongyloimoinhom(self, idnguoichoitruongnhom, delay = 2.):
         if time.time() - self._thoidiemthaotacnhomgannhat < delay:
             return
         if not idnguoichoitruongnhom:
@@ -1391,7 +1390,7 @@ class MoiTruong:
 
         self.action_thucthicaulenh("pf {} {}".format(idkynang, self.get_idnguoichoi()), delay = 0)
 
-    def action_dichuyen(self, x, y, delay = 1.):
+    def action_dichuyen(self, x, y, delay = 2.):
         if self._is_vohieuhoadichuyen:
             return
 
@@ -1402,7 +1401,7 @@ class MoiTruong:
         self._thoidiemdichuyengannhat = time.time()
         self.auto_assemble_dichuyen(x, y)
 
-    def action_dichuyengiukhoangcachtoithieu(self, diachicosothongtinnhanvat2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 1.):
+    def action_dichuyengiukhoangcachtoithieu(self, diachicosothongtinnhanvat2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 2.):
         if not diachicosothongtinnhanvat2:
             return
 
@@ -1411,7 +1410,7 @@ class MoiTruong:
 
         return self.action_dichuyengiukhoangcachtoithieudiem(self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2), khoangcachtoithieu = khoangcachtoithieu, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
 
-    def action_dichuyengiukhoangcachtoida(self, diachicosothongtinnhanvat2, khoangcachtoida, khoangcachdichuyentoida = 0, delay = 1.):
+    def action_dichuyengiukhoangcachtoida(self, diachicosothongtinnhanvat2, khoangcachtoida, khoangcachdichuyentoida = 0, delay = 2.):
         if not diachicosothongtinnhanvat2:
             return
 
@@ -1420,7 +1419,7 @@ class MoiTruong:
 
         return self.action_dichuyengiukhoangcachtoidadiem(self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2), khoangcachtoida = khoangcachtoida, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
 
-    def action_dichuyenphudau(self, diachicosothongtinnhanvat2, khoangcachphudau = 1, delay = 1.):
+    def action_dichuyenphudau(self, diachicosothongtinnhanvat2, khoangcachphudau = 1, delay = 2.):
         if not diachicosothongtinnhanvat2:
             return
         if not self.get_iddoituong(diachicosothongtinnhanvat2):
@@ -1462,7 +1461,7 @@ class MoiTruong:
 
         self.action_dichuyen(xclick, yclick, delay = delay)
 
-    def action_dichuyengiukhoangcachtoidadiem(self, x2, y2, khoangcachtoida, khoangcachdichuyentoida = 0, delay = 1.):
+    def action_dichuyengiukhoangcachtoidadiem(self, x2, y2, khoangcachtoida, khoangcachdichuyentoida = 0, delay = 2.):
         diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
 
         x1, y1 = self.get_toadox(diachicosothongtinnhanvat1), self.get_toadoy(diachicosothongtinnhanvat1)
@@ -1503,7 +1502,7 @@ class MoiTruong:
 
         self.action_dichuyen(xclick, yclick, delay = delay)
 
-    def action_dichuyengiukhoangcachtoithieudiem(self, x2, y2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 1.):
+    def action_dichuyengiukhoangcachtoithieudiem(self, x2, y2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 2.):
         diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
 
         x1, y1 = self.get_toadox(diachicosothongtinnhanvat1), self.get_toadoy(diachicosothongtinnhanvat1)
@@ -1543,10 +1542,10 @@ class MoiTruong:
 
         self.action_dichuyen(xclick, yclick, delay = delay)
 
-    def action_dichuyentiepcan(self, diachicosothongtinnhanvat2, khoangcachdichuyentoida = 0, delay = 1.):
+    def action_dichuyentiepcan(self, diachicosothongtinnhanvat2, khoangcachdichuyentoida = 0, delay = 2.):
         self.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvat2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
 
-    def action_dichuyentiepcandiem(self, x2, y2, khoangcachdichuyentoida = 0, delay = 1.):
+    def action_dichuyentiepcandiem(self, x2, y2, khoangcachdichuyentoida = 0, delay = 2.):
         self.action_dichuyengiukhoangcachtoidadiem(x2, y2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
 
     def action_sudungkynangvitriphudau(self, idvitriX, idvitriY, diachicosothongtinnhanvat2, khoangcachphudau, delay = 0.5):
@@ -1627,7 +1626,7 @@ class MoiTruong:
 
         return x > 0
 
-    def action_khoitaothongtinbando(self, delay = 1.):
+    def action_khoitaothongtinbando(self, delay = 2.):
         if time.time() - self._thoidiemkhoitaothongtinbandogannhat < delay:
             return
 
@@ -1638,10 +1637,10 @@ class MoiTruong:
         self._thoidiemkhoitaothongtinbandogannhat = time.time()
         self.auto_assemble_khoitaothongtinbando()
 
-    def action_tudongtimduong(self, x, y, idbando, delay = 1.):
+    def action_tudongtimduong(self, x, y, idbando, delay = 2.):
         return
 
-        if time.time() - self._thoidiemtudongtimduonggannhat < delay:
+        if time.time() - self._thoidiemdichuyengannhat < delay:
             return
 
         if not self.get_is_dakhoitaothongtinbando():
@@ -1650,10 +1649,10 @@ class MoiTruong:
             return
 
         time.sleep(0.02)
-        self._thoidiemtudongtimduonggannhat = time.time()
+        self._thoidiemdichuyengannhat = time.time()
         self.auto_assemble_tudongtimduong(x, y, idbando)
 
-    def action_phucsinh(self, is_duoccuu = False, delay = 1.):
+    def action_phucsinh(self, is_duoccuu = False, delay = 2.):
         if time.time() - self._thoidiemphucsinhgannhat < delay:
             return
 
@@ -1671,7 +1670,7 @@ class MoiTruong:
 
         self.action_thucthicaulenh("desc revive")
 
-    def action_doimaupk(self, idmaupk, delay = 1.):
+    def action_doimaupk(self, idmaupk, delay = 2.):
         if time.time() - self._thoidiemmaupkgannhat < delay:
             return
 
@@ -1763,7 +1762,7 @@ class MoiTruong:
 
         return False
 
-    def action_suado(self, diachicosonhanvatthosuado, delay = 1.):
+    def action_suado(self, diachicosonhanvatthosuado, delay = 2.):
         if time.time() - self._thoidiemsuadogannhat < delay:
             return
 
