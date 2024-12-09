@@ -749,7 +749,6 @@ class TacTu:
                     break
                 i += 1
 
-
                 if not self.moitruong.get_is_vatphamtontai(diachicosothongtinvatphamxemxet):
                     continue
 
@@ -766,26 +765,26 @@ class TacTu:
                                 self._diachicosovatphamdangnhat = diachicosothongtinvatphamxemxet
                                 self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
 
-            if self._diachicosovatphamdangnhat and self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) and self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat) in VATPHAMTUDONGNHATs:
+            if self._diachicosovatphamdangnhat and self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) and self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat) in VATPHAMTUDONGNHATs and self._diachicosovatphamdangnhat not in self._diachicosovatphamkhongnhats:
                 is_tamngungdichuyendenhatdo = True
                 is_tamngungtancongdenhatdo = True
 
                 khoangcach = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat)
-                if khoangcach <= 2.5:
+                if khoangcach <= 2.:
                     self.moitruong.action_nhatdo(self._diachicosovatphamdangnhat, delay = 0.25)
                 else:
-                    if time.time() - self._thoidiemthaydoivatphamdangnhatgannhat > 6.:
-                        self._diachicosovatphamkhongnhats.append(self._diachicosovatphamdangnhat)
-                        print("self._diachicosovatphamkhongnhats: ", self._diachicosovatphamkhongnhats)
-                        self._diachicosovatphamdangnhat = False
-                    else:
-                        if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA, delay = 1.) and khoangcach > KHOANGCACHHIEUQUAKYNANGKHAITHIENTICHDIA + 3:
-                            self.moitruong.action_sudungkynangvitriphudaudiem(*VITRIKYNANG_KHAITHIENTICHDIA, self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True), self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True), khoangcachphudau = khoangcach)
-                        else:
-                            self.moitruong.action_dichuyentiepcan(self._diachicosovatphamdangnhat, delay = 2.)
-            else:
-                self._diachicosovatphamdangnhat = False
+                    # if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA, delay = 1.) and khoangcach > KHOANGCACHHIEUQUAKYNANGKHAITHIENTICHDIA + 3:
+                    #     self.moitruong.action_sudungkynangvitriphudaudiem(*VITRIKYNANG_KHAITHIENTICHDIA, self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True), self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True), khoangcachphudau = khoangcach)
+                    # else:
+                    self.moitruong.action_dichuyentiepcan(self._diachicosovatphamdangnhat, delay = 2.)
 
+                print("time.time() - self._thoidiemthaydoivatphamdangnhatgannhat: ", time.time() - self._thoidiemthaydoivatphamdangnhatgannhat)
+                if time.time() - self._thoidiemthaydoivatphamdangnhatgannhat > 6.:
+                    self._diachicosovatphamkhongnhats.append(self._diachicosovatphamdangnhat)
+                    self._diachicosovatphamdangnhat = False
+                    self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
+
+            else:
                 if self.moitruong.get_idbandohientai() == BANDO_BATQUAITRAN:
                     i = 0
 
