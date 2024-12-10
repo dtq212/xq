@@ -1411,16 +1411,18 @@ class MoiTruong:
 
         self.action_thucthicaulenh("pf {} {}".format(idkynang, self.get_idnguoichoi()), delay = 0)
 
-    def action_dichuyen(self, x, y, delay = 5.):
+    def action_dichuyen(self, x, y, delay = 1.):
         if self._is_vohieuhoadichuyen:
             return
 
         if time.time() - self._thoidiemdichuyengannhat < delay:
             return
 
-        time.sleep(0.02)
+        time.sleep(1.)
         self._thoidiemdichuyengannhat = time.time()
-        self.auto_assemble_dichuyen(x, y)
+
+        self.auto_assemble_tudongtimduong(x, y, self.get_idbandohientai())
+        # self.auto_assemble_dichuyen(x, y)
 
     def action_dichuyengiukhoangcachtoithieu(self, diachicosothongtinnhanvat2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 1.):
         if not diachicosothongtinnhanvat2:
