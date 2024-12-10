@@ -1418,11 +1418,9 @@ class MoiTruong:
         if time.time() - self._thoidiemdichuyengannhat < delay:
             return
 
-        time.sleep(1.)
         self._thoidiemdichuyengannhat = time.time()
 
-        self.auto_assemble_tudongtimduong(x, y, self.get_idbandohientai())
-        # self.auto_assemble_dichuyen(x, y)
+        self.auto_assemble_dichuyen(x, y)
 
     def action_dichuyengiukhoangcachtoithieu(self, diachicosothongtinnhanvat2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 1.):
         if not diachicosothongtinnhanvat2:
@@ -1669,7 +1667,6 @@ class MoiTruong:
 
     def action_tudongtimduong(self, x, y, idbando, delay = 1.):
         return
-
         if time.time() - self._thoidiemdichuyengannhat < delay:
             return
 
