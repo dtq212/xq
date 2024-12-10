@@ -265,6 +265,7 @@ class LoopPhu:
         self.tactu.action_tudongcuoithu()
 
         self.tactu.action_tudongnhatdo()
+        self.tactu.action_tudongvutdo()
 
 class LoopSuDungVatPham:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
