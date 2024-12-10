@@ -1176,9 +1176,6 @@ class MoiTruong:
         self.tientrinh.start_thread(self._diachiautoassemblesudungkynangvitri)
 
     def auto_assemble_dichuyen(self, x, y):
-        # x = min(max(x, 25), self._xmax - 25)
-        # y = min(max(y, 25), self._ymax - 25)
-
         time.sleep(0.02)
         if not self._is_dasetupautoassembledichuyen:
             self._diachiautoassembledichuyen = self.tientrinh.allocate(64)
