@@ -1321,8 +1321,6 @@ class MoiTruong:
         self._thoidiemnhatdogannhat = time.time()
         self._thoidiemnhatdogannhat_map[diachicosothongtinvatpham] = time.time()
 
-        print("action_nhatdo: ", diachicosothongtinvatpham)
-
         self.action_thucthicaulenh("get {} {}".format(x, y), delay = delay)
 
     def action_battheosaunhom(self, delay = 1.):

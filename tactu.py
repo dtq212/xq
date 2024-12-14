@@ -182,7 +182,8 @@ class TacTu:
                     break
 
                 khoangcachtruongnhom = self.moitruong.get_khoangcachdiem(xtruongnhom, ytruongnhom)
-                if khoangcachtruongnhom <= self._khoangcachtoidatruongnhom:
+                khoangcachtoidatruongnhom = self._khoangcachtoidatruongnhom - 3 if not self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon() else self._khoangcachtoidatruongnhom
+                if khoangcachtruongnhom <= khoangcachtoidatruongnhom:
                     break
 
                 if khoangcachtruongnhom >= KHOANGCACHTOIDAHOPLE:
@@ -195,9 +196,9 @@ class TacTu:
                     break
 
                 if khoangcachtruongnhom >= KHOANGCACHNUAMANHINH and khoangcachtruongnhom <= KHOANGCACHTOANMANHINH and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA, delay = 1.):
-                    self.moitruong.action_sudungkynangvitriphudaudiem(*VITRIKYNANG_KHAITHIENTICHDIA, xtruongnhom, ytruongnhom, khoangcachphudau = khoangcachtruongnhom - self._khoangcachtoidatruongnhom + 3.)
+                    self.moitruong.action_sudungkynangvitriphudaudiem(*VITRIKYNANG_KHAITHIENTICHDIA, xtruongnhom, ytruongnhom, khoangcachphudau = khoangcachtruongnhom - khoangcachtoidatruongnhom + 3.)
                 else:
-                    self.moitruong.action_dichuyengiukhoangcachtoidadiem(xtruongnhom, ytruongnhom, max(0, self._khoangcachtoidatruongnhom - 1.5 - time.time() + self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat()))
+                    self.moitruong.action_dichuyengiukhoangcachtoidadiem(xtruongnhom, ytruongnhom, max(0, khoangcachtoidatruongnhom - 1.5 - time.time() + self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat()))
 
                 break
 
@@ -831,7 +832,8 @@ class TacTu:
                         if self.moitruong.get_tendoituong(diachicosothongtinvatphamxemxet) != CHANGIABAORUONG:
                             continue
 
-                        if self._tenmuctieubatquaitrantruocdo != "S19" or self._tenmuctieubatquaitranhientai != AOANHMADAO:
+                        # if self._tenmuctieubatquaitrantruocdo != "S19" or self._tenmuctieubatquaitranhientai != AOANHMADAO:
+                        if self._tenmuctieubatquaitranhientai != "S9" or self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
                             khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
                             if khoangcach <= 2.5:
                                 if time.time() - self._thoidiemmochangiabaoruonggannhat >= 2.5:
