@@ -3748,3 +3748,737 @@
 2024-12-15 23:17:00,554 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet b910# 3
 2024-12-15 23:17:02,572 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet b910# 3
 2024-12-15 23:17:04,583 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet b910# 3
+2024-12-15 23:24:11,450 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 use b9a3#
+2024-12-15 23:24:12,279 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 use bce5#
+2024-12-15 23:24:15,884 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:24:16,394 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 333
+2024-12-15 23:24:16,908 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:24:17,276 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:17,397 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 563 366
+2024-12-15 23:24:17,569 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:17,860 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:18,138 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:18,295 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:18,403 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 333
+2024-12-15 23:24:18,409 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:18,565 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:24:18,705 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:18,850 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:24:18,883 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:24:18,971 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:24:19,138 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2312 3706
+2024-12-15 23:24:19,244 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:24:19,405 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 333
+2024-12-15 23:24:19,452 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2312 3706
+2024-12-15 23:24:19,534 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:24:19,818 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:24:19,904 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:24:19,960 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:20,085 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:20,216 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:24:20,365 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:20,417 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 333
+2024-12-15 23:24:20,508 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:24:20,643 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:20,786 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:24:20,914 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3254
+2024-12-15 23:24:21,056 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2312 3706
+2024-12-15 23:24:21,188 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3254
+2024-12-15 23:24:21,319 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:21,431 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 333
+2024-12-15 23:24:21,464 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3254
+2024-12-15 23:24:21,607 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:21,748 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3254
+2024-12-15 23:24:21,884 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:21,945 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:24:22,015 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:22,157 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2312 3706
+2024-12-15 23:24:22,304 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:22,447 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2312 3706
+2024-12-15 23:24:22,470 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 333
+2024-12-15 23:24:22,605 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:22,721 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2312 3706
+2024-12-15 23:24:22,967 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:24:22,976 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2313 3706
+2024-12-15 23:24:23,327 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:23,427 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:23,470 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 333
+2024-12-15 23:24:23,590 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:24:23,700 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:23,875 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:24:23,970 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2313 3706
+2024-12-15 23:24:23,983 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:24:24,140 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:24:24,240 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3254
+2024-12-15 23:24:24,392 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:24:24,525 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3254
+2024-12-15 23:24:24,674 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:24,820 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3254
+2024-12-15 23:24:24,970 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:24,995 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:24:25,110 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3254
+2024-12-15 23:24:25,256 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:25,391 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3254
+2024-12-15 23:24:25,536 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:25,664 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3254
+2024-12-15 23:24:25,820 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 333
+2024-12-15 23:24:25,828 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:25,924 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:26,023 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:24:26,118 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:26,197 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:26,391 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:24:26,618 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:26,837 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 333
+2024-12-15 23:24:26,885 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:27,045 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:24:27,145 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:24:27,172 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:27,427 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:27,496 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:24:27,755 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:27,777 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:24:27,843 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 563 366
+2024-12-15 23:24:28,085 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:28,098 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:28,106 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:24:28,400 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:28,595 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:28,855 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 333
+2024-12-15 23:24:28,855 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:24:29,120 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:24:29,162 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:24:29,245 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:29,454 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:24:29,505 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:24:29,753 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:24:29,786 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:24:29,871 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 333
+2024-12-15 23:24:30,063 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:24:30,067 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:30,143 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:24:30,349 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:30,360 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:24:30,621 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:30,722 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:30,873 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 333
+2024-12-15 23:24:30,907 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:31,001 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:31,165 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:24:31,210 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:31,284 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:31,484 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:31,572 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:31,768 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:31,868 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:31,895 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 333
+2024-12-15 23:24:32,021 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:24:32,135 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:24:32,187 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:24:32,309 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:24:32,442 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:24:32,729 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:24:32,736 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:24:32,902 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 333
+2024-12-15 23:24:32,993 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:32,997 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:33,188 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:24:33,280 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:33,334 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:33,563 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:33,606 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:33,838 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:33,880 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:33,925 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 333
+2024-12-15 23:24:34,138 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:34,210 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:24:34,426 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:34,705 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:34,988 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2313 3706
+2024-12-15 23:24:35,016 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 333
+2024-12-15 23:24:35,241 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:24:35,245 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:35,401 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:35,538 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:35,665 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:24:35,833 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:35,956 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:24:36,076 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 366
+2024-12-15 23:24:36,119 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2313 3706
+2024-12-15 23:24:36,246 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:24:36,270 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:24:36,404 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2313 3706
+2024-12-15 23:24:36,554 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:24:36,687 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2313 3706
+2024-12-15 23:24:36,867 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:37,079 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 333
+2024-12-15 23:24:37,155 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:37,287 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 430 266
+2024-12-15 23:24:37,420 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:24:37,699 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:24:37,969 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:24:38,065 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:38,087 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 333
+2024-12-15 23:24:38,254 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:24:38,304 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 430 266
+2024-12-15 23:24:38,324 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:24:38,513 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:38,626 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:24:38,886 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:39,051 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:24:39,178 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:39,452 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:39,566 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:24:39,726 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:39,839 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:24:40,001 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:40,130 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:24:40,274 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:40,551 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:40,829 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:41,562 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# show
+2024-12-15 23:24:42,135 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:24:43,196 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:24:44,154 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:24:44,337 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:46,160 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:24:46,421 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:24:47,555 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:48,161 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:24:49,521 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:49,542 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 430 333
+2024-12-15 23:24:49,901 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:50,038 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:50,161 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:24:50,263 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 430 266
+2024-12-15 23:24:50,324 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:24:50,448 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:24:50,556 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 430 333
+2024-12-15 23:24:50,612 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:24:50,738 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:24:50,901 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:24:50,996 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:51,169 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:24:51,266 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:51,266 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 430 266
+2024-12-15 23:24:51,559 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:51,584 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 430 333
+2024-12-15 23:24:51,753 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:51,841 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:24:52,003 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:24:52,092 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:24:52,275 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:24:52,297 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 430 266
+2024-12-15 23:24:52,384 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:24:52,565 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:24:52,594 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 430 333
+2024-12-15 23:24:52,662 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:24:52,847 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:24:53,040 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:53,103 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:24:53,317 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:53,589 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:54,022 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:24:54,533 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:24:54,805 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:24:56,211 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# show
+2024-12-15 23:24:56,798 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:57,071 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:57,127 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:24:57,362 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:57,641 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:57,919 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:24:57,951 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:24:59,144 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:25:01,124 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:25:01,127 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:25:03,174 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:25:04,310 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:25:04,316 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:25:05,174 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:25:07,183 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:25:07,447 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:25:07,480 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:25:09,197 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:25:10,643 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:25:10,699 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:25:11,205 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:25:13,227 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:25:13,829 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:25:13,889 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:25:15,228 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:25:17,126 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:25:20,593 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:20,615 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 430 333
+2024-12-15 23:25:20,631 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 430 266
+2024-12-15 23:25:20,967 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:21,258 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:21,342 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:21,548 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:21,611 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:25:21,633 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 430 266
+2024-12-15 23:25:21,831 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:21,894 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:25:21,990 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 430 333
+2024-12-15 23:25:22,093 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:25:22,166 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2312 3705
+2024-12-15 23:25:22,366 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:25:22,451 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2312 3705
+2024-12-15 23:25:22,647 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 430 266
+2024-12-15 23:25:22,651 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:25:22,713 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:22,957 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:25:23,017 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:23,027 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 430 333
+2024-12-15 23:25:23,312 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:23,439 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:23,601 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:23,676 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 430 266
+2024-12-15 23:25:23,721 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:23,883 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:23,976 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:25:24,040 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 333
+2024-12-15 23:25:24,151 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:25:24,262 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:25:24,458 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:25:24,544 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:25:24,694 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 430 266
+2024-12-15 23:25:24,755 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:25:24,806 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3254
+2024-12-15 23:25:25,042 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2312 3705
+2024-12-15 23:25:25,043 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 333
+2024-12-15 23:25:25,090 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:25,292 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:25,405 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:25,583 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:25,692 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:25,712 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 430 266
+2024-12-15 23:25:25,921 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:25,956 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:25:26,059 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 333
+2024-12-15 23:25:26,186 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2312 3705
+2024-12-15 23:25:26,248 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:25:26,480 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2312 3705
+2024-12-15 23:25:26,528 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:25:26,728 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 430 266
+2024-12-15 23:25:26,794 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:26,794 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2312 3705
+2024-12-15 23:25:27,060 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2313 3705
+2024-12-15 23:25:27,080 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 333
+2024-12-15 23:25:27,282 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:25:27,310 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:27,566 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:25:27,598 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:27,746 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 430 266
+2024-12-15 23:25:27,843 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:25:27,868 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2313 3705
+2024-12-15 23:25:28,082 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 333
+2024-12-15 23:25:28,146 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:28,183 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2313 3705
+2024-12-15 23:25:28,437 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:28,472 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2313 3705
+2024-12-15 23:25:28,731 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:28,734 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3254
+2024-12-15 23:25:28,900 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 430 266
+2024-12-15 23:25:28,993 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:29,006 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:25:29,099 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 333
+2024-12-15 23:25:29,281 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:29,300 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:25:29,558 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:29,585 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:25:29,836 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:25:29,844 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:29,916 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 430 266
+2024-12-15 23:25:30,110 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:25:30,110 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 333
+2024-12-15 23:25:30,344 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:30,394 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:25:30,622 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:30,669 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:25:30,913 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:30,922 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 430 266
+2024-12-15 23:25:31,132 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 300
+2024-12-15 23:25:31,202 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:31,228 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:31,493 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:31,504 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:31,788 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:31,789 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:31,928 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 474 266
+2024-12-15 23:25:32,040 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:25:32,057 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:25:32,134 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 300
+2024-12-15 23:25:32,321 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:25:32,330 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:25:32,610 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:25:32,688 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:25:32,890 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:25:32,943 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:25:32,965 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 430 266
+2024-12-15 23:25:33,141 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 300
+2024-12-15 23:25:33,225 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:33,272 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:33,512 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:33,559 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:33,806 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:33,831 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:33,973 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 430 266
+2024-12-15 23:25:34,067 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:25:34,085 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:25:34,150 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 300
+2024-12-15 23:25:34,351 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:25:34,358 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:25:34,632 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:25:34,632 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:25:34,889 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2215 3706
+2024-12-15 23:25:34,934 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:25:34,978 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 430 266
+2024-12-15 23:25:35,154 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:35,176 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 300
+2024-12-15 23:25:35,336 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:35,427 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:35,626 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:35,701 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:35,889 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:25:35,952 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2215 3706
+2024-12-15 23:25:35,991 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 474 266
+2024-12-15 23:25:36,163 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:25:36,199 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 300
+2024-12-15 23:25:36,247 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2215 3706
+2024-12-15 23:25:36,457 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:25:36,526 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2215 3706
+2024-12-15 23:25:36,749 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:25:36,819 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2215 3706
+2024-12-15 23:25:36,998 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 474 266
+2024-12-15 23:25:37,042 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:37,209 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 266
+2024-12-15 23:25:37,320 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:37,599 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:37,865 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:25:37,982 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:38,008 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 474 266
+2024-12-15 23:25:38,157 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:25:38,232 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 266
+2024-12-15 23:25:38,320 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:25:38,445 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:25:38,615 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:25:38,729 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:25:38,883 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:25:39,011 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 474 266
+2024-12-15 23:25:39,161 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:39,253 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 266
+2024-12-15 23:25:39,449 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:39,741 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:40,022 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 use bcdf#
+2024-12-15 23:25:40,031 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 474 266
+2024-12-15 23:25:40,075 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:40,272 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 266
+2024-12-15 23:25:40,318 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:40,356 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:40,608 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:40,635 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:40,881 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:25:40,944 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:25:41,042 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 474 266
+2024-12-15 23:25:41,142 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:25:41,205 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:25:41,278 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 266
+2024-12-15 23:25:41,427 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:25:41,498 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:25:41,776 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:25:42,586 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:25:42,862 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:25:44,489 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# show
+2024-12-15 23:25:45,058 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:25:45,171 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:25:46,120 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:25:47,060 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:25:48,277 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:25:49,077 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:25:49,357 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:25:51,092 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:25:51,507 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:25:52,580 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:25:53,105 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:25:54,681 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:25:55,192 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:25:55,769 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:25:57,193 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:25:57,812 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:25:58,996 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:26:00,997 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:26:01,381 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:26:02,464 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:26:03,400 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:26:05,412 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:26:05,674 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:26:07,420 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:26:09,453 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:26:11,471 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:26:13,531 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:26:15,551 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:26:17,569 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:26:19,591 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:26:21,606 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:26:23,608 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:26:25,630 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:26:27,633 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:26:29,634 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# 3
+2024-12-15 23:26:32,979 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:26:33,274 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 300
+2024-12-15 23:26:33,982 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 296 233
+2024-12-15 23:26:34,284 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 607 366
+2024-12-15 23:26:34,863 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:26:34,996 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:26:35,121 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:26:35,298 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 333
+2024-12-15 23:26:35,414 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:26:35,456 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:26:35,698 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:26:35,727 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:26:35,977 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:26:36,001 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:26:36,019 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:26:36,297 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:26:36,318 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 300
+2024-12-15 23:26:36,549 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:26:37,108 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:26:37,384 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:26:37,663 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:26:38,311 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:26:39,690 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 830 500
+2024-12-15 23:26:42,703 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 talk 1bc# 1
+2024-12-15 23:26:43,719 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 333
+2024-12-15 23:26:44,079 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# show
+2024-12-15 23:26:45,087 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# show
+2024-12-15 23:26:46,103 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# show
+2024-12-15 23:26:47,113 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# show
+2024-12-15 23:26:48,160 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# show
+2024-12-15 23:26:49,181 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# show
+2024-12-15 23:26:50,441 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# show
+2024-12-15 23:26:51,454 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# show
+2024-12-15 23:26:52,456 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# show
+2024-12-15 23:26:53,458 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# show
+2024-12-15 23:26:54,475 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# show
+2024-12-15 23:26:55,485 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# show
+2024-12-15 23:26:56,495 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# show
+2024-12-15 23:26:57,517 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# show
+2024-12-15 23:26:58,532 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# show
+2024-12-15 23:26:59,122 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:27:01,151 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:27:03,155 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:27:05,167 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:27:07,186 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:27:09,194 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:27:11,215 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:27:13,221 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:27:15,226 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:27:17,233 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:27:19,240 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:27:21,255 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:27:23,278 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:27:25,286 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:27:27,308 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:27:29,312 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:27:31,318 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:27:33,336 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:27:35,347 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:27:37,378 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pet b9d3# 3
+2024-12-15 23:27:40,206 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:27:40,722 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:27:41,012 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:27:41,285 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:27:41,577 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:27:41,852 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:27:42,144 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:27:43,527 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 30 0
+2024-12-15 23:28:03,053 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 use b9a3#
+2024-12-15 23:28:03,324 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:28:03,729 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 use bce5#
+2024-12-15 23:28:06,537 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:28:09,699 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:28:12,875 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:28:55,413 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 auto 5 1
+2024-12-15 23:29:21,754 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 use b9a3#
+2024-12-15 23:29:22,467 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 use bce5#
+2024-12-15 23:29:22,699 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:22,733 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:22,769 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 300
+2024-12-15 23:29:23,172 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:23,440 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:23,446 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:23,711 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:29:23,735 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:23,737 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:23,915 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 300
+2024-12-15 23:29:23,985 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:29:24,039 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:29:24,254 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:29:24,312 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:29:24,532 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:29:24,588 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:29:24,750 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:24,817 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:24,862 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:29:24,917 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 300
+2024-12-15 23:29:25,092 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:25,369 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:25,382 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:25,660 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:25,669 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:25,763 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:25,920 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:29:25,936 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:26,153 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 300
+2024-12-15 23:29:26,214 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:29:26,222 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:29:26,509 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:29:26,552 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:29:26,792 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:26,797 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:29:26,844 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:27,061 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:29:27,124 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:29:27,173 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 300
+2024-12-15 23:29:27,405 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:29:27,639 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:27,690 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:29:27,797 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:27,908 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3254
+2024-12-15 23:29:28,035 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2312 3705
+2024-12-15 23:29:28,169 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:29:28,191 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 266
+2024-12-15 23:29:28,310 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:28,445 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:29:28,596 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:28,707 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3254
+2024-12-15 23:29:28,804 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:28,911 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:28,972 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:29,183 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:29:29,203 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 474 266
+2024-12-15 23:29:29,246 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:29,470 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:29:29,533 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:29,766 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:29:29,809 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:29,817 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:30,019 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2312 3705
+2024-12-15 23:29:30,272 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:29:30,275 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:30,563 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:29:30,567 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:30,815 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:30,848 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:29:30,858 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:31,109 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2312 3705
+2024-12-15 23:29:31,110 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:31,383 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:31,385 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2312 3705
+2024-12-15 23:29:31,647 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3254
+2024-12-15 23:29:31,672 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:31,950 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:29:31,954 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:29:31,997 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:32,223 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:32,316 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:29:32,551 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:32,717 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:29:32,855 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:32,977 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:32,982 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:33,143 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:33,277 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:33,427 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:33,572 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:33,720 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:33,863 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:34,000 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:29:34,022 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:34,135 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:29:34,276 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:29:34,421 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:29:34,707 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:29:34,768 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:29:34,910 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:34,982 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:29:35,039 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:35,060 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:29:35,245 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:35,340 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:35,525 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:35,615 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:35,799 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:35,882 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:29:35,928 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:36,078 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:29:36,126 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:29:36,171 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:29:36,396 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:29:36,470 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:29:36,683 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:29:36,753 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:29:36,984 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2215 3706
+2024-12-15 23:29:37,005 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:37,022 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:37,163 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:37,242 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:37,331 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:37,551 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:37,630 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:37,850 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:37,885 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2312 3705
+2024-12-15 23:29:38,141 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2215 3706
+2024-12-15 23:29:38,147 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:29:38,169 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:38,426 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2215 3706
+2024-12-15 23:29:38,725 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2215 3706
+2024-12-15 23:29:39,175 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:40,102 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:40,543 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:29:40,545 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:40,729 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:40,889 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:29:41,133 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:29:41,193 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2316
+2024-12-15 23:29:41,410 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:41,454 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:41,455 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:29:41,727 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:41,738 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2316
+2024-12-15 23:29:42,002 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:29:42,003 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:29:42,300 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:29:42,469 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:42,486 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:42,520 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:42,579 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:29:42,800 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:42,873 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2314 3706
+2024-12-15 23:29:43,114 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:29:43,159 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:43,391 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:29:43,442 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:43,494 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:29:43,497 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:43,681 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:29:43,717 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:43,957 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2314 3705
+2024-12-15 23:29:43,982 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:29:44,215 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:44,274 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:29:44,499 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:44,513 ERROR auto_assemble_dichuyen(1216) Zhuangzi1: auto_assemble_dichuyen: 385 300
+2024-12-15 23:29:44,522 ERROR auto_assemble_dichuyen(1216) Zhuangzi2: auto_assemble_dichuyen: 385 266
+2024-12-15 23:29:44,557 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:29:44,782 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 2310 3705
+2024-12-15 23:29:44,838 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 3252 3705
+2024-12-15 23:29:45,045 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:29:45,104 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:45,338 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:29:45,390 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pf 2310 3706
+2024-12-15 23:29:45,621 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:29:45,913 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706
+2024-12-15 23:29:48,180 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi1 pet bcf0# show
+2024-12-15 23:29:49,988 ERROR auto_assemble_thucthicaulenh(1117) Zhuangzi2 pf 3252 3706

@@ -609,6 +609,11 @@ class TacTu:
                                 self.moitruong.action_dichuyentiepcandiem(self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieudangchon), self.moitruong.get_toadoy(diachicosothongtinnhanvatmuctieudangchon))
                             else:
                                 self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, KHOANGCACHSUDUNGKYNANGTAMXA - thoigiantuthenhanvatdungim - (0. if is_muctieudangchonlanguoichoi else 3.))
+                        else:
+                            if khoangcach >= KHOANGCACHSUDUNGKYNANGTAMXA - 0.5:
+                                self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, khoangcach - 0.5)
+                            else:
+                                self.moitruong.action_dichuyengiukhoangcachtoithieu(diachicosothongtinnhanvatmuctieudangchon, khoangcach - 0.5)
 
                 break
         self._is_tamngungdichuyensudungkynang = is_tamngungdichuyensudungkynang
@@ -988,8 +993,9 @@ class TacTu:
 
             return
 
+        self._idbandovuachet = False
+
         if x and y:
-            self._idbandovuachet = False
             self.moitruong.action_tudongtimduong(x, y, idbando)
 
     def action_tudongdichuyenlenbandovuachet(self):
