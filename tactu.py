@@ -989,6 +989,7 @@ class TacTu:
             return
 
         if x and y:
+            self._idbandovuachet = False
             self.moitruong.action_tudongtimduong(x, y, idbando)
 
     def action_tudongdichuyenlenbandovuachet(self):
@@ -1225,12 +1226,12 @@ class TacTu:
 
     def action_sudungvatphamhanhtrang(self, tenvatpham, delay = 0.25):
         if time.time() - self._thoidiemsudungvatphamgannhat < delay:
-            return
+            return False
 
         iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(tenvatpham)
 
         if not iddoituongvatpham:
-            return
+            return False
 
         is_ok = self.moitruong.action_thucthicaulenh("use {}#".format(hex(iddoituongvatpham)).replace("0x", ""), delay = delay)
         if is_ok:

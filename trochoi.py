@@ -50,7 +50,7 @@ class TroChoi:
                 idcuasohethans.add(idcuaso)
 
         for idcuasohethan in idcuasohethans:
-            self.cuasos.pop(idcuasohethan)
+            del self.cuasos[idcuasohethan]
 
         time.sleep(1)
 

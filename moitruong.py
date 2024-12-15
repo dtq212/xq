@@ -199,7 +199,7 @@ class MoiTruong:
 
     def get_is_cuasogametontai(self):
         tencuaso = str(win32gui.GetWindowText(self.idcuaso))
-        return "(" in tencuaso
+        return "Chien Quoc" in tencuaso
 
     def get_is_cuasogamekichhoat(self):
         return win32gui.GetForegroundWindow() == self.idcuaso
