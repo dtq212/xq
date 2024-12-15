@@ -832,8 +832,8 @@ class TacTu:
                         if self.moitruong.get_tendoituong(diachicosothongtinvatphamxemxet) != CHANGIABAORUONG:
                             continue
 
-                        # if self._tenmuctieubatquaitrantruocdo != "S19" or self._tenmuctieubatquaitranhientai != AOANHMADAO:
-                        if self._tenmuctieubatquaitranhientai != "S9" or self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
+                        if self._tenmuctieubatquaitrantruocdo != "S19" or self._tenmuctieubatquaitranhientai != AOANHMADAO:
+                        # if self._tenmuctieubatquaitranhientai != "S9" or self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
                             khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
                             if khoangcach <= 2.5:
                                 if time.time() - self._thoidiemmochangiabaoruonggannhat >= 2.5:
