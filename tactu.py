@@ -609,11 +609,8 @@ class TacTu:
                                 self.moitruong.action_dichuyentiepcandiem(self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieudangchon), self.moitruong.get_toadoy(diachicosothongtinnhanvatmuctieudangchon))
                             else:
                                 self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, KHOANGCACHSUDUNGKYNANGTAMXA - thoigiantuthenhanvatdungim - (0. if is_muctieudangchonlanguoichoi else 3.))
-                        else:
-                            if khoangcach >= KHOANGCACHSUDUNGKYNANGTAMXA - 0.5:
-                                self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, khoangcach - 0.5)
-                            else:
-                                self.moitruong.action_dichuyengiukhoangcachtoithieu(diachicosothongtinnhanvatmuctieudangchon, khoangcach - 0.5)
+                        elif idtuthenhanvat == TUTHENHANVAT_TANCONG:
+                            self.moitruong.action_dichuyentaicho()
 
                 break
         self._is_tamngungdichuyensudungkynang = is_tamngungdichuyensudungkynang
@@ -953,6 +950,7 @@ class TacTu:
                 elif idbando in DICHUYENPHITACDOATNGUYENTRUYENTONG_MAP:
                     iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvatphitacdoatngantruyentong)
                     if iddoituong:
+                        self._idbandovuachet = False
                         for caulenh in DICHUYENPHITACDOATNGUYENTRUYENTONG_MAP[idbando]:
                             self.moitruong.action_thucthicaulenh(caulenh.format(hex(iddoituong)).replace("0x", ""))
                             time.sleep(0.25)
@@ -969,6 +967,7 @@ class TacTu:
             elif idbando in DICHUYENPHITACDOATNGUYENTRUYENTONG_MAP:
                 iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvatphitacdoatngantruyentong)
                 if iddoituong:
+                    self._idbandovuachet = False
                     for caulenh in DICHUYENPHITACDOATNGUYENTRUYENTONG_MAP[idbando]:
                         self.moitruong.action_thucthicaulenh(caulenh.format(hex(iddoituong)).replace("0x", ""))
                         time.sleep(0.25)
@@ -991,9 +990,8 @@ class TacTu:
                     if self.moitruong.get_is_danghiencuasotuychon():
                         self.moitruong.set_is_danghiencuasotuychon(False)
 
-            return
 
-        self._idbandovuachet = False
+            return
 
         if x and y:
             self.moitruong.action_tudongtimduong(x, y, idbando)
@@ -1016,6 +1014,9 @@ class TacTu:
                     break
 
                 if self.moitruong.get_is_nhanvatdachet():
+                    break
+
+                if not self._idbandovuachet:
                     break
 
                 idbandohientai = self.moitruong.get_idbandohientai()
@@ -1377,6 +1378,9 @@ class TacTu:
                     break
 
                 if self.moitruong.get_is_dangvankhi():
+                    break
+
+                if self._is_tamngungtancongdichuyenlenbandovuachet:
                     break
 
                 iddoituongbaothudautien = self.moitruong.get_iddoituongbaothudautien()
