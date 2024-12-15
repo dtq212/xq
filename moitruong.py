@@ -1080,9 +1080,12 @@ class MoiTruong:
             return
 
         if "team + {}".format(idnguoichoitruongnhom) == self.get_caulenhmoinhomhientai() and self.get_is_danghiencuasoyesno():
-            self._thoidiemthaotacnhomgannhat = time.time()
-            self.action_thucthicaulenh("team + {}".format(idnguoichoitruongnhom), delay = 0)
-            self.set_is_danghiencuasoyesno(False)
+            is_ok = self.action_thucthicaulenh("team + {}".format(idnguoichoitruongnhom), delay = 0.5)
+            if is_ok:
+                self._thoidiemthaotacnhomgannhat = time.time()
+
+                if self.get_is_danghiencuasoyesno():
+                    self.set_is_danghiencuasoyesno(False)
 
     def auto_assemble_thucthicaulenh(self, caulenh):
         time.sleep(0.02)
@@ -1381,9 +1384,9 @@ class MoiTruong:
                 return
             caulenh = "pf {} {}#".format(idkynang, hex(iddoituong)).replace("0x", "")
 
-        self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
-
-        self.action_thucthicaulenh(caulenh, delay = 0)
+        is_ok = self.action_thucthicaulenh(caulenh, delay = delay)
+        if is_ok:
+            self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
 
     def action_sudungkynangvitrikhongtrihoan(self, idvitriX, idvitriY, delay = 0.25):
         idvitri = (idvitriX, idvitriY)
@@ -1396,8 +1399,9 @@ class MoiTruong:
 
         caulenh = "pf {}".format(idkynang)
 
-        self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
-        self.action_thucthicaulenh(caulenh, delay = 0)
+        is_ok = self.action_thucthicaulenh(caulenh, delay = delay)
+        if is_ok:
+            self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
 
     def action_sudungkynangvitrilenbanthan(self, idvitriX, idvitriY, delay = 0.25):
         idvitri = (idvitriX, idvitriY)
@@ -1408,9 +1412,10 @@ class MoiTruong:
         if not idkynang:
             return
 
-        self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
+        is_ok = self.action_thucthicaulenh("pf {} {}".format(idkynang, self.get_idnguoichoi()), delay = delay)
+        if is_ok:
+            self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
 
-        self.action_thucthicaulenh("pf {} {}".format(idkynang, self.get_idnguoichoi()), delay = 0)
 
     def action_dichuyen(self, x, y, delay = 1.):
         if self._is_vohieuhoadichuyen:
@@ -1593,8 +1598,6 @@ class MoiTruong:
         if not idkynang:
             return
 
-        self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
-
         diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
 
         x1, y1 = self.get_toadox(diachicosothongtinnhanvat1), self.get_toadoy(diachicosothongtinnhanvat1)
@@ -1614,7 +1617,9 @@ class MoiTruong:
         targetx = round(x1 + deltax)
         targety = round(y1 + deltay)
 
-        self.action_thucthicaulenh("pf {} {},{}".format(idkynang, targetx, targety), delay = 0)
+        is_ok = self.action_thucthicaulenh("pf {} {},{}".format(idkynang, targetx, targety), delay = delay)
+        if is_ok:
+            self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
 
     def get_is_damocuasotuychonnhanvatchinhlandau(self):
         x = read_int(self.tientrinh, self.diachixq + 0x3A531C)
@@ -1705,10 +1710,10 @@ class MoiTruong:
         if self.get_idmaupk() == idmaupk:
             return
 
-        self._thoidiemmaupkgannhat = time.time()
-
-        self.set_idmaupk(idmaupk)
-        self.action_thucthicaulenh("set !attack {}".format(idmaupk), delay = 0.)
+        is_ok = self.action_thucthicaulenh("set !attack {}".format(idmaupk), delay = delay)
+        if is_ok:
+            self.set_idmaupk(idmaupk)
+            self._thoidiemmaupkgannhat = time.time()
 
     def action_timkiemvatphamhanhtrang(self, tenvatpham = None):
         if not tenvatpham:
@@ -1817,10 +1822,11 @@ class MoiTruong:
         if time.time() - self._thoidiemsudungchucnangmorong5 < delay:
             return
 
-        self._thoidiemsudungchucnangmorong5 = time.time()
         caulenh = "auto 5 1"
 
-        self.action_thucthicaulenh(caulenh, delay = 0)
+        is_ok = self.action_thucthicaulenh(caulenh, delay = delay)
+        if is_ok:
+            self._thoidiemsudungchucnangmorong5 = time.time()
 
     def get_idmonphai(self, diachicosothongtinnhanvat = None):
         if diachicosothongtinnhanvat is None:

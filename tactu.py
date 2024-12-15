@@ -323,8 +323,9 @@ class TacTu:
                 self.action_sudungvatphamhanhtrang(ANXAPHU)
 
             if time.time() - self._thoidiemsudungsinhkhitangannhat > 300.:
-                self._thoidiemsudungsinhkhitangannhat = time.time()
-                self.action_sudungvatphamhanhtrang(SINHKHITAN, delay = 0.)
+                is_ok = self.action_sudungvatphamhanhtrang(SINHKHITAN, delay = 0.5)
+                if is_ok:
+                    self._thoidiemsudungsinhkhitangannhat = time.time()
 
             if time.time() - self._thoidiemsudungsotriduocgannhat > 1. and self.moitruong.get_phantramsinhlucconlai() <= 15.:
                 self._thoidiemsudungsotriduocgannhat = time.time()
@@ -738,9 +739,9 @@ class TacTu:
         if not iddoituongvatpham:
             return
 
-        self._thoidiemvutdogannhat = time.time()
-
-        self.moitruong.action_thucthicaulenh("drop ! {}#1".format(hex(iddoituongvatpham)).replace("0x", ""), delay = 0.)
+        is_ok = self.moitruong.action_thucthicaulenh("drop ! {}#1".format(hex(iddoituongvatpham)).replace("0x", ""), delay = 0.5)
+        if is_ok:
+            self._thoidiemvutdogannhat = time.time()
 
 
     def action_tudongnhatdo(self):
@@ -1231,8 +1232,11 @@ class TacTu:
         if not iddoituongvatpham:
             return
 
-        self._thoidiemsudungvatphamgannhat = time.time()
-        self.moitruong.action_thucthicaulenh("use {}#".format(hex(iddoituongvatpham)).replace("0x", ""), delay = 0.)
+        is_ok = self.moitruong.action_thucthicaulenh("use {}#".format(hex(iddoituongvatpham)).replace("0x", ""), delay = delay)
+        if is_ok:
+            self._thoidiemsudungvatphamgannhat = time.time()
+
+        return is_ok
 
     def action_tudongepdo78910(self, delay = 0.25):
         if time.time() - self._thoidiemepdogannhat < delay:
