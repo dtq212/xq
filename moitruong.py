@@ -181,7 +181,7 @@ class MoiTruong:
         if not diachicosothongtinnhanvatmuctieuhientai:
             self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
 
-        idbandohientai = self.get_idbandohientai()
+        idbandohientai = self._get_idbandohientai()
 
         if idbandohientai != self._idbandohientai:
             self._thoidiemthaydoibandogannhat = time.time()
@@ -279,6 +279,9 @@ class MoiTruong:
         return read_int(self.tientrinh, x + 0x1538)
 
     def get_idbandohientai(self):
+        return self._idbandohientai
+
+    def _get_idbandohientai(self):
         x = read_int(self.tientrinh, self.diachixq + 0x371754)
         if not x:
             return False
