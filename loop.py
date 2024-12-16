@@ -196,13 +196,14 @@ class LoopPhu:
 
     def __del__(self):
         try:
-            self.moitruong.action_tatvohieuhoatuthedelaysautancong()
-            self.moitruong.action_tatvohieuhoathietlapmuctieu()
-            self.moitruong.action_tatvohieuhoaxoamuctieu()
-            self.moitruong.action_tatvohieuhoalongclick()
-            self.moitruong.action_tatvohieuhoatrangthaichuotchonmuctieukynang()
-            self.moitruong.action_tatvohieuhoakhoanhvungkynang()
-            self.moitruong.action_tatvohieuhoaphimspace()
+            pass
+            # self.moitruong.action_tatvohieuhoatuthedelaysautancong()
+            # self.moitruong.action_tatvohieuhoathietlapmuctieu()
+            # self.moitruong.action_tatvohieuhoaxoamuctieu()
+            # self.moitruong.action_tatvohieuhoalongclick()
+            # self.moitruong.action_tatvohieuhoatrangthaichuotchonmuctieukynang()
+            # self.moitruong.action_tatvohieuhoakhoanhvungkynang()
+            # self.moitruong.action_tatvohieuhoaphimspace()
         except (pymem.exception.PymemError, pymem.exception.WinAPIError):
             pass
 
@@ -229,19 +230,20 @@ class LoopPhu:
         if time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() < 0.5:
             return
 
-        self.moitruong.action_vohieuhoatuthedelaysautancong()
+        # self.moitruong.action_vohieuhoatuthedelaysautancong()
+        # self.moitruong.action_vohieuhoathietlapmuctieu()
 
-        self.moitruong.action_vohieuhoathietlapmuctieu()
         if self.moitruong.get_is_bathanhtrang():
             self.moitruong.set_is_batalt(False)
         else:
             self.moitruong.set_is_batalt(True)
-        self.moitruong.action_vohieuhoaxoamuctieu()
-        self.moitruong.action_vohieuhoalongclick()
 
-        self.moitruong.action_vohieuhoatrangthaichuotchonmuctieukynang()
-        self.moitruong.action_vohieuhoakhoanhvungkynang()
-        self.moitruong.action_vohieuhoaphimspace()
+        # self.moitruong.action_vohieuhoaxoamuctieu()
+        # self.moitruong.action_vohieuhoalongclick()
+
+        # self.moitruong.action_vohieuhoatrangthaichuotchonmuctieukynang()
+        # self.moitruong.action_vohieuhoakhoanhvungkynang()
+        # self.moitruong.action_vohieuhoaphimspace()
 
         self.tactu.action_tudongdichuyenxungquanhdiem()
         self.tactu.action_tudongdichientruong()

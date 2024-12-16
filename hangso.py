@@ -181,6 +181,7 @@ SOCAPDOANTHACH = "SÆ¡ Cáº¥p Äoáº¡n Tháº¡ch"
 DOANTHACHDACBIETSOCAPDUOIDAT = "Äoáº¡n Tháº¡ch Äáº·c Biá»‡t SÆ"
 DOANTHACHDACBIETSOCAPHANHTRANG = "Ä\x90oáº¡n Tháº¡ch Ä\x90áº·c Biá»‡t S"
 DOANTHACHDACBIETCAOCAPDUOIDAT = "Äoáº¡n Tháº¡ch Äáº·c Biá»‡t Ca"
+
 DOANTHACHDACBIETCAOCAPHANHTRANG = "Ä\x90oáº¡n Tháº¡ch Ä\x90áº·c Biá»‡t C"
 HUYETLONGCHIEUTHU = "Huyáº¿t Long Chiáº¿u ThÆ°"
 TAITAOHOAN = "TÃ¡i Táº¡o HoÃ n"
