@@ -168,9 +168,6 @@ class TacTu:
                 if self.moitruong.get_is_truongnhom():
                     break
 
-                if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DICHUYEN:
-                    break
-
                 if self._is_tudongbattheosaunhom and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THEOSAUNHOM, ), True, is_hieuungcoloi = 1):
                     self.moitruong.action_battheosaunhom(2.)
 
@@ -619,7 +616,7 @@ class TacTu:
                             if thoigiantuthenhanvatdungim > 4.:
                                 self.moitruong.action_dichuyentiepcandiem(self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieudangchon), self.moitruong.get_toadoy(diachicosothongtinnhanvatmuctieudangchon))
                             else:
-                                self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, KHOANGCACHSUDUNGKYNANGTAMXA - thoigiantuthenhanvatdungim - (0. if is_muctieudangchonlanguoichoi else 3.))
+                                self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, KHOANGCACHSUDUNGKYNANGTAMXA - min(thoigiantuthenhanvatdungim, 3.) - (0. if is_muctieudangchonlanguoichoi else 3.))
 
                 break
         self._is_tamngungdichuyensudungkynang = is_tamngungdichuyensudungkynang
