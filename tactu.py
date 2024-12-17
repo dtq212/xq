@@ -168,6 +168,9 @@ class TacTu:
                 if self.moitruong.get_is_truongnhom():
                     break
 
+                if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_TANCONG:
+                    break
+
                 if self._is_tudongbattheosaunhom and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THEOSAUNHOM, ), True, is_hieuungcoloi = 1):
                     self.moitruong.action_battheosaunhom(2.)
 
