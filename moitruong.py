@@ -1119,7 +1119,7 @@ class MoiTruong:
 
 
     def auto_assemble_sudungkynangphimtat(self, idvitriphimtat):
-        time.sleep(0.02)
+        time.sleep(0.05)
         if not self._is_dasetupautoassemblesudungkynangphimtat:
             self._diachiautoassemblesudungkynangphimtat = self.tientrinh.allocate(64)
 
@@ -1147,7 +1147,7 @@ class MoiTruong:
 
 
     def auto_assemble_sudungkynangvitri(self, idvitriX, idvitriY, hinhthucsudungkynang = HINHTHUCSUDUNGKYNANG_CANMUCTIEU):
-        time.sleep(0.02)
+        time.sleep(0.05)
         idkynang = self.get_idkynang(idvitriX, idvitriY)
         if not idkynang:
             return
@@ -1181,7 +1181,7 @@ class MoiTruong:
         self.tientrinh.start_thread(self._diachiautoassemblesudungkynangvitri)
 
     def auto_assemble_dichuyen(self, x, y):
-        time.sleep(0.02)
+        time.sleep(0.05)
         if not self._is_dasetupautoassembledichuyen:
             self._diachiautoassembledichuyen = self.tientrinh.allocate(64)
 
@@ -1234,7 +1234,7 @@ class MoiTruong:
         self.tientrinh.start_thread(self._diachiautoassemblenhatdo)
 
     def auto_assemble_khoitaothongtinbando(self):
-        time.sleep(0.02)
+        time.sleep(0.05)
         if not self._is_dasetupautoassemblekhoitaothongtinbando:
             self._diachiautoassemblekhoitaothongtinbando = self.tientrinh.allocate(64)
 
@@ -1271,7 +1271,7 @@ class MoiTruong:
         if x <= 0 or y <= 0 or idbando <= 0:
             return
 
-        time.sleep(0.02)
+        time.sleep(0.05)
         if not self._is_dasetupautoassembletudongtimduong:
             self._diachiautoassembletudongtimduong = self.tientrinh.allocate(64)
 
@@ -1344,7 +1344,6 @@ class MoiTruong:
         if idvitriphimtat in self._thoidiemsudungkynangphimtatgannhat_map and time.time() - self._thoidiemsudungkynangphimtatgannhat_map[idvitriphimtat] < delay:
             return
 
-        time.sleep(0.02)
         self._thoidiemsudungkynangphimtatgannhat_map[idvitriphimtat] = time.time()
         self.auto_assemble_sudungkynangphimtat(idvitriphimtat)
 
@@ -1356,11 +1355,12 @@ class MoiTruong:
         if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
             return
 
-        time.sleep(0.02)
         self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
         self.auto_assemble_sudungkynangvitri(idvitriX, idvitriY, hinhthucsudungkynang)
 
     def action_sudungkynangvitrimuctieukhongtrihoan(self, idvitriX, idvitriY, diachicosothongtinnhanvatmuctieu = False, is_khongkiemtracothetancong = False, delay = 0.25):
+        return self.action_sudungkynangvitri(idvitriX, idvitriY, delay = delay)
+
         idvitri = (idvitriX, idvitriY)
         if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
             return
@@ -1388,6 +1388,8 @@ class MoiTruong:
             self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
 
     def action_sudungkynangvitrikhongtrihoan(self, idvitriX, idvitriY, delay = 0.25):
+        return self.action_sudungkynangvitri(idvitriX, idvitriY, hinhthucsudungkynang = HINHTHUCSUDUNGKYNANG_KHONGCANMUCTIEU, delay = delay)
+
         idvitri = (idvitriX, idvitriY)
         if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
             return
@@ -1668,7 +1670,6 @@ class MoiTruong:
         if self.get_is_dakhoitaothongtinbando():
             return
 
-        time.sleep(0.02)
         self._thoidiemkhoitaothongtinbandogannhat = time.time()
         self.auto_assemble_khoitaothongtinbando()
 
@@ -1682,7 +1683,6 @@ class MoiTruong:
             self.action_khoitaothongtinbando()
             return
 
-        time.sleep(0.02)
         self._thoidiemdichuyengannhat = time.time()
         self.auto_assemble_tudongtimduong(x, y, idbando)
 
