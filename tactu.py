@@ -822,9 +822,9 @@ class TacTu:
                     self.moitruong.action_nhatdo(self._diachicosovatphamdangnhat)
 
                 if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA, delay = 1.) and khoangcach >= 3:
-                    self.moitruong.action_sudungkynangvitriphudaudiem(*VITRIKYNANG_KHAITHIENTICHDIA, self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True), self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True), khoangcachphudau = khoangcach)
+                    self.moitruong.action_sudungkynangvitriphudaudiem(*VITRIKYNANG_KHAITHIENTICHDIA, self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True), self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True), khoangcachphudau = khoangcach - 1.5)
                 else:
-                    self.moitruong.action_dichuyentiepcandiem(self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True), self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True))
+                    self.moitruong.action_dichuyengiukhoangcachtoidadiem(self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True), self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True), khoangcachtoida = 1.5)
 
                 if time.time() - self._thoidiemthaydoivatphamdangnhatgannhat > 6.:
                     self._diachicosovatphamkhongnhats.append(self._diachicosovatphamdangnhat)
@@ -861,7 +861,7 @@ class TacTu:
                         if self._tenmuctieubatquaitrantruocdo != "S19" or self._tenmuctieubatquaitranhientai != AOANHMADAO:
                         # if self._tenmuctieubatquaitranhientai != "S9" or self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
                             khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
-                            if khoangcach <= 3.:
+                            if khoangcach <= 6.:
                                 if time.time() - self._thoidiemmochangiabaoruonggannhat >= 1.5:
                                     is_ok = self.moitruong.action_thucthicaulenh_get("look {}#".format(hex(self.moitruong.get_iddoituong(diachicosothongtinvatphamxemxet))).replace("0x", ""))
                                     if is_ok:
@@ -1137,7 +1137,7 @@ class TacTu:
                         self._diemdanhxungquanhhientai = diemdanhxungquanhtieptheo
 
                     print("{}: Di chuyển tiếp cận điểm: ".format(self.moitruong.get_tendoituong()), iddiemdanhxungquanhtieptheo, diemdanhxungquanhtieptheo)
-                    self.moitruong.action_dichuyentiepcandiem(*diemdanhxungquanhtieptheo[:-1], is_rangbuoctrongmanhinh = True)
+                    self.moitruong.action_dichuyentiepcandiem(*diemdanhxungquanhtieptheo[:-1])
 
                 else:
                     diemdanhxungquanhbatky = diemdanhxungnquanhs[0]
