@@ -818,7 +818,7 @@ class TacTu:
                 is_tamngungtancongdenhatdo = True
 
                 khoangcach = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat)
-                if khoangcach <= 3.:
+                if khoangcach <= 3. and self.moitruong.get_idtuthenhanvat() != TUTHENHANVAT_DICHUYEN:
                     self.moitruong.action_nhatdo(self._diachicosovatphamdangnhat)
 
                 if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA, delay = 1.) and khoangcach >= 3:
@@ -859,10 +859,9 @@ class TacTu:
                             continue
 
                         if self._tenmuctieubatquaitrantruocdo != "S19" or self._tenmuctieubatquaitranhientai != AOANHMADAO:
-                        # if self._tenmuctieubatquaitranhientai != "S9" or self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
                             khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
                             if khoangcach <= 6.:
-                                if time.time() - self._thoidiemmochangiabaoruonggannhat >= 1.5:
+                                if time.time() - self._thoidiemmochangiabaoruonggannhat >= 1.5 and self.moitruong.get_idtuthenhanvat() != TUTHENHANVAT_DICHUYEN:
                                     is_ok = self.moitruong.action_thucthicaulenh_get("look {}#".format(hex(self.moitruong.get_iddoituong(diachicosothongtinvatphamxemxet))).replace("0x", ""))
                                     if is_ok:
                                         self._thoidiemmochangiabaoruonggannhat = time.time()
