@@ -122,7 +122,7 @@ class LoopChinh:
         #     time.sleep(0.25)
 
         # while True:
-        #     self.moitruong.action_thucthicaulenh("noichuyen 257# gift.30", delay = 0.25)
+        #     self.moitruong.action_thucthicaulenh("noichuyen 21d# gift.30", delay = 0.25)
         #     time.sleep(0.25)
         #     self.tactu.action_tudongxepchongdo()
         #     time.sleep(0.25)
@@ -142,7 +142,7 @@ class LoopChinh:
         # while True:
         #     #noi cong 143
         #     #bao kich 146
-        #     self.moitruong.action_thucthicaulenh("talk b2fb# info.143")
+        #     self.moitruong.action_thucthicaulenh("talk 6365e# info.143")
         #     time.sleep(0.05)
         #     i += 1
         #     if i % 10 == 0:
