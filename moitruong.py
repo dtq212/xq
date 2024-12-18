@@ -887,14 +887,20 @@ class MoiTruong:
             self._diachicosothongtinnhanvatmuctieudangchon = diachicosothongtinnhanvat
 
         if diachicosothongtinnhanvat:
-            if self._get_diachicosothongtinnhanvatmuctieudangchon() == diachicosothongtinnhanvat:
+            if self._get_diachicosothongtinnhanvatmuctieudangchon() != diachicosothongtinnhanvat:
                 iddoituong = self.get_iddoituong(diachicosothongtinnhanvat)
-                if iddoituong > 0 and time.time() - self._thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat > delay:
+                if time.time() - self._thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat > delay:
                     self._thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat = time.time()
-                    write_int(self.tientrinh, self.diachixq + 0x1BC3E0, diachicosothongtinnhanvat)
-                    write_int(self.tientrinh, self.diachixq + 0x37173C, iddoituong)
-                    write_int(self.tientrinh, self.diachixq + 0x1BC440, diachicosothongtinnhanvat)
-                    write_int(self.tientrinh, self.diachixq + 0x1BC444, iddoituong)
+                    if iddoituong > 0:
+                        write_int(self.tientrinh, self.diachixq + 0x1BC3E0, diachicosothongtinnhanvat)
+                        write_int(self.tientrinh, self.diachixq + 0x37173C, iddoituong)
+                        write_int(self.tientrinh, self.diachixq + 0x1BC440, diachicosothongtinnhanvat)
+                        write_int(self.tientrinh, self.diachixq + 0x1BC444, iddoituong)
+                    else:
+                        write_int(self.tientrinh, self.diachixq + 0x1BC3E0, diachicosothongtinnhanvat)
+                        write_int(self.tientrinh, self.diachixq + 0x37173C, iddoituong)
+                        write_int(self.tientrinh, self.diachixq + 0x1BC440, diachicosothongtinnhanvat)
+                        write_int(self.tientrinh, self.diachixq + 0x1BC444, iddoituong)
 
 
     def action_vohieuhoatuthedelaysautancong(self):
