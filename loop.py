@@ -107,6 +107,7 @@ class LoopChinh:
         if time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() < 0.5:
             return
 
+
         self.tactu.action_tudongtheosautruongnhom()
 
         tenmonphai = MONPHAI_MAP.get(self.moitruong.get_idkynang(0, 0))
