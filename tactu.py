@@ -617,7 +617,7 @@ class TacTu:
                     if not is_duoitheo:
                         thoigiantuthenhanvatdungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat() if idtuthenhanvat == TUTHENHANVAT_DUNGIM else 0.
                         if thoigiantuthenhanvatdungim > 1.:
-                            if thoigiantuthenhanvatdungim > 4.:
+                            if thoigiantuthenhanvatdungim > 4.5:
                                 self.moitruong.action_dichuyentiepcandiem(self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieudangchon), self.moitruong.get_toadoy(diachicosothongtinnhanvatmuctieudangchon))
                             else:
                                 self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, KHOANGCACHSUDUNGKYNANGTAMXA - min(1. + thoigiantuthenhanvatdungim, 3.))
@@ -673,7 +673,6 @@ class TacTu:
                             if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
                                 self.moitruong.action_sudungkynangvitrikhongtrihoan(*VITRIKYNANG_KIMCUONGTHANPHAP)
                                 break
-
                     break
 
                 break
@@ -818,7 +817,7 @@ class TacTu:
                 is_tamngungtancongdenhatdo = True
 
                 khoangcach = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat)
-                if khoangcach <= 3. and self.moitruong.get_idtuthenhanvat() != TUTHENHANVAT_DICHUYEN:
+                if khoangcach <= 3. and self.moitruong.get_idtuthenhanvat() not in (TUTHENHANVAT_DICHUYEN, TUTHENHANVAT_TANCONG):
                     self.moitruong.action_nhatdo(self._diachicosovatphamdangnhat)
 
                 if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA, delay = 1.) and khoangcach >= 3:
@@ -861,7 +860,7 @@ class TacTu:
                         if self._tenmuctieubatquaitrantruocdo != "S19" or self._tenmuctieubatquaitranhientai != AOANHMADAO:
                             khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
                             if khoangcach <= 6.:
-                                if time.time() - self._thoidiemmochangiabaoruonggannhat >= 1.5 and self.moitruong.get_idtuthenhanvat() != TUTHENHANVAT_DICHUYEN:
+                                if time.time() - self._thoidiemmochangiabaoruonggannhat >= 1.5 and self.moitruong.get_idtuthenhanvat() not in (TUTHENHANVAT_DICHUYEN, TUTHENHANVAT_TANCONG):
                                     is_ok = self.moitruong.action_thucthicaulenh_get("look {}#".format(hex(self.moitruong.get_iddoituong(diachicosothongtinvatphamxemxet))).replace("0x", ""))
                                     if is_ok:
                                         self._thoidiemmochangiabaoruonggannhat = time.time()
