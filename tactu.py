@@ -378,13 +378,6 @@ class TacTu:
                                 if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
                                     self.moitruong.action_sudungkynangvitrimuctieukhongtrihoan(*VITRIKYNANG_KHIETVANQUYET, diachicosothongtinnhanvatxemxet, is_khongkiemtracothetancong = True)
                                     break
-
-                            # if self.moitruong.get_phantramsinhlucconlai(diachicosothongtinnhanvatxemxet) <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_CAMLOTRI):
-                            #     is_tamngungdichuyensudungkynang = True
-                            #     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
-                            #         self.moitruong.action_sudungkynangvitrimuctieukhongtrihoan(*VITRIKYNANG_CAMLOTRI, diachicosothongtinnhanvatxemxet, is_khongkiemtracothetancong = True)
-                            #         break
-
                             if self.moitruong.get_phantramsinhlucconlai(diachicosothongtinnhanvatxemxet) <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_SOTRI):
                                 is_tamngungdichuyensudungkynang = True
                                 if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
@@ -414,12 +407,6 @@ class TacTu:
                     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
                         self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_KHIETVANQUYET)
                         break
-
-                # if self.moitruong.get_phantramsinhlucconlai() <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_CAMLOTRI):
-                #     is_tamngungdichuyensudungkynang = True
-                #     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
-                #         self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_CAMLOTRI)
-                #         break
 
                 if self.moitruong.get_phantramsinhlucconlai() <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_SOTRI):
                     is_tamngungdichuyensudungkynang = True
@@ -454,7 +441,17 @@ class TacTu:
                 is_muctieudangchonlanguoichoi = self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon)
 
                 if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
-                    if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_DONGIAPTRAN):
+                    if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_HUYENQUANGTHIEMANH):
+                        is_tamngungdichuyensudungkynang = True
+                        if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
+                            self.moitruong.action_sudungkynangvitrimuctieukhongtrihoan(*VITRIKYNANG_HUYENQUANGTHIEMANH)
+
+                    elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHONGANTHUAT):
+                        is_tamngungdichuyensudungkynang = True
+                        if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
+                            self.moitruong.action_sudungkynangvitrimuctieukhongtrihoan(*VITRIKYNANG_PHONGANTHUAT)
+
+                    elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_DONGIAPTRAN):
                         is_tamngungdichuyensudungkynang = True
                         if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
                             self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_DONGIAPTRAN, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach - 1)
