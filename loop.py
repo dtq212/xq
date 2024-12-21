@@ -129,14 +129,14 @@ class LoopChinh:
         #     time.sleep(0.25)
 
         # while True:
-        #     self.moitruong.action_thucthicaulenh("talk 5c4b4# info.10050")
-        #     time.sleep(0.1)
-        #     self.moitruong.action_thucthicaulenh("talk 5c4b4# info.11")
-        #     time.sleep(0.1)
-        #     self.moitruong.action_thucthicaulenh("talk 5c4b4# info.200")
-        #     time.sleep(0.1)
-        #     self.moitruong.action_thucthicaulenh("talk 5c4b4# info.210")
-        #     time.sleep(0.1)
+        #     self.moitruong.action_thucthicaulenh("talk 1f42e# info.10050", delay = 0.)
+        #     time.sleep(0.25)
+        #     self.moitruong.action_thucthicaulenh("talk 1f42e# info.11", delay = 0.)
+        #     time.sleep(0.25)
+        #     self.moitruong.action_thucthicaulenh("talk 1f42e# info.200", delay = 0.)
+        #     time.sleep(0.25)
+        #     self.moitruong.action_thucthicaulenh("talk 1f42e# info.210", delay = 0.)
+        #     time.sleep(0.25)
 
         # i = 0
         #
