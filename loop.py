@@ -202,7 +202,7 @@ class LoopPhu:
             self.moitruong.action_tatvohieuhoaxoamuctieu()
             self.moitruong.action_tatvohieuhoalongclick()
             self.moitruong.action_tatvohieuhoatrangthaichuotchonmuctieukynang()
-            self.moitruong.action_tatvohieuhoakhoanhvungkynang()
+            # self.moitruong.action_tatvohieuhoakhoanhvungkynang()
             self.moitruong.action_tatvohieuhoaphimspace()
         except (pymem.exception.PymemError, pymem.exception.WinAPIError):
             pass
@@ -242,7 +242,7 @@ class LoopPhu:
         self.moitruong.action_vohieuhoalongclick()
 
         self.moitruong.action_vohieuhoatrangthaichuotchonmuctieukynang()
-        self.moitruong.action_vohieuhoakhoanhvungkynang()
+        # self.moitruong.action_vohieuhoakhoanhvungkynang()
         self.moitruong.action_vohieuhoaphimspace()
 
         self.tactu.action_tudongdichuyenxungquanhdiem()

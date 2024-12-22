@@ -903,16 +903,16 @@ class MoiTruong:
 
 
     def action_vohieuhoatuthedelaysautancong(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x1AF43, 1) != bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0x1AF43, bytes.fromhex("90 90 90 90 90 90 90 90 90 90"), 10)
-        if read_bytes(self.tientrinh, self.diachixq + 0x1B2D7, 1) != bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0x1B2D7, bytes.fromhex("90 90 90 90 90 90 90 90 90 90"), 10)
+        if read_int(self.tientrinh, self.diachixq + 0x1AF43 + 0x5) != TUTHENHANVAT_DUNGIM:
+            write_int(self.tientrinh, self.diachixq + 0x1AF43 + 0x5, TUTHENHANVAT_DUNGIM)
+        if read_int(self.tientrinh, self.diachixq + 0x1B2D7 + 0x5) != TUTHENHANVAT_DUNGIM:
+            write_int(self.tientrinh, self.diachixq + 0x1B2D7 + 0x5, TUTHENHANVAT_DUNGIM)
 
     def action_tatvohieuhoatuthedelaysautancong(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x1AF43, 1) == bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0x1AF43, bytes.fromhex("C7 86 B8 11 00 00 0B 00 00 00"), 10)
-        if read_bytes(self.tientrinh, self.diachixq + 0x1B2D7, 1) == bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0x1B2D7, bytes.fromhex("C7 86 B8 11 00 00 0B 00 00 00"), 10)
+        if read_int(self.tientrinh, self.diachixq + 0x1AF43 + 0x5) != TUTHENHANVAT_DELAYSAUTANCONG:
+            write_int(self.tientrinh, self.diachixq + 0x1AF43 + 0x5, TUTHENHANVAT_DELAYSAUTANCONG)
+        if read_int(self.tientrinh, self.diachixq + 0x1B2D7 + 0x5) != TUTHENHANVAT_DELAYSAUTANCONG:
+            write_int(self.tientrinh, self.diachixq + 0x1B2D7 + 0x5, TUTHENHANVAT_DELAYSAUTANCONG)
 
     def action_vohieuhoathietlapmuctieu(self):
         if read_bytes(self.tientrinh, self.diachixq + 0xA1E30, 1) != bytes.fromhex("90"):
@@ -970,27 +970,27 @@ class MoiTruong:
             write_int(self.tientrinh, self.diachixq + 0x497E5 + 2, self.diachixq + 0x1BC444)
 
     def action_vohieuhoalongclick(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x4984C, 1) != bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0x4984C, bytes.fromhex("90 90 90 90 90 90 90 90 90 90"), 10)
+        if read_int(self.tientrinh, self.diachixq + 0x4984C + 0x5) != 0:
+            write_int(self.tientrinh, self.diachixq + 0x4984C + 0x5, 0)
 
     def action_tatvohieuhoalongclick(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x4984C, 1) == bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0x4984C, bytes.fromhex("C7 82 10 16 00 00 01 00 00 00"), 10)
+        if read_int(self.tientrinh, self.diachixq + 0x4984C + 0x5) != 1:
+            write_int(self.tientrinh, self.diachixq + 0x4984C + 0x5, 1)
 
-    def action_vohieuhoalongclick2(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x41721 + 6, 1) != bytes.fromhex("00"):
-            write_bytes(self.tientrinh, self.diachixq + 0x41721 + 6, bytes.fromhex("00"), 1)
-    def action_tatvohieuhoalongclick2(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x41721 + 6, 1) == bytes.fromhex("00"):
-            write_bytes(self.tientrinh, self.diachixq + 0x41721 + 6, bytes.fromhex("01"), 1)
+    # def action_vohieuhoalongclick2(self):
+    #     if read_bytes(self.tientrinh, self.diachixq + 0x41721 + 6, 1) != bytes.fromhex("00"):
+    #         write_bytes(self.tientrinh, self.diachixq + 0x41721 + 6, bytes.fromhex("00"), 1)
+    # def action_tatvohieuhoalongclick2(self):
+    #     if read_bytes(self.tientrinh, self.diachixq + 0x41721 + 6, 1) == bytes.fromhex("00"):
+    #         write_bytes(self.tientrinh, self.diachixq + 0x41721 + 6, bytes.fromhex("01"), 1)
 
     def action_vohieuhoatrangthaichuotchonmuctieukynang(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x5405C, 1) != bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0x5405C, bytes.fromhex("90 90 90 90 90 90 90 90 90 90"), 10)
+        if read_int(self.tientrinh, self.diachixq + 0x5405C + 0x5) != 0:
+            write_int(self.tientrinh, self.diachixq + 0x5405C + 0x5, 0)
 
     def action_tatvohieuhoatrangthaichuotchonmuctieukynang(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x5405C, 1) == bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0x5405C, bytes.fromhex("C7 86 A4 01 00 00 02 00 00 00"), 10)
+        if read_int(self.tientrinh, self.diachixq + 0x5405C + 0x5) != 2:
+            write_int(self.tientrinh, self.diachixq + 0x5405C + 0x5, 2)
 
     def action_vohieuhoakhoanhvungkynang(self):
         if read_bytes(self.tientrinh, self.diachixq + 0x76148, 1) != bytes.fromhex("90"):
@@ -1001,12 +1001,12 @@ class MoiTruong:
             write_bytes(self.tientrinh, self.diachixq + 0x76148, bytes.fromhex("88 01"), 2)
 
     def action_vohieuhoaphimspace(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x3D8CB, 1) != bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0x3D8CB, bytes.fromhex("90 90 90 90 90 90 90"), 7)
+        if read_bytes(self.tientrinh, self.diachixq + 0x3D8CB + 0x7, 1) != bytes.fromhex("00"):
+            write_bytes(self.tientrinh, self.diachixq + 0x3D8CB + 0x7, bytes.fromhex("00"), 1)
 
     def action_tatvohieuhoaphimspace(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x3D8CB, 1) == bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0x3D8CB, bytes.fromhex("C6 80 40 81 00 00 01"), 7)
+        if read_bytes(self.tientrinh, self.diachixq + 0x3D8CB + 0x7, 1) != bytes.fromhex("01"):
+            write_bytes(self.tientrinh, self.diachixq + 0x3D8CB + 0x7, bytes.fromhex("01"), 1)
 
     def get_is_dangmobando(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
@@ -1609,6 +1609,13 @@ class MoiTruong:
         self._thoidiemnhatdogannhat_map[diachicosothongtinvatpham] = time.time()
 
         self.action_thucthicaulenh_get("get {} {}".format(x, y), delay = delay)
+
+    def action_nhatdoxungquanh(self, delay = 0.25):
+        if time.time() - self._thoidiemnhatdogannhat < delay:
+            return
+
+        self._thoidiemnhatdogannhat = time.time()
+        self.auto_assemble_nhatdo()
 
     def action_battheosaunhom(self, delay = 1.):
         if time.time() - self._thoidiembattattheosaunhomgannhat < delay:
