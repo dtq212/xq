@@ -444,15 +444,15 @@ class TacTu:
                 is_muctieudangchonlanguoichoi = self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon)
 
                 if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
-                    if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_HUYENQUANGTHIEMANH):
-                        is_tamngungdichuyensudungkynang = True
-                        if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
-                            self.moitruong.action_sudungkynangvitrimuctieukhongtrihoan(*VITRIKYNANG_HUYENQUANGTHIEMANH)
-
-                    elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHONGANTHUAT):
+                    if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHONGANTHUAT):
                         is_tamngungdichuyensudungkynang = True
                         if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
                             self.moitruong.action_sudungkynangvitrimuctieukhongtrihoan(*VITRIKYNANG_PHONGANTHUAT)
+
+                    elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_HUYENQUANGTHIEMANH):
+                        is_tamngungdichuyensudungkynang = True
+                        if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
+                            self.moitruong.action_sudungkynangvitrimuctieukhongtrihoan(*VITRIKYNANG_HUYENQUANGTHIEMANH)
 
                     # elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_THOIMIENTHUAT):
                     #     is_tamngungdichuyensudungkynang = True
