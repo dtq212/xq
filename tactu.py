@@ -1368,7 +1368,7 @@ class TacTu:
 
         self.moitruong.action_thucthicaulenh_move("move ! {}# 1".format(hex(iddoituongvatphamhanhtrang2)).replace("0x", ""))
 
-    def action_tudonghopthanhlinhthach(self):
+    def action_tudonghopthanhlinhthach(self, delay = 0.5):
         while True:
             vatphamhanhtrang_map = self.moitruong.get_danhsachvatphamhanhtrang_map()
 
@@ -1385,15 +1385,15 @@ class TacTu:
 
                 caulenh = "mix5 {}".format(" ".join(["{}#".format(hex(vitrivatpham[1])) for vitrivatpham in vitrivatphams[:5]])).replace("0x", "")
 
-                self.moitruong.action_thucthicaulenh(caulenh, delay = 0.5)
+                self.moitruong.action_thucthicaulenh(caulenh, delay = delay)
                 time.sleep(0.5)
 
             break
 
-    def action_tudongxepchongdo(self):
+    def action_tudongxepchongdo(self, delay = 0.5):
         if self._is_tudongxepchongdo and VATPHAMXEPCHONGs:
             while True:
-                if time.time() - self._thoidiemxepchongdogannhat < 0.5:
+                if time.time() - self._thoidiemxepchongdogannhat < delay:
                     break
 
                 if self.moitruong.get_is_dangvankhi():
@@ -1416,7 +1416,7 @@ class TacTu:
 
                     for vitrivatpham in vitrivatphams[1:]:
                         caulenh = "move {}# {}".format(hex(vitrivatpham[1]), vitrivatphams[0][0] + 1).replace("0x", "")
-                        is_ok = self.moitruong.action_thucthicaulenh_move(caulenh, delay = 0.5)
+                        is_ok = self.moitruong.action_thucthicaulenh_move(caulenh, delay = delay)
                         if is_ok:
                             self._thoidiemxepchongdogannhat = time.time()
                 break

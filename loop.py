@@ -115,40 +115,53 @@ class LoopChinh:
             getattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai))()
 
         # while True:
-        #     self.tactu.action_sudungvatphamhanhtrang(TUILINHTHACHCAP1)
+        #     self.tactu.action_sudungvatphamhanhtrang(TUILINHTHACHCAP1, delay = 0.)
         #     time.sleep(0.25)
-        #     self.tactu.action_sudungvatphamhanhtrang(TUILINHTHACHCAP2)
+        #     self.tactu.action_sudungvatphamhanhtrang(TUILINHTHACHCAP2, delay = 0.)
         #     time.sleep(0.25)
-        #     self.tactu.action_tudonghopthanhlinhthach()
-        #     time.sleep(0.25)
-
-        # while True:
-        #     self.moitruong.action_thucthicaulenh("noichuyen 21d# gift.30", delay = 0.25)
-        #     time.sleep(0.25)
-        #     self.tactu.action_tudongxepchongdo()
+        #     self.tactu.action_tudonghopthanhlinhthach(delay = 0.)
         #     time.sleep(0.25)
 
         # while True:
-        #     self.moitruong.action_thucthicaulenh("talk 1f42e# info.10050", delay = 0.)
+        #     self.moitruong.action_thucthicaulenh("noichuyen 28f# gift.31", delay = 0.1)
+        #     time.sleep(0.1)
+        #     self.tactu.action_tudongxepchongdo(delay = 0.)
+        #     time.sleep(0.1)
+        #
+        #     iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(CAOCAPDOANTHACH)
+        #
+        #     if not iddoituongvatpham:
+        #         continue
+        #
+        #     is_ok = self.moitruong.action_thucthicaulenh("drop ! {}#1".format(hex(iddoituongvatpham)).replace("0x", ""))
+        #     if is_ok:
+        #         time.sleep(0.1)
+
+        # while True:
+        #     self.moitruong.action_thucthicaulenh("talk 105d2# info.10050", delay = 0.)
         #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("talk 1f42e# info.11", delay = 0.)
+        #     self.moitruong.action_thucthicaulenh("talk 105d2# info.11", delay = 0.)
         #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("talk 1f42e# info.200", delay = 0.)
+        #     self.moitruong.action_thucthicaulenh("talk 105d2# info.200", delay = 0.)
         #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("talk 1f42e# info.210", delay = 0.)
+        #     self.moitruong.action_thucthicaulenh("talk 105d2# info.210", delay = 0.)
         #     time.sleep(0.25)
 
         # i = 0
-        #
+
         # while True:
         #     #noi cong 143
         #     #bao kich 146
-        #     self.moitruong.action_thucthicaulenh("talk 6365e# info.143")
+        #     #chinh xac 148
+        #     self.moitruong.action_thucthicaulenh("talk 105d1# info.148", delay = 0.)
         #     time.sleep(0.05)
         #     i += 1
-        #     if i % 10 == 0:
-        #         self.tactu.action_sudungvatphamhanhtrang(TUSAMDONTRUNG)
-        #         time.sleep(0.5)
+        #     if i % 2 == 0:
+        #         time.sleep(0.25)
+        #         is_ok = self.tactu.action_sudungvatphamhanhtrang(TUSAMDONTRUNG, delay = 0.)
+        #         if not is_ok:
+        #             self.tactu.action_sudungvatphamhanhtrang(TUSAMDONSO, delay = 0.)
+        #         time.sleep(0.25)
 
         # while True:
         #     iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(DOANTHACHDACBIETSOCAP)
