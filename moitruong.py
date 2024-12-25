@@ -886,20 +886,12 @@ class MoiTruong:
         if self.get_diachicosothongtinnhanvatmuctieudangchon() != diachicosothongtinnhanvat:
             self._diachicosothongtinnhanvatmuctieudangchon = diachicosothongtinnhanvat
 
-        if diachicosothongtinnhanvat and self._get_diachicosothongtinnhanvatmuctieudangchon() != diachicosothongtinnhanvat:
-            if time.time() - self._thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat > delay:
-                self._thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat = time.time()
-                iddoituong = self.get_iddoituong(diachicosothongtinnhanvat)
-                if iddoituong > 0:
-                    write_int(self.tientrinh, self.diachixq + 0x1BC3E0, diachicosothongtinnhanvat)
-                    write_int(self.tientrinh, self.diachixq + 0x37173C, iddoituong)
-                    write_int(self.tientrinh, self.diachixq + 0x1BC440, diachicosothongtinnhanvat)
-                    write_int(self.tientrinh, self.diachixq + 0x1BC444, iddoituong)
-                else:
-                    write_int(self.tientrinh, self.diachixq + 0x1BC3E0, diachicosothongtinnhanvat)
-                    write_int(self.tientrinh, self.diachixq + 0x37173C, iddoituong)
-                    write_int(self.tientrinh, self.diachixq + 0x1BC440, diachicosothongtinnhanvat)
-                    write_int(self.tientrinh, self.diachixq + 0x1BC444, iddoituong)
+            iddoituong = self.get_iddoituong(diachicosothongtinnhanvat)
+            if iddoituong > 0:
+                write_int(self.tientrinh, self.diachixq + 0x1BC3E0, diachicosothongtinnhanvat)
+                write_int(self.tientrinh, self.diachixq + 0x37173C, iddoituong)
+                write_int(self.tientrinh, self.diachixq + 0x1BC440, diachicosothongtinnhanvat)
+                write_int(self.tientrinh, self.diachixq + 0x1BC444, iddoituong)
 
 
     def action_vohieuhoatuthedelaysautancong(self):
