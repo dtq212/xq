@@ -826,8 +826,7 @@ class TacTu:
                     if self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat) == GATAYNOEL:
                         self.moitruong.action_nhatdoxungquanh()
                     elif khoangcach <= 3.:
-                        if self.moitruong.get_idtuthenhanvat() not in (TUTHENHANVAT_DICHUYEN, TUTHENHANVAT_TANCONG):
-                            self.moitruong.action_nhatdo(self._diachicosovatphamdangnhat)
+                        self.moitruong.action_nhatdo(self._diachicosovatphamdangnhat)
 
                     if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA, delay = 1.) and khoangcach >= 3:
                         self.moitruong.action_sudungkynangvitriphudaudiem(*VITRIKYNANG_KHAITHIENTICHDIA, self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True), self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True), khoangcachphudau = khoangcach)
