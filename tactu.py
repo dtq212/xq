@@ -833,7 +833,7 @@ class TacTu:
                     else:
                         self.moitruong.action_dichuyentiepcandiem(self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True), self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True))
 
-                    if time.time() - self._thoidiemthaydoivatphamdangnhatgannhat > 3. and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM and time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimgannhat() > 3.:
+                    if time.time() - self._thoidiemthaydoivatphamdangnhatgannhat > 1.5 and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM and time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimgannhat() > 3.:
                         self._diachicosovatphamkhongnhats.append(self._diachicosovatphamdangnhat)
                         self._diachicosovatphamdangnhat = False
 
