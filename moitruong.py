@@ -1622,7 +1622,7 @@ class MoiTruong:
 
         self.action_thucthicaulenh("team follow {}".format(idnguoichoitruongnhom))
     
-    def action_sudungkynangphimtat(self, idvitriphimtat, delay = 0.25):
+    def action_sudungkynangphimtat(self, idvitriphimtat, delay = 0.5):
         if idvitriphimtat in self._thoidiemsudungkynangphimtatgannhat_map and time.time() - self._thoidiemsudungkynangphimtatgannhat_map[idvitriphimtat] < delay:
             return
 
@@ -1632,7 +1632,7 @@ class MoiTruong:
     def get_thoidiemsudungkynangvitrigannhat(self, idvitri_x, idvitri_y, macdinh = None):
         return self._thoidiemsudungkynangvitrigannhat_map.get((idvitri_x, idvitri_y), macdinh)
 
-    def action_sudungkynangvitri(self, idvitri_x, idvitri_y, hinhthucsudungkynang = HINHTHUCSUDUNGKYNANG_CANMUCTIEU, delay = 0.25):
+    def action_sudungkynangvitri(self, idvitri_x, idvitri_y, hinhthucsudungkynang = HINHTHUCSUDUNGKYNANG_CANMUCTIEU, delay = 0.5):
         idvitri = (idvitri_x, idvitri_y)
         if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
             return
@@ -1640,7 +1640,7 @@ class MoiTruong:
         self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
         self.auto_assemble_sudungkynangvitri(idvitri_x, idvitri_y, hinhthucsudungkynang)
 
-    def action_sudungkynangvitrimuctieukhongtrihoan(self, idvitri_x, idvitri_y, diachicosothongtinnhanvatmuctieu = False, is_khongkiemtracothetancong = False, delay = 0.25):
+    def action_sudungkynangvitrimuctieukhongtrihoan(self, idvitri_x, idvitri_y, diachicosothongtinnhanvatmuctieu = False, is_khongkiemtracothetancong = False, delay = 0.5):
         idvitri = (idvitri_x, idvitri_y)
         if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
             return
@@ -1667,7 +1667,7 @@ class MoiTruong:
         if is_ok:
             self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
 
-    def action_sudungkynangvitrikhongtrihoan(self, idvitri_x, idvitri_y, delay = 0.25):
+    def action_sudungkynangvitrikhongtrihoan(self, idvitri_x, idvitri_y, delay = 0.5):
         # return self.action_sudungkynangvitri(idvitri_x, idvitri_y, hinhthucsudungkynang = HINHTHUCSUDUNGKYNANG_KHONGCANMUCTIEU, delay = delay)
 
         idvitri = (idvitri_x, idvitri_y)
@@ -1684,7 +1684,7 @@ class MoiTruong:
         if is_ok:
             self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
 
-    def action_sudungkynangvitrilenbanthan(self, idvitri_x, idvitri_y, delay = 0.25):
+    def action_sudungkynangvitrilenbanthan(self, idvitri_x, idvitri_y, delay = 0.5):
         idvitri = (idvitri_x, idvitri_y)
         if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
             return
