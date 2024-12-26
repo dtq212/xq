@@ -864,7 +864,7 @@ class TacTu:
                         if 1 or self._tenmuctieubatquaitrantruocdo != "S19" or self._tenmuctieubatquaitranhientai != AOANHMADAO:
                             khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
                             if khoangcach <= 6.:
-                                if time.time() - self._thoidiemmochangiabaoruonggannhat >= 1.5 and self.moitruong.get_idtuthenhanvat() not in (TUTHENHANVAT_DICHUYEN, TUTHENHANVAT_TANCONG):
+                                if time.time() - self._thoidiemmochangiabaoruonggannhat >= 1.5 and self.moitruong.get_idtuthenhanvat() != TUTHENHANVAT_DICHUYEN:
                                     is_ok = self.moitruong.action_thucthicaulenh_get("look {}#".format(hex(self.moitruong.get_iddoituong(diachicosothongtinvatphamxemxet))).replace("0x", ""), delay = 1.)
                                     if is_ok:
                                         self._thoidiemmochangiabaoruonggannhat = time.time()
@@ -1399,6 +1399,9 @@ class TacTu:
                 if self.moitruong.get_is_nhanvatdachet():
                     break
 
+                if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DICHUYEN:
+                    break
+
                 vatphamhanhtrang_map = self.moitruong.get_danhsachvatphamhanhtrang_map()
 
                 for tenvatpham, vitrivatphams in vatphamhanhtrang_map.items():
@@ -1428,6 +1431,9 @@ class TacTu:
                     break
 
                 if self.moitruong.get_is_nhanvatdachet():
+                    break
+
+                if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DICHUYEN:
                     break
 
                 iddoituongbaothudautien = self.moitruong.get_iddoituongbaothudautien()
@@ -1471,6 +1477,7 @@ class TacTu:
 
             if self.moitruong.get_is_nhanvatdachet():
                 return
+            
             if self.moitruong.get_idthucuoi() or time.time() - self.moitruong._thoidiemkhongcuoithugannhat < 2.:
                 return
 
