@@ -246,10 +246,10 @@ class LoopPhu:
         self.moitruong.action_vohieuhoatuthedelaysautancong()
         self.moitruong.action_vohieuhoathietlapmuctieu()
 
-        if self.moitruong.get_is_bathanhtrang():
-            self.moitruong.set_is_batalt(False)
-        else:
-            self.moitruong.set_is_batalt(True)
+        # if self.moitruong.get_is_bathanhtrang():
+        #     self.moitruong.set_is_batalt(False)
+        # else:
+        #     self.moitruong.set_is_batalt(True)
 
         self.moitruong.action_vohieuhoaxoamuctieu()
         self.moitruong.action_vohieuhoalongclick()
@@ -264,11 +264,6 @@ class LoopPhu:
         self.tactu.action_tudongxepchongdo()
         self.tactu.action_tudongtodoi()
 
-        if self.moitruong.get_is_nhanvatdachet():
-            if time.time() - self.thoidiemthongbaochetgannhat > 5.:
-                self.thoidiemthongbaochetgannhat = time.time()
-                phatam("Nhân vật đã chết")
-
         self.tactu.action_tudongphucsinh()
         self.tactu.action_tudongdichuyenlenbandovuachet()
         self.tactu.action_tudongdoimaupk()
@@ -279,6 +274,11 @@ class LoopPhu:
 
         self.tactu.action_tudongnhatdo()
         self.tactu.action_tudongvutdo()
+
+        if self.moitruong.get_is_nhanvatdachet():
+            if time.time() - self.thoidiemthongbaochetgannhat > 5.:
+                self.thoidiemthongbaochetgannhat = time.time()
+                phatam("Nhân vật đã chết")
 
 class LoopSuDungVatPham:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
