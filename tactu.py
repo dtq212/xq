@@ -799,7 +799,6 @@ class TacTu:
                             if self._diachicosovatphamdangnhat != diachicosothongtinvatphamxemxet:
                                 self._diachicosovatphamdangnhat = diachicosothongtinvatphamxemxet
                                 self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
-                                print("self._thoidiemthaydoivatphamdangnhatgannhat = time.time()")
 
             if self._diachicosovatphamdangnhat and self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) and self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat) in VATPHAMTUDONGNHATs and self._diachicosovatphamdangnhat not in self._diachicosovatphamkhongnhats:
                 while True:
@@ -1443,12 +1442,12 @@ class TacTu:
                     break
 
                 if self.moitruong.get_is_datrieuhoibaothu():
-                    if time.time() - self._thoidiemsudungthucanbaothugannhat > 120.:
-                        iddoituongcaocapbaothuthucpham = self.moitruong.action_timkiemvatphamhanhtrang(CAOCAPBAOTHUTHUCPHAM)
-                        if iddoituongcaocapbaothuthucpham:
-                            is_ok = self.moitruong.action_thucthicaulenh_use("use {}# pet {}#".format(hex(iddoituongcaocapbaothuthucpham), hex(iddoituongbaothudautien)).replace("0x", ""), delay = 0.5)
-                            if is_ok:
-                                self._thoidiemsudungthucanbaothugannhat = time.time()
+                    # if time.time() - self._thoidiemsudungthucanbaothugannhat > 120.:
+                    #     iddoituongcaocapbaothuthucpham = self.moitruong.action_timkiemvatphamhanhtrang(CAOCAPBAOTHUTHUCPHAM)
+                    #     if iddoituongcaocapbaothuthucpham:
+                    #         is_ok = self.moitruong.action_thucthicaulenh_use("use {}# pet {}#".format(hex(iddoituongcaocapbaothuthucpham), hex(iddoituongbaothudautien)).replace("0x", ""), delay = 0.5)
+                    #         if is_ok:
+                    #             self._thoidiemsudungthucanbaothugannhat = time.time()
                     diachicosonhanvatbaothudautien = self.moitruong.action_timkiemnhanvat(iddoituong = iddoituongbaothudautien)
 
                     if diachicosonhanvatbaothudautien and time.time() - self._thoidiemthietlapbaothuchodoigannhat > 2.:

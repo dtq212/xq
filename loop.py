@@ -57,7 +57,6 @@ class LoopTimKiemMucTieu:
                 self.step()
             except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
                 print("Luồng tìm kiếm mục tiêu: {}".format(err))
-                raise Exception(err)
                 time.sleep(1)
 
             time.sleep(0.02)
