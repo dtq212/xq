@@ -146,21 +146,21 @@ class LoopChinh:
         #     self.moitruong.action_thucthicaulenh("talk 105d2# info.210", delay = 0.)
         #     time.sleep(0.25)
 
-        i = 0
-
-        while True:
-            #noi cong 143
-            #bao kich 146
-            #chinh xac 148
-            self.moitruong.action_thucthicaulenh("talk 105d1# info.145", delay = 0.)
-            time.sleep(0.05)
-            i += 1
-            if i % 10 == 0:
-                time.sleep(0.25)
-                is_ok = self.tactu.action_sudungvatphamhanhtrang(TUSAMDONTRUNG, delay = 0.)
-                if not is_ok:
-                    self.tactu.action_sudungvatphamhanhtrang(TUSAMDONSO, delay = 0.)
-                time.sleep(0.25)
+        # i = 0
+        #
+        # while True:
+        #     #noi cong 143
+        #     #bao kich 146
+        #     #chinh xac 148
+        #     self.moitruong.action_thucthicaulenh("talk 105d1# info.145", delay = 0.)
+        #     time.sleep(0.05)
+        #     i += 1
+        #     if i % 10 == 0:
+        #         time.sleep(0.25)
+        #         is_ok = self.tactu.action_sudungvatphamhanhtrang(TUSAMDONTRUNG, delay = 0.)
+        #         if not is_ok:
+        #             self.tactu.action_sudungvatphamhanhtrang(TUSAMDONSO, delay = 0.)
+        #         time.sleep(0.25)
 
         # while True:
         #     iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(DOANTHACHDACBIETSOCAP)
@@ -214,7 +214,6 @@ class LoopPhu:
             self.moitruong.action_tatvohieuhoaxoamuctieu()
             self.moitruong.action_tatvohieuhoalongclick()
             self.moitruong.action_tatvohieuhoatrangthaichuotchonmuctieukynang()
-            # self.moitruong.action_tatvohieuhoakhoanhvungkynang()
             self.moitruong.action_tatvohieuhoaphimspace()
         except (pymem.exception.PymemError, pymem.exception.WinAPIError):
             pass
