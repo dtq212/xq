@@ -1034,8 +1034,6 @@ class MoiTruong:
         if not x:
             return
 
-        logger.error("{} set_is_danghiencuasoyesno: {}".format(self.get_tendoituong(), is_danghiencuasoyesno))
-
         return write_boolean(self.tientrinh, x + 0x34, is_danghiencuasoyesno)
 
     def get_is_danghiencuasotuychon(self):
@@ -1077,7 +1075,7 @@ class MoiTruong:
         return read_string(self.tientrinh, x + 0x7C).strip()
 
 
-    def action_thucthicaulenh(self, caulenh, delay = 0.05):
+    def action_thucthicaulenh(self, caulenh, delay = 0.25):
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
 
@@ -1107,7 +1105,7 @@ class MoiTruong:
 
         return True
 
-    def action_thucthicaulenh_move(self, caulenh, delay = 0.05):
+    def action_thucthicaulenh_move(self, caulenh, delay = 0.25):
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
 
@@ -1117,7 +1115,7 @@ class MoiTruong:
 
         return True
 
-    def action_thucthicaulenh_pet(self, caulenh, delay = 0.05):
+    def action_thucthicaulenh_pet(self, caulenh, delay = 0.25):
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
 
@@ -1127,7 +1125,7 @@ class MoiTruong:
 
         return True
 
-    def action_thucthicaulenh_talk(self, caulenh, delay = 0.05):
+    def action_thucthicaulenh_talk(self, caulenh, delay = 0.25):
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
 
@@ -1137,7 +1135,7 @@ class MoiTruong:
 
         return True
 
-    def action_thucthicaulenh_use(self, caulenh, delay = 0.05):
+    def action_thucthicaulenh_use(self, caulenh, delay = 0.25):
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
 

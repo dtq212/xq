@@ -146,21 +146,21 @@ class LoopChinh:
         #     self.moitruong.action_thucthicaulenh("talk 105d2# info.210", delay = 0.)
         #     time.sleep(0.25)
 
-        # i = 0
+        i = 0
 
-        # while True:
-        #     #noi cong 143
-        #     #bao kich 146
-        #     #chinh xac 148
-        #     self.moitruong.action_thucthicaulenh("talk 105d1# info.148", delay = 0.)
-        #     time.sleep(0.05)
-        #     i += 1
-        #     if i % 2 == 0:
-        #         time.sleep(0.25)
-        #         is_ok = self.tactu.action_sudungvatphamhanhtrang(TUSAMDONTRUNG, delay = 0.)
-        #         if not is_ok:
-        #             self.tactu.action_sudungvatphamhanhtrang(TUSAMDONSO, delay = 0.)
-        #         time.sleep(0.25)
+        while True:
+            #noi cong 143
+            #bao kich 146
+            #chinh xac 148
+            self.moitruong.action_thucthicaulenh("talk 105d1# info.145", delay = 0.)
+            time.sleep(0.05)
+            i += 1
+            if i % 10 == 0:
+                time.sleep(0.25)
+                is_ok = self.tactu.action_sudungvatphamhanhtrang(TUSAMDONTRUNG, delay = 0.)
+                if not is_ok:
+                    self.tactu.action_sudungvatphamhanhtrang(TUSAMDONSO, delay = 0.)
+                time.sleep(0.25)
 
         # while True:
         #     iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(DOANTHACHDACBIETSOCAP)
