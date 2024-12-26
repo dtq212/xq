@@ -886,12 +886,13 @@ class MoiTruong:
         if self.get_diachicosothongtinnhanvatmuctieudangchon() != diachicosothongtinnhanvat:
             self._diachicosothongtinnhanvatmuctieudangchon = diachicosothongtinnhanvat
 
-            iddoituong = self.get_iddoituong(diachicosothongtinnhanvat)
-            if iddoituong > 0:
-                write_int(self.tientrinh, self.diachixq + 0x1BC3E0, diachicosothongtinnhanvat)
-                write_int(self.tientrinh, self.diachixq + 0x37173C, iddoituong)
-                write_int(self.tientrinh, self.diachixq + 0x1BC440, diachicosothongtinnhanvat)
-                write_int(self.tientrinh, self.diachixq + 0x1BC444, iddoituong)
+            if diachicosothongtinnhanvat:
+                iddoituong = self.get_iddoituong(diachicosothongtinnhanvat)
+                if iddoituong > 0:
+                    write_int(self.tientrinh, self.diachixq + 0x1BC3E0, diachicosothongtinnhanvat)
+                    write_int(self.tientrinh, self.diachixq + 0x37173C, iddoituong)
+                    write_int(self.tientrinh, self.diachixq + 0x1BC440, diachicosothongtinnhanvat)
+                    write_int(self.tientrinh, self.diachixq + 0x1BC444, iddoituong)
 
 
     def action_vohieuhoatuthedelaysautancong(self):
@@ -1458,6 +1459,7 @@ class MoiTruong:
 
     def auto_assemble_dichuyen(self, x, y):
         logger.error("{} auto_assemble_dichuyen: {} {}".format(self.get_tendoituong(), x, y))
+        return
         if not self._is_dasetupautoassembledichuyen:
             self._diachiautoassembledichuyen = self.tientrinh.allocate(64)
 
@@ -2175,3 +2177,6 @@ class MoiTruong:
                 return False
 
         return True
+
+    def get_tenmonphai(self):
+        return MONPHAI_MAP.get(self.get_idkynang(0, 0))
