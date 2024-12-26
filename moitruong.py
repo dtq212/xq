@@ -1668,8 +1668,6 @@ class MoiTruong:
             self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
 
     def action_sudungkynangvitrikhongtrihoan(self, idvitri_x, idvitri_y, delay = 0.5):
-        # return self.action_sudungkynangvitri(idvitri_x, idvitri_y, hinhthucsudungkynang = HINHTHUCSUDUNGKYNANG_KHONGCANMUCTIEU, delay = delay)
-
         idvitri = (idvitri_x, idvitri_y)
         if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
             return
