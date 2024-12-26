@@ -246,11 +246,6 @@ class LoopPhu:
         self.moitruong.action_vohieuhoatuthedelaysautancong()
         self.moitruong.action_vohieuhoathietlapmuctieu()
 
-        # if self.moitruong.get_is_bathanhtrang():
-        #     self.moitruong.set_is_batalt(False)
-        # else:
-        #     self.moitruong.set_is_batalt(True)
-
         self.moitruong.action_vohieuhoaxoamuctieu()
         self.moitruong.action_vohieuhoalongclick()
 

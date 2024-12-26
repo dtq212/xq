@@ -799,6 +799,7 @@ class TacTu:
                             if self._diachicosovatphamdangnhat != diachicosothongtinvatphamxemxet:
                                 self._diachicosovatphamdangnhat = diachicosothongtinvatphamxemxet
                                 self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
+                                print("self._thoidiemthaydoivatphamdangnhatgannhat = time.time()")
 
             if self._diachicosovatphamdangnhat and self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) and self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat) in VATPHAMTUDONGNHATs and self._diachicosovatphamdangnhat not in self._diachicosovatphamkhongnhats:
                 while True:
