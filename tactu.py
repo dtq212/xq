@@ -592,11 +592,6 @@ class TacTu:
                     elif self.moitruong.get_is_cohieuungs(HIEUUNGBATLOITHUCSONCOTHEGIAIs, macdinh = False, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TINHTAMQUYET):
                         self.moitruong.action_sudungkynangvitrikhongtrihoan(*VITRIKYNANG_TINHTAMQUYET)
 
-                    # elif phantramsinhlucconlai <= 25. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENKHI):
-                    #     is_tamngungdichuyensudungkynang = True
-                    #     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
-                    #         self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_TIENKHI)
-
                     elif khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and is_muctieudangchonlanguoichoi and not is_muctieudangchonbichoang and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUCPHACHHOASON):
                         self.moitruong.action_sudungkynangvitrimuctieukhongtrihoan(*VITRIKYNANG_LUCPHACHHOASON)
 
