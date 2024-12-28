@@ -107,7 +107,8 @@ class LoopChinh:
             return
 
 
-        self.tactu.action_tudongtheosautruongnhom()
+        if self.moitruong.get_idbandohientai() != BANDO_BATQUAITRAN:
+            self.tactu.action_tudongtheosautruongnhom()
 
         tenmonphai = self.moitruong.get_tenmonphai()
         if hasattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai)):
@@ -150,9 +151,10 @@ class LoopChinh:
         #
         # while True:
         #     #noi cong 143
+        #     #than thu 145
         #     #bao kich 146
         #     #chinh xac 148
-        #     self.moitruong.action_thucthicaulenh("talk 105d1# info.145", delay = 0.)
+        #     self.moitruong.action_thucthicaulenh("talk 14af0# info.148", delay = 0.)
         #     time.sleep(0.05)
         #     i += 1
         #     if i % 10 == 0:
@@ -198,6 +200,7 @@ class LoopChinh:
             # self.tactu.action_tudongtimduong(BANDO_KHONMATRAN1)
 
         # print(self.moitruong.get_danhsachhieuungnhanvats())
+        # print(self.moitruong.get_danhsachvatphamhanhtrang_map())
 
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
@@ -213,6 +216,7 @@ class LoopPhu:
             self.moitruong.action_tatvohieuhoathietlapmuctieu()
             self.moitruong.action_tatvohieuhoaxoamuctieu()
             self.moitruong.action_tatvohieuhoalongclick()
+            self.moitruong.action_tatvohieubangthongbaogocduoibenphai()
             self.moitruong.action_tatvohieuhoatrangthaichuotchonmuctieukynang()
             self.moitruong.action_tatvohieuhoaphimspace()
         except (pymem.exception.PymemError, pymem.exception.WinAPIError):
@@ -246,6 +250,7 @@ class LoopPhu:
 
         self.moitruong.action_vohieuhoaxoamuctieu()
         self.moitruong.action_vohieuhoalongclick()
+        self.moitruong.action_vohieuhoabangthongbaogocduoibenphai()
 
         self.moitruong.action_vohieuhoatrangthaichuotchonmuctieukynang()
         self.moitruong.action_vohieuhoakhoanhvungkynang()
