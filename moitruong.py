@@ -1433,7 +1433,7 @@ class MoiTruong:
         time.sleep(0.05)
 
     def auto_assemble_sudungkynangtoado(self, idkynang, toadox, toadoy):
-        caulenh = "pf {} {},{}".format(idkynang, idkynang, toadox, toadoy).replace("0x", "")
+        caulenh = "pf {} {},{}".format(idkynang, toadox, toadoy).replace("0x", "")
         logger.error("{} auto_assemble_sudungkynangtoado: {} {} {} {}".format(self.get_tendoituong(), idkynang, toadox, toadoy, caulenh))
         if not self._is_dasetupautoassemblesudungkynangtoado:
             self._diachiautoassemblesudungkynangtoado = self.tientrinh.allocate(128)
@@ -2182,7 +2182,7 @@ class MoiTruong:
         targetx = round(x1 + deltax)
         targety = round(y1 + deltay)
 
-        is_ok = self.action_sudungkynangtoado("pf {} {},{}".format(idkynang, targetx, targety))
+        is_ok = self.action_sudungkynangtoado(idkynang, targetx, targety)
         if is_ok:
             self._thoidiemsudungkynanggannhat = time.time()
             self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()

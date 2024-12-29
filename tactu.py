@@ -877,7 +877,7 @@ class TacTu:
                                         self._thoidiemmochangiabaoruonggannhat = time.time()
                             elif not self._is_tamngungdichuyensudungkynang:
                                 self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinvatphamxemxet, khoangcachtoida = 1.5)
-                        elif time.time() - self.moitruong.get_thoidiemkhongcomuctieugannhat() > 6.:
+                        elif time.time() - self.moitruong.get_thoidiemkhongcomuctieugannhat() > 6. and self.moitruong.get_idtuthenhanvat() != TUTHENHANVAT_DICHUYEN:
                             self.action_sudungvatphamhanhtrang(HOITHANHPHU)
 
                         break
