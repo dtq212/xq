@@ -210,9 +210,7 @@ class LoopPhu:
 
     def __del__(self):
         try:
-            self.moitruong.action_tatvohieuhoathietlapmuctieu()
             self.moitruong.action_tatvohieuhoatuthedelaysautancong()
-            self.moitruong.action_tatvohieuhoaxoamuctieu()
             self.moitruong.action_tatvohieuhoalongclick()
             self.moitruong.action_tatvohieubangthongbaogocduoibenphai()
             self.moitruong.action_tatvohieuhoatrangthaichuotchonmuctieukynang()
@@ -243,9 +241,7 @@ class LoopPhu:
         if time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() < 0.5:
             return
 
-        self.moitruong.action_vohieuhoathietlapmuctieu()
         self.moitruong.action_vohieuhoatuthedelaysautancong()
-        self.moitruong.action_vohieuhoaxoamuctieu()
         self.moitruong.action_vohieuhoalongclick()
         self.moitruong.action_vohieuhoabangthongbaogocduoibenphai()
 
