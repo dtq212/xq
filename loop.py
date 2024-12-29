@@ -106,9 +106,7 @@ class LoopChinh:
         if time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() < 0.5:
             return
 
-
-        if self.moitruong.get_idbandohientai() != BANDO_BATQUAITRAN:
-            self.tactu.action_tudongtheosautruongnhom()
+        self.tactu.action_tudongtheosautruongnhom()
 
         tenmonphai = self.moitruong.get_tenmonphai()
         if hasattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai)):
@@ -138,13 +136,13 @@ class LoopChinh:
         #         time.sleep(0.1)
 
         # while True:
-        #     self.moitruong.action_thucthicaulenh("talk 105d2# info.10050", delay = 0.)
+        #     self.moitruong.action_thucthicaulenh("talk 14af1# info.10050", delay = 0.)
         #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("talk 105d2# info.11", delay = 0.)
+        #     self.moitruong.action_thucthicaulenh("talk 14af1# info.11", delay = 0.)
         #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("talk 105d2# info.200", delay = 0.)
+        #     self.moitruong.action_thucthicaulenh("talk 14af1# info.200", delay = 0.)
         #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("talk 105d2# info.210", delay = 0.)
+        #     self.moitruong.action_thucthicaulenh("talk 14af1# info.210", delay = 0.)
         #     time.sleep(0.25)
 
         # i = 0
@@ -212,8 +210,8 @@ class LoopPhu:
 
     def __del__(self):
         try:
-            self.moitruong.action_tatvohieuhoatuthedelaysautancong()
             self.moitruong.action_tatvohieuhoathietlapmuctieu()
+            self.moitruong.action_tatvohieuhoatuthedelaysautancong()
             self.moitruong.action_tatvohieuhoaxoamuctieu()
             self.moitruong.action_tatvohieuhoalongclick()
             self.moitruong.action_tatvohieubangthongbaogocduoibenphai()
@@ -245,9 +243,8 @@ class LoopPhu:
         if time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() < 0.5:
             return
 
-        self.moitruong.action_vohieuhoatuthedelaysautancong()
         self.moitruong.action_vohieuhoathietlapmuctieu()
-
+        self.moitruong.action_vohieuhoatuthedelaysautancong()
         self.moitruong.action_vohieuhoaxoamuctieu()
         self.moitruong.action_vohieuhoalongclick()
         self.moitruong.action_vohieuhoabangthongbaogocduoibenphai()

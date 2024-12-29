@@ -279,87 +279,87 @@ Y_LIEMPHA = 142
 
 DICHUYENTANTHUTIENCO_MAP = {
     BANDO_RANHGIOIDAMLAY: [
-        "talk {}# welcome.500",
-        "talk {}# welcome.501"
+        "welcome.500",
+        "welcome.501"
     ],
     BANDO_DIAGIOIDAMLAY: [
-        "talk {}# welcome.500",
-        "talk {}# welcome.502"
+        "welcome.500",
+        "welcome.502"
     ],
     BANDO_DONGHAINGUTHON: [
-        "talk {}# welcome.600",
-        "talk {}# welcome.601"
+        "welcome.600",
+        "welcome.601"
     ],
     BANDO_KENHTRINHQUOC1: [
-        "talk {}# welcome.600",
-        "talk {}# welcome.606"
+        "welcome.600",
+        "welcome.606"
     ],
     BANDO_KENHTRINHQUOC2: [
-        "talk {}# welcome.600",
-        "talk {}# welcome.607"
+        "welcome.600",
+        "welcome.607"
     ],
     BANDO_KENHTRINHQUOC3: [
-        "talk {}# welcome.600",
-        "talk {}# welcome.608"
+        "welcome.600",
+        "welcome.608"
     ],
 }
 
 DICHUYENPHITACDOATNGUYENTRUYENTONG_MAP = {
     BANDO_RANHGIOIDAMLAY: [
-        "talk {}# welcome.3",
-        "talk {}# welcome.10 RGDL"
+        "welcome.3",
+        "welcome.10 RGDL"
     ],
     BANDO_DIAGIOIDAMLAY: [
-        "talk {}# welcome.3",
-        "talk {}# welcome.10 DGDL"
+        "welcome.3",
+        "welcome.10 DGDL"
     ],
     BANDO_DONGHAINGUTHON: [
-        "talk {}# welcome.4",
-        "talk {}# welcome.10 DHNT"
+        "welcome.4",
+        "welcome.10 DHNT"
     ],
     BANDO_KENHTRINHQUOC1: [
-        "talk {}# welcome.4",
-        "talk {}# welcome.10 KTQ1"
+        "welcome.4",
+        "welcome.10 KTQ1"
     ],
     BANDO_BACHVANPHONG: [
-        "talk {}# welcome.5",
-        "talk {}# welcome.10 BVP"
+        "welcome.5",
+        "welcome.10 BVP"
     ],
     BANDO_YENTRUONGTHANH2: [
-        "talk {}# welcome.5",
-        "talk {}# welcome.10 YTT2"
+        "welcome.5",
+        "welcome.10 YTT2"
     ],
     BANDO_TRIEUTRUONGTHANH2: [
-        "talk {}# welcome.6",
-        "talk {}# welcome.10 TTT2"
+        "welcome.6",
+        "welcome.10 TTT2"
     ],
     BANDO_TANTRUONGTHANH2: [
-        "talk {}# welcome.6",
-        "talk {}# welcome.10 TANTT2"
+        "welcome.6",
+        "welcome.10 TANTT2"
     ],
     BANDO_LINHCOCDONG1: [
-        "talk {}# welcome.7",
-        "talk {}# welcome.10 LCD1"
+        "welcome.7",
+        "welcome.10 LCD1"
     ],
     BANDO_LINHCOCDONG2: [
-        "talk {}# welcome.7",
-        "talk {}# welcome.10 LCD2"
+        "welcome.7",
+        "welcome.10 LCD2"
     ],
     BANDO_LOANDAO1: [
-        "talk {}# welcome.8",
-        "talk {}# welcome.10 LD1"
+        "welcome.8",
+        "welcome.10 LD1"
     ],
     BANDO_LOANDAO2: [
-        "talk {}# welcome.8",
-        "talk {}# welcome.10 LD2"
+        "welcome.8",
+        "welcome.10 LD2"
     ],
     BANDO_KHONMATRAN1: [
-        "talk {}# welcome.9",
-        "talk {}# welcome.10 KMT1"
+        "welcome.9",
+        "welcome.10 KMT1"
     ],
     BANDO_KHONMATRAN2: [
-        "talk {}# welcome.9",
-        "talk {}# welcome.10 KMT2"
+        "welcome.9",
+        "welcome.10 KMT2"
     ],
 }
 
@@ -398,5 +398,5 @@ DIEMDANHXUNGQUANH_MAP = {
 
 # NHANVATTODOITUDONGs = (0, ) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
 NHANVATTODOITUDONGs = (3735, 4024, 3818, 3819, 3736, 3705, 3706) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
-VATPHAMTUDONGNHATs = (TUSAMDONTRUNG, CHENBAC, MANHGHEPNGOCBOI, SOCAPDOANTHACH, HUYETLONGCHIEUTHU, TAITAOHOAN, TUKIMBAOHOP, HONGCAU, HOACAU, CHANGIABAORUONG, MANHGHEPPHAPBAO, MANHGHEPTIENDONG, MANHGHEPNGOCNU, VIRUS_BIENCHUNG, PHAMTHIENTHU, DOANTHACHDACBIETCAOCAPDUOIDAT, GATAYNOEL)
+VATPHAMTUDONGNHATs = (TUSAMDONTRUNG, CHENBAC, MANHGHEPNGOCBOI, SOCAPDOANTHACH, HUYETLONGCHIEUTHU, TAITAOHOAN, TUKIMBAOHOP, HONGCAU, HOACAU, CHANGIABAORUONG, MANHGHEPPHAPBAO, MANHGHEPTIENDONG, MANHGHEPNGOCNU, VIRUS_BIENCHUNG, PHAMTHIENTHU, DOANTHACHDACBIETCAOCAPDUOIDAT, GATAYNOEL, DOANTHACHDACBIETSOCAPDUOIDAT)
 VATPHAMXEPCHONGs = (MANHGHEPPHAPBAO, MANHGHEPNGOCBOI, MANHGHEPTIENDONG, MANHGHEPNGOCNU, PHAMTHIENTHU, VIRUS_BIENCHUNG, RUONGBAOTHACHTIEU, HUYETLONGCHIEUTHU, RUONGBAOTHACHDAI, TAITAOHOAN, TUSAMDONTRUNG, TUSAMDONSO, CHENBAC, HOPQUAQUYDI, HOPQUAQUYDICAOCAP)
