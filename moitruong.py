@@ -1718,23 +1718,23 @@ class MoiTruong:
         if not self._is_dasetupautoassembledichuyen:
             self._diachiautoassembledichuyen = self.tientrinh.allocate(64)
 
-            write_bytes(self.tientrinh, self._diachiautoassembledichuyen, bytes.fromhex("8B 35"), 2)
+            write_bytes(self.tientrinh, self._diachiautoassembledichuyen, bytes.fromhex("8B 3D"), 2)
             write_int(self.tientrinh, self._diachiautoassembledichuyen + 2, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
 
-            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 6, bytes.fromhex("BB"), 1)
-            write_int(self.tientrinh, self._diachiautoassembledichuyen + 7, x)
+            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 6, bytes.fromhex("8D 77 14"), 1)
 
-            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 11, bytes.fromhex("BF"), 1)
-            write_int(self.tientrinh, self._diachiautoassembledichuyen + 12, y)
+            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 9, bytes.fromhex("BB"), 1)
+            write_int(self.tientrinh, self._diachiautoassembledichuyen + 10, y)
 
-            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 16, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassembledichuyen + 17, 0)
+            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 14, bytes.fromhex("BD"), 1)
+            write_int(self.tientrinh, self._diachiautoassembledichuyen + 15, x)
 
-            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 21, bytes.fromhex("57"), 1)
+            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 19, bytes.fromhex("6A 00"), 2)
 
-            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 22, bytes.fromhex("53"), 1)
+            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 21, bytes.fromhex("53"), 1)
+            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 22, bytes.fromhex("55"), 1)
 
-            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 23, bytes.fromhex("8B CE"), 2)
+            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 23, bytes.fromhex("8B CF"), 2)
 
             write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 25, bytes.fromhex("E8"), 1)
             write_int(self.tientrinh, self._diachiautoassembledichuyen + 26, self.diachixq + 0x476A0 - (self._diachiautoassembledichuyen + 25) - 5)
@@ -1742,8 +1742,38 @@ class MoiTruong:
             write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 30, bytes.fromhex("C3"), 1)
             self._is_dasetupautoassembledichuyen = True
         else:
-            write_int(self.tientrinh, self._diachiautoassembledichuyen + 7, x)
-            write_int(self.tientrinh, self._diachiautoassembledichuyen + 12, y)
+            write_int(self.tientrinh, self._diachiautoassembledichuyen + 10, y)
+            write_int(self.tientrinh, self._diachiautoassembledichuyen + 15, x)
+
+        # if not self._is_dasetupautoassembledichuyen:
+        #     self._diachiautoassembledichuyen = self.tientrinh.allocate(64)
+        #
+        #     write_bytes(self.tientrinh, self._diachiautoassembledichuyen, bytes.fromhex("8B 35"), 2)
+        #     write_int(self.tientrinh, self._diachiautoassembledichuyen + 2, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        #
+        #     write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 6, bytes.fromhex("BB"), 1)
+        #     write_int(self.tientrinh, self._diachiautoassembledichuyen + 7, x)
+        #
+        #     write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 11, bytes.fromhex("BF"), 1)
+        #     write_int(self.tientrinh, self._diachiautoassembledichuyen + 12, y)
+        #
+        #     write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 16, bytes.fromhex("68"), 1)
+        #     write_int(self.tientrinh, self._diachiautoassembledichuyen + 17, 0)
+        #
+        #     write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 21, bytes.fromhex("57"), 1)
+        #
+        #     write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 22, bytes.fromhex("53"), 1)
+        #
+        #     write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 23, bytes.fromhex("8B CE"), 2)
+        #
+        #     write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 25, bytes.fromhex("E8"), 1)
+        #     write_int(self.tientrinh, self._diachiautoassembledichuyen + 26, self.diachixq + 0x476A0 - (self._diachiautoassembledichuyen + 25) - 5)
+        #
+        #     write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 30, bytes.fromhex("C3"), 1)
+        #     self._is_dasetupautoassembledichuyen = True
+        # else:
+        #     write_int(self.tientrinh, self._diachiautoassembledichuyen + 7, x)
+        #     write_int(self.tientrinh, self._diachiautoassembledichuyen + 12, y)
 
         self.tientrinh.start_thread(self._diachiautoassembledichuyen)
         time.sleep(0.05)
