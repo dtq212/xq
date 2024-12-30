@@ -67,6 +67,7 @@ class TacTu:
         self._thoidiemvutdogannhat = time.time()
 
         self._diachicosovatphamkhongnhats = []
+        self._diachicosovatphamkhongnhat_map = {}
         self._thoidiemlammoivatphamkhongnhatgannhat = time.time()
         self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
         self._diemdanhxungquanhs = []
@@ -790,10 +791,6 @@ class TacTu:
         if self._is_tudongnhatdo:
             i = 0
 
-            if time.time() - self._thoidiemlammoivatphamkhongnhatgannhat > 120.:
-                self._thoidiemlammoivatphamkhongnhatgannhat = time.time()
-                self._diachicosovatphamkhongnhats.clear()
-
             while True:
                 diachicosothongtinvatphamxemxet = self.moitruong.get_diachicosothongtindoituongx(i)
                 if not diachicosothongtinvatphamxemxet:
@@ -803,7 +800,7 @@ class TacTu:
                 if not self.moitruong.get_is_vatphamtontai(diachicosothongtinvatphamxemxet):
                     continue
 
-                if diachicosothongtinvatphamxemxet in self._diachicosovatphamkhongnhats:
+                if time.time() - self._diachicosovatphamkhongnhat_map.get(diachicosothongtinvatphamxemxet, time.time() - 90) > 60:
                     continue
 
                 tenvatpham = self.moitruong.get_tendoituong(diachicosothongtinvatphamxemxet)
@@ -846,7 +843,7 @@ class TacTu:
                             self.moitruong.action_dichuyentiepcandiem(self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True), self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True))
 
                     if time.time() - self._thoidiemthaydoivatphamdangnhatgannhat > 3. and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM and time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimgannhat() > 3.:
-                        self._diachicosovatphamkhongnhats.append(self._diachicosovatphamdangnhat)
+                        self._diachicosovatphamkhongnhat_map[self._diachicosovatphamdangnhat] = time.time()
                         self._diachicosovatphamdangnhat = False
 
                     break
