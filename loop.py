@@ -121,7 +121,7 @@ class LoopChinh:
         #     time.sleep(0.25)
 
         # while True:
-        #     self.moitruong.action_thucthicaulenh("noichuyen 28f# gift.31", delay = 0.1)
+        #     self.moitruong.action_thucthicaulenh("noichuyen 285# gift.30", delay = 0.1)
         #     time.sleep(0.1)
         #     self.tactu.action_tudongxepchongdo(delay = 0.)
         #     time.sleep(0.1)
@@ -136,13 +136,13 @@ class LoopChinh:
         #         time.sleep(0.1)
 
         # while True:
-        #     self.moitruong.action_thucthicaulenh("talk 14af1# info.10050", delay = 0.)
+        #     self.moitruong.action_thucthicaulenh("talk 62348# info.10050", delay = 0.)
         #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("talk 14af1# info.11", delay = 0.)
+        #     self.moitruong.action_thucthicaulenh("talk 62348# info.11", delay = 0.)
         #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("talk 14af1# info.200", delay = 0.)
+        #     self.moitruong.action_thucthicaulenh("talk 62348# info.200", delay = 0.)
         #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("talk 14af1# info.210", delay = 0.)
+        #     self.moitruong.action_thucthicaulenh("talk 62348# info.210", delay = 0.)
         #     time.sleep(0.25)
 
         # i = 0
@@ -210,6 +210,7 @@ class LoopPhu:
 
     def __del__(self):
         try:
+            self.moitruong.action_tatvohieuhoathietlapmuctieu()
             self.moitruong.action_tatvohieuhoatuthedelaysautancong()
             self.moitruong.action_tatvohieuhoalongclick()
             self.moitruong.action_tatvohieubangthongbaogocduoibenphai()
@@ -241,6 +242,7 @@ class LoopPhu:
         if time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() < 0.5:
             return
 
+        self.moitruong.action_vohieuhoathietlapmuctieu()
         self.moitruong.action_vohieuhoatuthedelaysautancong()
         self.moitruong.action_vohieuhoalongclick()
         self.moitruong.action_vohieuhoabangthongbaogocduoibenphai()

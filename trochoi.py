@@ -18,11 +18,14 @@ class TroChoi:
         self.is_dangchay = threading.Event()
         self.remove1 = keyboard.add_hotkey("f12", self.themcuasohientai)
         self.remove2 = keyboard.add_hotkey("ctrl + alt + f12", lambda: self.is_dangchay.set())
+        self.is_dangloop = False
     def __del__(self):
         keyboard.remove_hotkey(self.remove1)
         keyboard.remove_hotkey(self.remove2)
 
     def themcuasohientai(self):
+        if self.is_dangloop:
+            return
         idcuaso = win32gui.GetForegroundWindow()
 
         if idcuaso in self.cuasos:
@@ -30,7 +33,7 @@ class TroChoi:
             return
 
         tencuaso = win32gui.GetWindowText(idcuaso)
-        if tencuaso and tencuaso.startswith("Chien"):
+        if tencuaso and tencuaso.startswith("Chien Quoc"):
             phatam("Khởi động thành công")
             cuaso = CuaSo(idcuaso)
             self.cuasos[idcuaso] = cuaso
@@ -43,14 +46,18 @@ class TroChoi:
             cuaso.tatauto()
 
     def loop(self):
+        self.is_dangloop = True
         idcuasohethans = set()
 
         for idcuaso, cuaso in self.cuasos.items():
             if cuaso.main_stop.is_set() or not cuaso.moitruong.get_is_cuasogametontai():
+                cuaso.main_stop.set()
                 idcuasohethans.add(idcuaso)
 
         for idcuasohethan in idcuasohethans:
             del self.cuasos[idcuasohethan]
+
+        self.is_dangloop = False
 
         time.sleep(1)
 
