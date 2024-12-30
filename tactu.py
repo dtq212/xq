@@ -800,7 +800,7 @@ class TacTu:
                 if not self.moitruong.get_is_vatphamtontai(diachicosothongtinvatphamxemxet):
                     continue
 
-                if time.time() - self._diachicosovatphamkhongnhat_map.get(diachicosothongtinvatphamxemxet, time.time() - 90) > 60:
+                if time.time() - self._diachicosovatphamkhongnhat_map.get(diachicosothongtinvatphamxemxet, time.time() - 90) < 60:
                     continue
 
                 tenvatpham = self.moitruong.get_tendoituong(diachicosothongtinvatphamxemxet)
