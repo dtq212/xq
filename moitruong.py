@@ -1384,10 +1384,10 @@ class MoiTruong:
 
             self._is_dasetupautoassemblesudungkynang = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1, len(caulenh))
-            if read_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19) != caulenh:
-                write_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19, caulenh)
+            if read_int(self.tientrinh, self._diachiautoassemblesudungkynang + 1) != len(caulenh):
+                write_int(self.tientrinh, self._diachiautoassemblesudungkynang + 1, len(caulenh))
+            if read_string(self.tientrinh, self._diachiautoassemblesudungkynang + 19) != caulenh:
+                write_string(self.tientrinh, self._diachiautoassemblesudungkynang + 19, caulenh)
 
         self.tientrinh.start_thread(self._diachiautoassemblesudungkynang)
         time.sleep(0.05)
@@ -1414,10 +1414,10 @@ class MoiTruong:
 
             self._is_dasetupautoassemblesudungkynangmuctieunguoichoi = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1, len(caulenh))
-            if read_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19) != caulenh:
-                write_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19, caulenh)
+            if read_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 1) != len(caulenh):
+                write_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 1, len(caulenh))
+            if read_string(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 19) != caulenh:
+                write_string(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 19, caulenh)
 
         self.tientrinh.start_thread(self._diachiautoassemblesudungkynangmuctieunguoichoi)
         time.sleep(0.05)
@@ -1444,10 +1444,10 @@ class MoiTruong:
 
             self._is_dasetupautoassemblesudungkynangmuctieukhacnguoichoi = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1, len(caulenh))
-            if read_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19) != caulenh:
-                write_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19, caulenh)
+            if read_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 1) != len(caulenh):
+                write_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 1, len(caulenh))
+            if read_string(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 19) != caulenh:
+                write_string(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 19, caulenh)
 
         self.tientrinh.start_thread(self._diachiautoassemblesudungkynangmuctieukhacnguoichoi)
         time.sleep(0.05)
@@ -1474,10 +1474,10 @@ class MoiTruong:
 
             self._is_dasetupautoassemblesudungkynangtoado = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1, len(caulenh))
-            if read_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19) != caulenh:
-                write_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19, caulenh)
+            if read_int(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 1) != len(caulenh):
+                write_int(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 1, len(caulenh))
+            if read_string(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 19) != caulenh:
+                write_string(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 19, caulenh)
 
         self.tientrinh.start_thread(self._diachiautoassemblesudungkynangtoado)
         time.sleep(0.05)
@@ -1504,10 +1504,10 @@ class MoiTruong:
 
             self._is_dasetupautoassembletrochuyenvoinpc = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1, len(caulenh))
-            if read_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19) != caulenh:
-                write_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19, caulenh)
+            if read_int(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 1) != len(caulenh):
+                write_int(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 1, len(caulenh))
+            if read_string(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 19) != caulenh:
+                write_string(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 19, caulenh)
 
         self.tientrinh.start_thread(self._diachiautoassembletrochuyenvoinpc)
         time.sleep(0.05)
@@ -1534,10 +1534,10 @@ class MoiTruong:
 
             self._is_dasetupautoassembledichuyenvatphamhanhtrang = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1, len(caulenh))
-            if read_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19) != caulenh:
-                write_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19, caulenh)
+            if read_int(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 1) != len(caulenh):
+                write_int(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 1, len(caulenh))
+            if read_string(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 19) != caulenh:
+                write_string(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 19, caulenh)
 
         self.tientrinh.start_thread(self._diachiautoassembledichuyenvatphamhanhtrang)
         time.sleep(0.05)
@@ -1564,10 +1564,10 @@ class MoiTruong:
 
             self._is_dasetupautoassemblesudungvatpham = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1, len(caulenh))
-            if read_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19) != caulenh:
-                write_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19, caulenh)
+            if read_int(self.tientrinh, self._diachiautoassemblesudungvatpham + 1) != len(caulenh):
+                write_int(self.tientrinh, self._diachiautoassemblesudungvatpham + 1, len(caulenh))
+            if read_string(self.tientrinh, self._diachiautoassemblesudungvatpham + 19) != caulenh:
+                write_string(self.tientrinh, self._diachiautoassemblesudungvatpham + 19, caulenh)
 
         self.tientrinh.start_thread(self._diachiautoassemblesudungvatpham)
         time.sleep(0.05)
@@ -1594,10 +1594,10 @@ class MoiTruong:
 
             self._is_dasetupautoassemblesudungvatphambaothu = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1, len(caulenh))
-            if read_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19) != caulenh:
-                write_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19, caulenh)
+            if read_int(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 1) != len(caulenh):
+                write_int(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 1, len(caulenh))
+            if read_string(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 19) != caulenh:
+                write_string(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 19, caulenh)
 
         self.tientrinh.start_thread(self._diachiautoassemblesudungvatphambaothu)
         time.sleep(0.05)
@@ -1624,10 +1624,10 @@ class MoiTruong:
 
             self._is_dasetupautoassemblenhatruong = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1, len(caulenh))
-            if read_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19) != caulenh:
-                write_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19, caulenh)
+            if read_int(self.tientrinh, self._diachiautoassemblenhatruong + 1) != len(caulenh):
+                write_int(self.tientrinh, self._diachiautoassemblenhatruong + 1, len(caulenh))
+            if read_string(self.tientrinh, self._diachiautoassemblenhatruong + 19) != caulenh:
+                write_string(self.tientrinh, self._diachiautoassemblenhatruong + 19, caulenh)
 
         self.tientrinh.start_thread(self._diachiautoassemblenhatruong)
         time.sleep(0.05)
@@ -1654,10 +1654,10 @@ class MoiTruong:
 
             self._is_dasetupautoassemblenhatdotoado = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1, len(caulenh))
-            if read_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19) != caulenh:
-                write_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19, caulenh)
+            if read_int(self.tientrinh, self._diachiautoassemblenhatdotoado + 1) != len(caulenh):
+                write_int(self.tientrinh, self._diachiautoassemblenhatdotoado + 1, len(caulenh))
+            if read_string(self.tientrinh, self._diachiautoassemblenhatdotoado + 19) != caulenh:
+                write_string(self.tientrinh, self._diachiautoassemblenhatdotoado + 19, caulenh)
 
         self.tientrinh.start_thread(self._diachiautoassemblenhatdotoado)
         time.sleep(0.05)
@@ -1684,10 +1684,10 @@ class MoiTruong:
 
             self._is_dasetupautoassembletrieuhoibaothu = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1, len(caulenh))
-            if read_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19) != caulenh:
-                write_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19, caulenh)
+            if read_int(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 1) != len(caulenh):
+                write_int(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 1, len(caulenh))
+            if read_string(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 19) != caulenh:
+                write_string(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 19, caulenh)
 
         self.tientrinh.start_thread(self._diachiautoassembletrieuhoibaothu)
         time.sleep(0.05)
@@ -1715,10 +1715,10 @@ class MoiTruong:
 
             self._is_dasetupautoassemblesudungkynangbaothu = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1, len(caulenh))
-            if read_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19) != caulenh:
-                write_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19, caulenh)
+            if read_int(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 1) != len(caulenh):
+                write_int(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 1, len(caulenh))
+            if read_string(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 19) != caulenh:
+                write_string(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 19, caulenh)
 
         self.tientrinh.start_thread(self._diachiautoassemblesudungkynangbaothu)
         time.sleep(0.05)
