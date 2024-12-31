@@ -1,4 +1,5 @@
 import ctypes
+import math
 import random
 import time
 
@@ -355,6 +356,18 @@ class MoiTruong:
             return False
         return read_int(self.tientrinh, x + 0x15F4)
 
+    def get_noidungthongbaogannhat(self):
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+
+        if not x:
+            return False
+
+        x = read_int(self.tientrinh, x + 0xADFD70)
+        if not x:
+            return False
+
+        return read_string(self.tientrinh, x + 0x24)
+
     def get_phantramsinhlucconlai(self, diachicosothongtinnhanvat = None):
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
@@ -372,10 +385,27 @@ class MoiTruong:
         if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
             toadoxsaptoi = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18)
             deltax = toadoxsaptoi - toadox
-            if deltax > 0:
+            if deltax != 0:
                 toadox += deltax / abs(deltax)
 
         return round(toadox)
+
+
+    def get_huongdichuyenx(self, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+
+        toadox = read_int(self.tientrinh, diachicosothongtinnhanvat)
+
+        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
+            toadoxsaptoi = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18)
+            deltax = toadoxsaptoi - toadox
+            if deltax != 0:
+                return deltax / abs(deltax)
+
+        return 0
+
+
 
     def get_toadoy(self, diachicosothongtinnhanvat = None, is_vitrihientai = False):
         if diachicosothongtinnhanvat is None:
@@ -389,10 +419,25 @@ class MoiTruong:
         if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
             toadoysaptoi = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C)
             deltay = toadoysaptoi - toadoy
-            if deltay > 0:
+            if deltay != 0:
                 toadoy += deltay / abs(deltay)
 
         return round(toadoy)
+
+    def get_huongdichuyeny(self, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+
+        toadoy = read_int(self.tientrinh, diachicosothongtinnhanvat)
+
+        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
+            toadoysaptoi = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18)
+            deltay = toadoysaptoi - toadoy
+            if deltay != 0:
+                return deltay / abs(deltay)
+
+        return 0
+
 
     def get_toadoxsaptoi(self, diachicosothongtinnhanvat = None):
         if diachicosothongtinnhanvat is None:
@@ -2161,9 +2206,6 @@ class MoiTruong:
         yclick = int(self._centery + deltay * toadomoidonvikhoangcachy)
 
         return self.action_dichuyen(xclick, yclick, delay = delay)
-
-    def action_dichuyentaicho(self, delay = 0.25):
-        return self.action_dichuyen(self._centerx, self._centery, delay = delay)
 
     def action_dichuyentiepcan(self, diachicosothongtinnhanvat2, khoangcachdichuyentoida = 0, delay = 0.25):
         return self.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvat2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)

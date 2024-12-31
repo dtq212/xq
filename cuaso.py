@@ -70,9 +70,10 @@ class CuaSo:
         keyboard.add_hotkey("ctrl + alt + t", self.battat_tudongbattheosaunhom)
 
         keyboard.add_hotkey("ctrl + alt + e", self.action_tudongepdo78910)
-        keyboard.add_hotkey("ctrl + alt + w", self.action_tudongepdo1112)
+        keyboard.add_hotkey("ctrl + alt + w", self.action_tudongkhamdenkhithatbai)
 
         keyboard.add_hotkey("ctrl + alt + x", self.battat_thucsondao)
+        keyboard.add_hotkey("ctrl + w", self.tudongepdomotlan)
 
         self.thoidiemluuthietlapgannhat = time.time()
 
@@ -164,6 +165,10 @@ class CuaSo:
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.battat_is_thucsondao()
 
+    def tudongepdomotlan(self):
+        if self.moitruong.get_is_cuasogamekichhoat():
+            self.tactu.action_tudongepdomotlan()
+
     def battat_tudongdichuyendiemdanhxungquanh(self):
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.battat_is_tudongdichuyendiemdanhxungquanh()
@@ -172,9 +177,9 @@ class CuaSo:
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.action_tudongepdo78910()
 
-    def action_tudongepdo1112(self):
+    def action_tudongkhamdenkhithatbai(self):
         if self.moitruong.get_is_cuasogamekichhoat():
-            self.tactu.action_tudongepdo1112()
+            self.tactu.action_tudongkhamdenkhithatbai()
 
     def themtenmuctieutancong(self):
         if self.moitruong.get_is_cuasogamekichhoat():
