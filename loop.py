@@ -112,6 +112,11 @@ class LoopChinh:
         if hasattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai)):
             getattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai))()
 
+        # diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+        # if diachicosothongtinnhanvatmuctieudangchon:
+        #     self.moitruong.action_thucthicaulenh("desc loop {}# 2516".format(hex(self.moitruong.get_iddoituong(diachicosothongtinnhanvatmuctieudangchon))).replace("0x", ""))
+        #     time.sleep(1.)
+
         # while True:
         #     self.tactu.action_sudungvatphamhanhtrang(TUILINHTHACHCAP1, delay = 0.)
         #     time.sleep(0.25)
