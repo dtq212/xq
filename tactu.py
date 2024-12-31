@@ -581,7 +581,7 @@ class TacTu:
                     if is_ok:
                         self._solansudungluutinhtruymang += 1
 
-                elif idtuthenhanvat == TUTHENHANVAT_DICHUYEN and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA) and not self.moitruong.get_is_vohieuhoadichuyen():
+                elif idtuthenhanvat == TUTHENHANVAT_DICHUYEN and khoangcach <= KHOANGCACHHIEUQUAKYNANGKHAITHIENTICHDIA and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA) and not self.moitruong.get_is_vohieuhoadichuyen():
                     is_ok = self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_KHAITHIENTICHDIA, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach)
                     if is_ok:
                         self._solansudungkhaithientichdia += 1
@@ -619,8 +619,6 @@ class TacTu:
                             self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, khoangcachtoida = khoangcach - 1.5)
                         else:
                             self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, KHOANGCACHSUDUNGKYNANGCANCHIEN)
-                    else:
-                        self.moitruong.action_dichuyentiepcan(diachicosothongtinnhanvatmuctieudangchon)
                 break
         self._is_tamngungdichuyensudungkynang = is_tamngungdichuyensudungkynang
 

@@ -114,7 +114,7 @@ class LoopChinh:
 
         # print(self.moitruong.get_noidungthongbaogannhat())
 
-        self.moitruong.action_ngungdichuyen()
+        # self.moitruong.action_ngungdichuyen()
 
         # diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
         # if diachicosothongtinnhanvatmuctieudangchon:
