@@ -604,11 +604,12 @@ class TacTu:
                 elif self.moitruong.get_is_cohieuungs(HIEUUNGBATLOITHUCSONCOTHEGIAIs, macdinh = False, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TINHTAMQUYET):
                     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TINHTAMQUYET)
 
-                elif khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and idtuthenhanvat != TUTHENHANVAT_DICHUYEN and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG):
-                    if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA):
-                        self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_KHAITHIENTICHDIA, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach + 1.5)
-                    else:
-                        self.moitruong.action_dichuyengiukhoangcachtoithieu(diachicosothongtinnhanvatmuctieudangchon, khoangcachtoithieu = khoangcach + 1.5)
+                elif idtuthenhanvat != TUTHENHANVAT_DICHUYEN and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG):
+                    if khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN:
+                        if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA):
+                            self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_KHAITHIENTICHDIA, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach + 1.5)
+                        else:
+                            self.moitruong.action_dichuyengiukhoangcachtoithieu(diachicosothongtinnhanvatmuctieudangchon, khoangcachtoithieu = khoangcach + 1.5)
 
                 if khoangcach <= KHOANGCACHTOIDAHOPLE:
                     thoigiantuthenhanvatdungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat() if idtuthenhanvat == TUTHENHANVAT_DUNGIM else 0.
@@ -1515,7 +1516,6 @@ class TacTu:
 
                 if self.moitruong.get_is_dangclickchuottrai():
                     break
-                    break
 
                 if self.moitruong.get_is_nhanvatdachet():
                     break
@@ -1600,13 +1600,15 @@ class TacTu:
 
             if self.moitruong.get_is_nhanvatdachet():
                 return
-            
-            if self.moitruong.get_idthucuoi() or time.time() - self.moitruong._thoidiemkhongcuoithugannhat < 2.:
-                return
 
             if not self.moitruong.get_is_dathietlapkynangphimtat(VITRIPHIMTATKYNANG_THUCANTHUCUOI):
                 return
 
             self._thoidiemkiemtracuoithugannhat = time.time()
 
-            self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_THUCANTHUCUOI)
+            if self.moitruong.get_idbandohientai() in BANDOKHONGTANCONGs:
+                if self.moitruong.get_idthucuoi():
+                    self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_THUCANTHUCUOI)
+            else:
+                if not self.moitruong.get_idthucuoi():
+                    self.moitruong.action_sudungkynangphimtat(VITRIPHIMTATKYNANG_THUCANTHUCUOI)
