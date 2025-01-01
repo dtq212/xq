@@ -1078,9 +1078,15 @@ class MoiTruong:
         if read_int(self.tientrinh, self.diachixq + 0x4984C + 0x6) != 0:
             write_int(self.tientrinh, self.diachixq + 0x4984C + 0x6, 0)
 
+        # if read_bytes(self.tientrinh, self.diachixq + 0x41721 + 6, 1) != bytes.fromhex("00"):
+        #     write_bytes(self.tientrinh, self.diachixq + 0x41721 + 6, bytes.fromhex("00"), 1)
+
     def action_tatvohieuhoalongclick(self):
         if read_int(self.tientrinh, self.diachixq + 0x4984C + 0x6) != 1:
             write_int(self.tientrinh, self.diachixq + 0x4984C + 0x6, 1)
+
+        # if read_bytes(self.tientrinh, self.diachixq + 0x41721 + 6, 1) == bytes.fromhex("00"):
+        #     write_bytes(self.tientrinh, self.diachixq + 0x41721 + 6, bytes.fromhex("01"), 1)
 
     def action_vohieuhoatrangthaichuotchonmuctieukynang(self):
         if read_int(self.tientrinh, self.diachixq + 0x5405C + 0x6) != 0:

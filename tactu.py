@@ -1384,6 +1384,27 @@ class TacTu:
                     time.sleep(0.05)
                     continue
 
+                if "Tháº¥t Báº¡i" in noidungthongbaogannhat:
+                    break
+
+                # if "ThÃ nh CÃ´ng [18/20]" in noidungthongbaogannhat:
+                #     break
+
+            self.action_tudongepdomotlan(delay = 0.)
+            time.sleep(0.05)
+
+            noidungthongbaotruocdo = noidungthongbaogannhat
+
+    def action_tudongkhamdenkhithanhcong18(self):
+        noidungthongbaotruocdo = False
+
+        while True:
+            noidungthongbaogannhat = self.moitruong.get_noidungthongbaogannhat()
+            if noidungthongbaotruocdo:
+                if noidungthongbaogannhat == noidungthongbaotruocdo:
+                    time.sleep(0.05)
+                    continue
+
                 # if "Tháº¥t Báº¡i" in noidungthongbaogannhat:
                 #     break
 
