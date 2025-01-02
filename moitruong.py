@@ -104,7 +104,7 @@ class MoiTruong:
         self._idbandohientai = False
 
         self._thoidiemcohieuungtienthanvodichgannhat = time.time()
-        self._thoidiemcohieuungnoikhanggannhat = time.time()
+        self._thoidiemcohieuungkimcuongbathoaidongannhat = time.time()
 
         self._thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat = time.time()
 
@@ -255,8 +255,8 @@ class MoiTruong:
         if not self.get_is_cohieuungs((HIEUUNGKYNANG_TIENTHANVODICH, ), macdinh = True, is_hieuungcoloi = 1):
             self._thoidiemcohieuungtienthanvodichgannhat = time.time()
 
-        if not self.get_is_cohieuungs((HIEUUNGKYNANG_NOIKHANG, ), macdinh = True, is_hieuungcoloi = 1):
-            self._thoidiemcohieuungnoikhanggannhat = time.time()
+        if not self.get_is_cohieuungs((HIEUUNGKYNANG_KIMCUONGBATHOAIDON, ), macdinh = True, is_hieuungcoloi = 1):
+            self._thoidiemcohieuungkimcuongbathoaidongannhat = time.time()
 
         idnguoichoitruongnhom = self.get_idnguoichoitruongnhom()
         if idnguoichoitruongnhom and not self.get_diachicosothongtinnhanvattruongnhom():
@@ -676,6 +676,17 @@ class MoiTruong:
         if not is_cohieuung:
             return 0.
         return thoigianhieuluctoida - (time.time() - self._thoidiemcohieuungtienthanvodichgannhat)
+
+    def get_thoigianconlaihieuungkimcuongbathoaidon(self, macdinh):
+        x = self.get_is_cohieuungs((HIEUUNGKYNANG_KIMCUONGBATHOAIDON, ), macdinh = (True, macdinh), is_hieuungcoloi = 1, is_travethoigianhieuluctoida = True)
+        if not x:
+            return 0.
+
+        is_cohieuung, thoigianhieuluctoida = x
+
+        if not is_cohieuung:
+            return 0.
+        return thoigianhieuluctoida - (time.time() - self._thoidiemcohieuungkimcuongbathoaidongannhat)
 
     def get_is_cohieuungs(self, idhieuungs, macdinh, diachicosothongtinnhanvat = None, is_hieuungcoloi: int = None, is_travethoigianhieuluctoida = False): #is_loihai: Kiểm tra lợi hại nữa
         if diachicosothongtinnhanvat is None:
