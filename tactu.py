@@ -568,7 +568,7 @@ class TacTu:
                     self._thoidiemsudungkimcuongbathoaidongannhat = time.time()
                     self.action_sudungvatphamhanhtrang(KIMCUONGBATHOAIDON)
 
-                elif time.time() - self._thoidiemsudungphihanhphugannhat > 1. and phantramsinhlucconlai <= 25. and not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENTHANVODICH) and self.moitruong.get_thoigianconlaihieuungkimcuongbathoaidon(macdinh = 2.0) <= 1.0:
+                if time.time() - self._thoidiemsudungphihanhphugannhat > 1. and phantramsinhlucconlai <= 25. and not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENTHANVODICH) and self.moitruong.get_thoigianconlaihieuungkimcuongbathoaidon(macdinh = 2.0) <= 1.0:
                     self._thoidiemsudungphihanhphugannhat = time.time()
                     self.action_sudungvatphamhanhtrang(PHIHANHPHU)
 
