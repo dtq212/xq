@@ -83,6 +83,7 @@ class MoiTruong:
         self._thoidiemsuadogannhat = time.time() - 1.
         self._thoidiemsudungchucnangmorong5 = time.time() - 2.5
         self._thoidiemtuthenhanvatdungimgannhat = time.time()
+        self._thoidiemtuthenhanvattanconggannhat = time.time()
         self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
         self._thoidiemngungdichuyengannhat = time.time() - 0.25
 
@@ -236,7 +237,9 @@ class MoiTruong:
             self._thoidiemtuthenhanvatdungimgannhat = time.time()
             self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
 
-        if idtuthenhanvat == TUTHENHANVAT_TANCONG:
+        if idtuthenhanvat not in (TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO):
+            self._thoidiemtuthenhanvattanconggannhat = time.time()
+        elif time.time() - self._thoidiemtuthenhanvattanconggannhat > 0.5:
             self.set_idtuthenhanvat(TUTHENHANVAT_DELAYSAUTANCONG)
 
         if not diachicosothongtinnhanvatmuctieuhientai:
