@@ -231,9 +231,13 @@ class MoiTruong:
         if diachicosothongtinnhanvatmuctieuhientai:
             self._thoidiemkhongcomuctieugannhat = time.time()
 
-        if self.get_idtuthenhanvat() != TUTHENHANVAT_DUNGIM:
+        idtuthenhanvat = self.get_idtuthenhanvat()
+        if idtuthenhanvat != TUTHENHANVAT_DUNGIM:
             self._thoidiemtuthenhanvatdungimgannhat = time.time()
             self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
+
+        if idtuthenhanvat == TUTHENHANVAT_TANCONG:
+            self.set_idtuthenhanvat(TUTHENHANVAT_DELAYSAUTANCONG)
 
         if not diachicosothongtinnhanvatmuctieuhientai:
             self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
@@ -261,6 +265,7 @@ class MoiTruong:
         idnguoichoitruongnhom = self.get_idnguoichoitruongnhom()
         if idnguoichoitruongnhom and not self.get_diachicosothongtinnhanvattruongnhom():
             self._diachicosothongtinnhanvattruongnhom = self.action_timkiemnhanvat(idnguoichoi = idnguoichoitruongnhom)
+
 
     def get_thoidiemthaydoibandogannhat(self):
         return self._thoidiemthaydoibandogannhat

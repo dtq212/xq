@@ -235,6 +235,8 @@ class TacTu:
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
                     elif not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
+                    elif self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon) in TENNHANVATKHONGTANCONGs:
+                        self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
                     elif self._tenmuctieutancongs and self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon) not in self._tenmuctieutancongs:
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
                     elif self._is_chidanhnguoichoi and not self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon):
@@ -270,8 +272,9 @@ class TacTu:
                 if not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieuxemxet):
                     continue
 
+                tendoituongmuctieuxemxet = self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieuxemxet)
+
                 if idbandohientai == BANDO_CHIENTRUONG:
-                    tendoituongmuctieuxemxet = self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieuxemxet)
                     if self._phehientai == PHEBACHKHOI:
                         if tendoituongmuctieuxemxet != LIEMPHA:
                             continue
@@ -281,11 +284,11 @@ class TacTu:
                     else:
                         continue
 
-                # if self.moitruong.get_idnguoichoi(diachicosothongtinnhanvatmuctieuxemxet) in NHANVATTODOITUDONGs:
-                #     continue
+                if tendoituongmuctieuxemxet in TENNHANVATKHONGTANCONGs:
+                    continue
 
                 if self._tenmuctieutancongs:
-                    if self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieuxemxet) not in self._tenmuctieutancongs:
+                    if tendoituongmuctieuxemxet not in self._tenmuctieutancongs:
                         continue
 
                 if self._is_chidanhnguoichoi and not self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieuxemxet):
@@ -1413,24 +1416,24 @@ class TacTu:
 
             noidungthongbaotruocdo = noidungthongbaogannhat
 
-        if is_tren10:
-            self.action_sudungvatphamhanhtrang(HYDUONG, delay = 0.)
-            time.sleep(0.05)
-
-            iddoituongvatphamhanhtrang8 = self.moitruong.get_iddoituongvatphamhanhtrang(7)
-            if not iddoituongvatphamhanhtrang8:
-                return
-
-            iddoituongvatphamhanhtrang7 = self.moitruong.get_iddoituongvatphamhanhtrang(6)
-            if not iddoituongvatphamhanhtrang7:
-                return
-
-            self.moitruong.action_dichuyenvatphamhanhtrang(iddoituongvatphamhanhtrang8, 7, delay = 0.)
-            time.sleep(0.05)
-
-            caulenh = "mix111255 0# {}# {}#".format(hex(iddoituongvatphamhanhtrang7), hex(iddoituongvatphamhanhtrang8)).replace("0x", "")
-
-            self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
+        # if is_tren10:
+        #     self.action_sudungvatphamhanhtrang(HYDUONG, delay = 0.)
+        #     time.sleep(0.05)
+        #
+        #     iddoituongvatphamhanhtrang8 = self.moitruong.get_iddoituongvatphamhanhtrang(7)
+        #     if not iddoituongvatphamhanhtrang8:
+        #         return
+        #
+        #     iddoituongvatphamhanhtrang7 = self.moitruong.get_iddoituongvatphamhanhtrang(6)
+        #     if not iddoituongvatphamhanhtrang7:
+        #         return
+        #
+        #     self.moitruong.action_dichuyenvatphamhanhtrang(iddoituongvatphamhanhtrang8, 7, delay = 0.)
+        #     time.sleep(0.05)
+        #
+        #     caulenh = "mix111255 0# {}# {}#".format(hex(iddoituongvatphamhanhtrang7), hex(iddoituongvatphamhanhtrang8)).replace("0x", "")
+        #
+        #     self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
 
 
     def action_tudongkhamdenkhithanhcong18(self):

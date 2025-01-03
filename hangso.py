@@ -176,6 +176,12 @@ LIEMPHA = "BLiÃªm Pha"
 BATQUAITRAN = "RBÃ¡t QuÃ¡i Tráº­n"
 AOANHMADAO = "áº¢o áº¢nh Ma Äáº¡o"
 
+THIENTHAN = "ThiÃªn Tháº§n"
+ACQUY = "Ãc Quá»·"
+THANTHUMAYET = "Tháº§n ThÃº - Ma Yáº¿t"
+
+TENNHANVATKHONGTANCONGs = (THIENTHAN, ACQUY, THANTHUMAYET)
+
 DOATNGANPHITAC = " Ä\x90oáº¡t NgÃ¢n Phi Táº·c ( Cáº¥p"
 TROMBAOPHITAC = " Trá»™m Báº£o Phi Táº·c ( Cáº¥p "
 CHIENQUOCTONGBAOTIEUYEU = " Chiáº¿n Quá»‘c Tá»‘ng Báº£o Tiá"
