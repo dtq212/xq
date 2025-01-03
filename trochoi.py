@@ -56,6 +56,7 @@ class TroChoi:
 
         for idcuasohethan in idcuasohethans:
             del self.cuasos[idcuasohethan]
+            phatam("Game đã đóng")
 
         self.is_dangloop = False
 
