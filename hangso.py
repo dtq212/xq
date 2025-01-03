@@ -180,6 +180,8 @@ DOATNGANPHITAC = " Ä\x90oáº¡t NgÃ¢n Phi Táº·c ( Cáº¥p"
 TROMBAOPHITAC = " Trá»™m Báº£o Phi Táº·c ( Cáº¥p "
 CHIENQUOCTONGBAOTIEUYEU = " Chiáº¿n Quá»‘c Tá»‘ng Báº£o Tiá"
 
+HYDUONG = "Há»· ÄÆ°á»ng"
+
 PHEBACHKHOI = 1
 PHELIEMPHA = 2
 
