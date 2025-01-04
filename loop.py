@@ -145,14 +145,42 @@ class LoopChinh:
         #         time.sleep(0.1)
 
         # while True:
-        #     self.moitruong.action_thucthicaulenh("talk c45d# info.10050", delay = 0.)
-        #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("talk c45d# info.11", delay = 0.)
-        #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("talk c45d# info.200", delay = 0.)
-        #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("talk c45d# info.210", delay = 0.)
-        #     time.sleep(0.25)
+        #     self.tactu.action_sudungvatphamhanhtrang('TÃºi PhÃ¡p Báº£o', delay = 0.)
+        #     time.sleep(0.05)
+        #
+        #     tendovutdis = ['Tháº§n Phong Phi Phong', 'Tháº¡ch Ä\x90iÃªu Quyá»\x81n Nháº«n', 'Linh TÃª HoÃ\xa0n', 'Thá»• HÃ\xa0nh ChÃ¢u', 'Nhiáº¿p Há»“n Linh', 'Trang Phá»¥c MÃ¹a HÃ¨ (Ná»¯)', 'Trang Phá»¥c Dáº¡o Phá»‘ (Nam)', 'HoÃ\xa0ng Sa Chi TÃ¢m', 'Cá»\xadu Long Tháº§n Há»\x8fa Tráº£o', 'ChuÃ´ng HÃ¡m ThiÃªn', 'Khu Tháº§n Lá»‡nh', 'Váº¡n Ã\x81c Chi Dá»±c - Há»“ng Ä\x90', 'XÃ\xadch Anh ThÆ°Æ¡ng', 'Ngá»\x8dc Kiáº¿m', 'Váº¡n Ã\x81c Chi Dá»±c - XÃ¡m Nháº', 'Nguyá»‡t HoÃ\xa0n', 'Cá»• PhÆ°Æ¡ng CÃ´n', 'Kim Ä\x90ao']
+        #
+        #     for tendovutdi in tendovutdis:
+        #         iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(tendovutdi)
+        #
+        #         if not iddoituongvatpham:
+        #             continue
+        #
+        #         is_ok = self.moitruong.action_thucthicaulenh("drop ! {}#1".format(hex(iddoituongvatpham)).replace("0x", ""), delay = 0.)
+        #         if is_ok:
+        #             time.sleep(0.1)
+
+        # tendovutdis = ['Tháº§n Phong Phi Phong', 'Tháº¡ch Ä\x90iÃªu Quyá»\x81n Nháº«n', 'Linh TÃª HoÃ\xa0n', 'Thá»• HÃ\xa0nh ChÃ¢u', 'Nhiáº¿p Há»“n Linh', 'Trang Phá»¥c MÃ¹a HÃ¨ (Ná»¯)', 'Trang Phá»¥c Dáº¡o Phá»‘ (Nam)', 'HoÃ\xa0ng Sa Chi TÃ¢m', 'Cá»\xadu Long Tháº§n Há»\x8fa Tráº£o', 'ChuÃ´ng HÃ¡m ThiÃªn', 'Khu Tháº§n Lá»‡nh', 'Váº¡n Ã\x81c Chi Dá»±c - Há»“ng Ä\x90', 'XÃ\xadch Anh ThÆ°Æ¡ng', 'Ngá»\x8dc Kiáº¿m', 'Váº¡n Ã\x81c Chi Dá»±c - XÃ¡m Nháº', 'Nguyá»‡t HoÃ\xa0n', 'Cá»• PhÆ°Æ¡ng CÃ´n', 'Kim Ä\x90ao']
+        #
+        # for tendovutdi in tendovutdis:
+        #     iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(tendovutdi)
+        #
+        #     if not iddoituongvatpham:
+        #         continue
+        #
+        #     is_ok = self.moitruong.action_thucthicaulenh("drop ! {}#1".format(hex(iddoituongvatpham)).replace("0x", ""), delay = 0.)
+        #     if is_ok:
+        #         time.sleep(0.1)
+
+        # while True:
+        #     self.moitruong.action_thucthicaulenh("talk 1cd36# info.10050", delay = 0.)
+        #     time.sleep(0.1)
+        #     self.moitruong.action_thucthicaulenh("talk 1cd36# info.11", delay = 0.)
+        #     time.sleep(0.1)
+        #     self.moitruong.action_thucthicaulenh("talk 1cd36# info.200", delay = 0.)
+        #     time.sleep(0.1)
+        #     self.moitruong.action_thucthicaulenh("talk 1cd36# info.210", delay = 0.)
+        #     time.sleep(0.1)
 
         # i = 0
         #
@@ -208,6 +236,8 @@ class LoopChinh:
 
         # print(self.moitruong.get_danhsachhieuungnhanvats())
         # print(self.moitruong.get_danhsachvatphamhanhtrang_map())
+
+
 
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
