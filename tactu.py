@@ -210,7 +210,7 @@ class TacTu:
                 if self._is_tamngungdichuyensudungkynang:
                     break
 
-                if self.moitruong.get_tenmonphai() == "thucson" and khoangcachtruongnhom >= 6 and not self.moitruong.get_is_vohieuhoadichuyen() and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA, delay = 1.):
+                if self.moitruong.get_tenmonphai() == "thucson" and khoangcachtruongnhom >= 6 and self.moitruong.get_idbandohientai() != BANDO_BATQUAITRAN and not self.moitruong.get_is_vohieuhoadichuyen() and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA, delay = 1.):
                     self.moitruong.action_sudungkynangvitriphudaudiem(*VITRIKYNANG_KHAITHIENTICHDIA, xtruongnhom, ytruongnhom, khoangcachphudau = khoangcachtruongnhom - khoangcachtoidatruongnhom + 3.)
                 else:
                     self.moitruong.action_dichuyengiukhoangcachtoidadiem(xtruongnhom, ytruongnhom, max(0, khoangcachtoidatruongnhom - 1.5 - time.time() + self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat()))
@@ -966,8 +966,8 @@ class TacTu:
                     elif khoangcach <= 3.:
                         self.moitruong.action_nhatdo(self._diachicosovatphamdangnhat)
 
-                    if not self._is_tamngungdichuyensudungkynang:
-                        if self.moitruong.get_tenmonphai() == "thucson" and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA, delay = 1.) and khoangcach >= 3 and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
+                    if not self._is_tamngungdichuyensudungkynang and not self.moitruong.get_is_vohieuhoadichuyen():
+                        if self.moitruong.get_tenmonphai() == "thucson" and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA, delay = 1.) and khoangcach >= 3 and self.moitruong.get_idbandohientai() != BANDO_BATQUAITRAN and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
                             self.moitruong.action_sudungkynangvitriphudaudiem(*VITRIKYNANG_KHAITHIENTICHDIA, self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True), self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True), khoangcachphudau = khoangcach)
                         else:
                             self.moitruong.action_dichuyentiepcandiem(self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True), self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True))

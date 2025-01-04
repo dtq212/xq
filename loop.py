@@ -282,7 +282,10 @@ class LoopPhu:
             return
 
         self.moitruong.action_vohieuhoathietlapmuctieu()
-        self.moitruong.action_vohieuhoatuthedelaysautancong()
+        if self.moitruong.get_idbandohientai() != BANDO_BATQUAITRAN:
+            self.moitruong.action_vohieuhoatuthedelaysautancong()
+        else:
+            self.moitruong.action_tatvohieuhoatuthedelaysautancong()
         self.moitruong.action_vohieuhoalongclick()
         self.moitruong.action_vohieuhoabangthongbaogocduoibenphai()
 
