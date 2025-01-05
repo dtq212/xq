@@ -144,21 +144,25 @@ class LoopChinh:
         #     if is_ok:
         #         time.sleep(0.1)
 
-        # while True:
-        #     self.tactu.action_sudungvatphamhanhtrang('TÃºi PhÃ¡p Báº£o', delay = 0.)
-        #     time.sleep(0.05)
-        #
-        #     tendovutdis = ['Tháº§n Phong Phi Phong', 'Tháº¡ch Ä\x90iÃªu Quyá»\x81n Nháº«n', 'Linh TÃª HoÃ\xa0n', 'Thá»• HÃ\xa0nh ChÃ¢u', 'Nhiáº¿p Há»“n Linh', 'Trang Phá»¥c MÃ¹a HÃ¨ (Ná»¯)', 'Trang Phá»¥c Dáº¡o Phá»‘ (Nam)', 'HoÃ\xa0ng Sa Chi TÃ¢m', 'Cá»\xadu Long Tháº§n Há»\x8fa Tráº£o', 'ChuÃ´ng HÃ¡m ThiÃªn', 'Khu Tháº§n Lá»‡nh', 'Váº¡n Ã\x81c Chi Dá»±c - Há»“ng Ä\x90', 'XÃ\xadch Anh ThÆ°Æ¡ng', 'Ngá»\x8dc Kiáº¿m', 'Váº¡n Ã\x81c Chi Dá»±c - XÃ¡m Nháº', 'Nguyá»‡t HoÃ\xa0n', 'Cá»• PhÆ°Æ¡ng CÃ´n', 'Kim Ä\x90ao']
-        #
-        #     for tendovutdi in tendovutdis:
-        #         iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(tendovutdi)
-        #
-        #         if not iddoituongvatpham:
-        #             continue
-        #
-        #         is_ok = self.moitruong.action_thucthicaulenh("drop ! {}#1".format(hex(iddoituongvatpham)).replace("0x", ""), delay = 0.)
-        #         if is_ok:
-        #             time.sleep(0.1)
+        if self.moitruong.get_idnguoichoi() in (3930, 3736):
+            tendovutdis = ['Tháº§n Phong Phi Phong', 'Tháº¡ch Ä\x90iÃªu Quyá»\x81n Nháº«n', 'Linh TÃª HoÃ\xa0n', 'Thá»• HÃ\xa0nh ChÃ¢u', 'Nhiáº¿p Há»“n Linh', 'Trang Phá»¥c MÃ¹a HÃ¨ (Ná»¯)', 'Trang Phá»¥c Dáº¡o Phá»‘ (Nam)', 'HoÃ\xa0ng Sa Chi TÃ¢m', 'Cá»\xadu Long Tháº§n Há»\x8fa Tráº£o', 'ChuÃ´ng HÃ¡m ThiÃªn', 'Khu Tháº§n Lá»‡nh', 'Váº¡n Ã\x81c Chi Dá»±c - Há»“ng Ä\x90', 'XÃ\xadch Anh ThÆ°Æ¡ng', 'Ngá»\x8dc Kiáº¿m', 'Váº¡n Ã\x81c Chi Dá»±c - XÃ¡m Nháº', 'Nguyá»‡t HoÃ\xa0n', 'Cá»• PhÆ°Æ¡ng CÃ´n', 'Kim Ä\x90ao']
+
+            while True:
+                for i in range(20):
+                    self.tactu.action_sudungvatphamhanhtrang('TÃºi PhÃ¡p Báº£o', delay = 0.)
+                    time.sleep(0.05)
+
+                for tendovutdi in tendovutdis:
+                    while True:
+                        iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(tendovutdi)
+
+                        if not iddoituongvatpham:
+                            break
+
+                        is_ok = self.moitruong.action_thucthicaulenh("drop ! {}#1".format(hex(iddoituongvatpham)).replace("0x", ""), delay = 0.)
+                        if is_ok:
+                            time.sleep(0.1)
+
 
         # tendovutdis = ['Tháº§n Phong Phi Phong', 'Tháº¡ch Ä\x90iÃªu Quyá»\x81n Nháº«n', 'Linh TÃª HoÃ\xa0n', 'Thá»• HÃ\xa0nh ChÃ¢u', 'Nhiáº¿p Há»“n Linh', 'Trang Phá»¥c MÃ¹a HÃ¨ (Ná»¯)', 'Trang Phá»¥c Dáº¡o Phá»‘ (Nam)', 'HoÃ\xa0ng Sa Chi TÃ¢m', 'Cá»\xadu Long Tháº§n Há»\x8fa Tráº£o', 'ChuÃ´ng HÃ¡m ThiÃªn', 'Khu Tháº§n Lá»‡nh', 'Váº¡n Ã\x81c Chi Dá»±c - Há»“ng Ä\x90', 'XÃ\xadch Anh ThÆ°Æ¡ng', 'Ngá»\x8dc Kiáº¿m', 'Váº¡n Ã\x81c Chi Dá»±c - XÃ¡m Nháº', 'Nguyá»‡t HoÃ\xa0n', 'Cá»• PhÆ°Æ¡ng CÃ´n', 'Kim Ä\x90ao']
         #
@@ -282,10 +286,7 @@ class LoopPhu:
             return
 
         self.moitruong.action_vohieuhoathietlapmuctieu()
-        if self.moitruong.get_idbandohientai() != BANDO_BATQUAITRAN:
-            self.moitruong.action_vohieuhoatuthedelaysautancong()
-        else:
-            self.moitruong.action_tatvohieuhoatuthedelaysautancong()
+        self.moitruong.action_vohieuhoatuthedelaysautancong()
         self.moitruong.action_vohieuhoalongclick()
         self.moitruong.action_vohieuhoabangthongbaogocduoibenphai()
 

@@ -19,6 +19,7 @@ class TroChoi:
         self.remove1 = keyboard.add_hotkey("f12", self.themcuasohientai)
         self.remove2 = keyboard.add_hotkey("ctrl + alt + f12", lambda: self.is_dangchay.set())
         self.is_dangloop = False
+        self.soluongcuaso = 0
     def __del__(self):
         keyboard.remove_hotkey(self.remove1)
         keyboard.remove_hotkey(self.remove2)
@@ -47,6 +48,7 @@ class TroChoi:
 
     def loop(self):
         self.is_dangloop = True
+
         idcuasohethans = set()
 
         for idcuaso, cuaso in self.cuasos.items():
@@ -56,9 +58,13 @@ class TroChoi:
 
         for idcuasohethan in idcuasohethans:
             del self.cuasos[idcuasohethan]
-            phatam("Game đã đóng")
+
+        soluongcuaso = len(self.cuasos)
+        if soluongcuaso < self.soluongcuaso:
+            phatam("Game đã bị đóng")
 
         self.is_dangloop = False
+        self.soluongcuaso = soluongcuaso
 
         time.sleep(1)
 
