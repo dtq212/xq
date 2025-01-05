@@ -122,13 +122,16 @@ class LoopChinh:
         #     time.sleep(1.)
 
         # while True:
-        #     self.tactu.action_sudungvatphamhanhtrang(TUILINHTHACHCAP1, delay = 0.)
-        #     time.sleep(0.25)
-        #     self.tactu.action_sudungvatphamhanhtrang(TUILINHTHACHCAP2, delay = 0.)
-        #     time.sleep(0.25)
+        #     # self.tactu.action_sudungvatphamhanhtrang(TUILINHTHACHCAP1, delay = 0.)
+        #     # time.sleep(0.25)
+        #     # self.tactu.action_sudungvatphamhanhtrang(TUILINHTHACHCAP2, delay = 0.)
+        #     # time.sleep(0.25)
         #     self.tactu.action_tudonghopthanhlinhthach(delay = 0.)
         #     time.sleep(0.25)
 
+        # while True:
+        #     self.moitruong.action_thucthicaulenh("talk 1f9# giaotrangbi.150de3#", delay = 0.)
+        #     time.sleep(0.1)
         # while True:
         #     self.moitruong.action_thucthicaulenh("noichuyen 285# gift.30", delay = 0.1)
         #     time.sleep(0.1)

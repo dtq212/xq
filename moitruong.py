@@ -360,6 +360,12 @@ class MoiTruong:
             return False
         return read_int(self.tientrinh, x + 0x1538)
 
+    def get_capdonhanvat(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x371754)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0x15B0)
+
     def get_idbandohientai(self):
         return self._idbandohientai
 
@@ -1341,7 +1347,7 @@ class MoiTruong:
 
         return True
 
-    def action_moihoacxinvaonhom(self, idnguoichoi, delay = 1.):
+    def action_moihoacxinvaonhom(self, idnguoichoi, delay = 0.25):
         if time.time() - self._thoidiemthaotacnhomgannhat < delay:
             return
         if not idnguoichoi:
@@ -1352,7 +1358,8 @@ class MoiTruong:
         self.auto_assemble_thaotacnhom("+", idnguoichoi)
 
         return True
-    def action_thoatkhoinhom(self, idnguoichoitruongnhom, delay = 1.):
+
+    def action_thoatkhoinhom(self, idnguoichoitruongnhom, delay = 0.25):
         if time.time() - self._thoidiemthaotacnhomgannhat < delay:
             return
         if not idnguoichoitruongnhom:
@@ -1364,18 +1371,26 @@ class MoiTruong:
 
         return True
 
-    def action_kiemtravadongyloimoinhom(self, idnguoichoitruongnhom, delay = 1.):
+    def action_kiemtravadongyloimoinhom(self, idtruongnhoms, delay = 0.25):
         if time.time() - self._thoidiemthaotacnhomgannhat < delay:
             return
-        if not idnguoichoitruongnhom:
+        if not idtruongnhoms:
             return
 
-        if "team + {}".format(idnguoichoitruongnhom) == self.get_caulenhmoinhomhientai() and self.get_is_danghiencuasoyesno():
-            self.auto_assemble_thaotacnhom("+", idnguoichoitruongnhom)
-            self._thoidiemthaotacnhomgannhat = time.time()
+        caulenhmoinhomhientai = self.get_caulenhmoinhomhientai()
+        if not caulenhmoinhomhientai:
+            return
 
-            if self.get_is_danghiencuasoyesno():
-                self.set_is_danghiencuasoyesno(False)
+        if "team + " in caulenhmoinhomhientai and self.get_is_danghiencuasoyesno():
+            idnguoichoitruongnhoms = caulenhmoinhomhientai.split("team + ")
+            if len(idnguoichoitruongnhoms) > 1:
+                idnguoichoitruongnhom = int(idnguoichoitruongnhoms[1])
+                if idnguoichoitruongnhom in idtruongnhoms:
+                    self.auto_assemble_thaotacnhom("+", idnguoichoitruongnhom)
+                    self._thoidiemthaotacnhomgannhat = time.time()
+
+                    if self.get_is_danghiencuasoyesno():
+                        self.set_is_danghiencuasoyesno(False)
 
         return True
 
