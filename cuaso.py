@@ -54,7 +54,7 @@ class CuaSo:
 
         keyboard.add_hotkey("ctrl + f", self.battat_tudongsudungkynang)
         keyboard.add_hotkey("ctrl + c", self.themtenmuctieutancong)
-        keyboard.add_hotkey("ctrl + alt+ c", self.botoanbotenmuctieutancong)
+        keyboard.add_hotkey("ctrl + alt + c", self.botoanbotenmuctieutancong)
         keyboard.add_hotkey("ctrl + alt + f", self.battat_tudongtheosautruongnhom)
 
         keyboard.add_hotkey("ctrl + d", self.thietlapchidanhnguoichoi)
@@ -75,6 +75,8 @@ class CuaSo:
 
         keyboard.add_hotkey("ctrl + alt + x", self.battat_thucsondao)
         keyboard.add_hotkey("ctrl + w", self.action_tudongkhamdenkhithatbai)
+
+        keyboard.add_hotkey("ctrl + alt + s", self.battat_is_phitac)
 
         self.thoidiemluuthietlapgannhat = time.time()
 
@@ -103,6 +105,9 @@ class CuaSo:
         keyboard.remove_hotkey("ctrl + alt + w")
 
         keyboard.remove_hotkey("ctrl + alt + x")
+        keyboard.remove_hotkey("ctrl + w")
+
+        keyboard.remove_hotkey("ctrl + alt + s")
 
 
     def tatauto(self, *args, **kwargs):
@@ -161,6 +166,10 @@ class CuaSo:
     def battat_tudongbattheosaunhom(self):
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.battat_is_tudongbattheosaunhom()
+
+    def battat_is_phitac(self):
+        if self.moitruong.get_is_cuasogamekichhoat():
+            self.tactu.battat_is_phitac()
 
     def battat_thucsondao(self):
         if self.moitruong.get_is_cuasogamekichhoat():

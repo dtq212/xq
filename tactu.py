@@ -30,6 +30,7 @@ class TacTu:
         self._is_tudongtrieuhoibaothudautien = True
         self._is_tudongchaylenbandovuachet = True
         self._is_tudongxepchongdo = True
+        self._is_phitac = False
 
         self._is_tudongdibatquaitran = False
 
@@ -231,18 +232,21 @@ class TacTu:
                 diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
 
                 if diachicosothongtinnhanvatmuctieudangchon:
+                    tendoituongmuctieudangchon = self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon)
                     if is_bandokhongtancong:
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
                     elif not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
-                    elif self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon) in TENNHANVATKHONGTANCONGs:
+                    elif tendoituongmuctieudangchon in TENNHANVATKHONGTANCONGs:
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
-                    elif self._tenmuctieutancongs and self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon) not in self._tenmuctieutancongs:
+                    elif self._is_phitac and not self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon) and tendoituongmuctieudangchon not in PHITACs:
+                        self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
+                    elif self._tenmuctieutancongs and tendoituongmuctieudangchon not in self._tenmuctieutancongs:
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
                     elif self._is_chidanhnguoichoi and not self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon):
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
                     elif idbandohientai == BANDO_BATQUAITRAN:
-                        tendoituongmuctieudangchon = self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon)
+                        tendoituongmuctieudangchon = tendoituongmuctieudangchon
                         if tendoituongmuctieudangchon and tendoituongmuctieudangchon != self._tenmuctieubatquaitranhientai:
                             self._tenmuctieubatquaitrantruocdo = self._tenmuctieubatquaitranhientai
                             self._tenmuctieubatquaitranhientai = tendoituongmuctieudangchon
@@ -266,6 +270,10 @@ class TacTu:
 
                 if tendoituongmuctieuxemxet in TENNHANVATKHONGTANCONGs:
                     continue
+
+                if self._is_phitac:
+                    if not self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieuxemxet) and tendoituongmuctieuxemxet not in PHITACs:
+                        continue
 
                 if self._tenmuctieutancongs:
                     if tendoituongmuctieuxemxet not in self._tenmuctieutancongs:
@@ -889,6 +897,13 @@ class TacTu:
         else:
             phatam("Tắt tự động bật tắt theo sau nhóm")
 
+    def battat_is_phitac(self):
+        self._is_phitac = not self._is_phitac
+        if self._is_phitac:
+            phatam("Bật phi tặc")
+        else:
+            phatam("Tắt phi tặc")
+
     def battat_is_tudongtheosautruongnhom(self):
         self._is_tudongtheosautruongnhom = not self._is_tudongtheosautruongnhom
         if self._is_tudongtheosautruongnhom:
@@ -1286,7 +1301,7 @@ class TacTu:
                         iddiemdanhxungquanhtieptheo = iddiemdanhxungquanhgannhat
                         diemdanhxungquanhtieptheo = diemdanhxungquanhbandos[iddiemdanhxungquanhgannhat]
                     else:
-                        iddiemdanhxungquanhtieptheo = ((self._iddiemdanhxungquanhhientai + 1) % len(diemdanhxungquanhbandos)) if (self.moitruong.get_khoangcachdiem(*self._diemdanhxungquanhhientai[:-1]) <= 6. or time.time() - self._thoidiemthaydoidiemdanhxungquanhgannhat > 6.) else self._iddiemdanhxungquanhhientai
+                        iddiemdanhxungquanhtieptheo = ((self._iddiemdanhxungquanhhientai + 1) % len(diemdanhxungquanhbandos)) if (self.moitruong.get_khoangcachdiem(*self._diemdanhxungquanhhientai[:-1]) <= 6. or time.time() - self._thoidiemthaydoidiemdanhxungquanhgannhat > 6. or (time.time() - self._thoidiemthaydoidiemdanhxungquanhgannhat > 1.5 and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM)) else self._iddiemdanhxungquanhhientai
                         diemdanhxungquanhtieptheo = diemdanhxungquanhbandos[iddiemdanhxungquanhtieptheo]
 
                     if iddiemdanhxungquanhtieptheo != self._iddiemdanhxungquanhhientai or self._diemdanhxungquanhhientai != diemdanhxungquanhtieptheo:
