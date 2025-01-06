@@ -71,12 +71,12 @@ class CuaSo:
 
         keyboard.add_hotkey("ctrl + alt + e", self.action_tudongepdo78910)
         keyboard.add_hotkey("ctrl + alt + w", self.tudongkhamdenkhithanhcong18)
-        keyboard.add_hotkey("ctrl + alt + r", self.action_tudongepdo11)
+        # keyboard.add_hotkey("ctrl + alt + r", self.action_tudongepdo11)
 
         keyboard.add_hotkey("ctrl + alt + x", self.battat_thucsondao)
         keyboard.add_hotkey("ctrl + w", self.action_tudongkhamdenkhithatbai)
 
-        keyboard.add_hotkey("ctrl + alt + s", self.battat_is_phitac)
+        keyboard.add_hotkey("ctrl + alt + v", self.battat_is_phitac)
 
         self.thoidiemluuthietlapgannhat = time.time()
 
@@ -107,7 +107,7 @@ class CuaSo:
         keyboard.remove_hotkey("ctrl + alt + x")
         keyboard.remove_hotkey("ctrl + w")
 
-        keyboard.remove_hotkey("ctrl + alt + s")
+        keyboard.remove_hotkey("ctrl + alt + v")
 
 
     def tatauto(self, *args, **kwargs):
