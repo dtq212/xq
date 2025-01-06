@@ -197,7 +197,7 @@ class TacTu:
 
                 diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
                 if (not diachicosothongtinnhanvatmuctieudangchon or not self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon)) and self.moitruong.get_idbandohientai() != BANDO_BATQUAITRAN:
-                    khoangcachtoidatruongnhom -= 6.
+                    khoangcachtoidatruongnhom -= 3.
 
                 if khoangcachtruongnhom <= khoangcachtoidatruongnhom:
                     break
@@ -1145,7 +1145,7 @@ class TacTu:
                 elif idbando in DICHUYENPHITACDOATNGUYENTRUYENTONG_MAP:
                     iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvatphitacdoatngantruyentong)
                     if iddoituong:
-                        self._idbandovuachet = False
+                        # self._idbandovuachet = False
                         for noidungtrochuyen in DICHUYENPHITACDOATNGUYENTRUYENTONG_MAP[idbando]:
                             is_ok = self.moitruong.action_trochuyenvoinpc(iddoituong, noidungtrochuyen)
                             if is_ok:
@@ -1165,7 +1165,7 @@ class TacTu:
             elif idbando in DICHUYENPHITACDOATNGUYENTRUYENTONG_MAP:
                 iddoituong = self.moitruong.get_iddoituong(diachicosothongtinnhanvatphitacdoatngantruyentong)
                 if iddoituong:
-                    self._idbandovuachet = False
+                    # self._idbandovuachet = False
                     for noidungtrochuyen in DICHUYENPHITACDOATNGUYENTRUYENTONG_MAP[idbando]:
                         self.moitruong.action_trochuyenvoinpc(iddoituong, noidungtrochuyen)
                         time.sleep(0.25)
@@ -1196,7 +1196,7 @@ class TacTu:
     def action_tudongdichuyenlenbandovuachet(self):
         is_tamngungtancongdichuyenlenbandovuachet = False
 
-        if self._is_tudongchaylenbandovuachet and self._is_tudongdichuyendiemdanhxungquanh and self._idbandovuachet:
+        if self._is_tudongchaylenbandovuachet and self._idbandovuachet:
             while True:
                 if self._is_tamngungdichuyensudungkynang:
                     break
@@ -1403,7 +1403,9 @@ class TacTu:
                     self._thoidiemnhanvatchetgannhat = time.time()
                 else:
                     if time.time() - self._thoidiemnhanvatchetgannhat > 0.5:
-                        self._idbandovuachet = self.moitruong.get_idbandohientai()
+                        idbandohientai = self.moitruong.get_idbandohientai()
+                        if idbandohientai in BANDOTUDONGLENSAUKHICHETs:
+                            self._idbandovuachet = idbandohientai
                     if time.time() - self._thoidiemnhanvatchetgannhat > 5.:
                         self.moitruong.action_phucsinh()
                     elif time.time() - self._thoidiemnhanvatchetgannhat > 2.5:
