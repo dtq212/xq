@@ -71,6 +71,7 @@ class CuaSo:
 
         keyboard.add_hotkey("ctrl + alt + e", self.action_tudongepdo78910)
         keyboard.add_hotkey("ctrl + alt + w", self.tudongkhamdenkhithanhcong18)
+        keyboard.add_hotkey("ctrl + alt + r", self.action_tudongepdo11)
 
         keyboard.add_hotkey("ctrl + alt + x", self.battat_thucsondao)
         keyboard.add_hotkey("ctrl + w", self.action_tudongkhamdenkhithatbai)
@@ -176,6 +177,10 @@ class CuaSo:
     def action_tudongepdo78910(self):
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.action_tudongepdo78910()
+
+    def action_tudongepdo11(self):
+        if self.moitruong.get_is_cuasogamekichhoat():
+            self.tactu.action_tudongepdo11()
 
     def action_tudongkhamdenkhithatbai(self):
         if self.moitruong.get_is_cuasogamekichhoat():

@@ -133,7 +133,7 @@ class LoopChinh:
         #     self.moitruong.action_thucthicaulenh("talk 1f9# giaotrangbi.150de3#", delay = 0.)
         #     time.sleep(0.1)
         # while True:
-        #     self.moitruong.action_thucthicaulenh("noichuyen 285# gift.30", delay = 0.1)
+        #     self.moitruong.action_thucthicaulenh("noichuyen 21c# gift.30", delay = 0.1)
         #     time.sleep(0.1)
         #     self.tactu.action_tudongxepchongdo(delay = 0.)
         #     time.sleep(0.1)
@@ -192,19 +192,20 @@ class LoopChinh:
         # i = 0
         #
         # while True:
-            #noi cong 143
-            #than thu 145
-            #bao kich 146
-            #chinh xac 148
-            # self.moitruong.action_thucthicaulenh("talk c45c# info.144", delay = 0.)
-            # time.sleep(0.05)
-            # i += 1
-            # if i % 2 == 0:
-            #     time.sleep(0.25)
-            #     is_ok = self.tactu.action_sudungvatphamhanhtrang(TUSAMDONTRUNG, delay = 0.)
-            #     if not is_ok:
-            #         self.tactu.action_sudungvatphamhanhtrang(TUSAMDONSO, delay = 0.)
-            #     time.sleep(0.25)
+        #     # ngoai cong 141
+        #     # noi cong 143
+        #     # than thu 145
+        #     # bao kich 146
+        #     # chinh xac 148
+        #     self.moitruong.action_thucthicaulenh("talk b5e4# info.141", delay = 0.)
+        #     time.sleep(0.05)
+        #     i += 1
+        #     if i % 2 == 0:
+        #         time.sleep(0.25)
+        #         is_ok = self.tactu.action_sudungvatphamhanhtrang(TUSAMDONTRUNG, delay = 0.)
+        #         if not is_ok:
+        #             self.tactu.action_sudungvatphamhanhtrang(TUSAMDONSO, delay = 0.)
+        #         time.sleep(0.25)
 
         # while True:
         #     iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(DOANTHACHDACBIETSOCAP)

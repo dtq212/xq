@@ -601,6 +601,9 @@ class TacTu:
                     if khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN:
                         self.moitruong.action_dichuyengiukhoangcachtoithieu(diachicosothongtinnhanvatmuctieudangchon, khoangcachtoithieu = khoangcach + 1.5)
 
+                elif khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and is_muctieudangchonlanguoichoi and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_DONDAOTRUCNHAP):
+                    self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_DONDAOTRUCNHAP)
+
                 if khoangcach <= KHOANGCACHTOIDAHOPLE:
                     thoigiantuthenhanvatdungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat() if idtuthenhanvat == TUTHENHANVAT_DUNGIM else 0.
                     if thoigiantuthenhanvatdungim > 0.5:
@@ -1453,7 +1456,6 @@ class TacTu:
             self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
             time.sleep(0.5)
 
-
     def action_tudongkhamdenkhithanhcong18(self):
         noidungthongbaotruocdo = False
 
@@ -1533,8 +1535,13 @@ class TacTu:
         if self.moitruong.get_is_danghiencuasotuychon():
             self.moitruong.set_is_danghiencuasotuychon(False)
 
-    def action_tudongepdo1112(self, delay = 0.25):
+    def action_tudongepdo11(self, delay = 0.25):
         if time.time() - self._thoidiemepdogannhat < delay:
+            return
+
+        tenvatpham2 = self.moitruong.get_tenvatphamhanhtrang(1)
+
+        if not tenvatpham2:
             return
 
         iddoituongvatphamhanhtrang2 = self.moitruong.get_iddoituongvatphamhanhtrang(1)
@@ -1543,21 +1550,27 @@ class TacTu:
 
         self._thoidiemepdogannhat = time.time()
 
-        iddoituongvatphamhanhtrang1 = self.moitruong.get_iddoituongvatphamhanhtrang(0)
-        if not iddoituongvatphamhanhtrang1:
-            return
+        sdfjhsdfsdf = 0
 
-        self.moitruong.action_dichuyenvatphamhanhtrang(iddoituongvatphamhanhtrang2, 1)
-        time.sleep(0.25)
+        while sdfjhsdfsdf <= 10:
+            sdfjhsdfsdf += 1
+            iddoituongvatphamhanhtrang1 = self.moitruong.get_iddoituongvatphamhanhtrang(0)
+            if not iddoituongvatphamhanhtrang1:
+                break
 
-        caulenh = "mix111255 0# {}# {}#".format(hex(iddoituongvatphamhanhtrang1), hex(iddoituongvatphamhanhtrang2)).replace("0x", "")
+            iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(tenvatpham2)
 
-        if random.randint(0, 10) < 10:
-            time.sleep(0.01)
+            if not iddoituongvatpham:
+                break
 
-        self.moitruong.action_thucthicaulenh(caulenh, delay = 0)
+            self.moitruong.action_dichuyenvatphamhanhtrang(iddoituongvatpham, 1)
+            time.sleep(0.25)
 
-        time.sleep(0.25)
+            caulenh = "mix1112555 12# {}# {}#".format(hex(iddoituongvatphamhanhtrang1), hex(iddoituongvatpham)).replace("0x", "")
+
+            self.moitruong.action_thucthicaulenh(caulenh)
+
+            time.sleep(0.25)
 
         if self.moitruong.get_is_danghiencuasotuychon():
             self.moitruong.set_is_danghiencuasotuychon(False)
