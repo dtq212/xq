@@ -533,7 +533,7 @@ class MoiTruong:
         return read_string(self.tientrinh, diachicosothongtinnhanvat + 0x1136)
 
     def get_is_cungbang(self, diachicosothongtinnhanvat):
-        return False
+        return self.get_idnguoichoi(diachicosothongtinnhanvat) in NHANVATCUNGBANGs
 
     def get_idtrangthaichuot(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
@@ -2315,9 +2315,6 @@ class MoiTruong:
         return self.action_dichuyengiukhoangcachtoidadiem(x2, y2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay, is_rangbuoctrongmanhinh = is_rangbuoctrongmanhinh)
 
     def action_sudungkynangvitriphudau(self, idvitri_x, idvitri_y, diachicosothongtinnhanvat2, khoangcachphudau, delay = 1):
-        if time.time() - self._thoidiemsudungkynanggannhat < 0.25:
-            return
-
         if not diachicosothongtinnhanvat2:
             return False
         if not self.get_is_nhanvattontai(diachicosothongtinnhanvat2):
@@ -2325,9 +2322,6 @@ class MoiTruong:
         return self.action_sudungkynangvitriphudaudiem(idvitri_x, idvitri_y, self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2), khoangcachphudau = khoangcachphudau, delay = delay)
 
     def action_sudungkynangvitriphudaudiem(self, idvitri_x, idvitri_y, x2, y2, khoangcachphudau, delay = 1):
-        if time.time() - self._thoidiemsudungkynanggannhat < 0.25:
-            return
-
         idvitri = (idvitri_x, idvitri_y)
         if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
             return False
