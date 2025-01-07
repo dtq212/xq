@@ -68,7 +68,14 @@ class LoopTimKiemMucTieu:
         if self.moitruong.get_is_dangmatketnoi():
             return
 
+        if time.time() - self.tactu._thoigiantamngungauto < 2.:
+            return
+
+        if self.moitruong.get_idbandohientai() in BANDOKHONGTANCONGs:
+            return
+
         self.tactu.action_tudongtimkiemmuctieu()
+        self.moitruong.action_phananhdiachicosothongtinnhanvatmuctieudangchoningame()
 
 class LoopChinh:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
@@ -365,6 +372,8 @@ class LoopSuDungVatPham:
             return
 
         if time.time() - self.tactu._thoigiantamngungauto < 2.:
+            if self.moitruong.get_is_danghiencuasotuychon():
+                self.moitruong.set_is_danghiencuasotuychon(False)
             return
 
         self.tactu.action_tudongsudungvatpham()

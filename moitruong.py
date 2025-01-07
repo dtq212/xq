@@ -112,6 +112,8 @@ class MoiTruong:
 
         self._diachicosothongtinnhanvattruongnhom = False
 
+        self._idnguoichoi = False
+
     def __del__(self):
         if self._is_dasetupautoassemblesudungkynangphimtat:
             self.tientrinh.free(self._diachiautoassemblesudungkynangphimtat)
@@ -231,6 +233,10 @@ class MoiTruong:
         return self._thoidiemtuthenhanvatdungimcomuctieugannhat
 
     def action_lammoitrangthaimoitruong(self):
+        idnguoichoi = self.get_idnguoichoi()
+        if idnguoichoi:
+            self._idnguoichoi = idnguoichoi
+
         diachicosothongtinnhanvatmuctieuhientai = self.get_diachicosothongtinnhanvatmuctieudangchon()
 
         if diachicosothongtinnhanvatmuctieuhientai:
@@ -1012,23 +1018,29 @@ class MoiTruong:
 
     def set_diachicosothongtinnhanvatmuctieudangchon(self, diachicosothongtinnhanvat):
         if self.get_diachicosothongtinnhanvatmuctieudangchon() != diachicosothongtinnhanvat:
-            self._thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat = time.time()
             self._diachicosothongtinnhanvatmuctieudangchon = diachicosothongtinnhanvat
 
-            if diachicosothongtinnhanvat:
-                iddoituong = self.get_iddoituong(diachicosothongtinnhanvat)
-                if iddoituong > 0:
-                    write_int(self.tientrinh, self.diachixq + 0x1BC3E0, diachicosothongtinnhanvat)
-                    write_int(self.tientrinh, self.diachixq + 0x37173C, iddoituong)
-                    write_int(self.tientrinh, self.diachixq + 0x1BC440, diachicosothongtinnhanvat)
-                    write_int(self.tientrinh, self.diachixq + 0x1BC444, iddoituong)
+    def action_phananhdiachicosothongtinnhanvatmuctieudangchoningame(self, delay = 0.25):
+        if time.time() - self._thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat < delay:
+            return
 
-                    return
+        self._thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat = time.time()
 
-            write_int(self.tientrinh, self.diachixq + 0x1BC3E0, 0)
-            write_int(self.tientrinh, self.diachixq + 0x37173C, 0)
-            write_int(self.tientrinh, self.diachixq + 0x1BC440, 0)
-            write_int(self.tientrinh, self.diachixq + 0x1BC444, 0)
+        diachicosothongtinnhanvat = self._diachicosothongtinnhanvatmuctieudangchon
+        if diachicosothongtinnhanvat:
+            iddoituong = self.get_iddoituong(diachicosothongtinnhanvat)
+            if iddoituong > 0:
+                write_int(self.tientrinh, self.diachixq + 0x1BC3E0, diachicosothongtinnhanvat)
+                write_int(self.tientrinh, self.diachixq + 0x37173C, iddoituong)
+                write_int(self.tientrinh, self.diachixq + 0x1BC440, diachicosothongtinnhanvat)
+                write_int(self.tientrinh, self.diachixq + 0x1BC444, iddoituong)
+
+                return
+
+        write_int(self.tientrinh, self.diachixq + 0x1BC3E0, 0)
+        write_int(self.tientrinh, self.diachixq + 0x37173C, 0)
+        write_int(self.tientrinh, self.diachixq + 0x1BC440, 0)
+        write_int(self.tientrinh, self.diachixq + 0x1BC444, 0)
 
     def action_vohieuhoatuthedelaysautancong(self):
         if read_int(self.tientrinh, self.diachixq + 0x1AF43 + 0x6) != TUTHENHANVAT_DUNGIM:
@@ -2438,8 +2450,6 @@ class MoiTruong:
 
         if is_ok:
             self._thoidiemphucsinhgannhat = time.time()
-            if self.get_is_danghiencuasotuychon():
-                self.set_is_danghiencuasotuychon(False)
 
         return is_ok
 

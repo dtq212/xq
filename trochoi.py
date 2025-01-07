@@ -50,11 +50,13 @@ class TroChoi:
         self.is_dangloop = True
 
         idcuasohethans = set()
+        idnguoichoihethans = set()
 
         for idcuaso, cuaso in self.cuasos.items():
             if cuaso.main_stop.is_set() or not cuaso.moitruong.get_is_cuasogametontai():
-                cuaso.main_stop.set()
                 idcuasohethans.add(idcuaso)
+                idnguoichoihethans.add(cuaso.moitruong._idnguoichoi)
+                cuaso.main_stop.set()
 
         for idcuasohethan in idcuasohethans:
             del self.cuasos[idcuasohethan]
@@ -62,6 +64,12 @@ class TroChoi:
         soluongcuaso = len(self.cuasos)
         if soluongcuaso < self.soluongcuaso:
             phatam("Game đã bị đóng")
+            os.startfile("C:\\Users\\ACER\\Desktop\\ChienQuoc New\\ChienQuoc New\\xq.exe")
+            print(idnguoichoihethans)
+            if {3735, 3705, 3706} & idnguoichoihethans:
+                os.startfile("C:\\Users\\ACER\\PycharmProjects\\xq\\wifi30.bat")
+            else:
+                os.startfile("C:\\Users\\ACER\\PycharmProjects\\xq\\wifi1.bat")
 
         self.is_dangloop = False
         self.soluongcuaso = soluongcuaso
