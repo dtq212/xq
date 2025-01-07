@@ -71,7 +71,7 @@ class CuaSo:
 
         keyboard.add_hotkey("ctrl + alt + e", self.action_tudongepdo78910)
         keyboard.add_hotkey("ctrl + alt + w", self.tudongkhamdenkhithanhcong18)
-        # keyboard.add_hotkey("ctrl + alt + r", self.action_tudongepdo11)
+        keyboard.add_hotkey("ctrl + alt + r", self.action_tudongepdo11)
 
         keyboard.add_hotkey("ctrl + alt + x", self.battat_thucsondao)
         keyboard.add_hotkey("ctrl + w", self.action_tudongkhamdenkhithatbai)
@@ -103,6 +103,7 @@ class CuaSo:
 
         keyboard.remove_hotkey("ctrl + alt + e")
         keyboard.remove_hotkey("ctrl + alt + w")
+        keyboard.remove_hotkey("ctrl + alt + r")
 
         keyboard.remove_hotkey("ctrl + alt + x")
         keyboard.remove_hotkey("ctrl + w")
