@@ -103,7 +103,7 @@ class LoopChinh:
         if self.moitruong.get_is_dangmatketnoi():
             return
 
-        if time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() < 0.5:
+        if time.time() - self.tactu._thoigiantamngungauto < 2.:
             return
 
         self.tactu.action_tudongtheosautruongnhom()
@@ -295,7 +295,7 @@ class LoopPhu:
         if self.moitruong.get_is_dangmatketnoi():
             return
 
-        if time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() < 0.5:
+        if time.time() - self.tactu._thoigiantamngungauto < 2.:
             return
 
         self.moitruong.action_vohieuhoathietlapmuctieu()
@@ -364,7 +364,7 @@ class LoopSuDungVatPham:
         if self.moitruong.get_is_dangmatketnoi():
             return
 
-        if time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() < 0.5:
+        if time.time() - self.tactu._thoigiantamngungauto < 2.:
             return
 
         self.tactu.action_tudongsudungvatpham()

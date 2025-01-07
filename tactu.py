@@ -41,6 +41,8 @@ class TacTu:
         self._tenmuctieutancongs = set()
         self._tenvatphamnhats = set()
 
+        self._thoigiantamngungauto = time.time()
+
         self._thoidiembattattheosaunhomgannhat = time.time()
         self._thoidiemkiemtrahieuunggannhat = time.time()
         self._thoidiemdichuyenkhacbandodichuyenxungquanhgannhat = time.time()
