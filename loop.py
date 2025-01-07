@@ -320,6 +320,9 @@ class LoopPhu:
                 self.thoidiemthongbaochetgannhat = time.time()
                 phatam("Nhân vật đã chết")
 
+        if not self.moitruong.get_is_bathanhtrang():
+            self.moitruong.set_is_batalt(True)
+
 class LoopSuDungVatPham:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
         self.moitruong = moitruong
