@@ -1327,13 +1327,13 @@ class MoiTruong:
 
         return True
 
-    def action_sudungvatpham(self, iddoituong, delay = 0.25):
+    def action_sudungvatpham(self, iddoituong, is_boquaxacnhan = False, delay = 0.25):
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
 
         self._thoidiemthucthicaulenhgannhat = time.time()
 
-        self.auto_assemble_sudungvatpham(iddoituong)
+        self.auto_assemble_sudungvatpham(iddoituong, is_boquaxacnhan)
 
         return True
 
@@ -1634,8 +1634,11 @@ class MoiTruong:
         self.tientrinh.start_thread(self._diachiautoassembledichuyenvatphamhanhtrang)
         time.sleep(0.05)
 
-    def auto_assemble_sudungvatpham(self, iddoituong):
-        caulenh = "use {}#".format(hex(iddoituong)).replace("0x", "")
+    def auto_assemble_sudungvatpham(self, iddoituong, is_boquaxacnhan = False):
+        if not is_boquaxacnhan:
+            caulenh = "use {}#".format(hex(iddoituong)).replace("0x", "")
+        else:
+            caulenh = "use ! {}#".format(hex(iddoituong)).replace("0x", "")
         logger.error("{} auto_assemble_sudungvatpham: {} {}".format(self.get_tendoituong(), iddoituong, caulenh))
         if not self._is_dasetupautoassemblesudungvatpham:
             self._diachiautoassemblesudungvatpham = self.tientrinh.allocate(128)

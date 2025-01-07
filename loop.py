@@ -189,10 +189,14 @@ class LoopChinh:
         #     self.moitruong.action_thucthicaulenh("talk 1cd36# info.210", delay = 0.)
         #     time.sleep(0.1)
 
+        self.tactu.action_sudungvatphamhanhtrang("Bang Há»™i Cá»‘ng Hiáº¿n ChÃ¢m", is_boquaxacnhan = True)
+        time.sleep(2.)
+
         # i = 0
         #
         # while True:
         #     # ngoai cong 141
+        #     # ngoai khang 142
         #     # noi cong 143
         #     # than thu 145
         #     # bao kich 146
