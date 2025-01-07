@@ -209,8 +209,10 @@ class LoopChinh:
             # than thu 145
             # bao kich 146
             # chinh xac 148
-            # self.moitruong.action_thucthicaulenh("talk 921f# info.144", delay = 0.)
+
+            # self.moitruong.action_thucthicaulenh("talk 921f# info.142", delay = 0.)
             # time.sleep(0.05)
+
             # i += 1
             #
             # if i % 50 == 0:
