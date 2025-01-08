@@ -404,6 +404,12 @@ class TacTu:
                                 self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_PHONGANTHUAT)
                             break
 
+                        elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_DONGIAPTRAN, delay = 1.):
+                            is_tamngungdichuyensudungkynang = True
+                            if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+                                self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_DONGIAPTRAN, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach - random.randint(0, 1))
+                            break
+
                 idnguoichoithanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms()
 
                 i = -1
@@ -1452,7 +1458,7 @@ class TacTu:
                     if time.time() - self._thoidiemnhanvatchetgannhat > 10. and self.moitruong.get_idmonphai() != "vanmongcoc":
                         self._thoigiantamngungauto = time.time()
                         self.moitruong.action_phucsinh()
-                    elif time.time() - self._thoidiemnhanvatchetgannhat > 5.:
+                    elif time.time() - self._thoidiemnhanvatchetgannhat > 2.:
                         self.moitruong.action_phucsinh(is_duoccuu = True)
                 break
 
