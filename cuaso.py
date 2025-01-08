@@ -20,6 +20,10 @@ def khoidong_loopsudungvatpham(moitruong: MoiTruong, tactu: TacTu, stop: threadi
     luong = LoopSuDungVatPham(moitruong, tactu, stop)
     luong.loop()
 
+def khoidong_loopcatdovaoruong(moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
+    luong = LoopCatDoVaoRuong(moitruong, tactu, stop)
+    luong.loop()
+
 def khoidong_loopchinh(moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
     luong = LoopChinh(moitruong, tactu, stop)
     luong.loop()
@@ -43,7 +47,7 @@ class CuaSo:
             threading.Thread(target = khoidong_loopsudungvatpham, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopchinh, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopphu, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
-
+            threading.Thread(target = khoidong_loopcatdovaoruong, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
         )
 
         for luong in self.luongs:
