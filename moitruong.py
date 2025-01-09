@@ -191,6 +191,18 @@ class MoiTruong:
 
         return x
 
+    def get_is_vitriruongtrong(self, i):
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not x:
+            return False
+
+        x = read_int(self.tientrinh, x + 0xADFD88)
+
+        if not x:
+            return False
+
+        return read_int(self.tientrinh, x + 0x318 + (i - 1) * 4) == 0
+
     def get_iddoituongvatphamhanhtrang(self, idvitri):
         x = self.get_diachicosothongtinvatphamhanhtrang()
         if not x:
@@ -2435,7 +2447,7 @@ class MoiTruong:
         self._thoidiemdichuyengannhat = time.time()
         self.auto_assemble_tudongtimduong(x, y, idbando)
 
-    def action_phucsinh(self, is_duoccuu = False, delay = 1.):
+    def action_phucsinh(self, is_duoccuu = False, delay = 2.):
         if time.time() - self._thoidiemphucsinhgannhat < delay:
             return
 

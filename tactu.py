@@ -1,3 +1,4 @@
+import math
 import random
 import time
 
@@ -787,7 +788,7 @@ class TacTu:
                         self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, khoangcach - thoigiantuthenhanvatdungim - 3.)
 
                 elif khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
-                    is_tranhxanguoichoi = is_muctieudangchonlanguoichoi and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA - 6 and not self.moitruong.get_is_vohieuhoadichuyen()
+                    is_tranhxanguoichoi = is_muctieudangchonlanguoichoi and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA - 9 and not self.moitruong.get_is_vohieuhoadichuyen()
 
                     if is_tranhxanguoichoi and idtuthenhanvat == TUTHENHANVAT_DICHUYEN and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA, delay = min(1., 0.1 * self._solansudungkhaithientichdia)):
                         is_ok = self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_KHAITHIENTICHDIA, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach - KHOANGCACHSUDUNGKYNANGTAMXA)
@@ -807,8 +808,8 @@ class TacTu:
                         if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
                             self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_NGUKIEMTHUAT)
 
-                    # elif is_tranhxanguoichoi and idtuthenhanvat != TUTHENHANVAT_DICHUYEN:
-                    #     self.moitruong.action_dichuyengiukhoangcachtoithieu(diachicosothongtinnhanvatmuctieudangchon, khoangcachtoithieu = khoangcach + 0.5)
+                    elif is_tranhxanguoichoi and idtuthenhanvat not in (TUTHENHANVAT_DICHUYEN, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO):
+                        self.moitruong.action_dichuyengiukhoangcachtoithieu(diachicosothongtinnhanvatmuctieudangchon, khoangcachtoithieu = khoangcach + 1.5)
 
                     elif is_muctieudangchonlanguoichoi and khoangcach <= KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NGUKIEMPHITIEN):
                         is_tamngungdichuyensudungkynang = True
@@ -1456,11 +1457,9 @@ class TacTu:
                         idbandohientai = self.moitruong.get_idbandohientai()
                         if idbandohientai in BANDOTUDONGLENSAUKHICHETs:
                             self._idbandovuachet = idbandohientai
-                    if time.time() - self._thoidiemnhanvatchetgannhat > 10. and self.moitruong.get_idmonphai() != "vanmongcoc":
+                    if time.time() - self._thoidiemnhanvatchetgannhat > 20. and self.moitruong.get_idmonphai() != "vanmongcoc":
                         self._thoigiantamngungauto = time.time()
                         self.moitruong.action_phucsinh()
-                    elif time.time() - self._thoidiemnhanvatchetgannhat > 2.:
-                        self.moitruong.action_phucsinh(is_duoccuu = True)
                 break
 
     def action_tudongdoimaupk(self):
@@ -1815,40 +1814,62 @@ class TacTu:
                 self.moitruong.action_thucthicaulenh("pf2 98", delay = 0.)
                 time.sleep(1.)
 
+                sothuturuongtruocdo = 1
+                is_dahet = False
                 if socaps:
-                    for idvitri, iddoituong in socaps:
-                        sothuturuongtruocdo = 1
-                        for i in range(0, 294):
-                            sothuturuong = i // 49 + 1
+                    for i in range(2, 9):
+                        for j in range(1, 49):
+                            sothuturuong = i
+                            sothutuvitri = j
+
                             if sothuturuong != sothuturuongtruocdo:
-                                self.moitruong.action_thucthicaulenh("pawn 5e# {}".format(sothuturuong).replace("0x", ""), delay = 0.)
+                                self.moitruong.action_thucthicaulenh("pawn 89# {}".format(sothuturuong).replace("0x", ""), delay = 0.)
                                 sothuturuongtruocdo = sothuturuong
                                 time.sleep(1.)
 
-                            sothutuvitri = i % 49 + 1
-
-                            iddoituongtaivitri = self.moitruong.get_iddoituongvatphamhanhtrang(idvitri)
-                            if not iddoituongtaivitri or iddoituong != iddoituongtaivitri:
+                            if self.moitruong.get_is_vitriruongtrong(sothutuvitri):
+                                is_dahet = True
+                                for idvitri, iddoituong in socaps:
+                                    iddoituongtaivitri = self.moitruong.get_iddoituongvatphamhanhtrang(idvitri)
+                                    if not iddoituongtaivitri or iddoituong != iddoituongtaivitri:
+                                        continue
+                                    is_dahet = False
+                                    self.moitruong.action_thucthicaulenh("pawn + 89# {}#1 {}".format(hex(iddoituong), sothutuvitri).replace("0x", ""), delay = 0.)
+                                    time.sleep(0.25)
+                                    break
+                            if is_dahet:
                                 break
-                            self.moitruong.action_thucthicaulenh("pawn + 5e# {}#1 {}".format(iddoituong, sothutuvitri).replace("0x", ""), delay = 0.)
-                            time.sleep(0.25)
+                        if is_dahet:
+                            break
 
-                    for idvitri, iddoituong in caocaps:
-                        sothuturuongtruocdo = 1
-                        for i in range(294, 0, -1):
-                            sothuturuong = i // 49 + 1
+
+                sothuturuongtruocdo = 1
+                is_dahet = False
+                if caocaps:
+                    for i in range(9, 2, -1):
+                        for j in range(49, 1, -1):
+                            sothuturuong = i
+                            sothutuvitri = j
+
                             if sothuturuong != sothuturuongtruocdo:
-                                self.moitruong.action_thucthicaulenh("pawn 5e# {}".format(sothuturuong).replace("0x", ""), delay = 0.)
+                                self.moitruong.action_thucthicaulenh("pawn 89# {}".format(sothuturuong).replace("0x", ""), delay = 0.)
                                 sothuturuongtruocdo = sothuturuong
                                 time.sleep(1.)
 
-                            sothutuvitri = i % 49 + 1
-
-                            iddoituongtaivitri = self.moitruong.get_iddoituongvatphamhanhtrang(idvitri)
-                            if not iddoituongtaivitri or iddoituong != iddoituongtaivitri:
+                            if self.moitruong.get_is_vitriruongtrong(sothutuvitri):
+                                is_dahet = True
+                                for idvitri, iddoituong in caocaps:
+                                    iddoituongtaivitri = self.moitruong.get_iddoituongvatphamhanhtrang(idvitri)
+                                    if not iddoituongtaivitri or iddoituong != iddoituongtaivitri:
+                                        continue
+                                    is_dahet = False
+                                    self.moitruong.action_thucthicaulenh("pawn + 89# {}#1 {}".format(hex(iddoituong), sothutuvitri).replace("0x", ""), delay = 0.)
+                                    time.sleep(0.25)
+                                    break
+                            if is_dahet:
                                 break
-                            self.moitruong.action_thucthicaulenh("pawn + 5e# {}#1 {}".format(iddoituong, sothutuvitri).replace("0x", ""), delay = 0.)
-                            time.sleep(0.25)
+                        if is_dahet:
+                            break
 
                 self.moitruong.action_thucthicaulenh("pawn close", delay = 0.)
                 time.sleep(1.)
