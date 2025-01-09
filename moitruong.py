@@ -191,6 +191,18 @@ class MoiTruong:
 
         return x
 
+    def get_idruong(self):
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not x:
+            return False
+
+        x = read_int(self.tientrinh, x + 0xADFD88)
+
+        if not x:
+            return False
+
+        return read_int(self.tientrinh, x + 0x310)
+
     def get_is_vitriruongtrong(self, i):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:

@@ -1814,6 +1814,10 @@ class TacTu:
                 self.moitruong.action_thucthicaulenh("pf2 98", delay = 0.)
                 time.sleep(1.)
 
+                idruong = self.moitruong.get_idruong()
+                if not idruong:
+                    return
+
                 sothuturuongtruocdo = 1
                 is_dahet = False
                 if socaps:
@@ -1823,7 +1827,7 @@ class TacTu:
                             sothutuvitri = j
 
                             if sothuturuong != sothuturuongtruocdo:
-                                self.moitruong.action_thucthicaulenh("pawn 89# {}".format(sothuturuong).replace("0x", ""), delay = 0.)
+                                self.moitruong.action_thucthicaulenh("pawn {}# {}".format(hex(idruong), sothuturuong).replace("0x", ""), delay = 0.)
                                 sothuturuongtruocdo = sothuturuong
                                 time.sleep(1.)
 
@@ -1834,7 +1838,7 @@ class TacTu:
                                     if not iddoituongtaivitri or iddoituong != iddoituongtaivitri:
                                         continue
                                     is_dahet = False
-                                    self.moitruong.action_thucthicaulenh("pawn + 89# {}#1 {}".format(hex(iddoituong), sothutuvitri).replace("0x", ""), delay = 0.)
+                                    self.moitruong.action_thucthicaulenh("pawn + {}# {}#1 {}".format(hex(idruong), hex(iddoituong), sothutuvitri).replace("0x", ""), delay = 0.)
                                     time.sleep(0.25)
                                     break
                             if is_dahet:
@@ -1852,7 +1856,7 @@ class TacTu:
                             sothutuvitri = j
 
                             if sothuturuong != sothuturuongtruocdo:
-                                self.moitruong.action_thucthicaulenh("pawn 89# {}".format(sothuturuong).replace("0x", ""), delay = 0.)
+                                self.moitruong.action_thucthicaulenh("pawn {}# {}".format(hex(idruong), sothuturuong).replace("0x", ""), delay = 0.)
                                 sothuturuongtruocdo = sothuturuong
                                 time.sleep(1.)
 
@@ -1863,7 +1867,7 @@ class TacTu:
                                     if not iddoituongtaivitri or iddoituong != iddoituongtaivitri:
                                         continue
                                     is_dahet = False
-                                    self.moitruong.action_thucthicaulenh("pawn + 89# {}#1 {}".format(hex(iddoituong), sothutuvitri).replace("0x", ""), delay = 0.)
+                                    self.moitruong.action_thucthicaulenh("pawn + {}# {}#1 {}".format(hex(idruong), hex(iddoituong), sothutuvitri).replace("0x", ""), delay = 0.)
                                     time.sleep(0.25)
                                     break
                             if is_dahet:
