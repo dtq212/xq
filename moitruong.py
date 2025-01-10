@@ -1044,7 +1044,7 @@ class MoiTruong:
         if self.get_diachicosothongtinnhanvatmuctieudangchon() != diachicosothongtinnhanvat:
             self._diachicosothongtinnhanvatmuctieudangchon = diachicosothongtinnhanvat
 
-    def action_phananhdiachicosothongtinnhanvatmuctieudangchoningame(self, delay = 0.25):
+    def action_phananhdiachicosothongtinnhanvatmuctieudangchoningame(self, delay = 0.5):
         if time.time() - self._thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat < delay:
             return
 
