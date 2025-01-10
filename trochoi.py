@@ -20,6 +20,8 @@ class TroChoi:
         self.remove2 = keyboard.add_hotkey("ctrl + alt + f12", lambda: self.is_dangchay.set())
         self.is_dangloop = False
         self.soluongcuaso = 0
+
+        self.thoidiemmogamemoigannhat = time.time()
     def __del__(self):
         keyboard.remove_hotkey(self.remove1)
         keyboard.remove_hotkey(self.remove2)
@@ -65,11 +67,12 @@ class TroChoi:
         if soluongcuaso < self.soluongcuaso:
             phatam("Game đã bị đóng")
             os.startfile("C:\\Users\\ACER\\Desktop\\ChienQuoc New\\ChienQuoc New\\xq.exe")
-            print(idnguoichoihethans)
-            if {3735, 3705, 3706} & idnguoichoihethans:
-                os.startfile("C:\\Users\\ACER\\PycharmProjects\\xq\\wifi30.bat")
-            else:
-                os.startfile("C:\\Users\\ACER\\PycharmProjects\\xq\\wifi1.bat")
+            if time.time() - self.thoidiemmogamemoigannhat > 5:
+                self.thoidiemmogamemoigannhat = time.time()
+                if {3735, 3705, 3706} & idnguoichoihethans:
+                    os.startfile("C:\\Users\\ACER\\PycharmProjects\\xq\\wifi30.bat")
+                else:
+                    os.startfile("C:\\Users\\ACER\\PycharmProjects\\xq\\wifi1.bat")
 
         self.is_dangloop = False
         self.soluongcuaso = soluongcuaso
