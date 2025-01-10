@@ -791,7 +791,7 @@ class TacTu:
                         self.moitruong.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvatmuctieudangchon, khoangcach - thoigiantuthenhanvatdungim - 3.)
 
                 elif khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
-                    is_tranhxanguoichoi = is_muctieudangchonlanguoichoi and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA - 6 and not self.moitruong.get_is_vohieuhoadichuyen()
+                    is_tranhxanguoichoi = is_muctieudangchonlanguoichoi and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA - 9 and not self.moitruong.get_is_vohieuhoadichuyen()
 
                     if is_tranhxanguoichoi and idtuthenhanvat == TUTHENHANVAT_DICHUYEN and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA, delay = min(1., 0.1 * self._solansudungkhaithientichdia)):
                         is_ok = self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_KHAITHIENTICHDIA, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach - KHOANGCACHSUDUNGKYNANGTAMXA)
@@ -1506,6 +1506,8 @@ class TacTu:
     def action_tudongkhamdenkhithatbai(self):
         noidungthongbaotruocdo = False
 
+        is_tren10 = False
+
         while True:
             if not self.moitruong.get_iddoituongvatphamhanhtrang(0):
                 break
@@ -1518,10 +1520,10 @@ class TacTu:
                     time.sleep(0.05)
                     continue
 
-                # if "ThÃ nh CÃ´ng [10/20]" in noidungthongbaogannhat:
-                #     is_tren10 = True
+                if "ThÃ nh CÃ´ng [10/20]" in noidungthongbaogannhat:
+                    is_tren10 = True
 
-                if "Tháº¥t Báº¡i" in noidungthongbaogannhat:
+                if is_tren10 and "Tháº¥t Báº¡i" in noidungthongbaogannhat:
                     break
 
                 if "ThÃ nh CÃ´ng [20/20]" in noidungthongbaogannhat:
