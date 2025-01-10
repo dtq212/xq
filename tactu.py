@@ -201,8 +201,11 @@ class TacTu:
                 khoangcachtoidatruongnhom = self._khoangcachtoidatruongnhom
 
                 diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
-                if (not diachicosothongtinnhanvatmuctieudangchon or not self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon)) and self.moitruong.get_idbandohientai() != BANDO_BATQUAITRAN and self.moitruong.get_idmonphai() != "vanmongcoc":
-                    khoangcachtoidatruongnhom -= 6.
+                if (not diachicosothongtinnhanvatmuctieudangchon or not self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon)) and self.moitruong.get_idbandohientai() != BANDO_BATQUAITRAN:
+                    if self.moitruong.get_idmonphai() != "vanmongcoc":
+                        khoangcachtoidatruongnhom -= 6.
+                    else:
+                        khoangcachtoidatruongnhom -= 3
 
                 if khoangcachtruongnhom <= khoangcachtoidatruongnhom:
                     break
