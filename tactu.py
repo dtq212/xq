@@ -41,6 +41,8 @@ class TacTu:
         self._khoangcachtoidatruongnhom = 9
 
         self._tenmuctieutancongs = set()
+        self._tenmuctieukhongtancongs = set()
+
         self._tenvatphamnhats = set()
 
         self._thoigiantamngungauto = time.time()
@@ -252,6 +254,8 @@ class TacTu:
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
                     elif self._tenmuctieutancongs and tendoituongmuctieudangchon not in self._tenmuctieutancongs:
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
+                    elif self._tenmuctieukhongtancongs and tendoituongmuctieudangchon in self._tenmuctieukhongtancongs:
+                        self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
                     elif self._is_chidanhnguoichoi and not is_muctieudangchonlanguoichoi:
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
                     elif is_muctieudangchonlanguoichoi and self.moitruong.get_phantramsinhlucconlai(diachicosothongtinnhanvatmuctieudangchon) <= 5 and self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TIENTHANVODICH, HIEUUNGKYNANG_KIMCUONGBATHOAIDON), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 1):
@@ -288,6 +292,10 @@ class TacTu:
 
                 if self._tenmuctieutancongs:
                     if tendoituongmuctieuxemxet not in self._tenmuctieutancongs:
+                        continue
+
+                if self._tenmuctieukhongtancongs:
+                    if tendoituongmuctieuxemxet in self._tenmuctieukhongtancongs:
                         continue
 
                 if self._is_chidanhnguoichoi and not self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieuxemxet):
@@ -981,6 +989,14 @@ class TacTu:
                 print("Danh sách mục tiêu tấn công: {}".format(self._tenmuctieutancongs))
                 phatam("Thêm tên mục tiêu tấn công. Tổng cộng {}".format(len(self._tenmuctieutancongs)))
 
+    def them_tenmuctieukhongtancong(self, tenmuctieukhongtancong):
+        if tenmuctieukhongtancong and tenmuctieukhongtancong not in self._tenmuctieukhongtancongs:
+            self._tenmuctieukhongtancongs.add(tenmuctieukhongtancong)
+
+            if self._tenmuctieukhongtancongs:
+                print("Danh sách mục tiêu không tấn công: {}".format(self._tenmuctieukhongtancongs))
+                phatam("Thêm tên mục tiêu không tấn công. Tổng cộng {}".format(len(self._tenmuctieukhongtancongs)))
+
     def them_tenvatphamnhat(self, tenvatphamnhat):
         if tenvatphamnhat and tenvatphamnhat not in self._tenvatphamnhats:
             self._tenvatphamnhats.add(tenvatphamnhat)
@@ -994,6 +1010,11 @@ class TacTu:
         self._tenvatphamnhats.clear()
 
         phatam("Bỏ thiết lập tên mục tiêu tấn công và vật phẩm nhặt".format(len(self._tenmuctieutancongs)))
+
+
+    def botoanbo_tenmuctieukhongtancong(self):
+        self._tenmuctieukhongtancongs.clear()
+        phatam("Bỏ thiết lập tên mục tiêu khoong tấn công".format(len(self._tenmuctieukhongtancongs)))
 
 
     def action_tudongvutdo(self):

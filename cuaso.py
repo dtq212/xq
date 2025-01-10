@@ -59,6 +59,8 @@ class CuaSo:
         keyboard.add_hotkey("ctrl + f", self.battat_tudongsudungkynang)
         keyboard.add_hotkey("ctrl + c", self.themtenmuctieutancong)
         keyboard.add_hotkey("ctrl + alt + c", self.botoanbotenmuctieutancong)
+        keyboard.add_hotkey("ctrl + x", self.themtenmuctieukhongtancong)
+        keyboard.add_hotkey("ctrl + alt + x", self.botoanbotenmuctieukhongtancong)
         keyboard.add_hotkey("ctrl + alt + f", self.battat_tudongtheosautruongnhom)
 
         keyboard.add_hotkey("ctrl + d", self.thietlapchidanhnguoichoi)
@@ -77,7 +79,7 @@ class CuaSo:
         keyboard.add_hotkey("ctrl + alt + w", self.tudongkhamdenkhithanhcong18)
         keyboard.add_hotkey("ctrl + alt + r", self.action_tudongepdo11)
 
-        keyboard.add_hotkey("ctrl + alt + x", self.battat_thucsondao)
+        keyboard.add_hotkey("ctrl + alt + d", self.battat_thucsondao)
         keyboard.add_hotkey("ctrl + w", self.action_tudongkhamdenkhithatbai)
 
         keyboard.add_hotkey("ctrl + alt + v", self.battat_is_phitac)
@@ -90,6 +92,7 @@ class CuaSo:
 
         keyboard.remove_hotkey("ctrl + f")
         keyboard.remove_hotkey("ctrl + c")
+        keyboard.remove_hotkey("ctrl + x")
         keyboard.remove_hotkey("ctrl + alt+ c")
         keyboard.remove_hotkey("ctrl + alt + f")
 
@@ -109,7 +112,7 @@ class CuaSo:
         keyboard.remove_hotkey("ctrl + alt + w")
         keyboard.remove_hotkey("ctrl + alt + r")
 
-        keyboard.remove_hotkey("ctrl + alt + x")
+        keyboard.remove_hotkey("ctrl + alt + d")
         keyboard.remove_hotkey("ctrl + w")
 
         keyboard.remove_hotkey("ctrl + alt + v")
@@ -205,9 +208,18 @@ class CuaSo:
             tenmuctieutancong = self.moitruong.get_tennhanvatchichuot()
             self.tactu.them_tenmuctieutancong(tenmuctieutancong)
 
+    def themtenmuctieukhongtancong(self):
+        if self.moitruong.get_is_cuasogamekichhoat():
+            tenmuctieukhongtancong = self.moitruong.get_tennhanvatchichuot()
+            self.tactu.them_tenmuctieukhongtancong(tenmuctieukhongtancong)
+
     def botoanbotenmuctieutancong(self):
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.botoanbo_tenmuctieutancong()
+
+    def botoanbotenmuctieukhongtancong(self):
+        if self.moitruong.get_is_cuasogamekichhoat():
+            self.tactu.botoanbo_tenmuctieukhongtancong()
 
     def themdiemdanhxungquanh(self):
         if self.moitruong.get_is_cuasogamekichhoat():
