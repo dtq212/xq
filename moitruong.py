@@ -286,6 +286,9 @@ class MoiTruong:
         if not diachicosothongtinnhanvatmuctieuhientai:
             self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
 
+        if self.get_is_cohieuungs((HIEUUNGKYNANG_TRAMMAC, ), macdinh = False, is_hieuungcoloi = 0):
+            self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
+
 
         idthucuoi = self._get_idthucuoi()
 

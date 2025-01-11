@@ -260,7 +260,7 @@ class LoopChinh:
             # self.i = 1
             # self.tactu.action_tudongtimduong(BANDO_KHONMATRAN1)
 
-        # print(self.moitruong.get_danhsachhieuungnhanvats())
+        # print(self.moitruong.get_danhsachhieuungnhanvats(self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()))
         # print(self.moitruong.get_danhsachvatphamhanhtrang_map())
 
 
