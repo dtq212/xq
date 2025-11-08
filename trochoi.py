@@ -66,13 +66,12 @@ class TroChoi:
         soluongcuaso = len(self.cuasos)
         if soluongcuaso < self.soluongcuaso:
             phatam("Game đã bị đóng")
-            os.startfile("C:\\Users\\ACER\\Desktop\\ChienQuoc New\\ChienQuoc New\\xq.exe")
-            if time.time() - self.thoidiemmogamemoigannhat > 5:
-                self.thoidiemmogamemoigannhat = time.time()
-                if {3735, 3705, 3706} & idnguoichoihethans:
-                    os.startfile("C:\\Users\\ACER\\PycharmProjects\\xq\\wifi30.bat")
-                else:
-                    os.startfile("C:\\Users\\ACER\\PycharmProjects\\xq\\wifi1.bat")
+            # if time.time() - self.thoidiemmogamemoigannhat > 5:
+            #     self.thoidiemmogamemoigannhat = time.time()
+            #     if {3735, 3705, 3706} & idnguoichoihethans:
+            #         os.startfile("C:\\Users\\ACER\\PycharmProjects\\xq\\wifi30.bat")
+            #     else:
+            #         os.startfile("C:\\Users\\ACER\\PycharmProjects\\xq\\wifi1.bat")
 
         self.is_dangloop = False
         self.soluongcuaso = soluongcuaso
