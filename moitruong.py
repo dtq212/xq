@@ -24,6 +24,7 @@ logger.addHandler(log_handler)
 
 class MoiTruong:
     def __init__(self, idcuaso):
+        logger.error(f"MoiTruong.__init__ - idcuaso: {idcuaso}") # Thêm logger
         self.idcuaso = idcuaso
         idtientrinh = ctypes.c_ulong()
         ctypes.windll.user32.GetWindowThreadProcessId(self.idcuaso, ctypes.byref(idtientrinh))
@@ -113,6 +114,7 @@ class MoiTruong:
         self._idnguoichoi = False
 
     def __del__(self):
+        logger.error("MoiTruong.__del__ - No parameters") # Thêm logger
         if self._is_dasetupautoassemblesudungkynangphimtat:
             self.tientrinh.free(self._diachiautoassemblesudungkynangphimtat)
 
@@ -171,45 +173,53 @@ class MoiTruong:
             self.tientrinh.free(self._diachiautoassemblenhatruong)
 #
     def get_sinhlucconlai(self):
+        logger.error("MoiTruong.get_sinhlucconlai - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
         if not x:
             return False
         return read_int(self.tientrinh, x + 0x152C)
 #
     def get_sinhluctoida(self):
+        logger.error("MoiTruong.get_sinhluctoida - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
         if not x:
             return False
         return read_int(self.tientrinh, x + 0x1530)
 #
     def get_noilucconlai(self):
+        logger.error("MoiTruong.get_noilucconlai - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
         if not x:
             return False
         return read_int(self.tientrinh, x + 0x1534)
 #
     def get_noiluctoida(self):
+        logger.error("MoiTruong.get_noiluctoida - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
         if not x:
             return False
         return read_int(self.tientrinh, x + 0x1538)
 #
     def get_capdonhanvat(self):
+        logger.error("MoiTruong.get_capdonhanvat - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
         if not x:
             return False
         return read_int(self.tientrinh, x + 0x15B0)
 #
     def get_idbandohientai(self):
+        logger.error("MoiTruong.get_idbandohientai - No parameters") # Thêm logger
         return self._idbandohientai
 #
     def _get_idbandohientai(self):
+        logger.error("MoiTruong._get_idbandohientai - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
         if not x:
             return False
         return read_int(self.tientrinh, x + 0x15F4)
 
     def get_diempk(self):
+        logger.error("MoiTruong.get_diempk - No parameters") # Thêm logger
         #TODO: Chưa xử lý
         return 0
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
@@ -224,12 +234,15 @@ class MoiTruong:
     #
 
     def get_diachicosothongtinnhanvat1(self):
+        logger.error("MoiTruong.get_diachicosothongtinnhanvat1 - No parameters") # Thêm logger
         return read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVAT1)
 
     def get_diachicosothongtindoituongx(self, x):
+        logger.error(f"MoiTruong.get_diachicosothongtindoituongx - x: {x}") # Thêm logger
         return read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVATX + x * 0x4)
 #
     def get_diachicosothongtinvatphamhanhtrang(self):
+        logger.error("MoiTruong.get_diachicosothongtinvatphamhanhtrang - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
@@ -239,24 +252,28 @@ class MoiTruong:
         return x
 #
     def get_iddoituongvatphamhanhtrang(self, idvitri):
+        logger.error(f"MoiTruong.get_iddoituongvatphamhanhtrang - idvitri: {idvitri}") # Thêm logger
         x = self.get_diachicosothongtinvatphamhanhtrang()
         if not x:
             return False
         return read_int(self.tientrinh, x + idvitri * 0x4)
 #
     def get_tenvatphamhanhtrang(self, idvitri):
+        logger.error(f"MoiTruong.get_tenvatphamhanhtrang - idvitri: {idvitri}") # Thêm logger
         x = self.get_diachicosothongtinvatphamhanhtrang()
         if not x:
             return False
         return read_string(self.tientrinh, x + idvitri * 0x20 + 0x1A8)
 #
     def get_diachicosothongtinkynang(self):
+        logger.error("MoiTruong.get_diachicosothongtinkynang - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
         return read_int(self.tientrinh, x + 0xADFE18)
 
     def get_danhsachidnguoichoixungquanhs(self):
+        logger.error("MoiTruong.get_danhsachidnguoichoixungquanhs - No parameters") # Thêm logger
         i = -1
         danhsachidnguoichoixungquanhs = []
         while True:
@@ -274,12 +291,15 @@ class MoiTruong:
         return danhsachidnguoichoixungquanhs
 
     def get_thoidiemtuthenhanvatdungimgannhat(self):
+        logger.error("MoiTruong.get_thoidiemtuthenhanvatdungimgannhat - No parameters") # Thêm logger
         return self._thoidiemtuthenhanvatdungimgannhat
 
     def get_thoidiemtuthenhanvatdungimcomuctieugannhat(self):
+        logger.error("MoiTruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat - No parameters") # Thêm logger
         return self._thoidiemtuthenhanvatdungimcomuctieugannhat
 
     def action_lammoitrangthaimoitruong(self):
+        logger.error("MoiTruong.action_lammoitrangthaimoitruong - No parameters") # Thêm logger
         idnguoichoi = self.get_idnguoichoi()
         if idnguoichoi:
             self._idnguoichoi = idnguoichoi
@@ -332,33 +352,41 @@ class MoiTruong:
 
 
     def get_thoidiemthaydoibandogannhat(self):
+        logger.error("MoiTruong.get_thoidiemthaydoibandogannhat - No parameters") # Thêm logger
         return self._thoidiemthaydoibandogannhat
 
     def get_is_cuasogametontai(self):
+        logger.error("MoiTruong.get_is_cuasogametontai - No parameters") # Thêm logger
         tencuaso = str(win32gui.GetWindowText(self.idcuaso))
         # return "Chien Quoc" in tencuaso
         return "(" in tencuaso and ")" in tencuaso
 
     def get_is_cuasogamekichhoat(self):
+        logger.error("MoiTruong.get_is_cuasogamekichhoat - No parameters") # Thêm logger
         return win32gui.GetForegroundWindow() == self.idcuaso
 
     def get_diachicosothongtinnhanvatdangchichuot(self):
+        logger.error("MoiTruong.get_diachicosothongtinnhanvatdangchichuot - No parameters") # Thêm logger
         return read_int(self.tientrinh, self.diachixq + 0x380B64)
 
     def get_idnguoichoi(self, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong.get_idnguoichoi - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x24)
 
     def get_is_dangmatketnoi(self):
+        logger.error("MoiTruong.get_is_dangmatketnoi - No parameters") # Thêm logger
         return not self.get_is_nhanvattontai()
 
     def get_iddoituong(self, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong.get_iddoituong - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x20)
 
     def get_idloaidoituong(self, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong.get_idloaidoituong - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
@@ -366,33 +394,39 @@ class MoiTruong:
 
     #Gọi là không tồn tại nó không đúng. Mà là nó ngoài tầm mà nhân vật thấy được nên không có thông tin về nó nữa
     def get_is_nhanvattontai(self, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong.get_is_nhanvattontai - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return self.get_iddoituong(diachicosothongtinnhanvat) > 0 and self.get_idloaidoituong(diachicosothongtinnhanvat) in (LOAIDOITUONG_NHANVAT1, LOAIDOITUONG_NHANVATKHAC1)
 
     def get_is_vatphamtontai(self, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong.get_is_vatphamtontai - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return self.get_iddoituong(diachicosothongtinnhanvat) != -1 and self.get_idloaidoituong(diachicosothongtinnhanvat) == LOAIDOITUONG_VATPHAMDUOIDAT
 
     def get_is_nhanvatdachet(self, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong.get_is_nhanvatdachet - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
         return read_boolean(self.tientrinh, diachicosothongtinnhanvat + 0x1424)
 
     def get_tendoituong(self, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong.get_tendoituong - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return read_string(self.tientrinh, diachicosothongtinnhanvat + 0x10AC)
 
     def get_tennhanvatchichuot(self):
+        logger.error("MoiTruong.get_tennhanvatchichuot - No parameters") # Thêm logger
         diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvatdangchichuot()
         if not diachicosothongtinnhanvat:
             return False
         return self.get_tendoituong(diachicosothongtinnhanvat)
 #
     def get_noidungthongbaogannhat(self):
+        logger.error("MoiTruong.get_noidungthongbaogannhat - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
 
         if not x:
@@ -405,11 +439,13 @@ class MoiTruong:
         return read_string(self.tientrinh, x + 0x24)
 #
     def get_phantramsinhlucconlai(self, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong.get_phantramsinhlucconlai - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1410) * 2
 #
     def get_toadox(self, diachicosothongtinnhanvat = None, is_vitrihientai = False):
+        logger.error(f"MoiTruong.get_toadox - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}, is_vitrihientai: {is_vitrihientai}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
@@ -427,6 +463,7 @@ class MoiTruong:
         return round(toadox)
 #
     def get_huongdichuyenx(self, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong.get_huongdichuyenx - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
@@ -441,6 +478,7 @@ class MoiTruong:
         return 0
 #
     def get_toadoy(self, diachicosothongtinnhanvat = None, is_vitrihientai = False):
+        logger.error(f"MoiTruong.get_toadoy - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}, is_vitrihientai: {is_vitrihientai}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
@@ -458,6 +496,7 @@ class MoiTruong:
         return round(toadoy)
 #
     def get_huongdichuyeny(self, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong.get_huongdichuyeny - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
@@ -472,6 +511,7 @@ class MoiTruong:
         return 0
 #
     def get_toadoxsaptoi(self, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong.get_toadoxsaptoi - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
@@ -480,6 +520,7 @@ class MoiTruong:
         return read_int(self.tientrinh, diachicosothongtinnhanvat)
 #
     def get_toadoysaptoi(self, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong.get_toadoysaptoi - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
@@ -489,6 +530,7 @@ class MoiTruong:
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
 #
     def get_toadoxbandochichuot(self):
+        logger.error("MoiTruong.get_toadoxbandochichuot - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
@@ -498,6 +540,7 @@ class MoiTruong:
         return read_int(self.tientrinh, x + 0x371C80)
 #
     def get_toadoybandochichuot(self):
+        logger.error("MoiTruong.get_toadoybandochichuot - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
@@ -507,6 +550,7 @@ class MoiTruong:
         return read_int(self.tientrinh, x + 0x371C84)
 #
     def get_idbandochichuot(self):
+        logger.error("MoiTruong.get_idbandochichuot - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
@@ -522,12 +566,14 @@ class MoiTruong:
         return read_int(self.tientrinh, x + 0x23C + 0x16C * y)
 #
     def get_idmaupk(self):
+        logger.error("MoiTruong.get_idmaupk - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
         return read_int(self.tientrinh, x + 0xAED6CC)
 #
     def set_idmaupk(self, idmaupk):
+        logger.error(f"MoiTruong.set_idmaupk - idmaupk: {idmaupk}") # Thêm logger
         if self.get_idmaupk() == idmaupk:
             return
 
@@ -540,15 +586,18 @@ class MoiTruong:
         write_int(self.tientrinh, x + 0xAED6CC, idmaupk)
 
     def get_tenbang(self, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong.get_tenbang - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
         return read_string(self.tientrinh, diachicosothongtinnhanvat + 0x1136)
 #
     def get_is_cungbang(self, diachicosothongtinnhanvat):
+        logger.error(f"MoiTruong.get_is_cungbang - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         return self.get_idnguoichoi(diachicosothongtinnhanvat) in NHANVATCUNGBANGs
 #
     def get_idtrangthaichuot(self):
+        logger.error("MoiTruong.get_idtrangthaichuot - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
@@ -558,6 +607,7 @@ class MoiTruong:
         return read_int(self.tientrinh, x + 0x1A4)
 #
     def set_idtrangthaichuot(self, idtrangthaichuot):
+        logger.error(f"MoiTruong.set_idtrangthaichuot - idtrangthaichuot: {idtrangthaichuot}") # Thêm logger
         if idtrangthaichuot == self.get_idtrangthaichuot():
             return
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
@@ -570,6 +620,7 @@ class MoiTruong:
         write_int(self.tientrinh, x + 0x1A4, idtrangthaichuot)
 
     def get_khoangcach(self, diachicosothongtinnhanvat2, diachicosothongtinnhanvat1 = False):
+        logger.error(f"MoiTruong.get_khoangcach - diachicosothongtinnhanvat2: {diachicosothongtinnhanvat2}, diachicosothongtinnhanvat1: {diachicosothongtinnhanvat1}") # Thêm logger
         if not diachicosothongtinnhanvat1:
             diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
 
@@ -579,6 +630,7 @@ class MoiTruong:
         return round(math.dist((x1, y1), (x2, y2)), 2)
 
     def get_khoangcachdiem(self, x2, y2, diachicosothongtinnhanvat1 = False):
+        logger.error(f"MoiTruong.get_khoangcachdiem - x2: {x2}, y2: {y2}, diachicosothongtinnhanvat1: {diachicosothongtinnhanvat1}") # Thêm logger
         if not diachicosothongtinnhanvat1:
             diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
 
@@ -587,15 +639,18 @@ class MoiTruong:
         return round(math.dist((x1, y1), (x2, y2)), 2)
 
     def get_idthucuoi(self):
+        logger.error("MoiTruong.get_idthucuoi - No parameters") # Thêm logger
         return self._idthucuoi
 
     def _get_idthucuoi(self, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong._get_idthucuoi - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         #TODO: Chưa xử lý
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1198)
 #
     def get_idtuthenhanvat(self, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong.get_idtuthenhanvat - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         """
             1: đứng yên, 2: di chuyển, 6: tấn công, 11: delay sau tấn công
         """
@@ -604,6 +659,7 @@ class MoiTruong:
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1178)
 #
     def set_idtuthenhanvat(self, idtuthenhanvat, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong.set_idtuthenhanvat - idtuthenhanvat: {idtuthenhanvat}, diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         """
             1: đứng yên, 2: di chuyển, 6: tấn công, 11: delay sau tấn công
         """
@@ -616,6 +672,7 @@ class MoiTruong:
         write_int(self.tientrinh, diachicosothongtinnhanvat + 0x1178, idtuthenhanvat)
 
     def get_is_muctieuchaytron(self, diachicosothongtinnhanvat):
+        logger.error(f"MoiTruong.get_is_muctieuchaytron - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if self.get_idtuthenhanvat(diachicosothongtinnhanvat) != TUTHENHANVAT_DICHUYEN:
             return False
 
@@ -625,11 +682,13 @@ class MoiTruong:
         return self.get_khoangcachdiem(x2, y2) > self.get_khoangcachdiem(x1, y1)
 #
     def get_is_dangdelaysautancong(self, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong.get_is_dangdelaysautancong - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x11B8) == 11
 #
     def get_soluonghieuungnhanvat(self, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong.get_soluonghieuungnhanvat - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
@@ -645,6 +704,7 @@ class MoiTruong:
         return soluonghieuungnhanvat
 #
     def get_danhsachhieuungnhanvats(self, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong.get_danhsachhieuungnhanvats - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
@@ -695,6 +755,7 @@ class MoiTruong:
         return hieuungs
 
     def get_thoigianconlaihieuungtienthanvodich(self, macdinh):
+        logger.error(f"MoiTruong.get_thoigianconlaihieuungtienthanvodich - macdinh: {macdinh}") # Thêm logger
         x = self.get_is_cohieuungs((HIEUUNGKYNANG_TIENTHANVODICH, ), macdinh = (True, macdinh), is_hieuungcoloi = 1, is_travethoigianhieuluctoida = True)
         if not x:
             return 0.
@@ -706,6 +767,7 @@ class MoiTruong:
         return thoigianhieuluctoida - (time.time() - self._thoidiemcohieuungtienthanvodichgannhat)
 
     def get_thoigianconlaihieuungkimcuongbathoaidon(self, macdinh):
+        logger.error(f"MoiTruong.get_thoigianconlaihieuungkimcuongbathoaidon - macdinh: {macdinh}") # Thêm logger
         x = self.get_is_cohieuungs((HIEUUNGKYNANG_KIMCUONGBATHOAIDON, ), macdinh = (True, macdinh), is_hieuungcoloi = 1, is_travethoigianhieuluctoida = True)
         if not x:
             return 0.
@@ -717,6 +779,7 @@ class MoiTruong:
         return thoigianhieuluctoida - (time.time() - self._thoidiemcohieuungkimcuongbathoaidongannhat)
 
     def get_is_cohieuungs(self, idhieuungs, macdinh, diachicosothongtinnhanvat = None, is_hieuungcoloi: int = None, is_travethoigianhieuluctoida = False): #is_loihai: Kiểm tra lợi hại nữa
+        logger.error(f"MoiTruong.get_is_cohieuungs - idhieuungs: {idhieuungs}, macdinh: {macdinh}, diachicosothongtinnhanvat: {diachicosothongtinnhanvat}, is_hieuungcoloi: {is_hieuungcoloi}, is_travethoigianhieuluctoida: {is_travethoigianhieuluctoida}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
@@ -787,9 +850,11 @@ class MoiTruong:
         return macdinh
 
     def get_is_dangtheosaunhom(self):
+        logger.error("MoiTruong.get_is_dangtheosaunhom - No parameters") # Thêm logger
         return self.get_is_cohieuungs(HIEUUNGKYNANG_THEOSAUNHOM, False)
 #
     def get_diachicosoidthanhviennhom(self):
+        logger.error("MoiTruong.get_diachicosoidthanhviennhom - No parameters") # Thêm logger
         #Trong nhóm còn nhìn thấy máu của nhau nữa nhé
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
@@ -800,6 +865,7 @@ class MoiTruong:
         return x
 #
     def get_toadoxtruongnhom(self):
+        logger.error("MoiTruong.get_toadoxtruongnhom - No parameters") # Thêm logger
         diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
         if not diachicosothanhviennhom:
             return False
@@ -807,6 +873,7 @@ class MoiTruong:
         return read_int(self.tientrinh, diachicosothanhviennhom + 0xBD0)
 #
     def get_toadoytruongnhom(self):
+        logger.error("MoiTruong.get_toadoytruongnhom - No parameters") # Thêm logger
         diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
         if not diachicosothanhviennhom:
             return False
@@ -814,12 +881,14 @@ class MoiTruong:
         return read_int(self.tientrinh, diachicosothanhviennhom + 0xC00)
 
     def get_idnguoichoitruongnhom(self):
+        logger.error("MoiTruong.get_idnguoichoitruongnhom - No parameters") # Thêm logger
         diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
         if not diachicosothanhviennhom:
             return False
         return read_int(self.tientrinh, diachicosothanhviennhom)
 
     def get_diachicosothongtinnhanvattruongnhom(self):
+        logger.error("MoiTruong.get_diachicosothongtinnhanvattruongnhom - No parameters") # Thêm logger
         idnguoichoitruongnhom = self.get_idnguoichoitruongnhom()
         if not idnguoichoitruongnhom:
             return False
@@ -830,9 +899,11 @@ class MoiTruong:
         return self._diachicosothongtinnhanvattruongnhom
 
     def get_is_truongnhom(self):
+        logger.error("MoiTruong.get_is_truongnhom - No parameters") # Thêm logger
         return self.get_idnguoichoi(self.get_diachicosothongtinnhanvat1()) == self.get_idnguoichoitruongnhom()
 
     def get_danhsachidnguoichoithanhviennhoms(self):
+        logger.error("MoiTruong.get_danhsachidnguoichoithanhviennhoms - No parameters") # Thêm logger
         idthanhviens = []
         diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
         if not diachicosothanhviennhom:
@@ -844,6 +915,7 @@ class MoiTruong:
 
         return idthanhviens
     def get_is_dangnamtrongnhom(self):
+        logger.error("MoiTruong.get_is_dangnamtrongnhom - No parameters") # Thêm logger
         diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
         if not diachicosothanhviennhom:
             return False
@@ -853,13 +925,16 @@ class MoiTruong:
         return idthanhviendautien > 0
 
     def get_is_tamngungtancong(self):
+        logger.error("MoiTruong.get_is_tamngungtancong - No parameters") # Thêm logger
         return self._is_tamngungtancong
 
     def set_is_tamngungtancong(self, is_tamngungtancong):
+        logger.error(f"MoiTruong.set_is_tamngungtancong - is_tamngungtancong: {is_tamngungtancong}") # Thêm logger
         if self._is_tamngungtancong != is_tamngungtancong:
             self._is_tamngungtancong = is_tamngungtancong
 #
     def get_idloainhanvat(self, diachicosothongtinnhanvat):
+        logger.error(f"MoiTruong.get_idloainhanvat - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if not diachicosothongtinnhanvat:
             return False
         """
@@ -870,9 +945,11 @@ class MoiTruong:
         return read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0x28)
 
     def get_is_nguoichoi(self, diachicosothongtinnhanvat):
+        logger.error(f"MoiTruong.get_is_nguoichoi - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         return self.get_idloainhanvat(diachicosothongtinnhanvat) in (LOAIMUCTIEU_NGUOICHOIKHACNHOM, LOAIMUCTIEU_NGUOICHOICUNGNHOM)
 #
     def get_is_npc(self, diachicosothongtinnhanvat):
+        logger.error(f"MoiTruong.get_is_npc - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         phantramsinhlucconlai = self.get_phantramsinhlucconlai(diachicosothongtinnhanvat)
         if phantramsinhlucconlai > 100:
             return True
@@ -881,6 +958,7 @@ class MoiTruong:
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x155C) in (25, 40) #25 có vẻ như là ở xa tít chưa thấy gì hay còn gọi là Chưa xác định, còn 40 là thấy rồi
 #
     def get_idkynang(self, idvitri_x, idvitri_y):
+        logger.error(f"MoiTruong.get_idkynang - idvitri_x: {idvitri_x}, idvitri_y: {idvitri_y}") # Thêm logger
         """
         :param idvitri_x: Số thứ tự cuốn sách bắt đầu từ 0
         :param idvitri_y: Số thứ tự kỹ năng ở trong cuốn sách ấy bắt đầu từ 0
@@ -894,6 +972,7 @@ class MoiTruong:
         return read_int(self.tientrinh, diachicosothongtinkynang + idvitrikynang * OFFSET_DIACHICOSOMOIKYNANG + 0x6830)
 #
     def get_is_kynangsansang(self, idvitri_x, idvitri_y, delay = 0.):
+        logger.error(f"MoiTruong.get_is_kynangsansang - idvitri_x: {idvitri_x}, idvitri_y: {idvitri_y}, delay: {delay}") # Thêm logger
         diachicosothongtinkynang = self.get_diachicosothongtinkynang()
         if not diachicosothongtinkynang:
             return False
@@ -906,6 +985,7 @@ class MoiTruong:
         return idkynang and is_dahockynang and thoigiangiancach and time.time() - self._thoidiemsudungkynangvitrigannhat_map.get((idvitri_x, idvitri_y), time.time() - delay - 1.) > delay
 
     def get_is_cothetancong(self, diachicosothongtinnhanvat):
+        logger.error(f"MoiTruong.get_is_cothetancong - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if not diachicosothongtinnhanvat:
             return False
 
@@ -944,12 +1024,14 @@ class MoiTruong:
         return True
 #
     def get_is_batalt(self):
+        logger.error("MoiTruong.get_is_batalt - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + 0x380B38)
         if not x:
             return False
         return read_boolean(self.tientrinh, x)
 #
     def set_is_batalt(self, is_batalt):
+        logger.error(f"MoiTruong.set_is_batalt - is_batalt: {is_batalt}") # Thêm logger
         if self.get_is_batalt() == is_batalt:
             return
 
@@ -962,6 +1044,7 @@ class MoiTruong:
         write_boolean(self.tientrinh, x, is_batalt)
 #
     def get_is_bathanhtrang(self):
+        logger.error("MoiTruong.get_is_bathanhtrang - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
@@ -974,6 +1057,7 @@ class MoiTruong:
         return read_boolean(self.tientrinh, x + 0x34)
 #
     def get_is_dangbatenter(self):
+        logger.error("MoiTruong.get_is_dangbatenter - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
@@ -983,9 +1067,11 @@ class MoiTruong:
         return read_boolean(self.tientrinh, x + 0x8140)
 
     def get_thoidiemkhongcomuctieugannhat(self):
+        logger.error("MoiTruong.get_thoidiemkhongcomuctieugannhat - No parameters") # Thêm logger
         return self._thoidiemkhongcomuctieugannhat
 
     def get_iddoituongmuctieudangchon(self):
+        logger.error("MoiTruong.get_iddoituongmuctieudangchon - No parameters") # Thêm logger
         diachicosothongtinnhanvatmuctieudangchon = self.get_diachicosothongtinnhanvatmuctieudangchon()
         if not diachicosothongtinnhanvatmuctieudangchon:
             return False
@@ -993,22 +1079,28 @@ class MoiTruong:
         return self.get_iddoituong(diachicosothongtinnhanvatmuctieudangchon)
 #
     def get_is_dangclickchuottrai(self):
+        logger.error("MoiTruong.get_is_dangclickchuottrai - No parameters") # Thêm logger
         return read_boolean(self.tientrinh, self.diachixq + 0x380B7D)
 
     def get_diachicosothongtinnhanvatmuctieudangchon(self):
+        logger.error("MoiTruong.get_diachicosothongtinnhanvatmuctieudangchon - No parameters") # Thêm logger
         return self._diachicosothongtinnhanvatmuctieudangchon
 #
     def _get_diachicosothongtinnhanvatmuctieudangchon(self):
+        logger.error("MoiTruong._get_diachicosothongtinnhanvatmuctieudangchon - No parameters") # Thêm logger
         return read_int(self.tientrinh, self.diachixq + 0x1BD4F0)
 
     def get_thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat(self):
+        logger.error("MoiTruong.get_thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat - No parameters") # Thêm logger
         return self._thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat
 
     def set_diachicosothongtinnhanvatmuctieudangchon(self, diachicosothongtinnhanvat):
+        logger.error(f"MoiTruong.set_diachicosothongtinnhanvatmuctieudangchon - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if self.get_diachicosothongtinnhanvatmuctieudangchon() != diachicosothongtinnhanvat:
             self._diachicosothongtinnhanvatmuctieudangchon = diachicosothongtinnhanvat
 #
     def action_phananhdiachicosothongtinnhanvatmuctieudangchoningame(self, delay = 0.5):
+        logger.error(f"MoiTruong.action_phananhdiachicosothongtinnhanvatmuctieudangchoningame - delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat < delay:
             return
 
@@ -1030,18 +1122,21 @@ class MoiTruong:
         write_int(self.tientrinh, self.diachixq + 0x1BD554, 0)
 #
     def action_vohieuhoatuthedelaysautancong(self):
+        logger.error("MoiTruong.action_vohieuhoatuthedelaysautancong - No parameters") # Thêm logger
         if read_int(self.tientrinh, self.diachixq + 0x1AFE3 + 0x6) != TUTHENHANVAT_DUNGIM:
             write_int(self.tientrinh, self.diachixq + 0x1AFE3 + 0x6, TUTHENHANVAT_DUNGIM)
         if read_int(self.tientrinh, self.diachixq + 0x1B277 + 0x6) != TUTHENHANVAT_DUNGIM:
             write_int(self.tientrinh, self.diachixq + 0x1B277 + 0x6, TUTHENHANVAT_DUNGIM)
 #
     def action_tatvohieuhoatuthedelaysautancong(self):
+        logger.error("MoiTruong.action_tatvohieuhoatuthedelaysautancong - No parameters") # Thêm logger
         if read_int(self.tientrinh, self.diachixq + 0x1AFE3 + 0x6) != TUTHENHANVAT_DELAYSAUTANCONG:
             write_int(self.tientrinh, self.diachixq + 0x1AFE3 + 0x6, TUTHENHANVAT_DELAYSAUTANCONG)
         if read_int(self.tientrinh, self.diachixq + 0x1B277 + 0x6) != TUTHENHANVAT_DELAYSAUTANCONG:
             write_int(self.tientrinh, self.diachixq + 0x1B277 + 0x6, TUTHENHANVAT_DELAYSAUTANCONG)
 #
     def action_vohieuhoathietlapmuctieu(self):
+        logger.error("MoiTruong.action_vohieuhoathietlapmuctieu - No parameters") # Thêm logger
         if read_bytes(self.tientrinh, self.diachixq + 0xA20F0, 1) != bytes.fromhex("90"):
             write_bytes(self.tientrinh, self.diachixq + 0xA20F0, bytes.fromhex("90 90 90 90 90"), 5)
 
@@ -1055,6 +1150,7 @@ class MoiTruong:
             write_bytes(self.tientrinh, self.diachixq + 0xA2106, bytes.fromhex("90 90 90 90 90 90"), 6)
 #
     def action_tatvohieuhoathietlapmuctieu(self):
+        logger.error("MoiTruong.action_tatvohieuhoathietlapmuctieu - No parameters") # Thêm logger
         if read_bytes(self.tientrinh, self.diachixq + 0xA20F0, 1) == bytes.fromhex("90"):
             write_bytes(self.tientrinh, self.diachixq + 0xA20F0, bytes.fromhex("A3"), 1)
             write_int(self.tientrinh, self.diachixq + 0xA20F0 + 1, self.diachixq + 0x1BD550)
@@ -1072,12 +1168,14 @@ class MoiTruong:
             write_int(self.tientrinh, self.diachixq + 0xA2106 + 2, self.diachixq + 0x37284C)
 #
     def action_vohieuhoaxoamuctieu(self):
+        logger.error("MoiTruong.action_vohieuhoaxoamuctieu - No parameters") # Thêm logger
         if read_bytes(self.tientrinh, self.diachixq + 0x9542B, 1) != bytes.fromhex("90"):
             write_bytes(self.tientrinh, self.diachixq + 0x9542B, bytes.fromhex("90 90 90 90 90 90 90 90 90 90"), 10)
         if read_bytes(self.tientrinh, self.diachixq + 0x95435, 1) != bytes.fromhex("90"):
             write_bytes(self.tientrinh, self.diachixq + 0x95435, bytes.fromhex("90 90 90 90 90 90 90 90 90 90"), 10)
 #
     def action_tatvohieuhoaxoamuctieu(self):
+        logger.error("MoiTruong.action_tatvohieuhoaxoamuctieu - No parameters") # Thêm logger
         if read_bytes(self.tientrinh, self.diachixq + 0x9542B, 1) == bytes.fromhex("90"):
             write_bytes(self.tientrinh, self.diachixq + 0x9542B, bytes.fromhex("C7 05"), 2)
             write_int(self.tientrinh, self.diachixq + 0x9542B + 2, self.diachixq + 0x1BD554)
@@ -1088,46 +1186,55 @@ class MoiTruong:
             write_int(self.tientrinh, self.diachixq + 0x95435 + 6, 0)
 #
     def action_vohieuhoalongclick(self):
+        logger.error("MoiTruong.action_vohieuhoalongclick - No parameters") # Thêm logger
         if read_int(self.tientrinh, self.diachixq + 0x4993C + 0x6) != 0:
             write_int(self.tientrinh, self.diachixq + 0x4993C + 0x6, 0)
 #
     def action_tatvohieuhoalongclick(self):
+        logger.error("MoiTruong.action_tatvohieuhoalongclick - No parameters") # Thêm logger
         if read_int(self.tientrinh, self.diachixq + 0x4993C + 0x6) != 1:
             write_int(self.tientrinh, self.diachixq + 0x4993C + 0x6, 1)
 #
     def action_vohieuhoatrangthaichuotchonmuctieukynang(self):
+        logger.error("MoiTruong.action_vohieuhoatrangthaichuotchonmuctieukynang - No parameters") # Thêm logger
         if read_int(self.tientrinh, self.diachixq + 0x5416C + 0x6) != 0:
             write_int(self.tientrinh, self.diachixq + 0x5416C + 0x6, 0)
 #
     def action_tatvohieuhoatrangthaichuotchonmuctieukynang(self):
+        logger.error("MoiTruong.action_tatvohieuhoatrangthaichuotchonmuctieukynang - No parameters") # Thêm logger
         if read_int(self.tientrinh, self.diachixq + 0x5416C + 0x6) != 2:
             write_int(self.tientrinh, self.diachixq + 0x5416C + 0x6, 2)
 
     def action_vohieuhoakhoanhvungkynang(self):
+        logger.error("MoiTruong.action_vohieuhoakhoanhvungkynang - No parameters") # Thêm logger
         #TODO: Chưa xử lý
         return
         if read_bytes(self.tientrinh, self.diachixq + 0x76148, 1) != bytes.fromhex("90"):
             write_bytes(self.tientrinh, self.diachixq + 0x76148, bytes.fromhex("90 90"), 2)
 
     def action_tatvohieuhoakhoanhvungkynang(self):
+        logger.error("MoiTruong.action_tatvohieuhoakhoanhvungkynang - No parameters") # Thêm logger
         #TODO: Chưa xử lý
         return
         if read_bytes(self.tientrinh, self.diachixq + 0x76148, 1) == bytes.fromhex("90"):
             write_bytes(self.tientrinh, self.diachixq + 0x76148, bytes.fromhex("88 01"), 2)
 
     def action_vohieuhoaphimspace(self):
+        logger.error("MoiTruong.action_vohieuhoaphimspace - No parameters") # Thêm logger
         #TODO: Chưa xử lý
         return
         if read_bytes(self.tientrinh, self.diachixq + 0x3D8CB + 0x6, 1) != bytes.fromhex("00"):
             write_bytes(self.tientrinh, self.diachixq + 0x3D8CB + 0x6, bytes.fromhex("00"), 1)
 
     def action_tatvohieuhoaphimspace(self):
+        logger.error("MoiTruong.action_tatvohieuhoaphimspace - No parameters") # Thêm logger
         #TODO: Chưa xử lý
         return
         if read_bytes(self.tientrinh, self.diachixq + 0x3D8CB + 0x6, 1) != bytes.fromhex("01"):
             write_bytes(self.tientrinh, self.diachixq + 0x3D8CB + 0x6, bytes.fromhex("01"), 1)
 #
     def get_is_dangmobando(self):
+        logger.error("MoiTruong.get_is_dangmobando - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
@@ -1137,6 +1244,7 @@ class MoiTruong:
         return read_boolean(self.tientrinh, x)
 #
     def get_is_danghiencuasoyesno(self):
+        logger.error("MoiTruong.get_is_danghiencuasoyesno - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
@@ -1148,6 +1256,7 @@ class MoiTruong:
         return read_boolean(self.tientrinh, x + 0x34)
 #
     def set_is_danghiencuasoyesno(self, is_danghiencuasoyesno):
+        logger.error(f"MoiTruong.set_is_danghiencuasoyesno - is_danghiencuasoyesno: {is_danghiencuasoyesno}") # Thêm logger
         if self.get_is_danghiencuasoyesno() == is_danghiencuasoyesno:
             return
 
@@ -1162,6 +1271,7 @@ class MoiTruong:
         return write_boolean(self.tientrinh, x + 0x34, is_danghiencuasoyesno)
 #
     def get_is_danghiencuasotuychon(self):
+        logger.error("MoiTruong.get_is_danghiencuasotuychon - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
@@ -1173,6 +1283,7 @@ class MoiTruong:
         return read_boolean(self.tientrinh, x + 0x1E38)
 #
     def set_is_danghiencuasotuychon(self, is_danghiencuasotuychon):
+        logger.error(f"MoiTruong.set_is_danghiencuasotuychon - is_danghiencuasotuychon: {is_danghiencuasotuychon}") # Thêm logger
         if self.get_is_danghiencuasotuychon() == is_danghiencuasotuychon:
             return
 
@@ -1187,6 +1298,7 @@ class MoiTruong:
         return write_boolean(self.tientrinh, x + 0x1E38, is_danghiencuasotuychon)
 #
     def get_caulenhmoinhomhientai(self):
+        logger.error("MoiTruong.get_caulenhmoinhomhientai - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
@@ -1198,6 +1310,7 @@ class MoiTruong:
         return read_string(self.tientrinh, x + 0x7C).strip()
 
     def action_thucthicaulenh(self, caulenh, delay = 0.25):
+        logger.error(f"MoiTruong.action_thucthicaulenh - caulenh: {caulenh}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
 
@@ -1208,6 +1321,7 @@ class MoiTruong:
         return True
 
     def action_nhatdotoado(self, toadox, toadoy, delay = 0.05):
+        logger.error(f"MoiTruong.action_nhatdotoado - toadox: {toadox}, toadoy: {toadoy}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
 
@@ -1218,6 +1332,7 @@ class MoiTruong:
         return True
 
     def action_nhatruong(self, iddoituong, delay = 0.05):
+        logger.error(f"MoiTruong.action_nhatruong - iddoituong: {iddoituong}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
 
@@ -1228,6 +1343,7 @@ class MoiTruong:
         return True
 
     def action_sudungkynang(self, idkynang, delay = 0.05):
+        logger.error(f"MoiTruong.action_sudungkynang - idkynang: {idkynang}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
 
@@ -1238,6 +1354,7 @@ class MoiTruong:
         return True
 
     def action_sudungkynangmuctieunguoichoi(self, idkynang, idnguoichoi, delay = 0.05):
+        logger.error(f"MoiTruong.action_sudungkynangmuctieunguoichoi - idkynang: {idkynang}, idnguoichoi: {idnguoichoi}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
 
@@ -1248,6 +1365,7 @@ class MoiTruong:
         return True
 
     def action_sudungkynangmuctieukhacnguoichoi(self, idkynang, iddoituong, delay = 0.05):
+        logger.error(f"MoiTruong.action_sudungkynangmuctieukhacnguoichoi - idkynang: {idkynang}, iddoituong: {iddoituong}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
 
@@ -1258,6 +1376,7 @@ class MoiTruong:
         return True
 
     def action_sudungkynangtoado(self, idkynang, toadox, toadoy, delay = 0.05):
+        logger.error(f"MoiTruong.action_sudungkynangtoado - idkynang: {idkynang}, toadox: {toadox}, toadoy: {toadoy}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
 
@@ -1268,6 +1387,7 @@ class MoiTruong:
         return True
 
     def action_dichuyenvatphamhanhtrang(self, iddoituong, vitri, delay = 0.25):
+        logger.error(f"MoiTruong.action_dichuyenvatphamhanhtrang - iddoituong: {iddoituong}, vitri: {vitri}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
 
@@ -1278,6 +1398,7 @@ class MoiTruong:
         return True
 
     def action_trochuyenvoinpc(self, iddoituong, noidungtrochuyen, delay = 0.25):
+        logger.error(f"MoiTruong.action_trochuyenvoinpc - iddoituong: {iddoituong}, noidungtrochuyen: {noidungtrochuyen}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
 
@@ -1288,6 +1409,7 @@ class MoiTruong:
         return True
 
     def action_sudungvatpham(self, iddoituong, is_boquaxacnhan = False, delay = 0.25):
+        logger.error(f"MoiTruong.action_sudungvatpham - iddoituong: {iddoituong}, is_boquaxacnhan: {is_boquaxacnhan}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
 
@@ -1298,6 +1420,7 @@ class MoiTruong:
         return True
 
     def action_moihoacxinvaonhom(self, idnguoichoi, delay = 0.25):
+        logger.error(f"MoiTruong.action_moihoacxinvaonhom - idnguoichoi: {idnguoichoi}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemthaotacnhomgannhat < delay:
             return
         if not idnguoichoi:
@@ -1310,6 +1433,7 @@ class MoiTruong:
         return True
 
     def action_thoatkhoinhom(self, idnguoichoitruongnhom, delay = 0.25):
+        logger.error(f"MoiTruong.action_thoatkhoinhom - idnguoichoitruongnhom: {idnguoichoitruongnhom}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemthaotacnhomgannhat < delay:
             return
         if not idnguoichoitruongnhom:
@@ -1322,6 +1446,7 @@ class MoiTruong:
         return True
 
     def action_kiemtravadongyloimoinhom(self, idtruongnhoms, delay = 0.25):
+        logger.error(f"MoiTruong.action_kiemtravadongyloimoinhom - idtruongnhoms: {idtruongnhoms}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemthaotacnhomgannhat < delay:
             return
         if not idtruongnhoms:
@@ -1345,6 +1470,7 @@ class MoiTruong:
         return True
 #
     def auto_assemble_thucthicaulenh(self, caulenh):
+        logger.error(f"MoiTruong.auto_assemble_thucthicaulenh - caulenh: {caulenh}") # Thêm logger
         logger.error("{} auto_assemble_thucthicaulenh: {}".format(self.get_tendoituong(), caulenh))
 
         if not self._is_dasetupautoassemblethucthicaulenh:
@@ -1375,6 +1501,7 @@ class MoiTruong:
         time.sleep(0.05)
 #
     def auto_assemble_thaotacnhom(self, idhoatdong, idnguoichoi):
+        logger.error(f"MoiTruong.auto_assemble_thaotacnhom - idhoatdong: {idhoatdong}, idnguoichoi: {idnguoichoi}") # Thêm logger
         caulenh = "team {} {}".format(idhoatdong, idnguoichoi)
         logger.error("{} auto_assemble_thaotacnhom: {} {} {}".format(self.get_tendoituong(), idhoatdong, idnguoichoi, caulenh))
         if not self._is_dasetupautoassemblethaotacnhom:
@@ -1405,6 +1532,7 @@ class MoiTruong:
         time.sleep(0.05)
 #
     def auto_assemble_sudungkynang(self, idkynang):
+        logger.error(f"MoiTruong.auto_assemble_sudungkynang - idkynang: {idkynang}") # Thêm logger
         caulenh = "pf {}".format(idkynang)
         logger.error("{} auto_assemble_sudungkynang: {} {}".format(self.get_tendoituong(), idkynang, caulenh))
         if not self._is_dasetupautoassemblesudungkynang:
@@ -1435,6 +1563,7 @@ class MoiTruong:
         time.sleep(0.05)
 #
     def auto_assemble_sudungkynangmuctieunguoichoi(self, idkynang, idnguoichoi):
+        logger.error(f"MoiTruong.auto_assemble_sudungkynangmuctieunguoichoi - idkynang: {idkynang}, idnguoichoi: {idnguoichoi}") # Thêm logger
         caulenh = "pf {} {}".format(idkynang, idnguoichoi)
         logger.error("{} auto_assemble_sudungkynangmuctieunguoichoi: {} {} {}".format(self.get_tendoituong(), idkynang, idnguoichoi, caulenh))
         if not self._is_dasetupautoassemblesudungkynangmuctieunguoichoi:
@@ -1465,6 +1594,7 @@ class MoiTruong:
         time.sleep(0.05)
 #
     def auto_assemble_sudungkynangmuctieukhacnguoichoi(self, idkynang, iddoituong):
+        logger.error(f"MoiTruong.auto_assemble_sudungkynangmuctieukhacnguoichoi - idkynang: {idkynang}, iddoituong: {iddoituong}") # Thêm logger
         caulenh = "pf {} {}#".format(idkynang, hex(iddoituong)).replace("0x", "")
         logger.error("{} auto_assemble_sudungkynangmuctieukhacnguoichoi: {} {} {}".format(self.get_tendoituong(), idkynang, iddoituong, caulenh))
         if not self._is_dasetupautoassemblesudungkynangmuctieukhacnguoichoi:
@@ -1495,6 +1625,7 @@ class MoiTruong:
         time.sleep(0.05)
 #
     def auto_assemble_sudungkynangtoado(self, idkynang, toadox, toadoy):
+        logger.error(f"MoiTruong.auto_assemble_sudungkynangtoado - idkynang: {idkynang}, toadox: {toadox}, toadoy: {toadoy}") # Thêm logger
         caulenh = "pf {} {},{}".format(idkynang, toadox, toadoy).replace("0x", "")
         logger.error("{} auto_assemble_sudungkynangtoado: {} {} {} {}".format(self.get_tendoituong(), idkynang, toadox, toadoy, caulenh))
         if not self._is_dasetupautoassemblesudungkynangtoado:
@@ -1525,6 +1656,7 @@ class MoiTruong:
         time.sleep(0.05)
 #
     def auto_assemble_trochuyenvoinpc(self, iddoituong, noidungtrochuyen, caulenhtrochuyen = "talk"):
+        logger.error(f"MoiTruong.auto_assemble_trochuyenvoinpc - iddoituong: {iddoituong}, noidungtrochuyen: {noidungtrochuyen}, caulenhtrochuyen: {caulenhtrochuyen}") # Thêm logger
         caulenh = "{} {}# {}".format(caulenhtrochuyen, hex(iddoituong), noidungtrochuyen).replace("0x", "")
         logger.error("{} auto_assemble_trochuyenvoinpc: {} {} {}".format(self.get_tendoituong(), iddoituong, noidungtrochuyen, caulenh))
         if not self._is_dasetupautoassembletrochuyenvoinpc:
@@ -1555,6 +1687,7 @@ class MoiTruong:
         time.sleep(0.05)
 #
     def auto_assemble_dichuyenvatphamhanhtrang(self, iddoituong, vitri):
+        logger.error(f"MoiTruong.auto_assemble_dichuyenvatphamhanhtrang - iddoituong: {iddoituong}, vitri: {vitri}") # Thêm logger
         caulenh = "move {}# {}".format(hex(iddoituong), vitri).replace("0x", "")
         logger.error("{} auto_assemble_dichuyenvatphamhanhtrang: {} {}".format(self.get_tendoituong(), iddoituong, vitri, caulenh))
         if not self._is_dasetupautoassembledichuyenvatphamhanhtrang:
@@ -1585,6 +1718,7 @@ class MoiTruong:
         time.sleep(0.05)
 #
     def auto_assemble_sudungvatpham(self, iddoituong, is_boquaxacnhan = False):
+        logger.error(f"MoiTruong.auto_assemble_sudungvatpham - iddoituong: {iddoituong}, is_boquaxacnhan: {is_boquaxacnhan}") # Thêm logger
         if not is_boquaxacnhan:
             caulenh = "use {}#".format(hex(iddoituong)).replace("0x", "")
         else:
@@ -1618,6 +1752,7 @@ class MoiTruong:
         time.sleep(0.05)
 #
     def auto_assemble_nhatruong(self, iddoituong):
+        logger.error(f"MoiTruong.auto_assemble_nhatruong - iddoituong: {iddoituong}") # Thêm logger
         caulenh = "look {}#".format(hex(iddoituong)).replace("0x", "")
         logger.error("{} auto_assemble_nhatruong: {} {}".format(self.get_tendoituong(), iddoituong, caulenh))
         if not self._is_dasetupautoassemblenhatruong:
@@ -1648,6 +1783,7 @@ class MoiTruong:
         time.sleep(0.05)
 #
     def auto_assemble_nhatdotoado(self, toadox, toadoy):
+        logger.error(f"MoiTruong.auto_assemble_nhatdotoado - toadox: {toadox}, toadoy: {toadoy}") # Thêm logger
         caulenh = "get {} {}".format(toadox, toadoy)
         logger.error("{} auto_assemble_nhatdotoado: {} {} {}".format(self.get_tendoituong(), toadox, toadoy, caulenh))
         if not self._is_dasetupautoassemblenhatdotoado:
@@ -1678,6 +1814,7 @@ class MoiTruong:
         time.sleep(0.05)
 #
     def auto_assemble_dichuyen(self, x, y):
+        logger.error(f"MoiTruong.auto_assemble_dichuyen - x: {x}, y: {y}") # Thêm logger
         logger.error("{} auto_assemble_dichuyen: {} {}".format(self.get_tendoituong(), x, y))
 
         if not self._is_dasetupautoassembledichuyen:
@@ -1714,6 +1851,7 @@ class MoiTruong:
         time.sleep(0.05)
 
     def auto_assemble_nhatdo(self):
+        logger.error("MoiTruong.auto_assemble_nhatdo - No parameters") # Thêm logger
         if not self._is_dasetupautoassemblenhatdo:
             self._diachiautoassemblenhatdo = self.tientrinh.allocate(64)
 
@@ -1731,6 +1869,7 @@ class MoiTruong:
         self.tientrinh.start_thread(self._diachiautoassemblenhatdo)
 
     def auto_assemble_khoitaothongtinbando(self):
+        logger.error("MoiTruong.auto_assemble_khoitaothongtinbando - No parameters") # Thêm logger
         #TODO: Chưa xử lý
         logger.error("{} auto_assemble_khoitaothongtinbando".format(self.get_tendoituong()))
         if not self._is_dasetupautoassemblekhoitaothongtinbando:
@@ -1765,6 +1904,7 @@ class MoiTruong:
         time.sleep(0.05)
 
     def action_nhatdo(self, diachicosothongtinvatpham, delay = 0.05):
+        logger.error(f"MoiTruong.action_nhatdo - diachicosothongtinvatpham: {diachicosothongtinvatpham}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemnhatdogannhat < delay:
             return
 
@@ -1785,6 +1925,7 @@ class MoiTruong:
         return True
 
     def action_nhatdoxungquanh(self, delay = 0.05):
+        logger.error(f"MoiTruong.action_nhatdoxungquanh - delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemnhatdogannhat < delay:
             return
 
@@ -1794,6 +1935,7 @@ class MoiTruong:
         return True
 
     def action_battheosaunhom(self, delay = 1.):
+        logger.error(f"MoiTruong.action_battheosaunhom - delay: {delay}") # Thêm logger
         if time.time() - self._thoidiembattattheosaunhomgannhat < delay:
             return
 
@@ -1809,9 +1951,11 @@ class MoiTruong:
         return is_ok
 
     def get_thoidiemsudungkynangvitrigannhat(self, idvitri_x, idvitri_y, macdinh = None):
+        logger.error(f"MoiTruong.get_thoidiemsudungkynangvitrigannhat - idvitri_x: {idvitri_x}, idvitri_y: {idvitri_y}, macdinh: {macdinh}") # Thêm logger
         return self._thoidiemsudungkynangvitrigannhat_map.get((idvitri_x, idvitri_y), macdinh)
 
     def action_sudungkynangvitrimuctieu(self, idvitri_x, idvitri_y, diachicosothongtinnhanvatmuctieu = False, is_khongkiemtracothetancong = False, delay = 0.5):
+        logger.error(f"MoiTruong.action_sudungkynangvitrimuctieu - idvitri_x: {idvitri_x}, idvitri_y: {idvitri_y}, diachicosothongtinnhanvatmuctieu: {diachicosothongtinnhanvatmuctieu}, is_khongkiemtracothetancong: {is_khongkiemtracothetancong}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemsudungkynanggannhat < 0.25:
             return
 
@@ -1845,6 +1989,7 @@ class MoiTruong:
         return is_ok
 
     def action_sudungkynangvitri(self, idvitri_x, idvitri_y, delay = 0.5):
+        logger.error(f"MoiTruong.action_sudungkynangvitri - idvitri_x: {idvitri_x}, idvitri_y: {idvitri_y}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemsudungkynanggannhat < 0.25:
             return
 
@@ -1864,6 +2009,7 @@ class MoiTruong:
         return is_ok
 
     def action_sudungkynangvitrilenbanthan(self, idvitri_x, idvitri_y, delay = 0.5):
+        logger.error(f"MoiTruong.action_sudungkynangvitrilenbanthan - idvitri_x: {idvitri_x}, idvitri_y: {idvitri_y}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemsudungkynanggannhat < 0.25:
             return
 
@@ -1883,6 +2029,7 @@ class MoiTruong:
         return is_ok
 
     def action_dichuyen(self, x, y, delay = 0.5, is_rangbuoctrongmanhinh = False):
+        logger.error(f"MoiTruong.action_dichuyen - x: {x}, y: {y}, delay: {delay}, is_rangbuoctrongmanhinh: {is_rangbuoctrongmanhinh}") # Thêm logger
         if self._is_vohieuhoadichuyen:
             return
 
@@ -1899,6 +2046,7 @@ class MoiTruong:
         return True
 
     def action_dichuyengiukhoangcachtoithieu(self, diachicosothongtinnhanvat2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 0.5):
+        logger.error(f"MoiTruong.action_dichuyengiukhoangcachtoithieu - diachicosothongtinnhanvat2: {diachicosothongtinnhanvat2}, khoangcachtoithieu: {khoangcachtoithieu}, khoangcachdichuyentoida: {khoangcachdichuyentoida}, delay: {delay}") # Thêm logger
         if not diachicosothongtinnhanvat2:
             return
 
@@ -1908,6 +2056,7 @@ class MoiTruong:
         return self.action_dichuyengiukhoangcachtoithieudiem(self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2), khoangcachtoithieu = khoangcachtoithieu, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
 
     def action_dichuyengiukhoangcachtoida(self, diachicosothongtinnhanvat2, khoangcachtoida, khoangcachdichuyentoida = 0, delay = 0.5):
+        logger.error(f"MoiTruong.action_dichuyengiukhoangcachtoida - diachicosothongtinnhanvat2: {diachicosothongtinnhanvat2}, khoangcachtoida: {khoangcachtoida}, khoangcachdichuyentoida: {khoangcachdichuyentoida}, delay: {delay}") # Thêm logger
         if not diachicosothongtinnhanvat2:
             return
 
@@ -1917,6 +2066,7 @@ class MoiTruong:
         return self.action_dichuyengiukhoangcachtoidadiem(self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2), khoangcachtoida = khoangcachtoida, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
 
     def action_dichuyenphudau(self, diachicosothongtinnhanvat2, khoangcachphudau = 1, delay = 0.5):
+        logger.error(f"MoiTruong.action_dichuyenphudau - diachicosothongtinnhanvat2: {diachicosothongtinnhanvat2}, khoangcachphudau: {khoangcachphudau}, delay: {delay}") # Thêm logger
         if not diachicosothongtinnhanvat2:
             return
         if not self.get_iddoituong(diachicosothongtinnhanvat2):
@@ -1959,6 +2109,7 @@ class MoiTruong:
         return self.action_dichuyen(xclick, yclick, delay = delay)
 
     def action_dichuyengiukhoangcachtoidadiem(self, x2, y2, khoangcachtoida, khoangcachdichuyentoida = 0, delay = 0.5, is_rangbuoctrongmanhinh = False):
+        logger.error(f"MoiTruong.action_dichuyengiukhoangcachtoidadiem - x2: {x2}, y2: {y2}, khoangcachtoida: {khoangcachtoida}, khoangcachdichuyentoida: {khoangcachdichuyentoida}, delay: {delay}, is_rangbuoctrongmanhinh: {is_rangbuoctrongmanhinh}") # Thêm logger
         if x2 <= 0 or y2 <= 0:
             return
 
@@ -2003,6 +2154,7 @@ class MoiTruong:
         return self.action_dichuyen(xclick, yclick, delay = delay, is_rangbuoctrongmanhinh = is_rangbuoctrongmanhinh)
 
     def action_dichuyengiukhoangcachtoithieudiem(self, x2, y2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 0.5):
+        logger.error(f"MoiTruong.action_dichuyengiukhoangcachtoithieudiem - x2: {x2}, y2: {y2}, khoangcachtoithieu: {khoangcachtoithieu}, khoangcachdichuyentoida: {khoangcachdichuyentoida}, delay: {delay}") # Thêm logger
         if x2 <= 0 or y2 <= 0:
             return
         diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
@@ -2045,14 +2197,17 @@ class MoiTruong:
         return self.action_dichuyen(xclick, yclick, delay = delay)
 
     def action_dichuyentiepcan(self, diachicosothongtinnhanvat2, khoangcachdichuyentoida = 0, delay = 0.5):
+        logger.error(f"MoiTruong.action_dichuyentiepcan - diachicosothongtinnhanvat2: {diachicosothongtinnhanvat2}, khoangcachdichuyentoida: {khoangcachdichuyentoida}, delay: {delay}") # Thêm logger
         return self.action_dichuyengiukhoangcachtoida(diachicosothongtinnhanvat2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
 
     def action_dichuyentiepcandiem(self, x2, y2, khoangcachdichuyentoida = 0, delay = 0.5, is_rangbuoctrongmanhinh = False):
+        logger.error(f"MoiTruong.action_dichuyentiepcandiem - x2: {x2}, y2: {y2}, khoangcachdichuyentoida: {khoangcachdichuyentoida}, delay: {delay}, is_rangbuoctrongmanhinh: {is_rangbuoctrongmanhinh}") # Thêm logger
         if x2 <= 0 or y2 <= 0:
             return
         return self.action_dichuyengiukhoangcachtoidadiem(x2, y2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay, is_rangbuoctrongmanhinh = is_rangbuoctrongmanhinh)
 
     def action_sudungkynangvitriphudau(self, idvitri_x, idvitri_y, diachicosothongtinnhanvat2, khoangcachphudau, delay = 1):
+        logger.error(f"MoiTruong.action_sudungkynangvitriphudau - idvitri_x: {idvitri_x}, idvitri_y: {idvitri_y}, diachicosothongtinnhanvat2: {diachicosothongtinnhanvat2}, khoangcachphudau: {khoangcachphudau}, delay: {delay}") # Thêm logger
         if not diachicosothongtinnhanvat2:
             return False
         if not self.get_is_nhanvattontai(diachicosothongtinnhanvat2):
@@ -2060,6 +2215,7 @@ class MoiTruong:
         return self.action_sudungkynangvitriphudaudiem(idvitri_x, idvitri_y, self.get_toadox(diachicosothongtinnhanvat2), self.get_toadoy(diachicosothongtinnhanvat2), khoangcachphudau = khoangcachphudau, delay = delay)
 
     def action_sudungkynangvitriphudaudiem(self, idvitri_x, idvitri_y, x2, y2, khoangcachphudau, delay = 1):
+        logger.error(f"MoiTruong.action_sudungkynangvitriphudaudiem - idvitri_x: {idvitri_x}, idvitri_y: {idvitri_y}, x2: {x2}, y2: {y2}, khoangcachphudau: {khoangcachphudau}, delay: {delay}") # Thêm logger
         idvitri = (idvitri_x, idvitri_y)
         if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
             return False
@@ -2095,6 +2251,7 @@ class MoiTruong:
         return is_ok
 #
     def get_is_damocuasotuychonnhanvatchinhlandau(self):
+        logger.error("MoiTruong.get_is_damocuasotuychonnhanvatchinhlandau - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + 0x3A642C)
         if not x:
             return False
@@ -2105,6 +2262,7 @@ class MoiTruong:
         return True
 #
     def get_is_dangvankhi(self):
+        logger.error("MoiTruong.get_is_dangvankhi - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
@@ -2117,6 +2275,7 @@ class MoiTruong:
         return read_int(self.tientrinh, x + 0xD8) == TRANGTHAIVANKHI_DANGVANKHI
 #
     def get_is_dakhoitaothongtinbando(self):
+        logger.error("MoiTruong.get_is_dakhoitaothongtinbando - No parameters") # Thêm logger
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
@@ -2125,6 +2284,7 @@ class MoiTruong:
         return x > 0
 
     def action_khoitaothongtinbando(self, delay = 1.):
+        logger.error(f"MoiTruong.action_khoitaothongtinbando - delay: {delay}") # Thêm logger
         #TODO: Chưa xử lý
         return
         if time.time() - self._thoidiemkhoitaothongtinbandogannhat < delay:
@@ -2139,6 +2299,7 @@ class MoiTruong:
         return True
 
     def action_phucsinh(self, is_duoccuu = False, delay = 2.):
+        logger.error(f"MoiTruong.action_phucsinh - is_duoccuu: {is_duoccuu}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemphucsinhgannhat < delay:
             return
 
@@ -2157,6 +2318,7 @@ class MoiTruong:
         return is_ok
 
     def action_doimaupk(self, idmaupk, delay = 1.):
+        logger.error(f"MoiTruong.action_doimaupk - idmaupk: {idmaupk}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemmaupkgannhat < delay:
             return
 
@@ -2171,6 +2333,7 @@ class MoiTruong:
         return is_ok
 
     def action_timkiemvatphamhanhtrang(self, tenvatpham = None):
+        logger.error(f"MoiTruong.action_timkiemvatphamhanhtrang - tenvatpham: {tenvatpham}") # Thêm logger
         if not tenvatpham:
             return False
 
@@ -2192,6 +2355,7 @@ class MoiTruong:
         return False
 
     def get_danhsachvatphamhanhtrang_map(self):
+        logger.error("MoiTruong.get_danhsachvatphamhanhtrang_map - No parameters") # Thêm logger
         i = -1
         vatphamhanhtrang_map = {}
         while True:
@@ -2212,6 +2376,7 @@ class MoiTruong:
         return vatphamhanhtrang_map
 
     def action_timkiemnhanvat(self, tennhanvat = None, idnguoichoi = None, iddoituong = None, tennhanvatchua = None):
+        logger.error(f"MoiTruong.action_timkiemnhanvat - tennhanvat: {tennhanvat}, idnguoichoi: {idnguoichoi}, iddoituong: {iddoituong}, tennhanvatchua: {tennhanvatchua}") # Thêm logger
         if not tennhanvat and not idnguoichoi and not iddoituong and not tennhanvatchua:
             return False
 
@@ -2254,6 +2419,7 @@ class MoiTruong:
         return False
 
     def action_suado(self, diachicosonhanvatthosuado, delay = 1.):
+        logger.error(f"MoiTruong.action_suado - diachicosonhanvatthosuado: {diachicosonhanvatthosuado}, delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemsuadogannhat < delay:
             return
 
@@ -2267,6 +2433,7 @@ class MoiTruong:
         return is_ok
 
     def action_sudungchucnangmorong5(self, delay = 2.5):
+        logger.error(f"MoiTruong.action_sudungchucnangmorong5 - delay: {delay}") # Thêm logger
         if time.time() - self._thoidiemsudungchucnangmorong5 < delay:
             return
 
@@ -2278,20 +2445,24 @@ class MoiTruong:
         return is_ok
 
     def get_idmonphai(self, diachicosothongtinnhanvat = None):
+        logger.error(f"MoiTruong.get_idmonphai - diachicosothongtinnhanvat: {diachicosothongtinnhanvat}") # Thêm logger
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1184)
 
     def get_is_vohieuhoadichuyen(self):
+        logger.error("MoiTruong.get_is_vohieuhoadichuyen - No parameters") # Thêm logger
         return self._is_vohieuhoadichuyen
 
     def set_is_vohieuhoadichuyen(self, is_vohieuhoadichuyen):
+        logger.error(f"MoiTruong.set_is_vohieuhoadichuyen - is_vohieuhoadichuyen: {is_vohieuhoadichuyen}") # Thêm logger
         if self._is_vohieuhoadichuyen == is_vohieuhoadichuyen:
             return
         self._is_vohieuhoadichuyen = is_vohieuhoadichuyen
 
     def get_is_daketthucchientruong(self):
+        logger.error("MoiTruong.get_is_daketthucchientruong - No parameters") # Thêm logger
         #TODO: Chưa triển khai
         return
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
@@ -2303,6 +2474,7 @@ class MoiTruong:
         return read_boolean(self.tientrinh, x + 0x34)
 
     def set_is_daketthucchientruong(self, is_daketthucchientruong):
+        logger.error(f"MoiTruong.set_is_daketthucchientruong - is_daketthucchientruong: {is_daketthucchientruong}") # Thêm logger
         #TODO: Chưa triển khai
         return
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
@@ -2314,6 +2486,7 @@ class MoiTruong:
         return write_boolean(self.tientrinh, x + 0x34, is_daketthucchientruong)
 
     def get_iddoituongbaothudautien(self):
+        logger.error("MoiTruong.get_iddoituongbaothudautien - No parameters") # Thêm logger
         #TODO: Chưa triển khai
         return
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
@@ -2325,6 +2498,7 @@ class MoiTruong:
         return read_int(self.tientrinh, x + 0x47C)
 
     def get_is_datrieuhoibaothu(self):
+        logger.error("MoiTruong.get_is_datrieuhoibaothu - No parameters") # Thêm logger
         #TODO: Chưa triển khai
         return
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
@@ -2336,6 +2510,7 @@ class MoiTruong:
         return read_boolean(self.tientrinh, x + 0x1AE8)
 
     def get_is_dayhanhtrang(self):
+        logger.error("MoiTruong.get_is_dayhanhtrang - No parameters") # Thêm logger
         i = -1
         while True:
             if i >= SOLUONGVATPHAMHANHTRANGTOIDA:
@@ -2350,4 +2525,5 @@ class MoiTruong:
         return True
 
     def get_tenmonphai(self):
+        logger.error("MoiTruong.get_tenmonphai - No parameters") # Thêm logger
         return MONPHAI_MAP.get(self.get_idkynang(0, 0))
