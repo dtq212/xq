@@ -1277,26 +1277,6 @@ class MoiTruong:
 
         return True
 
-    def action_trieuhoibaothu(self, iddoituong, delay = 0.25):
-        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
-            return False
-
-        self._thoidiemthucthicaulenhgannhat = time.time()
-
-        self.auto_assemble_trieuhoibaothu(iddoituong)
-
-        return True
-    
-    def action_sudungkynangbaothu(self, iddoituong, idkynang, delay = 0.25):
-        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
-            return False
-
-        self._thoidiemthucthicaulenhgannhat = time.time()
-
-        self.auto_assemble_sudungkynangbaothu(iddoituong, idkynang)
-
-        return True
-
     def action_trochuyenvoinpc(self, iddoituong, noidungtrochuyen, delay = 0.25):
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
@@ -1314,16 +1294,6 @@ class MoiTruong:
         self._thoidiemthucthicaulenhgannhat = time.time()
 
         self.auto_assemble_sudungvatpham(iddoituong, is_boquaxacnhan)
-
-        return True
-
-    def action_sudungvatphambaothu(self, iddoituongvatpham, iddoituongbaothu, delay = 0.25):
-        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
-            return False
-
-        self._thoidiemthucthicaulenhgannhat = time.time()
-
-        self.auto_assemble_sudungvatphambaothu(iddoituongvatpham, iddoituongbaothu)
 
         return True
 
@@ -1373,7 +1343,7 @@ class MoiTruong:
                         self.set_is_danghiencuasoyesno(False)
 
         return True
-
+#
     def auto_assemble_thucthicaulenh(self, caulenh):
         logger.error("{} auto_assemble_thucthicaulenh: {}".format(self.get_tendoituong(), caulenh))
 
@@ -1387,7 +1357,7 @@ class MoiTruong:
             write_int(self.tientrinh, self._diachiautoassemblethucthicaulenh + 6, self._diachiautoassemblethucthicaulenh + 19)
 
             write_bytes(self.tientrinh, self._diachiautoassemblethucthicaulenh + 10, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblethucthicaulenh + 11, self.diachixq + 0x951C0 - (self._diachiautoassemblethucthicaulenh + 10) - 5)
+            write_int(self.tientrinh, self._diachiautoassemblethucthicaulenh + 11, self.diachixq + 0x95450 - (self._diachiautoassemblethucthicaulenh + 10) - 5)
 
             write_bytes(self.tientrinh, self._diachiautoassemblethucthicaulenh + 15, bytes.fromhex("83 C4 08"), 3)
             write_bytes(self.tientrinh, self._diachiautoassemblethucthicaulenh + 18, bytes.fromhex("C3"), 1)
@@ -1403,7 +1373,7 @@ class MoiTruong:
 
         self.tientrinh.start_thread(self._diachiautoassemblethucthicaulenh)
         time.sleep(0.05)
-
+#
     def auto_assemble_thaotacnhom(self, idhoatdong, idnguoichoi):
         caulenh = "team {} {}".format(idhoatdong, idnguoichoi)
         logger.error("{} auto_assemble_thaotacnhom: {} {} {}".format(self.get_tendoituong(), idhoatdong, idnguoichoi, caulenh))
@@ -1417,7 +1387,7 @@ class MoiTruong:
             write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 6, self._diachiautoassemblethaotacnhom + 19)
 
             write_bytes(self.tientrinh, self._diachiautoassemblethaotacnhom + 10, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 11, self.diachixq + 0x951C0 - (self._diachiautoassemblethaotacnhom + 10) - 5)
+            write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 11, self.diachixq + 0x95450 - (self._diachiautoassemblethaotacnhom + 10) - 5)
 
             write_bytes(self.tientrinh, self._diachiautoassemblethaotacnhom + 15, bytes.fromhex("83 C4 08"), 3)
             write_bytes(self.tientrinh, self._diachiautoassemblethaotacnhom + 18, bytes.fromhex("C3"), 1)
@@ -1433,7 +1403,7 @@ class MoiTruong:
 
         self.tientrinh.start_thread(self._diachiautoassemblethaotacnhom)
         time.sleep(0.05)
-
+#
     def auto_assemble_sudungkynang(self, idkynang):
         caulenh = "pf {}".format(idkynang)
         logger.error("{} auto_assemble_sudungkynang: {} {}".format(self.get_tendoituong(), idkynang, caulenh))
@@ -1447,7 +1417,7 @@ class MoiTruong:
             write_int(self.tientrinh, self._diachiautoassemblesudungkynang + 6, self._diachiautoassemblesudungkynang + 19)
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynang + 10, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungkynang + 11, self.diachixq + 0x951C0 - (self._diachiautoassemblesudungkynang + 10) - 5)
+            write_int(self.tientrinh, self._diachiautoassemblesudungkynang + 11, self.diachixq + 0x95450 - (self._diachiautoassemblesudungkynang + 10) - 5)
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynang + 15, bytes.fromhex("83 C4 08"), 3)
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynang + 18, bytes.fromhex("C3"), 1)
@@ -1463,7 +1433,7 @@ class MoiTruong:
 
         self.tientrinh.start_thread(self._diachiautoassemblesudungkynang)
         time.sleep(0.05)
-
+#
     def auto_assemble_sudungkynangmuctieunguoichoi(self, idkynang, idnguoichoi):
         caulenh = "pf {} {}".format(idkynang, idnguoichoi)
         logger.error("{} auto_assemble_sudungkynangmuctieunguoichoi: {} {} {}".format(self.get_tendoituong(), idkynang, idnguoichoi, caulenh))
@@ -1477,7 +1447,7 @@ class MoiTruong:
             write_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 6, self._diachiautoassemblesudungkynangmuctieunguoichoi + 19)
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 10, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 11, self.diachixq + 0x951C0 - (self._diachiautoassemblesudungkynangmuctieunguoichoi + 10) - 5)
+            write_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 11, self.diachixq + 0x95450 - (self._diachiautoassemblesudungkynangmuctieunguoichoi + 10) - 5)
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 15, bytes.fromhex("83 C4 08"), 3)
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 18, bytes.fromhex("C3"), 1)
@@ -1493,7 +1463,7 @@ class MoiTruong:
 
         self.tientrinh.start_thread(self._diachiautoassemblesudungkynangmuctieunguoichoi)
         time.sleep(0.05)
-
+#
     def auto_assemble_sudungkynangmuctieukhacnguoichoi(self, idkynang, iddoituong):
         caulenh = "pf {} {}#".format(idkynang, hex(iddoituong)).replace("0x", "")
         logger.error("{} auto_assemble_sudungkynangmuctieukhacnguoichoi: {} {} {}".format(self.get_tendoituong(), idkynang, iddoituong, caulenh))
@@ -1507,7 +1477,7 @@ class MoiTruong:
             write_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 6, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 19)
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 10, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 11, self.diachixq + 0x951C0 - (self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 10) - 5)
+            write_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 11, self.diachixq + 0x95450 - (self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 10) - 5)
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 15, bytes.fromhex("83 C4 08"), 3)
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 18, bytes.fromhex("C3"), 1)
@@ -1523,7 +1493,7 @@ class MoiTruong:
 
         self.tientrinh.start_thread(self._diachiautoassemblesudungkynangmuctieukhacnguoichoi)
         time.sleep(0.05)
-
+#
     def auto_assemble_sudungkynangtoado(self, idkynang, toadox, toadoy):
         caulenh = "pf {} {},{}".format(idkynang, toadox, toadoy).replace("0x", "")
         logger.error("{} auto_assemble_sudungkynangtoado: {} {} {} {}".format(self.get_tendoituong(), idkynang, toadox, toadoy, caulenh))
@@ -1537,7 +1507,7 @@ class MoiTruong:
             write_int(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 6, self._diachiautoassemblesudungkynangtoado + 19)
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 10, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 11, self.diachixq + 0x951C0 - (self._diachiautoassemblesudungkynangtoado + 10) - 5)
+            write_int(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 11, self.diachixq + 0x95450 - (self._diachiautoassemblesudungkynangtoado + 10) - 5)
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 15, bytes.fromhex("83 C4 08"), 3)
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 18, bytes.fromhex("C3"), 1)
@@ -1553,7 +1523,7 @@ class MoiTruong:
 
         self.tientrinh.start_thread(self._diachiautoassemblesudungkynangtoado)
         time.sleep(0.05)
-
+#
     def auto_assemble_trochuyenvoinpc(self, iddoituong, noidungtrochuyen, caulenhtrochuyen = "talk"):
         caulenh = "{} {}# {}".format(caulenhtrochuyen, hex(iddoituong), noidungtrochuyen).replace("0x", "")
         logger.error("{} auto_assemble_trochuyenvoinpc: {} {} {}".format(self.get_tendoituong(), iddoituong, noidungtrochuyen, caulenh))
@@ -1567,7 +1537,7 @@ class MoiTruong:
             write_int(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 6, self._diachiautoassembletrochuyenvoinpc + 19)
 
             write_bytes(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 10, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 11, self.diachixq + 0x951C0 - (self._diachiautoassembletrochuyenvoinpc + 10) - 5)
+            write_int(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 11, self.diachixq + 0x95450 - (self._diachiautoassembletrochuyenvoinpc + 10) - 5)
 
             write_bytes(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 15, bytes.fromhex("83 C4 08"), 3)
             write_bytes(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 18, bytes.fromhex("C3"), 1)
@@ -1583,7 +1553,7 @@ class MoiTruong:
 
         self.tientrinh.start_thread(self._diachiautoassembletrochuyenvoinpc)
         time.sleep(0.05)
-
+#
     def auto_assemble_dichuyenvatphamhanhtrang(self, iddoituong, vitri):
         caulenh = "move {}# {}".format(hex(iddoituong), vitri).replace("0x", "")
         logger.error("{} auto_assemble_dichuyenvatphamhanhtrang: {} {}".format(self.get_tendoituong(), iddoituong, vitri, caulenh))
@@ -1597,7 +1567,7 @@ class MoiTruong:
             write_int(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 6, self._diachiautoassembledichuyenvatphamhanhtrang + 19)
 
             write_bytes(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 10, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 11, self.diachixq + 0x951C0 - (self._diachiautoassembledichuyenvatphamhanhtrang + 10) - 5)
+            write_int(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 11, self.diachixq + 0x95450 - (self._diachiautoassembledichuyenvatphamhanhtrang + 10) - 5)
 
             write_bytes(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 15, bytes.fromhex("83 C4 08"), 3)
             write_bytes(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 18, bytes.fromhex("C3"), 1)
@@ -1613,7 +1583,7 @@ class MoiTruong:
 
         self.tientrinh.start_thread(self._diachiautoassembledichuyenvatphamhanhtrang)
         time.sleep(0.05)
-
+#
     def auto_assemble_sudungvatpham(self, iddoituong, is_boquaxacnhan = False):
         if not is_boquaxacnhan:
             caulenh = "use {}#".format(hex(iddoituong)).replace("0x", "")
@@ -1630,7 +1600,7 @@ class MoiTruong:
             write_int(self.tientrinh, self._diachiautoassemblesudungvatpham + 6, self._diachiautoassemblesudungvatpham + 19)
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungvatpham + 10, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungvatpham + 11, self.diachixq + 0x951C0 - (self._diachiautoassemblesudungvatpham + 10) - 5)
+            write_int(self.tientrinh, self._diachiautoassemblesudungvatpham + 11, self.diachixq + 0x95450 - (self._diachiautoassemblesudungvatpham + 10) - 5)
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungvatpham + 15, bytes.fromhex("83 C4 08"), 3)
             write_bytes(self.tientrinh, self._diachiautoassemblesudungvatpham + 18, bytes.fromhex("C3"), 1)
@@ -1646,37 +1616,7 @@ class MoiTruong:
 
         self.tientrinh.start_thread(self._diachiautoassemblesudungvatpham)
         time.sleep(0.05)
-
-    def auto_assemble_sudungvatphambaothu(self, iddoituongvatpham, iddoituongpet):
-        caulenh = "use {}# pet {}#".format(hex(iddoituongvatpham), hex(iddoituongpet)).replace("0x", "")
-        logger.error("{} auto_assemble_sudungvatphambaothu: {} {} {}".format(self.get_tendoituong(), iddoituongvatpham, iddoituongpet, caulenh))
-        if not self._is_dasetupautoassemblesudungvatphambaothu:
-            self._diachiautoassemblesudungvatphambaothu = self.tientrinh.allocate(128)
-
-            write_bytes(self.tientrinh, self._diachiautoassemblesudungvatphambaothu, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 1, len(caulenh))
-
-            write_bytes(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 5, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 6, self._diachiautoassemblesudungvatphambaothu + 19)
-
-            write_bytes(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 10, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 11, self.diachixq + 0x951C0 - (self._diachiautoassemblesudungvatphambaothu + 10) - 5)
-
-            write_bytes(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 15, bytes.fromhex("83 C4 08"), 3)
-            write_bytes(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 18, bytes.fromhex("C3"), 1)
-
-            write_string(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 19, caulenh)
-
-            self._is_dasetupautoassemblesudungvatphambaothu = True
-        else:
-            if read_int(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 1, len(caulenh))
-            if read_string(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 19) != caulenh:
-                write_string(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 19, caulenh)
-
-        self.tientrinh.start_thread(self._diachiautoassemblesudungvatphambaothu)
-        time.sleep(0.05)
-
+#
     def auto_assemble_nhatruong(self, iddoituong):
         caulenh = "look {}#".format(hex(iddoituong)).replace("0x", "")
         logger.error("{} auto_assemble_nhatruong: {} {}".format(self.get_tendoituong(), iddoituong, caulenh))
@@ -1690,7 +1630,7 @@ class MoiTruong:
             write_int(self.tientrinh, self._diachiautoassemblenhatruong + 6, self._diachiautoassemblenhatruong + 19)
 
             write_bytes(self.tientrinh, self._diachiautoassemblenhatruong + 10, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblenhatruong + 11, self.diachixq + 0x951C0 - (self._diachiautoassemblenhatruong + 10) - 5)
+            write_int(self.tientrinh, self._diachiautoassemblenhatruong + 11, self.diachixq + 0x95450 - (self._diachiautoassemblenhatruong + 10) - 5)
 
             write_bytes(self.tientrinh, self._diachiautoassemblenhatruong + 15, bytes.fromhex("83 C4 08"), 3)
             write_bytes(self.tientrinh, self._diachiautoassemblenhatruong + 18, bytes.fromhex("C3"), 1)
@@ -1706,7 +1646,7 @@ class MoiTruong:
 
         self.tientrinh.start_thread(self._diachiautoassemblenhatruong)
         time.sleep(0.05)
-
+#
     def auto_assemble_nhatdotoado(self, toadox, toadoy):
         caulenh = "get {} {}".format(toadox, toadoy)
         logger.error("{} auto_assemble_nhatdotoado: {} {} {}".format(self.get_tendoituong(), toadox, toadoy, caulenh))
@@ -1720,7 +1660,7 @@ class MoiTruong:
             write_int(self.tientrinh, self._diachiautoassemblenhatdotoado + 6, self._diachiautoassemblenhatdotoado + 19)
 
             write_bytes(self.tientrinh, self._diachiautoassemblenhatdotoado + 10, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblenhatdotoado + 11, self.diachixq + 0x951C0 - (self._diachiautoassemblenhatdotoado + 10) - 5)
+            write_int(self.tientrinh, self._diachiautoassemblenhatdotoado + 11, self.diachixq + 0x95450 - (self._diachiautoassemblenhatdotoado + 10) - 5)
 
             write_bytes(self.tientrinh, self._diachiautoassemblenhatdotoado + 15, bytes.fromhex("83 C4 08"), 3)
             write_bytes(self.tientrinh, self._diachiautoassemblenhatdotoado + 18, bytes.fromhex("C3"), 1)
@@ -1736,96 +1676,7 @@ class MoiTruong:
 
         self.tientrinh.start_thread(self._diachiautoassemblenhatdotoado)
         time.sleep(0.05)
-
-    def auto_assemble_trieuhoibaothu(self, iddoituong):
-        caulenh = "pet {}# show".format(hex(iddoituong)).replace("0x", "")
-        logger.error("{} auto_assemble_trieuhoibaothu: {} {}".format(self.get_tendoituong(), iddoituong, caulenh))
-        if not self._is_dasetupautoassembletrieuhoibaothu:
-            self._diachiautoassembletrieuhoibaothu = self.tientrinh.allocate(128)
-
-            write_bytes(self.tientrinh, self._diachiautoassembletrieuhoibaothu, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 1, len(caulenh))
-
-            write_bytes(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 5, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 6, self._diachiautoassembletrieuhoibaothu + 19)
-
-            write_bytes(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 10, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 11, self.diachixq + 0x951C0 - (self._diachiautoassembletrieuhoibaothu + 10) - 5)
-
-            write_bytes(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 15, bytes.fromhex("83 C4 08"), 3)
-            write_bytes(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 18, bytes.fromhex("C3"), 1)
-
-            write_string(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 19, caulenh)
-
-            self._is_dasetupautoassembletrieuhoibaothu = True
-        else:
-            if read_int(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 1, len(caulenh))
-            if read_string(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 19) != caulenh:
-                write_string(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 19, caulenh)
-
-        self.tientrinh.start_thread(self._diachiautoassembletrieuhoibaothu)
-        time.sleep(0.05)
-
-
-    def auto_assemble_sudungkynangbaothu(self, iddoituong, idkynang):
-        caulenh = "pet {}# {}".format(hex(iddoituong), idkynang).replace("0x", "")
-        logger.error("{} auto_assemble_sudungkynangbaothu: {} {} {}".format(self.get_tendoituong(), iddoituong, idkynang, caulenh))
-        if not self._is_dasetupautoassemblesudungkynangbaothu:
-            self._diachiautoassemblesudungkynangbaothu = self.tientrinh.allocate(128)
-
-            write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangbaothu, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 1, len(caulenh))
-
-            write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 5, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 6, self._diachiautoassemblesudungkynangbaothu + 19)
-
-            write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 10, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 11, self.diachixq + 0x951C0 - (self._diachiautoassemblesudungkynangbaothu + 10) - 5)
-
-            write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 15, bytes.fromhex("83 C4 08"), 3)
-            write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 18, bytes.fromhex("C3"), 1)
-
-            write_string(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 19, caulenh)
-
-            self._is_dasetupautoassemblesudungkynangbaothu = True
-        else:
-            if read_int(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 1, len(caulenh))
-            if read_string(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 19) != caulenh:
-                write_string(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 19, caulenh)
-
-        self.tientrinh.start_thread(self._diachiautoassemblesudungkynangbaothu)
-        time.sleep(0.05)
-
-    def auto_assemble_sudungkynangphimtat(self, idvitriphimtat):
-        logger.error("{} auto_assemble_sudungkynangphimtat: {}".format(self.get_tendoituong(), idvitriphimtat))
-        if not self._is_dasetupautoassemblesudungkynangphimtat:
-            self._diachiautoassemblesudungkynangphimtat = self.tientrinh.allocate(64)
-
-            write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangphimtat, bytes.fromhex("B8"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungkynangphimtat + 1, idvitriphimtat)
-
-            write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangphimtat + 5, bytes.fromhex("8B 15"), 2)
-            write_int(self.tientrinh, self._diachiautoassemblesudungkynangphimtat + 7, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
-
-            write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangphimtat + 11, bytes.fromhex("50"), 1)
-
-            write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangphimtat + 12, bytes.fromhex("8D 8A"), 2)
-            write_int(self.tientrinh, self._diachiautoassemblesudungkynangphimtat + 14, 0xADFEA0)
-
-            write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangphimtat + 18, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungkynangphimtat + 19, self.diachixq + 0x72E70 - (self._diachiautoassemblesudungkynangphimtat + 18) - 5)
-
-            write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangphimtat + 23, bytes.fromhex("C3"), 1)
-
-            self._is_dasetupautoassemblesudungkynangphimtat = True
-        else:
-            write_int(self.tientrinh, self._diachiautoassemblesudungkynangphimtat + 1, idvitriphimtat)
-
-        self.tientrinh.start_thread(self._diachiautoassemblesudungkynangphimtat)
-        time.sleep(0.05)
-
+#
     def auto_assemble_dichuyen(self, x, y):
         logger.error("{} auto_assemble_dichuyen: {} {}".format(self.get_tendoituong(), x, y))
 
@@ -1851,7 +1702,7 @@ class MoiTruong:
             write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 23, bytes.fromhex("8B CF"), 2)
 
             write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 25, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassembledichuyen + 26, self.diachixq + 0x476A0 - (self._diachiautoassembledichuyen + 25) - 5)
+            write_int(self.tientrinh, self._diachiautoassembledichuyen + 26, self.diachixq + 0x47790 - (self._diachiautoassembledichuyen + 25) - 5)
 
             write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 30, bytes.fromhex("C3"), 1)
             self._is_dasetupautoassembledichuyen = True
@@ -1872,7 +1723,7 @@ class MoiTruong:
             write_bytes(self.tientrinh, self._diachiautoassemblenhatdo + 6, bytes.fromhex("8D 59 14"), 3)
 
             write_bytes(self.tientrinh, self._diachiautoassemblenhatdo + 9, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblenhatdo + 10, self.diachixq + 0xB3F0 - (self._diachiautoassemblenhatdo + 9) - 5)
+            write_int(self.tientrinh, self._diachiautoassemblenhatdo + 10, self.diachixq + 0xB400 - (self._diachiautoassemblenhatdo + 9) - 5)
 
             write_bytes(self.tientrinh, self._diachiautoassemblenhatdo + 14, bytes.fromhex("C3"), 1)
             self._is_dasetupautoassemblenhatdo = True
@@ -1880,6 +1731,7 @@ class MoiTruong:
         self.tientrinh.start_thread(self._diachiautoassemblenhatdo)
 
     def auto_assemble_khoitaothongtinbando(self):
+        #TODO: Chưa xử lý
         logger.error("{} auto_assemble_khoitaothongtinbando".format(self.get_tendoituong()))
         if not self._is_dasetupautoassemblekhoitaothongtinbando:
             self._diachiautoassemblekhoitaothongtinbando = self.tientrinh.allocate(64)
@@ -1910,49 +1762,6 @@ class MoiTruong:
             self._is_dasetupautoassemblekhoitaothongtinbando = True
 
         self.tientrinh.start_thread(self._diachiautoassemblekhoitaothongtinbando)
-        time.sleep(0.05)
-
-    def auto_assemble_tudongtimduong(self, x, y, idbando):
-        if x <= 0 or y <= 0 or idbando <= 0:
-            return
-
-        logger.error("{} auto_assemble_tudongtimduong: {} {} {}".format(self.get_tendoituong(), x, y, idbando))
-        if not self._is_dasetupautoassembletudongtimduong:
-            self._diachiautoassembletudongtimduong = self.tientrinh.allocate(64)
-
-            write_bytes(self.tientrinh, self._diachiautoassembletudongtimduong, bytes.fromhex("8B 35"), 2)
-            write_int(self.tientrinh, self._diachiautoassembletudongtimduong + 2, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
-
-            write_bytes(self.tientrinh, self._diachiautoassembletudongtimduong + 6, bytes.fromhex("8B B6"), 2)
-            write_int(self.tientrinh, self._diachiautoassembletudongtimduong + 8, 0xADFDEC)
-
-            write_bytes(self.tientrinh, self._diachiautoassembletudongtimduong + 12, bytes.fromhex("B9"), 1)
-            write_int(self.tientrinh, self._diachiautoassembletudongtimduong + 13, y)
-
-            write_bytes(self.tientrinh, self._diachiautoassembletudongtimduong + 17, bytes.fromhex("BA"), 1)
-            write_int(self.tientrinh, self._diachiautoassembletudongtimduong + 18, x)
-
-            write_bytes(self.tientrinh, self._diachiautoassembletudongtimduong + 22, bytes.fromhex("B8"), 1)
-            write_int(self.tientrinh, self._diachiautoassembletudongtimduong + 23, idbando)
-
-            write_bytes(self.tientrinh, self._diachiautoassembletudongtimduong + 27, bytes.fromhex("51"), 1)
-            write_bytes(self.tientrinh, self._diachiautoassembletudongtimduong + 28, bytes.fromhex("52"), 1)
-            write_bytes(self.tientrinh, self._diachiautoassembletudongtimduong + 29, bytes.fromhex("50"), 1)
-
-            write_bytes(self.tientrinh, self._diachiautoassembletudongtimduong + 30, bytes.fromhex("8B CE"), 2)
-
-            write_bytes(self.tientrinh, self._diachiautoassembletudongtimduong + 32, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassembletudongtimduong + 33, self.diachixq + 0xD6120 - (self._diachiautoassembletudongtimduong + 32) - 5)
-
-            write_bytes(self.tientrinh, self._diachiautoassembletudongtimduong + 37, bytes.fromhex("C3"), 1)
-
-            self._is_dasetupautoassembletudongtimduong = True
-        else:
-            write_int(self.tientrinh, self._diachiautoassembletudongtimduong + 13, y)
-            write_int(self.tientrinh, self._diachiautoassembletudongtimduong + 18, x)
-            write_int(self.tientrinh, self._diachiautoassembletudongtimduong + 23, idbando)
-
-        self.tientrinh.start_thread(self._diachiautoassembletudongtimduong)
         time.sleep(0.05)
 
     def action_nhatdo(self, diachicosothongtinvatpham, delay = 0.05):
@@ -1998,19 +1807,6 @@ class MoiTruong:
             self._thoidiembattattheosaunhomgannhat = time.time()
 
         return is_ok
-    
-    def action_sudungkynangphimtat(self, idvitriphimtat, delay = 0.5):
-        if time.time() - self._thoidiemsudungkynanggannhat < 0.25:
-            return
-
-        if idvitriphimtat in self._thoidiemsudungkynangphimtatgannhat_map and time.time() - self._thoidiemsudungkynangphimtatgannhat_map[idvitriphimtat] < delay:
-            return
-
-        self._thoidiemsudungkynanggannhat = time.time()
-        self._thoidiemsudungkynangphimtatgannhat_map[idvitriphimtat] = time.time()
-        self.auto_assemble_sudungkynangphimtat(idvitriphimtat)
-
-        return True
 
     def get_thoidiemsudungkynangvitrigannhat(self, idvitri_x, idvitri_y, macdinh = None):
         return self._thoidiemsudungkynangvitrigannhat_map.get((idvitri_x, idvitri_y), macdinh)
@@ -2341,19 +2137,6 @@ class MoiTruong:
         self.auto_assemble_khoitaothongtinbando()
 
         return True
-    def action_tudongtimduong(self, x, y, idbando, delay = 1.):
-        return
-
-        if time.time() - self._thoidiemdichuyengannhat < delay:
-            return
-
-        if not self.get_is_dakhoitaothongtinbando():
-            time.sleep(0.5)
-            self.action_khoitaothongtinbando()
-            return
-
-        self._thoidiemdichuyengannhat = time.time()
-        self.auto_assemble_tudongtimduong(x, y, idbando)
 
     def action_phucsinh(self, is_duoccuu = False, delay = 2.):
         if time.time() - self._thoidiemphucsinhgannhat < delay:

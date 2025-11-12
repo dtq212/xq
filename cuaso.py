@@ -71,18 +71,9 @@ class CuaSo:
         keyboard.add_hotkey("ctrl + alt + p", self.botoanbodiemdanhxungquanh)
 
         keyboard.add_hotkey("ctrl + m", self.battat_vohieuhoadichuyen)
-        keyboard.add_hotkey("ctrl + alt + y", self.battat_tudongdichientruong)
-        keyboard.add_hotkey("ctrl + alt + b", self.battat_tudongdibatquaitran)
         keyboard.add_hotkey("ctrl + alt + t", self.battat_tudongbattheosaunhom)
 
-        keyboard.add_hotkey("ctrl + alt + e", self.action_tudongepdo78910)
-        keyboard.add_hotkey("ctrl + alt + w", self.tudongkhamdenkhithanhcong18)
-        keyboard.add_hotkey("ctrl + alt + r", self.action_tudongepdo11)
-        keyboard.add_hotkey("ctrl + alt + l", self.battat_tudonglamnhiemvulaoquangia)
-
         keyboard.add_hotkey("ctrl + alt + d", self.battat_thucsondao)
-        keyboard.add_hotkey("ctrl + w", self.action_tudongkhamdenkhithatbai)
-
         keyboard.add_hotkey("ctrl + alt + v", self.battat_is_phitac)
 
         self.thoidiemluuthietlapgannhat = time.time()
@@ -165,14 +156,6 @@ class CuaSo:
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.battat_is_vohieuhoadichuyen()
 
-    def battat_tudongdichientruong(self):
-        if self.moitruong.get_is_cuasogamekichhoat():
-            self.tactu.battat_is_tudongdichientruong()
-
-    def battat_tudongdibatquaitran(self):
-        if self.moitruong.get_is_cuasogamekichhoat():
-            self.tactu.battat_is_tudongdibatquaitran()
-
     def battat_tudongbattheosaunhom(self):
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.battat_is_tudongbattheosaunhom()
@@ -185,29 +168,9 @@ class CuaSo:
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.battat_is_thucsondao()
 
-    def tudongkhamdenkhithanhcong18(self):
-        if self.moitruong.get_is_cuasogamekichhoat():
-            self.tactu.action_tudongkhamdenkhithanhcong18()
-
     def battat_tudongdichuyendiemdanhxungquanh(self):
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.battat_is_tudongdichuyendiemdanhxungquanh()
-
-    def battat_tudonglamnhiemvulaoquangia(self):
-        if self.moitruong.get_is_cuasogamekichhoat():
-            self.tactu.battat_tudonglamnhiemvulaoquangia()
-
-    def action_tudongepdo78910(self):
-        if self.moitruong.get_is_cuasogamekichhoat():
-            self.tactu.action_tudongepdo78910()
-
-    def action_tudongepdo11(self):
-        if self.moitruong.get_is_cuasogamekichhoat():
-            self.tactu.action_tudongepdo11()
-
-    def action_tudongkhamdenkhithatbai(self):
-        if self.moitruong.get_is_cuasogamekichhoat():
-            self.tactu.action_tudongkhamdenkhithatbai()
 
     def themtenmuctieutancong(self):
         if self.moitruong.get_is_cuasogamekichhoat():
