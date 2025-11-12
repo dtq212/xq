@@ -1041,16 +1041,17 @@ class TacTu:
 
                 tenvatpham = self.moitruong.get_tendoituong(diachicosothongtinvatphamxemxet)
 
-                if tenvatpham in VATPHAMTUDONGNHATs:
-                    khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
-                    if khoangcach <= KHOANGCACHTOANMANHINH * 2:
-                        if not self._diachicosovatphamdangnhat or not self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) or khoangcach < self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat):
-                            if self._diachicosovatphamdangnhat != diachicosothongtinvatphamxemxet:
-                                self._diachicosovatphamdangnhat = diachicosothongtinvatphamxemxet
-                                self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
-                                break
+                # if tenvatpham in VATPHAMTUDONGNHATs:
+                khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
+                if khoangcach <= KHOANGCACHTOANMANHINH * 2:
+                    if not self._diachicosovatphamdangnhat or not self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) or khoangcach < self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat):
+                        if self._diachicosovatphamdangnhat != diachicosothongtinvatphamxemxet:
+                            self._diachicosovatphamdangnhat = diachicosothongtinvatphamxemxet
+                            self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
+                            break
 
-            if self._diachicosovatphamdangnhat and self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) and self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat) in VATPHAMTUDONGNHATs and self._diachicosovatphamdangnhat not in self._diachicosovatphamkhongnhats:
+            # if self._diachicosovatphamdangnhat and self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) and self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat) in VATPHAMTUDONGNHATs and self._diachicosovatphamdangnhat not in self._diachicosovatphamkhongnhats:
+            if self._diachicosovatphamdangnhat and self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) and self._diachicosovatphamdangnhat not in self._diachicosovatphamkhongnhats:
                 while True:
                     if self._is_tamngungnhatdodetheosautruongnhom:
                         break
