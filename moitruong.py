@@ -1773,7 +1773,7 @@ class MoiTruong:
             return
 
         self._thoidiemnhatdogannhat = time.time()
-        self._thoidiemnhatdogannhat_map[diachicosothongtinnhanvat] = time.time()
+        self._thoidiemnhatdogannhat_map[diachicosothongtinvatpham] = time.time()
 
         self.action_nhatdotoado(x, y, delay = delay)
 
