@@ -1029,6 +1029,8 @@ class TacTu:
 
             self.moitruong.action_nhatdoxungquanh(delay = 1.)
 
+            #TODO: Đầy rương rồi thì thôi
+
             while True:
                 diachicosothongtinvatphamxemxet = self.moitruong.get_diachicosothongtindoituongx(i)
                 if not diachicosothongtinvatphamxemxet:
