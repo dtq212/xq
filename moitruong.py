@@ -1013,14 +1013,14 @@ class MoiTruong:
     def action_vohieuhoatuthedelaysautancong(self):
         if read_int(self.tientrinh, self.diachixq + 0x1AFE3 + 0x6) != TUTHENHANVAT_DUNGIM:
             write_int(self.tientrinh, self.diachixq + 0x1AFE3 + 0x6, TUTHENHANVAT_DUNGIM)
-        if read_int(self.tientrinh, self.diachixq + 0x1AFE3 + 0x6) != TUTHENHANVAT_DUNGIM:
-            write_int(self.tientrinh, self.diachixq + 0x1AFE3 + 0x6, TUTHENHANVAT_DUNGIM)
+        if read_int(self.tientrinh, self.diachixq + 0x1B377 + 0x6) != TUTHENHANVAT_DUNGIM:
+            write_int(self.tientrinh, self.diachixq + 0x1B377 + 0x6, TUTHENHANVAT_DUNGIM)
 #
     def action_tatvohieuhoatuthedelaysautancong(self):
         if read_int(self.tientrinh, self.diachixq + 0x1AFE3 + 0x6) != TUTHENHANVAT_DELAYSAUTANCONG:
             write_int(self.tientrinh, self.diachixq + 0x1AFE3 + 0x6, TUTHENHANVAT_DELAYSAUTANCONG)
-        if read_int(self.tientrinh, self.diachixq + 0x1AFE3 + 0x6) != TUTHENHANVAT_DELAYSAUTANCONG:
-            write_int(self.tientrinh, self.diachixq + 0x1AFE3 + 0x6, TUTHENHANVAT_DELAYSAUTANCONG)
+        if read_int(self.tientrinh, self.diachixq + 0x1B377 + 0x6) != TUTHENHANVAT_DELAYSAUTANCONG:
+            write_int(self.tientrinh, self.diachixq + 0x1B377 + 0x6, TUTHENHANVAT_DELAYSAUTANCONG)
 #
     def action_vohieuhoathietlapmuctieu(self):
         if read_bytes(self.tientrinh, self.diachixq + 0xA20F0, 1) != bytes.fromhex("90"):

@@ -95,7 +95,7 @@ class TacTu:
         self._is_tamngungtancongdebuffchothanhviennhom = False
         self._is_tamngungtancongdichuyenlenbandovuachet = False
         self._is_tudongdichuyendiemdanhxungquanh = False
-        self._is_tudongdoimaupk = True
+        self._is_tudongdoimaupk = False
 
         self._idbandohientai = False
         self._phehientai = False
@@ -1154,8 +1154,9 @@ class TacTu:
                     self.moitruong.action_dichuyentiepcandiem(*diemdanhxungquanhtieptheo[:-1], delay = 1.)
 
                 else:
-                    diemdanhxungquanhbatky = diemdanhxungquanhs[0]
-                    self.action_tudongtimduong(*diemdanhxungquanhbatky)
+                    # diemdanhxungquanhbatky = diemdanhxungquanhs[0]
+                    # self.action_tudongtimduong(*diemdanhxungquanhbatky)
+                    pass
 
                 break
 
