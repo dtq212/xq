@@ -278,7 +278,6 @@ class LoopPhu:
             self.moitruong.action_tatvohieuhoathietlapmuctieu()
             self.moitruong.action_tatvohieuhoatuthedelaysautancong()
             self.moitruong.action_tatvohieuhoalongclick()
-            self.moitruong.action_tatvohieubangthongbaogocduoibenphai()
             self.moitruong.action_tatvohieuhoatrangthaichuotchonmuctieukynang()
             self.moitruong.action_tatvohieuhoaphimspace()
         except (pymem.exception.PymemError, pymem.exception.WinAPIError):
@@ -310,7 +309,6 @@ class LoopPhu:
         self.moitruong.action_vohieuhoathietlapmuctieu()
         self.moitruong.action_vohieuhoatuthedelaysautancong()
         self.moitruong.action_vohieuhoalongclick()
-        self.moitruong.action_vohieuhoabangthongbaogocduoibenphai()
 
         self.moitruong.action_vohieuhoatrangthaichuotchonmuctieukynang()
         self.moitruong.action_vohieuhoakhoanhvungkynang()
@@ -415,5 +413,3 @@ class LoopCatDoVaoRuong:
 
         if time.time() - self.tactu._thoigiantamngungauto < 2.:
             return
-
-        self.tactu.action_tudongcatdovaoruong()
