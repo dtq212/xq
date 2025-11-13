@@ -35,7 +35,6 @@ class TroChoi:
         idcuaso = win32gui.GetForegroundWindow()
 
         tencuaso = win32gui.GetWindowText(idcuaso)
-
         if not (tencuaso and tencuaso.startswith("Chien Quoc")):
             phatam("Khởi động thất bại. Không phải cửa sổ game")
             return
@@ -43,16 +42,13 @@ class TroChoi:
         if idcuaso in self.cuasos:
             cuaso_cu = self.cuasos[idcuaso]
 
-            is_stopped = cuaso_cu.main_stop.is_set()
-            is_disconnected = cuaso_cu.moitruong.get_is_dangmatketnoi()
-
-            if is_disconnected or is_stopped:
-                phatam("Cửa sổ đã tồn tại nhưng luồng đã dừng/mất kết nối. Đang khởi động lại...")
-                cuaso_cu.tatauto()
+            if cuaso_cu.main_stop.is_set():
+                phatam("Phát hiện luồng cũ đã dừng, đang khởi động lại...")
                 del self.cuasos[idcuaso]
             else:
                 phatam("Cửa sổ đã tồn tại và đang hoạt động bình thường")
                 return
+
         phatam("Khởi động thành công")
         cuaso = CuaSo(idcuaso)
         self.cuasos[idcuaso] = cuaso

@@ -111,13 +111,10 @@ class CuaSo:
             keyboard.remove_hotkey("ctrl + alt + v")
         except:
             pass
-    # Thêm hàm mới để đảm bảo các luồng dừng lại
+
     def _chotoanbocacluongdunghan(self):
-        """Chủ động chờ các luồng phụ kết thúc sau khi set main_stop."""
         for luong in self.luongs:
-            # Chỉ chờ các luồng đang chạy
             if luong.is_alive():
-                # Chờ tối đa 0.5 giây cho mỗi luồng
                 luong.join(timeout = 0.5)
 
     def tatauto(self, *args, **kwargs):
@@ -132,12 +129,20 @@ class CuaSo:
         while not self.main_stop.is_set() and self.moitruong.get_is_cuasogametontai():
             if not self.moitruong.get_is_dangmatketnoi():
                 tennhanvat = self.moitruong.get_tendoituong()
-                if tennhanvat:
-                    self.systray.update(hover_text = tennhanvat)
 
                 if tennhanvat != self.tennhanvat:
                     if tennhanvat:
+                        if self.tennhanvat:
+                            self.tactu.luuthietlap(self.tennhanvat)
+
                         self.tactu.taithietlap(tennhanvat)
+                        self.systray.update(hover_text = tennhanvat)
+
+                    elif self.tennhanvat:
+                        self.tactu.luuthietlap(self.tennhanvat)
+                        self.systray.update(hover_text = CHUACHONHANVAT)
+
+                    self.tennhanvat = tennhanvat
 
                 elif tennhanvat and time.time() - self.thoidiemluuthietlapgannhat > 2.:
                     self.thoidiemluuthietlapgannhat = time.time()
