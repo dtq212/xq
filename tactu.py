@@ -107,9 +107,11 @@ class TacTu:
         self._solansudungkhaithientichdia = 0
         self._solansudungluutinhtruymang = 0
 
+        self._is_chantangcapdo = True
+
     def __del__(self):
         try:
-            pass
+            self.moitruong.action_bochantangcapdo()
         except (pymem.exception.PymemError, pymem.exception.WinAPIError):
             pass
 
@@ -124,6 +126,7 @@ class TacTu:
             "_is_chidanhnguoichoi": self._is_chidanhnguoichoi,
             "_is_tudongtodoi": self._is_tudongtodoi,
             "_is_thucsondao": self._is_thucsondao,
+            "_is_chantangcapdo": self._is_chantangcapdo,
         }
 
         util_luuthietlap(tennhanvat, thietlap)
@@ -157,6 +160,9 @@ class TacTu:
 
             if "_is_thucsondao" in thietlap:
                 self._is_thucsondao = thietlap["_is_thucsondao"]
+
+            if "_is_chantangcapdo" in thietlap:
+                self._is_chantangcapdo = thietlap["_is_chantangcapdo"]
 
     def action_tudongtheosautruongnhom(self):
         is_tamngungtancongtheosautruongnhom = False
@@ -948,6 +954,13 @@ class TacTu:
         else:
             phatam("Tắt thục sơn đao")
 
+    def battat_is_chantangcapdo(self):
+        self._is_chantangcapdo = not self._is_chantangcapdo
+        if self._is_chantangcapdo:
+            phatam("Bật chặn tăng cấp độ")
+        else:
+            phatam("Tắt chặn tăng cấp độ")
+
     def battat_is_tudongdichuyendiemdanhxungquanh(self):
         self._is_tudongdichuyendiemdanhxungquanh = not self._is_tudongdichuyendiemdanhxungquanh
         if self._is_tudongdichuyendiemdanhxungquanh:
@@ -1345,3 +1358,9 @@ class TacTu:
                         if is_ok:
                             self._thoidiemxepchongdogannhat = time.time()
                 break
+
+    def action_chantangcapdo(self):
+        if self._is_chantangcapdo:
+            self.moitruong.action_chantangcapdo()
+        else:
+            self.moitruong.action_bochantangcapdo()

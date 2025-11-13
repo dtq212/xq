@@ -167,6 +167,8 @@ class LoopPhu:
         self.moitruong.action_vohieuhoakhoanhvungkynang()
         self.moitruong.action_vohieuhoaphimspace()
 
+        self.tactu.action_chantangcapdo()
+
         self.tactu.action_tudongdichuyenxungquanhdiem()
 
         self.tactu.action_tudongxepchongdo()
