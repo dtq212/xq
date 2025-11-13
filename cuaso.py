@@ -139,6 +139,9 @@ class CuaSo:
                 self.systray.update(hover_text = CHUACHONHANVAT)
 
             time.sleep(1)
+
+        self.main_stop.set()
+
         try:
             self.systray.shutdown()
         except:
