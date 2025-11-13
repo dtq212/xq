@@ -1,5 +1,3 @@
-import logging
-from logging.handlers import RotatingFileHandler
 import math
 import os
 import pickle
@@ -11,11 +9,6 @@ import playsound
 import unicodedata
 
 from hangso import STRING_ENCODING
-
-log_formatter = logging.Formatter('%(asctime)s %(levelname)s %(funcName)s(%(lineno)d) %(message)s')
-
-log_handler = RotatingFileHandler("_internal/log/log.log", mode = "a", maxBytes = 512 * 1024, backupCount = 5, encoding = None, delay = False)
-log_handler.setFormatter(log_formatter)
 
 def to_hex(val, nbits):
   return hex((val + (1 << nbits)) % (1 << nbits))

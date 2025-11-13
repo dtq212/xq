@@ -19,9 +19,6 @@ OFFSET_DIACHICOSOMOIKYNANG = 0x224
 
 OFFSET_DIACHICOSOTHONGTINNHANVATX = 0x1BDA60
 
-logger = logging.getLogger(__name__)
-logger.addHandler(log_handler)
-
 class MoiTruong:
     def __init__(self, idcuaso):
         self.idcuaso = idcuaso
