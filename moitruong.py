@@ -192,8 +192,6 @@ class MoiTruong:
         return read_int(self.tientrinh, x + 0x15F4)
 
     def get_diempk(self):
-        #TODO: Chưa xử lý
-        return 0
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
         if not x:
             return False

@@ -65,6 +65,9 @@ class CuaSo:
         keyboard.add_hotkey("ctrl + d", self.thietlapchidanhnguoichoi)
         keyboard.add_hotkey("ctrl + a", self.bothietlapchidanhnguoichoi)
 
+        keyboard.add_hotkey("ctrl + e", self.batpk)
+        keyboard.add_hotkey("ctrl + q", self.tatpk)
+
         keyboard.add_hotkey("ctrl + p", self.themdiemdanhxungquanh)
         keyboard.add_hotkey("ctrl + alt + shift + p", self.battat_tudongdichuyendiemdanhxungquanh)
         keyboard.add_hotkey("ctrl + alt + p", self.botoanbodiemdanhxungquanh)
@@ -221,3 +224,11 @@ class CuaSo:
     def bothietlapchidanhnguoichoi(self):
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.thietlap_chidanhnguoichoi(False)
+
+    def batpk(self):
+        if self.moitruong.get_is_cuasogamekichhoat():
+            self.tactu.action_batpk()
+
+    def tatpk(self):
+        if self.moitruong.get_is_cuasogamekichhoat():
+            self.tactu.action_tatpk()
