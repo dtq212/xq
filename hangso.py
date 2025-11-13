@@ -451,11 +451,9 @@ DIEMDANHXUNGQUANH_MAP = {
     BANDO_LOANDAO2: LOANDAO2,
 }
 
-TOAIMABO = "ToÃ¡i Ma Bá»‘"
-
 NHANVATTODOITUDONGs = (158, 224) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
 NHANVATNGUYHIEMs = tuple()
 NHANVATCUNGBANGs = (1, *NHANVATTODOITUDONGs)
-VATPHAMTUDONGNHATs = (TOAIMABO, )
+VATPHAMTUDONGNHATs = ("ToÃ¡i Ma Bá»‘", "Da Ráº¯n")
 VATPHAMTUDONGNHAT2s = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", "Bá»‘ Y", "GiÃ¡p", "CÃ´n", "KÃ­ch")
 VATPHAMXEPCHONGs = tuple()
