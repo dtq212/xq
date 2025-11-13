@@ -1027,11 +1027,12 @@ class TacTu:
         if self._is_tudongnhatdo:
             i = 0
 
-            self.moitruong.action_nhatdoxungquanh(delay = 1.)
-
-            #TODO: Đầy rương rồi thì thôi
+            # self.moitruong.action_nhatdoxungquanh(delay = 1.)
 
             while True:
+                if self.moitruong.get_is_dayhanhtrang():
+                    break
+
                 diachicosothongtinvatphamxemxet = self.moitruong.get_diachicosothongtindoituongx(i)
                 if not diachicosothongtinvatphamxemxet:
                     break
@@ -1045,17 +1046,19 @@ class TacTu:
 
                 tenvatpham = self.moitruong.get_tendoituong(diachicosothongtinvatphamxemxet)
 
-                # if tenvatpham in VATPHAMTUDONGNHATs:
-                khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
-                if khoangcach <= KHOANGCACHTOANMANHINH * 2:
-                    if not self._diachicosovatphamdangnhat or not self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) or khoangcach < self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat):
-                        if self._diachicosovatphamdangnhat != diachicosothongtinvatphamxemxet:
-                            self._diachicosovatphamdangnhat = diachicosothongtinvatphamxemxet
-                            self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
-                            break
+                print(f"Tên vật phẩm: {tenvatpham} loại vật phẩm: {self.moitruong.get_idloaidoituong(diachicosothongtinvatphamxemxet)}")
 
-            # if self._diachicosovatphamdangnhat and self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) and self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat) in VATPHAMTUDONGNHATs and self._diachicosovatphamdangnhat not in self._diachicosovatphamkhongnhats:
-            if self._diachicosovatphamdangnhat and self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) and self._diachicosovatphamdangnhat not in self._diachicosovatphamkhongnhats:
+
+                if tenvatpham in VATPHAMTUDONGNHATs or self.moitruong.get_idloaidoituong(diachicosothongtinvatphamxemxet) != 3:
+                    khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
+                    if khoangcach <= KHOANGCACHTOANMANHINH * 2:
+                        if not self._diachicosovatphamdangnhat or not self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) or khoangcach < self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat):
+                            if self._diachicosovatphamdangnhat != diachicosothongtinvatphamxemxet:
+                                self._diachicosovatphamdangnhat = diachicosothongtinvatphamxemxet
+                                self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
+                                break
+
+            if self._diachicosovatphamdangnhat and self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) and (self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat) in VATPHAMTUDONGNHATs or self.moitruong.get_idloaidoituong(diachicosothongtinvatphamxemxet) != 3) and self._diachicosovatphamdangnhat not in self._diachicosovatphamkhongnhats:
                 while True:
                     if self._is_tamngungnhatdodetheosautruongnhom:
                         break
