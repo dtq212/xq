@@ -1046,10 +1046,7 @@ class TacTu:
 
                 tenvatpham = self.moitruong.get_tendoituong(diachicosothongtinvatphamxemxet)
 
-                print(f"Tên vật phẩm: {tenvatpham} loại vật phẩm: {self.moitruong.get_idloaidoituong(diachicosothongtinvatphamxemxet)}")
-
-
-                if tenvatpham in VATPHAMTUDONGNHATs or self.moitruong.get_idloaidoituong(diachicosothongtinvatphamxemxet) != 3:
+                if tenvatpham in VATPHAMTUDONGNHATs or any(motphantenvatpham2 in tenvatpham for motphantenvatpham2 in VATPHAMTUDONGNHAT2s):
                     khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
                     if khoangcach <= KHOANGCACHTOANMANHINH * 2:
                         if not self._diachicosovatphamdangnhat or not self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) or khoangcach < self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat):
@@ -1058,7 +1055,12 @@ class TacTu:
                                 self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
                                 break
 
-            if self._diachicosovatphamdangnhat and self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) and (self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat) in VATPHAMTUDONGNHATs or self.moitruong.get_idloaidoituong(diachicosothongtinvatphamxemxet) != 3) and self._diachicosovatphamdangnhat not in self._diachicosovatphamkhongnhats:
+            if self._diachicosovatphamdangnhat:
+                tenvatpham = self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat)
+            else:
+                tenvatpham = ""
+
+            if self._diachicosovatphamdangnhat and self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) and (tenvatpham in VATPHAMTUDONGNHATs or any(motphantenvatpham in tenvatpham for motphantenvatpham in VATPHAMTUDONGNHAT2s)) and self._diachicosovatphamdangnhat not in self._diachicosovatphamkhongnhats:
                 while True:
                     if self._is_tamngungnhatdodetheosautruongnhom:
                         break

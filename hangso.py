@@ -457,4 +457,5 @@ NHANVATTODOITUDONGs = (158, 224) #ID đầu tiên sẽ được sử dụng làm
 NHANVATNGUYHIEMs = tuple()
 NHANVATCUNGBANGs = (1, *NHANVATTODOITUDONGs)
 VATPHAMTUDONGNHATs = (TOAIMABO, )
+VATPHAMTUDONGNHAT2s = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", "Bá»‘ Y", "GiÃ¡p", "CÃ´n", "KÃ­ch")
 VATPHAMXEPCHONGs = tuple()
