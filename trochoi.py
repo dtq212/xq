@@ -23,8 +23,11 @@ class TroChoi:
 
         self.thoidiemmogamemoigannhat = time.time()
     def __del__(self):
-        keyboard.remove_hotkey(self.remove1)
-        keyboard.remove_hotkey(self.remove2)
+        try:
+            keyboard.remove_hotkey(self.remove1)
+            keyboard.remove_hotkey(self.remove2)
+        except:
+            pass
 
     def themcuasohientai(self):
         if self.is_dangloop:
@@ -40,8 +43,8 @@ class TroChoi:
         if idcuaso in self.cuasos:
             cuaso_cu = self.cuasos[idcuaso]
 
-            is_disconnected = cuaso_cu.moitruong.get_is_dangmatketnoi()
             is_stopped = cuaso_cu.main_stop.is_set()
+            is_disconnected = cuaso_cu.moitruong.get_is_dangmatketnoi()
 
             if is_disconnected or is_stopped:
                 phatam("Cửa sổ đã tồn tại nhưng luồng đã dừng/mất kết nối. Đang khởi động lại...")

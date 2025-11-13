@@ -40,7 +40,6 @@ class CuaSo:
         self.tennhanvat = False
 
         self.main_stop = threading.Event()
-
         self.luongs = (
             threading.Thread(target = khoidong_looplammoitrangthaimoitruong, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_looptimkiemmuctieu, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
@@ -79,41 +78,51 @@ class CuaSo:
         self.thoidiemluuthietlapgannhat = time.time()
 
     def __del__(self):
-        self.main_stop.set()
 
+        try:
+            self.main_stop.set()
+            
+            keyboard.remove_hotkey("ctrl + f")
+            keyboard.remove_hotkey("ctrl + c")
+            keyboard.remove_hotkey("ctrl + x")
+            keyboard.remove_hotkey("ctrl + alt+ c")
+            keyboard.remove_hotkey("ctrl + alt + f")
 
-        keyboard.remove_hotkey("ctrl + f")
-        keyboard.remove_hotkey("ctrl + c")
-        keyboard.remove_hotkey("ctrl + x")
-        keyboard.remove_hotkey("ctrl + alt+ c")
-        keyboard.remove_hotkey("ctrl + alt + f")
+            keyboard.remove_hotkey("ctrl + d")
+            keyboard.remove_hotkey("ctrl + a")
 
-        keyboard.remove_hotkey("ctrl + d")
-        keyboard.remove_hotkey("ctrl + a")
+            keyboard.remove_hotkey("ctrl + p")
+            keyboard.remove_hotkey("ctrl + alt + shift + p")
+            keyboard.remove_hotkey("ctrl + alt + p")
 
-        keyboard.remove_hotkey("ctrl + p")
-        keyboard.remove_hotkey("ctrl + alt + shift + p")
-        keyboard.remove_hotkey("ctrl + alt + p")
+            keyboard.remove_hotkey("ctrl + m")
+            keyboard.remove_hotkey("ctrl + alt + y")
+            keyboard.remove_hotkey("ctrl + alt + b")
+            keyboard.remove_hotkey("ctrl + alt + t")
 
-        keyboard.remove_hotkey("ctrl + m")
-        keyboard.remove_hotkey("ctrl + alt + y")
-        keyboard.remove_hotkey("ctrl + alt + b")
-        keyboard.remove_hotkey("ctrl + alt + t")
+            keyboard.remove_hotkey("ctrl + alt + e")
+            keyboard.remove_hotkey("ctrl + alt + w")
+            keyboard.remove_hotkey("ctrl + alt + r")
+            keyboard.remove_hotkey("ctrl + alt + l")
 
-        keyboard.remove_hotkey("ctrl + alt + e")
-        keyboard.remove_hotkey("ctrl + alt + w")
-        keyboard.remove_hotkey("ctrl + alt + r")
-        keyboard.remove_hotkey("ctrl + alt + l")
+            keyboard.remove_hotkey("ctrl + alt + d")
+            keyboard.remove_hotkey("ctrl + w")
 
-        keyboard.remove_hotkey("ctrl + alt + d")
-        keyboard.remove_hotkey("ctrl + w")
-
-        keyboard.remove_hotkey("ctrl + alt + v")
-
+            keyboard.remove_hotkey("ctrl + alt + v")
+        except:
+            pass
+    # Thêm hàm mới để đảm bảo các luồng dừng lại
+    def _chotoanbocacluongdunghan(self):
+        """Chủ động chờ các luồng phụ kết thúc sau khi set main_stop."""
+        for luong in self.luongs:
+            # Chỉ chờ các luồng đang chạy
+            if luong.is_alive():
+                # Chờ tối đa 0.5 giây cho mỗi luồng
+                luong.join(timeout = 0.5)
 
     def tatauto(self, *args, **kwargs):
         self.main_stop.set()
-
+        self._chotoanbocacluongdunghan()
         try:
             self.systray.shutdown()
         except:
@@ -141,7 +150,7 @@ class CuaSo:
             time.sleep(1)
 
         self.main_stop.set()
-
+        self._chotoanbocacluongdunghan()
         try:
             self.systray.shutdown()
         except:
