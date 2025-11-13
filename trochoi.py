@@ -23,15 +23,10 @@ class TroChoi:
 
         self.thoidiemmogamemoigannhat = time.time()
     def __del__(self):
-        try:
-            keyboard.remove_hotkey(self.remove1)
-            keyboard.remove_hotkey(self.remove2)
-        except:
-            pass
+        keyboard.remove_hotkey(self.remove1)
+        keyboard.remove_hotkey(self.remove2)
 
     def themcuasohientai(self):
-        if self.is_dangloop:
-            return
         idcuaso = win32gui.GetForegroundWindow()
 
         tencuaso = win32gui.GetWindowText(idcuaso)

@@ -78,39 +78,35 @@ class CuaSo:
         self.thoidiemluuthietlapgannhat = time.time()
 
     def __del__(self):
+        self.main_stop.set()
 
-        try:
-            self.main_stop.set()
-            
-            keyboard.remove_hotkey("ctrl + f")
-            keyboard.remove_hotkey("ctrl + c")
-            keyboard.remove_hotkey("ctrl + x")
-            keyboard.remove_hotkey("ctrl + alt+ c")
-            keyboard.remove_hotkey("ctrl + alt + f")
+        keyboard.remove_hotkey("ctrl + f")
+        keyboard.remove_hotkey("ctrl + c")
+        keyboard.remove_hotkey("ctrl + x")
+        keyboard.remove_hotkey("ctrl + alt+ c")
+        keyboard.remove_hotkey("ctrl + alt + f")
 
-            keyboard.remove_hotkey("ctrl + d")
-            keyboard.remove_hotkey("ctrl + a")
+        keyboard.remove_hotkey("ctrl + d")
+        keyboard.remove_hotkey("ctrl + a")
 
-            keyboard.remove_hotkey("ctrl + p")
-            keyboard.remove_hotkey("ctrl + alt + shift + p")
-            keyboard.remove_hotkey("ctrl + alt + p")
+        keyboard.remove_hotkey("ctrl + p")
+        keyboard.remove_hotkey("ctrl + alt + shift + p")
+        keyboard.remove_hotkey("ctrl + alt + p")
 
-            keyboard.remove_hotkey("ctrl + m")
-            keyboard.remove_hotkey("ctrl + alt + y")
-            keyboard.remove_hotkey("ctrl + alt + b")
-            keyboard.remove_hotkey("ctrl + alt + t")
+        keyboard.remove_hotkey("ctrl + m")
+        keyboard.remove_hotkey("ctrl + alt + y")
+        keyboard.remove_hotkey("ctrl + alt + b")
+        keyboard.remove_hotkey("ctrl + alt + t")
 
-            keyboard.remove_hotkey("ctrl + alt + e")
-            keyboard.remove_hotkey("ctrl + alt + w")
-            keyboard.remove_hotkey("ctrl + alt + r")
-            keyboard.remove_hotkey("ctrl + alt + l")
+        keyboard.remove_hotkey("ctrl + alt + e")
+        keyboard.remove_hotkey("ctrl + alt + w")
+        keyboard.remove_hotkey("ctrl + alt + r")
+        keyboard.remove_hotkey("ctrl + alt + l")
 
-            keyboard.remove_hotkey("ctrl + alt + d")
-            keyboard.remove_hotkey("ctrl + w")
+        keyboard.remove_hotkey("ctrl + alt + d")
+        keyboard.remove_hotkey("ctrl + w")
 
-            keyboard.remove_hotkey("ctrl + alt + v")
-        except:
-            pass
+        keyboard.remove_hotkey("ctrl + alt + v")
 
     def _chotoanbocacluongdunghan(self):
         for luong in self.luongs:
