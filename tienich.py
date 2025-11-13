@@ -64,6 +64,7 @@ def slugify(value, allow_unicode = False):
 
 
 def phatam(noidung):
+    print(f"phatam: {noidung}")
     tenfile = slugify(noidung)
     folder_amthanh_path = os.path.join(".", "_internal", "amthanh")
     if not os.path.exists(folder_amthanh_path):
