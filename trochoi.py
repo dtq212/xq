@@ -31,18 +31,29 @@ class TroChoi:
             return
         idcuaso = win32gui.GetForegroundWindow()
 
-        if idcuaso in self.cuasos:
-            phatam("Cửa sổ đã tồn tại")
+        tencuaso = win32gui.GetWindowText(idcuaso)
+        if not (tencuaso and tencuaso.startswith("Chien Quoc")):
+            phatam("Khởi động thất bại. Không phải cửa sổ game")
             return
 
-        tencuaso = win32gui.GetWindowText(idcuaso)
-        if tencuaso and tencuaso.startswith("Chien Quoc"):
-            phatam("Khởi động thành công")
-            cuaso = CuaSo(idcuaso)
-            self.cuasos[idcuaso] = cuaso
-            threading.Thread(target = loop_cuaso, args = [cuaso], daemon = False).start()
-        else:
-            phatam("Khởi động thất bại")
+        if idcuaso in self.cuasos:
+            cuaso_cu = self.cuasos[idcuaso]
+            is_disconnected = cuaso_cu.moitruong.get_is_dangmatketnoi()
+            is_stopped = cuaso_cu.main_stop.is_set()
+
+            if is_disconnected or is_stopped:
+                phatam("Cửa sổ đã tồn tại nhưng đang bị treo/mất kết nối. Đang khởi động lại...")
+
+                cuaso_cu.tatauto()
+                del self.cuasos[idcuaso]
+            else:
+                phatam("Cửa sổ đã tồn tại và đang hoạt động bình thường")
+                return
+
+        phatam("Khởi động thành công")
+        cuaso = CuaSo(idcuaso)
+        self.cuasos[idcuaso] = cuaso
+        threading.Thread(target = loop_cuaso, args = [cuaso], daemon = False).start()
 
     def tatauto(self):
         for cuaso in self.cuasos.values():
