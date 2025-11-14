@@ -195,12 +195,7 @@ class MoiTruong:
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
         if not x:
             return False
-        x = read_string(self.tientrinh, x + 0xC0)
-        if not x:
-            return False
-        if not x.isnumeric():
-            return False
-        return int(x)
+        return read_int(self.tientrinh, x + 0x1568)
     #
 
     def get_diachicosothongtinnhanvat1(self):

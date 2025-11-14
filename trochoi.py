@@ -59,18 +59,25 @@ class TroChoi:
         idcuasohethans = set()
         idnguoichoihethans = set()
 
-        for idcuaso, cuaso in self.cuasos.items():
-            if cuaso.main_stop.is_set() or not cuaso.moitruong.get_is_cuasogametontai():
-                idcuasohethans.add(idcuaso)
-                idnguoichoihethans.add(cuaso.moitruong._idnguoichoi)
-                cuaso.main_stop.set()
+        soluongcuaso = 0
 
-        for idcuasohethan in idcuasohethans:
-            del self.cuasos[idcuasohethan]
+        try:
+            for idcuaso, cuaso in self.cuasos.items():
+                if cuaso.main_stop.is_set() or not cuaso.moitruong.get_is_cuasogametontai():
+                    idcuasohethans.add(idcuaso)
+                    idnguoichoihethans.add(cuaso.moitruong._idnguoichoi)
+                    cuaso.main_stop.set()
 
-        soluongcuaso = len(self.cuasos)
-        if soluongcuaso < self.soluongcuaso:
-            phatam("Game đã bị đóng")
+            for idcuasohethan in idcuasohethans:
+                del self.cuasos[idcuasohethan]
+
+            soluongcuaso = len(self.cuasos)
+            if soluongcuaso < self.soluongcuaso:
+                phatam("Game đã bị đóng")
+
+        except Exception as e:
+            phatam(f"🚨 Lỗi đột ngột trong vòng lặp chính: {e}. Đang cố gắng tiếp tục.")
+            pass
 
         self.is_dangloop = False
         self.soluongcuaso = soluongcuaso
