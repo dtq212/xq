@@ -103,6 +103,7 @@ if __name__ == "__main__":
     if not is_datrung:
         trochoi = TroChoi()
         while not trochoi.is_dangchay.is_set():
+            time.sleep(0.0001)
             trochoi.loop()
 
         trochoi.tatauto()

@@ -235,6 +235,7 @@ class MoiTruong:
         i = -1
         danhsachidnguoichoixungquanhs = []
         while True:
+            time.sleep(0.0001)
             i += 1
             diachicosothongtinnhanvatxemxet = self.get_diachicosothongtindoituongx(i)
             if not diachicosothongtinnhanvatxemxet:
@@ -633,6 +634,7 @@ class MoiTruong:
         i = -1
 
         while True:
+            time.sleep(0.0001)
             if not self.get_is_nhanvattontai(diachicosothongtinnhanvat):
                 return hieuungs
 
@@ -710,6 +712,7 @@ class MoiTruong:
             return False
 
         while True:
+            time.sleep(0.0001)
             if not self.get_is_nhanvattontai(diachicosothongtinnhanvat):
                 return macdinh
 
@@ -2171,6 +2174,7 @@ class MoiTruong:
         i = -1
 
         while True:
+            time.sleep(0.0001)
             if i >= SOLUONGVATPHAMHANHTRANGTOIDA:
                 break
 
@@ -2189,6 +2193,7 @@ class MoiTruong:
         i = -1
         vatphamhanhtrang_map = {}
         while True:
+            time.sleep(0.0001)
             if i >= SOLUONGVATPHAMHANHTRANGTOIDA:
                 break
 
@@ -2212,6 +2217,7 @@ class MoiTruong:
         i = 0
 
         while True:
+            time.sleep(0.0001)
             diachicosothongtinnhanvatxemxet = self.get_diachicosothongtindoituongx(i)
             if not diachicosothongtinnhanvatxemxet:
                 break
@@ -2332,6 +2338,7 @@ class MoiTruong:
     def get_is_dayhanhtrang(self):
         i = -1
         while True:
+            time.sleep(0.0001)
             if i >= SOLUONGVATPHAMHANHTRANGTOIDA:
                 break
 
