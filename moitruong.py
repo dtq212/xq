@@ -1087,7 +1087,7 @@ class MoiTruong:
     def action_bochantangcapdo(self):
         if read_bytes(self.tientrinh, self.diachixq + 0x13FB61, 1) != bytes.fromhex("E8"):
             write_bytes(self.tientrinh, self.diachixq + 0x13FB61, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self.diachixq + 0x13FB61 + 1, self.diachixq + 0x16C730 - self.diachixq + 0x13FB61 - 5)
+            write_int(self.tientrinh, self.diachixq + 0x13FB61 + 1, self.diachixq + 0x16C730 - (self.diachixq + 0x13FB61) - 5)
 
     def action_vohieuhoakhoanhvungkynang(self):
         #TODO: Chưa xử lý
