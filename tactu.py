@@ -451,7 +451,13 @@ class TacTu:
                         self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_KHIETVANQUYET)
                         break
 
-                if phantramsinhlucconlai <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_SOTRI):
+                if phantramsinhlucconlai <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_CAMLOTRI):
+                    is_tamngungdichuyensudungkynang = True
+                    if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+                        self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_CAMLOTRI)
+                        break
+
+                if phantramsinhlucconlai <= 90. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_SOTRI):
                     is_tamngungdichuyensudungkynang = True
                     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
                         self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_SOTRI)
@@ -529,13 +535,13 @@ class TacTu:
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_KHIETVANQUYET, diachicosothongtinnhanvatphantramsinhlucthapnhat, is_khongkiemtracothetancong = True)
                         break
 
-                if diachicosothongtinnhanvatphantramsinhlucthapnhat and phantramsinhlucconlaithapnhat <= 50. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_CAMLOTRI):
+                if diachicosothongtinnhanvatphantramsinhlucthapnhat and phantramsinhlucconlaithapnhat <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_CAMLOTRI):
                     is_tamngungdichuyensudungkynang = True
                     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_CAMLOTRI, diachicosothongtinnhanvatphantramsinhlucthapnhat, is_khongkiemtracothetancong = True)
                         break
 
-                if diachicosothongtinnhanvatphantramsinhlucthapnhat and phantramsinhlucconlaithapnhat <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_SOTRI):
+                if diachicosothongtinnhanvatphantramsinhlucthapnhat and phantramsinhlucconlaithapnhat <= 90. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_SOTRI):
                     is_tamngungdichuyensudungkynang = True
                     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_SOTRI, diachicosothongtinnhanvatphantramsinhlucthapnhat, is_khongkiemtracothetancong = True)
