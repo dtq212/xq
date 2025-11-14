@@ -237,6 +237,7 @@ class TacTu:
             i = 0
 
             while True:
+                time.sleep(0.0001)
                 idbandohientai = self.moitruong.get_idbandohientai()
                 is_bandokhongtancong = idbandohientai in BANDOKHONGTANCONGs
 
@@ -376,6 +377,7 @@ class TacTu:
         is_tamngungdichuyensudungkynang = False
         if self._is_tudongsudungkynang:
             while True:
+                time.sleep(0.0001)
                 if self._is_tamngungtancongdebuffchothanhviennhom:
                     break
                 if self._is_tamngungtancongdichuyenlenbandovuachet:
@@ -471,11 +473,11 @@ class TacTu:
                         
                 #ƯU TIÊN BUFF HIỆU ỨNG CHO BẢN THÂN TRƯỚC
                 if not diachicosothongtinnhanvatmuctieudangchon or not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
-                    if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NOIKHANG,), macdinh = True, is_hieuungcoloi = 1) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KIMGIAPTHANCONG):
-                        is_tamngungdichuyensudungkynang = True
-                        if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
-                            self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_KIMGIAPTHANCONG)
-                        break
+                    # if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NOIKHANG,), macdinh = True, is_hieuungcoloi = 1) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KIMGIAPTHANCONG):
+                    #     is_tamngungdichuyensudungkynang = True
+                    #     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+                    #         self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_KIMGIAPTHANCONG)
+                    #     break
                     if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KIMCHAMDOACH,), macdinh = True, is_hieuungcoloi = 1):
                         is_tamngungdichuyensudungkynang = True
                         if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
@@ -581,6 +583,7 @@ class TacTu:
         is_tamngungdichuyensudungkynang = False
         if self._is_tudongsudungkynang:
             while True:
+                time.sleep(0.0001)
                 if self._is_tamngungtancongtheosautruongnhom:
                     break
                 if self._is_tamngungtancongdenhatdo:
@@ -905,6 +908,7 @@ class TacTu:
         is_tamngungdichuyensudungkynang = False
         if self._is_tudongsudungkynang:
             while True:
+                time.sleep(0.0001)
                 if self._is_tamngungtancongtheosautruongnhom:
                     break
                 if self._is_tamngungtancongdenhatdo:
@@ -1061,6 +1065,7 @@ class TacTu:
             # self.moitruong.action_nhatdoxungquanh(delay = 1.)
 
             while True:
+                time.sleep(0.0001)
                 if diachicosomuctieudangchon := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
                     if self.moitruong.get_is_nguoichoi(diachicosomuctieudangchon) and self.moitruong.get_is_cothetancong(diachicosomuctieudangchon):
                         break
@@ -1339,6 +1344,7 @@ class TacTu:
     def action_tudongxepchongdo(self, delay = 0.5):
         if self._is_tudongxepchongdo and VATPHAMXEPCHONGs:
             while True:
+                time.sleep(0.0001)
                 if time.time() - self._thoidiemxepchongdogannhat < delay:
                     break
 

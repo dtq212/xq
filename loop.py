@@ -25,7 +25,7 @@ class LoopLamMoiTrangThaiMoiTruong:
                 print("Loop làm mới trạng thái môi trường: {}".format(err))
                 time.sleep(1)
 
-            time.sleep(0.02)
+            time.sleep(0.05)
 
     def step(self):
         if not self.moitruong.get_is_nhanvattontai():
@@ -59,7 +59,7 @@ class LoopTimKiemMucTieu:
                 print("Luồng tìm kiếm mục tiêu: {}".format(err))
                 time.sleep(1)
 
-            time.sleep(0.02)
+            time.sleep(0.05)
 
     def step(self):
         if not self.moitruong.get_is_nhanvattontai():
@@ -101,7 +101,7 @@ class LoopChinh:
                 print("Luồng chính: {}".format(err))
                 time.sleep(1)
 
-            time.sleep(0.02)
+            time.sleep(0.05)
 
     def step(self):
         if not self.moitruong.get_is_nhanvattontai():
@@ -147,7 +147,7 @@ class LoopPhu:
             except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
                 print("Luồng phụ: {}".format(err))
                 time.sleep(1)
-            time.sleep(0.02)
+            time.sleep(0.05)
 
     def step(self):
         if not self.moitruong.get_is_nhanvattontai():
@@ -212,7 +212,7 @@ class LoopSuDungVatPham:
                 print("Luồng sử dụng vật phẩm: {}".format(err))
                 time.sleep(1)
 
-            time.sleep(0.02)
+            time.sleep(0.05)
 
     def step(self):
         if not self.moitruong.get_is_nhanvattontai():
@@ -251,7 +251,7 @@ class LoopCatDoVaoRuong:
                 print("Luồng cất đồ vào rương: {}".format(err))
                 time.sleep(1)
 
-            time.sleep(0.02)
+            time.sleep(0.05)
 
     def step(self):
         if not self.moitruong.get_is_nhanvattontai():
