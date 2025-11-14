@@ -1055,6 +1055,10 @@ class TacTu:
             # self.moitruong.action_nhatdoxungquanh(delay = 1.)
 
             while True:
+                if diachicosomuctieudangchon := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
+                    if self.moitruong.get_is_nguoichoi(diachicosomuctieudangchon) and self.moitruong.get_is_cothetancong(diachicosomuctieudangchon):
+                        break
+
                 if self.moitruong.get_is_dayhanhtrang():
                     break
 
