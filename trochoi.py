@@ -10,7 +10,10 @@ from cuaso import CuaSo
 from tienich import phatam
 
 def loop_cuaso(cuaso: CuaSo):
-    cuaso.loop()
+    try:
+        cuaso.loop()
+    except:
+        pass
 
 class TroChoi:
     def __init__(self):
@@ -103,7 +106,6 @@ if __name__ == "__main__":
     if not is_datrung:
         trochoi = TroChoi()
         while not trochoi.is_dangchay.is_set():
-            time.sleep(0.0001)
             trochoi.loop()
 
         trochoi.tatauto()
