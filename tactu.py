@@ -222,10 +222,11 @@ class TacTu:
                 if self._is_tamngungdichuyensudungkynang:
                     break
 
-                if self.moitruong.get_idbandohientai() not in BANDOKHONGTANCONGs and self.moitruong.get_tenmonphai() == "thucson" and khoangcachtruongnhom >= 6 and not self.moitruong.get_is_vohieuhoadichuyen() and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA, delay = 1.):
-                    self.moitruong.action_sudungkynangvitriphudaudiem(*VITRIKYNANG_KHAITHIENTICHDIA, xtruongnhom, ytruongnhom, khoangcachphudau = khoangcachtruongnhom - khoangcachtoidatruongnhom + 3.)
-                else:
-                    self.moitruong.action_dichuyengiukhoangcachtoidadiem(xtruongnhom, ytruongnhom, khoangcachtoidatruongnhom - 1.5, delay = 1.)
+                # if self.moitruong.get_idbandohientai() not in BANDOKHONGTANCONGs and self.moitruong.get_tenmonphai() == "thucson" and khoangcachtruongnhom >= 6 and not self.moitruong.get_is_vohieuhoadichuyen() and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA, delay = 1.):
+                #     self.moitruong.action_sudungkynangvitriphudaudiem(*VITRIKYNANG_KHAITHIENTICHDIA, xtruongnhom, ytruongnhom, khoangcachphudau = khoangcachtruongnhom - khoangcachtoidatruongnhom + 3.)
+                # else:
+
+                self.moitruong.action_dichuyengiukhoangcachtoidadiem(xtruongnhom, ytruongnhom, khoangcachtoidatruongnhom - 1.5, delay = 1.)
 
                 break
 
