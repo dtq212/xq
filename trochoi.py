@@ -76,7 +76,7 @@ class TroChoi:
 
             soluongcuaso = len(self.cuasos)
             if soluongcuaso < self.soluongcuaso:
-                phatam("Game đã bị đóng")
+                phatam("Game đã bị đóng", True)
 
         except Exception as e:
             phatam(f"🚨 Lỗi đột ngột trong vòng lặp chính: {e}. Đang cố gắng tiếp tục.")

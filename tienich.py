@@ -63,7 +63,7 @@ def slugify(value, allow_unicode = False):
     return re.sub(r"[-\s]+", "-", value).strip("-_")
 
 
-def phatam(noidung):
+def phatam(noidung, is_block = False):
     print(f"phatam: {noidung}")
     tenfile = slugify(noidung)
     folder_amthanh_path = os.path.join(".", "_internal", "amthanh")
@@ -75,7 +75,7 @@ def phatam(noidung):
     if not os.path.exists(file_path):
         gtts.gTTS(noidung, lang = "vi").save(file_path)
     try:
-        playsound.playsound(file_path, False)
+        playsound.playsound(file_path, is_block)
     except playsound.PlaysoundException as err:
         print("Phát âm lỗi: {}".format(err))
 
