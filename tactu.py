@@ -843,12 +843,17 @@ class TacTu:
                         if thoigiantuthenhanvatdungim > 1.:
                             khoangcachgiutoida = KHOANGCACHSUDUNGKYNANGTAMXA - min(1. + thoigiantuthenhanvatdungim + (3 if not is_muctieudangchonlanguoichoi else 0), 3.)
 
-
                             if self.moitruong.get_is_dangnamtrongnhom() and not self.moitruong.get_is_truongnhom():
                                 if diachicosothongtinnhanvattruongnhom := self.moitruong.get_diachicosothongtinnhanvattruongnhom():
                                     khoangcachmuctieutruongnhom = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon, diachicosothongtinnhanvattruongnhom)
-                                    nguongkhoangcachtoida = self._khoangcachtoidatruongnhom + KHOANGCACHSUDUNGKYNANGTAMXA
-                                    if khoangcachmuctieutruongnhom > nguongkhoangcachtoida:
+
+                                    khoangcachtoidatruongnhom = self._khoangcachtoidatruongnhom
+
+                                    khoangcachtoidatruongnhom -= 4.5
+
+                                    nguongkhoangcachtoida = khoangcachtoidatruongnhom + khoangcachgiutoida
+
+                                    if khoangcachmuctieutruongnhom > nguongkhoangcachtoida and self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon) < khoangcachmuctieutruongnhom:
                                         break
 
                             if thoigiantuthenhanvatdungim > 4.5:
