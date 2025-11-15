@@ -1326,9 +1326,6 @@ class MoiTruong:
         return True
 #
     def auto_assemble_thucthicaulenh(self, caulenh):
-        print(f"MoiTruong.auto_assemble_thucthicaulenh - caulenh: {caulenh}")
-        print("{} auto_assemble_thucthicaulenh: {}".format(self.get_tendoituong(), caulenh))
-
         if not self._is_dasetupautoassemblethucthicaulenh:
             self._diachiautoassemblethucthicaulenh = self.tientrinh.allocate(128)
 
