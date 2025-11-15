@@ -250,6 +250,7 @@ MONPHAI_MAP = {
 }
 
 BANDO_TANTHUTHON = 1
+BANDO_CUTHUDAO = 549
 BANDO_CHU = 80
 BANDO_THUCSON = 273
 BANDO_VANMONGCOC = 165
@@ -456,9 +457,9 @@ DIEMDANHXUNGQUANH_MAP = {
 NHANVATTODOITUDONGs = (724, 725, 158, 224) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
 NHANVATNGUYHIEMs = tuple()
 NHANVATCUNGBANGs = (1, *NHANVATTODOITUDONGs)
-VATPHAMTUDONGNHATs = ("ToÃ¡i Ma Bá»‘", "Da Ráº¯n", "TÆ¡ Táº±m", "Ly Há»“n", "ToÃ¡i LÄƒng", "Ly PhÃ¡ch", "Ma Tinh Tháº¡ch", "Huá»³nh Quang Tháº¡ch", "Äá»™ng Váº­t Bi Mao", LAMCAU, HOACAU, HONGCAU)
-VATPHAMTUDONGNHAT2s = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", "Bá»‘ Y", "GiÃ¡p", "CÃ´n", "KÃ­ch")
-VATPHAMTUDONGNHAT2s = tuple()
+VATPHAMTUDONGNHATs = ("ToÃ¡i Ma Bá»‘", "Da Ráº¯n", "TÆ¡ Táº±m", "Ly Há»“n", "ToÃ¡i LÄƒng", "Ly PhÃ¡ch", "Ma Tinh Tháº¡ch", "Huá»³nh Quang Tháº¡ch", "Äá»™ng Váº­t Bi Mao", LAMCAU, HOACAU, HONGCAU, "ToÃ¡i Sa", "Nhiáº¿p Há»“n Tháº¡ch", "Tá»­ Kim Báº£o Há»™p")
+VATPHAMTUDONGNHATCUTHUDAOs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o")
+# VATPHAMTUDONGNHAT2s = tuple()
 VATPHAMXEPCHONGs = tuple()
 
 TENMUCTIEUKHONGTANCONGs = (SONGTUDUNGCAM, )

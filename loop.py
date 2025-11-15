@@ -20,7 +20,6 @@ class LoopLamMoiTrangThaiMoiTruong:
     def loop(self):
         while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():
             try:
-                time.sleep(0.0001)
                 self.step()
             except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
                 print("Loop làm mới trạng thái môi trường: {}".format(err))
@@ -55,7 +54,6 @@ class LoopTimKiemMucTieu:
     def loop(self):
         while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():
             try:
-                time.sleep(0.0001)
                 self.step()
             except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
                 print("Luồng tìm kiếm mục tiêu: {}".format(err))
@@ -98,7 +96,6 @@ class LoopChinh:
     def loop(self):
         while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():
             try:
-                time.sleep(0.0001)
                 self.step()
             except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
                 print("Luồng chính: {}".format(err))
@@ -146,7 +143,6 @@ class LoopPhu:
     def loop(self):
         while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():
             try:
-                time.sleep(0.0001)
                 self.step()
             except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
                 print("Luồng phụ: {}".format(err))
@@ -211,7 +207,6 @@ class LoopSuDungVatPham:
     def loop(self):
         while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():
             try:
-                time.sleep(0.0001)
                 self.step()
             except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
                 print("Luồng sử dụng vật phẩm: {}".format(err))
@@ -251,7 +246,6 @@ class LoopCatDoVaoRuong:
     def loop(self):
         while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():
             try:
-                time.sleep(0.0001)
                 self.step()
             except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
                 print("Luồng cất đồ vào rương: {}".format(err))
