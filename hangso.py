@@ -233,6 +233,7 @@ RUONGBAOTHACHDAI = "RÆ°Æ¡ng Báº£o Tháº¡ch(Äáº¡i)"
 GATAYNOEL = "GÃ  TÃ¢y Noel"
 LIXI = "Phong Bao LÃ¬ XÃ¬"
 HACLANTHACH = "Háº¯c LÃ¢n Tháº¡ch"
+SONGTUDUNGCAM = "Song Tá»­ DÅ©ng Cáº£m"
 
 TUILINHTHACHCAP1 = "TÃºi Linh Tháº¡ch cáº¥p 1"
 TUILINHTHACHCAP2 = "TÃºi Linh Tháº¡ch cáº¥p 2"
@@ -458,3 +459,5 @@ VATPHAMTUDONGNHATs = ("ToÃ¡i Ma Bá»‘", "Da Ráº¯n", "TÆ¡ Táº±m", "L
 VATPHAMTUDONGNHAT2s = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", "Bá»‘ Y", "GiÃ¡p", "CÃ´n", "KÃ­ch")
 VATPHAMTUDONGNHAT2s = tuple()
 VATPHAMXEPCHONGs = tuple()
+
+TENMUCTIEUKHONGTANCONGs = (SONGTUDUNGCAM, )
