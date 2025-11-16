@@ -235,6 +235,7 @@ GATAYNOEL = "GÃ  TÃ¢y Noel"
 LIXI = "Phong Bao LÃ¬ XÃ¬"
 HACLANTHACH = "Háº¯c LÃ¢n Tháº¡ch"
 SONGTUDUNGCAM = "Song Tá»­ DÅ©ng Cáº£m"
+THANTHUTHO = "Tháº§n ThÃº - Thá»"
 
 TUILINHTHACHCAP1 = "TÃºi Linh Tháº¡ch cáº¥p 1"
 TUILINHTHACHCAP2 = "TÃºi Linh Tháº¡ch cáº¥p 2"
@@ -458,8 +459,8 @@ NHANVATTODOITUDONGs = (724, 725, 158, 224, 1186, 1187) #ID đầu tiên sẽ đ�
 NHANVATNGUYHIEMs = tuple()
 NHANVATCUNGBANGs = (1, *NHANVATTODOITUDONGs)
 VATPHAMTUDONGNHATs = ("ToÃ¡i Ma Bá»‘", "Da Ráº¯n", "TÆ¡ Táº±m", "Ly Há»“n", "ToÃ¡i LÄƒng", "Ly PhÃ¡ch", "Ma Tinh Tháº¡ch", "Huá»³nh Quang Tháº¡ch", "Äá»™ng Váº­t Bi Mao", LAMCAU, HOACAU, HONGCAU, "ToÃ¡i Sa", "Nhiáº¿p Há»“n Tháº¡ch", "Tá»­ Kim Báº£o Há»™p")
-VATPHAMTUDONGNHATCUTHUDAOs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o")
+VATPHAMTUDONGNHATCUTHUDAOs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n")
 # VATPHAMTUDONGNHAT2s = tuple()
 VATPHAMXEPCHONGs = tuple()
 
-TENMUCTIEUKHONGTANCONGs = (SONGTUDUNGCAM, )
+TENMUCTIEUKHONGTANCONGs = (SONGTUDUNGCAM, THANTHUTHO)
