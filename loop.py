@@ -209,7 +209,6 @@ class LoopPhu:
         if not self.moitruong.get_is_bathanhtrang():
             self.moitruong.set_is_batalt(True)
 
-
 class LoopSuDungVatPham:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
         self.moitruong = moitruong
@@ -248,39 +247,3 @@ class LoopSuDungVatPham:
             return
 
         self.tactu.action_tudongsudungvatpham()
-
-
-class LoopCatDoVaoRuong:
-    def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
-        self.moitruong = moitruong
-        self.tactu = tactu
-        self.stop = stop
-
-    def __del__(self):
-        try:
-            pass
-        except (pymem.exception.PymemError, pymem.exception.WinAPIError):
-            pass
-
-        if not self.stop.is_set():
-            self.stop.set()
-
-    def loop(self):
-        while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():
-            try:
-                self.step()
-            except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
-                print("Luồng cất đồ vào rương: {}".format(err))
-                time.sleep(1)
-
-            time.sleep(0.05)
-
-    def step(self):
-        if not self.moitruong.get_is_nhanvattontai():
-            return
-
-        if self.moitruong.get_is_dangmatketnoi():
-            return
-
-        if time.time() - self.tactu._thoigiantamngungauto < 2.:
-            return
