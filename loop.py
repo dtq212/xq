@@ -6,7 +6,6 @@ from moitruong import MoiTruong
 from tactu import TacTu
 from tienich import phatam
 
-
 class LoopLamMoiTrangThaiMoiTruong:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
         self.moitruong = moitruong
@@ -77,6 +76,34 @@ class LoopTimKiemMucTieu:
         self.tactu.action_tudongtimkiemmuctieu()
         self.moitruong.action_phananhdiachicosothongtinnhanvatmuctieudangchoningame()
 
+class LoopDieuPhoiDiChuyen:
+    def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
+        self.moitruong = moitruong
+        self.tactu = tactu
+        self.stop = stop
+
+    def __del__(self):
+        if not self.stop.is_set():
+            self.stop.set()
+
+    def loop(self):
+        while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():
+            try:
+                self.step()
+            except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
+                print("Luồng điều phối di chuyển: {}".format(err))
+                time.sleep(1)
+            time.sleep(0.05)
+
+    def step(self):
+        if not self.moitruong.get_is_nhanvattontai():
+            return
+        if self.moitruong.get_is_dangmatketnoi():
+            return
+        if time.time() - self.tactu._thoigiantamngungauto < 2.:
+            return
+        self.tactu.action_xulydichuyenuutien()
+
 class LoopChinh:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
         self.moitruong = moitruong
@@ -113,11 +140,9 @@ class LoopChinh:
         if time.time() - self.tactu._thoigiantamngungauto < 2.:
             return
 
-        self.tactu.action_tudongtheosautruongnhom()
+        self.tactu._action_theonhom()
+        self.tactu._action_sudungkynang()
 
-        tenmonphai = self.moitruong.get_tenmonphai()
-        if hasattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai)):
-            getattr(self.tactu, "action_tudongsudungkynang_{}".format(tenmonphai))()
 
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
@@ -162,24 +187,19 @@ class LoopPhu:
         self.moitruong.action_vohieuhoathietlapmuctieu()
         self.moitruong.action_vohieuhoatuthedelaysautancong()
         self.moitruong.action_vohieuhoalongclick()
-
         self.moitruong.action_vohieuhoatrangthaichuotchonmuctieukynang()
         self.moitruong.action_vohieuhoakhoanhvungkynang()
         self.moitruong.action_vohieuhoaphimspace()
-
         self.tactu.action_chantangcapdo()
-
-        self.tactu.action_tudongdichuyenxungquanhdiem()
-
         self.tactu.action_tudongxepchongdo()
         self.tactu.action_tudongtodoi()
-
         self.tactu.action_tudongphucsinh()
         self.tactu.action_tudongdoimaupk()
         self.tactu.action_tudongsuado()
-
-        self.tactu.action_tudongnhatdo()
         self.tactu.action_tudongvutdo()
+
+        self.tactu._action_dichuyentudo()
+        self.tactu._action_nhatdo()
 
         if self.moitruong.get_is_nhanvatdachet():
             if time.time() - self.thoidiemthongbaochetgannhat > 5.:
@@ -188,6 +208,7 @@ class LoopPhu:
 
         if not self.moitruong.get_is_bathanhtrang():
             self.moitruong.set_is_batalt(True)
+
 
 class LoopSuDungVatPham:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
@@ -227,6 +248,7 @@ class LoopSuDungVatPham:
             return
 
         self.tactu.action_tudongsudungvatpham()
+
 
 class LoopCatDoVaoRuong:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):

@@ -8,30 +8,33 @@ from moitruong import MoiTruong
 from tactu import TacTu
 from hangso import *
 
+
 def khoidong_looplammoitrangthaimoitruong(moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
     luong = LoopLamMoiTrangThaiMoiTruong(moitruong, tactu, stop)
     luong.loop()
+
 
 def khoidong_looptimkiemmuctieu(moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
     luong = LoopTimKiemMucTieu(moitruong, tactu, stop)
     luong.loop()
 
+
 def khoidong_loopsudungvatpham(moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
     luong = LoopSuDungVatPham(moitruong, tactu, stop)
-    luong.loop()
-
-def khoidong_loopcatdovaoruong(moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
-    luong = LoopCatDoVaoRuong(moitruong, tactu, stop)
     luong.loop()
 
 def khoidong_loopchinh(moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
     luong = LoopChinh(moitruong, tactu, stop)
     luong.loop()
 
+
 def khoidong_loopphu(moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
     luong = LoopPhu(moitruong, tactu, stop)
     luong.loop()
 
+def khoidong_loopdieuphoidichuyen(moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
+    luong = LoopDieuPhoiDiChuyen(moitruong, tactu, stop)
+    luong.loop()
 
 class CuaSo:
     def __init__(self, idcuaso):
@@ -46,7 +49,7 @@ class CuaSo:
             threading.Thread(target = khoidong_loopsudungvatpham, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopchinh, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopphu, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
-            threading.Thread(target = khoidong_loopcatdovaoruong, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_loopdieuphoidichuyen, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
         )
 
         for luong in self.luongs:
