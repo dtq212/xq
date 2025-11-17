@@ -1847,6 +1847,8 @@ class MoiTruong:
         if not idkynang:
             return
 
+        print(f"action_sudungkynangvitri: idvitri: {idvitri}, idkynang: {idkynang}")
+
         is_ok = self.action_sudungkynang(idkynang)
         if is_ok:
             self._thoidiemsudungkynanggannhat = time.time()
