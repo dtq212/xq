@@ -108,6 +108,7 @@ class MoiTruong:
         self._diachicosothongtinnhanvattruongnhom = False
 
         self._idnguoichoi = False
+        self._diachicosothongtinnhanvatmuctieudangchontruocdo = False
 
     def __del__(self):
         if self._is_dasetupautoassembledichuyen:
@@ -261,6 +262,12 @@ class MoiTruong:
 
         diachicosothongtinnhanvatmuctieuhientai = self.get_diachicosothongtinnhanvatmuctieudangchon()
 
+        if diachicosothongtinnhanvatmuctieuhientai and not self._diachicosothongtinnhanvatmuctieudangchontruocdo:
+            self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
+        if not diachicosothongtinnhanvatmuctieuhientai:
+            self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
+        self._diachicosothongtinnhanvatmuctieudangchontruocdo = diachicosothongtinnhanvatmuctieuhientai
+
         if diachicosothongtinnhanvatmuctieuhientai:
             self._thoidiemkhongcomuctieugannhat = time.time()
 
@@ -269,7 +276,6 @@ class MoiTruong:
             self._thoidiemthaydoibandogannhat = time.time()
 
         self._idbandohientai = idbandohientai
-
 
         idtuthenhanvat = self.get_idtuthenhanvat()
         if idtuthenhanvat != TUTHENHANVAT_DUNGIM:
@@ -281,23 +287,16 @@ class MoiTruong:
         elif time.time() - self._thoidiemtuthenhanvattanconggannhat > 0.5:
             self.set_idtuthenhanvat(TUTHENHANVAT_DELAYSAUTANCONG)
 
-        if not diachicosothongtinnhanvatmuctieuhientai:
-            self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
-
         if self.get_is_cohieuungs((HIEUUNGKYNANG_TRAMMAC, ), macdinh = False, is_hieuungcoloi = 0):
             self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
 
-
         idthucuoi = self._get_idthucuoi()
-
         if idthucuoi:
             self._thoidiemkhongcuoithugannhat = time.time()
-
         self._idthucuoi = idthucuoi
 
         if not self.get_is_cohieuungs((HIEUUNGKYNANG_TIENTHANVODICH, ), macdinh = True, is_hieuungcoloi = 1):
             self._thoidiemcohieuungtienthanvodichgannhat = time.time()
-
         if not self.get_is_cohieuungs((HIEUUNGKYNANG_KIMCUONGBATHOAIDON, ), macdinh = True, is_hieuungcoloi = 1):
             self._thoidiemcohieuungkimcuongbathoaidongannhat = time.time()
 
