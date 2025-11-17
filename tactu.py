@@ -721,7 +721,7 @@ class TacTu:
                 elif khoangcach <= KHOANGCACHTOIDAHOPLE and not is_duoitheonguoichoi:
                     thoigiantuthenhanvatdungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat() if idtuthenhanvat == TUTHENHANVAT_DUNGIM else 0.
                     if thoigiantuthenhanvatdungim > 1.:
-                        khoangcachgiutoida = KHOANGCACHSUDUNGKYNANGTAMXA - min(1. + thoigiantuthenhanvatdungim + (6 if not is_muctieudangchonlanguoichoi else 0), 3.)
+                        khoangcachgiutoida = KHOANGCACHSUDUNGKYNANGTAMXA - min(1. + thoigiantuthenhanvatdungim + (3 if not is_muctieudangchonlanguoichoi else 0), 3.)
 
                         if thoigiantuthenhanvatdungim > 4.5:
                             self._yeucautancong = {
@@ -737,6 +737,7 @@ class TacTu:
                                 "diachimuctieu": diachicosothongtinnhanvatmuctieudangchon,
                                 "khoangcachtoida": khoangcachgiutoida
                             }
+                            print(f"self._yeucautancong: {self._yeucautancong}")
             break
         return
 
