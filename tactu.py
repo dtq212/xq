@@ -254,7 +254,7 @@ class TacTu:
 
             diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
             if not diachicosothongtinnhanvatmuctieudangchon or not self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon):
-                if self.moitruong.get_idmonphai() != "vanmongcoc":
+                if self.moitruong.get_tenmonphai() != "vanmongcoc":
                     khoangcachtoidatruongnhom -= 6.
                 else:
                     khoangcachtoidatruongnhom -= 3
@@ -394,10 +394,10 @@ class TacTu:
                 if is_ok:
                     self._thoidiemsudungsinhkhitangannhat = time.time()
 
-            idmonphai = self.moitruong.get_idmonphai()
+            tenmonphai = self.moitruong.get_tenmonphai()
 
             if time.time() - self._thoidiemsudungkimcuongbathoaidongannhat >= .5 and self.moitruong.get_phantramsinhlucconlai() <= 25.:
-                if idmonphai != "thucson" or (not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENTHANVODICH) and 0 < self.moitruong.get_thoigianconlaihieuungtienthanvodich(macdinh = 2.0) <= 1.5):
+                if tenmonphai != "thucson" or (not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENTHANVODICH) and 0 < self.moitruong.get_thoigianconlaihieuungtienthanvodich(macdinh = 2.0) <= 1.5):
                     self._thoidiemsudungkimcuongbathoaidongannhat = time.time()
                     self.action_sudungvatphamhanhtrang(KIMCUONGBATHOAIDON)
 
@@ -410,17 +410,17 @@ class TacTu:
                 self.action_sudungvatphamhanhtrang(SOTRIDUOC)
 
     def _action_sudungkynang(self):
-        idmonphai = self.moitruong.get_idmonphai()
+        tenmonphai = self.moitruong.get_tenmonphai()
 
         self._is_tamngungdichuyensudungkynang = False
 
         self._yeucautancong = None
 
-        if idmonphai == "vanmongcoc":
+        if tenmonphai == "vanmongcoc":
             self._action_sudungkynang_vanmongcoc()
-        elif idmonphai == "thucson":
+        elif tenmonphai == "thucson":
             self._action_sudungkynang_thucson()
-        elif idmonphai == "daohoanguyen":
+        elif tenmonphai == "daohoanguyen":
             self._action_sudungkynang_daohoanguyen()
 
     def _action_sudungkynang_vanmongcoc(self):
@@ -1174,7 +1174,7 @@ class TacTu:
                         idbandohientai = self.moitruong.get_idbandohientai()
                         if idbandohientai in BANDOTUDONGLENSAUKHICHETs:
                             self._idbandovuachet = idbandohientai
-                    if time.time() - self._thoidiemnhanvatchetgannhat > 20. and self.moitruong.get_idmonphai() != "vanmongcoc":
+                    if time.time() - self._thoidiemnhanvatchetgannhat > 20. and self.moitruong.get_tenmonphai() != "vanmongcoc":
                         self._thoigiantamngungauto = time.time()
                         self.moitruong.action_phucsinh()
                 break

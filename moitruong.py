@@ -1847,8 +1847,6 @@ class MoiTruong:
         if not idkynang:
             return
 
-        print(f"action_sudungkynangvitri: idvitri: {idvitri}, idkynang: {idkynang}")
-
         is_ok = self.action_sudungkynang(idkynang)
         if is_ok:
             self._thoidiemsudungkynanggannhat = time.time()
@@ -2275,6 +2273,12 @@ class MoiTruong:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1184)
+
+    def get_tenmonphai(self, diachicosothongtinnhanvat = None):
+        idmonphai = self.get_idmonphai(diachicosothongtinnhanvat)
+        if not idmonphai:
+            return False
+        return MONPHAI_MAP.get(idmonphai, False)
 
     def get_is_vohieuhoadichuyen(self):
         return self._is_vohieuhoadichuyen
