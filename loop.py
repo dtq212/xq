@@ -143,7 +143,6 @@ class LoopChinh:
         self.tactu._action_theonhom()
         self.tactu._action_sudungkynang()
 
-
         # self.moitruong.action_thucthicaulenh("talk 7c97# info.58")
         # time.sleep(0.25)
         # self.moitruong.action_thucthicaulenh("talk 7c97# info.18")

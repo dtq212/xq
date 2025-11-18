@@ -1,3 +1,4 @@
+import math
 import random
 import time
 
@@ -178,14 +179,41 @@ class TacTu:
         if self._yeucaunhatdo:
             yeucauduocchon = self._yeucaunhatdo
 
-        elif self._yeucautheonhom:
-            yeucauduocchon = self._yeucautheonhom
-
         elif self._yeucautancong:
             yeucauduocchon = self._yeucautancong
 
+        elif self._yeucautheonhom:
+            yeucauduocchon = self._yeucautheonhom
+
         elif self._yeucautudo:
             yeucauduocchon = self._yeucautudo
+
+        if yeucauduocchon and yeucauduocchon.get("yeucau") == YEUCAUDICHUYENTANCONG and not self.moitruong.get_is_truongnhom():
+            xtruongnhom = self.moitruong.get_toadoxtruongnhom()
+            ytruongnhom = self.moitruong.get_toadoytruongnhom()
+
+            if xtruongnhom and ytruongnhom:
+                x_muctieu, y_muctieu = None, None
+                toadodich = yeucauduocchon.get("toadodich")
+                diachimuctieu = yeucauduocchon.get("diachimuctieu")
+
+                if toadodich:
+                    x_muctieu, y_muctieu = toadodich
+                elif diachimuctieu:
+                    x_muctieu = self.moitruong.get_toadox(diachimuctieu, is_vitrihientai = True)
+                    y_muctieu = self.moitruong.get_toadoy(diachimuctieu, is_vitrihientai = True)
+
+                if x_muctieu and y_muctieu:
+                    khoangcachtruongnhom = math.dist((x_muctieu, y_muctieu), (xtruongnhom, ytruongnhom))
+
+                    if khoangcachtruongnhom > self._khoangcachtoidatruongnhom:
+                        print(f"Hủy tấn công mục tiêu (cách trưởng nhóm {khoangcachtruongnhom:.2f}m) nằm ngoài tầm theo sau ({self._khoangcachtoidatruongnhom}m).")
+
+                        self._yeucautancong = None
+                        if self._yeucautheonhom:
+                            yeucauduocchon = self._yeucautheonhom
+                        else:
+                            yeucauduocchon = None
 
         if yeucauduocchon:
             toadodich = yeucauduocchon.get("toadodich")
@@ -545,7 +573,7 @@ class TacTu:
                     if thoigiantuthenhanvatdungim > 4.5:
                         khoangcachgiutoida = 0
                     else:
-                        khoangcachgiutoida = (KHOANGCACHSUDUNGKYNANGTAMXA - 3) - (1.5 + thoigiantuthenhanvatdungim)
+                        khoangcachgiutoida = (KHOANGCACHSUDUNGKYNANGTAMXA - 3) - max(1.5 + thoigiantuthenhanvatdungim, 0 if is_muctieudangchonlanguoichoi else 6)
 
                     self._yeucautancong = {
                         "yeucau": YEUCAUDICHUYENTANCONG,
@@ -593,6 +621,7 @@ class TacTu:
         else:
             self._action_sudungkynang_thucsonkiem()
 
+
     def _action_sudungkynang_thucsonkiem(self):
         if not self._is_tudongsudungkynang:
             return
@@ -604,7 +633,6 @@ class TacTu:
                 break
             if self.moitruong.get_is_dangvankhi():
                 break
-
             idtuthenhanvat = self.moitruong.get_idtuthenhanvat()
             diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
             phantramsinhlucconlai = self.moitruong.get_phantramsinhlucconlai()
@@ -612,6 +640,7 @@ class TacTu:
             is_muctieudangchonlanguoichoi = False
             khoangcach = KHOANGCACHTOIDAHOPLE
             is_muctieudangchonbichoang = False
+            is_muctieubikhoaphapbao = True
             is_muctieuchaytron = False
             is_cothetancong = False
 
@@ -619,6 +648,7 @@ class TacTu:
                 is_muctieudangchonlanguoichoi = self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon)
                 khoangcach = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon)
                 is_muctieudangchonbichoang = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0)
+                is_muctieubikhoaphapbao = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KHOAPHAPBAO,), False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0)
                 is_muctieuchaytron = self.moitruong.get_is_muctieuchaytron(diachicosothongtinnhanvatmuctieudangchon)
                 is_cothetancong = self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon)
 
@@ -686,7 +716,8 @@ class TacTu:
                         if thoigiantuthenhanvatdungim > 4.5:
                             khoangcachgiutoida = 0
                         else:
-                            khoangcachgiutoida = KHOANGCACHSUDUNGKYNANGTAMXA - max(1.5 + thoigiantuthenhanvatdungim, 6 if is_muctieudangchonlanguoichoi else 0)
+                            khoangcachgiutoida = KHOANGCACHSUDUNGKYNANGTAMXA - max(1.5 + thoigiantuthenhanvatdungim, 0 if is_muctieudangchonlanguoichoi else 6)
+
                         self._yeucautancong = {
                             "yeucau": YEUCAUDICHUYENTANCONG,
                             "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
@@ -703,6 +734,9 @@ class TacTu:
                         elif is_muctieudangchonlanguoichoi and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and not is_muctieudangchonbichoang and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUCPHACHHOASON):
                             self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_LUCPHACHHOASON)
                             break
+                        # elif is_muctieudangchonlanguoichoi and not is_muctieubikhoaphapbao and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and self.moitruong.get_is_kynangphapbaosansang():
+                        #     self.moitruong.action_sudungkynangphapbao(diachicosothongtinnhanvatmuctieudangchon)
+                        #     break
                         elif is_muctieudangchonlanguoichoi and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_VANKIEMXUYENTAM):
                             self._is_tamngungdichuyensudungkynang = True
                             if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):

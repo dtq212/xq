@@ -139,6 +139,8 @@ HIEUUNGKYNANG_TRONGTHUONG = 9020
 HIEUUNGKYNANG_CHOANG = 9002
 HIEUUNGKYNANG_NHANSAM = 6
 
+HIEUUNGKYNANG_KHOAPHAPBAO = 9561
+
 HIEUUNGKYNANG_THAUCOTDINH = 2614
 HIEUUNGKYNANG_CHAYMAU = 9022
 
@@ -455,9 +457,10 @@ DIEMDANHXUNGQUANH_MAP = {
     BANDO_LOANDAO2: LOANDAO2,
 }
 
+
 NHANVATTODOITUDONGs = (158, 724, 725, 224, 1186, 1187) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
 NHANVATNGUYHIEMs = tuple()
-NHANVATCUNGBANGs = (1, *NHANVATTODOITUDONGs)
+NHANVATCUNGBANGs = (1, 19, 26, 27, 159, *NHANVATTODOITUDONGs)
 VATPHAMTUDONGNHATs = ("ToÃ¡i Ma Bá»‘", "Da Ráº¯n", "TÆ¡ Táº±m", "Ly Há»“n", "ToÃ¡i LÄƒng", "Ly PhÃ¡ch", "Ma Tinh Tháº¡ch", "Huá»³nh Quang Tháº¡ch", "Äá»™ng Váº­t Bi Mao", LAMCAU, HOACAU, HONGCAU, "ToÃ¡i Sa", "Nhiáº¿p Há»“n Tháº¡ch", "Tá»­ Kim Báº£o Há»™p")
 VATPHAMTUDONGNHATCUTHUDAOs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i")
 VATPHAMXEPCHONGs = tuple()
