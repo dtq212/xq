@@ -3,12 +3,14 @@ import os
 import pickle
 import re
 import sys
+import threading
 
 import gtts
 import playsound
 import unicodedata
 
 from hangso import STRING_ENCODING
+
 
 def to_hex(val, nbits):
   return hex((val + (1 << nbits)) % (1 << nbits))
@@ -62,10 +64,7 @@ def slugify(value, allow_unicode = False):
     value = re.sub(r"[^\w\s-]", "", value.lower())
     return re.sub(r"[-\s]+", "-", value).strip("-_")
 
-
-import threading
-import os
-def _phatam_worker(noidung, is_block):
+def _phatam(noidung, is_block):
     try:
         print(f"phatam (thread): {noidung}")
         tenfile = slugify(noidung)
@@ -86,7 +85,7 @@ def _phatam_worker(noidung, is_block):
 
 
 def phatam(noidung, is_block = True):
-    t = threading.Thread(target = _phatam_worker, args = (noidung, is_block), daemon = True)
+    t = threading.Thread(target = _phatam, args = (noidung, is_block), daemon = True)
     t.start()
 
 
