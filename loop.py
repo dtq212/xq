@@ -144,6 +144,16 @@ class LoopChinh:
         self.tactu._action_sudungkynang()
 
 
+        # self.moitruong.action_thucthicaulenh("talk 7c97# info.58")
+        # time.sleep(0.25)
+        # self.moitruong.action_thucthicaulenh("talk 7c97# info.18")
+        # time.sleep(0.25)
+        # self.moitruong.action_thucthicaulenh("talk 7c97# info.20")
+        # time.sleep(0.25)
+        # self.moitruong.action_thucthicaulenh("talk 7c97# info.21")
+        # time.sleep(0.25)
+
+
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
         self.moitruong = moitruong
