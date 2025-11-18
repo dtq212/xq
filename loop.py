@@ -42,11 +42,6 @@ class LoopTimKiemMucTieu:
         self.stop = stop
 
     def __del__(self):
-        try:
-            pass
-        except (pymem.exception.PymemError, pymem.exception.WinAPIError):
-            pass
-
         if not self.stop.is_set():
             self.stop.set()
 
@@ -112,11 +107,6 @@ class LoopChinh:
         self.i = 0
 
     def __del__(self):
-        try:
-            pass
-        except (pymem.exception.PymemError, pymem.exception.WinAPIError):
-            pass
-
         if not self.stop.is_set():
             self.stop.set()
 
@@ -152,6 +142,7 @@ class LoopChinh:
         # self.moitruong.action_thucthicaulenh("talk 7c97# info.21")
         # time.sleep(0.25)
 
+        # print(self.moitruong.get_danhsachhieuungnhanvats())
 
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
@@ -168,7 +159,7 @@ class LoopPhu:
             self.moitruong.action_tatvohieuhoalongclick()
             self.moitruong.action_tatvohieuhoatrangthaichuotchonmuctieukynang()
             self.moitruong.action_tatvohieuhoaphimspace()
-        except (pymem.exception.PymemError, pymem.exception.WinAPIError):
+        except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
             pass
 
         if not self.stop.is_set():
@@ -225,11 +216,6 @@ class LoopSuDungVatPham:
         self.stop = stop
 
     def __del__(self):
-        try:
-            pass
-        except (pymem.exception.PymemError, pymem.exception.WinAPIError):
-            pass
-
         if not self.stop.is_set():
             self.stop.set()
 

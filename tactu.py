@@ -188,32 +188,37 @@ class TacTu:
         elif self._yeucautudo:
             yeucauduocchon = self._yeucautudo
 
-        if yeucauduocchon and yeucauduocchon.get("yeucau") == YEUCAUDICHUYENTANCONG and not self.moitruong.get_is_truongnhom():
-            xtruongnhom = self.moitruong.get_toadoxtruongnhom()
-            ytruongnhom = self.moitruong.get_toadoytruongnhom()
+        if yeucauduocchon and yeucauduocchon.get("yeucau") == YEUCAUDICHUYENTANCONG and self._is_tudongtheosautruongnhom and not self.moitruong.get_is_truongnhom():
+            x_truongnhom = self.moitruong.get_toadoxtruongnhom()
+            y_truongnhom = self.moitruong.get_toadoytruongnhom()
 
-            if xtruongnhom and ytruongnhom:
+            if x_truongnhom and y_truongnhom:
                 x_muctieu, y_muctieu = None, None
-                toadodich = yeucauduocchon.get("toadodich")
-                diachimuctieu = yeucauduocchon.get("diachimuctieu")
+                toadodich_tam = yeucauduocchon.get("toadodich")
+                diachimuctieu_tam = yeucauduocchon.get("diachimuctieu")
 
-                if toadodich:
-                    x_muctieu, y_muctieu = toadodich
-                elif diachimuctieu:
-                    x_muctieu = self.moitruong.get_toadox(diachimuctieu, is_vitrihientai = True)
-                    y_muctieu = self.moitruong.get_toadoy(diachimuctieu, is_vitrihientai = True)
+                if toadodich_tam:
+                    x_muctieu, y_muctieu = toadodich_tam
+                elif diachimuctieu_tam:
+                    x_muctieu = self.moitruong.get_toadox(diachimuctieu_tam, is_vitrihientai=True)
+                    y_muctieu = self.moitruong.get_toadoy(diachimuctieu_tam, is_vitrihientai=True)
 
                 if x_muctieu and y_muctieu:
-                    khoangcachtruongnhom = math.dist((x_muctieu, y_muctieu), (xtruongnhom, ytruongnhom))
+                    khoangcachmuctieuvatruongnhom = math.dist((x_muctieu, y_muctieu), (x_truongnhom, y_truongnhom))
+                    khoangcachtoidatruongnhom = self._tinhtoankhoangcachtoidatruongnhomphuhop() - 1.5
 
-                    if khoangcachtruongnhom > self._khoangcachtoidatruongnhom:
-                        print(f"Hủy tấn công mục tiêu (cách trưởng nhóm {khoangcachtruongnhom:.2f}m) nằm ngoài tầm theo sau ({self._khoangcachtoidatruongnhom}m).")
+                    if khoangcachmuctieuvatruongnhom > khoangcachtoidatruongnhom:
+                        vec_x = x_muctieu - x_truongnhom
+                        vec_y = y_muctieu - y_truongnhom
 
-                        self._yeucautancong = None
-                        if self._yeucautheonhom:
-                            yeucauduocchon = self._yeucautheonhom
-                        else:
-                            yeucauduocchon = None
+                        x_clipped = int(x_truongnhom + (vec_x * khoangcachtoidatruongnhom / khoangcachmuctieuvatruongnhom))
+                        y_clipped = int(y_truongnhom + (vec_y * khoangcachtoidatruongnhom / khoangcachmuctieuvatruongnhom))
+
+                        print(f"Mục tiêu cách trưởng nhóm {khoangcachmuctieuvatruongnhom:.2f}m) > khoảng cách tối đa trưởng nhóm ({khoangcachtoidatruongnhom}m). Đang giới hạn tọa độ... Khoảng cách mới: {math.dist((x_clipped, y_clipped), (x_truongnhom, y_truongnhom))}")
+
+                        yeucauduocchon["toadodich"] = (x_clipped, y_clipped)
+                        yeucauduocchon["diachimuctieu"] = None
+                        yeucauduocchon["khoangcachtoida"] = 0
 
         if yeucauduocchon:
             toadodich = yeucauduocchon.get("toadodich")
@@ -279,14 +284,7 @@ class TacTu:
                 break
 
             khoangcachtruongnhom = self.moitruong.get_khoangcachdiem(xtruongnhom, ytruongnhom)
-            khoangcachtoidatruongnhom = self._khoangcachtoidatruongnhom
-
-            diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
-            if not diachicosothongtinnhanvatmuctieudangchon or not self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon):
-                if self.moitruong.get_tenmonphai() != "vanmongcoc":
-                    khoangcachtoidatruongnhom -= 6.
-                else:
-                    khoangcachtoidatruongnhom -= 3
+            khoangcachtoidatruongnhom = self._tinhtoankhoangcachtoidatruongnhomphuhop()
 
             if khoangcachtruongnhom <= khoangcachtoidatruongnhom:
                 break
@@ -300,6 +298,16 @@ class TacTu:
             }
             break
         return
+
+    def _tinhtoankhoangcachtoidatruongnhomphuhop(self):
+        khoangcachtoidatruongnhom = self._khoangcachtoidatruongnhom
+        diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+        if not diachicosothongtinnhanvatmuctieudangchon or not self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon):
+            if self.moitruong.get_tenmonphai() != "vanmongcoc":
+                khoangcachtoidatruongnhom -= 6.
+            else:
+                khoangcachtoidatruongnhom -= 3
+        return khoangcachtoidatruongnhom
 
     def action_tudongtimkiemmuctieu(self):
         if self._is_tudongtimkiemmuctieu:
@@ -446,7 +454,7 @@ class TacTu:
         self._yeucautancong = None
 
         diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
-        if diachicosothongtinnhanvatmuctieudangchon and self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon) == "Admin2D":
+        if diachicosothongtinnhanvatmuctieudangchon and self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_ANTHANTHUAT, ), macdinh = True, is_hieuungcoloi = 1):
             return
 
         if tenmonphai == "vanmongcoc":

@@ -76,7 +76,7 @@ def phatam(noidung, is_block = False):
         gtts.gTTS(noidung, lang = "vi").save(file_path)
     try:
         playsound.playsound(file_path, is_block)
-    except playsound.PlaysoundException as err:
+    except Exception as err:
         print("Phát âm lỗi: {}".format(err))
 
 
