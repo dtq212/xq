@@ -171,26 +171,21 @@ class TacTu:
         if self.moitruong.get_is_dangvankhi():
             return
         if self._is_tamngungdichuyensudungkynang:
-            # print("self._is_tamngungdichuyensudungkynang")
             return
 
         yeucauduocchon = None
 
         if self._yeucaunhatdo:
             yeucauduocchon = self._yeucaunhatdo
-            # print(f"yeucauduocchon: self._yeucaunhatdo: {yeucauduocchon}")
 
         elif self._yeucautheonhom:
             yeucauduocchon = self._yeucautheonhom
-            # print(f"yeucauduocchon: self._yeucautheonhom: {yeucauduocchon}")
 
         elif self._yeucautancong:
             yeucauduocchon = self._yeucautancong
-            # print(f"yeucauduocchon: self._yeucautancong: {yeucauduocchon}")
 
         elif self._yeucautudo:
             yeucauduocchon = self._yeucautudo
-            # print(f"yeucauduocchon: self._yeucautudo: {yeucauduocchon}")
 
         if yeucauduocchon:
             toadodich = yeucauduocchon.get("toadodich")
@@ -548,11 +543,9 @@ class TacTu:
 
                 if thoigiantuthenhanvatdungim > 0.5 and khoangcach > KHOANGCACHSUDUNGKYNANGTAMXA - 3:
                     if thoigiantuthenhanvatdungim > 4.5:
-                        # print(f"VMC Phat hien KET CUNG (dung im > 4.5s). Yeu cau di chuyen vao 0. Khoang cach: {khoangcach}")
                         khoangcachgiutoida = 0
                     else:
                         khoangcachgiutoida = (KHOANGCACHSUDUNGKYNANGTAMXA - 3) - (1.5 + thoigiantuthenhanvatdungim)
-                        # print(f"VMC Phat hien Desync/Stuck (dung im > 0.5s). Yeu cau di chuyen, khoangcachgiutoida: {khoangcachgiutoida}. Khoang cach: {khoangcach}")
 
                     self._yeucautancong = {
                         "yeucau": YEUCAUDICHUYENTANCONG,
@@ -691,11 +684,9 @@ class TacTu:
 
                     if thoigiantuthenhanvatdungim > 0.5 and khoangcach > KHOANGCACHSUDUNGKYNANGTAMXA - 3:
                         if thoigiantuthenhanvatdungim > 4.5:
-                            # print(f"Phat hien KET CUNG (dung im > 4.5s). Yeu cau di chuyen vao 0. Khoang cach: {khoangcach}")
                             khoangcachgiutoida = 0
                         else:
                             khoangcachgiutoida = KHOANGCACHSUDUNGKYNANGTAMXA - (1.5 + thoigiantuthenhanvatdungim)
-                            # print(f"Phat hien Desync/Stuck (dung im > 1s). Yeu cau di chuyen, khoangcachgiutoida: {khoangcachgiutoida}. Khoang cach: {khoangcach}")
                         self._yeucautancong = {
                             "yeucau": YEUCAUDICHUYENTANCONG,
                             "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
