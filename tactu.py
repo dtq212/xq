@@ -422,6 +422,10 @@ class TacTu:
 
         self._yeucautancong = None
 
+        diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+        if diachicosothongtinnhanvatmuctieudangchon and self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon) == "Admin2D":
+            return
+
         if tenmonphai == "vanmongcoc":
             self._action_sudungkynang_vanmongcoc()
         elif tenmonphai == "thucson":
