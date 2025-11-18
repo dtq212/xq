@@ -1,13 +1,30 @@
-import locale
-import os
+import threading
+import sys
 import threading
 import time
+import traceback
 
 import keyboard
+import win32api
 import win32gui
 
 from cuaso import CuaSo
 from tienich import phatam
+
+
+def debug_dump_threads():
+    print("\n" + "=" * 30 + " DEBUG: DUMP STACK TRACE " + "=" * 30)
+    frames = sys._current_frames()
+    for thread_id, frame in frames.items():
+        thread_name = "Unknown"
+        for t in threading.enumerate():
+            if t.ident == thread_id:
+                thread_name = t.name
+                break
+        print(f"\n🧵 Thread: {thread_name} (ID: {thread_id})")
+        traceback.print_stack(frame)
+    print("=" * 80 + "\n")
+
 
 def loop_cuaso(cuaso: CuaSo):
     try:
@@ -15,97 +32,85 @@ def loop_cuaso(cuaso: CuaSo):
     except:
         pass
 
+
 class TroChoi:
     def __init__(self):
-        self.cuasos = {}
+        self.cuaso = None
         self.is_dangchay = threading.Event()
         self.remove1 = keyboard.add_hotkey("f12", self.themcuasohientai)
         self.remove2 = keyboard.add_hotkey("ctrl + alt + f12", lambda: self.is_dangchay.set())
-        self.is_dangloop = False
-        self.soluongcuaso = 0
-
         self.thoidiemmogamemoigannhat = time.time()
+
     def __del__(self):
-        keyboard.remove_hotkey(self.remove1)
-        keyboard.remove_hotkey(self.remove2)
-
-    def themcuasohientai(self):
-        idcuaso = win32gui.GetForegroundWindow()
-
-        tencuaso = win32gui.GetWindowText(idcuaso)
-        if not (tencuaso and tencuaso.startswith("Chien Quoc")):
-            phatam("Khởi động thất bại. Không phải cửa sổ game")
-            return
-
-        if idcuaso in self.cuasos:
-            cuaso_cu = self.cuasos[idcuaso]
-
-            if cuaso_cu.main_stop.is_set():
-                phatam("Phát hiện luồng cũ đã dừng, đang khởi động lại...")
-                del self.cuasos[idcuaso]
-            else:
-                phatam("Cửa sổ đã tồn tại và đang hoạt động bình thường")
-                return
-
-        phatam("Khởi động thành công")
-        cuaso = CuaSo(idcuaso)
-        self.cuasos[idcuaso] = cuaso
-        threading.Thread(target = loop_cuaso, args = [cuaso], daemon = False).start()
-
-    def tatauto(self):
-        for cuaso in self.cuasos.values():
-            cuaso.tatauto()
-
-    def loop(self):
-        self.is_dangloop = True
-
-        idcuasohethans = set()
-        idnguoichoihethans = set()
-
-        soluongcuaso = 0
-
         try:
-            for idcuaso, cuaso in self.cuasos.items():
-                if cuaso.main_stop.is_set() or not cuaso.moitruong.get_is_cuasogametontai():
-                    idcuasohethans.add(idcuaso)
-                    idnguoichoihethans.add(cuaso.moitruong._idnguoichoi)
-                    cuaso.main_stop.set()
-
-            for idcuasohethan in idcuasohethans:
-                del self.cuasos[idcuasohethan]
-
-            soluongcuaso = len(self.cuasos)
-            if soluongcuaso < self.soluongcuaso:
-                phatam("Game đã bị đóng", True)
-
-        except Exception as err:
-            phatam(f"🚨 Lỗi đột ngột trong vòng lặp chính: {err}. Đang cố gắng tiếp tục.")
+            keyboard.remove_hotkey(self.remove1)
+            keyboard.remove_hotkey(self.remove2)
+        except:
             pass
 
-        self.is_dangloop = False
-        self.soluongcuaso = soluongcuaso
+    def themcuasohientai(self):
+        if self.cuaso is not None:
+            return
 
-        time.sleep(1)
+        idcuaso = win32gui.GetForegroundWindow()
+        tencuaso = win32gui.GetWindowText(idcuaso)
 
-import pymem
+        if not (tencuaso and tencuaso.startswith("Chien Quoc")):
+            phatam("Không phải cửa sổ game")
+            return
+
+        phatam("Đã kết nối thành công")
+        print(f"Tool đã kết nối với cửa sổ: {tencuaso} (ID: {idcuaso})")
+
+        self.cuaso = CuaSo(idcuaso)
+
+        threading.Thread(target = loop_cuaso, args = [self.cuaso], daemon = True).start()
+
+    def tatauto(self):
+        if self.cuaso:
+            self.cuaso.tatauto()
+
+    def loop_quanly(self):
+        while not self.is_dangchay.is_set():
+            try:
+                if self.cuaso:
+                    if self.cuaso.main_stop.is_set() or not self.cuaso.moitruong.get_is_cuasogametontai():
+                        phatam("Game đã bị đóng hoặc ngắt kết nối")
+                        self.cuaso.main_stop.set()
+                        self.cuaso = None
+            except Exception as e:
+                print(f"Lỗi giám sát: {e}")
+
+            time.sleep(1)
+
 
 if __name__ == "__main__":
-    name = "trochoi.exe"
+    trochoi = TroChoi()
 
-    is_datrung = False
+    t_quanly = threading.Thread(target = trochoi.loop_quanly, daemon = True)
+    t_quanly.start()
 
-    processes = pymem.process.list_processes()
-    for process in processes:
-        process_name = process.szExeFile.decode(locale.getpreferredencoding())
-        if process_name == name:
-            process_id = process.th32ProcessID
-            if process_id != os.getpid():
-                phatam("Khởi động thất bại. Phần mềm đã bật")
-                is_datrung = True
+    print("=" * 50)
+    print("TOOL CHIẾN QUỐC (CHẾ ĐỘ ĐA CỬA SỔ)")
+    print("Hướng dẫn:")
+    print("1. Mở Tool này lên.")
+    print("2. Vào game, bấm F12 để kết nối.")
+    print("3. Muốn chạy thêm acc khác? -> Mở thêm 1 bản Tool nữa rồi làm lại bước 2.")
+    print("-" * 50)
+    print("👉 Bấm [INSERT] để Debug.")
+    print("👉 Bấm [PAUSE] để Dừng.")
+    print("=" * 50)
 
-    if not is_datrung:
-        trochoi = TroChoi()
-        while not trochoi.is_dangchay.is_set():
-            trochoi.loop()
+    while not trochoi.is_dangchay.is_set():
+        if win32api.GetAsyncKeyState(0x2D) & 0x8000:
+            debug_dump_threads()
+            time.sleep(1)
 
-        trochoi.tatauto()
+        if win32api.GetAsyncKeyState(0x13) & 0x8000:
+            print("\n🛑 Dừng tool!")
+            trochoi.is_dangchay.set()
+            break
+
+        time.sleep(0.1)
+
+    trochoi.tatauto()

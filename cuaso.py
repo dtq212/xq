@@ -1,6 +1,8 @@
 import os
-
+import threading
+import time
 import keyboard
+import win32gui
 from infi.systray import SysTrayIcon
 
 from loop import *
@@ -23,6 +25,7 @@ def khoidong_loopsudungvatpham(moitruong: MoiTruong, tactu: TacTu, stop: threadi
     luong = LoopSuDungVatPham(moitruong, tactu, stop)
     luong.loop()
 
+
 def khoidong_loopchinh(moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
     luong = LoopChinh(moitruong, tactu, stop)
     luong.loop()
@@ -32,9 +35,11 @@ def khoidong_loopphu(moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
     luong = LoopPhu(moitruong, tactu, stop)
     luong.loop()
 
+
 def khoidong_loopdieuphoidichuyen(moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
     luong = LoopDieuPhoiDiChuyen(moitruong, tactu, stop)
     luong.loop()
+
 
 class CuaSo:
     def __init__(self, idcuaso):
@@ -43,6 +48,7 @@ class CuaSo:
         self.tennhanvat = False
 
         self.main_stop = threading.Event()
+
         self.luongs = (
             threading.Thread(target = khoidong_looplammoitrangthaimoitruong, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_looptimkiemmuctieu, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
@@ -55,7 +61,11 @@ class CuaSo:
         for luong in self.luongs:
             luong.start()
 
-        self.systray = SysTrayIcon(os.path.join("_internal", "icon", "icon.ico"), CHUACHONHANVAT, on_quit = self.tatauto)
+        icon_path = os.path.join("_internal", "icon", "icon.ico")
+        if not os.path.exists(icon_path):
+            icon_path = None
+
+        self.systray = SysTrayIcon(icon_path, CHUACHONHANVAT, on_quit = self.tatauto)
         self.systray.start()
 
         keyboard.add_hotkey("ctrl + f", self.battat_tudongsudungkynang)
@@ -80,41 +90,12 @@ class CuaSo:
 
         keyboard.add_hotkey("ctrl + alt + d", self.battat_thucsondao)
         keyboard.add_hotkey("ctrl + alt + v", self.battat_is_phitac)
-
         keyboard.add_hotkey("ctrl + alt + shift + c", self.battat_chantangcapdo)
 
         self.thoidiemluuthietlapgannhat = time.time()
 
     def __del__(self):
-        self.main_stop.set()
-
-        keyboard.remove_hotkey("ctrl + f")
-        keyboard.remove_hotkey("ctrl + c")
-        keyboard.remove_hotkey("ctrl + x")
-        keyboard.remove_hotkey("ctrl + alt+ c")
-        keyboard.remove_hotkey("ctrl + alt + f")
-
-        keyboard.remove_hotkey("ctrl + d")
-        keyboard.remove_hotkey("ctrl + a")
-
-        keyboard.remove_hotkey("ctrl + p")
-        keyboard.remove_hotkey("ctrl + alt + shift + p")
-        keyboard.remove_hotkey("ctrl + alt + p")
-
-        keyboard.remove_hotkey("ctrl + m")
-        keyboard.remove_hotkey("ctrl + alt + y")
-        keyboard.remove_hotkey("ctrl + alt + b")
-        keyboard.remove_hotkey("ctrl + alt + t")
-
-        keyboard.remove_hotkey("ctrl + alt + e")
-        keyboard.remove_hotkey("ctrl + alt + w")
-        keyboard.remove_hotkey("ctrl + alt + r")
-        keyboard.remove_hotkey("ctrl + alt + l")
-
-        keyboard.remove_hotkey("ctrl + alt + d")
-        keyboard.remove_hotkey("ctrl + w")
-
-        keyboard.remove_hotkey("ctrl + alt + v")
+        self.tatauto()
 
     def _chotoanbocacluongdunghan(self):
         for luong in self.luongs:
@@ -130,6 +111,7 @@ class CuaSo:
             pass
 
     def loop(self):
+        last_hover_text = None
         while not self.main_stop.is_set() and self.moitruong.get_is_cuasogametontai():
             if not self.moitruong.get_is_dangmatketnoi():
                 tennhanvat = self.moitruong.get_tendoituong()
@@ -138,13 +120,17 @@ class CuaSo:
                     if tennhanvat:
                         if self.tennhanvat:
                             self.tactu.luuthietlap(self.tennhanvat)
-
                         self.tactu.taithietlap(tennhanvat)
-                        self.systray.update(hover_text = tennhanvat)
+
+                        if tennhanvat != last_hover_text:
+                            self.systray.update(hover_text = tennhanvat)
+                            last_hover_text = tennhanvat
 
                     elif self.tennhanvat:
                         self.tactu.luuthietlap(self.tennhanvat)
-                        self.systray.update(hover_text = CHUACHONHANVAT)
+                        if CHUACHONHANVAT != last_hover_text:
+                            self.systray.update(hover_text = CHUACHONHANVAT)
+                            last_hover_text = CHUACHONHANVAT
 
                     self.tennhanvat = tennhanvat
 
@@ -154,7 +140,9 @@ class CuaSo:
 
                 self.tennhanvat = tennhanvat
             else:
-                self.systray.update(hover_text = CHUACHONHANVAT)
+                if CHUACHONHANVAT != last_hover_text:
+                    self.systray.update(hover_text = CHUACHONHANVAT)
+                    last_hover_text = CHUACHONHANVAT
 
             time.sleep(1)
 

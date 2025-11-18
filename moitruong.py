@@ -2385,6 +2385,9 @@ class MoiTruong:
 
             i += 1
 
+            if i % 10 == 0:
+                time.sleep(0.001)
+
             iddoituongvatpham = self.get_iddoituongvatphamhanhtrang(i)
             if not iddoituongvatpham:
                 return False

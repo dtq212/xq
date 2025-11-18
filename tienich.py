@@ -88,7 +88,6 @@ def phatam(noidung, is_block = True):
     t = threading.Thread(target = _phatam, args = (noidung, is_block), daemon = True)
     t.start()
 
-
 def luuthietlap(tennhanvat, thietlap):
     tenfile = slugify(tennhanvat)
 
