@@ -63,21 +63,31 @@ def slugify(value, allow_unicode = False):
     return re.sub(r"[-\s]+", "-", value).strip("-_")
 
 
-def phatam(noidung, is_block = False):
-    print(f"phatam: {noidung}")
-    tenfile = slugify(noidung)
-    folder_amthanh_path = os.path.join(".", "_internal", "amthanh")
-    if not os.path.exists(folder_amthanh_path):
-        os.makedirs(folder_amthanh_path, exist_ok = True)
-
-    file_path = os.path.join(folder_amthanh_path, "{}.mp3".format(tenfile))
-
-    if not os.path.exists(file_path):
-        gtts.gTTS(noidung, lang = "vi").save(file_path)
+import threading
+import os
+def _phatam_worker(noidung, is_block):
     try:
+        print(f"phatam (thread): {noidung}")
+        tenfile = slugify(noidung)
+        duongdanthumucamthanh = os.path.join(".", "_internal", "amthanh")
+
+        if not os.path.exists(duongdanthumucamthanh):
+            os.makedirs(duongdanthumucamthanh, exist_ok = True)
+
+        file_path = os.path.join(duongdanthumucamthanh, "{}.mp3".format(tenfile))
+
+        if not os.path.exists(file_path):
+            gtts.gTTS(noidung, lang = "vi").save(file_path)
+            
         playsound.playsound(file_path, is_block)
+
     except Exception as err:
         print("Phát âm lỗi: {}".format(err))
+
+
+def phatam(noidung, is_block = True):
+    t = threading.Thread(target = _phatam_worker, args = (noidung, is_block), daemon = True)
+    t.start()
 
 
 def luuthietlap(tennhanvat, thietlap):
