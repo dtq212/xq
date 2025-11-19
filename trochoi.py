@@ -29,19 +29,13 @@ class TroChoiWorker:
         self.cuaso = None
         self.target_hwnd = target_hwnd
         self.is_dangchay = threading.Event()
-        self.remove2 = keyboard.add_hotkey("ctrl + alt + f12", lambda: self.is_dangchay.set())
-
-    def __del__(self):
-        try:
-            keyboard.remove_hotkey(self.remove2)
-        except:
-            pass
 
     def khoidong(self):
         if not win32gui.IsWindow(self.target_hwnd):
             return
 
         self.cuaso = CuaSo(self.target_hwnd)
+
         if not self.kiemtranhanvathople():
             return
 
@@ -64,25 +58,26 @@ class TroChoiWorker:
             return False
 
     def loop_quanly(self):
-        thoigianmatnhanvat = 0
+        thoi_gian_mat_nhan_vat = 0
 
         while not self.is_dangchay.is_set():
             try:
                 if self.cuaso.main_stop.is_set() or not win32gui.IsWindow(self.target_hwnd):
                     self.is_dangchay.set()
                     break
+
                 if win32api.GetAsyncKeyState(0x13) & 0x8000:
                     self.is_dangchay.set()
                     break
-                if not self.kiemtranhanvathople():
-                    if thoigianmatnhanvat == 0:
-                        thoigianmatnhanvat = time.time()
 
-                    elif time.time() - thoigianmatnhanvat > 1:
+                if not self.kiemtranhanvathople():
+                    if thoi_gian_mat_nhan_vat == 0:
+                        thoi_gian_mat_nhan_vat = time.time()
+                    elif time.time() - thoi_gian_mat_nhan_vat > 2:
                         self.is_dangchay.set()
                         break
                 else:
-                    thoigianmatnhanvat = 0
+                    thoi_gian_mat_nhan_vat = 0
 
             except Exception:
                 self.is_dangchay.set()
@@ -102,19 +97,19 @@ class TroChoiManager:
         self.lock = threading.Lock()
         self.is_running = True
 
-        keyboard.add_hotkey("ctrl + alt + f12", self.stop_all)
+        keyboard.add_hotkey("ctrl + alt + f12", self.dungtatca)
 
         print("=" * 50)
-        print("TOOL CHIẾN QUỐC (SMART DETECT)")
+        print("TOOL CHIẾN QUỐC (SMART DETECT - NO LAG)")
         print("Trạng thái: Đang soi cửa sổ game...")
-        print("1. Chỉ khi ĐĂNG NHẬP và CÓ TÊN NHÂN VẬT, Auto mới chạy.")
-        print("2. Mất kết nối / Ra chọn nhân vật -> Auto TỰ TẮT.")
+        print("1. Tự chạy khi đăng nhập.")
+        print("2. Tự tắt khi thoát game.")
         print("3. Ctrl + Alt + F12: Tắt TOÀN BỘ.")
         print("-" * 50)
         print("Đừng tắt cửa sổ này!")
         print("=" * 50)
 
-    def stop_all(self):
+    def dungtatca(self):
         print("\nĐang dừng toàn bộ hệ thống...")
         self.is_running = False
         with self.lock:
@@ -127,7 +122,7 @@ class TroChoiManager:
         time.sleep(1)
         os._exit(0)
 
-    def _tim_cua_so_game(self):
+    def timcuasogame(self):
         ds_hwnd = []
 
         def callback(hwnd, _):
@@ -139,21 +134,19 @@ class TroChoiManager:
         win32gui.EnumWindows(callback, None)
         return ds_hwnd
 
-    def kiem_tra_du_dieu_kien_manager(self, hwnd):
+    def kiemtradudieukienmanager(self, hwnd):
         try:
             mt = MoiTruong(hwnd)
             if not mt.get_is_nhanvattontai():
                 return False
-
             ten = mt.get_tendoituong()
             if not ten or len(ten) == 0:
                 return False
-
             return True
         except:
             return False
 
-    def spawn_worker_for_hwnd(self, hwnd):
+    def mothemtientrinhcuasomoi(self, hwnd):
         with self.lock:
             if hwnd in self.managed_processes:
                 return
@@ -176,12 +169,12 @@ class TroChoiManager:
                 for h in dead_hwnds:
                     del self.managed_processes[h]
 
-            game_hwnds = self._tim_cua_so_game()
+            game_hwnds = self.timcuasogame()
 
             for hwnd in game_hwnds:
                 if hwnd not in self.managed_processes:
-                    if self.kiem_tra_du_dieu_kien_manager(hwnd):
-                        self.spawn_worker_for_hwnd(hwnd)
+                    if self.kiemtradudieukienmanager(hwnd):
+                        self.mothemtientrinhcuasomoi(hwnd)
 
             time.sleep(2)
 
