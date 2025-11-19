@@ -56,7 +56,7 @@ class TroChoiWorker:
         self.loop_quanly()
 
     def loop_quanly(self):
-        thoi_gian_mat_ket_noi = 0
+        thoigianmatketnoi = 0
 
         while not self.is_dangchay.is_set():
             try:
@@ -69,13 +69,13 @@ class TroChoiWorker:
                     break
 
                 if self.cuaso.moitruong.get_is_dangmatketnoi():
-                    if thoi_gian_mat_ket_noi == 0:
-                        thoi_gian_mat_ket_noi = time.time()
-                    elif time.time() - thoi_gian_mat_ket_noi > 5:
+                    if thoigianmatketnoi == 0:
+                        thoigianmatketnoi = time.time()
+                    elif time.time() - thoigianmatketnoi > 2.5:
                         self.is_dangchay.set()
                         break
                 else:
-                    thoi_gian_mat_ket_noi = 0
+                    thoigianmatketnoi = 0
             except Exception:
                 pass
             time.sleep(0.5)
