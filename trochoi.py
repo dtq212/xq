@@ -65,10 +65,8 @@ class TroChoiWorker:
                         break
                 else:
                     thoi_gian_mat_ket_noi = 0
-
             except Exception:
                 pass
-
             time.sleep(0.5)
 
         if self.cuaso:
@@ -83,16 +81,15 @@ class TroChoiManager:
         self.lock = threading.Lock()
         self.is_running = True
 
-        keyboard.add_hotkey("f12", self.spawn_worker)
         keyboard.add_hotkey("ctrl + alt + f12", self.stop_all)
 
         print("=" * 50)
-        print("TOOL CHIEN QUOC (MANAGER)")
-        print("Trang thai: Dang cho lenh...")
-        print("1. Vao game -> Bam F12 de chay Auto (Chay ngam).")
-        print("2. Ctrl + Alt + F12: Tat TOAN BO.")
+        print("TOOL CHIẾN QUỐC (AUTO-DETECT MANAGER)")
+        print("Trạng thái: Đang tự động quét game...")
+        print("1. Bạn chỉ cần mở game, Tool sẽ tự gắn Auto.")
+        print("2. Ctrl + Alt + F12: Tắt TOÀN BỘ.")
         print("-" * 50)
-        print("Dung tat cua so nay!")
+        print("Đừng tắt cửa sổ này!")
         print("=" * 50)
 
     def stop_all(self):
@@ -108,24 +105,25 @@ class TroChoiManager:
         time.sleep(1)
         os._exit(0)
 
-    def spawn_worker(self):
-        hwnd = win32gui.GetForegroundWindow()
-        tencuaso = win32gui.GetWindowText(hwnd)
+    def _tim_cua_so_game(self):
+        ds_hwnd = []
 
-        if not (tencuaso and ("Chien Quoc" in tencuaso or "Chiến Quốc" in tencuaso)):
-            phatam("Không phải cửa sổ game")
-            return
+        def callback(hwnd, _):
+            if win32gui.IsWindowVisible(hwnd):
+                title = win32gui.GetWindowText(hwnd)
+                if title and ("Chien Quoc" in title or "Chiến Quốc" in title):
+                    ds_hwnd.append(hwnd)
 
+        win32gui.EnumWindows(callback, None)
+        return ds_hwnd
+
+    def spawn_worker_for_hwnd(self, hwnd):
         with self.lock:
-            dead_hwnds = [h for h, p in self.managed_processes.items() if p.poll() is not None]
-            for h in dead_hwnds:
-                del self.managed_processes[h]
-
             if hwnd in self.managed_processes:
-                phatam("Cửa sổ này đang chạy Auto rồi")
                 return
 
-            phatam("Đang khởi động Auto mới")
+            phatam("Phát hiện game mới")
+            print(f"-> Đang gắn Auto cho cửa sổ {hwnd}...")
 
             script_path = os.path.abspath(__file__)
             cmd = [sys.executable, script_path, "--child", str(hwnd)]
@@ -134,11 +132,22 @@ class TroChoiManager:
                 proc = subprocess.Popen(cmd, creationflags = CREATE_NO_WINDOW)
                 self.managed_processes[hwnd] = proc
             except Exception:
-                phatam("Lỗi khởi động")
+                print(f"Lỗi khởi động Worker cho {hwnd}")
 
     def run(self):
         while self.is_running:
-            time.sleep(1)
+            with self.lock:
+                dead_hwnds = [h for h, p in self.managed_processes.items() if p.poll() is not None]
+                for h in dead_hwnds:
+                    del self.managed_processes[h]
+
+            game_hwnds = self._tim_cua_so_game()
+
+            for hwnd in game_hwnds:
+                if hwnd not in self.managed_processes:
+                    self.spawn_worker_for_hwnd(hwnd)
+                    time.sleep(1)
+            time.sleep(2)
 
 
 if __name__ == "__main__":
