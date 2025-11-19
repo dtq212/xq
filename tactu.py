@@ -303,10 +303,7 @@ class TacTu:
         khoangcachtoidatruongnhom = self._khoangcachtoidatruongnhom
         diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
         if not diachicosothongtinnhanvatmuctieudangchon or not self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon):
-            if self.moitruong.get_tenmonphai() != "vanmongcoc":
-                khoangcachtoidatruongnhom -= 6.
-            else:
-                khoangcachtoidatruongnhom -= 3
+            khoangcachtoidatruongnhom -= 6.
         return khoangcachtoidatruongnhom
 
     def action_tudongtimkiemmuctieu(self):
