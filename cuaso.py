@@ -68,6 +68,7 @@ class CuaSo:
         self.systray = SysTrayIcon(icon_path, CHUACHONHANVAT, on_quit = self.tatauto)
         self.systray.start()
 
+        # --- Đăng ký Hotkey ---
         keyboard.add_hotkey("ctrl + f", self.battat_tudongsudungkynang)
         keyboard.add_hotkey("ctrl + c", self.themtenmuctieutancong)
         keyboard.add_hotkey("ctrl + alt + c", self.botoanbotenmuctieutancong)
@@ -96,6 +97,10 @@ class CuaSo:
 
     def __del__(self):
         self.tatauto()
+        try:
+            pass  # Không cần remove thủ công để tránh xung đột
+        except:
+            pass
 
     def _chotoanbocacluongdunghan(self):
         for luong in self.luongs:
@@ -140,6 +145,9 @@ class CuaSo:
 
                 self.tennhanvat = tennhanvat
             else:
+                # Fix lỗi không update khi đăng nhập lại:
+                self.tennhanvat = False
+
                 if CHUACHONHANVAT != last_hover_text:
                     self.systray.update(hover_text = CHUACHONHANVAT)
                     last_hover_text = CHUACHONHANVAT
@@ -153,6 +161,7 @@ class CuaSo:
         except:
             pass
 
+    # --- CÁC HÀM HOTKEY (Check cửa sổ kích hoạt) ---
     def battat_tudongsudungkynang(self):
         if self.moitruong.get_is_cuasogamekichhoat():
             self.tactu.battat_is_tudongsudungkynang()

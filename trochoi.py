@@ -1,29 +1,19 @@
-import threading
+import os
 import sys
-import threading
 import time
-import traceback
-
+import subprocess
+import threading
 import keyboard
-import win32api
+import win32event
 import win32gui
+import win32process
+import win32api
+import locale
+import pymem
+import winerror
 
 from cuaso import CuaSo
 from tienich import phatam
-
-
-def debug_dump_threads():
-    print("\n" + "=" * 30 + " DEBUG: DUMP STACK TRACE " + "=" * 30)
-    frames = sys._current_frames()
-    for thread_id, frame in frames.items():
-        thread_name = "Unknown"
-        for t in threading.enumerate():
-            if t.ident == thread_id:
-                thread_name = t.name
-                break
-        print(f"\n🧵 Thread: {thread_name} (ID: {thread_id})")
-        traceback.print_stack(frame)
-    print("=" * 80 + "\n")
 
 
 def loop_cuaso(cuaso: CuaSo):
@@ -33,84 +23,131 @@ def loop_cuaso(cuaso: CuaSo):
         pass
 
 
-class TroChoi:
-    def __init__(self):
+class TroChoiWorker:
+    def __init__(self, target_hwnd):
         self.cuaso = None
+        self.target_hwnd = target_hwnd  # ID cửa sổ được chỉ định từ Tool Mẹ
         self.is_dangchay = threading.Event()
-        self.remove1 = keyboard.add_hotkey("f12", self.themcuasohientai)
+
         self.remove2 = keyboard.add_hotkey("ctrl + alt + f12", lambda: self.is_dangchay.set())
-        self.thoidiemmogamemoigannhat = time.time()
 
     def __del__(self):
         try:
-            keyboard.remove_hotkey(self.remove1)
             keyboard.remove_hotkey(self.remove2)
         except:
             pass
 
-    def themcuasohientai(self):
-        if self.cuaso is not None:
+    def khoidong(self):
+        if not win32gui.IsWindow(self.target_hwnd):
+            print(f"Cửa sổ {self.target_hwnd} không tồn tại.")
             return
 
-        idcuaso = win32gui.GetForegroundWindow()
-        tencuaso = win32gui.GetWindowText(idcuaso)
+        print(f"Worker đang khởi động cho HWND: {self.target_hwnd}")
+        self.cuaso = CuaSo(self.target_hwnd)
+
+        threading.Thread(target = loop_cuaso, args = [self.cuaso], daemon = True).start()
+
+        self.loop_quanly()
+
+    def loop_quanly(self):
+        print(f"Worker bắt đầu giám sát cửa sổ {self.target_hwnd}...")
+
+        while not self.is_dangchay.is_set():
+            try:
+                if self.cuaso.main_stop.is_set() or not self.cuaso.moitruong.get_is_cuasogametontai():
+                    print("Game kết thúc hoặc mất kết nối -> Worker dừng lại.")
+                    self.is_dangchay.set()
+                    break
+
+                if win32api.GetAsyncKeyState(0x13) & 0x8000:
+                    self.is_dangchay.set()
+                    break
+
+            except Exception as e:
+                print(f"Worker lỗi: {e}")
+
+            time.sleep(0.5)
+
+        # Dọn dẹp trước khi thoát
+        if self.cuaso:
+            self.cuaso.tatauto()
+        os._exit(0)
+
+class TroChoiManager:
+    def __init__(self):
+        self.managed_processes = {}
+        self.lock = threading.Lock()
+
+        keyboard.add_hotkey("f12", self.spawn_worker)
+
+        print("=" * 50)
+        print("TOOL CHIẾN QUỐC (CHẾ ĐỘ QUẢN LÝ ĐA TIẾN TRÌNH)")
+        print("Trạng thái: Đang chờ lệnh...")
+        print("1. Vào game bất kỳ -> Bấm F12 để kích hoạt Auto cho game đó.")
+        print("2. Tool Mẹ này sẽ tự động mở một cửa sổ console riêng cho game đó.")
+        print("3. Khi game tắt, cửa sổ console con sẽ tự tắt.")
+        print("-" * 50)
+        print("👉 Giữ nguyên cửa sổ này và đừng tắt nó!")
+        print("=" * 50)
+
+    def spawn_worker(self):
+        hwnd = win32gui.GetForegroundWindow()
+        tencuaso = win32gui.GetWindowText(hwnd)
 
         if not (tencuaso and tencuaso.startswith("Chien Quoc")):
             phatam("Không phải cửa sổ game")
             return
 
-        phatam("Đã kết nối thành công")
-        print(f"Tool đã kết nối với cửa sổ: {tencuaso} (ID: {idcuaso})")
+        with self.lock:
+            dead_hwnds = [h for h, p in self.managed_processes.items() if p.poll() is not None]
+            for h in dead_hwnds:
+                del self.managed_processes[h]
 
-        self.cuaso = CuaSo(idcuaso)
+            if hwnd in self.managed_processes:
+                phatam("Cửa sổ này đang chạy Auto rồi")
+                return
 
-        threading.Thread(target = loop_cuaso, args = [self.cuaso], daemon = True).start()
+            phatam("Đang khởi động Auto mới")
 
-    def tatauto(self):
-        if self.cuaso:
-            self.cuaso.tatauto()
+            cmd = [sys.executable, __file__, "--child", str(hwnd)]
 
-    def loop_quanly(self):
-        while not self.is_dangchay.is_set():
             try:
-                if self.cuaso:
-                    if self.cuaso.main_stop.is_set() or not self.cuaso.moitruong.get_is_cuasogametontai():
-                        phatam("Game đã bị đóng hoặc ngắt kết nối")
-                        self.cuaso.main_stop.set()
-                        self.cuaso = None
+                proc = subprocess.Popen(cmd, creationflags=0x08000000)
+
+                self.managed_processes[hwnd] = proc
+                print(f"[Manager] Đã tạo Worker cho HWND {hwnd} (PID: {proc.pid})")
             except Exception as e:
-                print(f"Lỗi giám sát: {e}")
+                print(f"[Manager] Lỗi tạo Worker: {e}")
+                phatam("Lỗi khởi động")
 
+    def run(self):
+        while True:
             time.sleep(1)
-
 
 if __name__ == "__main__":
-    trochoi = TroChoi()
+    if len(sys.argv) > 2 and sys.argv[1] == "--child":
+        try:
+            target_hwnd = int(sys.argv[2])
+            worker = TroChoiWorker(target_hwnd)
+            worker.khoidong()
+        except Exception as e:
+            print(f"Worker crash: {e}")
+            time.sleep(5)
+    else:
+        name = "trochoi.exe"
+        my_pid = os.getpid()
+        is_duplicate = False
 
-    t_quanly = threading.Thread(target = trochoi.loop_quanly, daemon = True)
-    t_quanly.start()
+        mutex_name = "Global_Tool_ChienQuoc_Manager_Mutex"
+        mutex = win32event.CreateMutex(None, True, mutex_name)
+        if win32api.GetLastError() == winerror.ERROR_ALREADY_EXISTS:
+            print("⚠️ Tool Quản Lý đang chạy rồi! Bạn không cần mở thêm.")
+            phatam("Tool quản lý đang chạy rồi")
+            time.sleep(2)
+            sys.exit(0)
 
-    print("=" * 50)
-    print("TOOL CHIẾN QUỐC (CHẾ ĐỘ ĐA CỬA SỔ)")
-    print("Hướng dẫn:")
-    print("1. Mở Tool này lên.")
-    print("2. Vào game, bấm F12 để kết nối.")
-    print("3. Muốn chạy thêm acc khác? -> Mở thêm 1 bản Tool nữa rồi làm lại bước 2.")
-    print("-" * 50)
-    print("👉 Bấm [INSERT] để Debug.")
-    print("👉 Bấm [PAUSE] để Dừng.")
-    print("=" * 50)
-
-    while not trochoi.is_dangchay.is_set():
-        if win32api.GetAsyncKeyState(0x2D) & 0x8000:
-            debug_dump_threads()
-            time.sleep(1)
-
-        if win32api.GetAsyncKeyState(0x13) & 0x8000:
-            print("\n🛑 Dừng tool!")
-            trochoi.is_dangchay.set()
-            break
-
-        time.sleep(0.1)
-
-    trochoi.tatauto()
+        manager = TroChoiManager()
+        try:
+            manager.run()
+        except KeyboardInterrupt:
+            pass
