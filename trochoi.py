@@ -11,6 +11,7 @@ import win32gui
 import winerror
 
 from cuaso import CuaSo
+from moitruong import MoiTruong
 from tienich import phatam
 
 CREATE_NO_WINDOW = 0x08000000
@@ -41,43 +42,52 @@ class TroChoiWorker:
             return
 
         self.cuaso = CuaSo(self.target_hwnd)
+        if not self.kiemtranhanvathople():
+            return
 
-        while not self.is_dangchay.is_set():
-            if not win32gui.IsWindow(self.target_hwnd):
-                return
-
-            if self.cuaso.moitruong.get_is_nhanvattontai():
-                phatam("Đã kết nối nhân vật")
-                break
-
-            time.sleep(1)
+        phatam("Đã kết nối nhân vật")
 
         threading.Thread(target = loop_cuaso, args = [self.cuaso], daemon = True).start()
         self.loop_quanly()
 
+    def kiemtranhanvathople(self):
+        try:
+            if not self.cuaso.moitruong.get_is_nhanvattontai():
+                return False
+
+            ten = self.cuaso.moitruong.get_tendoituong()
+            if not ten or len(ten) == 0:
+                return False
+
+            return True
+        except:
+            return False
+
     def loop_quanly(self):
-        thoigianmatketnoi = 0
+        thoigianmatnhanvat = 0
 
         while not self.is_dangchay.is_set():
             try:
-                if self.cuaso.main_stop.is_set() or not self.cuaso.moitruong.get_is_cuasogametontai():
+                if self.cuaso.main_stop.is_set() or not win32gui.IsWindow(self.target_hwnd):
                     self.is_dangchay.set()
                     break
-
                 if win32api.GetAsyncKeyState(0x13) & 0x8000:
                     self.is_dangchay.set()
                     break
+                if not self.kiemtranhanvathople():
+                    if thoigianmatnhanvat == 0:
+                        thoigianmatnhanvat = time.time()
 
-                if self.cuaso.moitruong.get_is_dangmatketnoi():
-                    if thoigianmatketnoi == 0:
-                        thoigianmatketnoi = time.time()
-                    elif time.time() - thoigianmatketnoi > 2.5:
+                    elif time.time() - thoigianmatnhanvat > 1:
                         self.is_dangchay.set()
                         break
                 else:
-                    thoigianmatketnoi = 0
+                    thoigianmatnhanvat = 0
+
             except Exception:
-                pass
+                self.is_dangchay.set()
+                break
+
             time.sleep(0.5)
 
         if self.cuaso:
@@ -95,17 +105,17 @@ class TroChoiManager:
         keyboard.add_hotkey("ctrl + alt + f12", self.stop_all)
 
         print("=" * 50)
-        print("TOOL CHIEN QUOC (AUTO-DETECT MANAGER)")
-        print("Trang thai: Dang quet game va cho dang nhap...")
-        print("1. Ban cu mo game thoai mai.")
-        print("2. Khi nao DANG NHAP xong, Auto se tu dong kich hoat.")
-        print("3. Ctrl + Alt + F12: Tat TOAN BO.")
+        print("TOOL CHIẾN QUỐC (SMART DETECT)")
+        print("Trạng thái: Đang soi cửa sổ game...")
+        print("1. Chỉ khi ĐĂNG NHẬP và CÓ TÊN NHÂN VẬT, Auto mới chạy.")
+        print("2. Mất kết nối / Ra chọn nhân vật -> Auto TỰ TẮT.")
+        print("3. Ctrl + Alt + F12: Tắt TOÀN BỘ.")
         print("-" * 50)
-        print("Dung tat cua so nay!")
+        print("Đừng tắt cửa sổ này!")
         print("=" * 50)
 
     def stop_all(self):
-        print("\nDang dung toan bo he thong...")
+        print("\nĐang dừng toàn bộ hệ thống...")
         self.is_running = False
         with self.lock:
             for hwnd, proc in self.managed_processes.items():
@@ -129,12 +139,26 @@ class TroChoiManager:
         win32gui.EnumWindows(callback, None)
         return ds_hwnd
 
+    def kiem_tra_du_dieu_kien_manager(self, hwnd):
+        try:
+            mt = MoiTruong(hwnd)
+            if not mt.get_is_nhanvattontai():
+                return False
+
+            ten = mt.get_tendoituong()
+            if not ten or len(ten) == 0:
+                return False
+
+            return True
+        except:
+            return False
+
     def spawn_worker_for_hwnd(self, hwnd):
         with self.lock:
             if hwnd in self.managed_processes:
                 return
 
-            print(f"-> Phat hien cua so {hwnd}, dang gan Auto (Che do cho)...")
+            print(f"-> Phát hiện cửa sổ {hwnd} hợp lệ -> Kích hoạt Auto!")
 
             script_path = os.path.abspath(__file__)
             cmd = [sys.executable, script_path, "--child", str(hwnd)]
@@ -156,8 +180,8 @@ class TroChoiManager:
 
             for hwnd in game_hwnds:
                 if hwnd not in self.managed_processes:
-                    self.spawn_worker_for_hwnd(hwnd)
-                    time.sleep(1)
+                    if self.kiem_tra_du_dieu_kien_manager(hwnd):
+                        self.spawn_worker_for_hwnd(hwnd)
 
             time.sleep(2)
 
