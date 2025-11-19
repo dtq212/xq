@@ -731,7 +731,11 @@ class TacTu:
                         }
                         break
                     else:
-                        if is_muctieudangchonlanguoichoi and not is_muctieudangchonbichoang and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LANGKHONGCHIHUYET):
+                        if self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN, ), macdinh = False, is_hieuungcoloi = 0):
+                            if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TINHTAMQUYET):
+                                self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TINHTAMQUYET)
+                                break
+                        elif is_muctieudangchonlanguoichoi and not is_muctieudangchonbichoang and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LANGKHONGCHIHUYET):
                             self._is_tamngungdichuyensudungkynang = True
                             if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
                                 self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_LANGKHONGCHIHUYET)
