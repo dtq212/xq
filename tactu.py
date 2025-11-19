@@ -714,14 +714,14 @@ class TacTu:
                 #         if is_ok:
                 #             self._solansudungkhaithientichdia += 1
 
-                elif not is_duoitheonguoichoi:
+                elif 1 or not is_duoitheonguoichoi:
                     thoigiantuthenhanvatdungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat() if idtuthenhanvat == TUTHENHANVAT_DUNGIM else 0.
 
                     if thoigiantuthenhanvatdungim > 0.5 and khoangcach > KHOANGCACHSUDUNGKYNANGTAMXA - 3:
                         if thoigiantuthenhanvatdungim > 4.5:
                             khoangcachgiutoida = 0
                         else:
-                            khoangcachgiutoida = KHOANGCACHSUDUNGKYNANGTAMXA - max(1.5 + thoigiantuthenhanvatdungim, 0 if is_muctieudangchonlanguoichoi else 6)
+                            khoangcachgiutoida = KHOANGCACHSUDUNGKYNANGTAMXA - max(1.5 + thoigiantuthenhanvatdungim, 0 if is_muctieudangchonlanguoichoi else 9)
 
                         self._yeucautancong = {
                             "yeucau": YEUCAUDICHUYENTANCONG,
