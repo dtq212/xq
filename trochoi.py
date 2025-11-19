@@ -41,6 +41,17 @@ class TroChoiWorker:
             return
 
         self.cuaso = CuaSo(self.target_hwnd)
+
+        while not self.is_dangchay.is_set():
+            if not win32gui.IsWindow(self.target_hwnd):
+                return
+
+            if self.cuaso.moitruong.get_is_nhanvattontai():
+                phatam("Đã kết nối nhân vật")
+                break
+
+            time.sleep(1)
+
         threading.Thread(target = loop_cuaso, args = [self.cuaso], daemon = True).start()
         self.loop_quanly()
 
@@ -84,16 +95,17 @@ class TroChoiManager:
         keyboard.add_hotkey("ctrl + alt + f12", self.stop_all)
 
         print("=" * 50)
-        print("TOOL CHIẾN QUỐC (AUTO-DETECT MANAGER)")
-        print("Trạng thái: Đang tự động quét game...")
-        print("1. Bạn chỉ cần mở game, Tool sẽ tự gắn Auto.")
-        print("2. Ctrl + Alt + F12: Tắt TOÀN BỘ.")
+        print("TOOL CHIEN QUOC (AUTO-DETECT MANAGER)")
+        print("Trang thai: Dang quet game va cho dang nhap...")
+        print("1. Ban cu mo game thoai mai.")
+        print("2. Khi nao DANG NHAP xong, Auto se tu dong kich hoat.")
+        print("3. Ctrl + Alt + F12: Tat TOAN BO.")
         print("-" * 50)
-        print("Đừng tắt cửa sổ này!")
+        print("Dung tat cua so nay!")
         print("=" * 50)
 
     def stop_all(self):
-        print("\nĐang dừng toàn bộ hệ thống...")
+        print("\nDang dung toan bo he thong...")
         self.is_running = False
         with self.lock:
             for hwnd, proc in self.managed_processes.items():
@@ -122,8 +134,7 @@ class TroChoiManager:
             if hwnd in self.managed_processes:
                 return
 
-            phatam("Phát hiện game mới")
-            print(f"-> Đang gắn Auto cho cửa sổ {hwnd}...")
+            print(f"-> Phat hien cua so {hwnd}, dang gan Auto (Che do cho)...")
 
             script_path = os.path.abspath(__file__)
             cmd = [sys.executable, script_path, "--child", str(hwnd)]
@@ -132,7 +143,7 @@ class TroChoiManager:
                 proc = subprocess.Popen(cmd, creationflags = CREATE_NO_WINDOW)
                 self.managed_processes[hwnd] = proc
             except Exception:
-                print(f"Lỗi khởi động Worker cho {hwnd}")
+                pass
 
     def run(self):
         while self.is_running:
@@ -147,6 +158,7 @@ class TroChoiManager:
                 if hwnd not in self.managed_processes:
                     self.spawn_worker_for_hwnd(hwnd)
                     time.sleep(1)
+
             time.sleep(2)
 
 
