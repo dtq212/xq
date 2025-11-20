@@ -427,25 +427,13 @@ class TacTu:
             if self.moitruong.get_diempk() > 0:
                 self.action_sudungvatphamhanhtrang(ANXAPHU)
 
-            if time.time() - self._thoidiemsudungsinhkhitangannhat > 10.:
-                is_ok = self.action_sudungvatphamhanhtrang(SINHKHITAN)
-                if is_ok:
-                    self._thoidiemsudungsinhkhitangannhat = time.time()
-
-            tenmonphai = self.moitruong.get_tenmonphai()
-
-            if time.time() - self._thoidiemsudungkimcuongbathoaidongannhat >= .5 and self.moitruong.get_phantramsinhlucconlai() <= 25.:
-                if tenmonphai != "thucson" or (not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENTHANVODICH) and 0 < self.moitruong.get_thoigianconlaihieuungtienthanvodich(macdinh = 2.0) <= 1.5):
-                    self._thoidiemsudungkimcuongbathoaidongannhat = time.time()
-                    self.action_sudungvatphamhanhtrang(KIMCUONGBATHOAIDON)
-
-            if time.time() - self._thoidiemsudungtaitaohoangannhat >= .5 and self.moitruong.get_phantramsinhlucconlai() <= 5. and 0 < self.moitruong.get_thoigianconlaihieuungkimcuongbathoaidon(macdinh = 2.0) <= 1.5:
-                self._thoidiemsudungtaitaohoangannhat = time.time()
-                self.action_sudungvatphamhanhtrang(TAITAOHOAN)
-
-            if time.time() - self._thoidiemsudungsotriduocgannhat > 2. and self.moitruong.get_phantramsinhlucconlai() <= 25.:
-                self._thoidiemsudungsotriduocgannhat = time.time()
-                self.action_sudungvatphamhanhtrang(SOTRIDUOC)
+            # if time.time() - self._thoidiemsudungtaitaohoangannhat >= .5 and self.moitruong.get_phantramsinhlucconlai() <= 5. and 0 < self.moitruong.get_thoigianconlaihieuungkimcuongbathoaidon(macdinh = 2.0) <= 1.5:
+            #     self._thoidiemsudungtaitaohoangannhat = time.time()
+            #     self.action_sudungvatphamhanhtrang(TAITAOHOAN)
+            #
+            # if time.time() - self._thoidiemsudungsotriduocgannhat > 2. and self.moitruong.get_phantramsinhlucconlai() <= 25.:
+            #     self._thoidiemsudungsotriduocgannhat = time.time()
+            #     self.action_sudungvatphamhanhtrang(SOTRIDUOC)
 
     def _action_sudungkynang(self):
         tenmonphai = self.moitruong.get_tenmonphai()

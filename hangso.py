@@ -239,6 +239,7 @@ GATAYNOEL = "GÃ  TÃ¢y Noel"
 LIXI = "Phong Bao LÃ¬ XÃ¬"
 HACLANTHACH = "Háº¯c LÃ¢n Tháº¡ch"
 SONGTUDUNGCAM = "Song Tá»­ DÅ©ng Cáº£m"
+SONGTUANHMINH = "Song Tá»­ Anh Minh"
 THANTHUTHO = "Tháº§n ThÃº - Thá»"
 
 TUILINHTHACHCAP1 = "TÃºi Linh Tháº¡ch cáº¥p 1"
@@ -468,7 +469,7 @@ VATPHAMTUDONGNHATs = ("ToÃ¡i Ma Bá»‘", "Da Ráº¯n", "TÆ¡ Táº±m", "L
 VATPHAMTUDONGNHATCUTHUDAOs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i")
 VATPHAMXEPCHONGs = tuple()
 
-TENMUCTIEUKHONGTANCONGs = (SONGTUDUNGCAM, THANTHUTHO)
+TENMUCTIEUKHONGTANCONGs = (SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO)
 
 YEUCAUDICHUYEN_NONE = 0
 YEUCAUDICHUYENNHATDO = 1
