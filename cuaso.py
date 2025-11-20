@@ -5,7 +5,6 @@ import keyboard
 import win32gui
 from infi.systray import SysTrayIcon
 
-# Import các module nội bộ (Đảm bảo loop.py đã sửa lỗi Circular Import)
 from loop import (
     LoopLamMoiTrangThaiMoiTruong,
     LoopTimKiemMucTieu,
@@ -17,6 +16,7 @@ from loop import (
 from moitruong import MoiTruong
 from tactu import TacTu
 from hangso import *
+
 
 def khoidong_looplammoitrangthaimoitruong(moitruong, tactu, stop):
     LoopLamMoiTrangThaiMoiTruong(moitruong, tactu, stop).loop()
@@ -48,7 +48,6 @@ class CuaSo:
         self.tactu = TacTu(self.moitruong)
         self.tennhanvat = False
         self.main_stop = threading.Event()
-        self.hotkeys = []
 
         self.luongs = (
             threading.Thread(target = khoidong_looplammoitrangthaimoitruong, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
@@ -62,6 +61,8 @@ class CuaSo:
         for luong in self.luongs:
             luong.start()
 
+        threading.Thread(target = self.loop_xulyphimtat, daemon = True).start()
+
         icon_path = os.path.join("_internal", "icon", "icon.ico")
         if not os.path.exists(icon_path):
             icon_path = None
@@ -70,30 +71,7 @@ class CuaSo:
         self.systray = SysTrayIcon(icon_path, title_ban_dau, on_quit = self.tatauto)
         self.systray.start()
 
-        self.dang_ky_hotkey("ctrl + f", self.battat_tudongsudungkynang)
-        self.dang_ky_hotkey("ctrl + c", self.themtenmuctieutancong)
-        self.dang_ky_hotkey("ctrl + alt + c", self.botoanbotenmuctieutancong)
-        self.dang_ky_hotkey("ctrl + x", self.themtenmuctieukhongtancong)
-        self.dang_ky_hotkey("ctrl + alt + x", self.botoanbotenmuctieukhongtancong)
-        self.dang_ky_hotkey("ctrl + alt + f", self.battat_tudongtheosautruongnhom)
-        self.dang_ky_hotkey("ctrl + d", self.thietlapchidanhnguoichoi)
-        self.dang_ky_hotkey("ctrl + a", self.bothietlapchidanhnguoichoi)
-        self.dang_ky_hotkey("ctrl + e", self.batpk)
-        self.dang_ky_hotkey("ctrl + q", self.tatpk)
-        self.dang_ky_hotkey("ctrl + p", self.themdiemdanhxungquanh)
-        self.dang_ky_hotkey("ctrl + alt + shift + p", self.battat_tudongdichuyendiemdanhxungquanh)
-        self.dang_ky_hotkey("ctrl + alt + p", self.botoanbodiemdanhxungquanh)
-        self.dang_ky_hotkey("ctrl + m", self.battat_vohieuhoadichuyen)
-        self.dang_ky_hotkey("ctrl + alt + t", self.battat_tudongbattheosaunhom)
-        self.dang_ky_hotkey("ctrl + alt + d", self.battat_thucsondao)
-        self.dang_ky_hotkey("ctrl + alt + v", self.battat_is_phitac)
-        self.dang_ky_hotkey("ctrl + alt + shift + c", self.battat_chantangcapdo)
-
         self.thoidiemluuthietlapgannhat = time.time()
-
-    def dang_ky_hotkey(self, phim, ham):
-        hook = keyboard.add_hotkey(phim, ham)
-        self.hotkeys.append(hook)
 
     def __del__(self):
         self.tatauto()
@@ -106,13 +84,6 @@ class CuaSo:
     def tatauto(self, *args, **kwargs):
         self.main_stop.set()
 
-        for hook in self.hotkeys:
-            try:
-                keyboard.remove_hotkey(hook)
-            except:
-                pass
-        self.hotkeys.clear()
-
         self._chotoanbocacluongdunghan()
 
         try:
@@ -122,12 +93,11 @@ class CuaSo:
 
     def loop(self):
         last_hover_text = None
-        thoigianmatketnoi = 0
+        thoi_gian_mat_ket_noi = 0
 
         while not self.main_stop.is_set() and self.moitruong.get_is_cuasogametontai():
             if not self.moitruong.get_is_dangmatketnoi():
-                thoigianmatketnoi = 0
-
+                thoi_gian_mat_ket_noi = 0
                 tennhanvat = self.moitruong.get_tendoituong()
 
                 if tennhanvat != self.tennhanvat:
@@ -156,71 +126,147 @@ class CuaSo:
                     self.systray.update(hover_text = CHUACHONHANVAT)
                     last_hover_text = CHUACHONHANVAT
 
-                if thoigianmatketnoi == 0:
-                    thoigianmatketnoi = time.time()
-                elif time.time() - thoigianmatketnoi > 1.:
+                if thoi_gian_mat_ket_noi == 0:
+                    thoi_gian_mat_ket_noi = time.time()
+                elif time.time() - thoi_gian_mat_ket_noi > 1.:
                     break
 
             time.sleep(1)
 
         self.tatauto()
 
+    def loop_xulyphimtat(self):
+        while not self.main_stop.is_set():
+            if self.moitruong.get_is_cuasogamekichhoat():
+
+                if keyboard.is_pressed("ctrl+alt+shift+p"):
+                    self.battat_tudongdichuyendiemdanhxungquanh()
+                    time.sleep(0.3)
+
+                elif keyboard.is_pressed("ctrl+alt+shift+c"):
+                    self.battat_chantangcapdo()
+                    time.sleep(0.3)
+
+                elif keyboard.is_pressed("ctrl+alt+c"):
+                    self.botoanbotenmuctieutancong()
+                    time.sleep(0.3)
+
+                elif keyboard.is_pressed("ctrl+alt+x"):
+                    self.botoanbotenmuctieukhongtancong()
+                    time.sleep(0.3)
+
+                elif keyboard.is_pressed("ctrl+alt+f"):
+                    self.battat_tudongtheosautruongnhom()
+                    time.sleep(0.3)
+
+                elif keyboard.is_pressed("ctrl+alt+p"):
+                    self.botoanbodiemdanhxungquanh()
+                    time.sleep(0.3)
+
+                elif keyboard.is_pressed("ctrl+alt+t"):
+                    self.battat_tudongbattheosaunhom()
+                    time.sleep(0.3)
+
+                elif keyboard.is_pressed("ctrl+alt+d"):
+                    self.battat_thucsondao()
+                    time.sleep(0.3)
+
+                elif keyboard.is_pressed("ctrl+alt+v"):
+                    self.battat_is_phitac()
+                    time.sleep(0.3)
+
+                # Các tổ hợp phím ngắn (2 phím)
+                elif keyboard.is_pressed("ctrl+f"):
+                    self.battat_tudongsudungkynang()
+                    time.sleep(0.3)
+
+                elif keyboard.is_pressed("ctrl+c"):
+                    self.themtenmuctieutancong()
+                    time.sleep(0.3)
+
+                elif keyboard.is_pressed("ctrl+x"):
+                    self.themtenmuctieukhongtancong()
+                    time.sleep(0.3)
+
+                elif keyboard.is_pressed("ctrl+d"):
+                    self.thietlapchidanhnguoichoi()
+                    time.sleep(0.3)
+
+                elif keyboard.is_pressed("ctrl+a"):
+                    self.bothietlapchidanhnguoichoi()
+                    time.sleep(0.3)
+
+                elif keyboard.is_pressed("ctrl+e"):
+                    self.batpk()
+                    time.sleep(0.3)
+
+                elif keyboard.is_pressed("ctrl+q"):
+                    self.tatpk()
+                    time.sleep(0.3)
+
+                elif keyboard.is_pressed("ctrl+p"):
+                    self.themdiemdanhxungquanh()
+                    time.sleep(0.3)
+
+                elif keyboard.is_pressed("ctrl+m"):
+                    self.battat_vohieuhoadichuyen()
+                    time.sleep(0.3)
+
+            time.sleep(0.05)
+
     def battat_tudongsudungkynang(self):
-        if self.moitruong.get_is_cuasogamekichhoat(): self.tactu.battat_is_tudongsudungkynang()
+        self.tactu.battat_is_tudongsudungkynang()
 
     def battat_tudongtheosautruongnhom(self):
-        if self.moitruong.get_is_cuasogamekichhoat(): self.tactu.battat_is_tudongtheosautruongnhom()
+        self.tactu.battat_is_tudongtheosautruongnhom()
 
     def battat_vohieuhoadichuyen(self):
-        if self.moitruong.get_is_cuasogamekichhoat(): self.tactu.battat_is_vohieuhoadichuyen()
+        self.tactu.battat_is_vohieuhoadichuyen()
 
     def battat_tudongbattheosaunhom(self):
-        if self.moitruong.get_is_cuasogamekichhoat(): self.tactu.battat_is_tudongbattheosaunhom()
+        self.tactu.battat_is_tudongbattheosaunhom()
 
     def battat_is_phitac(self):
-        if self.moitruong.get_is_cuasogamekichhoat(): self.tactu.battat_is_phitac()
+        self.tactu.battat_is_phitac()
 
     def battat_thucsondao(self):
-        if self.moitruong.get_is_cuasogamekichhoat(): self.tactu.battat_is_thucsondao()
+        self.tactu.battat_is_thucsondao()
 
     def battat_tudongdichuyendiemdanhxungquanh(self):
-        if self.moitruong.get_is_cuasogamekichhoat(): self.tactu.battat_is_tudongdichuyendiemdanhxungquanh()
+        self.tactu.battat_is_tudongdichuyendiemdanhxungquanh()
 
     def battat_chantangcapdo(self):
-        if self.moitruong.get_is_cuasogamekichhoat(): self.tactu.battat_is_chantangcapdo()
+        self.tactu.battat_is_chantangcapdo()
 
     def themtenmuctieutancong(self):
-        if self.moitruong.get_is_cuasogamekichhoat():
-            self.tactu.them_tenmuctieutancong(self.moitruong.get_tennhanvatchichuot())
+        self.tactu.them_tenmuctieutancong(self.moitruong.get_tennhanvatchichuot())
 
     def themtenmuctieukhongtancong(self):
-        if self.moitruong.get_is_cuasogamekichhoat():
-            self.tactu.them_tenmuctieukhongtancong(self.moitruong.get_tennhanvatchichuot())
+        self.tactu.them_tenmuctieukhongtancong(self.moitruong.get_tennhanvatchichuot())
 
     def botoanbotenmuctieutancong(self):
-        if self.moitruong.get_is_cuasogamekichhoat(): self.tactu.botoanbo_tenmuctieutancong()
+        self.tactu.botoanbo_tenmuctieutancong()
 
     def botoanbotenmuctieukhongtancong(self):
-        if self.moitruong.get_is_cuasogamekichhoat(): self.tactu.botoanbo_tenmuctieukhongtancong()
+        self.tactu.botoanbo_tenmuctieukhongtancong()
 
     def themdiemdanhxungquanh(self):
-        if self.moitruong.get_is_cuasogamekichhoat():
-            if self.moitruong.get_is_dangmobando():
-                self.tactu.them_diemdanhxungquanh((self.moitruong.get_toadoxbandochichuot(), self.moitruong.get_toadoybandochichuot(), self.moitruong.get_idbandochichuot()))
-            else:
-                self.tactu.them_diemdanhxungquanh((self.moitruong.get_toadox(is_vitrihientai = True), self.moitruong.get_toadoy(is_vitrihientai = True), self.moitruong.get_idbandohientai()))
+        if self.moitruong.get_is_dangmobando():
+            self.tactu.them_diemdanhxungquanh((self.moitruong.get_toadoxbandochichuot(), self.moitruong.get_toadoybandochichuot(), self.moitruong.get_idbandochichuot()))
+        else:
+            self.tactu.them_diemdanhxungquanh((self.moitruong.get_toadox(is_vitrihientai = True), self.moitruong.get_toadoy(is_vitrihientai = True), self.moitruong.get_idbandohientai()))
 
     def botoanbodiemdanhxungquanh(self):
-        if self.moitruong.get_is_cuasogamekichhoat(): self.tactu.botoanbo_diemdanhxungquanh()
+        self.tactu.botoanbo_diemdanhxungquanh()
 
     def thietlapchidanhnguoichoi(self):
-        if self.moitruong.get_is_cuasogamekichhoat(): self.tactu.thietlap_chidanhnguoichoi(True)
+        self.tactu.thietlap_chidanhnguoichoi(True)
 
     def bothietlapchidanhnguoichoi(self):
-        if self.moitruong.get_is_cuasogamekichhoat(): self.tactu.thietlap_chidanhnguoichoi(False)
+        self.tactu.thietlap_chidanhnguoichoi(False)
 
     def batpk(self):
-        if self.moitruong.get_is_cuasogamekichhoat(): self.tactu.action_batpk()
+        self.tactu.action_batpk()
 
     def tatpk(self):
-        if self.moitruong.get_is_cuasogamekichhoat(): self.tactu.action_tatpk()
+        self.tactu.action_tatpk()
