@@ -122,8 +122,12 @@ class CuaSo:
 
     def loop(self):
         last_hover_text = None
+        thoigianmatketnoi = 0
+
         while not self.main_stop.is_set() and self.moitruong.get_is_cuasogametontai():
             if not self.moitruong.get_is_dangmatketnoi():
+                thoigianmatketnoi = 0
+
                 tennhanvat = self.moitruong.get_tendoituong()
 
                 if tennhanvat != self.tennhanvat:
@@ -147,11 +151,15 @@ class CuaSo:
                     self.thoidiemluuthietlapgannhat = time.time()
                     self.tactu.luuthietlap(tennhanvat)
             else:
-                # Mất kết nối
                 self.tennhanvat = False
                 if CHUACHONHANVAT != last_hover_text:
                     self.systray.update(hover_text = CHUACHONHANVAT)
                     last_hover_text = CHUACHONHANVAT
+
+                if thoigianmatketnoi == 0:
+                    thoigianmatketnoi = time.time()
+                elif time.time() - thoigianmatketnoi > 1.:
+                    break
 
             time.sleep(1)
 
