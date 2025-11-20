@@ -94,6 +94,7 @@ class MoiTruong:
 
         self._soluonghieuungnhanvattruocdo_map = {}
         self._thoidiemsoluonghieuungbangkhonggannhat_map = {}
+        self._thoidiemmuctieubichoanggannhat_map = {}
 
         self._diachicosothongtinnhanvatmuctieudangchon = False
 
@@ -247,6 +248,21 @@ class MoiTruong:
         if diachicosothongtinnhanvatmuctieuhientai:
             self._thoidiemkhongcomuctieugannhat = time.time()
 
+            if self.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG, HIEUUNGKYNANG_TRAMMAC, HIEUUNGKYNANG_KHOAPHAPBAO), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieuhientai, is_hieuungcoloi = 0):
+                iddoituongmuctieu = self.get_iddoituong(diachicosothongtinnhanvatmuctieuhientai)
+                if iddoituongmuctieu > 0:
+                    thoidiemmuctieubichoanggannhat = self._thoidiemmuctieubichoanggannhat_map.get(iddoituongmuctieu, 0)
+                    if time.time() - thoidiemmuctieubichoanggannhat >= 5.:
+                        self._thoidiemmuctieubichoanggannhat_map[iddoituongmuctieu] = time.time()
+                        
+        if len(self._thoidiemmuctieubichoanggannhat_map) > 500:
+            now = time.time()
+            keys_to_remove = [k for k, v in self._thoidiemmuctieubichoanggannhat_map.items() if now - v > 20]
+            for k in keys_to_remove:
+                del self._thoidiemmuctieubichoanggannhat_map[k]
+            if len(self._thoidiemmuctieubichoanggannhat_map) > 500:
+                self._thoidiemmuctieubichoanggannhat_map.clear()
+
         idbandohientai = self._get_idbandohientai()
         if idbandohientai != self._idbandohientai:
             self._thoidiemthaydoibandogannhat = time.time()
@@ -266,14 +282,9 @@ class MoiTruong:
         if not diachicosothongtinnhanvatmuctieuhientai:
             self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
 
-        if self.get_is_cohieuungs((HIEUUNGKYNANG_TRAMMAC,), macdinh = False, is_hieuungcoloi = 0):
-            self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
-
         idthucuoi = self._get_idthucuoi()
-
         if idthucuoi:
             self._thoidiemkhongcuoithugannhat = time.time()
-
         self._idthucuoi = idthucuoi
 
         if not self.get_is_cohieuungs((HIEUUNGKYNANG_TIENTHANVODICH,), macdinh = True, is_hieuungcoloi = 1):
@@ -286,6 +297,21 @@ class MoiTruong:
         if idnguoichoitruongnhom and not self.get_diachicosothongtinnhanvattruongnhom():
             self._diachicosothongtinnhanvattruongnhom = self.action_timkiemnhanvat(idnguoichoi = idnguoichoitruongnhom)
 
+    def get_is_cothegaychoang(self, diachicosothongtinnhanvat, thoigiangiancach = 5.0):
+        if not diachicosothongtinnhanvat:
+            return False
+
+        iddoituong = self.get_iddoituong(diachicosothongtinnhanvat)
+        if iddoituong <= 0:
+            return True
+
+        thoidiembichoanggannhat = self._thoidiemmuctieubichoanggannhat_map.get(iddoituong, 0)
+
+        if time.time() - thoidiembichoanggannhat < thoigiangiancach:
+            return False
+
+        return True
+    
     def get_thoidiemthaydoibandogannhat(self):
         return self._thoidiemthaydoibandogannhat
 

@@ -58,7 +58,7 @@ class TroChoiWorker:
             return False
 
     def loop_quanly(self):
-        thoi_gian_mat_nhan_vat = 0
+        thoigianmatnhanvat = 0
 
         while not self.is_dangchay.is_set():
             try:
@@ -71,13 +71,13 @@ class TroChoiWorker:
                     break
 
                 if not self.kiemtranhanvathople():
-                    if thoi_gian_mat_nhan_vat == 0:
-                        thoi_gian_mat_nhan_vat = time.time()
-                    elif time.time() - thoi_gian_mat_nhan_vat > 2:
+                    if thoigianmatnhanvat == 0:
+                        thoigianmatnhanvat = time.time()
+                    elif time.time() - thoigianmatnhanvat > 1:
                         self.is_dangchay.set()
                         break
                 else:
-                    thoi_gian_mat_nhan_vat = 0
+                    thoigianmatnhanvat = 0
 
             except Exception:
                 self.is_dangchay.set()
@@ -176,8 +176,7 @@ class TroChoiManager:
                     if self.kiemtradudieukienmanager(hwnd):
                         self.mothemtientrinhcuasomoi(hwnd)
 
-            time.sleep(2)
-
+            time.sleep(1)
 
 if __name__ == "__main__":
     if "--child" in sys.argv:
@@ -194,7 +193,7 @@ if __name__ == "__main__":
 
         if win32api.GetLastError() == winerror.ERROR_ALREADY_EXISTS:
             phatam("Tool quản lý đang chạy rồi")
-            time.sleep(2)
+            time.sleep(1)
             sys.exit(0)
 
         manager = TroChoiManager()
