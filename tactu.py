@@ -734,7 +734,7 @@ class TacTu:
                         }
                         break
                     else:
-                        if self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN, HIEUUNGKYNANG_MULOA), macdinh = False, is_hieuungcoloi = 0):
+                        if self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN, HIEUUNGKYNANG_MULOA, HIEUUNGKYNANG_THIEUDOT), macdinh = False, is_hieuungcoloi = 0):
                             if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TINHTAMQUYET):
                                 self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TINHTAMQUYET)
                                 break
@@ -1130,7 +1130,7 @@ class TacTu:
                 if khoangcach <= 2.:
                     self.moitruong.action_nhatdo(self._diachicosovatphamdangnhat)
 
-                if self.moitruong.get_tenmonphai() == "thucson" and \
+                if 0 and self.moitruong.get_tenmonphai() == "thucson" and \
                         self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA, delay = 1.) and \
                         khoangcach >= 3 and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM and \
                         not self._is_tamngungdichuyensudungkynang and not self.moitruong.get_is_vohieuhoadichuyen():
