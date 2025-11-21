@@ -1333,9 +1333,9 @@ class TacTu:
         giatrixephangcaonhat = xephangcuatoi
 
         for id_dongdoi in dongdoixungquanhs:
-            xephang_dongdoi = NHANVATTODOITUDONGs.index(id_dongdoi)
-            if xephang_dongdoi < giatrixephangcaonhat:
-                giatrixephangcaonhat = xephang_dongdoi
+            xephangdongdoi = NHANVATTODOITUDONGs.index(id_dongdoi)
+            if xephangdongdoi < giatrixephangcaonhat:
+                giatrixephangcaonhat = xephangdongdoi
                 idnguoichoixephangcaonhat = id_dongdoi
 
         if self.moitruong.get_is_truongnhom():
