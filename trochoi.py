@@ -118,7 +118,7 @@ class TroChoiManager:
                     proc.kill()
                 except:
                     pass
-        phatam("Đã tắt tool")
+        # phatam("Đã tắt tool")
         time.sleep(1)
         os._exit(0)
 

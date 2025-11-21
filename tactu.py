@@ -1299,13 +1299,66 @@ class TacTu:
                             for idnguoichoithanhvien in NHANVATTODOITUDONGs[1:]:
                                 if idnguoichoithanhvien in danhsachidnguoichoixungquanhs and idnguoichoithanhvien not in danhsachidthanhviennhoms:
                                     self.moitruong.action_moihoacxinvaonhom(idnguoichoithanhvien)
-
                                     break
 
                     else:
                         self.moitruong.action_kiemtravadongyloimoinhom(NHANVATTODOITUDONGs)
                         break
                 break
+
+    def action_tudongtodoi(self):
+        if not self._is_tudongtodoi or not NHANVATTODOITUDONGs:
+            return
+
+        idnguoichoi = self.moitruong.get_idnguoichoi()
+        if idnguoichoi not in NHANVATTODOITUDONGs:
+            return
+
+        danhsachxungquanhs = self.moitruong.get_danhsachidnguoichoixungquanhs()
+        danhsachthanhviens = self.moitruong.get_danhsachidnguoichoithanhviennhoms()
+
+        dongdoixungquanhs = [id for id in danhsachxungquanhs if id in NHANVATTODOITUDONGs]
+
+        if not dongdoixungquanhs and not self.moitruong.get_is_dangnamtrongnhom():
+            return
+
+        if self.moitruong.get_is_dangnamtrongnhom():
+            idtruongnhom = self.moitruong.get_idnguoichoitruongnhom()
+            if idtruongnhom and idtruongnhom not in NHANVATTODOITUDONGs:
+                self.moitruong.action_thoatkhoinhom(idtruongnhom)
+                return
+
+        xephangcuatoi = NHANVATTODOITUDONGs.index(idnguoichoi)
+        idnguoichoixephangcaonhat = idnguoichoi
+        giatrixephangcaonhat = xephangcuatoi
+
+        for id_dongdoi in dongdoixungquanhs:
+            xephang_dongdoi = NHANVATTODOITUDONGs.index(id_dongdoi)
+            if xephang_dongdoi < giatrixephangcaonhat:
+                giatrixephangcaonhat = xephang_dongdoi
+                idnguoichoixephangcaonhat = id_dongdoi
+
+        if self.moitruong.get_is_truongnhom():
+            if idnguoichoixephangcaonhat != idnguoichoi and idnguoichoixephangcaonhat not in danhsachthanhviens:
+                if len(danhsachthanhviens) <= 1:
+                    self.moitruong.action_thoatkhoinhom(idnguoichoi)
+                    return
+
+            if len(danhsachthanhviens) < 5:
+                for id_dongdoi in dongdoixungquanhs:
+                    if id_dongdoi not in danhsachthanhviens:
+                        self.moitruong.action_moihoacxinvaonhom(id_dongdoi)
+                        break
+
+        elif self.moitruong.get_is_dangnamtrongnhom():
+            pass
+
+        else:
+            self.moitruong.action_kiemtravadongyloimoinhom(NHANVATTODOITUDONGs)
+
+            if idnguoichoixephangcaonhat == idnguoichoi:
+                if dongdoixungquanhs:
+                    self.moitruong.action_moihoacxinvaonhom(dongdoixungquanhs[0])
 
     def action_tudongphucsinh(self):
         if self._is_tudongphucsinh:
