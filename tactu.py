@@ -417,7 +417,13 @@ class TacTu:
                 self._thoidiemkiemtrahieuunggannhat = time.time()
 
                 if self.moitruong.get_idbandohientai() not in BANDOKHONGTANCONGs and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_PHAPLUCTHACH,), True, is_hieuungcoloi = 1):
-                    self.action_sudungvatphamhanhtrang(TIEUPHAPLUCTHACH)
+                    if not self.moitruong.action_timkiemvatphamhanhtrang(TIEUPHAPLUCTHACH):
+                        self.moitruong.action_thucthicaulenh("buy 2 9 1")
+                        time.sleep(0.25)
+                        self.moitruong.action_thucthicaulenh("zip 123")
+                    else:
+                        self.action_sudungvatphamhanhtrang(TIEUPHAPLUCTHACH)
+                    #buyitem 2 9 1
 
                 diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
                 if diachicosothongtinnhanvatmuctieudangchon and self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon) and self.moitruong.get_idbandohientai() not in BANDOKHONGTANCONGs and time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() > 1.:
@@ -425,12 +431,17 @@ class TacTu:
                         self.action_sudungvatphamhanhtrang(NHANSAM)
 
             if self.moitruong.get_diempk() > 0:
-                self.action_sudungvatphamhanhtrang(ANXAPHU)
+                if not self.moitruong.action_timkiemvatphamhanhtrang(ANXAPHU):
+                    self.moitruong.action_thucthicaulenh("buy 5 3 1")
+                    time.sleep(0.25)
+                    self.moitruong.action_thucthicaulenh("zip 123")
+                else:
+                    self.action_sudungvatphamhanhtrang(ANXAPHU)
 
             # if time.time() - self._thoidiemsudungtaitaohoangannhat >= .5 and self.moitruong.get_phantramsinhlucconlai() <= 5. and 0 < self.moitruong.get_thoigianconlaihieuungkimcuongbathoaidon(macdinh = 2.0) <= 1.5:
             #     self._thoidiemsudungtaitaohoangannhat = time.time()
             #     self.action_sudungvatphamhanhtrang(TAITAOHOAN)
-            #
+
             # if time.time() - self._thoidiemsudungsotriduocgannhat > 2. and self.moitruong.get_phantramsinhlucconlai() <= 25.:
             #     self._thoidiemsudungsotriduocgannhat = time.time()
             #     self.action_sudungvatphamhanhtrang(SOTRIDUOC)
