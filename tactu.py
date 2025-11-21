@@ -746,7 +746,7 @@ class TacTu:
                         if thoigiantuthenhanvatdungim > 4.5:
                             khoangcachgiutoida = 0
                         else:
-                            khoangcachgiutoida = KHOANGCACHSUDUNGKYNANGTAMXA - max(1.5 + thoigiantuthenhanvatdungim, 0 if is_muctieudangchonlanguoichoi else 9)
+                            khoangcachgiutoida = KHOANGCACHSUDUNGKYNANGTAMXA - max(1.5 + thoigiantuthenhanvatdungim, 0 if is_muctieudangchonlanguoichoi or not self.moitruong.get_is_truongnhom() else 9)
 
                         self._yeucautancong = {
                             "yeucau": YEUCAUDICHUYENTANCONG,
