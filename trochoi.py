@@ -1,10 +1,11 @@
 import os
-import signal
 import subprocess
 import sys
 import threading
 import time
+import signal
 
+import keyboard
 import win32api
 import win32event
 import win32gui
@@ -13,6 +14,7 @@ import winerror
 from cuaso import CuaSo
 from moitruong import MoiTruong
 from tienich import phatam
+from hangso import NHANVATTODOITUDONGs
 
 CREATE_NO_WINDOW = 0x08000000
 VK_PAUSE = 0x13
@@ -103,11 +105,14 @@ class TroChoiManager:
         self.lock = threading.Lock()
         self.is_running = True
 
+        self.current_metric = None
+
         print("=" * 50)
-        print("TOOL CHIẾN QUỐC (SAFE MODE)")
+        print("TOOL CHIẾN QUỐC (AUTO NETWORK SWITCHING)")
+        print(f"Nhân vật chính (Ưu tiên mạng riêng): {NHANVATTODOITUDONGs[0] if NHANVATTODOITUDONGs else 'Chưa cấu hình'}")
         print("1. Tự chạy khi đăng nhập.")
-        print("2. Tự tắt khi thoát game.")
-        print("3. Phím PAUSE/BREAK: Tắt TOÀN BỘ (Cực nhạy).")
+        print("2. Tự động đổi mạng dựa trên nhân vật chính.")
+        print("3. PAUSE: Tắt TOÀN BỘ.")
         print("-" * 50)
         print("Đừng tắt cửa sổ này!")
         print("=" * 50)
@@ -124,6 +129,26 @@ class TroChoiManager:
         phatam("Đã tắt tool")
         time.sleep(1)
         os._exit(0)
+
+    def thiet_lap_uu_tien_wifi(self, metric):
+        # Chỉ thực hiện nếu trạng thái thay đổi
+        if self.current_metric == metric:
+            return
+
+        try:
+            cmd = f'powershell -Command "Get-NetAdapter \'Wi-Fi\' | Set-NetIPInterface -InterfaceMetric {metric}"'
+            subprocess.run(cmd, shell = True, creationflags = CREATE_NO_WINDOW)
+
+            self.current_metric = metric
+
+            if metric == 1:
+                phatam("Đã chuyển sang Wifi")
+                print(f"[Auto-Net] Đã tìm thấy Đại Ca -> Chuyển sang Wifi (Metric 1)")
+            else:
+                phatam("Đã chuyển sang Mạng riêng")
+                print(f"[Auto-Net] Vắng mặt Đại Ca -> Chuyển sang Mạng riêng (Metric 100)")
+        except Exception as e:
+            print(f"Lỗi set mạng: {e}")
 
     def _tim_cua_so_game(self):
         ds_hwnd = []
@@ -163,12 +188,45 @@ class TroChoiManager:
             except Exception:
                 pass
 
-    def run(self):
-        while self.is_running:
+    def check_network_condition(self):
+        if not NHANVATTODOITUDONGs:
+            return
 
+        id_dai_ca = NHANVATTODOITUDONGs[0]
+        is_dai_ca_online = False
+
+        with self.lock:
+            active_hwnds = list(self.managed_processes.keys())
+
+        for hwnd in active_hwnds:
+            try:
+                mt = MoiTruong(hwnd)
+                if mt.get_is_nhanvattontai():
+                    if mt.get_idnguoichoi() == id_dai_ca:
+                        is_dai_ca_online = True
+                        break
+            except:
+                pass
+
+        if is_dai_ca_online:
+            self.thiet_lap_uu_tien_wifi(1)
+        else:
+            self.thiet_lap_uu_tien_wifi(100)
+
+    def run(self):
+        time.sleep(1)
+
+        while self.is_running:
             if win32api.GetAsyncKeyState(VK_PAUSE) & 0x8000:
                 self.stop_all()
                 break
+
+            if keyboard.is_pressed("ctrl+alt+1"):
+                self.thiet_lap_uu_tien_wifi(1)
+                time.sleep(0.5)
+            elif keyboard.is_pressed("ctrl+alt+2"):
+                self.thiet_lap_uu_tien_wifi(100)
+                time.sleep(0.5)
 
             with self.lock:
                 dead_hwnds = []
@@ -185,7 +243,9 @@ class TroChoiManager:
                     if self.kiem_tra_du_dieu_kien_manager(hwnd):
                         self.spawn_worker_for_hwnd(hwnd)
 
-            time.sleep(0.2)
+            self.check_network_condition()
+
+            time.sleep(0.5)
 
 
 if __name__ == "__main__":
