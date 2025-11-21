@@ -19,6 +19,8 @@ from hangso import NHANVATTODOITUDONGs
 CREATE_NO_WINDOW = 0x08000000
 VK_PAUSE = 0x13
 
+TEN_CARD_BLUETOOTH = "Bluetooth Network Connection"
+
 
 def loop_cuaso(cuaso: CuaSo):
     try:
@@ -104,15 +106,15 @@ class TroChoiManager:
         self.managed_processes = {}
         self.lock = threading.Lock()
         self.is_running = True
-
         self.current_metric = None
 
         print("=" * 50)
-        print("TOOL CHIẾN QUỐC (AUTO NETWORK SWITCHING)")
-        print(f"Nhân vật chính (Ưu tiên mạng riêng): {NHANVATTODOITUDONGs[0] if NHANVATTODOITUDONGs else 'Chưa cấu hình'}")
-        print("1. Tự chạy khi đăng nhập.")
-        print("2. Tự động đổi mạng dựa trên nhân vật chính.")
-        print("3. PAUSE: Tắt TOÀN BỘ.")
+        print("TOOL CHIẾN QUỐC (AUTO BLUETOOTH SWITCHER)")
+        print(f"Đại Ca (Dùng Bluetooth): {NHANVATTODOITUDONGs[0] if NHANVATTODOITUDONGs else 'Chưa cấu hình'}")
+        print("1. Chưa thấy Đại Ca -> Ưu tiên Bluetooth (Để log Đại Ca).")
+        print("2. Thấy Đại Ca -> Giảm ưu tiên Bluetooth (Để log Clone bằng Wifi).")
+        print("3. Ctrl+Alt+1: Ép dùng Bluetooth.")
+        print("4. Ctrl+Alt+2: Ép dùng Wifi.")
         print("-" * 50)
         print("Đừng tắt cửa sổ này!")
         print("=" * 50)
@@ -130,25 +132,26 @@ class TroChoiManager:
         time.sleep(1)
         os._exit(0)
 
-    def thiet_lap_uu_tien_wifi(self, metric):
-        # Chỉ thực hiện nếu trạng thái thay đổi
+    def thiet_lap_mang_bluetooth(self, metric):
+
         if self.current_metric == metric:
             return
 
         try:
-            cmd = f'powershell -Command "Get-NetAdapter \'Wi-Fi\' | Set-NetIPInterface -InterfaceMetric {metric}"'
+            cmd = f'powershell -Command "Get-NetAdapter \'{TEN_CARD_BLUETOOTH}\' | Set-NetIPInterface -InterfaceMetric {metric}"'
+
             subprocess.run(cmd, shell = True, creationflags = CREATE_NO_WINDOW)
 
             self.current_metric = metric
 
             if metric == 1:
-                phatam("Đã chuyển sang Wifi")
-                print(f"[Auto-Net] Đã tìm thấy Đại Ca -> Chuyển sang Wifi (Metric 1)")
+                phatam("Đã ưu tiên Bluetooth")
+                print(f"[Network] Bluetooth Metric = 1 (HIGH) -> Chế độ Đại Ca")
             else:
-                phatam("Đã chuyển sang Mạng riêng")
-                print(f"[Auto-Net] Vắng mặt Đại Ca -> Chuyển sang Mạng riêng (Metric 100)")
+                phatam("Đã ưu tiên Wifi")
+                print(f"[Network] Bluetooth Metric = 100 (LOW) -> Chế độ Clone")
         except Exception as e:
-            print(f"Lỗi set mạng: {e}")
+            print(f"Lỗi chỉnh mạng: {e}")
 
     def _tim_cua_so_game(self):
         ds_hwnd = []
@@ -209,9 +212,9 @@ class TroChoiManager:
                 pass
 
         if is_dai_ca_online:
-            self.thiet_lap_uu_tien_wifi(1)
+            self.thiet_lap_mang_bluetooth(100)
         else:
-            self.thiet_lap_uu_tien_wifi(100)
+            self.thiet_lap_mang_bluetooth(1)
 
     def run(self):
         time.sleep(1)
@@ -222,10 +225,10 @@ class TroChoiManager:
                 break
 
             if keyboard.is_pressed("ctrl+alt+1"):
-                self.thiet_lap_uu_tien_wifi(1)
+                self.thiet_lap_mang_bluetooth(1)
                 time.sleep(0.5)
             elif keyboard.is_pressed("ctrl+alt+2"):
-                self.thiet_lap_uu_tien_wifi(100)
+                self.thiet_lap_mang_bluetooth(100)
                 time.sleep(0.5)
 
             with self.lock:
