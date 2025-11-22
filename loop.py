@@ -133,13 +133,13 @@ class LoopChinh:
         self.tactu._action_theonhom()
         self.tactu._action_sudungkynang()
 
-        # self.moitruong.action_thucthicaulenh("talk 83da# info.58")
+        # self.moitruong.action_thucthicaulenh("talk d4e4# info.58")
         # time.sleep(0.25)
-        # self.moitruong.action_thucthicaulenh("talk 83da# info.18")
+        # self.moitruong.action_thucthicaulenh("talk d4e4# info.18")
         # time.sleep(0.25)
-        # self.moitruong.action_thucthicaulenh("talk 83da# info.20")
+        # self.moitruong.action_thucthicaulenh("talk d4e4# info.20")
         # time.sleep(0.25)
-        # self.moitruong.action_thucthicaulenh("talk 83da# info.21")
+        # self.moitruong.action_thucthicaulenh("talk d4e4# info.21")
         # time.sleep(0.25)
 
         # print(self.moitruong.get_danhsachhieuungnhanvats())

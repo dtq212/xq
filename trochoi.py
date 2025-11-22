@@ -128,7 +128,6 @@ class TroChoiManager:
                     proc.kill()
                 except:
                     pass
-        phatam("Đã tắt tool")
         time.sleep(1)
         os._exit(0)
 
@@ -186,7 +185,8 @@ class TroChoiManager:
             cmd = [sys.executable, script_path, "--child", str(hwnd)]
 
             try:
-                proc = subprocess.Popen(cmd, creationflags = CREATE_NO_WINDOW)
+                # proc = subprocess.Popen(cmd, creationflags = CREATE_NO_WINDOW)
+                proc = subprocess.Popen(cmd, stdout = sys.stdout, stderr = sys.stderr)
                 self.managed_processes[hwnd] = proc
             except Exception:
                 pass
