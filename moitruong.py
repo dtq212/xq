@@ -2353,28 +2353,6 @@ class MoiTruong:
             return
         return write_boolean(self.tientrinh, x + 0x34, is_daketthucchientruong)
 
-    def get_iddoituongbaothudautien(self):
-        # TODO: Chưa triển khai
-        return
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
-        if not x:
-            return False
-        x = read_int(self.tientrinh, x + 0xADFDDC)
-        if not x:
-            return False
-        return read_int(self.tientrinh, x + 0x47C)
-
-    def get_is_datrieuhoibaothu(self):
-        # TODO: Chưa triển khai
-        return
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
-        if not x:
-            return False
-        x = read_int(self.tientrinh, x + 0xADFDDC)
-        if not x:
-            return False
-        return read_boolean(self.tientrinh, x + 0x1AE8)
-
     def get_is_dayhanhtrang(self):
         i = -1
         while True:
@@ -2394,3 +2372,138 @@ class MoiTruong:
 
     def get_tenmonphai(self):
         return MONPHAI_MAP.get(self.get_idkynang(0, 0))
+
+    def get_is_datrieuhoibaothu(self):
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not x:
+            return False
+        x = read_int(self.tientrinh, x + 0xADFDDC)
+        if not x:
+            return False
+        return read_boolean(self.tientrinh, x + 0x1AE8)
+
+    def get_iddoituongbaothudautien(self):
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not x:
+            return False
+        x = read_int(self.tientrinh, x + 0xADFDDC)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0x47C)
+
+    def action_sudungvatphambaothu(self, iddoituongvatpham, iddoituongbaothu, delay = 0.25):
+        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
+            return False
+
+        self._thoidiemthucthicaulenhgannhat = time.time()
+
+        self.auto_assemble_sudungvatphambaothu(iddoituongvatpham, iddoituongbaothu)
+
+        return True
+
+    def action_trieuhoibaothu(self, iddoituong, delay = 0.25):
+        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
+            return False
+
+        self._thoidiemthucthicaulenhgannhat = time.time()
+
+        self.auto_assemble_trieuhoibaothu(iddoituong)
+
+        return True
+
+    def action_sudungkynangbaothu(self, iddoituong, idkynang, delay = 0.25):
+        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
+            return False
+
+        self._thoidiemthucthicaulenhgannhat = time.time()
+
+        self.auto_assemble_sudungkynangbaothu(iddoituong, idkynang)
+
+        return True
+
+    def auto_assemble_sudungvatphambaothu(self, iddoituongvatpham, iddoituongpet):
+        caulenh = "use {}# pet {}#".format(hex(iddoituongvatpham), hex(iddoituongpet)).replace("0x", "")
+        if not self._is_dasetupautoassemblesudungvatphambaothu:
+            self._diachiautoassemblesudungvatphambaothu = self.tientrinh.allocate(128)
+
+            write_bytes(self.tientrinh, self._diachiautoassemblesudungvatphambaothu, bytes.fromhex("68"), 1)
+            write_int(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 1, len(caulenh))
+
+            write_bytes(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 5, bytes.fromhex("68"), 1)
+            write_int(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 6, self._diachiautoassemblesudungvatphambaothu + 19)
+
+            write_bytes(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 10, bytes.fromhex("E8"), 1)
+            write_int(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 11, self.diachixq + 0x95450 - (self._diachiautoassemblesudungvatphambaothu + 10) - 5)
+
+            write_bytes(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 15, bytes.fromhex("83 C4 08"), 3)
+            write_bytes(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 18, bytes.fromhex("C3"), 1)
+
+            write_string(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 19, caulenh)
+
+            self._is_dasetupautoassemblesudungvatphambaothu = True
+        else:
+            if read_int(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 1) != len(caulenh):
+                write_int(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 1, len(caulenh))
+            if read_string(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 19) != caulenh:
+                write_string(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 19, caulenh)
+
+        self.tientrinh.start_thread(self._diachiautoassemblesudungvatphambaothu)
+        time.sleep(0.05)
+
+    def auto_assemble_trieuhoibaothu(self, iddoituong):
+        caulenh = "pet {}# show".format(hex(iddoituong)).replace("0x", "")
+        if not self._is_dasetupautoassembletrieuhoibaothu:
+            self._diachiautoassembletrieuhoibaothu = self.tientrinh.allocate(128)
+
+            write_bytes(self.tientrinh, self._diachiautoassembletrieuhoibaothu, bytes.fromhex("68"), 1)
+            write_int(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 1, len(caulenh))
+
+            write_bytes(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 5, bytes.fromhex("68"), 1)
+            write_int(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 6, self._diachiautoassembletrieuhoibaothu + 19)
+
+            write_bytes(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 10, bytes.fromhex("E8"), 1)
+            write_int(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 11, self.diachixq + 0x95450 - (self._diachiautoassembletrieuhoibaothu + 10) - 5)
+
+            write_bytes(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 15, bytes.fromhex("83 C4 08"), 3)
+            write_bytes(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 18, bytes.fromhex("C3"), 1)
+
+            write_string(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 19, caulenh)
+
+            self._is_dasetupautoassembletrieuhoibaothu = True
+        else:
+            if read_int(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 1) != len(caulenh):
+                write_int(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 1, len(caulenh))
+            if read_string(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 19) != caulenh:
+                write_string(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 19, caulenh)
+
+        self.tientrinh.start_thread(self._diachiautoassembletrieuhoibaothu)
+        time.sleep(0.05)
+
+    def auto_assemble_sudungkynangbaothu(self, iddoituong, idkynang):
+        caulenh = "pet {}# {}".format(hex(iddoituong), idkynang).replace("0x", "")
+        if not self._is_dasetupautoassemblesudungkynangbaothu:
+            self._diachiautoassemblesudungkynangbaothu = self.tientrinh.allocate(128)
+
+            write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangbaothu, bytes.fromhex("68"), 1)
+            write_int(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 1, len(caulenh))
+
+            write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 5, bytes.fromhex("68"), 1)
+            write_int(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 6, self._diachiautoassemblesudungkynangbaothu + 19)
+
+            write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 10, bytes.fromhex("E8"), 1)
+            write_int(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 11, self.diachixq + 0x95450 - (self._diachiautoassemblesudungkynangbaothu + 10) - 5)
+
+            write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 15, bytes.fromhex("83 C4 08"), 3)
+            write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 18, bytes.fromhex("C3"), 1)
+
+            write_string(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 19, caulenh)
+
+            self._is_dasetupautoassemblesudungkynangbaothu = True
+        else:
+            if read_int(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 1) != len(caulenh):
+                write_int(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 1, len(caulenh))
+            if read_string(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 19) != caulenh:
+                write_string(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 19, caulenh)
+
+        self.tientrinh.start_thread(self._diachiautoassemblesudungkynangbaothu)
+        time.sleep(0.05)

@@ -1612,3 +1612,52 @@ class TacTu:
             self.moitruong.action_chantangcapdo()
         else:
             self.moitruong.action_bochantangcapdo()
+
+    def action_tudongtrieuhoibaothudautien(self):
+        if self._is_tudongtrieuhoibaothudautien:
+            while True:
+                if self.moitruong.get_idbandohientai() not in BANDOKHONGTANCONGs or time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() < 1.:
+                    break
+
+                if self.moitruong.get_is_dangvankhi():
+                    break
+
+                if self.moitruong.get_is_dangclickchuottrai():
+                    break
+
+                if self.moitruong.get_is_nhanvatdachet():
+                    break
+
+                if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DICHUYEN:
+                    break
+
+                if self._is_tamngungdichuyensudungkynang:
+                    break
+
+                iddoituongbaothudautien = self.moitruong.get_iddoituongbaothudautien()
+
+                if not iddoituongbaothudautien:
+                    break
+
+                if self.moitruong.get_is_datrieuhoibaothu():
+                    if time.time() - self._thoidiemsudungthucanbaothugannhat > 120.:
+                        iddoituongcaocapbaothuthucpham = self.moitruong.action_timkiemvatphamhanhtrang(CAOCAPBAOTHUTHUCPHAM)
+                        if iddoituongcaocapbaothuthucpham:
+                            is_ok = self.moitruong.action_sudungvatphambaothu(iddoituongcaocapbaothuthucpham, iddoituongbaothudautien, delay = 0.5)
+                            if is_ok:
+                                self._thoidiemsudungthucanbaothugannhat = time.time()
+                    diachicosonhanvatbaothudautien = self.moitruong.action_timkiemnhanvat(iddoituong = iddoituongbaothudautien)
+
+                    if diachicosonhanvatbaothudautien and time.time() - self._thoidiemthietlapbaothuchodoigannhat > 2.:
+                        is_ok = self.moitruong.action_sudungkynangbaothu(iddoituongbaothudautien, 3, delay = 0.5)
+                        if is_ok:
+                            self._thoidiemthietlapbaothuchodoigannhat = time.time()
+                    break
+
+                if time.time() - self._thoidiemtudongtrieuhoibaothudautien > 1. and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
+                    is_ok = self.moitruong.action_trieuhoibaothu(iddoituongbaothudautien, delay = 0.5)
+                    if is_ok:
+                        self._thoidiemtudongtrieuhoibaothudautien = time.time()
+                    break
+
+                break
