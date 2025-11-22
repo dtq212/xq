@@ -864,6 +864,15 @@ class TacTu:
             diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
             phantramsinhlucconlai = self.moitruong.get_phantramsinhlucconlai()
 
+            def force_diagonal(dest_x, dest_y, my_x, my_y):
+                dx = dest_x - my_x
+                dy = dest_y - my_y
+                if abs(dx) <= 1:
+                    dest_x += 2 if dx >= 0 else -2
+                if abs(dy) <= 1:
+                    dest_y += 2 if dy >= 0 else -2
+                return dest_x, dest_y
+
             thoi_gian_dung_im = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat()
             is_dang_bi_ket = (idtuthenhanvat == TUTHENHANVAT_DUNGIM and thoi_gian_dung_im > 0.4)
 
@@ -878,6 +887,7 @@ class TacTu:
                 is_muctieudangchonbichoang = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0)
                 is_cothetancong = self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon)
 
+            # --- 2. BUFF & HỒI PHỤC ---
             if not diachicosothongtinnhanvatmuctieudangchon or not is_muctieudangchonlanguoichoi:
                 if self.moitruong.get_is_cohieuungs(HIEUUNGBATLOITHUCSONCOTHEGIAIs, macdinh = False, is_hieuungcoloi = 0):
                     if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TINHTAMQUYET):
@@ -912,6 +922,7 @@ class TacTu:
                 self.action_sudungvatphamhanhtrang(PHIHANHPHU)
                 break
 
+            # --- LOGIC TẤN CÔNG ---
             if diachicosothongtinnhanvatmuctieudangchon and is_cothetancong:
                 x_banthan = self.moitruong.get_toadox(is_vitrihientai = True)
                 y_banthan = self.moitruong.get_toadoy(is_vitrihientai = True)
@@ -921,24 +932,26 @@ class TacTu:
                 is_kttd_ready = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA)
                 is_kttd_bi_cam = time.time() - self._thoidiemtamngungkhaithientichdia < 0.8
 
-                should_use_luutinh = True
-                if is_kttd_ready and not is_kttd_bi_cam and khoangcach < 6.0:
-                    should_use_luutinh = False
-
-                # === 1. LƯU TINH TRUY MẠNG ===
+                # === A. LƯU TINH TRUY MẠNG (Move-Tech, Ưu tiên số 1) ===
                 is_luutinh_ready = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG)
-                if should_use_luutinh and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and is_luutinh_ready and not self.moitruong.get_is_vohieuhoadichuyen():
-                    if khoangcach < 2.0:
+                if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and is_luutinh_ready and not self.moitruong.get_is_vohieuhoadichuyen():
+
+                    # Case A.1: < 6.0m -> Lùi ra xa để lấy đà (Kiting)
+                    if khoangcach < 6.0:
                         vec_x = x_banthan - x_mt
                         vec_y = y_banthan - y_mt
                         if vec_x == 0 and vec_y == 0: vec_x, vec_y = 1, 1
 
                         dist_vec = math.hypot(vec_x, vec_y)
-                        target_dist = 4.0
+                        target_dist_run = 7.0  # Chạy ra xa khoảng 7m
 
-                        trigger_x = int(x_mt + (vec_x / dist_vec) * target_dist)
-                        trigger_y = int(y_mt + (vec_y / dist_vec) * target_dist)
+                        trigger_x = int(x_mt + (vec_x / dist_vec) * target_dist_run)
+                        trigger_y = int(y_mt + (vec_y / dist_vec) * target_dist_run)
 
+                        # Ép chéo (Deterministic)
+                        trigger_x, trigger_y = force_diagonal(trigger_x, trigger_y, x_banthan, y_banthan)
+
+                        # Nếu kẹt thì Jiggle
                         if is_dang_bi_ket:
                             trigger_x += random.choice([-2, 2])
                             trigger_y += random.choice([-2, 2])
@@ -950,16 +963,13 @@ class TacTu:
                             "khoangcachtoida": 0
                         }
                         break
-                    else:
-                        vec_x = x_mt - x_banthan
-                        vec_y = y_mt - y_banthan
-                        dist_vec = math.hypot(vec_x, vec_y)
 
-                        if dist_vec > 0:
-                            trigger_x = int(x_banthan + (vec_x / dist_vec) * 1.5)
-                            trigger_y = int(y_banthan + (vec_y / dist_vec) * 1.5)
-                        else:
-                            trigger_x, trigger_y = x_mt, y_mt
+                    # Case A.2: >= 6.0m -> Lao vào (Approach)
+                    else:
+                        trigger_x, trigger_y = x_mt, y_mt
+
+                        # Ép chéo
+                        trigger_x, trigger_y = force_diagonal(trigger_x, trigger_y, x_banthan, y_banthan)
 
                         if is_dang_bi_ket:
                             trigger_x += random.choice([-2, 2])
@@ -977,7 +987,7 @@ class TacTu:
                             self._solansudungluutinhtruymang += 1
                             break
 
-                # === 2. COMBO CẬN CHIẾN (Đao) ===
+                # === B. COMBO CẬN CHIẾN ===
                 elif khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN:
                     if self.moitruong.get_is_cohieuungs(HIEUUNGBATLOITHUCSONCOTHEGIAIs, macdinh = False, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TINHTAMQUYET):
                         self._is_tamngungdichuyensudungkynang = True
@@ -992,34 +1002,36 @@ class TacTu:
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_LUCPHACHHOASON)
                         break
 
-                # === 3. KHAI THIÊN TỊCH ĐỊA ===
+                # === C. KHAI THIÊN TỊCH ĐỊA (Move-Tech) ===
+                # Điều kiện: Chỉ dùng khi <= 4.5m
                 if not is_kttd_bi_cam and is_kttd_ready and not self.moitruong.get_is_vohieuhoadichuyen() and khoangcach <= 4.5:
+
                     vec_x_base = x_banthan - x_mt
                     vec_y_base = y_banthan - y_mt
+                    bias_factor = 0.6
 
-                    # [SỬA LOGIC CHỐNG KẸT THẲNG HÀNG]
-                    # Thay vì tính bias phức tạp, ta kiểm tra nếu thẳng hàng thì cưỡng bức lệch (Force Offset)
-                    if abs(vec_x_base) < 3:  # Đang đứng thẳng hàng dọc
-                        vec_x_kite = 5 if random.choice([True, False]) else -5  # Lệch ngang mạnh
+                    if abs(vec_x_base) < abs(vec_y_base) * 0.5:
+                        vec_x_kite = abs(vec_y_base) * bias_factor if vec_x_base >= 0 else -abs(vec_y_base) * bias_factor
                         vec_y_kite = vec_y_base
-                    elif abs(vec_y_base) < 3:  # Đang đứng thẳng hàng ngang
-                        vec_y_kite = 5 if random.choice([True, False]) else -5  # Lệch dọc mạnh
+                    elif abs(vec_y_base) < abs(vec_x_base) * 0.5:
+                        vec_y_kite = abs(vec_x_base) * bias_factor if vec_y_base >= 0 else -abs(vec_x_base) * bias_factor
                         vec_x_kite = vec_x_base
                     else:
-                        # Nếu đã chéo rồi thì giữ nguyên vector
-                        vec_x_kite = vec_x_base
-                        vec_y_kite = vec_y_base
+                        vec_x_kite, vec_y_kite = vec_x_base, vec_y_base
 
                     dist_kite = math.hypot(vec_x_kite, vec_y_kite)
 
+                    # C.1: Kiting nếu quá gần (< 3.0m)
                     if khoangcach < 3.0:
-                        min_dist_move = 3.5
                         if dist_kite > 0:
                             target_dist_retreat = 5.0
                             trigger_move_x = int(x_mt + (vec_x_kite / dist_kite) * target_dist_retreat)
                             trigger_move_y = int(y_mt + (vec_y_kite / dist_kite) * target_dist_retreat)
                         else:
                             trigger_move_x, trigger_move_y = x_mt + 3, y_mt + 3
+
+                        # Ép chéo (Deterministic)
+                        trigger_move_x, trigger_move_y = force_diagonal(trigger_move_x, trigger_move_y, x_banthan, y_banthan)
 
                         if is_dang_bi_ket:
                             trigger_move_x += random.choice([-2, 2])
@@ -1032,6 +1044,8 @@ class TacTu:
                             "khoangcachtoida": 0
                         }
                         break
+
+                    # C.2: Tung Chiêu (Move-Tech) nếu 3.0 <= KC <= 4.5
                     else:
                         idkynang = self.moitruong.get_idkynang(*VITRIKYNANG_KHAITHIENTICHDIA)
                         if idkynang:
@@ -1060,7 +1074,9 @@ class TacTu:
                                 final_target_x = int(x_banthan + max_range)
                                 final_target_y = int(y_banthan)
 
-                            move_tech_x, move_tech_y = final_target_x, final_target_y
+                            # Điểm lấy đà cũng phải ép chéo
+                            move_tech_x, move_tech_y = force_diagonal(final_target_x, final_target_y, x_banthan, y_banthan)
+
                             if is_dang_bi_ket:
                                 move_tech_x += random.choice([-2, 2])
                                 move_tech_y += random.choice([-2, 2])
@@ -1079,32 +1095,35 @@ class TacTu:
                                 self._solansudungkhaithientichdia += 1
                                 break
 
-                # === 4. COMBO KHỐNG CHẾ & DI CHUYỂN MẶC ĐỊNH ===
-                if khoangcach > 3.0 and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
-                    if not is_muctieudangchonbichoang and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LANGKHONGCHIHUYET):
-                        self._is_tamngungdichuyensudungkynang = True
-                        if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
-                            self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_LANGKHONGCHIHUYET)
-                        break
+                # === D. COMBO KHỐNG CHẾ TẦM TRUNG (Thục Sơn Kiếm) ===
+                # Chỉ vào đây nếu KTTD không dùng được (do CD hoặc do Xa)
+                elif not is_kttd_ready:
+                    if khoangcach > 3.0 and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
+                        if not is_muctieudangchonbichoang and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LANGKHONGCHIHUYET):
+                            self._is_tamngungdichuyensudungkynang = True
+                            if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+                                self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_LANGKHONGCHIHUYET)
+                            break
 
-                    elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_VANKIEMXUYENTAM):
-                        self._is_tamngungdichuyensudungkynang = True
-                        if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
-                            self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_VANKIEMXUYENTAM)
-                        break
+                        elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_VANKIEMXUYENTAM):
+                            self._is_tamngungdichuyensudungkynang = True
+                            if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+                                self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_VANKIEMXUYENTAM)
+                            break
 
-                    elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_BANGTAMTHUC):
-                        self._is_tamngungdichuyensudungkynang = True
-                        if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
-                            self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_BANGTAMTHUC)
-                        break
+                        elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_BANGTAMTHUC):
+                            self._is_tamngungdichuyensudungkynang = True
+                            if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+                                self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_BANGTAMTHUC)
+                            break
 
-                    elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_VANVUTIEUDIEU):
-                        self._is_tamngungdichuyensudungkynang = True
-                        if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
-                            self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_VANVUTIEUDIEU)
-                        break
+                        elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_VANVUTIEUDIEU):
+                            self._is_tamngungdichuyensudungkynang = True
+                            if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+                                self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_VANVUTIEUDIEU)
+                            break
 
+                # === E. DI CHUYỂN MẶC ĐỊNH (Chase) ===
                 thoigiantuthenhanvatdungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat() if idtuthenhanvat == TUTHENHANVAT_DUNGIM else 0.
                 if thoigiantuthenhanvatdungim > 0.5 and khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN:
                     self._yeucautancong = {
