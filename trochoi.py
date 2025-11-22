@@ -17,7 +17,7 @@ from tienich import phatam
 from hangso import NHANVATTODOITUDONGs
 
 CREATE_NO_WINDOW = 0x08000000
-VK_PAUSE = 0x13
+VK_F12 = 0x7B
 
 TEN_CARD_BLUETOOTH = "Bluetooth Network Connection"
 
@@ -71,7 +71,7 @@ class TroChoiWorker:
                     self.is_dangchay.set()
                     break
 
-                if win32api.GetAsyncKeyState(VK_PAUSE) & 0x8000:
+                if win32api.GetAsyncKeyState(VK_F12) & 0x8000:
                     self.is_dangchay.set()
                     break
 
@@ -116,7 +116,7 @@ class TroChoiManager:
         print("3. Ctrl+Alt+1: Ép dùng Bluetooth.")
         print("4. Ctrl+Alt+2: Ép dùng Wifi.")
         print("-" * 50)
-        print("Đừng tắt cửa sổ này!")
+        print("Nhấn phím F12 để dừng toàn bộ!")
         print("=" * 50)
 
     def stop_all(self):
@@ -182,10 +182,9 @@ class TroChoiManager:
             print(f"-> Phát hiện cửa sổ {hwnd} hợp lệ -> Kích hoạt Auto!")
 
             script_path = os.path.abspath(__file__)
-            cmd = [sys.executable, script_path, "--child", str(hwnd)]
+            cmd = [sys.executable, "-u", script_path, "--child", str(hwnd)]
 
             try:
-                # proc = subprocess.Popen(cmd, creationflags = CREATE_NO_WINDOW)
                 proc = subprocess.Popen(cmd, stdout = sys.stdout, stderr = sys.stderr)
                 self.managed_processes[hwnd] = proc
             except Exception:
@@ -220,7 +219,7 @@ class TroChoiManager:
         time.sleep(1)
 
         while self.is_running:
-            if win32api.GetAsyncKeyState(VK_PAUSE) & 0x8000:
+            if win32api.GetAsyncKeyState(VK_F12) & 0x8000:
                 self.stop_all()
                 break
 
