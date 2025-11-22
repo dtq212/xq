@@ -143,6 +143,7 @@ class LoopChinh:
         # time.sleep(0.25)
 
         # print(self.moitruong.get_danhsachhieuungnhanvats())
+        # print(self.moitruong.get_danhsachvatphamhanhtrang_map())
 
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):

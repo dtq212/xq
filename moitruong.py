@@ -2373,23 +2373,29 @@ class MoiTruong:
     def get_tenmonphai(self):
         return MONPHAI_MAP.get(self.get_idkynang(0, 0))
 
-    def get_is_datrieuhoibaothu(self):
+    def get_diachicosobaothudautien(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
-        x = read_int(self.tientrinh, x + 0xADFDDC)
-        if not x:
-            return False
-        return read_boolean(self.tientrinh, x + 0x1AE8)
+        return read_int(self.tientrinh, x + 0xADFDDC)
+
+    def get_is_datrieuhoibaothudautien(self, macdinh = True):
+        diachicoso = self.get_diachicosobaothudautien()
+        if not diachicoso:
+            return macdinh
+        return read_boolean(self.tientrinh, diachicoso + 0x1AE8)
 
     def get_iddoituongbaothudautien(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
-        if not x:
+        diachicoso = self.get_diachicosobaothudautien()
+        if not diachicoso:
             return False
-        x = read_int(self.tientrinh, x + 0xADFDDC)
-        if not x:
+        return read_int(self.tientrinh, diachicoso + 0x47C)
+
+    def get_dotrungthanhbaothudautien(self):
+        diachicoso = self.get_diachicosobaothudautien()
+        if not diachicoso:
             return False
-        return read_int(self.tientrinh, x + 0x47C)
+        return read_int(self.tientrinh, diachicoso + 0x4DC)
 
     def action_sudungvatphambaothu(self, iddoituongvatpham, iddoituongbaothu, delay = 0.25):
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
