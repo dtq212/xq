@@ -925,6 +925,7 @@ class TacTu:
                 if is_kttd_ready and not is_kttd_bi_cam and khoangcach < 6.0:
                     should_use_luutinh = False
 
+                # === 1. LƯU TINH TRUY MẠNG ===
                 is_luutinh_ready = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG)
                 if should_use_luutinh and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and is_luutinh_ready and not self.moitruong.get_is_vohieuhoadichuyen():
                     if khoangcach < 2.0:
@@ -976,6 +977,7 @@ class TacTu:
                             self._solansudungluutinhtruymang += 1
                             break
 
+                # === 2. COMBO CẬN CHIẾN (Đao) ===
                 elif khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN:
                     if self.moitruong.get_is_cohieuungs(HIEUUNGBATLOITHUCSONCOTHEGIAIs, macdinh = False, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TINHTAMQUYET):
                         self._is_tamngungdichuyensudungkynang = True
@@ -990,27 +992,32 @@ class TacTu:
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_LUCPHACHHOASON)
                         break
 
+                # === 3. KHAI THIÊN TỊCH ĐỊA ===
                 if not is_kttd_bi_cam and is_kttd_ready and not self.moitruong.get_is_vohieuhoadichuyen() and khoangcach <= 4.5:
                     vec_x_base = x_banthan - x_mt
                     vec_y_base = y_banthan - y_mt
-                    bias_factor = 0.6
 
-                    if abs(vec_x_base) < abs(vec_y_base) * 0.5:
-                        vec_x_kite = abs(vec_y_base) * bias_factor if vec_x_base >= 0 else -abs(vec_y_base) * bias_factor
+                    # [SỬA LOGIC CHỐNG KẸT THẲNG HÀNG]
+                    # Thay vì tính bias phức tạp, ta kiểm tra nếu thẳng hàng thì cưỡng bức lệch (Force Offset)
+                    if abs(vec_x_base) < 3:  # Đang đứng thẳng hàng dọc
+                        vec_x_kite = 5 if random.choice([True, False]) else -5  # Lệch ngang mạnh
                         vec_y_kite = vec_y_base
-                    elif abs(vec_y_base) < abs(vec_x_base) * 0.5:
-                        vec_y_kite = abs(vec_x_base) * bias_factor if vec_y_base >= 0 else -abs(vec_x_base) * bias_factor
+                    elif abs(vec_y_base) < 3:  # Đang đứng thẳng hàng ngang
+                        vec_y_kite = 5 if random.choice([True, False]) else -5  # Lệch dọc mạnh
                         vec_x_kite = vec_x_base
                     else:
-                        vec_x_kite, vec_y_kite = vec_x_base, vec_y_base
+                        # Nếu đã chéo rồi thì giữ nguyên vector
+                        vec_x_kite = vec_x_base
+                        vec_y_kite = vec_y_base
 
                     dist_kite = math.hypot(vec_x_kite, vec_y_kite)
 
-                    if khoangcach < 2.0:
+                    if khoangcach < 3.0:
                         min_dist_move = 3.5
                         if dist_kite > 0:
-                            trigger_move_x = int(x_mt + (vec_x_kite / dist_kite) * min_dist_move)
-                            trigger_move_y = int(y_mt + (vec_y_kite / dist_kite) * min_dist_move)
+                            target_dist_retreat = 5.0
+                            trigger_move_x = int(x_mt + (vec_x_kite / dist_kite) * target_dist_retreat)
+                            trigger_move_y = int(y_mt + (vec_y_kite / dist_kite) * target_dist_retreat)
                         else:
                             trigger_move_x, trigger_move_y = x_mt + 3, y_mt + 3
 
@@ -1072,6 +1079,7 @@ class TacTu:
                                 self._solansudungkhaithientichdia += 1
                                 break
 
+                # === 4. COMBO KHỐNG CHẾ & DI CHUYỂN MẶC ĐỊNH ===
                 if khoangcach > 3.0 and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
                     if not is_muctieudangchonbichoang and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LANGKHONGCHIHUYET):
                         self._is_tamngungdichuyensudungkynang = True
@@ -1113,6 +1121,7 @@ class TacTu:
                     break
 
             break
+
     def _action_sudungkynang_daohoanguyen(self):
         if not self._is_tudongsudungkynang:
             return
