@@ -864,6 +864,11 @@ class TacTu:
             diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
             phantramsinhlucconlai = self.moitruong.get_phantramsinhlucconlai()
 
+            # --- KIỂM TRA KẸT (STUCK DETECTION) ---
+            # Nếu đang đứng im quá 0.4s thì coi là bị kẹt
+            thoi_gian_dung_im = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat()
+            is_dang_bi_ket = (idtuthenhanvat == TUTHENHANVAT_DUNGIM and thoi_gian_dung_im > 0.4)
+
             is_muctieudangchonlanguoichoi = False
             khoangcach = KHOANGCACHTOIDAHOPLE
             is_muctieudangchonbichoang = False
@@ -894,12 +899,11 @@ class TacTu:
                             self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_BANGPHACHNGANTAM)
                         break
 
-            is_bandocuthudao = self.moitruong.get_idbandohientai() == BANDO_CUTHUDAO
-            if phantramsinhlucconlai <= 25 or (is_muctieudangchonlanguoichoi and phantramsinhlucconlai <= 50) or (is_bandocuthudao and is_muctieudangchonlanguoichoi and phantramsinhlucconlai <= 75):
+            if phantramsinhlucconlai <= 25 or (is_muctieudangchonlanguoichoi and phantramsinhlucconlai <= 50):
                 if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENTHANVODICH):
                     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TIENTHANVODICH)
                     break
-            if is_bandocuthudao and is_muctieudangchonlanguoichoi and time.time() - self._thoidiemsudungphihanhphugannhat > 1. and phantramsinhlucconlai <= 25. and not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENTHANVODICH) and self.moitruong.get_thoigianconlaihieuungtienthanvodich(macdinh = 2.5) < 2.:
+            if is_muctieudangchonlanguoichoi and time.time() - self._thoidiemsudungphihanhphugannhat > 1. and phantramsinhlucconlai <= 25. and not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENTHANVODICH) and self.moitruong.get_thoigianconlaihieuungtienthanvodich(macdinh = 2.5) < 2.:
                 self._thoidiemsudungphihanhphugannhat = time.time()
                 self.action_sudungvatphamhanhtrang(PHIHANHPHU)
                 break
@@ -917,9 +921,11 @@ class TacTu:
                 if is_kttd_ready and not is_kttd_bi_cam and khoangcach < 6.0:
                     should_use_luutinh = False
 
+                # === 1. LƯU TINH TRUY MẠNG ===
                 is_luutinh_ready = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG)
                 if should_use_luutinh and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and is_luutinh_ready and not self.moitruong.get_is_vohieuhoadichuyen():
                     if khoangcach < 2.0:
+                        # Logic lùi ra khi quá gần
                         vec_x = x_banthan - x_mt
                         vec_y = y_banthan - y_mt
                         if vec_x == 0 and vec_y == 0: vec_x, vec_y = 1, 1
@@ -930,6 +936,11 @@ class TacTu:
                         trigger_x = int(x_mt + (vec_x / dist_vec) * target_dist)
                         trigger_y = int(y_mt + (vec_y / dist_vec) * target_dist)
 
+                        # Nếu bị kẹt, di chuyển lệch đi chút (Random Jiggle)
+                        if is_dang_bi_ket:
+                            trigger_x += random.choice([-2, 2])
+                            trigger_y += random.choice([-2, 2])
+
                         self._yeucautancong = {
                             "yeucau": YEUCAUDICHUYENTANCONG,
                             "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
@@ -938,6 +949,7 @@ class TacTu:
                         }
                         break
                     else:
+                        # Logic Move-Tech áp sát
                         vec_x = x_mt - x_banthan
                         vec_y = y_mt - y_banthan
                         dist_vec = math.hypot(vec_x, vec_y)
@@ -947,6 +959,11 @@ class TacTu:
                             trigger_y = int(y_banthan + (vec_y / dist_vec) * 1.5)
                         else:
                             trigger_x, trigger_y = x_mt, y_mt
+
+                        # Nếu bị kẹt (tường chắn đường lao tới), di chuyển lệch sang bên
+                        if is_dang_bi_ket:
+                            trigger_x += random.choice([-2, 2])
+                            trigger_y += random.choice([-2, 2])
 
                         self._yeucautancong = None
                         if idtuthenhanvat != TUTHENHANVAT_DICHUYEN:
@@ -969,6 +986,7 @@ class TacTu:
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_LUCPHACHHOASON)
                         break
 
+                # === 3. KHAI THIÊN TỊCH ĐỊA ===
                 if not is_kttd_bi_cam and is_kttd_ready and not self.moitruong.get_is_vohieuhoadichuyen():
                     vec_x_base = x_banthan - x_mt
                     vec_y_base = y_banthan - y_mt
@@ -986,12 +1004,18 @@ class TacTu:
                     dist_kite = math.hypot(vec_x_kite, vec_y_kite)
 
                     if khoangcach < 2.0:
+                        # Logic Lùi ra (Kiting)
                         min_dist_move = 3.5
                         if dist_kite > 0:
                             trigger_move_x = int(x_mt + (vec_x_kite / dist_kite) * min_dist_move)
                             trigger_move_y = int(y_mt + (vec_y_kite / dist_kite) * min_dist_move)
                         else:
                             trigger_move_x, trigger_move_y = x_mt + 3, y_mt + 3
+
+                        # Nếu bị kẹt khi đang lùi, lùi lệch đi
+                        if is_dang_bi_ket:
+                            trigger_move_x += random.choice([-2, 2])
+                            trigger_move_y += random.choice([-2, 2])
 
                         self._yeucautancong = {
                             "yeucau": YEUCAUDICHUYENTANCONG,
@@ -1002,6 +1026,7 @@ class TacTu:
                         break
 
                     else:
+                        # Logic Tung Chiêu
                         idkynang = self.moitruong.get_idkynang(*VITRIKYNANG_KHAITHIENTICHDIA)
                         if idkynang:
                             x_dest = self.moitruong.get_toadoxsaptoi(diachicosothongtinnhanvatmuctieudangchon)
@@ -1029,9 +1054,19 @@ class TacTu:
                                 final_target_x = int(x_banthan + max_range)
                                 final_target_y = int(y_banthan)
 
+                            # Tọa độ di chuyển để lấy đà (Move-Tech Target)
+                            move_tech_x, move_tech_y = final_target_x, final_target_y
+
+                            # [XỬ LÝ KẸT QUAN TRỌNG]
+                            # Nếu bị kẹt khi lấy đà, ta di chuyển lệch đi chỗ khác để trigger trạng thái chạy
+                            # NHƯNG vẫn tung chiêu vào tọa độ chuẩn (final_target)
+                            if is_dang_bi_ket:
+                                move_tech_x += random.choice([-2, 2])
+                                move_tech_y += random.choice([-2, 2])
+
                             self._yeucautancong = None
                             if idtuthenhanvat != TUTHENHANVAT_DICHUYEN:
-                                self.moitruong.action_dichuyentiepcandiem(final_target_x, final_target_y)
+                                self.moitruong.action_dichuyentiepcandiem(move_tech_x, move_tech_y)
                                 time.sleep(0.05)
 
                             is_ok = self.moitruong.action_sudungkynangtoado(idkynang, final_target_x, final_target_y)
