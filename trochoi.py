@@ -132,7 +132,6 @@ class TroChoiManager:
         os._exit(0)
 
     def thiet_lap_mang_bluetooth(self, metric):
-
         if self.current_metric == metric:
             return
 

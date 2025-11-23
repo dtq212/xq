@@ -133,17 +133,20 @@ class LoopChinh:
         self.tactu._action_theonhom()
         self.tactu._action_sudungkynang()
 
-        # self.moitruong.action_thucthicaulenh("talk d4e4# info.58")
+        # self.moitruong.action_thucthicaulenh("talk b8e8# info.58")
         # time.sleep(0.25)
-        # self.moitruong.action_thucthicaulenh("talk d4e4# info.18")
+        # self.moitruong.action_thucthicaulenh("talk b8e8# info.18")
         # time.sleep(0.25)
-        # self.moitruong.action_thucthicaulenh("talk d4e4# info.20")
+        # self.moitruong.action_thucthicaulenh("talk b8e8# info.20")
         # time.sleep(0.25)
-        # self.moitruong.action_thucthicaulenh("talk d4e4# info.21")
+        # self.moitruong.action_thucthicaulenh("talk b8e8# info.21")
         # time.sleep(0.25)
 
-        # print(self.moitruong.get_danhsachhieuungnhanvats())
+        # if diachidoituong := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
+        #     print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
         # print(self.moitruong.get_danhsachvatphamhanhtrang_map())
+
+        # print(self.moitruong.get_idkynang(0, 0))
 
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
