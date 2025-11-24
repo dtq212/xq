@@ -458,9 +458,9 @@ class TacTu:
             #     self._thoidiemsudungtaitaohoangannhat = time.time()
             #     self.action_sudungvatphamhanhtrang(TAITAOHOAN)
 
-            # if time.time() - self._thoidiemsudungsotriduocgannhat > 2. and self.moitruong.get_phantramsinhlucconlai() <= 25.:
-            #     self._thoidiemsudungsotriduocgannhat = time.time()
-            #     self.action_sudungvatphamhanhtrang(SOTRIDUOC)
+            if time.time() - self._thoidiemsudungsotriduocgannhat > 2. and self.moitruong.get_phantramsinhlucconlai() <= 75.:
+                self._thoidiemsudungsotriduocgannhat = time.time()
+                self.action_sudungvatphamhanhtrang(HOATLACHOAN)
 
     def _action_sudungkynang(self):
         tenmonphai = self.moitruong.get_tenmonphai()
@@ -699,7 +699,7 @@ class TacTu:
                     if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TINHTAMQUYET):
                         self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TINHTAMQUYET)
                         break
-                if phantramsinhlucconlai <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENKHI):
+                if phantramsinhlucconlai <= 90. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENKHI):
                     self._is_tamngungdichuyensudungkynang = True
                     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
                         self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_TIENKHI)
@@ -841,7 +841,7 @@ class TacTu:
                             if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TINHTAMQUYET):
                                 self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TINHTAMQUYET)
                                 break
-                        elif phantramsinhlucconlai <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENKHI):
+                        elif phantramsinhlucconlai <= 90. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENKHI):
                             self._is_tamngungdichuyensudungkynang = True
                             if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
                                 self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_TIENKHI)
@@ -915,7 +915,9 @@ class TacTu:
                 self._trangthaikhaithientichdia["is_retreating"] = False
 
             thoi_gian_dung_im = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat()
-            is_dangbiket = (idtuthenhanvat == TUTHENHANVAT_DUNGIM and thoi_gian_dung_im > 0.4)
+            da_ra_lenh_di_chuyen_gan_day = (time.time() - self._thoidiemdichuyentiepcangannhat < 1.0)
+
+            is_dangbiket = (idtuthenhanvat == TUTHENHANVAT_DUNGIM and thoi_gian_dung_im > 0.4 and da_ra_lenh_di_chuyen_gan_day)
 
             is_muctieudangchonlanguoichoi = False
             khoangcach = KHOANGCACHTOIDAHOPLE
@@ -934,7 +936,7 @@ class TacTu:
                         self._is_tamngungdichuyensudungkynang = True
                         self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TINHTAMQUYET)
                         break
-                if phantramsinhlucconlai <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENKHI):
+                if phantramsinhlucconlai <= 90. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENKHI):
                     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
                         self._is_tamngungdichuyensudungkynang = True
                         self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_TIENKHI)
@@ -1000,6 +1002,7 @@ class TacTu:
 
                     if idtuthenhanvat != TUTHENHANVAT_DICHUYEN:
                         self.moitruong.action_dichuyentiepcandiem(tx, ty)
+                        self._thoidiemdichuyentiepcangannhat = time.time()  # Update thời gian di chuyển
                         time.sleep(0.05)
 
                     is_ok = self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_LUUTINHTRUYMANG)
@@ -1031,11 +1034,8 @@ class TacTu:
 
                 if not is_khaithientichdiabicam and is_khaithientichdiasansang and not self.moitruong.get_is_vohieuhoadichuyen() and khoangcach <= 4.5:
                     if self._trangthaikhaithientichdia["is_retreating"]:
-                        thoigianlui = time.time() - self._trangthaikhaithientichdia["start_time"]
-                        is_vitriphuhop = (khoangcach >= 2.0 and (delta_x_abs >= 0.5 or delta_y_abs >= 0.5))
-                        is_quathoigianlui = thoigianlui > 0.3
-
-                        if is_vitriphuhop or is_quathoigianlui:
+                        time_passed = time.time() - self._trangthaikhaithientichdia["start_time"]
+                        if (khoangcach >= 1.5 and delta_x_abs >= 1.0 and delta_y_abs >= 1.0) or time_passed > 0.3:
                             self._trangthaikhaithientichdia["is_retreating"] = False
                         else:
                             break
@@ -1044,9 +1044,9 @@ class TacTu:
                     vec_y_base = y_banthan - y_muctieu
                     dist_kite = math.hypot(vec_x_base, vec_y_base)
 
-                    is_vitrikhongphuhop = (khoangcach < 1.5) or (delta_x_abs < 1.0) or (delta_y_abs < 1.0)
+                    need_reposition = (khoangcach < 1.5) or (delta_x_abs < 1.0) or (delta_y_abs < 1.0)
 
-                    if is_vitrikhongphuhop:
+                    if need_reposition:
                         target_dist_retreat = 5.0
                         if dist_kite > 0:
                             tx = int(round(x_muctieu + (vec_x_base / dist_kite) * target_dist_retreat))
@@ -1068,6 +1068,7 @@ class TacTu:
                             "toadodich": (tx, ty),
                             "khoangcachtoida": 0
                         }
+                        self._thoidiemdichuyentiepcangannhat = time.time()  # Update thời gian di chuyển
                         break
                     else:
                         idkynang = self.moitruong.get_idkynang(*VITRIKYNANG_KHAITHIENTICHDIA)
@@ -1126,6 +1127,7 @@ class TacTu:
 
                             if idtuthenhanvat != TUTHENHANVAT_DICHUYEN:
                                 self.moitruong.action_dichuyentiepcandiem(move_tx, move_ty)
+                                self._thoidiemdichuyentiepcangannhat = time.time()  # Update thời gian di chuyển
                                 time.sleep(0.05)
 
                             is_ok = self.moitruong.action_sudungkynangtoado(idkynang, final_tx, final_ty)
@@ -1158,7 +1160,7 @@ class TacTu:
                             if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
                                 self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_VANVUTIEUDIEU)
                             break
-    
+
                 thoigiantuthenhanvatdungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat() if idtuthenhanvat == TUTHENHANVAT_DUNGIM else 0.
                 if thoigiantuthenhanvatdungim > 0.5 and khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN:
                     self._yeucautancong = {
@@ -1167,8 +1169,8 @@ class TacTu:
                         "diachimuctieu": diachicosothongtinnhanvatmuctieudangchon,
                         "khoangcachtoida": 0
                     }
+                    self._thoidiemdichuyentiepcangannhat = time.time()  # Update thời gian di chuyển
                     break
-
             break
 
     def _action_sudungkynang_daohoanguyen(self):
