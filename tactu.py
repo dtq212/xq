@@ -1035,7 +1035,7 @@ class TacTu:
                 if not is_khaithientichdiabicam and is_khaithientichdiasansang and not self.moitruong.get_is_vohieuhoadichuyen() and khoangcach <= 4.5:
                     if self._trangthaikhaithientichdia["is_retreating"]:
                         time_passed = time.time() - self._trangthaikhaithientichdia["start_time"]
-                        if (khoangcach >= 1.5 and delta_x_abs >= 1.0 and delta_y_abs >= 1.0) or time_passed > 0.3:
+                        if (khoangcach >= 2.0 and delta_x_abs >= 1.0 and delta_y_abs >= 1.0) or time_passed > 0.3:
                             self._trangthaikhaithientichdia["is_retreating"] = False
                         else:
                             break
@@ -1044,9 +1044,9 @@ class TacTu:
                     vec_y_base = y_banthan - y_muctieu
                     dist_kite = math.hypot(vec_x_base, vec_y_base)
 
-                    need_reposition = (khoangcach < 1.5) or (delta_x_abs < 1.0) or (delta_y_abs < 1.0)
+                    is_vitrichuaphuhop = (khoangcach < 3.0) or (delta_x_abs < 1.0) or (delta_y_abs < 1.0)
 
-                    if need_reposition:
+                    if is_vitrichuaphuhop:
                         target_dist_retreat = 5.0
                         if dist_kite > 0:
                             tx = int(round(x_muctieu + (vec_x_base / dist_kite) * target_dist_retreat))
