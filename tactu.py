@@ -458,7 +458,7 @@ class TacTu:
             #     self._thoidiemsudungtaitaohoangannhat = time.time()
             #     self.action_sudungvatphamhanhtrang(TAITAOHOAN)
 
-            if time.time() - self._thoidiemsudungsotriduocgannhat > 2. and self.moitruong.get_phantramsinhlucconlai() <= 75.:
+            if self.moitruong.get_idbandohientai() not in BANDOKHONGTANCONGs and time.time() - self._thoidiemsudungsotriduocgannhat > 2. and self.moitruong.get_phantramsinhlucconlai() <= 75.:
                 self._thoidiemsudungsotriduocgannhat = time.time()
                 self.action_sudungvatphamhanhtrang(HOATLACHOAN)
 
@@ -954,7 +954,7 @@ class TacTu:
                         break
 
             is_bandocuthudao = self.moitruong.get_idbandohientai() == BANDO_CUTHUDAO
-            if phantramsinhlucconlai <= 25 or (is_muctieudangchonlanguoichoi and phantramsinhlucconlai <= 50):
+            if self.moitruong.get_idbandohientai() not in BANDOKHONGTANCONGs and phantramsinhlucconlai <= 25 or (is_muctieudangchonlanguoichoi and phantramsinhlucconlai <= 50):
                 if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENTHANVODICH):
                     self._is_tamngungdichuyensudungkynang = True
                     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TIENTHANVODICH)
@@ -1026,6 +1026,11 @@ class TacTu:
                     elif self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NGOAIKHANG, HIEUUNGKYNANG_NOIKHANG,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 1) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHAMATRAM):
                         self._is_tamngungdichuyensudungkynang = True
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_PHAMATRAM)
+                        break
+                    elif phantramsinhlucconlai <= 90. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENKHI):
+                        if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+                            self._is_tamngungdichuyensudungkynang = True
+                            self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_TIENKHI)
                         break
                     elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_DONDAOTRUCNHAP):
                         self._is_tamngungdichuyensudungkynang = True
