@@ -145,6 +145,7 @@ class LoopChinh:
 
         # if diachidoituong := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
         #     print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
+        # print(self.moitruong.get_danhsachhieuungnhanvats())
         # print(self.moitruong.get_danhsachvatphamhanhtrang_map())
 
         # print(self.moitruong.get_idkynang(0, 0))

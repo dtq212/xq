@@ -63,6 +63,7 @@ VITRIKYNANG_LUCPHACHHOASON = (5, 0)
 VITRIKYNANG_KHAITHIENTICHDIA = (6, 0)
 VITRIKYNANG_BADAONOHAOKHI = (7, 0)
 
+VITRIKYNANG_LANHNGUYETTAMPHAP = (0, 1)
 VITRIKYNANG_BANGPHACHNGANTAM = (1, 1)
 
 VITRIKYNANG_NGUKIEMTHUAT = (0, 2)
@@ -155,6 +156,7 @@ HIEUUNGKYNANG_TIENTHANVODICH = 3254
 HIEUUNGKYNANG_KIMCUONGBATHOAIDON = 653
 HIEUUNGKYNANG_HUYETTHACH = 2
 HIEUUNGKYNANG_PHAPLUCTHACH = 4
+HIEUUNGKYNANG_LANHNGUYETTAMPHAP = 2221
 HIEUUNGKYNANG_BANGPHACHNGANTAM = 2222
 HIEUUNGKYNANG_TRONGTHUONG = 9020
 HIEUUNGKYNANG_CHOANG = 9002
@@ -482,9 +484,9 @@ DIEMDANHXUNGQUANH_MAP = {
 
 NHANVATTODOITUDONGs = (1186, 1904, 158, 724, 725, 224, 1187) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
 NHANVATNGUYHIEMs = tuple()
-NHANVATCUNGBANGs = (1, 19, 26, 27, 159, 1258, 395, 536, 39, 803, 528, 290, 38, 54, 436, 160, 62, 68, 434, 217, 1374, 1153, 56, 140, 435, 1129, 53, 65, 163, 807, 1950, 37, 126, 42, 1860, 100, *NHANVATTODOITUDONGs)
+NHANVATCUNGBANGs = (1, 19, 26, 27, 159, 1258, 395, 536, 39, 803, 528, 290, 38, 54, 436, 160, 62, 68, 434, 217, 1374, 1153, 56, 140, 435, 1129, 53, 65, 163, 807, 1950, 37, 126, 42, 1860, 100, 1765, 2069, 1150, *NHANVATTODOITUDONGs)
 VATPHAMTUDONGNHATs = ("ToÃ¡i Ma Bá»‘", "Da Ráº¯n", "TÆ¡ Táº±m", "Ly Há»“n", "ToÃ¡i LÄƒng", "Ly PhÃ¡ch", "Ma Tinh Tháº¡ch", "Huá»³nh Quang Tháº¡ch", "Äá»™ng Váº­t Bi Mao", LAMCAU, HOACAU, HONGCAU, "ToÃ¡i Sa", "Nhiáº¿p Há»“n Tháº¡ch", "Tá»­ Kim Báº£o Há»™p", "Da SÃ³i", "Máº£nh Kinh ThÆ° Má» NÃ©t", "")
-VATPHAMTUDONGNHATCUTHUDAOs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i")
+VATPHAMTUDONGNHATCUTHUDAOs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i", " Nháº«n")
 VATPHAMXEPCHONGs = tuple()
 
 VOTUHOCNHANs = ("VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 30)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 40)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 50)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 60)", )
