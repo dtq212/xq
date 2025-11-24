@@ -110,6 +110,12 @@ class TacTu:
 
         self._is_chantangcapdo = True
 
+        self._trangthaikhaithientichdia = {
+            "is_retreating": False,
+            "start_time": 0,
+            "target_id": 0,
+        }
+
     def __del__(self):
         try:
             self.moitruong.action_bochantangcapdo()
@@ -879,13 +885,6 @@ class TacTu:
     def _action_sudungkynang_thucsondao(self):
         if not self._is_tudongsudungkynang:
             return
-
-        if not hasattr(self, '_kttd_state'):
-            self._trangthaikhaithientichdia = {
-                "is_retreating": False,
-                "start_time": 0,
-                "target_id": 0,
-            }
 
         def force_diagonal(dest_x, dest_y, my_x, my_y):
             dx = int(dest_x) - int(my_x)
