@@ -1032,7 +1032,7 @@ class TacTu:
                 if not is_khaithientichdiabicam and is_khaithientichdiasansang and not self.moitruong.get_is_vohieuhoadichuyen() and khoangcach <= 4.5:
                     if self._trangthaikhaithientichdia["is_retreating"]:
                         thoigianlui = time.time() - self._trangthaikhaithientichdia["start_time"]
-                        is_vitriphuhop = (khoangcach >= 2.5 and (delta_x_abs >= 0.5 or delta_y_abs >= 0.5))
+                        is_vitriphuhop = (khoangcach >= 2.0 and (delta_x_abs >= 0.5 or delta_y_abs >= 0.5))
                         is_quathoigianlui = thoigianlui > 0.3
 
                         if is_vitriphuhop or is_quathoigianlui:
@@ -1044,7 +1044,7 @@ class TacTu:
                     vec_y_base = y_banthan - y_muctieu
                     dist_kite = math.hypot(vec_x_base, vec_y_base)
 
-                    is_vitrikhongphuhop = (khoangcach < 2.0) or (delta_x_abs < 1.0) or (delta_y_abs < 1.0)
+                    is_vitrikhongphuhop = (khoangcach < 1.5) or (delta_x_abs < 1.0) or (delta_y_abs < 1.0)
 
                     if is_vitrikhongphuhop:
                         target_dist_retreat = 5.0
