@@ -244,6 +244,7 @@ TIEUPHAPLUCTHACH = "Tiá»ƒu PhÃ¡p Lá»±c Tháº¡ch"
 HONGCAU = "Há»“ng Cáº§u"
 HOACAU = "Hoa Cáº§u"
 LAMCAU = "Lam Cáº§u"
+HACCAU = "Háº¯c Cáº§u"
 CHANGIABAORUONG = "ChÃ¢n Giáº£ Báº£o RÆ°Æ¡ng"
 SINHKHITAN = "Sinh KhÃ­ TÃ¡n [KhoÃ¡]"
 SOTRIDUOC = "SÆ¡ Trá»‹ DÆ°á»£c"
@@ -278,7 +279,7 @@ MONPHAI_MAP = {
 }
 
 BANDO_TANTHUTHON = 1
-BANDO_CUTHUDAO = 549
+BANDO_CUTHUDAOs = (549, 541)
 BANDO_CHU = 80
 BANDO_THUCSON = 273
 BANDO_VANMONGCOC = 165
@@ -486,7 +487,7 @@ DIEMDANHXUNGQUANH_MAP = {
 NHANVATTODOITUDONGs = (1186, 1904, 158, 724, 725, 224, 1187) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
 NHANVATNGUYHIEMs = tuple()
 NHANVATCUNGBANGs = (1, 19, 26, 27, 159, 1258, 395, 536, 39, 803, 528, 290, 38, 54, 436, 160, 62, 68, 434, 217, 1374, 1153, 56, 140, 435, 1129, 53, 65, 163, 807, 1950, 37, 126, 42, 1860, 100, 1765, 2069, 1150, *NHANVATTODOITUDONGs)
-VATPHAMTUDONGNHATs = ("ToÃ¡i Ma Bá»‘", "Da Ráº¯n", "TÆ¡ Táº±m", "Ly Há»“n", "ToÃ¡i LÄƒng", "Ly PhÃ¡ch", "Ma Tinh Tháº¡ch", "Huá»³nh Quang Tháº¡ch", "Äá»™ng Váº­t Bi Mao", LAMCAU, HOACAU, HONGCAU, "ToÃ¡i Sa", "Nhiáº¿p Há»“n Tháº¡ch", "Tá»­ Kim Báº£o Há»™p", "Da SÃ³i", "Máº£nh Kinh ThÆ° Má» NÃ©t", HOATLACHOAN)
+VATPHAMTUDONGNHATs = ("ToÃ¡i Ma Bá»‘", "Da Ráº¯n", "TÆ¡ Táº±m", "Ly Há»“n", "ToÃ¡i LÄƒng", "Ly PhÃ¡ch", "Ma Tinh Tháº¡ch", "Huá»³nh Quang Tháº¡ch", "Äá»™ng Váº­t Bi Mao", LAMCAU, HOACAU, HONGCAU, "ToÃ¡i Sa", "Nhiáº¿p Há»“n Tháº¡ch", "Tá»­ Kim Báº£o Há»™p", "Da SÃ³i", "Máº£nh Kinh ThÆ° Má» NÃ©t", HOATLACHOAN, HACCAU)
 VATPHAMTUDONGNHATCUTHUDAOs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i", " Nháº«n")
 VATPHAMXEPCHONGs = tuple()
 

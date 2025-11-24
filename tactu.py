@@ -76,7 +76,6 @@ class TacTu:
         self._thoidiemxepchongdogannhat = time.time()
         self._thoidiemvutdogannhat = time.time()
         self._thoidiemsudungtaitaohoangannhat = time.time()
-
         self._diachicosovatphamkhongnhats = []
         self._diachicosovatphamkhongnhat_map = {}
         self._thoidiemlammoivatphamkhongnhatgannhat = time.time()
@@ -115,6 +114,9 @@ class TacTu:
             "start_time": 0,
             "target_id": 0,
         }
+
+        self._idmuctieudangdichuyenkhaithien = 0
+        self._thoidiembatdaudichuyenkhaithien = 0
 
     def __del__(self):
         try:
@@ -319,6 +321,19 @@ class TacTu:
 
     def action_tudongtimkiemmuctieu(self):
         if self._is_tudongtimkiemmuctieu:
+            if self._idmuctieudangdichuyenkhaithien > 0:
+                if time.time() - self._thoidiembatdaudichuyenkhaithien > 3.0:
+                    self._idmuctieudangdichuyenkhaithien = 0
+                else:
+                    diachi_muctieu_khoa = self.moitruong.action_timkiemnhanvat(iddoituong = self._idmuctieudangdichuyenkhaithien)
+
+                    if diachi_muctieu_khoa and not self.moitruong.get_is_nhanvatdachet(diachi_muctieu_khoa):
+                        if self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon() != diachi_muctieu_khoa:
+                            self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(diachi_muctieu_khoa)
+                        return
+                    else:
+                        self._idmuctieudangdichuyenkhaithien = 0
+
             i = 0
 
             while True:
@@ -739,7 +754,7 @@ class TacTu:
                                     self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_TIEUCHUTHIEN, diachicosothongtinnhanvatmuctieu = diachicosothongtinnhanvatxemxet, is_khongkiemtracothetancong = True)
                                 break
 
-            is_bandocuthudao = self.moitruong.get_idbandohientai() == BANDO_CUTHUDAO
+            is_bandocuthudao = self.moitruong.get_idbandohientai() in BANDO_CUTHUDAOs
 
             if phantramsinhlucconlai <= 25 or (is_muctieudangchonlanguoichoi and phantramsinhlucconlai <= 50) or (is_bandocuthudao and is_muctieudangchonlanguoichoi and phantramsinhlucconlai <= 75):
                 if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENTHANVODICH):
@@ -886,18 +901,25 @@ class TacTu:
         if not self._is_tudongsudungkynang:
             return
 
-        def force_diagonal(dest_x, dest_y, my_x, my_y):
+        def epgoc(dest_x, dest_y, my_x, my_y):
             dx = int(dest_x) - int(my_x)
             dy = int(dest_y) - int(my_y)
-            THRESHOLD = 2
-            OFFSET = 4
-            if abs(dx) <= THRESHOLD:
-                add = OFFSET if (dx > 0 or (dx == 0 and random.random() > 0.5)) else -OFFSET
+
+            THRESHOLD_X = 1.0
+            THRESHOLD_Y = 0.8
+
+            OFFSET_X = 2.0
+            OFFSET_Y = 1.5
+
+            if abs(dx) <= THRESHOLD_X:
+                add = OFFSET_X if (dx > 0 or (dx == 0 and random.random() > 0.5)) else -OFFSET_X
                 dest_x += add
-            if abs(dy) <= THRESHOLD:
-                add = OFFSET if (dy > 0 or (dy == 0 and random.random() > 0.5)) else -OFFSET
+
+            if abs(dy) <= THRESHOLD_Y:
+                add = OFFSET_Y if (dy > 0 or (dy == 0 and random.random() > 0.5)) else -OFFSET_Y
                 dest_y += add
-            return dest_x, dest_y
+
+            return int(dest_x), int(dest_y)
 
         while True:
             if self.moitruong.get_is_dangclickchuottrai():
@@ -914,10 +936,10 @@ class TacTu:
             if not diachicosothongtinnhanvatmuctieudangchon:
                 self._trangthaikhaithientichdia["is_retreating"] = False
 
-            thoi_gian_dung_im = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat()
-            da_ra_lenh_di_chuyen_gan_day = (time.time() - self._thoidiemdichuyentiepcangannhat < 1.0)
+            thoigiandungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat()
+            is_daralenhdichuyenganday = (time.time() - self._thoidiemdichuyentiepcangannhat < 1.0)
 
-            is_dangbiket = (idtuthenhanvat == TUTHENHANVAT_DUNGIM and thoi_gian_dung_im > 0.4 and da_ra_lenh_di_chuyen_gan_day)
+            is_dangbiket = (idtuthenhanvat == TUTHENHANVAT_DUNGIM and thoigiandungim > 0.4 and is_daralenhdichuyenganday)
 
             is_muctieudangchonlanguoichoi = False
             khoangcach = KHOANGCACHTOIDAHOPLE
@@ -953,7 +975,7 @@ class TacTu:
                             self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_BANGPHACHNGANTAM)
                         break
 
-            is_bandocuthudao = self.moitruong.get_idbandohientai() == BANDO_CUTHUDAO
+            is_bandocuthudao = self.moitruong.get_idbandohientai() in BANDO_CUTHUDAOs
             if self.moitruong.get_idbandohientai() not in BANDOKHONGTANCONGs and phantramsinhlucconlai <= 25 or (is_muctieudangchonlanguoichoi and phantramsinhlucconlai <= 50):
                 if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENTHANVODICH):
                     self._is_tamngungdichuyensudungkynang = True
@@ -989,20 +1011,20 @@ class TacTu:
                     if khoangcach <= 3.0:
                         tx = int(round(x_banthan - (vec_x / (dist_vec or 1)) * 2.0))
                         ty = int(round(y_banthan - (vec_y / (dist_vec or 1)) * 2.0))
-                        tx, ty = force_diagonal(tx, ty, x_banthan, y_banthan)
+                        tx, ty = epgoc(tx, ty, x_banthan, y_banthan)
                     else:
                         tx, ty = x_muctieu, y_muctieu
 
                     if is_dangbiket:
-                        tx += random.choice([-3, 3])
-                        ty += random.choice([-3, 3])
+                        tx += int(random.choice([-4, 4]))
+                        ty += int(random.choice([-3, 3]))
 
                     self._yeucautancong = None
                     self._is_tamngungdichuyensudungkynang = True
 
                     if idtuthenhanvat != TUTHENHANVAT_DICHUYEN:
                         self.moitruong.action_dichuyentiepcandiem(tx, ty)
-                        self._thoidiemdichuyentiepcangannhat = time.time()  # Update thời gian di chuyển
+                        self._thoidiemdichuyentiepcangannhat = time.time()
                         time.sleep(0.05)
 
                     is_ok = self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_LUUTINHTRUYMANG)
@@ -1037,105 +1059,122 @@ class TacTu:
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_DONDAOTRUCNHAP)
                         break
 
-                if not is_khaithientichdiabicam and is_khaithientichdiasansang and not self.moitruong.get_is_vohieuhoadichuyen() and khoangcach <= 4.5:
+                if not is_khaithientichdiabicam and is_khaithientichdiasansang and not self.moitruong.get_is_vohieuhoadichuyen() and khoangcach <= 6.5:
+
+                    LIMIT_X = 5.2
+                    LIMIT_Y = 3.9
+                    SAFE_X = 5.0
+                    SAFE_Y = 3.7
+
                     if self._trangthaikhaithientichdia["is_retreating"]:
-                        time_passed = time.time() - self._trangthaikhaithientichdia["start_time"]
-                        if (khoangcach >= 2.0 and delta_x_abs >= 1.0 and delta_y_abs >= 1.0) or time_passed > 0.3:
+                        thoigiandilui = time.time() - self._trangthaikhaithientichdia["start_time"]
+                        is_vitriphuhop_lui = (khoangcach >= 2.5 and (delta_x_abs >= 1.0 or delta_y_abs >= 0.8))
+                        if is_vitriphuhop_lui or thoigiandilui > 0.5:
                             self._trangthaikhaithientichdia["is_retreating"] = False
                         else:
                             break
 
-                    vec_x_base = x_banthan - x_muctieu
-                    vec_y_base = y_banthan - y_muctieu
-                    dist_kite = math.hypot(vec_x_base, vec_y_base)
+                    is_qua_gan = (khoangcach < 2.0) or (delta_x_abs < 1.3) or (delta_y_abs < 1.0)
+                    is_quaxatruc = (delta_x_abs > SAFE_X) or (delta_y_abs > SAFE_Y)
 
-                    is_vitrichuaphuhop = (khoangcach < 3.0) or (delta_x_abs < 1.0) or (delta_y_abs < 1.0)
+                    is_vitrichuaphuhop = is_qua_gan or is_quaxatruc
 
                     if is_vitrichuaphuhop:
-                        target_dist_retreat = 5.0
-                        if dist_kite > 0:
-                            tx = int(round(x_muctieu + (vec_x_base / dist_kite) * target_dist_retreat))
-                            ty = int(round(y_muctieu + (vec_y_base / dist_kite) * target_dist_retreat))
-                        else:
-                            tx, ty = x_muctieu + 4, y_muctieu + 4
+                        vec_x_base = x_banthan - x_muctieu
+                        vec_y_base = y_banthan - y_muctieu
 
-                        tx, ty = force_diagonal(tx, ty, x_banthan, y_banthan)
+                        target_x_move, target_y_move = x_banthan, y_banthan
+
+                        if is_qua_gan:
+                            dist_kite = math.hypot(vec_x_base, vec_y_base)
+                            target_dist_retreat = 4.0
+
+                            if dist_kite > 0:
+                                target_x_move = int(round(x_muctieu + (vec_x_base / dist_kite) * target_dist_retreat))
+                                target_y_move = int(round(y_muctieu + (vec_y_base / dist_kite) * target_dist_retreat))
+                            else:
+                                target_x_move, target_y_move = x_muctieu + 4, y_muctieu + 3
+
+                            self._trangthaikhaithientichdia["is_retreating"] = True
+                            self._trangthaikhaithientichdia["start_time"] = time.time()
+
+                        elif is_quaxatruc:
+                            offset_x = x_banthan - x_muctieu
+                            offset_y = y_banthan - y_muctieu
+
+                            new_offset_x = offset_x
+                            new_offset_y = offset_y
+
+                            if abs(offset_x) > SAFE_X:
+                                new_offset_x = SAFE_X if offset_x > 0 else -SAFE_X
+                            if abs(offset_y) > SAFE_Y:
+                                new_offset_y = SAFE_Y if offset_y > 0 else -SAFE_Y
+
+                            target_x_move = int(round(x_muctieu + new_offset_x))
+                            target_y_move = int(round(y_muctieu + new_offset_y))
+
+                            self._trangthaikhaithientichdia["is_retreating"] = False
+
+                        move_tx, move_ty = epgoc(target_x_move, target_y_move, x_banthan, y_banthan)
+
                         if is_dangbiket:
-                            tx += random.choice([-3, 3])
-                            ty += random.choice([-3, 3])
+                            move_tx += int(random.choice([-4, 4]))
+                            move_ty += int(random.choice([-3, 3]))
 
-                        self._trangthaikhaithientichdia["is_retreating"] = True
-                        self._trangthaikhaithientichdia["start_time"] = time.time()
+                        self._yeucautancong = None
+                        self._is_tamngungdichuyensudungkynang = True
 
-                        self._yeucautancong = {
-                            "yeucau": YEUCAUDICHUYENTANCONG,
-                            "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
-                            "toadodich": (tx, ty),
-                            "khoangcachtoida": 0
-                        }
-                        self._thoidiemdichuyentiepcangannhat = time.time()  # Update thời gian di chuyển
+                        id_muctieu_hientai = self.moitruong.get_iddoituong(diachicosothongtinnhanvatmuctieudangchon)
+                        if id_muctieu_hientai:
+                            self._idmuctieudangdichuyenkhaithien = id_muctieu_hientai
+                            self._thoidiembatdaudichuyenkhaithien = time.time()
+
+                        if idtuthenhanvat != TUTHENHANVAT_DICHUYEN:
+                            self.moitruong.action_dichuyentiepcandiem(move_tx, move_ty)
+                            self._thoidiemdichuyentiepcangannhat = time.time()
+                            time.sleep(0.05)
                         break
+
                     else:
                         idkynang = self.moitruong.get_idkynang(*VITRIKYNANG_KHAITHIENTICHDIA)
                         if idkynang:
-                            x_dest = self.moitruong.get_toadoxsaptoi(diachicosothongtinnhanvatmuctieudangchon)
-                            y_dest = self.moitruong.get_toadoysaptoi(diachicosothongtinnhanvatmuctieudangchon)
-                            vec_dest_x = x_dest - x_muctieu
-                            vec_dest_y = y_dest - y_muctieu
-                            dist_dest = math.hypot(vec_dest_x, vec_dest_y)
+                            vec_cast_x = x_muctieu - x_banthan
+                            vec_cast_y = y_muctieu - y_banthan
 
-                            if dist_dest > 0:
-                                intercept_x = x_muctieu + (vec_dest_x / dist_dest) * 1.5
-                                intercept_y = y_muctieu + (vec_dest_y / dist_dest) * 1.5
-                            else:
-                                intercept_x, intercept_y = x_muctieu, y_muctieu
+                            rel_x = vec_cast_x
+                            rel_y = vec_cast_y
 
-                            vec_cast_x = intercept_x - x_banthan
-                            vec_cast_y = intercept_y - y_banthan
-                            dist_cast = math.hypot(vec_cast_x, vec_cast_y)
+                            if abs(rel_x) > LIMIT_X:
+                                scale = LIMIT_X / abs(rel_x)
+                                rel_x *= scale
+                                rel_y *= scale
 
-                            LIMIT_X = 6.4
-                            LIMIT_Y = 4.8
-                            TARGET_DIST = 6.5
+                            if abs(rel_y) > LIMIT_Y:
+                                scale = LIMIT_Y / abs(rel_y)
+                                rel_x *= scale
+                                rel_y *= scale
 
-                            if dist_cast > 0:
-                                u_x = vec_cast_x / dist_cast
-                                u_y = vec_cast_y / dist_cast
+                            final_tx = int(round(x_banthan + rel_x))
+                            final_ty = int(round(y_banthan + rel_y))
 
-                                rel_x = u_x * TARGET_DIST
-                                rel_y = u_y * TARGET_DIST
-
-                                if abs(rel_x) > LIMIT_X:
-                                    scale = LIMIT_X / abs(rel_x)
-                                    rel_x *= scale
-                                    rel_y *= scale
-
-                                if abs(rel_y) > LIMIT_Y:
-                                    scale = LIMIT_Y / abs(rel_y)
-                                    rel_x *= scale
-                                    rel_y *= scale
-
-                                final_tx = int(round(x_banthan + rel_x))
-                                final_ty = int(round(y_banthan + rel_y))
-                            else:
-                                final_tx = int(x_banthan + LIMIT_X)
-                                final_ty = int(y_banthan)
-
-                            move_tx, move_ty = force_diagonal(final_tx, final_ty, x_banthan, y_banthan)
-
-                            if is_dangbiket:
-                                move_tx += random.choice([-3, 3])
-                                move_ty += random.choice([-3, 3])
+                            move_tx, move_ty = epgoc(final_tx, final_ty, x_banthan, y_banthan)
 
                             self._yeucautancong = None
                             self._is_tamngungdichuyensudungkynang = True
 
+                            id_muctieu_hientai = self.moitruong.get_iddoituong(diachicosothongtinnhanvatmuctieudangchon)
+                            if id_muctieu_hientai:
+                                self._idmuctieudangdichuyenkhaithien = id_muctieu_hientai
+                                self._thoidiembatdaudichuyenkhaithien = time.time()
+
                             if idtuthenhanvat != TUTHENHANVAT_DICHUYEN:
                                 self.moitruong.action_dichuyentiepcandiem(move_tx, move_ty)
-                                self._thoidiemdichuyentiepcangannhat = time.time()  # Update thời gian di chuyển
+                                self._thoidiemdichuyentiepcangannhat = time.time()
                                 time.sleep(0.05)
 
                             is_ok = self.moitruong.action_sudungkynangtoado(idkynang, final_tx, final_ty)
+
+                            self._idmuctieudangdichuyenkhaithien = 0
 
                             self._thoidiemtamngungkhaithientichdia = time.time()
                             if is_ok:
@@ -1174,7 +1213,7 @@ class TacTu:
                         "diachimuctieu": diachicosothongtinnhanvatmuctieudangchon,
                         "khoangcachtoida": 0
                     }
-                    self._thoidiemdichuyentiepcangannhat = time.time()  # Update thời gian di chuyển
+                    self._thoidiemdichuyentiepcangannhat = time.time()
                     break
             break
 
@@ -1408,7 +1447,7 @@ class TacTu:
             return
 
         i = 0
-        is_bandocuthudao = self.moitruong.get_idbandohientai() == BANDO_CUTHUDAO
+        is_bandocuthudao = self.moitruong.get_idbandohientai() in BANDO_CUTHUDAOs
         while True:
             if diachicosomuctieudangchon := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
                 if self.moitruong.get_is_nguoichoi(diachicosomuctieudangchon) and self.moitruong.get_is_cothetancong(diachicosomuctieudangchon):
