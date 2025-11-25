@@ -1417,12 +1417,10 @@ class TacTu:
                         break
 
                 if is_sudungkhaithientichdiaantoan and is_duocphepsudungkhaithientichdia and not self.moitruong.get_is_vohieuhoadichuyen() and khoangcach <= 6.5:
-                    # --- [ĐÃ CẬP NHẬT] THÔNG SỐ VỊ TRÍ & CAST MỚI ---
                     SAFE_X = 4.2
                     SAFE_Y = 3.1
                     CAST_LIMIT_X = 6.2
                     CAST_LIMIT_Y = 4.7
-                    # ------------------------------------------------
 
                     if self._trangthaikhaithientichdia["is_danglui"]:
                         thoigiandilui = time.time() - self._trangthaikhaithientichdia["thoidiembatdau"]
@@ -1489,13 +1487,11 @@ class TacTu:
                             vec_cast_y = y_muctieu - y_banthan
 
                             if is_sudungkhaithientichdiathatbai:
-                                # Safe Mode (Cast tại vị trí quái, chỉ clamp nếu vượt CAST_LIMIT - điều khó xảy ra vì SAFE < CAST_LIMIT)
                                 rel_x, rel_y = vec_cast_x, vec_cast_y
                                 if abs(rel_x) > CAST_LIMIT_X: rel_x *= (CAST_LIMIT_X / abs(rel_x))
                                 if abs(rel_y) > CAST_LIMIT_Y: rel_y *= (CAST_LIMIT_Y / abs(rel_y))
 
                             else:
-                                # Max Range Mode: Dùng CAST_LIMIT (6.2, 4.7) để tính toán
                                 ratio_x = CAST_LIMIT_X / abs(vec_cast_x) if vec_cast_x != 0 else 999
                                 ratio_y = CAST_LIMIT_Y / abs(vec_cast_y) if vec_cast_y != 0 else 999
 
