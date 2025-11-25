@@ -109,6 +109,7 @@ class MoiTruong:
         self._diachicosothongtinnhanvattruongnhom = False
 
         self._idnguoichoi = False
+        self._thoidiemxuathientrongtamnhin = {}
 
     def __del__(self):
         def safe_free(flag_name, addr_name):
@@ -266,8 +267,37 @@ class MoiTruong:
         idbandohientai = self._get_idbandohientai()
         if idbandohientai != self._idbandohientai:
             self._thoidiemthaydoibandogannhat = time.time()
+            self._thoidiemxuathientrongtamnhin.clear()
 
         self._idbandohientai = idbandohientai
+
+        iddoituongtrongtammats = set()
+
+        i = 0
+        hientai = time.time()
+
+        while True:
+            diachidoituong = self.get_diachicosothongtindoituongx(i)
+            if not diachidoituong:
+                break
+            i += 1
+
+            iddoituong = self.get_iddoituong(diachidoituong)
+            if iddoituong <= 0:
+                continue
+
+            khoangcach = self.get_khoangcach(diachidoituong)
+
+            if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
+                iddoituongtrongtammats.add(iddoituong)
+
+                if iddoituong not in self._thoidiemxuathientrongtamnhin:
+                    self._thoidiemxuathientrongtamnhin[iddoituong] = hientai
+
+        iddanhos = list(self._thoidiemxuathientrongtamnhin.keys())
+        for idcu in iddanhos:
+            if idcu not in iddoituongtrongtammats:
+                del self._thoidiemxuathientrongtamnhin[idcu]
 
         idtuthenhanvat = self.get_idtuthenhanvat()
         if idtuthenhanvat != TUTHENHANVAT_DUNGIM:
@@ -296,6 +326,9 @@ class MoiTruong:
         idnguoichoitruongnhom = self.get_idnguoichoitruongnhom()
         if idnguoichoitruongnhom and not self.get_diachicosothongtinnhanvattruongnhom():
             self._diachicosothongtinnhanvattruongnhom = self.action_timkiemnhanvat(idnguoichoi = idnguoichoitruongnhom)
+
+    def get_thoidiemxuathiendautien(self, id_doituong):
+        return self._thoidiemxuathientrongtamnhin.get(id_doituong, 0)
 
     def get_is_cothegaychoang(self, diachicosothongtinnhanvat, thoigiangiancach = 5.0):
         if not diachicosothongtinnhanvat:
