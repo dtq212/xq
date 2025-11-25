@@ -324,18 +324,19 @@ class TacTu:
     def _chonmuctieuantoan(self, diachicosothongtinnhanvat):
         if not diachicosothongtinnhanvat:
             return
-        idmuctieu = self.moitruong.get_iddoituong(diachicosothongtinnhanvat)
 
-        thoidiemxuathien = self.moitruong.get_thoidiemxuathiendautien(idmuctieu)
-        hientai = time.time()
-
-        thoigiandanhanbiet = hientai - thoidiemxuathien
-
-        if thoidiemxuathien == 0 or thoigiandanhanbiet < 1.5:
-            delay = random.uniform(1.2, 1.8)
-            time.sleep(delay)
-        else:
-            pass
+        # idmuctieu = self.moitruong.get_iddoituong(diachicosothongtinnhanvat)
+        #
+        # thoidiemxuathien = self.moitruong.get_thoidiemxuathiendautien(idmuctieu)
+        # hientai = time.time()
+        #
+        # thoigiandanhanbiet = hientai - thoidiemxuathien
+        #
+        # if thoidiemxuathien == 0 or thoigiandanhanbiet < 1.5:
+        #     delay = random.uniform(1.2, 1.8)
+        #     time.sleep(delay)
+        # else:
+        #     pass
 
         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(diachicosothongtinnhanvat)
 

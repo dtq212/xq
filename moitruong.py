@@ -273,31 +273,31 @@ class MoiTruong:
 
         iddoituongtrongtammats = set()
 
-        i = 0
-        hientai = time.time()
+        # i = 0
+        # hientai = time.time()
+        #
+        # while True:
+        #     diachidoituong = self.get_diachicosothongtindoituongx(i)
+        #     if not diachidoituong:
+        #         break
+        #     i += 1
+        #
+        #     iddoituong = self.get_iddoituong(diachidoituong)
+        #     if iddoituong <= 0:
+        #         continue
+        #
+        #     khoangcach = self.get_khoangcach(diachidoituong)
+        #
+        #     if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
+        #         iddoituongtrongtammats.add(iddoituong)
+        #
+        #         if iddoituong not in self._thoidiemxuathientrongtamnhin:
+        #             self._thoidiemxuathientrongtamnhin[iddoituong] = hientai
 
-        while True:
-            diachidoituong = self.get_diachicosothongtindoituongx(i)
-            if not diachidoituong:
-                break
-            i += 1
-
-            iddoituong = self.get_iddoituong(diachidoituong)
-            if iddoituong <= 0:
-                continue
-
-            khoangcach = self.get_khoangcach(diachidoituong)
-
-            if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
-                iddoituongtrongtammats.add(iddoituong)
-
-                if iddoituong not in self._thoidiemxuathientrongtamnhin:
-                    self._thoidiemxuathientrongtamnhin[iddoituong] = hientai
-
-        iddanhos = list(self._thoidiemxuathientrongtamnhin.keys())
-        for idcu in iddanhos:
-            if idcu not in iddoituongtrongtammats:
-                del self._thoidiemxuathientrongtamnhin[idcu]
+        # iddanhos = list(self._thoidiemxuathientrongtamnhin.keys())
+        # for idcu in iddanhos:
+        #     if idcu not in iddoituongtrongtammats:
+        #         del self._thoidiemxuathientrongtamnhin[idcu]
 
         idtuthenhanvat = self.get_idtuthenhanvat()
         if idtuthenhanvat != TUTHENHANVAT_DUNGIM:
