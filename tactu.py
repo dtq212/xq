@@ -1684,7 +1684,7 @@ class TacTu:
                 break
 
     def action_tudongdoimaupk(self):
-        if self._is_tudongdoimaupk:
+        if self._is_tudongdoimaupk and self.moitruong.get_idbandohientai() not in BANDO_CUTHUDAOs:
             if time.time() - self._thoidiemdoimaupkgannhat > 5.:
                 self._thoidiemdoimaupkgannhat = time.time()
                 self.action_batpk()
