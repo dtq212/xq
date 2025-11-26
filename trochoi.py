@@ -109,12 +109,14 @@ class TroChoiManager:
         self.current_metric = None
 
         print("=" * 50)
-        print("TOOL CHIẾN QUỐC (AUTO BLUETOOTH SWITCHER)")
-        print(f"Đại Ca (Dùng Bluetooth): {NHANVATTODOITUDONGs[0] if NHANVATTODOITUDONGs else 'Chưa cấu hình'}")
-        print("1. Chưa thấy Đại Ca -> Ưu tiên Bluetooth (Để log Đại Ca).")
-        print("2. Thấy Đại Ca -> Giảm ưu tiên Bluetooth (Để log Clone bằng Wifi).")
-        print("3. Ctrl+Alt+1: Ép dùng Bluetooth.")
-        print("4. Ctrl+Alt+2: Ép dùng Wifi.")
+        print("TOOL CHIẾN QUỐC (AUTO MẠNG BLUETOOTH)")
+        print("-" * 50)
+        print("LOGIC MẠNG:")
+        print("1. Có cửa sổ đang đăng nhập -> Ưu tiên Bluetooth.")
+        print("2. Tất cả cửa sổ đã vào game -> Ưu tiên Wifi (Nhường mạng).")
+        print("-" * 50)
+        print("3. Ctrl+Alt+1: Ép dùng Bluetooth (Metric 1).")
+        print("4. Ctrl+Alt+2: Ép dùng Wifi (Metric 100).")
         print("-" * 50)
         print("Nhấn phím F12 để dừng toàn bộ!")
         print("=" * 50)
@@ -143,11 +145,11 @@ class TroChoiManager:
             self.current_metric = metric
 
             if metric == 1:
-                phatam("Đã ưu tiên Bluetooth")
-                print(f"[Network] Bluetooth Metric = 1 (HIGH) -> Chế độ Đại Ca")
+                phatam("Đã ưu tiên Bluetooth để đăng nhập")
+                print(f"[Network] Bluetooth Metric = 1 (HIGH) -> Chế độ Đăng Nhập")
             else:
-                phatam("Đã ưu tiên Wifi")
-                print(f"[Network] Bluetooth Metric = 100 (LOW) -> Chế độ Clone")
+                phatam("Đã chuyển về Wifi")
+                print(f"[Network] Bluetooth Metric = 100 (LOW) -> Chế độ Treo Game")
         except Exception as e:
             print(f"Lỗi chỉnh mạng: {e}")
 
@@ -166,6 +168,7 @@ class TroChoiManager:
     def kiem_tra_du_dieu_kien_manager(self, hwnd):
         try:
             mt = MoiTruong(hwnd)
+            # Kiểm tra xem đã vào game chưa (có thông tin nhân vật)
             if not mt.get_is_nhanvattontai(): return False
             ten = mt.get_tendoituong()
             if not ten or len(ten) == 0: return False
@@ -178,7 +181,7 @@ class TroChoiManager:
             if hwnd in self.managed_processes:
                 return
 
-            print(f"-> Phát hiện cửa sổ {hwnd} hợp lệ -> Kích hoạt Auto!")
+            print(f"-> Phát hiện cửa sổ {hwnd} đã vào game -> Kích hoạt Auto!")
 
             script_path = os.path.abspath(__file__)
             cmd = [sys.executable, "-u", script_path, "--child", str(hwnd)]
@@ -190,29 +193,40 @@ class TroChoiManager:
                 pass
 
     def check_network_condition(self):
-        if not NHANVATTODOITUDONGs:
+        # Lấy tất cả cửa sổ game đang mở (bao gồm cả cửa sổ chưa chạy auto)
+        tat_ca_cua_so = self._tim_cua_so_game()
+
+        co_cua_so_chua_dang_nhap = False
+
+        if not tat_ca_cua_so:
+            # Không có game nào mở -> Về mặc định (Wifi)
+            self.thiet_lap_mang_bluetooth(100)
             return
 
-        id_dai_ca = NHANVATTODOITUDONGs[0]
-        is_dai_ca_online = False
-
-        with self.lock:
-            active_hwnds = list(self.managed_processes.keys())
-
-        for hwnd in active_hwnds:
+        for hwnd in tat_ca_cua_so:
             try:
                 mt = MoiTruong(hwnd)
-                if mt.get_is_nhanvattontai():
-                    if mt.get_idnguoichoi() == id_dai_ca:
-                        is_dai_ca_online = True
-                        break
-            except:
-                pass
+                # Nếu không lấy được thông tin nhân vật -> Đang ở màn hình đăng nhập
+                if not mt.get_is_nhanvattontai():
+                    co_cua_so_chua_dang_nhap = True
+                    break
 
-        if is_dai_ca_online:
-            self.thiet_lap_mang_bluetooth(100)
-        else:
+                # Kiểm tra kỹ hơn tên đối tượng
+                ten = mt.get_tendoituong()
+                if not ten or len(ten) == 0:
+                    co_cua_so_chua_dang_nhap = True
+                    break
+            except:
+                # Nếu lỗi khi đọc môi trường (thường do chưa load game xong) -> Coi như chưa đăng nhập
+                co_cua_so_chua_dang_nhap = True
+                break
+
+        if co_cua_so_chua_dang_nhap:
+            # Có ít nhất 1 cửa sổ chưa vào game -> Ưu tiên Bluetooth
             self.thiet_lap_mang_bluetooth(1)
+        else:
+            # Tất cả các cửa sổ tìm thấy đều đã có nhân vật -> Bỏ ưu tiên Bluetooth
+            self.thiet_lap_mang_bluetooth(100)
 
     def run(self):
         time.sleep(1)
@@ -238,12 +252,14 @@ class TroChoiManager:
                 for h in dead_hwnds:
                     del self.managed_processes[h]
 
+            # Quét cửa sổ game để kích hoạt Worker (chỉ kích hoạt khi đã vào game)
             game_hwnds = self._tim_cua_so_game()
             for hwnd in game_hwnds:
                 if hwnd not in self.managed_processes:
                     if self.kiem_tra_du_dieu_kien_manager(hwnd):
                         self.spawn_worker_for_hwnd(hwnd)
 
+            # Kiểm tra điều kiện mạng liên tục
             self.check_network_condition()
 
             time.sleep(0.5)
