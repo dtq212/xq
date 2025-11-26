@@ -205,6 +205,7 @@ class LoopPhu:
         self.tactu.action_tudongvutdo()
 
         self.tactu.action_tudongtrieuhoibaothudautien()
+        self.tactu.action_tudongdieukhienbaothumaoson()
 
         self.tactu._action_dichuyentudo()
         self.tactu._action_nhatdo()

@@ -111,6 +111,9 @@ class MoiTruong:
         self._idnguoichoi = False
         self._thoidiemxuathientrongtamnhin = {}
 
+        self._tennguoichoithanhviennhoms = []
+        self._thoidiemcapnhattennguoichoithanhviennhom = 0.
+
     def __del__(self):
         def safe_free(flag_name, addr_name):
             try:
@@ -326,6 +329,10 @@ class MoiTruong:
         idnguoichoitruongnhom = self.get_idnguoichoitruongnhom()
         if idnguoichoitruongnhom and not self.get_diachicosothongtinnhanvattruongnhom():
             self._diachicosothongtinnhanvattruongnhom = self.action_timkiemnhanvat(idnguoichoi = idnguoichoitruongnhom)
+
+        if time.time() - self._thoidiemcapnhattennguoichoithanhviennhom > 0.5:
+            self._capnhatdanhsachtennguoichoithanhviennhom()
+            self._thoidiemcapnhattennguoichoithanhviennhom = time.time()
 
     def get_thoidiemxuathiendautien(self, id_doituong):
         return self._thoidiemxuathientrongtamnhin.get(id_doituong, 0)
@@ -915,6 +922,9 @@ class MoiTruong:
 
         return idkynang and is_dahockynang and thoigiangiancach and time.time() - self._thoidiemsudungkynangvitrigannhat_map.get((idvitri_x, idvitri_y), time.time() - delay - 1.) > delay
 
+    def get_danhsachtennguoichoithanhviennhoms(self):
+        return self._tennguoichoithanhviennhoms
+
     def get_is_cothetancong(self, diachicosothongtinnhanvat):
         if not diachicosothongtinnhanvat:
             return False
@@ -932,6 +942,15 @@ class MoiTruong:
 
         if self.get_is_npc(diachicosothongtinnhanvat):
             return False
+
+        tenmuctieu = self.get_tendoituong(diachicosothongtinnhanvat)
+
+        if tenmuctieu:
+            danhsachtennguoichoithanhviennhom = self.get_danhsachtennguoichoithanhviennhoms()
+
+            for tenthanhviennhom in danhsachtennguoichoithanhviennhom:
+                if tenthanhviennhom in tenmuctieu:
+                    return False
 
         idmaupk = self.get_idmaupk()
 
@@ -1907,7 +1926,7 @@ class MoiTruong:
             idnguoichoi = self.get_idnguoichoi(diachicosothongtinnhanvatmuctieudangchon)
             is_ok = self.action_sudungkynangmuctieunguoichoi(idkynang, idnguoichoi)
         else:
-            iddoituong = self.get_iddoituongmuctieudangchon()
+            iddoituong = self.get_iddoituong(diachicosothongtinnhanvatmuctieudangchon)
             if iddoituong:
                 is_ok = self.action_sudungkynangmuctieukhacnguoichoi(idkynang, iddoituong)
 
@@ -2406,6 +2425,12 @@ class MoiTruong:
     def get_tenmonphai(self):
         return MONPHAI_MAP.get(self.get_idkynang(0, 0))
 
+    def get_iddoituongbaothumaoson(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0x184)
+
     def get_diachicosobaothudautien(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
@@ -2546,3 +2571,34 @@ class MoiTruong:
 
         self.tientrinh.start_thread(self._diachiautoassemblesudungkynangbaothu)
         time.sleep(0.05)
+
+    def _capnhatdanhsachtennguoichoithanhviennhom(self):
+        tennguoichoithanhviennhoms = []
+
+        tenbanthan = self.get_tendoituong(self.get_diachicosothongtinnhanvat1())
+        if tenbanthan:
+            tennguoichoithanhviennhoms.append(tenbanthan)
+
+        idnguoichoithanhviennhoms = self.get_danhsachidnguoichoithanhviennhoms()
+
+        if idnguoichoithanhviennhoms:
+            idnguoichoithanhviennhom_set = set(idnguoichoithanhviennhoms)
+            i = -1
+            while True:
+                i += 1
+                dc = self.get_diachicosothongtindoituongx(i)
+                if not dc:
+                    break
+
+                if not self.get_is_nhanvattontai(dc):
+                    continue
+
+                uid = self.get_idnguoichoi(dc)
+
+                if uid in idnguoichoithanhviennhom_set:
+                    ten = self.get_tendoituong(dc)
+                    if ten and ten not in tennguoichoithanhviennhoms:
+                        tennguoichoithanhviennhoms.append(ten)
+
+        self._tennguoichoithanhviennhoms = tennguoichoithanhviennhoms
+

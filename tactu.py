@@ -12,6 +12,7 @@ from tienich import taithietlap as util_taithietlap, phatam
 
 class TacTu:
     def __init__(self, moitruong: MoiTruong):
+        self._is_tudongdieukhienbaothumaoson = True
         self._solanthatbaikhaithien = 0
         self._thoidiembiphatkhaithien = 0.
         self._is_tudonglamnhiemvulaoquangia = False
@@ -23,7 +24,7 @@ class TacTu:
         self._is_vohieuhoadichuyen = False
         # Thiết lập có lưu
         self._is_tudongtheosautruongnhom = False
-        self._is_tudongbattheosaunhom = False
+        self._is_tudongbattheosaunhom = True
         self._is_tudongtimkiemmuctieu = True
         self._is_tudongsudungkynang = True
         self._is_tudongsudungvatpham = True
@@ -40,7 +41,7 @@ class TacTu:
 
         self._is_uutiennguoichoi = True
 
-        self._khoangcachtoidatruongnhom = 12
+        self._khoangcachtoidatruongnhom = 9
 
         self._tenmuctieutancongs = set()
         self._tenmuctieukhongtancongs = set(TENMUCTIEUKHONGTANCONGs)
@@ -64,6 +65,7 @@ class TacTu:
         self._thoidiemyeucauroikhoichientruonggannhat = time.time()
         self._thoidiemtudongtrieuhoibaothudautien = time.time()
         self._thoidiemthietlapbaothuchodoigannhat = time.time()
+        self._thoidiemdieukhienbaothumaosongannhat = time.time()
         self._thoidiemkiemtracuoithugannhat = time.time()
         self._thoidiemsudungvatphamgannhat = time.time()
         self._thoidiemsudungthucanbaothugannhat = time.time()
@@ -97,7 +99,7 @@ class TacTu:
         self._khoangcachtimkiemmuctieu = 18.
         self._is_tudongtrieuhoithanthu = True
         self._is_tudongdichuyendiemdanhxungquanh = False
-        self._is_tudongdoimaupk = True
+        self._is_tudongdoimaupk = False
 
         self._idbandohientai = False
         self._phehientai = False
@@ -229,7 +231,7 @@ class TacTu:
                         x_clipped = int(x_truongnhom + (vec_x * khoangcachtoidatruongnhom / khoangcachmuctieuvatruongnhom))
                         y_clipped = int(y_truongnhom + (vec_y * khoangcachtoidatruongnhom / khoangcachmuctieuvatruongnhom))
 
-                        print(f"Mục tiêu cách trưởng nhóm {khoangcachmuctieuvatruongnhom:.2f}m) > khoảng cách tối đa trưởng nhóm ({khoangcachtoidatruongnhom}m). Đang giới hạn tọa độ... Khoảng cách mới: {math.dist((x_clipped, y_clipped), (x_truongnhom, y_truongnhom))}")
+                        # print(f"Mục tiêu cách trưởng nhóm {khoangcachmuctieuvatruongnhom:.2f}m) > khoảng cách tối đa trưởng nhóm ({khoangcachtoidatruongnhom}m). Đang giới hạn tọa độ... Khoảng cách mới: {math.dist((x_clipped, y_clipped), (x_truongnhom, y_truongnhom))}")
 
                         yeucauduocchon["toadodich"] = (x_clipped, y_clipped)
                         yeucauduocchon["diachimuctieu"] = None
@@ -517,14 +519,8 @@ class TacTu:
 
         self._yeucautancong = None
 
-        if tenmonphai == "vanmongcoc":
-            self._action_sudungkynang_vanmongcoc()
-        elif tenmonphai == "thucson":
-            self._action_sudungkynang_thucson()
-        elif tenmonphai == "daohoanguyen":
-            self._action_sudungkynang_daohoanguyen()
-        elif tenmonphai == "conluan":
-            self._action_sudungkynang_conluan()
+        if hasattr(self, f"_action_sudungkynang_{tenmonphai}"):
+            getattr(self, f"_action_sudungkynang_{tenmonphai}")()
 
     def _action_sudungkynang_vanmongcoc(self):
         if not self._is_tudongsudungkynang:
@@ -541,23 +537,34 @@ class TacTu:
             diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
             idtuthenhanvat = self.moitruong.get_idtuthenhanvat()
 
-            phantramsinhlucconlai = self.moitruong.get_phantramsinhlucconlai()
-
             idnguoichoithanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms()
+            danhsachtenthanhvien = self.moitruong.get_danhsachtennguoichoithanhviennhoms()
+
             i = -1
-            diachicosothongtinnhanvatnguoichoithanhviennhoms = []
+            diachicosothongtinnhanvatnguoichoithanhviennhoms = [self.moitruong.get_diachicosothongtinnhanvat1()]
+
             while True:
                 i += 1
                 diachicosothongtinnhanvatxemxet = self.moitruong.get_diachicosothongtindoituongx(i)
                 if not diachicosothongtinnhanvatxemxet:
                     break
+
                 if not self.moitruong.get_is_nhanvattontai(diachicosothongtinnhanvatxemxet):
                     continue
+
                 idnguoichoi = self.moitruong.get_idnguoichoi(diachicosothongtinnhanvatxemxet)
-                if not idnguoichoi:
+                if self.moitruong.get_khoangcach(diachicosothongtinnhanvatxemxet) > KHOANGCACHSUDUNGKYNANGTAMXA:
                     continue
-                if idnguoichoi in idnguoichoithanhviennhoms and self.moitruong.get_khoangcach(diachicosothongtinnhanvatxemxet) <= KHOANGCACHSUDUNGKYNANGTAMXA:
+
+                if idnguoichoi and idnguoichoi in idnguoichoithanhviennhoms:
                     diachicosothongtinnhanvatnguoichoithanhviennhoms.append(diachicosothongtinnhanvatxemxet)
+
+                elif tendoituong := self.moitruong.get_tendoituong(diachicosothongtinnhanvatxemxet):
+                    for tenthanhvien in danhsachtenthanhvien:
+                        if tenthanhvien in tendoituong:
+                            # print(f"tenthanhvien: {tenthanhvien}, tendoituong: {tendoituong}, iddoituong: {hex(self.moitruong.get_iddoituong(diachicosothongtinnhanvatxemxet))}")
+                            diachicosothongtinnhanvatnguoichoithanhviennhoms.append(diachicosothongtinnhanvatxemxet)
+                            break
 
             diachicosothongtinnhanvatdachet = False
             diachicosothongtinnhanvatphantramsinhlucthapnhat = False
@@ -582,25 +589,29 @@ class TacTu:
                     if not diachicosothongtinnhanvatchuacobuffsinhluc and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CUONGTHETHUAT,), macdinh = True, diachicosothongtinnhanvat = diachicosothongtinnhanvatnguoichoithanhviennhom, is_hieuungcoloi = 1):
                         diachicosothongtinnhanvatchuacobuffsinhluc = diachicosothongtinnhanvatnguoichoithanhviennhom
 
-            if diachicosothongtinnhanvatdachet and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_CAITUHOANSINH, delay = 2.):
+            if diachicosothongtinnhanvatdachet and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_CAITUHOANSINH, delay = 1.):
                 self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_CAITUHOANSINH, diachicosothongtinnhanvatdachet, is_khongkiemtracothetancong = True)
                 break
 
             if diachicosothongtinnhanvatphantramsinhlucthapnhat and phantramsinhlucconlaithapnhat <= 90.:
-                self._is_tamngungdichuyensudungkynang = True
-                if phantramsinhlucconlaithapnhat <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_CAMLOTRI):
-                    if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
-                        self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_CAMLOTRI, diachicosothongtinnhanvatphantramsinhlucthapnhat, is_khongkiemtracothetancong = True)
-                        break
-                if phantramsinhlucconlaithapnhat <= 90. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHIETVANQUYET):
-                    if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
-                        self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_KHIETVANQUYET, diachicosothongtinnhanvatphantramsinhlucthapnhat, is_khongkiemtracothetancong = True)
-                        break
+                # if phantramsinhlucconlaithapnhat <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_CAMLOTRI):
+                    # self._is_tamngungdichuyensudungkynang = True
+                #     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+                #         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_CAMLOTRI, diachicosothongtinnhanvatphantramsinhlucthapnhat, is_khongkiemtracothetancong = True)
+                #         break
+                # if phantramsinhlucconlaithapnhat <= 90. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHIETVANQUYET):
+                    # self._is_tamngungdichuyensudungkynang = True
+                #     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+                #         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_KHIETVANQUYET, diachicosothongtinnhanvatphantramsinhlucthapnhat, is_khongkiemtracothetancong = True)
+                #         break
+
                 if phantramsinhlucconlaithapnhat <= 90. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_SOTRI):
+                    self._is_tamngungdichuyensudungkynang = True
                     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_SOTRI, diachicosothongtinnhanvatphantramsinhlucthapnhat, is_khongkiemtracothetancong = True)
                         break
                 if phantramsinhlucconlaithapnhat <= 90. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_VODINHLUUTHUY):
+                    self._is_tamngungdichuyensudungkynang = True
                     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_VODINHLUUTHUY, diachicosothongtinnhanvatphantramsinhlucthapnhat, is_khongkiemtracothetancong = True)
                         break
@@ -615,39 +626,117 @@ class TacTu:
                 if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
                     self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_NGANCHAMDOACH, diachicosothongtinnhanvatchuacobuffngoaicong, is_khongkiemtracothetancong = True)
                 break
-            if diachicosothongtinnhanvatchuacobuffsinhluc and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_CUONGTHETHUAT):
-                self._is_tamngungdichuyensudungkynang = True
-                if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
-                    self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_CUONGTHETHUAT, diachicosothongtinnhanvatchuacobuffsinhluc, is_khongkiemtracothetancong = True)
-                break
 
-            if phantramsinhlucconlai <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_CAMLOTRI):
-                self._is_tamngungdichuyensudungkynang = True
-                if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
-                    self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_CAMLOTRI)
-                break
-            if phantramsinhlucconlai <= 90. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHIETVANQUYET):
-                self._is_tamngungdichuyensudungkynang = True
-                if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
-                    self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_KHIETVANQUYET)
-                break
-            if phantramsinhlucconlai <= 90. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_SOTRI):
-                self._is_tamngungdichuyensudungkynang = True
-                if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
-                    self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_SOTRI)
-                break
-            if phantramsinhlucconlai <= 90. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_VODINHLUUTHUY):
-                self._is_tamngungdichuyensudungkynang = True
-                if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
-                    self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_VODINHLUUTHUY)
-                break
+            # if diachicosothongtinnhanvatchuacobuffsinhluc and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_CUONGTHETHUAT):
+            #     self._is_tamngungdichuyensudungkynang = True
+            #     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+            #         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_CUONGTHETHUAT, diachicosothongtinnhanvatchuacobuffsinhluc, is_khongkiemtracothetancong = True)
+            #     break
 
-            if not diachicosothongtinnhanvatmuctieudangchon or not self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon):
-                if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KIMCHAMDOACH,), macdinh = True, is_hieuungcoloi = 1):
-                    self._is_tamngungdichuyensudungkynang = True
-                    if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
-                        self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_KIMCHAMDOACH)
+            # if phantramsinhlucconlai <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_CAMLOTRI):
+            #     self._is_tamngungdichuyensudungkynang = True
+            #     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+            #         self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_CAMLOTRI)
+            #     break
+            # if phantramsinhlucconlai <= 90. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHIETVANQUYET):
+            #     self._is_tamngungdichuyensudungkynang = True
+            #     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+            #         self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_KHIETVANQUYET)
+            #     break
+
+            # if phantramsinhlucconlai <= 90. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_SOTRI):
+            #     self._is_tamngungdichuyensudungkynang = True
+            #     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+            #         self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_SOTRI)
+            #     break
+            # if phantramsinhlucconlai <= 90. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_VODINHLUUTHUY):
+            #     self._is_tamngungdichuyensudungkynang = True
+            #     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+            #         self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_VODINHLUUTHUY)
+            #     break
+
+            # if not diachicosothongtinnhanvatmuctieudangchon or not self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon):
+            #     if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KIMCHAMDOACH,), macdinh = True, is_hieuungcoloi = 1):
+            #         self._is_tamngungdichuyensudungkynang = True
+            #         if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+            #             self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_KIMCHAMDOACH)
+            #         break
+
+            if diachicosothongtinnhanvatmuctieudangchon:
+                khoangcach = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon)
+                is_muctieudangchonlanguoichoi = self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon)
+                thoigiantuthenhanvatdungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat() if idtuthenhanvat == TUTHENHANVAT_DUNGIM else 0.
+
+                if thoigiantuthenhanvatdungim > 0.5 and khoangcach > KHOANGCACHSUDUNGKYNANGTAMXA - 3:
+                    if thoigiantuthenhanvatdungim > 4.5:
+                        khoangcachgiutoida = 0
+                    else:
+                        khoangcachgiutoida = (KHOANGCACHSUDUNGKYNANGTAMXA - 3) - max(1.5 + thoigiantuthenhanvatdungim, 0)
+
+                    if not self.moitruong.get_is_dangnamtrongnhom() or self.moitruong.get_is_truongnhom():
+                        self._yeucautancong = {
+                            "yeucau": YEUCAUDICHUYENTANCONG,
+                            "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
+                            "diachimuctieu": diachicosothongtinnhanvatmuctieudangchon,
+                            "khoangcachtoida": khoangcachgiutoida
+                        }
                     break
+                else:
+                    # if is_muctieudangchonlanguoichoi and self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
+                    #     if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA - 3:
+                    #         if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRAMMAC, HIEUUNGKYNANG_CHOANG), False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHONGANTHUAT):
+                    #             self._is_tamngungdichuyensudungkynang = True
+                    #             if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+                    #                 self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_PHONGANTHUAT)
+                    #             break
+                    #         elif not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_MULOA, HIEUUNGKYNANG_CHOANG), False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_HUYENQUANGTHIEMANH):
+                    #             self._is_tamngungdichuyensudungkynang = True
+                    #             if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+                    #                 self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_HUYENQUANGTHIEMANH)
+                    #             break
+                    if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
+                        phantramnoiluc = int(self.moitruong.get_noilucconlai() * 100 / self.moitruong.get_noiluctoida())
+                        # if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHAYMAU,), diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, macdinh = True, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHONGVUKINHTHIEN):
+                        #     self._is_tamngungdichuyensudungkynang = True
+                        #     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+                        #         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_PHONGVUKINHTHIEN)
+                        #     break
+                        # elif phantramnoiluc > 25 and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KYMONTRAN, delay = 1.):
+                        #     self._is_tamngungdichuyensudungkynang = True
+                        #     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+                        #         self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_KYMONTRAN, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach - random.randint(-1, 1))
+                        #     break
+                        # elif phantramnoiluc > 25 and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_DONGIAPTRAN, delay = 1.):
+                        #     self._is_tamngungdichuyensudungkynang = True
+                        #     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+                        #         self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_DONGIAPTRAN, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach - random.randint(-1, 1))
+                        #     break
+                        if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LIETPHONGQUYET):
+                            self._is_tamngungdichuyensudungkynang = True
+                            if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+                                self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_LIETPHONGQUYET)
+                            break
+            break
+        return
+
+    def _action_sudungkynang_maoson(self):
+        if not self._is_tudongsudungkynang:
+            return
+
+        while True:
+            if self.moitruong.get_is_dangclickchuottrai():
+                break
+            if self.moitruong.get_is_nhanvatdachet():
+                break
+            if self.moitruong.get_is_dangvankhi():
+                break
+
+            diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+            idtuthenhanvat = self.moitruong.get_idtuthenhanvat()
+
+            if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THANTUEPHAPCHU,), macdinh = True, is_hieuungcoloi = 1) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_THANTUEPHAPCHU):
+                self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_THANTUEPHAPCHU)
+                break
 
             if diachicosothongtinnhanvatmuctieudangchon:
                 khoangcach = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon)
@@ -660,43 +749,22 @@ class TacTu:
                     else:
                         khoangcachgiutoida = (KHOANGCACHSUDUNGKYNANGTAMXA - 3) - max(1.5 + thoigiantuthenhanvatdungim, 0 if is_muctieudangchonlanguoichoi else 6)
 
-                    self._yeucautancong = {
-                        "yeucau": YEUCAUDICHUYENTANCONG,
-                        "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
-                        "diachimuctieu": diachicosothongtinnhanvatmuctieudangchon,
-                        "khoangcachtoida": khoangcachgiutoida
-                    }
+                    if not self.moitruong.get_is_dangnamtrongnhom() or self.moitruong.get_is_truongnhom():
+                        self._yeucautancong = {
+                            "yeucau": YEUCAUDICHUYENTANCONG,
+                            "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
+                            "diachimuctieu": diachicosothongtinnhanvatmuctieudangchon,
+                            "khoangcachtoida": khoangcachgiutoida
+                        }
                     break
                 else:
-                    if is_muctieudangchonlanguoichoi and self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
-                        if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA - 3:
-                            if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRAMMAC, HIEUUNGKYNANG_CHOANG), False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHONGANTHUAT):
-                                self._is_tamngungdichuyensudungkynang = True
-                                if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
-                                    self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_PHONGANTHUAT)
-                                break
-                            elif not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_MULOA, HIEUUNGKYNANG_CHOANG), False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_HUYENQUANGTHIEMANH):
-                                self._is_tamngungdichuyensudungkynang = True
-                                if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
-                                    self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_HUYENQUANGTHIEMANH)
-                                break
-                    if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA - 3 and phantramsinhlucconlai >= 75:
-                        phantramnoiluc = int(self.moitruong.get_noilucconlai() * 100 / self.moitruong.get_noiluctoida())
-                        if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHAYMAU,), diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, macdinh = True, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHONGVUKINHTHIEN):
-                            self._is_tamngungdichuyensudungkynang = True
-                            if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
-                                self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_PHONGVUKINHTHIEN)
-                            break
-                        elif phantramnoiluc > 25 and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KYMONTRAN, delay = 1.):
-                            self._is_tamngungdichuyensudungkynang = True
-                            if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
-                                self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_KYMONTRAN, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach - random.randint(-1, 1))
-                            break
-                        elif phantramnoiluc > 25 and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_DONGIAPTRAN, delay = 1.):
-                            self._is_tamngungdichuyensudungkynang = True
-                            if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
-                                self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_DONGIAPTRAN, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach - random.randint(-1, 1))
-                            break
+                    if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
+                        pass
+                        # if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHUCMAQUYET):
+                        #     self._is_tamngungdichuyensudungkynang = True
+                        #     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+                        #         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_PHUCMAQUYET)
+                        #     break
             break
         return
 
@@ -1760,6 +1828,34 @@ class TacTu:
         else:
             self.moitruong.action_bochantangcapdo()
 
+    def action_tudongdieukhienbaothumaoson(self):
+        if self._is_tudongdieukhienbaothumaoson:
+            while True:
+                if self.moitruong.get_is_nhanvatdachet():
+                    break
+
+                if self.moitruong.get_tenmonphai() != "maoson":
+                    break
+
+                if time.time() - self._thoidiemdieukhienbaothumaosongannhat < 1.:
+                    break
+
+                iddoituongbaothumaoson = self.moitruong.get_iddoituongbaothumaoson()
+
+                if not iddoituongbaothumaoson:
+                    break
+
+                diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+                if not diachicosothongtinnhanvatmuctieudangchon:
+                    break
+
+                if self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
+                    if iddoituongnhanvatmuctieudangchon := self.moitruong.get_iddoituong(diachicosothongtinnhanvatmuctieudangchon):
+                        caulenh = f"pet {hex(iddoituongbaothumaoson)}# 1 {hex(iddoituongnhanvatmuctieudangchon)}#".replace("0x", "")
+                        is_ok = self.moitruong.action_thucthicaulenh(caulenh, delay = 0.5)
+                        if is_ok:
+                            self._thoidiemdieukhienbaothumaosongannhat = time.time()
+
     def action_tudongtrieuhoibaothudautien(self):
         if self._is_tudongtrieuhoibaothudautien:
             while True:
@@ -1795,10 +1891,11 @@ class TacTu:
                                 self._thoidiemsudungthucanbaothugannhat = time.time()
                     diachicosonhanvatbaothudautien = self.moitruong.action_timkiemnhanvat(iddoituong = iddoituongbaothudautien)
 
-                    if diachicosonhanvatbaothudautien and time.time() - self._thoidiemthietlapbaothuchodoigannhat > 2.:
-                        is_ok = self.moitruong.action_sudungkynangbaothu(iddoituongbaothudautien, 3, delay = 0.5)
-                        if is_ok:
-                            self._thoidiemthietlapbaothuchodoigannhat = time.time()
+                    # if diachicosonhanvatbaothudautien and time.time() - self._thoidiemthietlapbaothuchodoigannhat > 2.:
+                    #     is_ok = self.moitruong.action_sudungkynangbaothu(iddoituongbaothudautien, 3, delay = 0.5)
+                    #     if is_ok:
+                    #         self._thoidiemthietlapbaothuchodoigannhat = time.time()
+
                     break
 
                 if time.time() - self._thoidiemtudongtrieuhoibaothudautien > 1. and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
