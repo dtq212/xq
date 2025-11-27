@@ -2431,11 +2431,23 @@ class MoiTruong:
             return False
         return read_int(self.tientrinh, x + 0x184)
 
+    def get_phantramsinhlucconlaibaothumaoson(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0x1D4)
+
+    def get_phantramnoilucconlaibaothumaoson(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0x184) * 2
+
     def get_diachicosobaothudautien(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
-        return read_int(self.tientrinh, x + 0xADFDDC)
+        return read_int(self.tientrinh, x + 0xADFDDC) * 2
 
     def get_is_datrieuhoibaothudautien(self, macdinh = True):
         diachicoso = self.get_diachicosobaothudautien()
