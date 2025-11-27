@@ -739,7 +739,8 @@ class TacTu:
                 break
 
             if self.moitruong.get_iddoituongbaothumaoson():
-                if self.moitruong.get_phantramnoilucconlaibaothumaoson() < 50:
+                phantramnoilucconlaibaothummaoson = self.moitruong.get_phantramnoilucconlaibaothumaoson()
+                if phantramnoilucconlaibaothummaoson < 50:
                     if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_DITINHDAIPHAP):
                         self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_DITINHDAIPHAP)
                         break
