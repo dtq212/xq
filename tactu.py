@@ -1858,7 +1858,8 @@ class TacTu:
                     if self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
                         if iddoituongnhanvatmuctieudangchon := self.moitruong.get_iddoituong(diachicosothongtinnhanvatmuctieudangchon):
                             self.moitruong.action_ralenhbaothumaosontancong(iddoituongbaothumaoson, iddoituongnhanvatmuctieudangchon)
-
+                else:
+                    self.moitruong.action_ralenhbaothumaosontheosau(iddoituongbaothumaoson)
                 break
 
     def action_tudongtrieuhoibaothudautien(self):

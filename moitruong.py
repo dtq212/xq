@@ -65,6 +65,7 @@ class MoiTruong:
         self._is_dasetupautoassemblesudungkynangtoado = False
         self._is_dasetupautoassembletrochuyenvoinpc = False
         self._is_dasetupautoassembleralenhbaothumaosontancong = False
+        self._is_dasetupautoassembleralenhbaothumaosontheosau = False
 
         self._thoidiembattattheosaunhomgannhat = 0.
         self._thoidiemdichuyengannhat = 0.
@@ -86,6 +87,7 @@ class MoiTruong:
         self._thoidiemtuthenhanvatkhongdichuyengannhat = 0.
         self._thoidiemngungdichuyengannhat = 0.
         self._thoidiemralenhbaothumaosontancong = 0.
+        self._thoidiemralenhbaothumaosontheosau = 0.
 
         self._idthucuoi = False
         self._thoidiemkhongcuoithugannhat = 0.
@@ -133,6 +135,7 @@ class MoiTruong:
         safe_free("_is_dasetupautoassemblekhoitaothongtinbando", "_diachiautoassemblekhoitaothongtinbando")
         safe_free("_is_dasetupautoassemblethucthicaulenh", "_diachiautoassemblethucthicaulenh")
         safe_free("_is_dasetupautoassembleralenhbaothumaosontancong", "_diachiautoassembleralenhbaothumaosontancong")
+        safe_free("_is_dasetupautoassembleralenhbaothumaosontheosau", "_diachiautoassembleralenhbaothumaosontheosau")
         safe_free("_is_dasetupautoassembletrochuyenvoinpc", "_diachiautoassembletrochuyenvoinpc")
         safe_free("_is_dasetupautoassemblesudungvatpham", "_diachiautoassemblesudungvatpham")
         safe_free("_is_dasetupautoassembledichuyenvatphamhanhtrang", "_diachiautoassembledichuyenvatphamhanhtrang")
@@ -1264,6 +1267,16 @@ class MoiTruong:
 
         return True
 
+    def action_ralenhbaothumaosontheosau(self, iddoituongbaothumaoson, delay = 0.25):
+        if time.time() - self._thoidiemralenhbaothumaosontheosau < delay:
+            return False
+
+        self._thoidiemralenhbaothumaosontheosau = time.time()
+
+        self.auto_assemble_ralenhbaothumaosontheosau(iddoituongbaothumaoson)
+
+        return True
+
     def action_nhatdotoado(self, toadox, toadoy, delay = 0.05):
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
@@ -1475,6 +1488,36 @@ class MoiTruong:
                 write_string(self.tientrinh, self._diachiautoassembleralenhbaothumaosontancong + 19, caulenh)
 
         self.tientrinh.start_thread(self._diachiautoassembleralenhbaothumaosontancong)
+        time.sleep(0.05)
+
+    def auto_assemble_ralenhbaothumaosontheosau(self, iddoituongbaothumaoson):
+        caulenh = f"pet {hex(iddoituongbaothumaoson)}# 2".replace("0x", "")
+
+        if not self._is_dasetupautoassembleralenhbaothumaosontheosau:
+            self._diachiautoassembleralenhbaothumaosontheosau = self.tientrinh.allocate(128)
+
+            write_bytes(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau, bytes.fromhex("68"), 1)
+            write_int(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 1, len(caulenh))
+
+            write_bytes(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 5, bytes.fromhex("68"), 1)
+            write_int(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 6, self._diachiautoassembleralenhbaothumaosontheosau + 19)
+
+            write_bytes(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 10, bytes.fromhex("E8"), 1)
+            write_int(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 11, self.diachixq + 0x95450 - (self._diachiautoassembleralenhbaothumaosontheosau + 10) - 5)
+
+            write_bytes(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 15, bytes.fromhex("83 C4 08"), 3)
+            write_bytes(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 18, bytes.fromhex("C3"), 1)
+
+            write_string(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 19, caulenh)
+
+            self._is_dasetupautoassembleralenhbaothumaosontheosau = True
+        else:
+            if read_int(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 1) != len(caulenh):
+                write_int(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 1, len(caulenh))
+            if read_string(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 19) != caulenh:
+                write_string(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 19, caulenh)
+
+        self.tientrinh.start_thread(self._diachiautoassembleralenhbaothumaosontheosau)
         time.sleep(0.05)
 
     def auto_assemble_thaotacnhom(self, idhoatdong, idnguoichoi):
