@@ -734,18 +734,25 @@ class TacTu:
             diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
             idtuthenhanvat = self.moitruong.get_idtuthenhanvat()
 
-            if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THANTUEPHAPCHU,), macdinh = True, is_hieuungcoloi = 1) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_THANTUEPHAPCHU):
+            noilucconlai = self.moitruong.get_noilucconlai()
+
+            phantramsinhlucconlai = self.moitruong.get_phantramsinhlucconlai()
+            if phantramsinhlucconlai > 50 and noilucconlai <= 50 and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_HUYETMACHU):
+                self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_HUYETMACHU)
+                break
+
+            if noilucconlai > 50 and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THANTUEPHAPCHU,), macdinh = True, is_hieuungcoloi = 1) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_THANTUEPHAPCHU):
                 self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_THANTUEPHAPCHU)
                 break
 
-            if self.moitruong.get_iddoituongbaothumaoson():
+            if noilucconlai > 50 and self.moitruong.get_iddoituongbaothumaoson():
                 phantramnoilucconlaibaothummaoson = self.moitruong.get_phantramnoilucconlaibaothumaoson()
                 if phantramnoilucconlaibaothummaoson < 50:
                     if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_DITINHDAIPHAP):
                         self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_DITINHDAIPHAP)
                         break
 
-            if diachicosothongtinnhanvatmuctieudangchon:
+            if noilucconlai > 50 and diachicosothongtinnhanvatmuctieudangchon:
                 khoangcach = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon)
                 is_muctieudangchonlanguoichoi = self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon)
                 thoigiantuthenhanvatdungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat() if idtuthenhanvat == TUTHENHANVAT_DUNGIM else 0.
@@ -765,13 +772,19 @@ class TacTu:
                         }
                     break
                 else:
-                    if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
+                    if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LOIDONGCUUTHIEN):
+                        self._is_tamngungdichuyensudungkynang = True
+                        if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+                            self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_LOIDONGCUUTHIEN)
+                        break
+                    elif khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
                         pass
                         # if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHUCMAQUYET):
                         #     self._is_tamngungdichuyensudungkynang = True
                         #     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
                         #         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_PHUCMAQUYET)
                         #     break
+
             break
         return
 
@@ -1852,8 +1865,7 @@ class TacTu:
                 if diachicosothongtinnhanvatmuctieudangchon := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
                     if self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
                         if iddoituongnhanvatmuctieudangchon := self.moitruong.get_iddoituong(diachicosothongtinnhanvatmuctieudangchon):
-                            caulenh = f"pet {hex(iddoituongbaothumaoson)}# 1 {hex(iddoituongnhanvatmuctieudangchon)}#".replace("0x", "")
-                            self.moitruong.action_thucthicaulenh(caulenh, delay = 0.5)
+                            self.moitruong.action_ralenhbaothumaosontancong(iddoituongbaothumaoson, iddoituongnhanvatmuctieudangchon)
 
                 break
 
