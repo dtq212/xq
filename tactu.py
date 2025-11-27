@@ -194,19 +194,19 @@ class TacTu:
         if self._is_tamngungdichuyensudungkynang:
             return
 
+        is_truongnhom = not self.moitruong.get_is_dangnamtrongnhom() or self.moitruong.get_is_truongnhom()
+
         yeucauduocchon = None
 
-        if self._yeucaunhatdo:
+        if self._yeucaunhatdo and is_truongnhom:
             yeucauduocchon = self._yeucaunhatdo
-        elif self._yeucaukhaikhoang:
+        elif self._yeucaukhaikhoang and is_truongnhom:
             yeucauduocchon = self._yeucaukhaikhoang
         elif self._yeucautancong:
             yeucauduocchon = self._yeucautancong
-
         elif self._yeucautheonhom:
             yeucauduocchon = self._yeucautheonhom
-
-        elif self._yeucautudo:
+        elif self._yeucautudo and is_truongnhom:
             yeucauduocchon = self._yeucautudo
 
         if yeucauduocchon and yeucauduocchon.get("yeucau") == YEUCAUDICHUYENTANCONG and self._is_tudongtheosautruongnhom and not self.moitruong.get_is_truongnhom():
