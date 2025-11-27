@@ -38,6 +38,8 @@ class TacTu:
         self._is_tudongchaylenbandovuachet = True
         self._is_tudongxepchongdo = True
         self._is_phitac = False
+        self._is_tudongkhaikhoang = False
+        self._thoidiemkhaikhoanggannhat = 0.
 
         self._is_uutiennguoichoi = True
 
@@ -632,11 +634,11 @@ class TacTu:
                     self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_CUONGTHETHUAT, diachicosothongtinnhanvatchuacobuffsinhluc, is_khongkiemtracothetancong = True)
                 break
 
-            if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_LINHKHIHOTHE, ), macdinh = True, is_hieuungcoloi = 1) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LINHKHIHOTHE):
-                self._is_tamngungdichuyensudungkynang = True
-                if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
-                    self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_LINHKHIHOTHE)
-                break
+            # if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_LINHKHIHOTHE, ), macdinh = True, is_hieuungcoloi = 1) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LINHKHIHOTHE):
+            #     self._is_tamngungdichuyensudungkynang = True
+            #     if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG):
+            #         self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_LINHKHIHOTHE)
+            #     break
 
             # if phantramsinhlucconlai <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_CAMLOTRI):
             #     self._is_tamngungdichuyensudungkynang = True
@@ -1925,3 +1927,37 @@ class TacTu:
                         self._thoidiemtudongtrieuhoibaothudautien = time.time()
                     break
                 break
+
+    def battat_is_tudongkhaikhoang(self):
+        self._is_tudongkhaikhoang = not self._is_tudongkhaikhoang
+        if self._is_tudongkhaikhoang:
+            phatam("Bật tự động khai khoáng")
+        else:
+            phatam("Tắt tự động khai khoáng")
+
+    def action_tudongkhaikhoang(self):
+        if not self._is_tudongkhaikhoang:
+            return
+
+        if time.time() - self._thoidiemkhaikhoanggannhat < 1.0:
+            return
+
+        i = -1
+        while True:
+            i += 1
+            diachidoituong = self.moitruong.get_diachicosothongtindoituongx(i)
+            if not diachidoituong:
+                break
+
+            tendoituong = self.moitruong.get_tendoituong(diachidoituong)
+
+            if tendoituong and "KhoÃ¡ng" in tendoituong:
+                if self.moitruong.get_khoangcach(diachidoituong) > KHOANGCACHTOIDAHOPLE:
+                    continue
+
+                iddoituong = self.moitruong.get_iddoituong(diachidoituong)
+                if iddoituong > 0:
+                    is_ok = self.moitruong.action_khaikhoang(iddoituong)
+                    if is_ok:
+                        self._thoidiemkhaikhoanggannhat = time.time()
+                    break

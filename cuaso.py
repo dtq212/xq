@@ -146,6 +146,9 @@ class CuaSo:
                 elif keyboard.is_pressed("ctrl+alt+shift+c"):
                     self.battat_chantangcapdo()
                     time.sleep(0.3)
+                elif keyboard.is_pressed("ctrl+alt+shift+k"):
+                    self.battat_tudongkhaikhoang()
+                    time.sleep(0.3)
 
                 elif keyboard.is_pressed("ctrl+alt+c"):
                     self.botoanbotenmuctieutancong()
@@ -175,7 +178,6 @@ class CuaSo:
                     self.battat_is_phitac()
                     time.sleep(0.3)
 
-                # Các tổ hợp phím ngắn (2 phím)
                 elif keyboard.is_pressed("ctrl+f"):
                     self.battat_tudongsudungkynang()
                     time.sleep(0.3)
@@ -237,6 +239,9 @@ class CuaSo:
 
     def battat_chantangcapdo(self):
         self.tactu.battat_is_chantangcapdo()
+
+    def battat_tudongkhaikhoang(self):
+        self.tactu.battat_is_tudongkhaikhoang()
 
     def themtenmuctieutancong(self):
         self.tactu.them_tenmuctieutancong(self.moitruong.get_tennhanvatchichuot())
