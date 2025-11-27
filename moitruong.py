@@ -83,6 +83,7 @@ class MoiTruong:
         self._thoidiemtuthenhanvatdungimgannhat = 0.
         self._thoidiemtuthenhanvattanconggannhat = 0.
         self._thoidiemtuthenhanvatdungimcomuctieugannhat = 0.
+        self._thoidiemtuthenhanvatkhongdichuyengannhat = 0.
         self._thoidiemngungdichuyengannhat = 0.
         self._thoidiemralenhbaothumaosontancong = 0.
 
@@ -247,6 +248,9 @@ class MoiTruong:
     def get_thoidiemtuthenhanvatdungimcomuctieugannhat(self):
         return self._thoidiemtuthenhanvatdungimcomuctieugannhat
 
+    def get_thoidiemtuthenhanvatkhongdichuyen(self):
+        return self._thoidiemtuthenhanvatkhongdichuyengannhat
+
     def action_lammoitrangthaimoitruong(self):
         idnguoichoi = self.get_idnguoichoi()
         if idnguoichoi:
@@ -311,6 +315,8 @@ class MoiTruong:
         if idtuthenhanvat != TUTHENHANVAT_DUNGIM:
             self._thoidiemtuthenhanvatdungimgannhat = time.time()
             self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
+        if idtuthenhanvat == TUTHENHANVAT_DICHUYEN:
+            self._thoidiemtuthenhanvatkhongdichuyengannhat = time.time()
 
         if idtuthenhanvat not in (TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO):
             self._thoidiemtuthenhanvattanconggannhat = time.time()
@@ -2475,6 +2481,12 @@ class MoiTruong:
         if not x:
             return False
         return read_int(self.tientrinh, x + 0x184)
+
+    def get_idhinhthuchanhvibaothumaoson(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0x1B4)
 
     def get_phantramsinhlucconlaibaothumaoson(self):
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
