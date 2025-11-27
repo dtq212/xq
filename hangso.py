@@ -512,7 +512,10 @@ TOAISA = "ToÃ¡i Sa"
 TOAIMABO = "ToÃ¡i Ma Bá»‘"
 NHIEPHONTHACH = "Nhiáº¿p Há»“n Tháº¡ch"
 DASOI = "Da SÃ³i"
-VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUKIMBAOHOP, HOATLACHOAN, TOAIMABO)
+LYHON = "Ly Há»“n"
+LYPHACH = "Ly PhÃ¡ch"
+DONGVATBIMAO = "Äá»™ng Váº­t Bi Mao"
+VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUKIMBAOHOP, HOATLACHOAN, TOAIMABO, LYHON, LYPHACH, DONGVATBIMAO)
 VATPHAMTUDONGNHATCUTHUDAOs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i", " Nháº«n")
 VATPHAMXEPCHONGs = tuple()
 

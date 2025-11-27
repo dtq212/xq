@@ -1555,7 +1555,7 @@ class TacTu:
             if time.time() - self._diachicosovatphamkhongnhat_map.get(diachicosothongtinvatphamxemxet, time.time() - 90) < 60:
                 continue
             tenvatpham = self.moitruong.get_tendoituong(diachicosothongtinvatphamxemxet)
-            if tenvatpham in VATPHAMTUDONGNHATs or (is_bandocuthudao and any(motphantenvatpham2 in tenvatpham for motphantenvatpham2 in VATPHAMTUDONGNHATCUTHUDAOs)):
+            if tenvatpham in VATPHAMTUDONGNHATs or (any(motphantenvatpham2 in tenvatpham for motphantenvatpham2 in VATPHAMTUDONGNHATCUTHUDAOs)):
                 khoangcach = self.moitruong.get_khoangcach(diachicosothongtinvatphamxemxet)
                 if khoangcach <= KHOANGCACHTOANMANHINH:
                     if not self._diachicosovatphamdangnhat or not self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) or khoangcach < self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat):
@@ -1569,7 +1569,7 @@ class TacTu:
         else:
             tenvatpham = ""
 
-        if self._diachicosovatphamdangnhat and self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) and (tenvatpham in VATPHAMTUDONGNHATs or (is_bandocuthudao and any(motphantenvatpham in tenvatpham for motphantenvatpham in VATPHAMTUDONGNHATCUTHUDAOs))) and self._diachicosovatphamdangnhat not in self._diachicosovatphamkhongnhats:
+        if self._diachicosovatphamdangnhat and self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat) and (tenvatpham in VATPHAMTUDONGNHATs or (any(motphantenvatpham in tenvatpham for motphantenvatpham in VATPHAMTUDONGNHATCUTHUDAOs))) and self._diachicosovatphamdangnhat not in self._diachicosovatphamkhongnhats:
             while True:
                 if self.moitruong.get_is_dangclickchuottrai():
                     break
