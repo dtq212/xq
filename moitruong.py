@@ -2531,6 +2531,12 @@ class MoiTruong:
             return False
         return read_int(self.tientrinh, x + 0x1B4)
 
+    def get_idhanhvibaothumaoson(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0x1E0)
+
     def get_phantramsinhlucconlaibaothumaoson(self):
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
         if not x:
