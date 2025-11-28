@@ -143,9 +143,9 @@ class LoopChinh:
         # self.moitruong.action_thucthicaulenh("talk b8e8# info.21")
         # time.sleep(0.25)
 
-        if diachidoituong := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
+        # if diachidoituong := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
             # print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
-            print(self.moitruong.get_tendoituong(diachidoituong))
+            # print(self.moitruong.get_tendoituong(diachidoituong))
         # print(self.moitruong.get_danhsachhieuungnhanvats())
         # print(self.moitruong.get_danhsachvatphamhanhtrang_map())
 
