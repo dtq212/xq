@@ -168,7 +168,6 @@ class TroChoiManager:
     def kiem_tra_du_dieu_kien_manager(self, hwnd):
         try:
             mt = MoiTruong(hwnd)
-            # Kiểm tra xem đã vào game chưa (có thông tin nhân vật)
             if not mt.get_is_nhanvattontai(): return False
             ten = mt.get_tendoituong()
             if not ten or len(ten) == 0: return False
@@ -193,39 +192,32 @@ class TroChoiManager:
                 pass
 
     def check_network_condition(self):
-        # Lấy tất cả cửa sổ game đang mở (bao gồm cả cửa sổ chưa chạy auto)
         tat_ca_cua_so = self._tim_cua_so_game()
 
         co_cua_so_chua_dang_nhap = False
 
         if not tat_ca_cua_so:
-            # Không có game nào mở -> Về mặc định (Wifi)
             self.thiet_lap_mang_bluetooth(100)
             return
 
         for hwnd in tat_ca_cua_so:
             try:
                 mt = MoiTruong(hwnd)
-                # Nếu không lấy được thông tin nhân vật -> Đang ở màn hình đăng nhập
                 if not mt.get_is_nhanvattontai():
                     co_cua_so_chua_dang_nhap = True
                     break
 
-                # Kiểm tra kỹ hơn tên đối tượng
                 ten = mt.get_tendoituong()
                 if not ten or len(ten) == 0:
                     co_cua_so_chua_dang_nhap = True
                     break
             except:
-                # Nếu lỗi khi đọc môi trường (thường do chưa load game xong) -> Coi như chưa đăng nhập
                 co_cua_so_chua_dang_nhap = True
                 break
 
         if co_cua_so_chua_dang_nhap:
-            # Có ít nhất 1 cửa sổ chưa vào game -> Ưu tiên Bluetooth
             self.thiet_lap_mang_bluetooth(1)
         else:
-            # Tất cả các cửa sổ tìm thấy đều đã có nhân vật -> Bỏ ưu tiên Bluetooth
             self.thiet_lap_mang_bluetooth(100)
 
     def run(self):
@@ -252,14 +244,12 @@ class TroChoiManager:
                 for h in dead_hwnds:
                     del self.managed_processes[h]
 
-            # Quét cửa sổ game để kích hoạt Worker (chỉ kích hoạt khi đã vào game)
             game_hwnds = self._tim_cua_so_game()
             for hwnd in game_hwnds:
                 if hwnd not in self.managed_processes:
                     if self.kiem_tra_du_dieu_kien_manager(hwnd):
                         self.spawn_worker_for_hwnd(hwnd)
 
-            # Kiểm tra điều kiện mạng liên tục
             self.check_network_condition()
 
             time.sleep(0.5)
