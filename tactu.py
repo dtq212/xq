@@ -383,6 +383,7 @@ class TacTu:
 
                     is_boquamuctieuhientai = False
 
+                    is_cuongthi = CUONGTHI in tendoituongmuctieudangchon
                     if is_bandokhongtancong:
                         is_boquamuctieuhientai = True
                     elif not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
@@ -395,7 +396,7 @@ class TacTu:
                         is_boquamuctieuhientai = True
                     elif self._tenmuctieukhongtancongs and tendoituongmuctieudangchon in self._tenmuctieukhongtancongs:
                         is_boquamuctieuhientai = True
-                    elif self._is_chidanhnguoichoi and not is_muctieudangchonlanguoichoi and CUONGTHI not in tendoituongmuctieudangchon:
+                    elif self._is_chidanhnguoichoi and not is_muctieudangchonlanguoichoi and not is_cuongthi:
                         is_boquamuctieuhientai = True
                     elif is_muctieudangchonlanguoichoi and self.moitruong.get_phantramsinhlucconlai(diachicosothongtinnhanvatmuctieudangchon) <= 5 and self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TIENTHANVODICH, HIEUUNGKYNANG_KIMCUONGBATHOAIDON,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 1):
                         is_boquamuctieuhientai = True
@@ -403,6 +404,9 @@ class TacTu:
                         is_boquamuctieuhientai = True
                     elif is_muctieudangchonlanguoichoi and self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_ANTHANTHUAT,), macdinh = True, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 1):
                         is_boquamuctieuhientai = True
+                    elif self.moitruong.get_idmaupk() == MAUPK_HOABINH and is_cuongthi:
+                        is_boquamuctieuhientai = True
+
 
                     if is_boquamuctieuhientai:
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
@@ -473,6 +477,9 @@ class TacTu:
                     demmuctieugan += 1
 
                 if diachicosothongtinnhanvatmuctieuxemxet == diachicosothongtinnhanvatmuctieudangchon:
+                    continue
+
+                if self.moitruong.get_idmaupk() == MAUPK_HOABINH and CUONGTHI in tendoituongmuctieuxemxet:
                     continue
 
                 def _thaydoimuctieuhientai():
@@ -2030,3 +2037,39 @@ class TacTu:
                 if time.time() - self._thoidiemkhaikhoanggannhat > 1.0:
                     self.moitruong.action_khaikhoang(iddoituong)
                     self._thoidiemkhaikhoanggannhat = time.time()
+
+    def action_tudongbanrac(self):
+        ten_npc = "Chá»§ Tiá»‡m Táº¡p HÃ³a"
+
+        diachi_npc = self.moitruong.action_timkiemnhanvat(ten_npc)
+        if not diachi_npc:
+            phatam("Không tìm thấy Chủ Tiệm Tạp Hóa")
+            return
+
+        khoangcach = self.moitruong.get_khoangcach(diachi_npc)
+        if khoangcach > 3.0:
+            phatam(f"Đứng quá xa Chủ Tiệm Tạp Hóa ({round(khoangcach, 1)}m)")
+            return
+
+        id_npc = self.moitruong.get_iddoituong(diachi_npc)
+        if not id_npc or id_npc <= 0:
+            return
+
+        npc_hex = hex(id_npc).replace("0x", "")
+        phatam("Bắt đầu bán rác")
+
+        count_sold = 0
+        for i in range(24, SOLUONGVATPHAMHANHTRANGTOIDA):
+            id_item = self.moitruong.get_iddoituongvatphamhanhtrang(i)
+
+            if id_item and id_item > 0:
+                item_hex = hex(id_item).replace("0x", "")
+                caulenh = f"sell {npc_hex}# {item_hex}# 1"
+                self.moitruong.action_thucthicaulenh(caulenh, delay = 0.25)
+                count_sold += 1
+                time.sleep(0.25)
+
+        if count_sold > 0:
+            phatam(f"Đã bán {count_sold} món đồ")
+        else:
+            phatam("Không có đồ để bán từ ô 24")

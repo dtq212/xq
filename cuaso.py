@@ -149,7 +149,9 @@ class CuaSo:
                 elif keyboard.is_pressed("ctrl+alt+shift+k"):
                     self.battat_tudongkhaikhoang()
                     time.sleep(0.3)
-
+                elif keyboard.is_pressed("ctrl+alt+shift+b"):
+                    self.thuchien_tudongbanrac()
+                    time.sleep(0.3)
                 elif keyboard.is_pressed("ctrl+alt+c"):
                     self.botoanbotenmuctieutancong()
                     time.sleep(0.3)
@@ -242,6 +244,9 @@ class CuaSo:
 
     def battat_tudongkhaikhoang(self):
         self.tactu.battat_is_tudongkhaikhoang()
+
+    def thuchien_tudongbanrac(self):
+        self.tactu.action_tudongbanrac()
 
     def themtenmuctieutancong(self):
         self.tactu.them_tenmuctieutancong(self.moitruong.get_tennhanvatchichuot())
