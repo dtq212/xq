@@ -1355,7 +1355,7 @@ class MoiTruong:
 
         return True
 
-    def action_dichuyenvatphamhanhtrang(self, iddoituong, vitri, delay = 0.25):
+    def action_dichuyenvatphamhanhtrang(self, iddoituong, vitri, delay = 0.5):
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
             return False
 
@@ -1463,6 +1463,7 @@ class MoiTruong:
 
     def auto_assemble_ralenhbaothumaosontancong(self, iddoituongbaothumaoson, iddoituongnhanvatmuctieudangchon):
         caulenh = f"pet {hex(iddoituongbaothumaoson)}# 1 {hex(iddoituongnhanvatmuctieudangchon)}#".replace("0x", "")
+        print(f"{self.get_tendoituong()} auto_assemble_ralenhbaothumaosontancong: {caulenh}")
 
         if not self._is_dasetupautoassembleralenhbaothumaosontancong:
             self._diachiautoassembleralenhbaothumaosontancong = self.tientrinh.allocate(128)
@@ -1493,6 +1494,7 @@ class MoiTruong:
 
     def auto_assemble_ralenhbaothumaosontheosau(self, iddoituongbaothumaoson):
         caulenh = f"pet {hex(iddoituongbaothumaoson)}# 2".replace("0x", "")
+        print(f"{self.get_tendoituong()} auto_assemble_ralenhbaothumaosontheosau: {caulenh}")
 
         if not self._is_dasetupautoassembleralenhbaothumaosontheosau:
             self._diachiautoassembleralenhbaothumaosontheosau = self.tientrinh.allocate(128)
@@ -1522,9 +1524,8 @@ class MoiTruong:
         time.sleep(0.05)
 
     def auto_assemble_thaotacnhom(self, idhoatdong, idnguoichoi):
-        print(f"MoiTruong.auto_assemble_thaotacnhom - idhoatdong: {idhoatdong}, idnguoichoi: {idnguoichoi}")
         caulenh = "team {} {}".format(idhoatdong, idnguoichoi)
-        print("{} auto_assemble_thaotacnhom: {} {} {}".format(self.get_tendoituong(), idhoatdong, idnguoichoi, caulenh))
+        print(f"{self.get_tendoituong()} auto_assemble_thaotacnhom: {caulenh}")
         if not self._is_dasetupautoassemblethaotacnhom:
             self._diachiautoassemblethaotacnhom = self.tientrinh.allocate(128)
 
@@ -1554,7 +1555,6 @@ class MoiTruong:
 
     def auto_assemble_sudungkynang(self, idkynang):
         caulenh = "pf {}".format(idkynang)
-        # print("{} auto_assemble_sudungkynang: {} {}".format(self.get_tendoituong(), idkynang, caulenh))
         if not self._is_dasetupautoassemblesudungkynang:
             self._diachiautoassemblesudungkynang = self.tientrinh.allocate(128)
 
@@ -1642,9 +1642,7 @@ class MoiTruong:
         time.sleep(0.05)
 
     def auto_assemble_sudungkynangmuctieukhacnguoichoi(self, idkynang, iddoituong):
-        # print(f"MoiTruong.auto_assemble_sudungkynangmuctieukhacnguoichoi - idkynang: {idkynang}, iddoituong: {iddoituong}")
         caulenh = "pf {} {}#".format(idkynang, hex(iddoituong)).replace("0x", "")
-        # print("{} auto_assemble_sudungkynangmuctieukhacnguoichoi: {} {} {}".format(self.get_tendoituong(), idkynang, iddoituong, caulenh))
         if not self._is_dasetupautoassemblesudungkynangmuctieukhacnguoichoi:
             self._diachiautoassemblesudungkynangmuctieukhacnguoichoi = self.tientrinh.allocate(128)
 
@@ -1673,9 +1671,7 @@ class MoiTruong:
         time.sleep(0.05)
 
     def auto_assemble_sudungkynangtoado(self, idkynang, toadox, toadoy):
-        # print(f"MoiTruong.auto_assemble_sudungkynangtoado - idkynang: {idkynang}, toadox: {toadox}, toadoy: {toadoy}")
         caulenh = "pf {} {},{}".format(idkynang, toadox, toadoy).replace("0x", "")
-        # print("{} auto_assemble_sudungkynangtoado: {} {} {} {}".format(self.get_tendoituong(), idkynang, toadox, toadoy, caulenh))
         if not self._is_dasetupautoassemblesudungkynangtoado:
             self._diachiautoassemblesudungkynangtoado = self.tientrinh.allocate(128)
 
@@ -1704,7 +1700,6 @@ class MoiTruong:
         time.sleep(0.05)
 
     def auto_assemble_trochuyenvoinpc(self, iddoituong, noidungtrochuyen, caulenhtrochuyen = "talk"):
-        print(f"MoiTruong.auto_assemble_trochuyenvoinpc - iddoituong: {iddoituong}, noidungtrochuyen: {noidungtrochuyen}, caulenhtrochuyen: {caulenhtrochuyen}")
         caulenh = "{} {}# {}".format(caulenhtrochuyen, hex(iddoituong), noidungtrochuyen).replace("0x", "")
         print("{} auto_assemble_trochuyenvoinpc: {} {} {}".format(self.get_tendoituong(), iddoituong, noidungtrochuyen, caulenh))
         if not self._is_dasetupautoassembletrochuyenvoinpc:
@@ -1735,7 +1730,6 @@ class MoiTruong:
         time.sleep(0.05)
 
     def auto_assemble_dichuyenvatphamhanhtrang(self, iddoituong, vitri):
-        print(f"MoiTruong.auto_assemble_dichuyenvatphamhanhtrang - iddoituong: {iddoituong}, vitri: {vitri}")
         caulenh = "move {}# {}".format(hex(iddoituong), vitri).replace("0x", "")
         print("{} auto_assemble_dichuyenvatphamhanhtrang: {} {}".format(self.get_tendoituong(), iddoituong, vitri, caulenh))
         if not self._is_dasetupautoassembledichuyenvatphamhanhtrang:
@@ -1766,7 +1760,6 @@ class MoiTruong:
         time.sleep(0.05)
 
     def auto_assemble_sudungvatpham(self, iddoituong, is_boquaxacnhan = False):
-        print(f"MoiTruong.auto_assemble_sudungvatpham - iddoituong: {iddoituong}, is_boquaxacnhan: {is_boquaxacnhan}")
         if not is_boquaxacnhan:
             caulenh = "use {}#".format(hex(iddoituong)).replace("0x", "")
         else:
@@ -1862,8 +1855,7 @@ class MoiTruong:
         time.sleep(0.05)
 
     def auto_assemble_dichuyen(self, x, y):
-        # print(f"MoiTruong.auto_assemble_dichuyen - x: {x}, y: {y}")
-        # print("{} auto_assemble_dichuyen: {} {}".format(self.get_tendoituong(), x, y))
+        print("{} auto_assemble_dichuyen: {} {}".format(self.get_tendoituong(), x, y))
 
         if not self._is_dasetupautoassembledichuyen:
             self._diachiautoassembledichuyen = self.tientrinh.allocate(64)
@@ -2069,7 +2061,7 @@ class MoiTruong:
 
         return is_ok
 
-    def action_dichuyen(self, x, y, delay = 0.05, is_rangbuoctrongmanhinh = False):
+    def action_dichuyen(self, x, y, delay = 0.25, is_rangbuoctrongmanhinh = False):
         if self._is_vohieuhoadichuyen:
             return
 
