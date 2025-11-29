@@ -924,7 +924,7 @@ class MoiTruong:
 
         return read_int(self.tientrinh, diachicosothongtinkynang + idvitrikynang * OFFSET_DIACHICOSOMOIKYNANG + 0x6830)
 
-    def get_is_kynangsansang(self, idvitri_x, idvitri_y, delay = 0.):
+    def get_is_kynangsansang(self, idvitri_x, idvitri_y, delay = 0., is_kiemtranoiluc = False):
         diachicosothongtinkynang = self.get_diachicosothongtinkynang()
         if not diachicosothongtinkynang:
             return False
@@ -933,6 +933,11 @@ class MoiTruong:
         idkynang = read_int(self.tientrinh, diachicosothongtinkynang + idvitrikynang * OFFSET_DIACHICOSOMOIKYNANG + 0x6830)
         is_dahockynang = True
         thoigiangiancach = read_int(self.tientrinh, diachicosothongtinkynang + idvitrikynang * OFFSET_DIACHICOSOMOIKYNANG + 0x6A4C) == 0
+
+        if is_kiemtranoiluc:
+            if monphai := self.get_tenmonphai():
+                if self.get_noilucconlai() < NOILUCYEUCAUKYNANG_MAP.get(monphai, {}).get((idvitri_x, idvitri_y), 50):
+                    return False
 
         return idkynang and is_dahockynang and thoigiangiancach and time.time() - self._thoidiemsudungkynangvitrigannhat_map.get((idvitri_x, idvitri_y), time.time() - delay - 1.) > delay
 
@@ -1341,6 +1346,8 @@ class MoiTruong:
 
         self._thoidiemthucthicaulenhgannhat = time.time()
 
+        # print(f"action_sudungkynangmuctieukhacnguoichoi: {idkynang}")
+
         self.auto_assemble_sudungkynangmuctieukhacnguoichoi(idkynang, iddoituong)
 
         return True
@@ -1433,7 +1440,7 @@ class MoiTruong:
         return True
 
     def auto_assemble_thucthicaulenh(self, caulenh):
-        print(f"auto_assemble_thucthicaulenh: {caulenh}")
+        # print(f"auto_assemble_thucthicaulenh: {caulenh}")
         if not self._is_dasetupautoassemblethucthicaulenh:
             self._diachiautoassemblethucthicaulenh = self.tientrinh.allocate(128)
 
@@ -1731,7 +1738,7 @@ class MoiTruong:
 
     def auto_assemble_dichuyenvatphamhanhtrang(self, iddoituong, vitri):
         caulenh = "move {}# {}".format(hex(iddoituong), vitri).replace("0x", "")
-        print("{} auto_assemble_dichuyenvatphamhanhtrang: {} {}".format(self.get_tendoituong(), iddoituong, vitri, caulenh))
+        # print("{} auto_assemble_dichuyenvatphamhanhtrang: {} {}".format(self.get_tendoituong(), iddoituong, vitri, caulenh))
         if not self._is_dasetupautoassembledichuyenvatphamhanhtrang:
             self._diachiautoassembledichuyenvatphamhanhtrang = self.tientrinh.allocate(128)
 
@@ -2027,8 +2034,6 @@ class MoiTruong:
         if time.time() - self._thoidiemsudungkynanggannhat < delay:
             return
 
-        print("action_sudungkynangvitri")
-
         idvitri = (idvitri_x, idvitri_y)
         if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
             return
@@ -2063,7 +2068,7 @@ class MoiTruong:
 
         return is_ok
 
-    def action_dichuyen(self, x, y, delay = 0.25, is_rangbuoctrongmanhinh = False):
+    def action_dichuyen(self, x, y, delay = 0.5, is_rangbuoctrongmanhinh = False):
         if self._is_vohieuhoadichuyen:
             return
 

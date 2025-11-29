@@ -144,14 +144,19 @@ class LoopChinh:
         # time.sleep(0.25)
 
         # if diachidoituong := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
-            # print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
+        #     print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
             # print(self.moitruong.get_tendoituong(diachidoituong))
         # print(self.moitruong.get_danhsachhieuungnhanvats())
         # print(self.moitruong.get_danhsachvatphamhanhtrang_map())
 
         # print(self.moitruong.get_idkynang(0, 0))
 
+        # if self.moitruong.get_tendoituong() == "Dasshu":
+        #     if diachi := self.moitruong.action_timkiemnhanvat(iddoituong = self.moitruong.get_iddoituongbaothumaoson()):
+        #         print(hex(diachi))
 
+        # if self.moitruong.get_tendoituong() == "Laotsezu4":
+        #     print(self.moitruong.get_danhsachhieuungnhanvats())
 
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
