@@ -12,6 +12,7 @@ from tienich import taithietlap as util_taithietlap, phatam
 
 class TacTu:
     def __init__(self, moitruong: MoiTruong):
+        self._thoidiemlogdebug = 0.
         self._is_tudongdieukhienbaothumaoson = True
         self._solanthatbaikhaithien = 0
         self._thoidiembiphatkhaithien = 0.
@@ -109,6 +110,11 @@ class TacTu:
         self._thoidiemthaydoidiemdanhxungquanhgannhat = time.time()
         self._khoangcachdiemdanhxungquanh = 27.
         self._thoidiemloggomquai = 0.
+
+        self._idmuctieubiloi_map = {}  # Danh sách đen {id: thời_gian_bị_phạt}
+        self._idmuctieudangtheokiemtraket = 0  # ID đang theo dõi để check kẹt
+        self._thoidiemdungimkiemtraket = 0.  # Thời điểm bắt đầu đứng im
+
         self._yeucaunhatdo = None
         self._yeucautheonhom = None
         self._yeucautancong = None
@@ -204,31 +210,93 @@ class TacTu:
                 self._is_chantangcapdo = thietlap["_is_chantangcapdo"]
 
     def action_xulydichuyenuutien(self):
+        is_log = False
+        if time.time() - self._thoidiemlogdebug > 2.0:
+            is_log = True
+            self._thoidiemlogdebug = time.time()
+
         if self.moitruong.get_is_nhanvatdachet():
+            if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Nhân vật đang CHẾT")
             return
         if self.moitruong.get_is_dangclickchuottrai():
+            if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Đang CLICK CHUỘT TRÁI")
             return
         if self.moitruong.get_is_dangvankhi():
+            if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Đang VẬN KHÍ")
             return
         if self._is_tamngungdichuyensudungkynang:
+            if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Đang tạm ngưng để dùng SKILL")
             return
 
         is_anhhuongboitruongnhom = self._is_tudongtheosautruongnhom and self.moitruong.get_is_dangnamtrongnhom() and not self.moitruong.get_is_truongnhom()
 
         yeucauduocchon = None
+        lydochon = "KHÔNG CÓ"
 
         if self._yeucaunhatdo and not is_anhhuongboitruongnhom:
             yeucauduocchon = self._yeucaunhatdo
+            lydochon = "NHẶT ĐỒ"
         elif self._yeucaukhaikhoang and not is_anhhuongboitruongnhom:
             yeucauduocchon = self._yeucaukhaikhoang
+            lydochon = "KHAI KHOÁNG"
         elif self._yeucaugomquai:
             yeucauduocchon = self._yeucaugomquai
+            lydochon = "GOM QUÁI"
         elif self._yeucautancong:
             yeucauduocchon = self._yeucautancong
+            lydochon = "TẤN CÔNG"
         elif self._yeucautheonhom:
             yeucauduocchon = self._yeucautheonhom
+            lydochon = "THEO NHÓM"
         elif self._yeucautudo and not is_anhhuongboitruongnhom:
             yeucauduocchon = self._yeucautudo
+            lydochon = "ĐI DẠO (TỰ DO)"
+
+        if is_log:
+            msg_dich = str(yeucauduocchon.get("toadodich")) if yeucauduocchon else "None"
+            print(f"[DEBUG-MOVE] Quyết định: {lydochon} | Đích: {msg_dich}")
+
+            if self._yeucaugomquai and lydochon == "NHẶT ĐỒ":
+                print("[DEBUG-MOVE] CẢNH BÁO: Gom quái bị Nhặt đồ chiếm quyền ưu tiên!")
+
+        iddoituongmuctieudanggom = 0
+
+        if yeucauduocchon:
+            loaiyeucau = yeucauduocchon.get("yeucau")
+
+            if loaiyeucau in (YEUCAUDICHUYENTANCONG, YEUCAUDICHUYENGOMQUAI):
+                diachimuctieu = yeucauduocchon.get("diachimuctieu")
+                if diachimuctieu:
+                    iddoituongmuctieudanggom = self.moitruong.get_iddoituong(diachimuctieu)
+                else:
+                    iddoituongmuctieudanggom = yeucauduocchon.get("idmuctieu", 0)
+
+        if iddoituongmuctieudanggom > 0:
+            if iddoituongmuctieudanggom != self._idmuctieudangtheokiemtraket:
+                self._idmuctieudangtheokiemtraket = iddoituongmuctieudanggom
+                self._thoidiemdungimkiemtraket = 0.
+            else:
+                if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
+                    hientai = time.time()
+                    if self._thoidiemdungimkiemtraket == 0.:
+                        self._thoidiemdungimkiemtraket = hientai
+
+                    elif hientai - self._thoidiemdungimkiemtraket > 3.0:
+                        print(f"[DEBUG-MOVE] Kẹt tường khi đến mục tiêu {hex(iddoituongmuctieudanggom)}. Blacklist 10s.")
+
+                        self._idmuctieubiloi_map[iddoituongmuctieudanggom] = hientai
+
+                        self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
+
+                        self._idmuctieudangtheokiemtraket = 0
+                        self._thoidiemdungimkiemtraket = 0.
+
+                        return
+                else:
+                    self._thoidiemdungimkiemtraket = 0.
+        else:
+            self._idmuctieudangtheokiemtraket = 0
+            self._thoidiemdungimkiemtraket = 0.
 
         if yeucauduocchon and yeucauduocchon.get("yeucau") == YEUCAUDICHUYENTANCONG and is_anhhuongboitruongnhom:
             x_truongnhom = self.moitruong.get_toadoxtruongnhom()
@@ -293,7 +361,7 @@ class TacTu:
                         diachimuctieu,
                         khoangcachtoithieu
                     )
-
+                    
     def _action_theonhom(self):
         self._yeucautheonhom = None
 
@@ -386,6 +454,11 @@ class TacTu:
                     else:
                         self._idmuctieudangdichuyenkhaithien = 0
 
+            hientai = time.time()
+            idcanxoas = [k for k, v in self._idmuctieubiloi_map.items() if hientai - v > 10.0]
+            for k in idcanxoas:
+                del self._idmuctieubiloi_map[k]
+
             i = 0
             demmuctieugan = 0
 
@@ -457,6 +530,10 @@ class TacTu:
                                     self._thoidiemphatamanthan = time.time()
 
                 if not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieuxemxet):
+                    continue
+
+                iddoituongmuctieuxemxet = self.moitruong.get_iddoituong(diachicosothongtinnhanvatmuctieuxemxet)
+                if iddoituongmuctieuxemxet in self._idmuctieubiloi_map:
                     continue
 
                 tendoituongmuctieuxemxet = self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieuxemxet)
@@ -2353,6 +2430,11 @@ class TacTu:
 
         is_coquaixungquanh = False
 
+        hientai = time.time()
+        idcanxoas = [k for k, v in self._idmuctieubiloi_map.items() if hientai - v > 10.0]
+        for k in idcanxoas:
+            del self._idmuctieubiloi_map[k]
+
         while True:
             i += 1
             diachidoituongxemxet = self.moitruong.get_diachicosothongtindoituongx(i)
@@ -2362,6 +2444,9 @@ class TacTu:
             if self.moitruong.get_idloainhanvat(diachidoituongxemxet) != LOAIMUCTIEU_QUAIVATHOACNPC: continue
 
             iddoituongquai = self.moitruong.get_iddoituong(diachidoituongxemxet)
+            if iddoituongquai in self._idmuctieubiloi_map:
+                continue
+
             khoangcach = self.moitruong.get_khoangcach(diachidoituongxemxet)
 
             if khoangcach <= KHOANGCACHTOANMANHINH:
@@ -2423,7 +2508,8 @@ class TacTu:
                 self._yeucaugomquai = {
                     "yeucau": YEUCAUDICHUYENGOMQUAI,
                     "toadodich": (x_quai, y_quai),
-                    "khoangcachtoida": 0.
+                    "khoangcachtoida": 0.,
+                    "idmuctieu": idquaicankeogannhat
                 }
         else:
             if is_canghilog: print("[DEBUG-GOM] Đang bật gom nhưng không tìm thấy mục tiêu hợp lệ.")

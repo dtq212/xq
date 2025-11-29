@@ -1839,9 +1839,9 @@ class MoiTruong:
         time.sleep(0.05)
 
     def auto_assemble_nhatdotoado(self, toadox, toadoy):
-        print(f"MoiTruong.auto_assemble_nhatdotoado - toadox: {toadox}, toadoy: {toadoy}")
+        # print(f"MoiTruong.auto_assemble_nhatdotoado - toadox: {toadox}, toadoy: {toadoy}")
         caulenh = "get {} {}".format(toadox, toadoy)
-        print("{} auto_assemble_nhatdotoado: {} {} {}".format(self.get_tendoituong(), toadox, toadoy, caulenh))
+        # print("{} auto_assemble_nhatdotoado: {} {} {}".format(self.get_tendoituong(), toadox, toadoy, caulenh))
         if not self._is_dasetupautoassemblenhatdotoado:
             self._diachiautoassemblenhatdotoado = self.tientrinh.allocate(128)
 
