@@ -570,6 +570,10 @@ class TacTu:
                 self._thoidiemsudungsotriduocgannhat = time.time()
                 self.action_sudungvatphamhanhtrang(HOATLACHOAN)
 
+            if self.moitruong.get_tenmonphai() == "camvequan" and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THIENNGUYENDON, ), macdinh = True, is_hieuungcoloi = True):
+                self._thoidiemsudungsotriduocgannhat = time.time()
+                self.action_sudungvatphamhanhtrang(THIENNGUYENDON)
+
     def _action_sudungkynang(self):
         tenmonphai = self.moitruong.get_tenmonphai()
 
@@ -2000,7 +2004,7 @@ class TacTu:
 
             diachicosothongtinnhanvatchutiemsuachua = self.moitruong.action_timkiemnhanvat(CHUTIEMSUACHUA)
 
-            if diachicosothongtinnhanvatchutiemsuachua and self.moitruong.get_khoangcach(diachicosothongtinnhanvatchutiemsuachua) <= 6:
+            if diachicosothongtinnhanvatchutiemsuachua and self.moitruong.get_khoangcach(diachicosothongtinnhanvatchutiemsuachua) <= 3.0:
                 self.moitruong.action_suado(diachicosothongtinnhanvatchutiemsuachua)
 
     def action_sudungvatphamhanhtrang(self, tenvatpham, is_boquaxacnhan = False, delay = 0.25):
