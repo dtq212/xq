@@ -155,8 +155,8 @@ class LoopChinh:
         #     if diachi := self.moitruong.action_timkiemnhanvat(iddoituong = self.moitruong.get_iddoituongbaothumaoson()):
         #         print(hex(diachi))
 
-        if self.moitruong.get_tendoituong() == "Laotsezu4":
-            print(self.moitruong.get_danhsachhieuungnhanvats())
+        # if self.moitruong.get_tendoituong() == "Laotsezu4":
+        #     print(self.moitruong.get_danhsachhieuungnhanvats())
 
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):

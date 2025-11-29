@@ -172,6 +172,12 @@ class MoiTruong:
             return False
         return read_int(self.tientrinh, x + 0x1538)
 
+    def get_nguyenkhiconlai(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0x1560)
+
     def get_capdonhanvat(self):
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
         if not x:
@@ -936,7 +942,7 @@ class MoiTruong:
 
         if is_kiemtranoiluc:
             if monphai := self.get_tenmonphai():
-                if self.get_noilucconlai() < NOILUCYEUCAUKYNANG_MAP.get(monphai, {}).get((idvitri_x, idvitri_y), 50):
+                if self.get_noilucconlai() < NGUYENKHIYEUCAUKYNANGCAMVEQUAN_MAP.get(monphai, {}).get((idvitri_x, idvitri_y), 50):
                     return False
 
         return idkynang and is_dahockynang and thoigiangiancach and time.time() - self._thoidiemsudungkynangvitrigannhat_map.get((idvitri_x, idvitri_y), time.time() - delay - 1.) > delay
