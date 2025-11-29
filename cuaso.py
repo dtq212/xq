@@ -216,6 +216,10 @@ class CuaSo:
                     self.battat_vohieuhoadichuyen()
                     time.sleep(0.3)
 
+                elif keyboard.is_pressed("ctrl+alt+shift+g"):
+                    self.battat_tudonggomquai()
+                    time.sleep(0.3)
+
             time.sleep(0.05)
 
     def battat_tudongsudungkynang(self):
@@ -280,3 +284,6 @@ class CuaSo:
 
     def tatpk(self):
         self.tactu.action_tatpk()
+
+    def battat_tudonggomquai(self):
+        self.tactu.battat_tudonggomquai()

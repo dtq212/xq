@@ -132,6 +132,7 @@ class LoopChinh:
             return
 
         self.tactu._action_theonhom()
+        self.tactu.action_xulygomquai()
         self.tactu._action_sudungkynang()
 
         # self.moitruong.action_thucthicaulenh("talk b8e8# info.58")

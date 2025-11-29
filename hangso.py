@@ -150,6 +150,9 @@ VITRIKYNANG_TRIEUHOIQUYTOT = (1, 1)
 VITRIKYNANG_TRIEUHOITHIENBINH = (2, 1)
 VITRIKYNANG_TRIEUHOICUONGTHI = (3, 1)
 
+VITRIKYNANG_HUYETTE = (3, 3)
+VITRIKYNANG_MENHTE = (4, 3)
+
 VITRIKYNANG_HUYETMACHU = (0, 2)
 VITRIKYNANG_THUCGIAP = (1, 2)
 VITRIKYNANG_THUCCOT = (2, 2)
@@ -547,9 +550,11 @@ LYPHACH = "Ly PhÃ¡ch"
 DONGVATBIMAO = "Äá»™ng Váº­t Bi Mao"
 
 CUONGTHI = "CÆ°Æ¡ng Thi"
+QUYTOT = "Quá»· Tá»‘t"
+THIENBINH = "ThiÃªn Binh"
 
 VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUKIMBAOHOP, HOATLACHOAN, TOAIMABO, LYHON, LYPHACH, DONGVATBIMAO)
-VATPHAMTUDONGNHATCUTHUDAOs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i", " Nháº«n")
+VATPHAMTUDONGNHATCUTHUDAOs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i", " Nháº«n", " TiÃªu")
 VATPHAMXEPCHONGs = tuple()
 
 VOTUHOCNHANs = ("VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 30)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 40)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 50)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 60)", )
@@ -561,6 +566,8 @@ YEUCAUDICHUYENNHATDO = 1
 YEUCAUDICHUYENTANCONG = 2
 YEUCAUDICHUYENDICHUYENTUDO = 3
 YEUCAUDICHUYENTHEONHOM = 4
+YEUCAUDICHUYENGOMQUAI = 5
+YEUCAUDICHUYENGOMQUAI = 5
 
 KIEUDICHUYEN_GIUKHOANGCACHTOIDA = 1
 KIEUDICHUYEN_GIUKHOANGCACHTOITHIEU = 2
