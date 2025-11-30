@@ -554,6 +554,7 @@ BUAGIAY = "BÃ¹a Giáº¥y"
 CUONGTHI = "CÆ°Æ¡ng Thi"
 QUYTOT = "Quá»· Tá»‘t"
 THIENBINH = "ThiÃªn Binh"
+THIENTHANTHANH = "Tháº§n ThÃº - Thá»"
 
 VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUKIMBAOHOP, HOATLACHOAN, TOAIMABO, LYHON, LYPHACH, DONGVATBIMAO)
 VATPHAMTUDONGNHATCUTHUDAOs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i", " Nháº«n", " TiÃªu")
