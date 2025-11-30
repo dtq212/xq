@@ -1983,6 +1983,10 @@ class TacTu:
     def _action_dichuyentudo(self):
         yeucautudomoi = None
 
+        if self.moitruong.get_idbandohientai() in BANDOKHONGTANCONGs:
+            self._yeucautudo = None
+            return
+
         if not self._is_tudongdichuyendiemdanhxungquanh:
             self._yeucautudo = None
             return
@@ -2442,6 +2446,12 @@ class TacTu:
         yeucaugomquaimoi = None
 
         if not self._is_tudonggomquai:
+            self._is_danggomquai = False
+            self._yeucaugomquai = None
+            self._idquaidangkeo = 0
+            return
+
+        if self.moitruong.get_idbandohientai() in BANDOKHONGTANCONGs:
             self._is_danggomquai = False
             self._yeucaugomquai = None
             self._idquaidangkeo = 0
