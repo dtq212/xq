@@ -212,6 +212,7 @@ class LoopPhu:
         self.tactu.action_tudongdoimaupk()
         self.tactu.action_tudongsuado()
         self.tactu.action_tudongvutdo()
+        self.tactu.action_xulyveban_maoson()
         self.tactu.action_tudongkhaikhoang()
 
         self.tactu.action_tudongtrieuhoibaothudautien()
