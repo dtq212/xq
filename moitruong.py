@@ -174,6 +174,11 @@ class MoiTruong:
             return False
         return read_int(self.tientrinh, x + 0x1538)
 
+    def get_phantramnoilucconlai(self):
+        if noiluctoida := self.get_noiluctoida():
+            return self.get_noilucconlai() * 100. / noiluctoida
+        return 0
+
     def get_nguyenkhiconlai(self):
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
         if not x:
