@@ -161,6 +161,8 @@ class TacTu:
         self._thoidiem_batdau_check_ket = 0.
 
         self._idquaigomdautien = 0
+        self._thoidiemphatamlacmapgannhat = 0.
+        self._thoidiemphatamdayhanhtrang = 0.
 
     def __del__(self):
         try:
@@ -1960,6 +1962,10 @@ class TacTu:
             return
 
         if self.moitruong.get_is_dayhanhtrang():
+            if time.time() - self._thoidiemphatamdayhanhtrang > 5.0:
+                phatam("Hành trang đầy")
+                self._thoidiemphatamdayhanhtrang = time.time()
+
             self._diachicosovatphamdangnhat = False
             self._yeucaunhatdo = None
             return
@@ -2021,7 +2027,7 @@ class TacTu:
                 "khoangcachtoida": 0
             }
 
-            if khoangcach <= 2.5:
+            if khoangcach <= 3.0:
                 if time.time() - self._thoidiemnhatdogannhat_map.get(self._diachicosovatphamdangnhat, 0) > 0.2:
                     self.moitruong.action_nhatdo(self._diachicosovatphamdangnhat)
                     self._thoidiemnhatdogannhat_map[self._diachicosovatphamdangnhat] = time.time()
@@ -2069,6 +2075,12 @@ class TacTu:
 
             diemdanhxungquanhbandos = [dd for dd in diemdanhxungquanhs if dd[2] == idbandohientai]
 
+            if not diemdanhxungquanhbandos:
+                if time.time() - self._thoidiemphatamlacmapgannhat > 5.0:
+                    phatam("Lạc sang bản đồ lạ rồi")
+                    self._thoidiemphatamlacmapgannhat = time.time()
+                break
+                
             if diemdanhxungquanhbandos:
                 is_cantimdiemgannhat = False
 
