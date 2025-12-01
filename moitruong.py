@@ -1878,11 +1878,13 @@ class MoiTruong:
     def auto_assemble_dichuyen(self, x, y):
         # print("{} auto_assemble_dichuyen: {} {}".format(self.get_tendoituong(), x, y))
 
-        # if x == self._xdichuyengannhat and y == self._ydichuyengannhat:
-        #     return
+        if x == self._xdichuyengannhat and y == self._ydichuyengannhat:
+            if time.time() - self._thoidiemboquadichuyencungtoadogannhat < 1.0:
+                return
 
         self._xdichuyengannhat = x
         self._ydichuyengannhat = y
+        self._thoidiemboquadichuyencungtoadogannhat = time.time()
 
         if not self._is_dasetupautoassembledichuyen:
             self._diachiautoassembledichuyen = self.tientrinh.allocate(64)
