@@ -53,7 +53,7 @@ class TacTu:
         self._idbandolanquetkhaikhoangtruoc = 0
         self._is_nhieumuctieugan = False
         self._soluongnhieumuctieu = 4
-        self._soluongquaigomtoithieu = self._soluongnhieumuctieu + 1
+        self._soluongquaigomtoithieu = 4
         self._is_tudonggomquai = False
         self._is_danggomquai = False
         self._danhsachidquaidagom = set()
@@ -264,16 +264,18 @@ class TacTu:
             if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Đang tạm ngưng để về bán")
             return
 
-        if time.time() - self._thoidiemgapnguoichoigannhat < 5. and self.moitruong.get_idbandohientai() in BANDOCUTHUDAOs:
+        is_anhhuongboitruongnhom = self._is_tudongtheosautruongnhom and self.moitruong.get_is_dangnamtrongnhom() and not self.moitruong.get_is_truongnhom()
+
+        is_yeucaunhatdo = self._yeucaunhatdo and not is_anhhuongboitruongnhom
+
+        if time.time() - self._thoidiemgapnguoichoigannhat < 2.5 and self.moitruong.get_idbandohientai() in BANDOCUTHUDAOs and not is_yeucaunhatdo:
             if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Bắt gặp người chơi trên bản đồ cự thú đảo")
             return
-
-        is_anhhuongboitruongnhom = self._is_tudongtheosautruongnhom and self.moitruong.get_is_dangnamtrongnhom() and not self.moitruong.get_is_truongnhom()
 
         yeucauduocchon = None
         lydochon = "KHÔNG CÓ"
 
-        if self._yeucaunhatdo and not is_anhhuongboitruongnhom:
+        if is_yeucaunhatdo:
             yeucauduocchon = self._yeucaunhatdo
             lydochon = "NHẶT ĐỒ"
         elif self._yeucaukhaikhoang and not is_anhhuongboitruongnhom:
@@ -2331,10 +2333,12 @@ class TacTu:
                 # if idhinhthuchanhvibaothumaoson:
                 #     self.moitruong.action_thucthicaulenh(f"pet {hex(iddoituongbaothumaoson)}# mode 0".replace("0x", ""))
 
-                if diachicosothongtinnhanvatmuctieudangchon := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
+                if self._is_danggomquai:
+                    self.moitruong.action_ralenhbaothumaosontheosau(iddoituongbaothumaoson)
+                elif diachicosothongtinnhanvatmuctieudangchon := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
                     if self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon) and self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon) <= KHOANGCACHTOANMANHINH:
                         if iddoituongnhanvatmuctieudangchon := self.moitruong.get_iddoituong(diachicosothongtinnhanvatmuctieudangchon):
-                            if self.moitruong.get_idbandohientai() not in BANDOCUTHUDAOs or time.time() - self._thoidiemphatamanthan > 5. or self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon) <= 4.5:
+                            if self.moitruong.get_idbandohientai() not in BANDOCUTHUDAOs or time.time() - self._thoidiemgapnguoichoigannhat > 2.5 or self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon) <= 4.5:
                                 self.moitruong.action_ralenhbaothumaosontancong(iddoituongbaothumaoson, iddoituongnhanvatmuctieudangchon)
 
                 break
