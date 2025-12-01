@@ -880,12 +880,12 @@ class TacTu:
                         if phantramnoiluc > 25 and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_DONGIAPTRAN) and ("Trá»™m Báº£o" in self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon) or self._is_nhieumuctieugan):
                             self._is_tamngungdichuyensudungkynang = True
                             if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG) and time.time() - self.moitruong.get_thoidiemtuthenhanvatkhongdichuyen() > 0.25:
-                                self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_DONGIAPTRAN, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach - random.randint(-1, 1))
+                                self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_DONGIAPTRAN, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach - random.randint(0, 1))
                             break
                         if phantramnoiluc > 25 and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KYMONTRAN) and ("Trá»™m Báº£o" in self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon) or self._is_nhieumuctieugan):
                             self._is_tamngungdichuyensudungkynang = True
                             if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG) and time.time() - self.moitruong.get_thoidiemtuthenhanvatkhongdichuyen() > 0.25:
-                                self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_KYMONTRAN, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach - random.randint(-1, 1))
+                                self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_KYMONTRAN, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach - random.randint(-1, 0))
                             break
                         if phantramnoiluc > 25 and not is_anhhuongboitruongnhom and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHAYMAU,), diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, macdinh = True, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHONGVUKINHTHIEN) and "Trá»™m Báº£o" in self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon) and not self._is_nhieumuctieugan:
                             self._is_tamngungdichuyensudungkynang = True

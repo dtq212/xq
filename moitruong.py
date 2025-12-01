@@ -121,6 +121,7 @@ class MoiTruong:
         self._thoidiemcapnhattennguoichoithanhviennhom = 0.
         self._xdichuyengannhat = -1
         self._ydichuyengannhat = -1
+        self._thoidiemboquadichuyencungtoadogannhat = 0.
 
     def __del__(self):
         def safe_free(flag_name, addr_name):
@@ -1877,8 +1878,8 @@ class MoiTruong:
     def auto_assemble_dichuyen(self, x, y):
         # print("{} auto_assemble_dichuyen: {} {}".format(self.get_tendoituong(), x, y))
 
-        if x == self._xdichuyengannhat and y == self._ydichuyengannhat:
-            return
+        # if x == self._xdichuyengannhat and y == self._ydichuyengannhat:
+        #     return
 
         self._xdichuyengannhat = x
         self._ydichuyengannhat = y
