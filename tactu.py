@@ -12,6 +12,7 @@ from tienich import taithietlap as util_taithietlap, phatam
 
 class TacTu:
     def __init__(self, moitruong: MoiTruong):
+        self._thoidiembatdaudendiem = 0.
         self._thoidiemlogdebug = 0.
         self._is_tudongdieukhienbaothumaoson = True
         self._solanthatbaikhaithien = 0
@@ -165,7 +166,6 @@ class TacTu:
         self._thoidiemphatamdayhanhtrang = 0.
 
         self._thoidiemgapnguoichoigannhat = 0.
-        self._thoidiembatdaudendiem = 0.
 
     def __del__(self):
         try:
@@ -549,12 +549,6 @@ class TacTu:
                     elif self.moitruong.get_idmaupk() == MAUPK_HOABINH and is_baothumaoson:
                         is_boquamuctieuhientai = True
 
-                    if not is_boquamuctieuhientai and self._is_tudongdichuyendiemdanhxungquanh and self._diemdanhxungquanhhientai:
-                        if self._diemdanhxungquanhhientai[2] == idbandohientai:
-                            khoangcachtoineo = self.moitruong.get_khoangcachdiem(self._diemdanhxungquanhhientai[0], self._diemdanhxungquanhhientai[1], diachicosothongtinnhanvatmuctieudangchon)
-                            if khoangcachtoineo > self._khoangcachtimkiemmuctieu:
-                                is_boquamuctieuhientai = True
-
                     if is_boquamuctieuhientai:
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
                         diachicosothongtinnhanvatmuctieudangchon = 0
@@ -599,12 +593,6 @@ class TacTu:
                 tendoituongmuctieuxemxet = self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieuxemxet)
                 if tendoituongmuctieuxemxet in TENNHANVATKHONGTANCONGs:
                     continue
-
-                if self._is_tudongdichuyendiemdanhxungquanh and self._diemdanhxungquanhhientai:
-                    if self._diemdanhxungquanhhientai[2] == idbandohientai:
-                        khoangcachtoineo = self.moitruong.get_khoangcachdiem(self._diemdanhxungquanhhientai[0], self._diemdanhxungquanhhientai[1], diachicosothongtinnhanvatmuctieuxemxet)
-                        if khoangcachtoineo > self._khoangcachtimkiemmuctieu:
-                            continue
 
                 if self._is_phitac:
                     if not is_muctieudangxemxetlanguoichoi and tendoituongmuctieuxemxet not in VOTUHOCNHANs:
@@ -2189,7 +2177,7 @@ class TacTu:
                 elif self._diemdanhxungquanhhientai[2] != idbandohientai:
                     is_cantimdiemgannhat = True
 
-                if self._thoidiem_batdau_den_diem == 0:
+                if self._thoidiembatdaudendiem == 0:
                     self._thoidiembatdaudendiem = time.time()
 
                 if is_cantimdiemgannhat:
@@ -2204,7 +2192,7 @@ class TacTu:
 
                     self._iddiemdanhxungquanhhientai = iddiemdanhxungquanhgannhat
                     self._diemdanhxungquanhhientai = diemdanhxungquanhbandos[iddiemdanhxungquanhgannhat]
-                    self._thoidiembatdaudendiem = time.time()  # Reset timer khi chọn điểm mới
+                    self._thoidiembatdaudendiem = time.time()
 
                 khoangcachdendiemhientai = self.moitruong.get_khoangcachdiem(*self._diemdanhxungquanhhientai[:-1])
 
@@ -2216,8 +2204,8 @@ class TacTu:
                     if time.time() - self._thoidiembatdaudendiem > 10.0:
                         canchuyendendiemtieptheo = True
                     else:
-                        is_vuamoidaokhoang = (time.time() - self._thoidiemkhaikhoanggannhat < 6.0)
-                        if not is_vuamoidaokhoang:
+                        is_vua_moi_dao_khoang = (time.time() - self._thoidiemkhaikhoanggannhat < 6.0)
+                        if not is_vua_moi_dao_khoang:
                             tuthe_hien_tai = self.moitruong.get_idtuthenhanvat()
                             if tuthe_hien_tai == TUTHENHANVAT_DUNGIM:
                                 thoigian_dung_im = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimgannhat()
