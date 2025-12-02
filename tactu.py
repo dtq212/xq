@@ -165,6 +165,7 @@ class TacTu:
         self._thoidiemphatamdayhanhtrang = 0.
 
         self._thoidiemgapnguoichoigannhat = 0.
+        self._thoidiembatdaudendiem = 0.
 
     def __del__(self):
         try:
@@ -548,6 +549,12 @@ class TacTu:
                     elif self.moitruong.get_idmaupk() == MAUPK_HOABINH and is_baothumaoson:
                         is_boquamuctieuhientai = True
 
+                    if not is_boquamuctieuhientai and self._is_tudongdichuyendiemdanhxungquanh and self._diemdanhxungquanhhientai:
+                        if self._diemdanhxungquanhhientai[2] == idbandohientai:
+                            khoangcachtoineo = self.moitruong.get_khoangcachdiem(self._diemdanhxungquanhhientai[0], self._diemdanhxungquanhhientai[1], diachicosothongtinnhanvatmuctieudangchon)
+                            if khoangcachtoineo > self._khoangcachtimkiemmuctieu:
+                                is_boquamuctieuhientai = True
+
                     if is_boquamuctieuhientai:
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
                         diachicosothongtinnhanvatmuctieudangchon = 0
@@ -592,6 +599,12 @@ class TacTu:
                 tendoituongmuctieuxemxet = self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieuxemxet)
                 if tendoituongmuctieuxemxet in TENNHANVATKHONGTANCONGs:
                     continue
+
+                if self._is_tudongdichuyendiemdanhxungquanh and self._diemdanhxungquanhhientai:
+                    if self._diemdanhxungquanhhientai[2] == idbandohientai:
+                        khoangcachtoineo = self.moitruong.get_khoangcachdiem(self._diemdanhxungquanhhientai[0], self._diemdanhxungquanhhientai[1], diachicosothongtinnhanvatmuctieuxemxet)
+                        if khoangcachtoineo > self._khoangcachtimkiemmuctieu:
+                            continue
 
                 if self._is_phitac:
                     if not is_muctieudangxemxetlanguoichoi and tendoituongmuctieuxemxet not in VOTUHOCNHANs:
@@ -1535,7 +1548,7 @@ class TacTu:
                         if self._solanthatbaikhaithien == 3:
                             self._thoidiembiphatkhaithien = time.time()
 
-                is_duocphepsudungkhaithientichdia = is_khaithientichdiasansang and self._solanthatbaikhaithien < 3 and is_muctieudangchonlanguoichoi
+                is_duocphepsudungkhaithientichdia = is_khaithientichdiasansang and self._solanthatbaikhaithien < 3 #and is_muctieudangchonlanguoichoi
                 is_sudungkhaithientichdiaantoan = not is_khaithientichdiabicam or is_sudungkhaithientichdiathatbai
                 is_luutinhtruymangsansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG)
 
@@ -2176,6 +2189,9 @@ class TacTu:
                 elif self._diemdanhxungquanhhientai[2] != idbandohientai:
                     is_cantimdiemgannhat = True
 
+                if self._thoidiem_batdau_den_diem == 0:
+                    self._thoidiembatdaudendiem = time.time()
+
                 if is_cantimdiemgannhat:
                     khoangcachgannhat = 999999.
                     iddiemdanhxungquanhgannhat = 0
@@ -2188,6 +2204,7 @@ class TacTu:
 
                     self._iddiemdanhxungquanhhientai = iddiemdanhxungquanhgannhat
                     self._diemdanhxungquanhhientai = diemdanhxungquanhbandos[iddiemdanhxungquanhgannhat]
+                    self._thoidiembatdaudendiem = time.time()  # Reset timer khi chọn điểm mới
 
                 khoangcachdendiemhientai = self.moitruong.get_khoangcachdiem(*self._diemdanhxungquanhhientai[:-1])
 
@@ -2196,30 +2213,30 @@ class TacTu:
                 if khoangcachdendiemhientai <= 4.0:
                     canchuyendendiemtieptheo = True
                 else:
-                    is_vuamoidaokhoang = (time.time() - self._thoidiemkhaikhoanggannhat < 6.0)
+                    if time.time() - self._thoidiembatdaudendiem > 10.0:
+                        canchuyendendiemtieptheo = True
+                    else:
+                        is_vuamoidaokhoang = (time.time() - self._thoidiemkhaikhoanggannhat < 6.0)
+                        if not is_vuamoidaokhoang:
+                            tuthe_hien_tai = self.moitruong.get_idtuthenhanvat()
+                            if tuthe_hien_tai == TUTHENHANVAT_DUNGIM:
+                                thoigian_dung_im = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimgannhat()
+                                if thoigian_dung_im > 3.0:
+                                    if time.time() - self._thoidiemphatamketduonggannhat > 5.0:
+                                        self._thoidiemphatamketduonggannhat = time.time()
+                                    canchuyendendiemtieptheo = True
 
-                    if not is_vuamoidaokhoang:
-                        tuthehientai = self.moitruong.get_idtuthenhanvat()
+                if canchuyendendiemtieptheo:
+                    iddiemtieptheo = (self._iddiemdanhxungquanhhientai + 1) % len(diemdanhxungquanhbandos)
+                    self._iddiemdanhxungquanhhientai = iddiemtieptheo
+                    self._diemdanhxungquanhhientai = diemdanhxungquanhbandos[iddiemtieptheo]
+                    self._thoidiembatdaudendiem = time.time()
 
-                        if tuthehientai == TUTHENHANVAT_DUNGIM:
-                            thoigiandungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimgannhat()
-
-                            if thoigiandungim > 3.0:
-                                if time.time() - self._thoidiemphatamketduonggannhat > 5.0:
-                                    phatam("Kẹt đường (đứng im), bỏ qua điểm này")
-                                    self._thoidiemphatamketduonggannhat = time.time()
-                                canchuyendendiemtieptheo = True
-
-            if canchuyendendiemtieptheo:
-                iddiemtieptheo = (self._iddiemdanhxungquanhhientai + 1) % len(diemdanhxungquanhbandos)
-                self._iddiemdanhxungquanhhientai = iddiemtieptheo
-                self._diemdanhxungquanhhientai = diemdanhxungquanhbandos[iddiemtieptheo]
-
-            yeucautudomoi = {
-                "yeucau": YEUCAUDICHUYENDICHUYENTUDO,
-                "toadodich": self._diemdanhxungquanhhientai[:-1],
-                "khoangcachtoida": 0
-            }
+                yeucautudomoi = {
+                    "yeucau": YEUCAUDICHUYENDICHUYENTUDO,
+                    "toadodich": self._diemdanhxungquanhhientai[:-1],
+                    "khoangcachtoida": 0
+                }
             break
 
         self._yeucautudo = yeucautudomoi
