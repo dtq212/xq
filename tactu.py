@@ -1772,6 +1772,10 @@ class TacTu:
                 khoangcach = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon)
 
                 if khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN:
+                    if nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_NHATQUYENBATSON] and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NHATQUYENBATSON):
+                        self._is_tamngungdichuyensudungkynang = True
+                        self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_NHATQUYENBATSON)
+                        break
                     if nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_DAIHAIVOLUONG] and self._is_nhieumuctieugan and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_DAIHAIVOLUONG):
                         self._is_tamngungdichuyensudungkynang = True
                         self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_DAIHAIVOLUONG)
@@ -1791,10 +1795,6 @@ class TacTu:
                     if nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_KHONGTHUNHAPBACHNHAN] and is_muctieudangchonlanguoichoi and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN, ), macdinh = True, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHONGTHUNHAPBACHNHAN):
                         self._is_tamngungdichuyensudungkynang = True
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_KHONGTHUNHAPBACHNHAN)
-                        break
-                    if nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_NHATQUYENBATSON] and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NHATQUYENBATSON):
-                        self._is_tamngungdichuyensudungkynang = True
-                        self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_NHATQUYENBATSON)
                         break
                 elif khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
                     if nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_BADONGQUYEN] and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_BADONGQUYEN):
@@ -2316,7 +2316,7 @@ class TacTu:
                         idbandohientai = self.moitruong.get_idbandohientai()
                         if idbandohientai in BANDOTUDONGLENSAUKHICHETs:
                             self._idbandovuachet = idbandohientai
-                    if time.time() - self._thoidiemnhanvatchetgannhat > 20. and self.moitruong.get_tenmonphai() != "vanmongcoc":
+                    if time.time() - self._thoidiemnhanvatchetgannhat > 2.5 and self.moitruong.get_tenmonphai() != "vanmongcoc":
                         self._thoigiantamngungauto = time.time()
                         self.moitruong.action_phucsinh()
                 break

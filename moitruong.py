@@ -2346,18 +2346,17 @@ class MoiTruong:
 
         return True
 
-    def action_phucsinh(self, is_duoccuu = False, delay = 2.):
+    def action_phucsinh(self, is_duoccuu = False, delay = 2.5):
         if time.time() - self._thoidiemphucsinhgannhat < delay:
             return
 
         if not self.get_is_nhanvatdachet():
             return
 
+        is_ok = False
+
         if is_duoccuu:
             is_ok = self.action_thucthicaulenh("desc revive$")
-
-        else:
-            is_ok = self.action_thucthicaulenh("desc revive")
 
         if is_ok:
             self._thoidiemphucsinhgannhat = time.time()
