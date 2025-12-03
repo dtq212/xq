@@ -555,7 +555,7 @@ DIEMDANHXUNGQUANH_MAP = {
     BANDO_LOANDAO2: LOANDAO2,
 }
 
-NHANVATTODOITUDONGs = (2484, 2483, 2492, 2574, 2855) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
+NHANVATTODOITUDONGs = (2484, 2483, 2492, 2574, 2855, 2303) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
 # NHANVATTODOITUDONGs = tuple() #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
 NHANVATNGUYHIEMs = tuple()
 NHANVATCUNGBANGs = (1, 19, 26, 27, 159, 1258, 395, 536, 39, 803, 528, 290, 38, 54, 436, 160, 62, 68, 434, 217, 1374, 1153, 56, 140, 435, 1129, 53, 65, 163, 807, 1950, 37, 126, 42, 1860, 100, 1765, 2069, 1150, 1766, 655, 122, 36, 1369, *NHANVATTODOITUDONGs)
@@ -594,3 +594,28 @@ YEUCAUDICHUYENKHAIKHOANG = 100
 
 KIEUDICHUYEN_GIUKHOANGCACHTOIDA = 1
 KIEUDICHUYEN_GIUKHOANGCACHTOITHIEU = 2
+
+THONGTINTUDONGDANGNHAP_MAP = {
+    "Dasmurai": {
+        "tentaikhoan": "dasmurai",
+        "matkhau": "dasmurai",
+        "vitrinhanvat": 1,
+    },
+    "Dasshu": {
+        "tentaikhoan": "dasshu",
+        "matkhau": "dasshu",
+        "vitrinhanvat": 1,
+    },
+    "Xanh365": {
+        "tentaikhoan": "xanh365",
+        "matkhau": "xanh365",
+        "vitrinhanvat": 1,
+    },
+    "Laotsezu": {
+        "tentaikhoan": "laotsezu",
+        "matkhau": "hateva1",
+        "vitrinhanvat": 1,
+    },
+}
+
+DUONGDAN_GAME = r"D:\Games\ChienQuoc2D_New\ChienQuoc.exe"

@@ -93,15 +93,18 @@ class CuaSo:
 
     def loop(self):
         last_hover_text = None
-        thoi_gian_mat_ket_noi = 0
+        thoigianmatketnoi = 0
 
         while not self.main_stop.is_set() and self.moitruong.get_is_cuasogametontai():
+
             if not self.moitruong.get_is_dangmatketnoi():
-                thoi_gian_mat_ket_noi = 0
+                thoigianmatketnoi = 0
                 tennhanvat = self.moitruong.get_tendoituong()
 
                 if tennhanvat != self.tennhanvat:
                     if tennhanvat:
+                        self.tactu._tennhanvat = tennhanvat
+
                         if self.tennhanvat:
                             self.tactu.luuthietlap(self.tennhanvat)
                         self.tactu.taithietlap(tennhanvat)
@@ -120,15 +123,19 @@ class CuaSo:
                 elif tennhanvat and time.time() - self.thoidiemluuthietlapgannhat > 1.:
                     self.thoidiemluuthietlapgannhat = time.time()
                     self.tactu.luuthietlap(tennhanvat)
+
             else:
                 self.tennhanvat = False
                 if CHUACHONHANVAT != last_hover_text:
                     self.systray.update(hover_text = CHUACHONHANVAT)
                     last_hover_text = CHUACHONHANVAT
 
-                if thoi_gian_mat_ket_noi == 0:
-                    thoi_gian_mat_ket_noi = time.time()
-                elif time.time() - thoi_gian_mat_ket_noi > 1.:
+                self.tactu.action_kiemtradangnhaplai()
+
+                if thoigianmatketnoi == 0:
+                    thoigianmatketnoi = time.time()
+
+                elif time.time() - thoigianmatketnoi > 300.:
                     break
 
             time.sleep(1)
