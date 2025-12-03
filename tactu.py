@@ -1,4 +1,3 @@
-import hashlib
 import math
 import random
 import time
@@ -168,9 +167,6 @@ class TacTu:
 
         self._thoidiemgapnguoichoigannhat = 0.
         self._thoidiemdichuyentudogannhat = 0.
-
-        self._tennhanvat = None
-        self._thoidiemdangnhapgannhat = 0.
 
     def __del__(self):
         try:
@@ -3003,27 +2999,3 @@ class TacTu:
                 "toadodich": (tx, ty),
                 "khoangcachtoida": 0
             }
-
-    def action_kiemtradangnhaplai(self):
-        if not self._tennhanvat:
-            return
-
-        config = THONGTINTUDONGDANGNHAP_MAP.get(self._tennhanvat)
-        if not config:
-            return
-
-        if time.time() - self._thoidiemdangnhapgannhat < 15.0:
-            return
-
-        print(f"[AUTO-LOGIN] Phát hiện {self._tennhanvat} bị dis ra Login. Đang đăng nhập lại...")
-
-        taikhoan = config["tentaikhoan"]
-        matkhau = config["matkhau"]
-        vitri = config["vitrinhanvat"]
-
-        pass_md5 = hashlib.md5(matkhau.encode()).hexdigest().upper()
-
-        cmd = f"LOGIN {taikhoan} {pass_md5} {vitri}"
-        self.moitruong.action_thucthicaulenh(cmd)
-
-        self._thoidiemdangnhapgannhat = time.time()

@@ -4,28 +4,22 @@ import sys
 import threading
 import time
 import signal
-import hashlib
 
 import keyboard
 import win32api
 import win32event
 import win32gui
-import win32process
 import winerror
 
 from cuaso import CuaSo
 from moitruong import MoiTruong
-from tienich import phatam, slugify
-from hangso import NHANVATTODOITUDONGs, THONGTINTUDONGDANGNHAP_MAP, DUONGDAN_GAME
+from tienich import phatam
+from hangso import NHANVATTODOITUDONGs
 
 CREATE_NO_WINDOW = 0x08000000
 VK_F12 = 0x7B
 
 TEN_CARD_BLUETOOTH = "Bluetooth Network Connection"
-
-
-def get_md5(text):
-    return hashlib.md5(text.encode()).hexdigest().upper()
 
 
 def loop_cuaso(cuaso: CuaSo):
@@ -84,7 +78,7 @@ class TroChoiWorker:
                 if not self.kiem_tra_nhan_vat_hop_le():
                     if thoi_gian_mat_nhan_vat == 0:
                         thoi_gian_mat_nhan_vat = time.time()
-                    elif time.time() - thoi_gian_mat_nhan_vat > 60:
+                    elif time.time() - thoi_gian_mat_nhan_vat > 2:
                         os.kill(os.getpid(), signal.SIGTERM)
                         break
                 else:
@@ -113,18 +107,16 @@ class TroChoiManager:
         self.lock = threading.Lock()
         self.is_running = True
         self.current_metric = None
-        self.last_check_login = 0
 
         print("=" * 50)
-        print("TOOL CHIẾN QUỐC (AUTO MẠNG + AUTO LOGIN)")
+        print("TOOL CHIẾN QUỐC (AUTO MẠNG BLUETOOTH)")
         print("-" * 50)
         print("LOGIC MẠNG:")
         print("1. Có cửa sổ đang đăng nhập -> Ưu tiên Bluetooth.")
         print("2. Tất cả cửa sổ đã vào game -> Ưu tiên Wifi (Nhường mạng).")
         print("-" * 50)
-        print("LOGIC LOGIN:")
-        print(f"Giám sát {len(THONGTINTUDONGDANGNHAP_MAP)} tài khoản.")
-        print("Nếu thiếu -> Tự mở game -> Tự đăng nhập.")
+        print("3. Ctrl+Alt+1: Ép dùng Bluetooth (Metric 1).")
+        print("4. Ctrl+Alt+2: Ép dùng Wifi (Metric 100).")
         print("-" * 50)
         print("Nhấn phím F12 để dừng toàn bộ!")
         print("=" * 50)
@@ -188,12 +180,7 @@ class TroChoiManager:
             if hwnd in self.managed_processes:
                 return
 
-            try:
-                mt = MoiTruong(hwnd)
-                ten = mt.get_tendoituong()
-                print(f"-> Phát hiện {ten} ({hwnd}) đã vào game -> Kích hoạt Auto!")
-            except:
-                print(f"-> Phát hiện cửa sổ {hwnd} -> Kích hoạt Auto!")
+            print(f"-> Phát hiện cửa sổ {hwnd} đã vào game -> Kích hoạt Auto!")
 
             script_path = os.path.abspath(__file__)
             cmd = [sys.executable, "-u", script_path, "--child", str(hwnd)]
@@ -233,78 +220,6 @@ class TroChoiManager:
         else:
             self.thiet_lap_mang_bluetooth(100)
 
-    def check_and_restore_characters(self):
-        if time.time() - self.last_check_login < 30.0:
-            return
-
-        self.last_check_login = time.time()
-
-        online_chars = []
-        tat_ca_cua_so = self._tim_cua_so_game()
-
-        for hwnd in tat_ca_cua_so:
-            try:
-                mt = MoiTruong(hwnd)
-                if mt.get_is_nhanvattontai():
-                    ten = mt.get_tendoituong()
-                    if ten: online_chars.append(ten)
-            except:
-                pass
-
-        for ten_nv, config in THONGTINTUDONGDANGNHAP_MAP.items():
-            if ten_nv not in online_chars:
-                print(f"[MANAGER] Cảnh báo: {ten_nv} vắng mặt. Đang mở lại...")
-                self.khoi_dong_va_dang_nhap(ten_nv, config)
-                time.sleep(10)
-                self.last_check_login = time.time()
-                break
-
-    def khoi_dong_va_dang_nhap(self, ten_can_login, config):
-        try:
-            game_dir = os.path.dirname(DUONGDAN_GAME)
-            process = subprocess.Popen(DUONGDAN_GAME, cwd = game_dir)
-
-            self.thiet_lap_mang_bluetooth(1)
-            time.sleep(15)
-
-            hwnd_target = 0
-
-            def find_new_window(hwnd, ctx):
-                nonlocal hwnd_target
-                if win32gui.IsWindowVisible(hwnd):
-                    title = win32gui.GetWindowText(hwnd)
-                    if "Chien Quoc" in title or "Chiến Quốc" in title:
-                        try:
-                            _, pid = win32process.GetWindowThreadProcessId(hwnd)
-                            if pid == process.pid:
-                                hwnd_target = hwnd
-                        except:
-                            pass
-
-            win32gui.EnumWindows(find_new_window, None)
-
-            if hwnd_target:
-                print(f"[MANAGER] Đã tìm thấy cửa sổ mới (PID {process.pid}). Gửi lệnh Login...")
-                mt = MoiTruong(hwnd_target)
-
-                tk = config["tentaikhoan"]
-                mk = config["matkhau"]
-                vitri = config["vitrinhanvat"]
-                mk_md5 = get_md5(mk)
-
-                cmd = f"LOGIN {tk} {mk_md5} {vitri}"
-
-                for _ in range(3):
-                    mt.action_thucthicaulenh(cmd)
-                    time.sleep(2)
-
-                print(f"[MANAGER] Đã gửi lệnh Login cho {ten_can_login}.")
-            else:
-                print("[MANAGER] Không tìm thấy cửa sổ game vừa mở.")
-
-        except Exception as e:
-            print(f"[MANAGER] Lỗi khi mở game: {e}")
-
     def run(self):
         time.sleep(1)
 
@@ -336,8 +251,6 @@ class TroChoiManager:
                         self.spawn_worker_for_hwnd(hwnd)
 
             self.check_network_condition()
-
-            self.check_and_restore_characters()
 
             time.sleep(0.5)
 
