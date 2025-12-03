@@ -580,7 +580,7 @@ class TacTu:
                                     phatam("Có thích khách")
                                     self._thoidiemphatamanthan = time.time()
 
-                if is_muctieudangxemxetlanguoichoi and self.moitruong.get_is_nhanvattontai(diachicosothongtinnhanvatmuctieuxemxet) and self.moitruong.get_idnguoichoi(diachicosothongtinnhanvatmuctieuxemxet) not in NHANVATTODOITUDONGs and self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieuxemxet) <= 12:
+                if is_muctieudangxemxetlanguoichoi and self.moitruong.get_is_nhanvattontai(diachicosothongtinnhanvatmuctieuxemxet) and self.moitruong.get_idnguoichoi(diachicosothongtinnhanvatmuctieuxemxet) not in NHANVATTODOITUDONGs and self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieuxemxet) <= 12 and not self.moitruong.get_is_nhanvatdachet():
                     self._thoidiemgapnguoichoigannhat = time.time()
 
                 iddoituongmuctieuxemxet = self.moitruong.get_iddoituong(diachicosothongtinnhanvatmuctieuxemxet)
