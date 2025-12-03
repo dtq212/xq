@@ -166,6 +166,7 @@ class TacTu:
         self._thoidiemphatamdayhanhtrang = 0.
 
         self._thoidiemgapnguoichoigannhat = 0.
+        self._thoidiemdichuyentudogannhat = 0.
 
     def __del__(self):
         try:
@@ -292,9 +293,13 @@ class TacTu:
             yeucauduocchon = self._yeucautheonhom
             lydochon = "THEO NHÓM"
         elif self._yeucautudo and not is_anhhuongboitruongnhom:
-            yeucauduocchon = self._yeucautudo
-            lydochon = "ĐI DẠO (TỰ DO)"
-
+            if time.time() - self._thoidiemdichuyentudogannhat > 2.0:
+                yeucauduocchon = self._yeucautudo
+                lydochon = "ĐI DẠO (TỰ DO)"
+                self._thoidiemdichuyentudogannhat = time.time()
+            else:
+                if is_log: print(f"[DEBUG-MOVE] ĐI DẠO: Đang delay ({round(time.time() - self._thoidiemdichuyentudogannhat, 1)}s < 2.0s)")
+                pass
         if is_log:
             msg_dich = str(yeucauduocchon.get("toadodich")) if yeucauduocchon else "None"
             print(f"[DEBUG-MOVE] Quyết định: {lydochon} | Đích: {msg_dich}")
@@ -2205,8 +2210,8 @@ class TacTu:
                     if time.time() - self._thoidiembatdaudendiem > 10.0:
                         canchuyendendiemtieptheo = True
                     else:
-                        is_vua_moi_dao_khoang = (time.time() - self._thoidiemkhaikhoanggannhat < 6.0)
-                        if not is_vua_moi_dao_khoang:
+                        is_vuamoidaokhoang = (time.time() - self._thoidiemkhaikhoanggannhat < 6.0)
+                        if not is_vuamoidaokhoang:
                             tuthe_hien_tai = self.moitruong.get_idtuthenhanvat()
                             if tuthe_hien_tai == TUTHENHANVAT_DUNGIM:
                                 thoigian_dung_im = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimgannhat()
