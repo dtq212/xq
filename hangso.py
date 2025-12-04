@@ -595,27 +595,3 @@ YEUCAUDICHUYENKHAIKHOANG = 100
 KIEUDICHUYEN_GIUKHOANGCACHTOIDA = 1
 KIEUDICHUYEN_GIUKHOANGCACHTOITHIEU = 2
 
-THONGTINTUDONGDANGNHAP_MAP = {
-    "Dasmurai": {
-        "tentaikhoan": "dasmurai",
-        "matkhau": "dasmurai",
-        "vitrinhanvat": 1,
-    },
-    "Dasshu": {
-        "tentaikhoan": "dasshu",
-        "matkhau": "dasshu",
-        "vitrinhanvat": 1,
-    },
-    "Xanh365": {
-        "tentaikhoan": "xanh365",
-        "matkhau": "xanh365",
-        "vitrinhanvat": 1,
-    },
-    "Laotsezu": {
-        "tentaikhoan": "laotsezu",
-        "matkhau": "hateva1",
-        "vitrinhanvat": 1,
-    },
-}
-
-DUONGDAN_GAME = r"D:\Games\ChienQuoc2D_New\ChienQuoc.exe"
