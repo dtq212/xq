@@ -46,7 +46,6 @@ DANH_SACH_ACC = {
 
 
 def get_online_characters():
-    """Quét tất cả cửa sổ game để xem ai đang online"""
     online_chars = []
 
     def callback(hwnd, _):
@@ -66,14 +65,12 @@ def get_online_characters():
 
 
 def tim_launcher_dang_mo():
-    """Tìm xem có Launcher nào đang mở sẵn không"""
     hwnd_found = 0
 
     def callback(hwnd, _):
         nonlocal hwnd_found
         if win32gui.IsWindowVisible(hwnd):
             title = win32gui.GetWindowText(hwnd)
-            # Tìm chính xác tiêu đề Launcher
             if title == LAUNCHER_TITLE:
                 hwnd_found = hwnd
 
