@@ -38,8 +38,8 @@ DANH_SACH_ACC = {
         "server": "Kênh 3",
     },
     "Dasmurai": {
-        "user": "Dasmurai",
-        "pass": "Dasmurai",
+        "user": "dasmurai",
+        "pass": "dasmurai",
         "server": "Kênh 4",
     },
 }
