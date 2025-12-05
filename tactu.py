@@ -1599,10 +1599,6 @@ class TacTu:
                             self._is_tamngungdichuyensudungkynang = True
                             self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_TIENKHI)
                         break
-                    elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_DONDAOTRUCNHAP):
-                        self._is_tamngungdichuyensudungkynang = True
-                        self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_DONDAOTRUCNHAP)
-                        break
 
                 if is_sudungkhaithientichdiaantoan and is_duocphepsudungkhaithientichdia and khoangcach <= 6.5:
                     SAFE_X = 4.2
@@ -1713,10 +1709,15 @@ class TacTu:
                                 break
 
                 elif not is_khaithientichdiasansang or self._solanthatbaikhaithien >= 5:
-                    if khoangcach < KHOANGCACHSUDUNGKYNANGCANCHIEN and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NGHENHPHONGTRAM):
-                        self._is_tamngungdichuyensudungkynang = True
-                        self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_NGHENHPHONGTRAM)
-                        break
+                    if khoangcach < KHOANGCACHSUDUNGKYNANGCANCHIEN:
+                        if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_DONDAOTRUCNHAP):
+                            self._is_tamngungdichuyensudungkynang = True
+                            self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_DONDAOTRUCNHAP)
+                            break
+                        elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NGHENHPHONGTRAM):
+                            self._is_tamngungdichuyensudungkynang = True
+                            self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_NGHENHPHONGTRAM)
+                            break
                     if khoangcach > 3.0 and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and is_muctieudangchonlanguoichoi:
                         if not is_muctieudangchonbichoang and self.moitruong.get_is_cothegaychoang(diachicosothongtinnhanvatmuctieudangchon) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LANGKHONGCHIHUYET):
                             self._is_tamngungdichuyensudungkynang = True
