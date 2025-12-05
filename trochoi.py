@@ -14,7 +14,6 @@ import winerror
 from cuaso import CuaSo
 from moitruong import MoiTruong
 from tienich import phatam
-from hangso import NHANVATTODOITUDONGs
 
 CREATE_NO_WINDOW = 0x08000000
 VK_F12 = 0x7B
