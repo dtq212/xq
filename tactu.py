@@ -1608,13 +1608,13 @@ class TacTu:
 
                     if self._trangthaikhaithientichdia["is_danglui"]:
                         thoigiandilui = time.time() - self._trangthaikhaithientichdia["thoidiembatdau"]
-                        is_vitriphuhop_lui = (khoangcach >= 2.5 and (delta_x_abs >= 1.0 or delta_y_abs >= 0.8))
-                        if is_vitriphuhop_lui or thoigiandilui > 0.5:
+                        is_vitriphuhoplui = (khoangcach >= 1.5 and (delta_x_abs >= 1.0 or delta_y_abs >= 0.8))
+                        if is_vitriphuhoplui or thoigiandilui > 0.5:
                             self._trangthaikhaithientichdia["is_danglui"] = False
                         else:
                             break
 
-                    is_quagan = (khoangcach < 2.0) or (delta_x_abs < 1.3) or (delta_y_abs < 1.0)
+                    is_quagan = (khoangcach < 1.0) or (delta_x_abs < 1.3) or (delta_y_abs < 1.0)
                     is_quaxatruc = (delta_x_abs > SAFE_X) or (delta_y_abs > SAFE_Y)
                     is_vitrichuaphuhop = is_quagan or is_quaxatruc
 
@@ -1700,7 +1700,7 @@ class TacTu:
                                 self._thoidiemdichuyentiepcangannhat = time.time()
                                 time.sleep(0.05)
 
-                            is_ok = self.moitruong.action_sudungkynangtoado(idkynang, final_tx, final_ty)
+                            is_ok = self.moitruong.action_sudungkynangtoado(idkynang, final_tx, final_ty, delay = 0.05)
                             self._idmuctieudangdichuyenkhaithien = 0
                             self._thoidiemtamngungkhaithientichdia = time.time()
                             if is_ok:
@@ -1718,7 +1718,7 @@ class TacTu:
                             self._is_tamngungdichuyensudungkynang = True
                             self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_NGHENHPHONGTRAM)
                             break
-                    if khoangcach > 3.0 and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and is_muctieudangchonlanguoichoi:
+                    if 3.0 < khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and is_muctieudangchonlanguoichoi:
                         if not is_muctieudangchonbichoang and self.moitruong.get_is_cothegaychoang(diachicosothongtinnhanvatmuctieudangchon) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LANGKHONGCHIHUYET):
                             self._is_tamngungdichuyensudungkynang = True
                             if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG) and time.time() - self.moitruong.get_thoidiemtuthenhanvatkhongdichuyen() > 0.25:
