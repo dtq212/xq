@@ -156,10 +156,10 @@ class LoopChinh:
         #     if diachi := self.moitruong.action_timkiemnhanvat(iddoituong = self.moitruong.get_iddoituongbaothumaoson()):
         #         print(hex(diachi))
 
-        # if self.moitruong.get_tendoituong() == "Laotsezu6":
+        # if self.moitruong.get_tendoituong() == "Laotsezu":
         #     if diachidoituong := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
-        #         print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
-            # print(self.moitruong.get_danhsachhieuungnhanvats())
+        #         # print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
+        #         print(self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRONGTHUONG, ), macdinh = True, is_hieuungcoloi = 0))
 
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
@@ -219,9 +219,10 @@ class LoopPhu:
 
         self.tactu.action_tudongtrieuhoibaothudautien()
         self.tactu.action_tudongdieukhienbaothumaoson()
+        self.tactu.action_tudongdichientruong()
 
-        self.tactu._action_dichuyentudo()
-        self.tactu._action_nhatdo()
+        self.tactu.action_dichuyentudo()
+        self.tactu.action_nhatdo()
 
         if self.moitruong.get_is_nhanvatdachet():
             if time.time() - self.thoidiemthongbaochetgannhat > 5.:

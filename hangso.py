@@ -4,7 +4,7 @@ STRING_ENCODING = "mbcs"
 KHOANGCACHNUAMANHINH = 9.
 KHOANGCACHTOANMANHINH = 18.
 
-KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN = 5
+KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN = 3
 
 KHOANGCACHTOIDAHOPLE = 255.
 KHOANGCACHSUDUNGKYNANGCANCHIEN = 1.5
@@ -275,6 +275,9 @@ HIEUUNGKYNANG_BANGPHACHNGANTAM = 2222
 HIEUUNGKYNANG_TRONGTHUONG = 9020
 HIEUUNGKYNANG_CHOANG = 9002
 HIEUUNGKYNANG_NHANSAM = 6
+
+HIEUUNGKYNANG_ROILOAN = 9018
+HIEUUNGKYNANG_LAMCHAM = 9012
 
 HIEUUNGKYNANG_KHOAPHAPBAO = 9561
 
@@ -559,7 +562,7 @@ DIEMDANHXUNGQUANH_MAP = {
     BANDO_LOANDAO2: LOANDAO2,
 }
 
-NHANVATTODOITUDONGs = (2484, 2483, 2492, 2574, 2855, 2303) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
+NHANVATTODOITUDONGs = (2484, 2483, 2492, 2574, 2855) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
 # NHANVATTODOITUDONGs = tuple() #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
 NHANVATNGUYHIEMs = tuple()
 NHANVATCUNGBANGs = (1, 19, 26, 27, 159, 1258, 395, 536, 39, 803, 528, 290, 38, 54, 436, 160, 62, 68, 434, 217, 1374, 1153, 56, 140, 435, 1129, 53, 65, 163, 807, 1950, 37, 126, 42, 1860, 100, 1765, 2069, 1150, 1766, 655, 122, 36, 1369, *NHANVATTODOITUDONGs)
@@ -582,7 +585,7 @@ TRANKY = "Tráº­n KÃ¬"
 TUSAMDON = "Tá»­ SÃ¢m ÄÆ¡n"
 
 VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUKIMBAOHOP, HOATLACHOAN, TOAIMABO, TUSAMDON)
-VATPHAMTUDONGNHATCUTHUDAOs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i", " Nháº«n", " TiÃªu")
+VATPHAMTUDONGNHATCUTHUDAOs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i", " Nháº«n", " TiÃªu", "Äáº§u CÃ¢n")
 VATPHAMXEPCHONGs = tuple()
 
 VOTUHOCNHANs = ("VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 30)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 40)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 50)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 60)", )

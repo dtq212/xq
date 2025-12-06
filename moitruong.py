@@ -300,39 +300,11 @@ class MoiTruong:
 
         self._idbandohientai = idbandohientai
 
-        iddoituongtrongtammats = set()
-
-        # i = 0
-        # hientai = time.time()
-        #
-        # while True:
-        #     diachidoituong = self.get_diachicosothongtindoituongx(i)
-        #     if not diachidoituong:
-        #         break
-        #     i += 1
-        #
-        #     iddoituong = self.get_iddoituong(diachidoituong)
-        #     if iddoituong <= 0:
-        #         continue
-        #
-        #     khoangcach = self.get_khoangcach(diachidoituong)
-        #
-        #     if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA:
-        #         iddoituongtrongtammats.add(iddoituong)
-        #
-        #         if iddoituong not in self._thoidiemxuathientrongtamnhin:
-        #             self._thoidiemxuathientrongtamnhin[iddoituong] = hientai
-
-        # iddanhos = list(self._thoidiemxuathientrongtamnhin.keys())
-        # for idcu in iddanhos:
-        #     if idcu not in iddoituongtrongtammats:
-        #         del self._thoidiemxuathientrongtamnhin[idcu]
-
         idtuthenhanvat = self.get_idtuthenhanvat()
-        if idtuthenhanvat != TUTHENHANVAT_DUNGIM:
+        if idtuthenhanvat != TUTHENHANVAT_DUNGIM or self.get_is_dangvankhi():
             self._thoidiemtuthenhanvatdungimgannhat = time.time()
             self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
-        if idtuthenhanvat == TUTHENHANVAT_DICHUYEN:
+        if idtuthenhanvat == TUTHENHANVAT_DICHUYEN or self.get_is_dangvankhi():
             self._thoidiemtuthenhanvatkhongdichuyengannhat = time.time()
 
         if idtuthenhanvat not in (TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO):
@@ -340,7 +312,7 @@ class MoiTruong:
         elif time.time() - self._thoidiemtuthenhanvattanconggannhat > 0.5:
             self.set_idtuthenhanvat(TUTHENHANVAT_DELAYSAUTANCONG)
 
-        if not diachicosothongtinnhanvatmuctieuhientai:
+        if not diachicosothongtinnhanvatmuctieuhientai or self.get_is_dangvankhi():
             self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
 
         idthucuoi = self._get_idthucuoi()
