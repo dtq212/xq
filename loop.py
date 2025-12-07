@@ -135,14 +135,15 @@ class LoopChinh:
         self.tactu.action_xulygomquai()
         self.tactu._action_sudungkynang()
 
-        # self.moitruong.action_thucthicaulenh("talk b8e8# info.58")
-        # time.sleep(0.25)
-        # self.moitruong.action_thucthicaulenh("talk b8e8# info.18")
-        # time.sleep(0.25)
-        # self.moitruong.action_thucthicaulenh("talk b8e8# info.20")
-        # time.sleep(0.25)
-        # self.moitruong.action_thucthicaulenh("talk b8e8# info.21")
-        # time.sleep(0.25)
+        # if self.moitruong.get_tendoituong() == "Laotsezu":
+        #     self.moitruong.action_thucthicaulenh("tallk 299# bonus.1")
+        #     time.sleep(0.25)
+        #     self.moitruong.action_thucthicaulenh("tallk 299# bonus.7")
+        #     time.sleep(0.25)
+        #     self.moitruong.action_thucthicaulenh("tallk 299# bonus.10")
+        #     time.sleep(0.25)
+        #     self.moitruong.action_thucthicaulenh("tallk 299# bonus.11")
+        #     time.sleep(0.25)
 
         # if diachidoituong := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
         #     print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
