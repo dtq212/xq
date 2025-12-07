@@ -583,8 +583,9 @@ THIENBINH = "ThiÃªn Binh"
 THIENTHANTHANH = "Tháº§n ThÃº - Thá»"
 TRANKY = "Tráº­n KÃ¬"
 TUSAMDON = "Tá»­ SÃ¢m ÄÆ¡n"
+TAYGAU = "Tay Gáº¥u"
 
-VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUKIMBAOHOP, HOATLACHOAN, TOAIMABO, TUSAMDON)
+VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUKIMBAOHOP, HOATLACHOAN, TOAIMABO, TUSAMDON, NHIEPHONTHACH, TAYGAU)
 VATPHAMTUDONGNHATCUTHUDAOs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i", " Nháº«n", " TiÃªu", "Äáº§u CÃ¢n")
 VATPHAMXEPCHONGs = tuple()
 

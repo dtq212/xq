@@ -210,7 +210,7 @@ class LoopPhu:
         self.tactu.action_chantangcapdo()
         self.tactu.action_tudongxepchongdo()
         self.tactu.action_tudongtodoi()
-        self.tactu.action_tudongphucsinh()
+        # self.tactu.action_tudongphucsinh()
         self.tactu.action_tudongdoimaupk()
         self.tactu.action_tudongsuado()
         self.tactu.action_tudongvutdo()
