@@ -1198,7 +1198,10 @@ class TacTu:
 
     def _action_sudungkynang_thucson(self):
         if self._is_thucsondao:
-            self._action_sudungkynang_thucsondao()
+            if self.moitruong.get_capdonhanvat() >= 25:
+                self._action_sudungkynang_thucsondao()
+            else:
+                self._action_sudungkynang_thucsondaolvthap()
         else:
             self._action_sudungkynang_thucsonkiem()
 
@@ -1749,7 +1752,58 @@ class TacTu:
                         "yeucau": YEUCAUDICHUYENTANCONG,
                         "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
                         "diachimuctieu": diachicosothongtinnhanvatmuctieudangchon,
-                        "khoangcachtoida": 0
+                        "khoangcachtoida": max(0, KHOANGCACHSUDUNGKYNANGCANCHIEN - thoigiantuthenhanvatdungim)
+                    }
+                    self._thoidiemdichuyentiepcangannhat = time.time()
+                    break
+            break
+
+    def _action_sudungkynang_thucsondaolvthap(self):
+        if not self._is_tudongsudungkynang:
+            return
+
+        while True:
+            if self.moitruong.get_is_dangclickchuottrai():
+                break
+            if self.moitruong.get_is_nhanvatdachet():
+                break
+            if self.moitruong.get_is_dangvankhi():
+                break
+
+            idtuthenhanvat = self.moitruong.get_idtuthenhanvat()
+            diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+            phantramsinhlucconlai = self.moitruong.get_phantramsinhlucconlai()
+
+            khoangcach = KHOANGCACHTOIDAHOPLE
+            is_cothetancong = False
+
+            if diachicosothongtinnhanvatmuctieudangchon and is_cothetancong:
+                if phantramsinhlucconlai <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENKHI):
+                    if idtuthenhanvat in (TUTHENHANVAT_DUNGIM, TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO, TUTHENHANVAT_DELAYSAUTANCONG) and time.time() - self.moitruong.get_thoidiemtuthenhanvatkhongdichuyen() > 0.25:
+                        self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.5)
+                        self.moitruong.action_sudungkynangvitrilenbanthan(*VITRIKYNANG_TIENKHI)
+                    break
+                if khoangcach < KHOANGCACHSUDUNGKYNANGCANCHIEN:
+                    if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHAMATRAM):
+                        self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.5)
+                        self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_PHAMATRAM)
+                        break
+                    elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_DONDAOTRUCNHAP):
+                        self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.5)
+                        self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_DONDAOTRUCNHAP)
+                        break
+                    elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NGHENHPHONGTRAM):
+                        self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.5)
+                        self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_NGHENHPHONGTRAM)
+                        break
+
+                thoigiantuthenhanvatdungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat() if idtuthenhanvat == TUTHENHANVAT_DUNGIM else 0.
+                if khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN:
+                    self._yeucautancong = {
+                        "yeucau": YEUCAUDICHUYENTANCONG,
+                        "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
+                        "diachimuctieu": diachicosothongtinnhanvatmuctieudangchon,
+                        "khoangcachtoida": max(0, KHOANGCACHSUDUNGKYNANGCANCHIEN - thoigiantuthenhanvatdungim)
                     }
                     self._thoidiemdichuyentiepcangannhat = time.time()
                     break
