@@ -135,8 +135,8 @@ class LoopChinh:
         self.tactu.action_xulygomquai()
         self.tactu._action_sudungkynang()
 
-        # if self.moitruong.get_tendoituong() == "Laotsezu":
-        #     self.moitruong.action_thucthicaulenh("tallk 299# bonus.1")
+        # if self.moitruong.get_tendoituong() == "Laotsezu3":
+        #     self.moitruong.action_thucthicaulenh("talk 15c8# giaotrangbi.6d588# 0")
         #     time.sleep(0.25)
         #     self.moitruong.action_thucthicaulenh("tallk 299# bonus.7")
         #     time.sleep(0.25)

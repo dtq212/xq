@@ -43,11 +43,11 @@ THONGTINDANGNHAP_MAP = {
         "pass": "hateva1",
         "server": "Kênh 4",
     },
-    "Laotsezu": {
-        "user": "laotsezu",
-        "pass": "hateva1",
-        "server": "Kênh 2",
-    },
+    # "Laotsezu": {
+    #     "user": "laotsezu",
+    #     "pass": "hateva1",
+    #     "server": "Kênh 2",
+    # },
 }
 
 def laydanhsachnhanvatonlines():
