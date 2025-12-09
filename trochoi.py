@@ -43,7 +43,7 @@ class TroChoiWorker:
         if not self.kiem_tra_nhan_vat_hop_le():
             return
 
-        phatam("Đã kết nối nhân vật")
+        # phatam("Đã kết nối nhân vật")
 
         threading.Thread(target = loop_cuaso, args = [self.cuaso], daemon = True).start()
         self.loop_quanly()
@@ -144,10 +144,10 @@ class TroChoiManager:
             self.current_metric = metric
 
             if metric == 1:
-                phatam("Đã ưu tiên Bluetooth để đăng nhập")
+                # phatam("Đã ưu tiên Bluetooth để đăng nhập")
                 print(f"[Network] Bluetooth Metric = 1 (HIGH) -> Chế độ Đăng Nhập")
             else:
-                phatam("Đã chuyển về Wifi")
+                # phatam("Đã chuyển về Wifi")
                 print(f"[Network] Bluetooth Metric = 100 (LOW) -> Chế độ Treo Game")
         except Exception as e:
             print(f"Lỗi chỉnh mạng: {e}")

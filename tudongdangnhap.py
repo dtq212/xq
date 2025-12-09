@@ -48,6 +48,11 @@ THONGTINDANGNHAP_MAP = {
     #     "pass": "hateva1",
     #     "server": "Kênh 2",
     # },
+    # "TruyÂ Má»‡nh": {
+    #     "user": "truymenh",
+    #     "pass": "hateva1",
+    #     "server": "Kênh 2",
+    # },
 }
 
 def laydanhsachnhanvatonlines():
