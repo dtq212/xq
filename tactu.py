@@ -275,7 +275,7 @@ class TacTu:
 
         is_yeucaunhatdo = self._yeucaunhatdo and not is_anhhuongboitruongnhom
 
-        if time.time() - self._thoidiemgapnguoichoigannhat < 2.5 and self.moitruong.get_idbandohientai() in BANDOCUTHUDAOs and self.moitruong.get_idmaupk() == MAUPK_HOABINH:
+        if time.time() - self._thoidiemgapnguoichoigannhat < 5.0 and self.moitruong.get_idbandohientai() in BANDOCUTHUDAOs and self.moitruong.get_idmaupk() == MAUPK_HOABINH:
             if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Bắt gặp người chơi trên bản đồ cự thú đảo")
             return
 
@@ -739,7 +739,7 @@ class TacTu:
         if self._is_danggomquai:
             return
 
-        if time.time() - self._thoidiemgapnguoichoigannhat < 2.5 and self.moitruong.get_idbandohientai() in BANDOCUTHUDAOs and self.moitruong.get_idmaupk() == MAUPK_HOABINH:
+        if time.time() - self._thoidiemgapnguoichoigannhat < 5.0 and self.moitruong.get_idbandohientai() in BANDOCUTHUDAOs and self.moitruong.get_idmaupk() == MAUPK_HOABINH:
             return
 
         tenmonphai = self.moitruong.get_tenmonphai()
@@ -1543,8 +1543,8 @@ class TacTu:
                         if self._solanthatbaikhaithien == 5:
                             self._thoidiembiphatkhaithien = time.time()
 
-                is_duocphepsudungkhaithientichdia = is_khaithientichdiasansang and self._solanthatbaikhaithien < 5 and time.time() - self._thoidiemtamngungdichuyensudungkynang > 0
-                is_duocphepsudungluutinhtruymang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG) and is_muctieudangchonlanguoichoi and time.time() - self._thoidiemtamngungdichuyensudungkynang > 0
+                is_duocphepsudungkhaithientichdia = is_khaithientichdiasansang and self._solanthatbaikhaithien < 5 and self.moitruong.get_idtuthenhanvat() not in (TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO) # time.time() - self._thoidiemtamngungdichuyensudungkynang > 0
+                is_duocphepsudungluutinhtruymang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG) and self.moitruong.get_idtuthenhanvat() not in (TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO) # time.time() - self._thoidiemtamngungdichuyensudungkynang > 0 #and is_muctieudangchonlanguoichoi
 
                 is_sudungkhaithientichdiaantoan = not is_khaithientichdiabicam or is_sudungkhaithientichdiathatbai
                 is_sudungkynangchoang = not is_muctieudangchonbichoang and self.moitruong.get_is_cothegaychoang(diachicosothongtinnhanvatmuctieudangchon)
@@ -1598,13 +1598,13 @@ class TacTu:
 
                     if self._trangthaikhaithientichdia["is_danglui"]:
                         thoigiandilui = time.time() - self._trangthaikhaithientichdia["thoidiembatdau"]
-                        is_vitriphuhoplui = (khoangcach >= 1.5 and (delta_x_abs >= 1.0 or delta_y_abs >= 1.3))
+                        is_vitriphuhoplui = (khoangcach >= 1.5 and (delta_x_abs >= 0.75 or delta_y_abs >= 0.75))
                         if is_vitriphuhoplui or thoigiandilui > 0.5:
                             self._trangthaikhaithientichdia["is_danglui"] = False
                         else:
                             break
 
-                    is_quagan = (khoangcach < 1.5) or (delta_x_abs < 1.0) or (delta_y_abs < 1.3)
+                    is_quagan = (khoangcach < 1.5) or (delta_x_abs < 0.75) or (delta_y_abs < 0.75)
                     is_quaxatruc = (delta_x_abs > SAFE_X) or (delta_y_abs > SAFE_Y)
                     is_vitrichuaphuhop = is_quagan or is_quaxatruc
 
@@ -2241,7 +2241,7 @@ class TacTu:
             self._yeucautudo = None
             return
 
-        if time.time() - self._thoidiemgapnguoichoigannhat < 2.5 and self.moitruong.get_idbandohientai() in BANDOCUTHUDAOs and self.moitruong.get_idmaupk() == MAUPK_HOABINH:
+        if time.time() - self._thoidiemgapnguoichoigannhat < 5.0 and self.moitruong.get_idbandohientai() in BANDOCUTHUDAOs and self.moitruong.get_idmaupk() == MAUPK_HOABINH:
             return
 
         while True:
