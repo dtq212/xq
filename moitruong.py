@@ -1847,12 +1847,13 @@ class MoiTruong:
         self.tientrinh.start_thread(self._diachiautoassemblenhatdotoado)
         time.sleep(0.05)
 
-    def auto_assemble_dichuyen(self, x, y):
+    def auto_assemble_dichuyen(self, x, y, is_batbuoc=False): # Thêm tham số is_batbuoc
         # print("{} auto_assemble_dichuyen: {} {}".format(self.get_tendoituong(), x, y))
 
-        if x == self._xdichuyengannhat and y == self._ydichuyengannhat:
-            if time.time() - self._thoidiemboquadichuyencungtoadogannhat < 1.0:
-                return
+        # if not is_batbuoc:
+        #     if x == self._xdichuyengannhat and y == self._ydichuyengannhat:
+        #         if time.time() - self._thoidiemboquadichuyencungtoadogannhat < 1.0:
+        #             return
 
         self._xdichuyengannhat = x
         self._ydichuyengannhat = y
