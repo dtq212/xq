@@ -309,10 +309,11 @@ class TacTu:
             else:
                 if is_log: print(f"[DEBUG-MOVE] ĐI DẠO: Đang delay ({round(time.time() - self._thoidiemdichuyentudogannhat, 1)}s < 2.0s)")
                 pass
-        diachimuctieudanggom = yeucauduocchon.get("diachimuctieu")
+        diachimuctieudanggom = yeucauduocchon.get("diachimuctieu") if yeucauduocchon else False
         if is_log:
             msg_dich = str(yeucauduocchon.get("toadodich")) if yeucauduocchon else "None"
-            print(f"[DEBUG-MOVE] Quyết định: {lydochon} | Đích: {msg_dich} | Mục tiêu: {diachimuctieudanggom if yeucauduocchon else "None"}")
+            msg_diachimuctieudanggom = diachimuctieudanggom if yeucauduocchon else "None"
+            print(f"[DEBUG-MOVE] Quyết định: {lydochon} | Đích: {msg_dich} | Mục tiêu: {msg_diachimuctieudanggom}")
 
         if yeucauduocchon and yeucauduocchon.get("yeucau") == YEUCAUDICHUYENTANCONG and is_anhhuongboitruongnhom:
             x_truongnhom = self.moitruong.get_toadoxtruongnhom()
