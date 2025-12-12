@@ -176,7 +176,8 @@ class MoiTruong:
         return read_int(self.tientrinh, x + 0x1538)
 
     def get_phantramnoilucconlai(self):
-        if noiluctoida := self.get_noiluctoida():
+        noiluctoida = self.get_noiluctoida()
+        if noiluctoida:
             return self.get_noilucconlai() * 100. / noiluctoida
         return 0
 
@@ -921,7 +922,8 @@ class MoiTruong:
         thoigiangiancach = read_int(self.tientrinh, diachicosothongtinkynang + idvitrikynang * OFFSET_DIACHICOSOMOIKYNANG + 0x6A4C) == 0
 
         if is_kiemtranoiluc:
-            if monphai := self.get_tenmonphai():
+            monphai = self.get_tenmonphai()
+            if monphai:
                 if self.get_noilucconlai() < NGUYENKHIYEUCAUKYNANGCAMVEQUAN_MAP.get(monphai, {}).get((idvitri_x, idvitri_y), 50):
                     return False
 
@@ -2063,7 +2065,7 @@ class MoiTruong:
 
         return is_ok
 
-    def action_dichuyen(self, x, y, delay = 0.5, is_rangbuoctrongmanhinh = False):
+    def action_dichuyen(self, x, y, delay = 0.25, is_rangbuoctrongmanhinh = False):
         if self._is_vohieuhoadichuyen:
             return
 
