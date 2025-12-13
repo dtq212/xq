@@ -1490,21 +1490,10 @@ class TacTu:
                             self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_BANGPHACHNGANTAM)
                         break
 
-            is_bandocuthudao = self.moitruong.get_idbandohientai() in BANDOCUTHUDAOs
-
             if self.moitruong.get_idbandohientai() not in BANDOKHONGTANCONGs and phantramsinhlucconlai <= 25 or (is_muctieudangchonlanguoichoi and phantramsinhlucconlai <= 50):
                 if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENTHANVODICH):
                     self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TIENTHANVODICH)
                     break
-
-            # if is_bandocuthudao and is_muctieudangchonlanguoichoi and time.time() - self._thoidiemsudungphihanhphugannhat > 1. and self.moitruong.get_phantramsinhlucconlai(diachicosothongtinnhanvatmuctieudangchon) > 50 and self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TIENTHANVODICH, HIEUUNGKYNANG_KIMCUONGBATHOAIDON,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 1):
-            #     self._thoidiemsudungphihanhphugannhat = time.time()
-            #     self.action_sudungvatphamhanhtrang(PHIHANHPHU)
-            #     break
-            # if is_bandocuthudao and is_muctieudangchonlanguoichoi and time.time() - self._thoidiemsudungphihanhphugannhat > 1. and phantramsinhlucconlai <= 5. and not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENTHANVODICH) and self.moitruong.get_thoigianconlaihieuungtienthanvodich(macdinh = 2.5) < 2.:
-            #     self._thoidiemsudungphihanhphugannhat = time.time()
-            #     self.action_sudungvatphamhanhtrang(PHIHANHPHU)
-            #     break
 
             if diachicosothongtinnhanvatmuctieudangchon and is_cothetancong:
                 self._trangthaikhaithientichdia["is_danglui"] = False
