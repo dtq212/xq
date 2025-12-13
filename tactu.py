@@ -255,7 +255,7 @@ class TacTu:
             is_log = True
             self._thoidiemlogdebug = time.time()
 
-        is_log = self.moitruong.get_idnguoichoi() == 3236
+        is_log = False
         if self.moitruong.get_is_nhanvatdachet():
             if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Nhân vật đang CHẾT")
             return
@@ -394,7 +394,6 @@ class TacTu:
             self._thoidiemdungimkiemtraket = 0.
 
         if yeucauduocchon:
-            print(yeucauduocchon)
             toadodich = yeucauduocchon.get("toadodich")
             diachimuctieu = diachimuctieudanggom
 
@@ -1448,8 +1447,6 @@ class TacTu:
             if self.moitruong.get_is_dangvankhi():
                 break
 
-            is_vohieuhoadichuyen = not is_khaithientichdiasansang or not is_luutinhtruymangsansang
-
             idtuthenhanvat = self.moitruong.get_idtuthenhanvat()
             diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
             phantramsinhlucconlai = self.moitruong.get_phantramsinhlucconlai()
@@ -1467,6 +1464,8 @@ class TacTu:
                 khoangcach = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon)
                 is_muctieudangchonbichoang = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG, HIEUUNGKYNANG_BANGPHACHNGANTAM), False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0)
                 is_cothetancong = self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon)
+
+            is_vohieuhoadichuyen = khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN
 
             if not diachicosothongtinnhanvatmuctieudangchon or not is_muctieudangchonlanguoichoi:
                 if self.moitruong.get_is_cohieuungs(HIEUUNGBATLOITHUCSONCOTHEGIAIs, macdinh = False, is_hieuungcoloi = 0):
@@ -2019,9 +2018,9 @@ class TacTu:
                 tenvatpham = self.moitruong.get_tendoituong(diachivatpham)
 
                 is_cannhat = False
-                if tenvatpham in VATPHAMTUDONGNHATs:
+                if tenvatpham in VATPHAMTUDONGNHATs and tenvatpham not in VATPHAMKHONGNHATs:
                     is_cannhat = True
-                elif VATPHAMTUDONGNHATCUTHUDAOs and self.moitruong.get_idbandohientai() in BANDOCUTHUDAOs and any(x in tenvatpham for x in VATPHAMTUDONGNHATCUTHUDAOs):
+                elif VATPHAMTUDONGNHATCUTHUDAOs and self.moitruong.get_idbandohientai() in BANDOCUTHUDAOs and tenvatpham not in VATPHAMKHONGNHATs and any(x in tenvatpham for x in VATPHAMTUDONGNHATCUTHUDAOs):
                     is_cannhat = True
                 elif self._tenvatphamnhats and tenvatpham in self._tenvatphamnhats:
                     is_cannhat = True

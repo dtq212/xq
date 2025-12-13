@@ -1171,14 +1171,12 @@ class MoiTruong:
             write_bytes(self.tientrinh, self.diachixq + 0x3D8CB + 0x6, bytes.fromhex("01"), 1)
 
     def action_vohieuhoadichuyen(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x9BE3C, 1) != bytes.fromhex("83"):
-            write_bytes(self.tientrinh, self.diachixq + 0x9BE3C, bytes.fromhex("83 C4 08 90 90"), 5)
+        if read_bytes(self.tientrinh, self.diachixq + 0x9BE38, 1) != bytes.fromhex("EB"):
+            write_bytes(self.tientrinh, self.diachixq + 0x9BE38, bytes.fromhex("EB"), 1)
 
     def action_tatvohieuhoadichuyen(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x9BE3C, 1) != bytes.fromhex("E8"):
-            write_bytes(self.tientrinh, self.diachixq + 0x9BE3C, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self.diachixq + 0x9BE3C + 1, self.diachixq + 0x182E0 - (self.diachixq + 0x9BE3C) - 5)
-
+        if read_bytes(self.tientrinh, self.diachixq + 0x9BE38, 1) != bytes.fromhex("7E"):
+            write_bytes(self.tientrinh, self.diachixq + 0x9BE38, bytes.fromhex("7E"), 1)
 
     def get_is_dangmobando(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
