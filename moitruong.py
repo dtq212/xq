@@ -1170,6 +1170,16 @@ class MoiTruong:
         if read_bytes(self.tientrinh, self.diachixq + 0x3D8CB + 0x6, 1) != bytes.fromhex("01"):
             write_bytes(self.tientrinh, self.diachixq + 0x3D8CB + 0x6, bytes.fromhex("01"), 1)
 
+    def action_vohieuhoadichuyen(self):
+        if read_bytes(self.tientrinh, self.diachixq + 0x9BE3C, 1) != bytes.fromhex("83"):
+            write_bytes(self.tientrinh, self.diachixq + 0x9BE3C, bytes.fromhex("83 C4 08 90 90"), 5)
+
+    def action_tatvohieuhoadichuyen(self):
+        if read_bytes(self.tientrinh, self.diachixq + 0x9BE3C, 1) != bytes.fromhex("E8"):
+            write_bytes(self.tientrinh, self.diachixq + 0x9BE3C, bytes.fromhex("E8"), 1)
+            write_int(self.tientrinh, self.diachixq + 0x9BE3C + 1, self.diachixq + 0x182E0 - (self.diachixq + 0x9BE3C) - 5)
+
+
     def get_is_dangmobando(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
@@ -1995,7 +2005,7 @@ class MoiTruong:
         return self._thoidiemsudungkynangvitrigannhat_map.get((idvitri_x, idvitri_y), macdinh)
 
     def action_sudungkynangvitrimuctieu(self, idvitri_x, idvitri_y, diachicosothongtinnhanvatmuctieu = False, is_khongkiemtracothetancong = False, delay = 0.25):
-        if time.time() - self._thoidiemsudungkynanggannhat < 0.25:
+        if time.time() - self._thoidiemsudungkynanggannhat < 0.05:
             return
 
         idvitri = (idvitri_x, idvitri_y)

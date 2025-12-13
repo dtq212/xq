@@ -76,13 +76,20 @@ def _phatam(noidung, is_block):
         file_path = os.path.join(duongdanthumucamthanh, "{}.mp3".format(tenfile))
 
         if not os.path.exists(file_path):
-            gtts.gTTS(noidung, lang = "vi").save(file_path)
-            
-        playsound.playsound(file_path, is_block)
+            try:
+                gtts.gTTS(noidung, lang = "vi").save(file_path)
+            except Exception as e_save:
+                print(f"Lỗi khi lưu file âm thanh: {e_save}")
+                return
+        try:
+            playsound.playsound(file_path, is_block)
+        except Exception as e_play:
+            print(f"Lỗi playsound (đã bỏ qua): {e_play}")
+            pass
+        # -------------------
 
     except Exception as err:
-        print("Phát âm lỗi: {}".format(err))
-
+        print("Phát âm lỗi tổng quát: {}".format(err))
 
 def phatam(noidung, is_block = True):
     t = threading.Thread(target = _phatam, args = (noidung, is_block), daemon = True)
