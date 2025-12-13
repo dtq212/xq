@@ -1500,11 +1500,13 @@ class TacTu:
                 if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and is_luutinhtruymangsansang:
                     if idtuthenhanvat == TUTHENHANVAT_DICHUYEN:
                         if self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_LUUTINHTRUYMANG):
+                            is_vohieuhoadichuyen = True
                             break
 
                 if khoangcach <= KHOANGCACHHIEUQUAKYNANGKHAITHIENTICHDIA and is_khaithientichdiasansang:
                     if idtuthenhanvat == TUTHENHANVAT_DICHUYEN:
                         if self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_KHAITHIENTICHDIA, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach):
+                            is_vohieuhoadichuyen = True
                             break
 
                 if phantramsinhlucconlai <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENKHI):
