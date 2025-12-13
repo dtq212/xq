@@ -2,7 +2,7 @@ import threading
 import time
 import pymem.exception
 from hangso import *
-from moitruong import MoiTruong
+from moitruongcu import MoiTruong
 from tactu import TacTu
 from tienich import phatam
 
@@ -134,8 +134,6 @@ class LoopChinh:
         self.tactu._action_theonhom()
         self.tactu.action_xulygomquai()
         self.tactu._action_sudungkynang()
-
-        # self.moitruong.action_vohieuhoadichuyen()
 
         # if self.moitruong.get_tendoituong() == "TruyÂ Má»‡nh":
         #     self.tactu.action_sudungvatphamhanhtrang(TUSAMDON, delay = 5.)

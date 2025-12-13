@@ -1,10 +1,11 @@
 import os
 import threading
 import time
+
 import keyboard
-import win32gui
 from infi.systray import SysTrayIcon
 
+from hangso import *
 from loop import (
     LoopLamMoiTrangThaiMoiTruong,
     LoopTimKiemMucTieu,
@@ -13,9 +14,8 @@ from loop import (
     LoopPhu,
     LoopDieuPhoiDiChuyen
 )
-from moitruong import MoiTruong
+from moitruongcu import MoiTruong
 from tactu import TacTu
-from hangso import *
 
 
 def khoidong_looplammoitrangthaimoitruong(moitruong, tactu, stop):
@@ -233,9 +233,6 @@ class CuaSo:
 
     def battat_tudongtheosautruongnhom(self):
         self.tactu.battat_is_tudongtheosautruongnhom()
-
-    def battat_vohieuhoadichuyen(self):
-        self.tactu.battat_is_vohieuhoadichuyen()
 
     def battat_tudongbattheosaunhom(self):
         self.tactu.battat_is_tudongbattheosaunhom()

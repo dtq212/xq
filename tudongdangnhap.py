@@ -4,7 +4,7 @@ import time
 import win32gui
 import shutil
 import win32con
-from moitruong import MoiTruong
+from moitruongcu import MoiTruong
 from background_input import BackgroundInput
 
 DUONGDAN_GAME = r"D:\Games\ChienQuoc2D_New\ChienQuoc.exe"

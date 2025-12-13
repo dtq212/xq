@@ -416,7 +416,7 @@ MONPHAI_MAP = {
 }
 
 BANDO_TANTHUTHON = 1
-BANDOCUTHUDAOs = (549, 541, 264, 510)
+BANDOCUTHUDAOs = (549, 541, 264, 510, 511, 512, 513)
 BANDO_CHU = 80
 BANDO_THUCSON = 273
 BANDO_VANMONGCOC = 165
@@ -582,7 +582,7 @@ TUSAMDON = "Tá»­ SÃ¢m ÄÆ¡n"
 TAYGAU = "Tay Gáº¥u"
 TUIQUAVOSONG = "TÃºi QuÃ  VÃ´ Song"
 
-VATPHAMKHONGNHATs = ("ChuÃ´i Äao", "Vá» Kiáº¿m")
+VATPHAMKHONGNHATs = ("ChuÃ´i Äao", "Vá» Kiáº¿m", "PhÃ¡ Cá»±u KhÃ´i GiÃ¡p")
 VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUKIMBAOHOP, HOATLACHOAN, TOAIMABO, TUSAMDON, NHIEPHONTHACH, TAYGAU)
 VATPHAMTUDONGNHATCUTHUDAOs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i", " Nháº«n", " TiÃªu", "Äáº§u CÃ¢n")
 VATPHAMXEPCHONGs = tuple()
@@ -605,7 +605,7 @@ KIEUDICHUYEN_TOADOCHUAN = 3
 
 BANDOCOMO = 395
 
-NHANVATTODOITUDONGs = (2484, 2483, 2492, 2574, 2855, 3236, 2303) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
+NHANVATTODOITUDONGs = (2484, 2483, 2492, 2574, 2855) #ID đầu tiên sẽ được sử dụng làm trưởng nhóm
 NHANVATNGUYHIEMs = tuple()
 NHANVATCUNGBANGs = (3236, 2303,
     1, 19, 26, 27, 159, 1258, 395, 536, 39, 803, 528, 290, 38, 54, 436, 160, 62, 68, 434, 217, 56, 140,
