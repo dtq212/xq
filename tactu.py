@@ -5,7 +5,7 @@ import time
 import pymem
 
 from hangso import *
-from moitruongcu import MoiTruong
+from moitruong import MoiTruong
 from tienich import luuthietlap as util_luuthietlap
 from tienich import taithietlap as util_taithietlap, phatam
 
@@ -1508,16 +1508,12 @@ class TacTu:
             if diachicosothongtinnhanvatmuctieudangchon and is_cothetancong:
                 self._trangthaikhaithientichdia["is_danglui"] = False
 
-                if khoangcach <= KHOANGCACHHIEUQUAKYNANGKHAITHIENTICHDIA and is_khaithientichdiasansang:
-                    if idtuthenhanvat == TUTHENHANVAT_DICHUYEN:
-                        if self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_KHAITHIENTICHDIA, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach):
-                            break
+                if khoangcach <= KHOANGCACHHIEUQUAKYNANGKHAITHIENTICHDIA and is_khaithientichdiasansang and idtuthenhanvat == TUTHENHANVAT_DICHUYEN:
+                    if self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_KHAITHIENTICHDIA, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach):
                         break
 
-                if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and is_luutinhtruymangsansang:
-                    if idtuthenhanvat == TUTHENHANVAT_DICHUYEN:
-                        if self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_LUUTINHTRUYMANG):
-                            break
+                elif khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and is_luutinhtruymangsansang and idtuthenhanvat in (TUTHENHANVAT_DICHUYEN, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
+                    if self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_LUUTINHTRUYMANG):
                         break
 
                 if phantramsinhlucconlai <= 75. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIENKHI):
