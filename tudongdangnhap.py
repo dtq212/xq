@@ -28,31 +28,31 @@ TOADO_SERVER_LIST = {
 }
 
 THONGTINDANGNHAP_MAP = {
-    "Xanh365": {
-        "user": "xanh365",
-        "pass": "hateva1",
-        "server": "Kênh 1",
-    },
-    "Dasshu": {
-        "user": "dasshu",
-        "pass": "hateva1",
-        "server": "Kênh 3",
-    },
-    "Dasmurai": {
-        "user": "dasmurai",
-        "pass": "hateva1",
-        "server": "Kênh 4",
-    },
+    # "Xanh365": {
+    #     "user": "xanh365",
+    #     "pass": "hateva1",
+    #     "server": "Kênh 1",
+    # },
+    # "Dasshu": {
+    #     "user": "dasshu",
+    #     "pass": "hateva1",
+    #     "server": "Kênh 3",
+    # },
+    # "Dasmurai": {
+    #     "user": "dasmurai",
+    #     "pass": "hateva1",
+    #     "server": "Kênh 4",
+    # },
     # "Laotsezu": {
     #     "user": "laotsezu",
     #     "pass": "hateva1",
     #     "server": "Kênh 2",
     # },
-    # "TruyÂ Má»‡nh": {
-    #     "user": "truymenh",
-    #     "pass": "hateva1",
-    #     "server": "Kênh 2",
-    # },
+    "TruyÂ Má»‡nh": {
+        "user": "truymenh",
+        "pass": "hateva1",
+        "server": "Kênh 1",
+    },
 }
 
 def laydanhsachnhanvatonlines():
