@@ -135,6 +135,8 @@ class LoopChinh:
         self.tactu.action_xulygomquai()
         self.tactu._action_sudungkynang()
 
+
+
         # if self.moitruong.get_tendoituong() == "TruyÂ Má»‡nh":
         #     self.tactu.action_sudungvatphamhanhtrang(TUSAMDON, delay = 5.)
         #     self.moitruong.action_thucthicaulenh("tallk 29b# bonus.1")
@@ -146,8 +148,9 @@ class LoopChinh:
         #     self.moitruong.action_thucthicaulenh("tallk 29b# bonus.11")
         #     time.sleep(0.25)
 
-        # if diachidoituong := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
-        #     print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
+        # if diachidoituong := self.moitruong.get_diachicosothongtinnhanvatdangchichuot():
+        #     print(self.moitruong.get_tendoituong(diachidoituong))
+            # print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
             # print(self.moitruong.get_tendoituong(diachidoituong))
         # print(self.moitruong.get_danhsachhieuungnhanvats())
         # print(self.moitruong.get_danhsachvatphamhanhtrang_map())
@@ -222,7 +225,7 @@ class LoopPhu:
         self.tactu.action_tudongtrieuhoibaothudautien()
         self.tactu.action_tudongdieukhienbaothumaoson()
         self.tactu.action_tudongdichientruong()
-
+        self.tactu.action_tudonglamnhiemvusugia()
         self.tactu.action_dichuyentudo()
         self.tactu.action_nhatdo()
 

@@ -64,11 +64,15 @@ def slugify(value, allow_unicode = False):
     value = re.sub(r"[^\w\s-]", "", value.lower())
     return re.sub(r"[-\s]+", "-", value).strip("-_")
 
+
 def _phatam(noidung, is_block):
     try:
         print(f"phatam (thread): {noidung}")
         tenfile = slugify(noidung)
-        duongdanthumucamthanh = os.path.join(".", "_internal", "amthanh")
+
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+
+        duongdanthumucamthanh = os.path.join(os.getcwd(), "_internal", "amthanh")
 
         if not os.path.exists(duongdanthumucamthanh):
             os.makedirs(duongdanthumucamthanh, exist_ok = True)
@@ -86,7 +90,6 @@ def _phatam(noidung, is_block):
         except Exception as e_play:
             print(f"Lỗi playsound (đã bỏ qua): {e_play}")
             pass
-        # -------------------
 
     except Exception as err:
         print("Phát âm lỗi tổng quát: {}".format(err))

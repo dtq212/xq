@@ -225,6 +225,9 @@ class CuaSo:
                 elif keyboard.is_pressed("ctrl+alt+shift+z"):
                     self.battat_tudongdichientruong()
                     time.sleep(0.3)
+                elif keyboard.is_pressed("ctrl+alt+shift+n"):
+                    self.battat_tudonglamnhiemvusugia()
+                    time.sleep(0.3)
 
             time.sleep(0.05)
 
@@ -296,3 +299,6 @@ class CuaSo:
 
     def battat_tudongdichientruong(self):
         self.tactu.battat_is_tudongdichientruong()
+
+    def battat_tudonglamnhiemvusugia(self):
+        self.tactu.battat_is_tudonglamnhiemvusugia()

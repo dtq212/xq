@@ -483,13 +483,6 @@ class MoiTruong:
         write_int(self.tientrinh, diachicosothongtinnhanvat + 0x4, toadoy)
         write_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C, toadoy)
 
-    def action_ngatdichuyen(self):
-        toadox = self.get_toadox(is_vitrihientai = True)
-        toadoy = self.get_toadoy(is_vitrihientai = True)
-
-        self.set_toadox(toadox)
-        self.set_toadoy(toadoy)
-
     def get_huongdichuyeny(self, diachicosothongtinnhanvat = None):
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
