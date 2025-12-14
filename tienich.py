@@ -7,6 +7,7 @@ import threading
 
 import gtts
 import playsound
+import pygame
 import unicodedata
 
 from hangso import STRING_ENCODING
@@ -86,10 +87,15 @@ def _phatam(noidung, is_block):
                 print(f"Lỗi khi lưu file âm thanh: {e_save}")
                 return
         try:
-            playsound.playsound(file_path, is_block)
+            pygame.mixer.init()
+            pygame.mixer.music.load(file_path)
+            pygame.mixer.music.play()
+
+            if is_block:
+                while pygame.mixer.music.get_busy():
+                    pygame.time.Clock().tick(10)
         except Exception as e_play:
-            print(f"Lỗi playsound (đã bỏ qua): {e_play}")
-            pass
+            print(f"Lỗi phát âm thanh: {e_play}")
 
     except Exception as err:
         print("Phát âm lỗi tổng quát: {}".format(err))
