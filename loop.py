@@ -226,7 +226,6 @@ class LoopPhu:
         self.tactu.action_tudonglamnhiemvusugia()
         self.tactu.action_dichuyentudo()
         self.tactu.action_nhatdo()
-        self.moitruong.action_ngatdichuyen()
 
         if self.moitruong.get_is_nhanvatdachet():
             if time.time() - self.thoidiemthongbaochetgannhat > 5.:

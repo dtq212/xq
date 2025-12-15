@@ -2205,8 +2205,9 @@ class MoiTruong:
             deltay = int(-1 * khoangcachdichuyen * deltay / khoangcach)
 
         if not deltax and not deltay:
-            deltax = random.randint(-1, 1) * khoangcachdichuyentoida
-            deltay = random.randint(-1, 1) * khoangcachdichuyentoida
+            dist_move = khoangcachdichuyentoida if khoangcachdichuyentoida > 0 else khoangcachtoithieu
+            deltax = random.choice([-1, 1]) * dist_move
+            deltay = random.choice([-1, 1]) * dist_move
 
         xmax = self._xmax
         ymax = self._ymax
