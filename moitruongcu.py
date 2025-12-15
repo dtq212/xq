@@ -2050,8 +2050,15 @@ class MoiTruong:
 
         return is_ok
 
+    def get_idlenhdichuyen(self):
+        return read_int(self.tientrinh, self.diachixq + 0x37F9EC)
+
+    def set_idlenhdichuyen(self, idlenhdichuyen):
+        write_int(self.tientrinh, self.diachixq + 0x37F9EC, idlenhdichuyen)
+
     def action_ngatdichuyen(self):
-        write_int(self.tientrinh, self.diachixq + 0x37F9EC, 0)
+        if self.get_idlenhdichuyen() != 0:
+            self.set_idlenhdichuyen(0)
 
     def action_dichuyen(self, x, y, delay = 0.25, is_rangbuoctrongmanhinh = False):
         if time.time() - self._thoidiemdichuyengannhat < delay:

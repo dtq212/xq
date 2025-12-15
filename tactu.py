@@ -1594,10 +1594,6 @@ class TacTu:
             self._thoidiemluutinhtruymangkhongsansanggannhat = time.time()
             print("Vừa sử dụng lưu tinh truy mạng")
 
-
-        if time.time() - self._thoidiemkhaithientichdiakhongsansanggannhat < 1. or time.time() - self._thoidiemluutinhtruymangkhongsansanggannhat < 1.:
-            self.moitruong.action_ngatdichuyen()
-
         self._is_khaithientichdiasansang = is_khaithientichdiasansang
         self._is_luutinhtruymangsansang = is_luutinhtruymangsansang
         self._is_yeucauvohieuhoadichuyen = is_yeucauvohieuhoadichuyen
