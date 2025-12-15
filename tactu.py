@@ -5,7 +5,7 @@ import time
 import pymem
 
 from hangso import *
-from moitruongcu import MoiTruong
+from moitruong import MoiTruong
 from tienich import luuthietlap as util_luuthietlap
 from tienich import taithietlap as util_taithietlap, phatam
 
@@ -306,7 +306,7 @@ class TacTu:
         elif self._yeucaukhaikhoang and not is_anhhuongboitruongnhom:
             yeucauduocchon = self._yeucaukhaikhoang
             lydochon = "KHAI KHOÁNG"
-        elif self._yeucaugomquai and not is_anhhuongboitruongnhom:
+        elif self._yeucaugomquai and not is_anhhuongboitruongnhom and self._is_danggomquai:
             yeucauduocchon = self._yeucaugomquai
             lydochon = "GOM QUÁI"
         elif self._yeucautancong and self.moitruong.get_idbandohientai() not in BANDOKHONGTANCONGs:
@@ -323,6 +323,7 @@ class TacTu:
             else:
                 if is_log: print(f"[DEBUG-MOVE] ĐI DẠO: Đang delay ({round(time.time() - self._thoidiemdichuyentudogannhat, 1)}s < 2.0s)")
                 pass
+
         diachimuctieudanggom = yeucauduocchon.get("diachimuctieu") if yeucauduocchon else False
         if is_log:
             msg_dich = str(yeucauduocchon.get("toadodich")) if yeucauduocchon else "None"

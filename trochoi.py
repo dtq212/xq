@@ -12,7 +12,7 @@ import win32gui
 import winerror
 
 from cuaso import CuaSo
-from moitruongcu import MoiTruong
+from moitruong import MoiTruong
 from tienich import phatam
 
 CREATE_NO_WINDOW = 0x08000000
