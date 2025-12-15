@@ -88,7 +88,7 @@ class TacTu:
         self._thoidiemsudungvatphamgannhat = time.time()
         self._thoidiemsudungthucanbaothugannhat = time.time()
         self._thoidiemmochangiabaoruonggannhat = time.time()
-        self._thoidiemsudungsinhkhitangannhat = time.time()  # - 300.
+        self._thoidiemsudungsinhkhitangannhat = 0.
         self._thoidiemsudungsotriduocgannhat = time.time()
         self._thoidiemsudungphihanhphugannhat = time.time()
         self._thoidiemsudungkimcuongbathoaidongannhat = time.time()
@@ -756,6 +756,10 @@ class TacTu:
             if self.moitruong.get_idbandohientai() not in BANDOKHONGTANCONGs and time.time() - self._thoidiemsudungsotriduocgannhat > 2. and (phantramsinhlucconlai <= 25. or (is_muctieudangchonlanguoichoi and phantramsinhlucconlai <= 75)):
                 self._thoidiemsudungsotriduocgannhat = time.time()
                 self.action_sudungvatphamhanhtrang(HOATLACHOAN)
+
+            if time.time() - self._thoidiemsudungsinhkhitangannhat > 30.:
+                if self.action_sudungvatphamhanhtrang(SINHKHITAN):
+                    self._thoidiemsudungsinhkhitangannhat = time.time()
 
     def _action_sudungkynang(self):
         self._yeucautancong = None
