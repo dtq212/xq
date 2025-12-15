@@ -2,7 +2,7 @@ import threading
 import time
 import pymem.exception
 from hangso import *
-from moitruong import MoiTruong
+from moitruongcu import MoiTruong
 from tactu import TacTu
 from tienich import phatam
 
@@ -137,15 +137,13 @@ class LoopChinh:
 
 
 
-        # if self.moitruong.get_tendoituong() == "TruyÂ Má»‡nh":
-        #     self.tactu.action_sudungvatphamhanhtrang(TUSAMDON, delay = 5.)
-        #     self.moitruong.action_thucthicaulenh("tallk 29b# bonus.1")
+        # if self.moitruong.get_idnguoichoi() == 3569:
+        #     # self.tactu.action_sudungvatphamhanhtrang(TUSAMDON, delay = 5.)
+        #     self.moitruong.action_thucthicaulenh("tallk 295# bonus.1")
         #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("tallk 29b# bonus.7")
+        #     self.moitruong.action_thucthicaulenh("tallk 295# bonus.28")
         #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("tallk 29b# bonus.10")
-        #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("tallk 29b# bonus.11")
+        #     self.moitruong.action_thucthicaulenh("tallk 295# bonus.29")
         #     time.sleep(0.25)
 
         # if diachidoituong := self.moitruong.get_diachicosothongtinnhanvatdangchichuot():
