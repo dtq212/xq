@@ -2071,6 +2071,9 @@ class MoiTruong:
 
         return is_ok
 
+    def action_ngatdichuyen(self):
+        write_int(self.tientrinh, self.diachixq + 0x37F9EC, 0)
+
     def action_dichuyen(self, x, y, delay = 0.25, is_rangbuoctrongmanhinh = False):
         if self._is_vohieuhoadichuyen:
             return

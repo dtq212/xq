@@ -1589,11 +1589,13 @@ class TacTu:
         if self._is_khaithientichdiasansang and not is_khaithientichdiasansang:
             self._thoidiemkhaithientichdiakhongsansanggannhat = time.time()
             print("Vừa sử dụng khai thiên tịch địa")
-            self.moitruong.action_ngatdichuyen()
 
         if self._is_luutinhtruymangsansang and not is_luutinhtruymangsansang:
             self._thoidiemluutinhtruymangkhongsansanggannhat = time.time()
             print("Vừa sử dụng lưu tinh truy mạng")
+
+
+        if time.time() - self._thoidiemkhaithientichdiakhongsansanggannhat < 1. or time.time() - self._thoidiemluutinhtruymangkhongsansanggannhat < 1.:
             self.moitruong.action_ngatdichuyen()
 
         self._is_khaithientichdiasansang = is_khaithientichdiasansang
