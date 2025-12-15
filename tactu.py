@@ -1486,7 +1486,7 @@ class TacTu:
             if self.moitruong.get_is_dangvankhi():
                 break
 
-            is_yeucauvohieuhoadichuyen = not is_luutinhtruymangsansang and not is_khaithientichdiasansang
+            # is_yeucauvohieuhoadichuyen = not is_luutinhtruymangsansang and not is_khaithientichdiasansang
 
             idtuthenhanvat = self.moitruong.get_idtuthenhanvat()
             diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
@@ -1589,10 +1589,12 @@ class TacTu:
         if self._is_khaithientichdiasansang and not is_khaithientichdiasansang:
             self._thoidiemkhaithientichdiakhongsansanggannhat = time.time()
             print("Vừa sử dụng khai thiên tịch địa")
+            self.moitruong.action_ngatdichuyen()
 
         if self._is_luutinhtruymangsansang and not is_luutinhtruymangsansang:
             self._thoidiemluutinhtruymangkhongsansanggannhat = time.time()
             print("Vừa sử dụng lưu tinh truy mạng")
+            self.moitruong.action_ngatdichuyen()
 
         self._is_khaithientichdiasansang = is_khaithientichdiasansang
         self._is_luutinhtruymangsansang = is_luutinhtruymangsansang
