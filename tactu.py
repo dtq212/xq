@@ -1577,6 +1577,7 @@ class TacTu:
                         "diachimuctieu": diachicosothongtinnhanvatmuctieudangchon,
                         "khoangcach": khoangcach + 1.5
                     }
+                    print(f"self._yeucautancong: {self._yeucautancong}")
                     break
                 elif khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN:
                     thoigiantuthenhanvatdungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat() if idtuthenhanvat == TUTHENHANVAT_DUNGIM else 0.
