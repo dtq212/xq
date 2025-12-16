@@ -2122,6 +2122,11 @@ class MoiTruong:
         if not deltax and not deltay:
             return
 
+        chieuhuongdichuyen = 1 if self.get_is_cohieuungs((HIEUUNGKYNANG_ROILOAN,), macdinh = False, is_hieuungcoloi = 0) else -1
+
+        deltax *= chieuhuongdichuyen
+        deltay *= chieuhuongdichuyen
+
         xmax = self._xmax
         ymax = self._ymax
 
