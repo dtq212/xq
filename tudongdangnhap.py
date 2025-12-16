@@ -7,7 +7,7 @@ import win32con
 from moitruongcu import MoiTruong
 from background_input import BackgroundInput
 
-DUONGDAN_GAME = r"D:\Games\ChienQuoc2D_New\ChienQuoc.exe"
+DUONGDAN_GAME = r"D:\Games\ChienQuocNew\chienquocnew\xq.exe"
 LAUNCHER_TITLE = "client 1.01.68"
 GAME_TITLE_LOGIN_SCREEN = "Chien Quoc - Loan The Anh Hung"
 GAME_TITLE_PREFIX = "Chien Quoc ("
@@ -28,11 +28,16 @@ TOADO_SERVER_LIST = {
 }
 
 THONGTINDANGNHAP_MAP = {
-    # "Xanh365": {
-    #     "user": "xanh365",
-    #     "pass": "hateva1",
-    #     "server": "Kênh 1",
-    # },
+    "Zhuangzi1": {
+        "user": "zhuangzi1",
+        "pass": "hateva1",
+        "server": "Kênh 1",
+    },
+    "Zhuangzi2": {
+        "user": "zhuangzi2",
+        "pass": "hateva1",
+        "server": "Kênh 1",
+    },
     # "Dasshu": {
     #     "user": "dasshu",
     #     "pass": "hateva1",
@@ -48,11 +53,11 @@ THONGTINDANGNHAP_MAP = {
     #     "pass": "hateva1",
     #     "server": "Kênh 2",
     # },
-    "TruyÂ Má»‡nh": {
-        "user": "truymenh",
-        "pass": "hateva1",
-        "server": "Kênh 1",
-    },
+    # "TruyÂ Má»‡nh": {
+    #     "user": "truymenh",
+    #     "pass": "hateva1",
+    #     "server": "Kênh 1",
+    # },
 }
 
 def laydanhsachnhanvatonlines():
