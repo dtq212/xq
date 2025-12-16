@@ -1533,10 +1533,6 @@ class TacTu:
                         self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TINHTAMQUYET)
                         break
 
-                if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_BADAONOHAOKHI):
-                    if self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_BADAONOHAOKHI):
-                        break
-
                 if khoangcach <= KHOANGCACHHIEUQUAKYNANGKHAITHIENTICHDIA and is_khaithientichdiasansang and idtuthenhanvat == TUTHENHANVAT_DICHUYEN:
                     if self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_KHAITHIENTICHDIA, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach):
                         break
