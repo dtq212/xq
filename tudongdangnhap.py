@@ -8,7 +8,7 @@ from moitruongcu import MoiTruong
 from background_input import BackgroundInput
 
 DUONGDAN_GAME = r"D:\Games\ChienQuocNew\chienquocnew\xq.exe"
-LAUNCHER_TITLE = "client 1.01.68"
+LAUNCHER_TITLE = "client 1.01.50"
 GAME_TITLE_LOGIN_SCREEN = "Chien Quoc - Loan The Anh Hung"
 GAME_TITLE_PREFIX = "Chien Quoc ("
 
