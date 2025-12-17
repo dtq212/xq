@@ -180,6 +180,7 @@ class TacTu:
         self._thoidiemluutinhtruymangkhongsansanggannhat = 0.
 
         self._is_yeucauvohieuhoadichuyen = False
+        self._is_uutienbaothumaoson = False
 
     def __del__(self):
         try:
@@ -573,14 +574,13 @@ class TacTu:
                         is_boquamuctieuhientai = True
                     elif tendoituongmuctieudangchon in TENNHANVATKHONGTANCONGs:
                         is_boquamuctieuhientai = True
+                    elif self._is_chidanhnguoichoi and not is_muctieudangchonlanguoichoi and not is_muctieudangchonlabaothumaoson:
+                        is_boquamuctieuhientai = True
                     elif self._is_phitac and not is_muctieudangchonlanguoichoi and tendoituongmuctieudangchon not in VOTUHOCNHANs:
                         is_boquamuctieuhientai = True
                     elif self._tenmuctieutancongs and tendoituongmuctieudangchon not in self._tenmuctieutancongs:
                         is_boquamuctieuhientai = True
                     elif self._tenmuctieukhongtancongs and tendoituongmuctieudangchon in self._tenmuctieukhongtancongs:
-                        is_boquamuctieuhientai = True
-                    # elif self._is_chidanhnguoichoi and not is_muctieudangchonlanguoichoi and not is_muctieudangchonlabaothumaoson:
-                    elif self._is_chidanhnguoichoi and not is_muctieudangchonlanguoichoi:
                         is_boquamuctieuhientai = True
                     elif is_muctieudangchonlanguoichoi and self.moitruong.get_phantramsinhlucconlai(diachicosothongtinnhanvatmuctieudangchon) <= 5 and self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TIENTHANVODICH, HIEUUNGKYNANG_KIMCUONGBATHOAIDON,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 1):
                         is_boquamuctieuhientai = True
@@ -649,8 +649,7 @@ class TacTu:
 
                 is_muctieudangxemxetlabaothumaoson = any(tenbaothu in tendoituongmuctieudangxemxet for tenbaothu in (CUONGTHI, QUYTOT, THIENBINH))
 
-                # if self._is_chidanhnguoichoi and not is_muctieudangxemxetlanguoichoi and not is_muctieudangxemxetlabaothumaoson:
-                if self._is_chidanhnguoichoi and not is_muctieudangxemxetlanguoichoi:
+                if self._is_chidanhnguoichoi and not is_muctieudangxemxetlanguoichoi and not is_muctieudangxemxetlabaothumaoson:
                     continue
 
                 if is_bandokhongpk and (is_muctieudangxemxetlabaothumaoson or is_muctieudangxemxetlanguoichoi):
@@ -685,9 +684,6 @@ class TacTu:
                 if diachicosothongtinnhanvatmuctieuxemxet == diachicosothongtinnhanvatmuctieudangchon:
                     continue
 
-                # if self.moitruong.get_idmaupk() == MAUPK_HOABINH and is_muctieudangxemxetlabaothumaoson:
-                #     continue
-
                 def _thaydoimuctieuhientai():
                     if diachicosothongtinnhanvatmuctieudangchon:
                         self._diachicosomuctieuduphong = diachicosothongtinnhanvatmuctieudangchon
@@ -696,6 +692,19 @@ class TacTu:
                 if not diachicosothongtinnhanvatmuctieudangchon or not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
                     _thaydoimuctieuhientai()
                     continue
+
+                tendoituongmuctieudangchon = self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon)
+
+                if self._is_uutienbaothumaoson:
+                    is_muctieuxemxetlabaothumaoson = any(tenbaothu in tendoituongmuctieuxemxet for tenbaothu in (CUONGTHI, QUYTOT, THIENBINH))
+                    is_muctieudangchonlabaothumaoson = any(tenbaothu in tendoituongmuctieudangchon for tenbaothu in (CUONGTHI, QUYTOT, THIENBINH)) if diachicosothongtinnhanvatmuctieudangchon else False
+
+                    if is_muctieuxemxetlabaothumaoson:
+                        if not is_muctieudangchonlabaothumaoson:
+                            _thaydoimuctieuhientai()
+                            continue
+                    elif is_muctieudangchonlabaothumaoson:
+                        continue
 
                 if self._is_uutiennguoichoi:
                     if is_muctieudangxemxetlanguoichoi:
@@ -1927,6 +1936,13 @@ class TacTu:
                         break
             break
         return
+
+    def battat_is_uutienbaothumaoson(self):
+        self._is_uutienbaothumaoson = not self._is_uutienbaothumaoson
+        if self._is_uutienbaothumaoson:
+            phatam("Bật ưu tiên đánh đệ Mao Sơn")
+        else:
+            phatam("Tắt ưu tiên đánh đệ Mao Sơn")
 
     def battat_is_tudongsudungkynang(self):
         self._is_tudongsudungkynang = not self._is_tudongsudungkynang

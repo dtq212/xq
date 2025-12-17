@@ -212,9 +212,6 @@ class CuaSo:
                     self.themdiemdanhxungquanh()
                     time.sleep(0.3)
 
-                elif keyboard.is_pressed("ctrl+m"):
-                    self.battat_vohieuhoadichuyen()
-                    time.sleep(0.3)
 
                 elif keyboard.is_pressed("ctrl+alt+shift+g"):
                     self.battat_tudonggomquai()
@@ -228,8 +225,14 @@ class CuaSo:
                 elif keyboard.is_pressed("ctrl+alt+shift+n"):
                     self.battat_tudonglamnhiemvusugia()
                     time.sleep(0.3)
+                elif keyboard.is_pressed("ctrl+alt+s"):
+                    self.battat_uutienbaothumaoson()
+                    time.sleep(0.3)
 
             time.sleep(0.05)
+
+    def battat_uutienbaothumaoson(self):
+        self.tactu.battat_is_uutienbaothumaoson()
 
     def battat_tudongsudungkynang(self):
         self.tactu.battat_is_tudongsudungkynang()

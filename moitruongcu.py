@@ -938,6 +938,10 @@ class MoiTruong:
     def get_danhsachtennguoichoithanhviennhoms(self):
         return self._tennguoichoithanhviennhoms
 
+    def get_is_nhanvatchuasansang(self, diachicosothongtinnhanvat):
+        #Chưa sẵn sàng: Vừa đăng nhập
+        return read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0x29) == 1
+
     def get_is_cothetancong(self, diachicosothongtinnhanvat):
         if not diachicosothongtinnhanvat:
             return False
@@ -956,7 +960,20 @@ class MoiTruong:
         if self.get_is_npc(diachicosothongtinnhanvat):
             return False
 
+        if self.get_is_nhanvatchuasansang(diachicosothongtinnhanvat):
+            return False
+
         tenmuctieu = self.get_tendoituong(diachicosothongtinnhanvat)
+
+        if tenmuctieu and any(tendemaoson in tenmuctieu for tendemaoson in (CUONGTHI, QUYTOT, THIENBINH)):
+            try:
+                tenchunhan = tenmuctieu.split("(")[1].split(")")[0].strip()
+                if tenchunhan:
+                    diachicosothongtinnhanvatchunhan = self.action_timkiemnhanvat(tennhanvat = tenchunhan)
+                    if diachicosothongtinnhanvatchunhan:
+                        return self.get_is_cothetancong(diachicosothongtinnhanvatchunhan)
+            except Exception:
+                pass
 
         if tenmuctieu:
             danhsachtennguoichoithanhviennhom = self.get_danhsachtennguoichoithanhviennhoms()
