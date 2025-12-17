@@ -5,7 +5,7 @@ import time
 import pymem
 
 from hangso import *
-from moitruongcu import MoiTruong
+from moitruong import MoiTruong
 from tienich import luuthietlap as util_luuthietlap
 from tienich import taithietlap as util_taithietlap, phatam
 
@@ -468,6 +468,9 @@ class TacTu:
                 break
             if self.moitruong.get_idtuthenhanvat() in (TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO):
                 break
+            if diachicosothongtinnhanvatmuctieudangchon := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
+                if self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon):
+                    break
 
             if self._is_tudongbattheosaunhom and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THEOSAUNHOM,), True, is_hieuungcoloi = 1):
                 self.moitruong.action_battheosaunhom(2.)

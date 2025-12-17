@@ -2,7 +2,7 @@ import threading
 import time
 import pymem.exception
 from hangso import *
-from moitruongcu import MoiTruong
+from moitruong import MoiTruong
 from tactu import TacTu
 from tienich import phatam
 
