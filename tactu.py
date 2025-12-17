@@ -1533,12 +1533,12 @@ class TacTu:
                         self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TINHTAMQUYET)
                         break
 
-                if khoangcach <= KHOANGCACHHIEUQUAKYNANGKHAITHIENTICHDIA and is_khaithientichdiasansang and idtuthenhanvat == TUTHENHANVAT_DICHUYEN:
-                    if self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_KHAITHIENTICHDIA, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach):
-                        break
-
                 if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and is_luutinhtruymangsansang and idtuthenhanvat in (TUTHENHANVAT_DICHUYEN, TUTHENHANVAT_TANCONG, TUTHENHANVAT_DELAYSAUTANCONG):
                     if self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_LUUTINHTRUYMANG):
+                        break
+
+                if khoangcach <= KHOANGCACHHIEUQUAKYNANGKHAITHIENTICHDIA and is_khaithientichdiasansang and idtuthenhanvat == TUTHENHANVAT_DICHUYEN:
+                    if self.moitruong.action_sudungkynangvitriphudau(*VITRIKYNANG_KHAITHIENTICHDIA, diachicosothongtinnhanvatmuctieudangchon, khoangcachphudau = khoangcach):
                         break
 
                 if khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRONGTHUONG,), macdinh = True, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHAKHONGKICH):
