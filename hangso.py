@@ -589,7 +589,7 @@ SUGIANHIEMVU = "RSá»© Giáº£ Nhiá»‡m Vá»¥"
 
 VATPHAMKHONGNHATs = ("ChuÃ´i Äao", "Vá» Kiáº¿m", "PhÃ¡ Cá»±u KhÃ´i GiÃ¡p")
 VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUKIMBAOHOP, HOATLACHOAN, TOAIMABO, TUSAMDON, NHIEPHONTHACH, TAYGAU, TANGBAODO, TIENTE)
-VATPHAMTUDONGNHATCUTHUDAOs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i", " Nháº«n", " TiÃªu", "Äáº§u CÃ¢n")
+VATPHAMTUDONGNHATCUTHUDAOs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i", " Nháº«n", " TiÃªu", "Äáº§u CÃ¢n", "XÝ DiÔm")
 VATPHAMXEPCHONGs = tuple()
 
 VOTUHOCNHANs = ("VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 30)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 40)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 50)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 60)", )
