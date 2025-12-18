@@ -5,7 +5,7 @@ import time
 import pymem
 
 from hangso import *
-from moitruong import MoiTruong
+from moitruongcu import MoiTruong
 from tienich import luuthietlap as util_luuthietlap
 from tienich import taithietlap as util_taithietlap, phatam
 
