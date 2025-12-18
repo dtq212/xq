@@ -1782,7 +1782,7 @@ class MoiTruong:
             caulenh = "use {}#".format(hex(iddoituong)).replace("0x", "")
         else:
             caulenh = "use ! {}#".format(hex(iddoituong)).replace("0x", "")
-        print("{} auto_assemble_sudungvatpham: {} {}".format(self.get_tendoituong(), iddoituong, caulenh))
+        # print("{} auto_assemble_sudungvatpham: {} {}".format(self.get_tendoituong(), iddoituong, caulenh))
         if not self._is_dasetupautoassemblesudungvatpham:
             self._diachiautoassemblesudungvatpham = self.tientrinh.allocate(128)
 
