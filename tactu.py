@@ -180,7 +180,7 @@ class TacTu:
         self._thoidiemluutinhtruymangkhongsansanggannhat = 0.
 
         self._is_yeucauvohieuhoadichuyen = False
-        self._is_uutienbaothumaoson = False
+        self._is_uutienbaothumaoson = True
 
     def __del__(self):
         try:
