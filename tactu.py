@@ -1922,21 +1922,25 @@ class TacTu:
                         is_ngatdichuyen = True
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_HOALONGQUYET)
                         break
-                    elif not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_BIENTHANTHUAT,), macdinh = True, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_BIENTHANTHUAT):
+                    elif is_muctieudangchonlanguoichoi and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_BIENTHANTHUAT,), macdinh = True, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_BIENTHANTHUAT):
                         is_ngatdichuyen = True
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_BIENTHANTHUAT)
                         break
-                    elif not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRAMMAC, HIEUUNGKYNANG_CHOANG), False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHONGMACHU):
+                    elif is_muctieudangchonlanguoichoi and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRAMMAC, HIEUUNGKYNANG_CHOANG), False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHONGMACHU):
                         is_ngatdichuyen = True
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_PHONGMACHU)
+                        break
+                    elif khoangcach < 6. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_HANBANGTRAN):
+                        is_ngatdichuyen = True
+                        self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_HANBANGTRAN)
                         break
                     elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_HUYENLONGCHANKHI):
                         is_ngatdichuyen = True
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_HUYENLONGCHANKHI)
                         break
-                    elif khoangcach < 6. and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_HANBANGTRAN):
+                    elif not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRAMMAC, HIEUUNGKYNANG_CHOANG, HIEUUNGKYNANG_DONGBANG), False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_THUONGLONGQUYET):
                         is_ngatdichuyen = True
-                        self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_HANBANGTRAN)
+                        self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_THUONGLONGQUYET)
                         break
                     elif self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHONGHOAQUYET):
                         is_ngatdichuyen = True

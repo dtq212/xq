@@ -148,9 +148,9 @@ class LoopChinh:
         #     if diachi := self.moitruong.action_timkiemnhanvat(iddoituong = self.moitruong.get_iddoituongbaothumaoson()):
         #         print(hex(diachi))
 
-        # if self.moitruong.get_tendoituong() == "Laotsezu":
+        # if self.moitruong.get_tendoituong() == "ThoLuuManh1":
         #     if diachidoituong := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
-        #         # print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
+        #         print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
         #         print(self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRONGTHUONG, ), macdinh = True, is_hieuungcoloi = 0))
 
 class LoopPhu:
