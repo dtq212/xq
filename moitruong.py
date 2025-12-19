@@ -1153,11 +1153,11 @@ class MoiTruong:
             write_int(self.tientrinh, self.diachixq + 0x5416C + 0x6, 2)
 
     def action_chantangcapdo(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x13FB61, 1) != bytes.fromhex("83"):
+        if read_bytes(self.tientrinh, self.diachixq + 0x13FB61, 1) == bytes.fromhex("E8"):
             write_bytes(self.tientrinh, self.diachixq + 0x13FB61, bytes.fromhex("83 C4 08 90 90"), 5)
 
     def action_bochantangcapdo(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x13FB61, 1) != bytes.fromhex("E8"):
+        if read_bytes(self.tientrinh, self.diachixq + 0x13FB61, 1) == bytes.fromhex("83"):
             write_bytes(self.tientrinh, self.diachixq + 0x13FB61, bytes.fromhex("E8"), 1)
             write_int(self.tientrinh, self.diachixq + 0x13FB61 + 1, self.diachixq + 0x16C730 - (self.diachixq + 0x13FB61) - 5)
 

@@ -2,7 +2,7 @@ import threading
 import time
 import pymem.exception
 from hangso import *
-from moitruongcu import MoiTruong
+from moitruong import MoiTruong
 from tactu import TacTu
 from tienich import phatam
 
@@ -148,7 +148,8 @@ class LoopChinh:
         #     if diachi := self.moitruong.action_timkiemnhanvat(iddoituong = self.moitruong.get_iddoituongbaothumaoson()):
         #         print(hex(diachi))
 
-        # if self.moitruong.get_tendoituong() == "ThoLuuManh1":
+        # if self.moitruong.get_tendoituong() == "ThoLuuManh2":
+        #     print(self.moitruong.get_danhsachhieuungnhanvats())
         #     if diachidoituong := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
         #         print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
         #         print(self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRONGTHUONG, ), macdinh = True, is_hieuungcoloi = 0))
