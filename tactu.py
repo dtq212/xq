@@ -1032,7 +1032,7 @@ class TacTu:
                                 break
 
                 else:
-                    if noilucconlai > 150 and self.moitruong.action_timkiemvatphamhanhtrang(BUAGIAY) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TRIEUHOITHIENBINH):
+                    if noilucconlai > 150 and self.moitruong.action_timkiemvatphamhanhtrang(BUAGIAY) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TRIEUHOITHIENBINH) and not (self._is_nhieumuctieugan5 or phantramsinhlucconlai <= 33):
                         is_vohieuhoadichuyen = True
                         self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 1.)
                         self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TRIEUHOITHIENBINH, delay = 1.)
