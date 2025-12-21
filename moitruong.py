@@ -968,11 +968,14 @@ class MoiTruong:
                 pass
 
         if tenmuctieu:
-            danhsachtennguoichoithanhviennhom = self.get_danhsachtennguoichoithanhviennhoms()
+            if f"({self.get_tendoituong()})" in tenmuctieu:
+                return False
+            elif self.get_is_dangnamtrongnhom():
+                danhsachtennguoichoithanhviennhom = self.get_danhsachtennguoichoithanhviennhoms()
 
-            for tenthanhviennhom in danhsachtennguoichoithanhviennhom:
-                if tenthanhviennhom in tenmuctieu:
-                    return False
+                for tenthanhviennhom in danhsachtennguoichoithanhviennhom:
+                    if f"({tenthanhviennhom})" in tenmuctieu:
+                        return False
 
         idmaupk = self.get_idmaupk()
 

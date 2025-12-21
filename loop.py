@@ -108,7 +108,6 @@ class LoopChinh:
                 self.step()
             except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
                 print("Luồng chính: {}, {}".format(err, self.moitruong.get_tendoituong()))
-                raise err
                 time.sleep(1)
 
             time.sleep(0.05)
@@ -144,9 +143,11 @@ class LoopChinh:
 
         # print(self.moitruong.get_idkynang(0, 0))
 
-        # if self.moitruong.get_tendoituong() == "Dasshu":
-        #     if diachi := self.moitruong.action_timkiemnhanvat(iddoituong = self.moitruong.get_iddoituongbaothumaoson()):
-        #         print(hex(diachi))
+        # if self.moitruong.get_tendoituong() == "ThoLuuManh1":
+        #     self.moitruong.action_thucthicaulenh("noichuyen 1ed# gift.30", delay = 0)
+        #     time.sleep(0.5)
+            # if diachi := self.moitruong.action_timkiemnhanvat(iddoituong = self.moitruong.get_iddoituongbaothumaoson()):
+            #     print(hex(diachi))
 
         # if self.moitruong.get_tendoituong() == "ThoLuuManh2":
         #     print(self.moitruong.get_danhsachhieuungnhanvats())

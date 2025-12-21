@@ -7,7 +7,7 @@ import win32con
 from moitruongcu import MoiTruong
 from background_input import BackgroundInput
 
-DUONGDAN_GAME = r"D:\Games\ChienQuocNew\chienquocnew\xq.exe"
+DUONGDAN_GAME = r"D:\Games\ChienQuocNew\chienquocnew\ChienQuoc.exe"
 LAUNCHER_TITLE = "client 1.01.50"
 GAME_TITLE_LOGIN_SCREEN = "Chien Quoc - Loan The Anh Hung"
 GAME_TITLE_PREFIX = "Chien Quoc ("
@@ -28,6 +28,21 @@ TOADO_SERVER_LIST = {
 }
 
 THONGTINDANGNHAP_MAP = {
+    "ThoLuuManh1": {
+        "user": "tholuumanh1",
+        "pass": "hateva1",
+        "server": "Kênh 1",
+    },
+    "ThoLuuManh2": {
+        "user": "tholuumanh2",
+        "pass": "hateva1",
+        "server": "Kênh 1",
+    },
+    "ThoLuuManh3": {
+        "user": "tholuumanh3",
+        "pass": "hateva1",
+        "server": "Kênh 1",
+    },
     # "Zhuangzi1": {
     #     "user": "zhuangzi1",
     #     "pass": "hateva1",
@@ -48,16 +63,16 @@ THONGTINDANGNHAP_MAP = {
     #     "pass": "hateva1",
     #     "server": "Kênh 4",
     # },
-    "Laotsezu": {
-        "user": "laotsezu",
-        "pass": "hateva1",
-        "server": "Kênh 3",
-    },
-    "TruyÂ Má»‡nh": {
-        "user": "truymenh",
-        "pass": "hateva1",
-        "server": "Kênh 3",
-    },
+    # "Laotsezu": {
+    #     "user": "laotsezu",
+    #     "pass": "hateva1",
+    #     "server": "Kênh 3",
+    # },
+    # "TruyÂ Má»‡nh": {
+    #     "user": "truymenh",
+    #     "pass": "hateva1",
+    #     "server": "Kênh 3",
+    # },
 }
 
 def laydanhsachnhanvatonlines():
