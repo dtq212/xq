@@ -2332,15 +2332,13 @@ class MoiTruong:
         if not self.get_is_nhanvatdachet():
             return
 
-        is_ok = False
+        self._thoidiemphucsinhgannhat = time.time()
+        self.action_thucthicaulenh("desc revive", delay = 0.)
 
-        if is_duoccuu:
-            is_ok = self.action_thucthicaulenh("desc revive$")
+        time.sleep(1.)
 
-        if is_ok:
-            self._thoidiemphucsinhgannhat = time.time()
-
-        return is_ok
+        if self.get_is_danghiencuasotuychon():
+            self.set_is_danghiencuasotuychon(False)
 
     def action_doimaupk(self, idmaupk, delay = 1.):
         if time.time() - self._thoidiemmaupkgannhat < delay:

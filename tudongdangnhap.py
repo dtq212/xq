@@ -7,8 +7,8 @@ import win32con
 from moitruong import MoiTruong
 from background_input import BackgroundInput
 
-DUONGDAN_GAME = r"D:\Games\ChienQuocNew\chienquocnew\ChienQuoc.exe"
-LAUNCHER_TITLE = "client 1.01.50"
+DUONGDAN_GAME = r"D:\Games\ChienQuoc2D_New\ChienQuoc.exe"
+LAUNCHER_TITLE = "client 1.01.68"
 GAME_TITLE_LOGIN_SCREEN = "Chien Quoc - Loan The Anh Hung"
 GAME_TITLE_PREFIX = "Chien Quoc ("
 
