@@ -72,7 +72,7 @@ THONGTINDANGNHAP_MAP = {
     "Ecotech": {
         "user": "ecotech",
         "pass": "hateva1",
-        "server": "Kênh 3",
+        "server": "Kênh 1",
     },
     "Betavit": {
         "user": "betavit",
