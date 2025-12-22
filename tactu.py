@@ -1105,7 +1105,7 @@ class TacTu:
             if is_bophonghanhsansang:
                 self._is_vohieuhoadichuyenanthan = False
 
-            if not is_anthan and diachicosothongtinnhanvatmuctieudangchon and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_ANTHANTHUAT):
+            if not is_anthan and diachicosothongtinnhanvatmuctieudangchon and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_ANTHANTHUAT) and not self._is_tudonggomquai:
                 self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_ANTHANTHUAT)
                 break
 
