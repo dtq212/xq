@@ -999,7 +999,7 @@ class TacTu:
             phantramnoilucconlai = self.moitruong.get_phantramnoilucconlai()
 
             phantramsinhlucconlai = self.moitruong.get_phantramsinhlucconlai()
-            if phantramsinhlucconlai > 25 and phantramnoilucconlai <= 50 and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_HUYETMACHU):
+            if phantramsinhlucconlai > 25 and phantramnoilucconlai <= 50 and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_HUYETMACHU) and idtuthenhanvat not in (TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO):
                 self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_HUYETMACHU)
                 break
 
@@ -1034,8 +1034,7 @@ class TacTu:
                 if noilucconlai > 150 and self.moitruong.action_timkiemvatphamhanhtrang(BUAGIAY) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TRIEUHOITHIENBINH) and (not self._is_nhieumuctieugan5 or phantramsinhlucconlai <= 33):
                     is_vohieuhoadichuyen = True
                     self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 1.)
-                    if self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TRIEUHOITHIENBINH):
-                        time.sleep(1.)
+                    self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TRIEUHOITHIENBINH)
                     break
 
             if diachicosothongtinnhanvatmuctieudangchon:
@@ -1061,11 +1060,10 @@ class TacTu:
                         }
                     break
                 else:
-                    if noilucconlai > 50 and khoangcach <= KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN and self._is_nhieumuctieugan5 and thoigiantuthenhanvatkhongdichuyen > 0.5 and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LOIDONGCUUTHIEN):
+                    if noilucconlai > 50 and khoangcach <= KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LOIDONGCUUTHIEN):
                         is_vohieuhoadichuyen = True
                         self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 1.)
-                        if self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_LOIDONGCUUTHIEN):
-                            time.sleep(1.)
+                        self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_LOIDONGCUUTHIEN)
                         break
                     if noilucconlai > 50 and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHUCMAQUYET):
                         is_vohieuhoadichuyen = True
