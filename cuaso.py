@@ -176,10 +176,6 @@ class CuaSo:
                     self.battat_thucsondao()
                     time.sleep(0.3)
 
-                elif keyboard.is_pressed("ctrl+alt+v"):
-                    self.battat_is_phitac()
-                    time.sleep(0.3)
-
                 elif keyboard.is_pressed("ctrl+f"):
                     self.battat_tudongsudungkynang()
                     time.sleep(0.3)
@@ -242,9 +238,6 @@ class CuaSo:
 
     def battat_tudongbattheosaunhom(self):
         self.tactu.battat_is_tudongbattheosaunhom()
-
-    def battat_is_phitac(self):
-        self.tactu.battat_is_phitac()
 
     def battat_thucsondao(self):
         self.tactu.battat_is_thucsondao()

@@ -1034,8 +1034,8 @@ class TacTu:
                 if noilucconlai > 150 and self.moitruong.action_timkiemvatphamhanhtrang(BUAGIAY) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TRIEUHOITHIENBINH) and (not self._is_nhieumuctieugan5 or phantramsinhlucconlai <= 33):
                     is_vohieuhoadichuyen = True
                     self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 1.)
-                    self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TRIEUHOITHIENBINH)
-                    time.sleep(1.)
+                    if self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_TRIEUHOITHIENBINH):
+                        time.sleep(1.)
                     break
 
             if diachicosothongtinnhanvatmuctieudangchon:
@@ -1064,8 +1064,8 @@ class TacTu:
                     if noilucconlai > 50 and khoangcach <= KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN and self._is_nhieumuctieugan5 and thoigiantuthenhanvatkhongdichuyen > 0.5 and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LOIDONGCUUTHIEN):
                         is_vohieuhoadichuyen = True
                         self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 1.)
-                        self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_LOIDONGCUUTHIEN)
-                        time.sleep(1.)
+                        if self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_LOIDONGCUUTHIEN):
+                            time.sleep(1.)
                         break
                     if noilucconlai > 50 and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHUCMAQUYET):
                         is_vohieuhoadichuyen = True
@@ -2560,7 +2560,7 @@ class TacTu:
 
             if id_item and id_item > 0:
                 item_hex = hex(id_item).replace("0x", "")
-                caulenh = f"sell {npc_hex}# {item_hex}# 1"
+                caulenh = f"sell ! {npc_hex}# {item_hex}# 1"
                 self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
                 count_sold += 1
                 time.sleep(1.5)
