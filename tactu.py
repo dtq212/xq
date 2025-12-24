@@ -1238,7 +1238,7 @@ class TacTu:
                         is_vohieuhoadichuyen = True
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_TRUCDAOHOANGLONG)
                         break
-                    if nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGCAMVEQUAN_MAP[VITRIKYNANG_THIENBONGNHATKICH] and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_THIENBONGNHATKICH) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0):
+                    if nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGCAMVEQUAN_MAP[VITRIKYNANG_THIENBONGNHATKICH] and is_muctieudangchonlanguoichoi and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_THIENBONGNHATKICH) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0):
                         is_vohieuhoadichuyen = True
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_THIENBONGNHATKICH)
                         break
