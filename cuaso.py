@@ -213,7 +213,7 @@ class CuaSo:
                     self.battat_tudonggomquai()
                     time.sleep(0.3)
                 elif keyboard.is_pressed("ctrl+alt+shift+h"):
-                    self.battat_tudongveban_maoson()
+                    self.battat_tudongvebanrac()
                     time.sleep(0.3)
                 elif keyboard.is_pressed("ctrl+alt+shift+z"):
                     self.battat_tudongdichientruong()
@@ -290,8 +290,8 @@ class CuaSo:
     def battat_tudonggomquai(self):
         self.tactu.battat_tudonggomquai()
 
-    def battat_tudongveban_maoson(self):
-        self.tactu.battat_tudongveban_maoson()
+    def battat_tudongvebanrac(self):
+        self.tactu.battat_tudongvebanrac()
 
     def battat_tudongdichientruong(self):
         self.tactu.battat_is_tudongdichientruong()
