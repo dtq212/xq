@@ -2998,15 +2998,23 @@ class TacTu:
 
     def _action_xulyvebanrac_phaikhac(self):
         if self._trangthaiveban == 0:
-            if self.moitruong.get_is_dayhanhtrang():
-                print("[AUTO-SELL] Hành trang đầy...")
-                diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = QUANSUVOSONGTHANH)
-                if diachinpc:
-                    print("[AUTO-SELL] Phát hiện đang đứng cạnh NPC. Bỏ qua bước Hồi thành phù.")
-                    self._trangthaiveban = 2
+            diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = QUANSUVOSONGTHANH)
+
+            if diachinpc and self.moitruong.get_khoangcach(diachinpc) <= 12.0:
+                if not self.moitruong.get_is_dayhanhtrang():
+                    if self._idbandofarmbanrac != 0:
+                        print("[AUTO-SELL] Đứng cạnh NPC và túi đã gọn. Tiếp tục quay lại bãi farm.")
+                        self._trangthaiveban = 4
+                        return
+
                 else:
-                    self._trangthaiveban = 1
-                    self._thoidiemhoithanhphu = 0
+                    print("[AUTO-SELL] Đứng cạnh NPC nhưng túi đầy. Tiếp tục bán.")
+                    self._trangthaiveban = 2
+                    return
+            if self.moitruong.get_is_dayhanhtrang():
+                print("[AUTO-SELL] Hành trang đầy. Bắt đầu quy trình về bán.")
+                self._trangthaiveban = 1
+                self._thoidiemhoithanhphu = 0
 
         elif self._trangthaiveban == 1:
             hientai = time.time()
@@ -3019,10 +3027,8 @@ class TacTu:
 
             if hientai - self._thoidiemhoithanhphu > 12.0:
                 print("[AUTO-SELL] Đang dùng Hồi Thành Phù...")
-
-                self.moitruong.action_ngatdichuyen()
+                self.moitruong.action_dungim()
                 time.sleep(1.0)
-
                 self.action_sudunghoithanhphu()
                 self._thoidiemhoithanhphu = hientai
 
@@ -3043,13 +3049,15 @@ class TacTu:
 
         elif self._trangthaiveban == 3:
             self.action_tudongbanrac()
+            time.sleep(1.0)
+            self.action_tudongsuado(delay = 0.)
+
             if not self.moitruong.get_is_dayhanhtrang():
                 print("[AUTO-SELL] Đã bán xong.")
                 self._trangthaiveban = 4
-
         elif self._trangthaiveban == 4:
             if self._idbandofarmbanrac == 0:
-                print("[AUTO-SELL] Lỗi: Không nhớ ID bản đồ farm để quay lại!")
+                print("[AUTO-SELL] Lỗi: Không nhớ ID bản đồ farm!")
                 self._trangthaiveban = 0
                 return
 
@@ -3071,7 +3079,7 @@ class TacTu:
             return
 
         khoangcach = self.moitruong.get_khoangcach(diachinpc)
-        if khoangcach > 12.0:
+        if khoangcach > 9.0:
             x_npc = self.moitruong.get_toadox(diachinpc, is_vitrihientai = True)
             y_npc = self.moitruong.get_toadoy(diachinpc, is_vitrihientai = True)
             self.moitruong.action_dichuyen(x_npc, y_npc)
