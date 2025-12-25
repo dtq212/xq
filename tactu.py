@@ -2959,9 +2959,8 @@ class TacTu:
                         print("[AUTO-SELL] Đã gặp NPC, bắt đầu bán")
                         self._trangthaiveban = 3
                     else:
-                        x_npc = self.moitruong.get_toadox(diachi_npc, is_vitrihientai = True)
-                        y_npc = self.moitruong.get_toadoy(diachi_npc, is_vitrihientai = True)
-                        self.moitruong.action_dichuyen(x_npc, y_npc)
+                        self.moitruong.action_dichuyengiukhoangcachtoithieu(diachi_npc, 6.)
+
                         time.sleep(0.5)
                 else:
                     print("[AUTO-SELL] Đang tìm NPC Tạp Hóa...")
@@ -3027,8 +3026,7 @@ class TacTu:
 
             if hientai - self._thoidiemhoithanhphu > 12.0:
                 print("[AUTO-SELL] Đang dùng Hồi Thành Phù...")
-                self.moitruong.action_dungim()
-                time.sleep(1.0)
+                self.moitruong.action_ngatdichuyen()
                 self.action_sudunghoithanhphu()
                 self._thoidiemhoithanhphu = hientai
 
@@ -3040,9 +3038,7 @@ class TacTu:
 
             khoangcach = self.moitruong.get_khoangcach(diachinpc)
             if khoangcach > 12.0:
-                x_npc = self.moitruong.get_toadox(diachinpc, is_vitrihientai = True)
-                y_npc = self.moitruong.get_toadoy(diachinpc, is_vitrihientai = True)
-                self.moitruong.action_dichuyen(x_npc, y_npc)
+                self.moitruong.action_dichuyengiukhoangcachtoithieu(diachinpc, 6.)
                 time.sleep(0.5)
             else:
                 self._trangthaiveban = 3
@@ -3080,9 +3076,7 @@ class TacTu:
 
         khoangcach = self.moitruong.get_khoangcach(diachinpc)
         if khoangcach > 9.0:
-            x_npc = self.moitruong.get_toadox(diachinpc, is_vitrihientai = True)
-            y_npc = self.moitruong.get_toadoy(diachinpc, is_vitrihientai = True)
-            self.moitruong.action_dichuyen(x_npc, y_npc)
+            self.moitruong.action_dichuyengiukhoangcachtoithieu(diachinpc, 6.)
             return
 
         steps = DICHUYENTANTHUTIENCO_MAP.get(self._idbandofarmbanrac)
