@@ -595,6 +595,14 @@ class TacTu:
                         is_boquamuctieuhientai = True
                     elif self.moitruong.get_idmaupk() == MAUPK_HOABINH and is_muctieudangchonlabaothumaoson:
                         is_boquamuctieuhientai = True
+                    elif idbandohientai == BANDO_BACHMATRANG and not is_muctieudangchonlanguoichoi:
+                        mx = self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieudangchon)
+                        my = self.moitruong.get_toadoy(diachicosothongtinnhanvatmuctieudangchon)
+
+                        if math.dist((mx, my), (80, 122)) <= 9.0:
+                            is_boquamuctieuhientai = True
+                        elif self._tinhkhoangcachdendoanthang(mx, my, 132, 159, 160, 139) <= 9.0:
+                            is_boquamuctieuhientai = True
 
                     if is_boquamuctieuhientai:
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
@@ -621,6 +629,7 @@ class TacTu:
                         if diachicosothongtinnhanvatmuctieuxemxet != self.moitruong.get_diachicosothongtinnhanvat1():
                             if self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_ANTHANTHUAT,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieuxemxet, is_hieuungcoloi = 1):
                                 if self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieuxemxet) <= KHOANGCACHTOIDAHOPLE:
+                                    print("Có thích khách: {}".format(self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieuxemxet)))
                                     phatam("Có thích khách")
                                     self._thoidiemphatamanthan = time.time()
 
@@ -659,6 +668,15 @@ class TacTu:
 
                 if is_bandokhongpk and (is_muctieudangxemxetlabaothumaoson or is_muctieudangxemxetlanguoichoi):
                     continue
+
+                if idbandohientai == BANDO_BACHMATRANG and not is_muctieudangxemxetlanguoichoi:
+                    mx = self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieuxemxet)
+                    my = self.moitruong.get_toadoy(diachicosothongtinnhanvatmuctieuxemxet)
+
+                    if math.dist((mx, my), (80, 122)) <= 9.0:
+                        continue
+                    elif self._tinhkhoangcachdendoanthang(mx, my, 132, 159, 160, 139) <= 9.0:
+                        continue
 
                 diachicosothongtinnhanvattruongnhom = self.moitruong.get_diachicosothongtinnhanvattruongnhom()
 
@@ -735,7 +753,7 @@ class TacTu:
                     _thaydoimuctieuhientai()
                     continue
 
-                elif khoangcachmuctieuxemxet < self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon):
+                elif khoangcachmuctieuxemxet < self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon) + (1.5 if not is_muctieudangchonlanguoichoi else 0.):
                     _thaydoimuctieuhientai()
                     continue
 
@@ -2255,9 +2273,13 @@ class TacTu:
 
             if not diemdanhxungquanhbandos:
                 if time.time() - self._thoidiemphatamlacmapgannhat > 5.0:
-                    if self.moitruong.get_tenmonphai() == "maoson":
+                    if self.moitruong.get_tenmonphai() == "maoson" and self._is_tudongvebanrac:
                         self.moitruong.action_ngatdichuyen()
                         self.moitruong.action_thucthicaulenh("pf 4182.2")
+                        self._thoidiemphatamlacmapgannhat = time.time()
+                    elif self._is_tudongvebanrac and self._idbandofarmbanrac:
+                        self.moitruong.action_ngatdichuyen()
+                        self.action_sudunghoithanhphu()
                         self._thoidiemphatamlacmapgannhat = time.time()
                     else:
                         phatam("Lạc sang bản đồ lạ rồi")
@@ -2593,7 +2615,7 @@ class TacTu:
                 count_sold += 1
                 time.sleep(1.5)
 
-    def _tinh_khoangcach_den_doanthang(self, px, py, x1, y1, x2, y2):
+    def _tinhkhoangcachdendoanthang(self, px, py, x1, y1, x2, y2):
         dx = x2 - x1
         dy = y2 - y1
         if dx == 0 and dy == 0:
@@ -2725,11 +2747,11 @@ class TacTu:
                 mx = self.moitruong.get_toadox(diachidoituongxemxet)
                 my = self.moitruong.get_toadoy(diachidoituongxemxet)
 
-                if math.dist((mx, my), (76, 125)) < 9.0:
+                if math.dist((mx, my), (80, 122)) <= 9.0:
                     continue
-
-                if self._tinh_khoangcach_den_doanthang(mx, my, 132, 159, 160, 139) < 9.0:
+                elif self._tinhkhoangcachdendoanthang(mx, my, 132, 159, 160, 139) <= 9.0:
                     continue
+                
 
             iddoituongquai = self.moitruong.get_iddoituong(diachidoituongxemxet)
             if iddoituongquai in self._idmuctieubiloi_map:
@@ -2931,7 +2953,6 @@ class TacTu:
                     self._thoidiemchuyentrangthai = time.time()
 
             elif is_dayhanhtrang:
-                # phatam("Túi đầy, chuẩn bị biến về")
                 self._trangthaiveban = 1
                 self._thoidiemchuyentrangthai = time.time()
 
@@ -2952,19 +2973,17 @@ class TacTu:
         elif self._trangthaiveban == 2:
             if time.time() - self._thoidiemchuyentrangthai > 3.0:
                 diachi_npc = self.moitruong.action_timkiemnhanvat(chutiemtaphoa)
-
                 if diachi_npc:
                     khoangcach = self.moitruong.get_khoangcach(diachi_npc)
                     if khoangcach <= 12.0:
                         print("[AUTO-SELL] Đã gặp NPC, bắt đầu bán")
                         self._trangthaiveban = 3
                     else:
-                        self.moitruong.action_dichuyengiukhoangcachtoithieu(diachi_npc, 6.)
-
+                        self.moitruong.action_dichuyengiukhoangcachtoida(diachi_npc, 3.)
                         time.sleep(0.5)
                 else:
                     print("[AUTO-SELL] Đang tìm NPC Tạp Hóa...")
-                    if time.time() - self._thoidiemchuyentrangthai > 30.0:
+                    if time.time() - self._thoidiemchuyentrangthai > 6.0:
                         print("[AUTO-SELL] Lỗi: Không tìm thấy NPC quá lâu -> Reset.")
                         self._trangthaiveban = 0
 
@@ -3038,7 +3057,7 @@ class TacTu:
 
             khoangcach = self.moitruong.get_khoangcach(diachinpc)
             if khoangcach > 12.0:
-                self.moitruong.action_dichuyengiukhoangcachtoithieu(diachinpc, 6.)
+                self.moitruong.action_dichuyengiukhoangcachtoida(diachinpc, 3.)
                 time.sleep(0.5)
             else:
                 self._trangthaiveban = 3
@@ -3075,8 +3094,9 @@ class TacTu:
             return
 
         khoangcach = self.moitruong.get_khoangcach(diachinpc)
-        if khoangcach > 9.0:
-            self.moitruong.action_dichuyengiukhoangcachtoithieu(diachinpc, 6.)
+
+        if khoangcach > 6.0:
+            self.moitruong.action_dichuyengiukhoangcachtoida(diachinpc, 3.)
             return
 
         steps = DICHUYENTANTHUTIENCO_MAP.get(self._idbandofarmbanrac)
