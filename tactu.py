@@ -2461,6 +2461,43 @@ class TacTu:
             if diachicosothongtinnhanvatchutiemsuachua and self.moitruong.get_khoangcach(diachicosothongtinnhanvatchutiemsuachua) <= 12.0:
                 self.moitruong.action_suado(diachicosothongtinnhanvatchutiemsuachua)
 
+    def action_tudongsuado(self, delay = 3.):
+        if not self._is_tudongsuado:
+            return
+
+        if time.time() - self._thoidiemkiemtranpcsuadogannhat < delay:
+            return
+        self._thoidiemkiemtranpcsuadogannhat = time.time()
+
+        if self.moitruong.get_is_nhanvatdachet() or self.moitruong.get_is_dangvankhi():
+            return
+
+        start_wait = time.time()
+        TIMEOUT = 30.0
+
+        while True:
+            if time.time() - start_wait > TIMEOUT:
+                print(f"[Auto-SuaDo] Quá {TIMEOUT}s không tìm thấy Chủ Tiệm Sửa Chữa. Hủy bỏ.")
+                break
+
+            diachinpc = self.moitruong.action_timkiemnhanvat(CHUTIEMSUACHUA)
+
+            if diachinpc:
+                khoangcach = self.moitruong.get_khoangcach(diachinpc)
+
+                if khoangcach <= 12.0:
+                    print("[Auto-SuaDo] Đã tìm thấy NPC, đang sửa đồ...")
+                    self.moitruong.action_suado(diachinpc)
+                    return
+
+            if self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON:
+                if not diachinpc:
+                    self.moitruong.action_dichuyengiukhoangcachtoithieudiem(112, 165, khoangcachtoithieu = 3.)
+                else:
+                    self.moitruong.action_dichuyengiukhoangcachtoithieu(diachinpc, khoangcachtoithieu = 3.0)
+
+            time.sleep(1.0)
+    
     def action_sudungvatphamhanhtrang(self, tenvatpham, is_boquaxacnhan = False, delay = 0.25):
         if time.time() - self._thoidiemsudungvatphamgannhat < delay:
             return False
