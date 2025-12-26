@@ -124,6 +124,8 @@ class MoiTruong:
         self._ydichuyengannhat = -1
         self._thoidiemboquadichuyencungtoadogannhat = 0.
 
+        self._thoidiemnhanvatkhongsansanggannhat = 0.
+
     def __del__(self):
         def safe_free(flag_name, addr_name):
             try:
@@ -333,6 +335,9 @@ class MoiTruong:
         if time.time() - self._thoidiemcapnhattennguoichoithanhviennhom > 0.5:
             self._capnhatdanhsachtennguoichoithanhviennhom()
             self._thoidiemcapnhattennguoichoithanhviennhom = time.time()
+
+        if self.get_is_nhanvatchuasansang(self.get_diachicosothongtinnhanvat1()):
+            self._thoidiemnhanvatkhongsansanggannhat = time.time()
 
     def get_thoidiemxuathiendautien(self, id_doituong):
         return self._thoidiemxuathientrongtamnhin.get(id_doituong, 0)
@@ -2230,7 +2235,6 @@ class MoiTruong:
         x1, y1 = self.get_toadox(diachicosothongtinnhanvat1), self.get_toadoy(diachicosothongtinnhanvat1)
 
         khoangcach = round(math.dist((x1, y1), (x2, y2)), 2)
-
         if khoangcach >= khoangcachtoithieu:
             return
 
@@ -2238,6 +2242,8 @@ class MoiTruong:
         deltay = y1 - y2
 
         khoangcachdichuyen = khoangcachtoithieu
+
+        print("khoangcachdichuyen: {}".format(khoangcachdichuyen))
 
         if not round(khoangcachdichuyen):
             return
@@ -2261,6 +2267,9 @@ class MoiTruong:
 
         xclick = int(self._centerx + deltax * toadomoidonvikhoangcachx)
         yclick = int(self._centery + deltay * toadomoidonvikhoangcachy)
+
+
+        print("xclick: {}, yclick: {}".format(xclick, yclick))
 
         return self.action_dichuyen(xclick, yclick, delay = delay)
 

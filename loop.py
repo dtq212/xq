@@ -139,7 +139,7 @@ class LoopChinh:
             # print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
             # print(self.moitruong.get_tendoituong(diachidoituong))
         # print(self.moitruong.get_danhsachhieuungnhanvats())
-        # print(self.moitruong.get_danhsachvatphamhanhtrang_map())
+        # print(self.moitruong.get_danhsachvatphamhanhtrang_map().keys())
 
         # print(self.moitruong.get_idkynang(0, 0))
 
