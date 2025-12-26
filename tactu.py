@@ -2460,24 +2460,18 @@ class TacTu:
 
             if diachicosothongtinnhanvatchutiemsuachua and self.moitruong.get_khoangcach(diachicosothongtinnhanvatchutiemsuachua) <= 12.0:
                 self.moitruong.action_suado(diachicosothongtinnhanvatchutiemsuachua)
-
-    def action_tudongsuado(self, delay = 3.):
-        if not self._is_tudongsuado:
-            return
-
-        if time.time() - self._thoidiemkiemtranpcsuadogannhat < delay:
-            return
-        self._thoidiemkiemtranpcsuadogannhat = time.time()
-
+    
+    def action_suado(self):
+        print("action_suado")
         if self.moitruong.get_is_nhanvatdachet() or self.moitruong.get_is_dangvankhi():
             return
 
-        start_wait = time.time()
-        TIMEOUT = 30.0
+        thoidiembatdau = time.time()
+        THOIGIANTOIDA = 30.0
 
         while True:
-            if time.time() - start_wait > TIMEOUT:
-                print(f"[Auto-SuaDo] Quá {TIMEOUT}s không tìm thấy Chủ Tiệm Sửa Chữa. Hủy bỏ.")
+            if time.time() - thoidiembatdau > THOIGIANTOIDA:
+                print(f"[Auto-SuaDo] Quá {THOIGIANTOIDA}s không tìm thấy Chủ Tiệm Sửa Chữa. Hủy bỏ.")
                 break
 
             diachinpc = self.moitruong.action_timkiemnhanvat(CHUTIEMSUACHUA)
@@ -3041,7 +3035,7 @@ class TacTu:
         elif self._trangthaiveban == 3:
             self.action_tudongbanrac()
             time.sleep(1.)
-            self.action_tudongsuado(delay = 0.)
+            self.action_suado()
 
             if not self.moitruong.get_is_dayhanhtrang():
                 print("[AUTO-SELL] Đã bán xong, chuẩn bị quay lại")
@@ -3116,7 +3110,7 @@ class TacTu:
         elif self._trangthaiveban == 3:
             self.action_tudongbanrac()
             time.sleep(1.0)
-            self.action_tudongsuado(delay = 0.)
+            self.action_suado()
 
             if not self.moitruong.get_is_dayhanhtrang():
                 print("[AUTO-SELL] Đã bán xong.")
@@ -3134,8 +3128,9 @@ class TacTu:
                 self._trangthaiveban = 0
 
     def action_sudunghoithanhphu(self):
-        self.moitruong.action_thucthicaulenh("dGludmF0 2", delay = 0)
-        pass
+        if time.time() - self._thoidiemsudunghoithanhphugannhat > 5.:
+            self._thoidiemsudunghoithanhphugannhat = time.time()
+            self.moitruong.action_thucthicaulenh("dGludmF0 2", delay = 0)
 
     def action_dichuyenlenbandofarm(self):
         diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = TANTHUTIENCO)
