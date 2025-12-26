@@ -2486,6 +2486,7 @@ class TacTu:
 
             if self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON:
                 if not diachinpc:
+                    print("action_dichuyengiukhoangcachtoithieudiem")
                     self.moitruong.action_dichuyengiukhoangcachtoithieudiem(112, 165, khoangcachtoithieu = 3.)
                 else:
                     self.moitruong.action_dichuyengiukhoangcachtoithieu(diachinpc, khoangcachtoithieu = 3.0)
