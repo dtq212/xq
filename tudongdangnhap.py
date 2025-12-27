@@ -75,6 +75,11 @@ THONGTINDANGNHAP_MAP = {
         "pass": "hateva1",
         "server": "Kênh 3",
     },
+    "4137": {
+        "user": "doccocaubai",
+        "pass": "hateva1",
+        "server": "Kênh 3",
+    },
     # "Laotsezu": {
     #     "user": "laotsezu",
     #     "pass": "hateva1",
