@@ -552,6 +552,26 @@ class TacTu:
                     else:
                         self._diachicosonhanvatmuctieudangdichuyenkhaithien = 0
 
+            vungdabichiemdongs = []
+
+            if self._is_tudongvebanrac:
+                idnhanvathientai = self.moitruong.get_idnguoichoi()
+                idnguoichoithanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms()
+
+                iiii = -1
+                while True:
+                    iiii += 1
+                    diachidoituongbotxemxet = self.moitruong.get_diachicosothongtindoituongx(iiii)
+                    if not diachidoituongbotxemxet: break
+
+                    idnguoichoibot = self.moitruong.get_idnguoichoi(diachidoituongbotxemxet)
+                    if idnguoichoibot in NHANVATCUAMINHs and idnguoichoibot != idnhanvathientai:
+                        if not idnguoichoithanhviennhoms or idnguoichoibot not in idnguoichoithanhviennhoms:
+                            vungdabichiemdongs.append({
+                                "x": self.moitruong.get_toadox(diachidoituongbotxemxet),
+                                "y": self.moitruong.get_toadoy(diachidoituongbotxemxet)
+                            })
+
             hientai = time.time()
             idcanxoas = [k for k, v in self._idmuctieubiloi_map.items() if hientai - v > 120]
             for k in idcanxoas:
@@ -597,17 +617,26 @@ class TacTu:
                         is_boquamuctieuhientai = True
                     elif self.moitruong.get_idmaupk() == MAUPK_HOABINH and is_muctieudangchonlabaothumaoson:
                         is_boquamuctieuhientai = True
-                    elif idbandohientai == BANDO_BACHMATRANG and not is_muctieudangchonlanguoichoi:
-                        mx = self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieudangchon)
-                        my = self.moitruong.get_toadoy(diachicosothongtinnhanvatmuctieudangchon)
+                    elif self._is_tudongvebanrac:
+                        if idbandohientai == BANDO_BACHMATRANG and not is_muctieudangchonlanguoichoi:
+                            mx = self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieudangchon)
+                            my = self.moitruong.get_toadoy(diachicosothongtinnhanvatmuctieudangchon)
 
-                        if math.dist((mx, my), (80, 122)) <= 9.0:
-                            is_boquamuctieuhientai = True
-                        elif self._tinhkhoangcachdendoanthang(mx, my, 132, 159, 160, 139) <= 9.0:
-                            is_boquamuctieuhientai = True
-                        elif self._tinhkhoangcachdendoanthang(mx, my, 131, 111, 160, 139) <= 9.0:
-                            is_boquamuctieuhientai = True
+                            if math.dist((mx, my), (80, 122)) <= 9.0:
+                                is_boquamuctieuhientai = True
+                            elif self._tinhkhoangcachdendoanthang(mx, my, 132, 159, 160, 139) <= 9.0:
+                                is_boquamuctieuhientai = True
+                            elif self._tinhkhoangcachdendoanthang(mx, my, 131, 111, 160, 139) <= 9.0:
+                                is_boquamuctieuhientai = True
 
+                        if not is_boquamuctieuhientai and vungdabichiemdongs:
+                            qx = self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieudangchon)
+                            qy = self.moitruong.get_toadoy(diachicosothongtinnhanvatmuctieudangchon)
+                            for vung in vungdabichiemdongs:
+                                if math.dist((qx, qy), (vung["x"], vung["y"])) <= 9.0:
+                                    is_boquamuctieuhientai = True
+                                    break
+                            
                     if is_boquamuctieuhientai:
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
                         diachicosothongtinnhanvatmuctieudangchon = 0
@@ -673,17 +702,28 @@ class TacTu:
                 if is_bandokhongpk and (is_muctieudangxemxetlabaothumaoson or is_muctieudangxemxetlanguoichoi):
                     continue
 
-                if idbandohientai == BANDO_BACHMATRANG and not is_muctieudangxemxetlanguoichoi:
-                    mx = self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieuxemxet)
-                    my = self.moitruong.get_toadoy(diachicosothongtinnhanvatmuctieuxemxet)
+                if self._is_tudongvebanrac:
+                    if idbandohientai == BANDO_BACHMATRANG and not is_muctieudangxemxetlanguoichoi:
+                        mx = self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieuxemxet)
+                        my = self.moitruong.get_toadoy(diachicosothongtinnhanvatmuctieuxemxet)
 
-                    if math.dist((mx, my), (80, 122)) <= 9.0:
-                        continue
-                    elif self._tinhkhoangcachdendoanthang(mx, my, 132, 159, 160, 139) <= 9.0:
-                        continue
-                    elif self._tinhkhoangcachdendoanthang(mx, my, 131, 111, 160, 139) <= 9.0:
-                        continue
-
+                        if math.dist((mx, my), (80, 122)) <= 9.0:
+                            continue
+                        elif self._tinhkhoangcachdendoanthang(mx, my, 132, 159, 160, 139) <= 9.0:
+                            continue
+                        elif self._tinhkhoangcachdendoanthang(mx, my, 131, 111, 160, 139) <= 9.0:
+                            continue
+                    if vungdabichiemdongs:
+                        is_cobotcanhtranh = False
+                        qx = self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieuxemxet)
+                        qy = self.moitruong.get_toadoy(diachicosothongtinnhanvatmuctieuxemxet)
+                        for vung in vungdabichiemdongs:
+                            if math.dist((qx, qy), (vung["x"], vung["y"])) <= 9.0:
+                                is_cobotcanhtranh = True
+                                break
+                        if is_cobotcanhtranh:
+                            continue
+                    
                 diachicosothongtinnhanvattruongnhom = self.moitruong.get_diachicosothongtinnhanvattruongnhom()
 
                 is_anhhuongboitruongnhom = self._is_tudongtheosautruongnhom and self.moitruong.get_is_dangnamtrongnhom() and not self.moitruong.get_is_truongnhom() and diachicosothongtinnhanvattruongnhom
@@ -698,26 +738,6 @@ class TacTu:
                         continue
 
                 khoangcachdenbanthan = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieuxemxet)
-
-
-                if self._is_tudongvebanrac:
-                    j = 0
-                    is_codongdoidangdanh = False
-                    while True:
-                        diachicosodongdoi = self.moitruong.get_diachicosothongtindoituongx(j)
-                        if not diachicosodongdoi:
-                            break
-                        if self.moitruong.get_is_nguoichoi(diachicosodongdoi):
-                            idnguoichoi = self.moitruong.get_idnguoichoi(diachicosodongdoi)
-                            if idnguoichoi in NHANVATCUAMINHs and idnguoichoi != self.moitruong.get_idnguoichoi():
-                                khoangcachdongdoidenquai = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieuxemxet, diachicosodongdoi)
-                                if khoangcachdongdoidenquai < 4.5:
-                                    is_codongdoidangdanh = True
-                                    break
-                        j += 1
-
-                    if is_codongdoidangdanh:
-                        continue
                 
                 if khoangcachdenbanthan <= 3.0:
                     demmuctieugan3 += 1
@@ -2726,6 +2746,24 @@ class TacTu:
             self._idquaidangkeo = 0
             return
 
+        vungdabichiemdongs = []
+        idnhanvathientai = self.moitruong.get_idnguoichoi()
+        idnguoichoithanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms()
+
+        iiii = -1
+        while True:
+            iiii += 1
+            diachidoituongbotxemxet = self.moitruong.get_diachicosothongtindoituongx(iiii)
+            if not diachidoituongbotxemxet: break
+
+            idnguoichoibot = self.moitruong.get_idnguoichoi(diachidoituongbotxemxet)
+            if idnguoichoibot in NHANVATCUAMINHs and idnguoichoibot != idnhanvathientai:
+                if not idnguoichoithanhviennhoms or idnguoichoibot not in idnguoichoithanhviennhoms:
+                    vungdabichiemdongs.append({
+                        "x": self.moitruong.get_toadox(diachidoituongbotxemxet),
+                        "y": self.moitruong.get_toadoy(diachidoituongbotxemxet)
+                    })
+
         is_canghilog = False
         if time.time() - self._thoidiemloggomquai > 1.5:
             is_canghilog = True
@@ -2814,6 +2852,7 @@ class TacTu:
 
             if not self.moitruong.get_is_cothetancong(diachidoituongxemxet): continue
             if self.moitruong.get_idloainhanvat(diachidoituongxemxet) != LOAIMUCTIEU_QUAIVATHOACNPC: continue
+            
             tendoituongxemxet = self.moitruong.get_tendoituong(diachidoituongxemxet)
             if tendoituongxemxet in self._tenmuctieukhongtancongs:
                 continue
@@ -2821,7 +2860,7 @@ class TacTu:
                 continue
             if "Noel" in tendoituongxemxet:
                 continue
-
+            
             if self.moitruong.get_idbandohientai() == BANDO_BACHMATRANG:
                 mx = self.moitruong.get_toadox(diachidoituongxemxet)
                 my = self.moitruong.get_toadoy(diachidoituongxemxet)
@@ -2833,9 +2872,22 @@ class TacTu:
                 elif self._tinhkhoangcachdendoanthang(mx, my, 131, 111, 160, 139) <= 9.0:
                     continue
 
-
             iddoituongquai = self.moitruong.get_iddoituong(diachidoituongxemxet)
             if iddoituongquai in self._idmuctieubiloi_map:
+                continue
+            
+            qx = self.moitruong.get_toadox(diachidoituongxemxet)
+            qy = self.moitruong.get_toadoy(diachidoituongxemxet)
+
+            is_cobotkhacdangtranh = False
+            for vung in vungdabichiemdongs:
+                if math.dist((qx, qy), (vung["x"], vung["y"])) <= 9.0:
+                    is_cobotkhacdangtranh = True
+                    break
+
+            if is_cobotkhacdangtranh:
+                if iddoituongquai in self._danhsachidquaidagom:
+                    self._danhsachidquaidagom.remove(iddoituongquai)
                 continue
 
             khoangcach = self.moitruong.get_khoangcach(diachidoituongxemxet)
