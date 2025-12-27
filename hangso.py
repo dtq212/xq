@@ -490,45 +490,6 @@ Y_BACHKHOI = 51
 X_LIEMPHA = 181
 Y_LIEMPHA = 142
 
-DICHUYENTANTHUTIENCO_MAP = {
-    BANDO_TUONGLANG: [
-        "welcome.300",
-        "welcome.304",
-    ],
-    BANDO_MALANGDAO: [
-        "welcome.300",
-        "welcome.305",
-    ],
-    BANDO_BACHMATRANG: [
-        "welcome.300",
-        "welcome.306",
-    ],
-    BANDO_RANHGIOIDAMLAY: [
-        "welcome.500",
-        "welcome.501"
-    ],
-    BANDO_DIAGIOIDAMLAY: [
-        "welcome.500",
-        "welcome.502"
-    ],
-    BANDO_DONGHAINGUTHON: [
-        "welcome.600",
-        "welcome.601"
-    ],
-    BANDO_KENHTRINHQUOC1: [
-        "welcome.600",
-        "welcome.606"
-    ],
-    BANDO_KENHTRINHQUOC2: [
-        "welcome.600",
-        "welcome.607"
-    ],
-    BANDO_KENHTRINHQUOC3: [
-        "welcome.600",
-        "welcome.608"
-    ],
-}
-
 GOs = {
     (1, 0): 1,
     (1, 1): 2,
@@ -614,6 +575,56 @@ DIEMDANHXUNGQUANH_MAP = {
     BANDO_CULOC: CULOC,
 }
 
+
+DICHUYENTANTHUTIENCO_MAP = {
+    BANDO_TUONGLANG: [
+        "welcome.300",
+        "welcome.304",
+    ],
+    BANDO_MALANGDAO: [
+        "welcome.300",
+        "welcome.305",
+    ],
+    BANDO_BACHMATRANG: [
+        "welcome.300",
+        "welcome.306",
+    ],    
+    BANDO_QUELANG: [
+        "welcome.400",
+        "welcome.406",
+    ],
+    BANDO_MUCDA: [
+        "welcome.400",
+        "welcome.407",
+    ],    
+    BANDO_RANHGIOIDAMLAY: [
+        "welcome.500",
+        "welcome.501"
+    ],
+    BANDO_DIAGIOIDAMLAY: [
+        "welcome.500",
+        "welcome.502"
+    ],
+    BANDO_DONGHAINGUTHON: [
+        "welcome.600",
+        "welcome.601"
+    ],
+    BANDO_KENHTRINHQUOC1: [
+        "welcome.600",
+        "welcome.606"
+    ],
+    BANDO_KENHTRINHQUOC2: [
+        "welcome.600",
+        "welcome.607"
+    ],
+    BANDO_KENHTRINHQUOC3: [
+        "welcome.600",
+        "welcome.608"
+    ],
+}
+
+
+
 TOAILANG = "ToÃ¡i LÄƒng"
 TOAISA = "ToÃ¡i Sa"
 TOAIMABO = "ToÃ¡i Ma Bá»‘"
@@ -653,7 +664,7 @@ VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUKIMBAOHOP, HOATLACHOAN,
 VATPHAMTUDONGNHATFARMs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i", " Nháº«n", " TiÃªu", "Äáº§u CÃ¢n", "XÝ DiÔm", " Äáº§u CÃ¢n")
 VATPHAMXEPCHONGs = (MANHGHEPPHAPBAO, MANHGHEPNGOCBOI, MANHGHEPTIENDONG, MANHGHEPNGOCNU, PHAMTHIENTHU, VIRUS_BIENCHUNG, RUONGBAOTHACHTIEU, HUYETLONGCHIEUTHU,
                     RUONGBAOTHACHDAI, TAITAOHOAN, TUSAMDONTRUNG, TUSAMDONSO, CHENBAC, HOPQUAQUYDI, HOPQUAQUYDICAOCAP, PHIEUTROCHOI, HUYENTHUDON, HUYENTHUTHOMENHDON, LACTINHCHITIEN,
-                    TUINGANBAO, TUINGANLUONG, TUINGANXU
+                    TUINGANBAO, TUINGANLUONG, TUINGANXU, HOACAU, HONGCAU, LAMCAU, HACCAU
                     )
 
 VOTUHOCNHANs = ("VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 30)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 40)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 50)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 60)",)
@@ -676,9 +687,9 @@ KIEUDICHUYEN_TOADOCHUAN = 3
 
 BANDOCOMO = 395
 
-NHANVATTODOITUDONGs = (3813, 3942)
+NHANVATTODOITUDONGs = tuple()
+NHANVATCUAMINHs = (3942, 4137, 2855, 2483, 2492, 2574, 3813, 3814)
 NHANVATCUNGBANGs = (3236, 2303, 1, 19, 26, 27, 159, 1258, 395, 536, 39, 803, 528, 290, 38, 54, 436, 160, 62, 68, 434, 217, 56, 140,
                     435, 1129, 53, 65, 163, 807, 1950, 37, 126, 42, 1860, 100, 1765, 2069, 1150, 1766, 655, 122, 36, 1369, 888,
                     592, 1095, 538, 2478, 2834, 2555, *NHANVATTODOITUDONGs)
 NHANVATNGUYHIEMs = tuple()
-# NHANVATCUNGBANGs = tuple()

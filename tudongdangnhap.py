@@ -69,17 +69,8 @@ THONGTINDANGNHAP_MAP = {
     #     "pass": "hateva1",
     #     "server": "Kênh 4",
     # },
-    "Ecotech": {
-        "user": "ecotech",
-        "pass": "hateva1",
-        "server": "Kênh 1",
-    },
-    "Betavit": {
-        "user": "betavit",
-        "pass": "hateva1",
-        "server": "Kênh 4",
-    },
-    "ThoLuuManh": {
+
+    "3942": {
         "user": "tholuumanh",
         "pass": "hateva1",
         "server": "Kênh 3",
@@ -106,8 +97,8 @@ def laydanhsachnhanvatonlines():
                 try:
                     mt = MoiTruong(hwnd)
                     if mt.get_is_nhanvattontai():
-                        ten = mt.get_tendoituong()
-                        if ten: online_chars.append(ten)
+                        idnguoichoi = mt.get_idnguoichoi()
+                        if idnguoichoi: online_chars.append(str(idnguoichoi))
                 except:
                     pass
 

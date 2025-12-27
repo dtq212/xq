@@ -637,7 +637,7 @@ class TacTu:
                                     phatam("Có thích khách")
                                     self._thoidiemphatamanthan = time.time()
 
-                if is_muctieudangxemxetlanguoichoi and self.moitruong.get_is_nhanvattontai(diachicosothongtinnhanvatmuctieuxemxet) and self.moitruong.get_idnguoichoi(diachicosothongtinnhanvatmuctieuxemxet) not in NHANVATTODOITUDONGs and self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieuxemxet) <= self._khoangcachtimkiemmuctieu and not self.moitruong.get_is_nhanvatdachet(diachicosothongtinnhanvatmuctieuxemxet):
+                if is_muctieudangxemxetlanguoichoi and self.moitruong.get_is_nhanvattontai(diachicosothongtinnhanvatmuctieuxemxet) and self.moitruong.get_idnguoichoi(diachicosothongtinnhanvatmuctieuxemxet) not in NHANVATCUAMINHs and self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieuxemxet) <= self._khoangcachtimkiemmuctieu and not self.moitruong.get_is_nhanvatdachet(diachicosothongtinnhanvatmuctieuxemxet):
                     self._thoidiemgapnguoichoigannhat = time.time()
 
                 iddoituongmuctieuxemxet = self.moitruong.get_iddoituong(diachicosothongtinnhanvatmuctieuxemxet)
@@ -698,6 +698,27 @@ class TacTu:
                         continue
 
                 khoangcachdenbanthan = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieuxemxet)
+
+
+                if self._is_tudongvebanrac:
+                    j = 0
+                    is_codongdoidangdanh = False
+                    while True:
+                        diachicosodongdoi = self.moitruong.get_diachicosothongtindoituongx(j)
+                        if not diachicosodongdoi:
+                            break
+                        if self.moitruong.get_is_nguoichoi(diachicosodongdoi):
+                            idnguoichoi = self.moitruong.get_idnguoichoi(diachicosodongdoi)
+                            if idnguoichoi in NHANVATCUAMINHs and idnguoichoi != self.moitruong.get_idnguoichoi():
+                                khoangcachdongdoidenquai = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieuxemxet, diachicosodongdoi)
+                                if khoangcachdongdoidenquai < 4.5:
+                                    is_codongdoidangdanh = True
+                                    break
+                        j += 1
+
+                    if is_codongdoidangdanh:
+                        continue
+                
                 if khoangcachdenbanthan <= 3.0:
                     demmuctieugan3 += 1
 
@@ -1319,7 +1340,7 @@ class TacTu:
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_PHILONGTAMCHAU)
                         break
 
-                    if idtuthenhanvat == TUTHENHANVAT_DICHUYEN and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGCAMVEQUAN_MAP[VITRIKYNANG_THIENLYTATSAT] and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_THIENLYTATSAT):
+                    if idtuthenhanvat == TUTHENHANVAT_DICHUYEN and is_muctieudangchonlanguoichoi and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGCAMVEQUAN_MAP[VITRIKYNANG_THIENLYTATSAT] and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_THIENLYTATSAT):
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_THIENLYTATSAT)
                         break
 
@@ -2315,6 +2336,10 @@ class TacTu:
                 break
 
             if diemdanhxungquanhbandos:
+                idnguoichoi = self.moitruong.get_idnguoichoi()
+                if idnguoichoi % 2 == 0:
+                    diemdanhxungquanhbandos.reverse()
+
                 is_cantimdiemgannhat = False
 
                 if self._iddiemdanhxungquanhhientai == -1:
@@ -3047,6 +3072,7 @@ class TacTu:
             self.action_tudongbanrac()
             time.sleep(1.)
             self.action_suado()
+            time.sleep(1.)
 
             if not self.moitruong.get_is_dayhanhtrang():
                 print("[AUTO-SELL] Đã bán xong, chuẩn bị quay lại")
@@ -3122,6 +3148,7 @@ class TacTu:
             self.action_tudongbanrac()
             time.sleep(1.0)
             self.action_suado()
+            time.sleep(1.)
 
             if not self.moitruong.get_is_dayhanhtrang():
                 print("[AUTO-SELL] Đã bán xong.")
