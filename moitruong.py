@@ -2243,8 +2243,6 @@ class MoiTruong:
 
         khoangcachdichuyen = khoangcachtoithieu
 
-        print("khoangcachdichuyen: {}".format(khoangcachdichuyen))
-
         if not round(khoangcachdichuyen):
             return
 
@@ -2267,9 +2265,6 @@ class MoiTruong:
 
         xclick = int(self._centerx + deltax * toadomoidonvikhoangcachx)
         yclick = int(self._centery + deltay * toadomoidonvikhoangcachy)
-
-
-        print("xclick: {}, yclick: {}".format(xclick, yclick))
 
         return self.action_dichuyen(xclick, yclick, delay = delay)
 
