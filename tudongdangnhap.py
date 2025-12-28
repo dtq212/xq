@@ -80,6 +80,11 @@ THONGTINDANGNHAP_MAP = {
         "pass": "hateva1",
         "server": "Kênh 3",
     },
+    "4599": {
+        "user": "tieulyphidao",
+        "pass": "hateva1",
+        "server": "Kênh 3",
+    },
     # "Laotsezu": {
     #     "user": "laotsezu",
     #     "pass": "hateva1",
@@ -204,8 +209,8 @@ def mogamevadangnhap(char_name, config):
             print("❌ Lỗi: Cửa sổ Game không hiện lên sau khi bấm Launcher!")
             return
 
-        print(f"[5] Game đã lên (HWND: {hwnd_game}). Đợi load Login (8s)...")
-        time.sleep(8)
+        print(f"[5] Game đã lên (HWND: {hwnd_game}). Đợi load Login (2s)...")
+        time.sleep(2)
 
         print("[6] Bắt đầu đăng nhập...")
 
@@ -218,8 +223,8 @@ def mogamevadangnhap(char_name, config):
 
             bx, by = TOADO_GAME["BTN_XACNHAN_SERVER"]
             BackgroundInput.click(hwnd_game, bx, by)
-            print("   -> Chờ chuyển màn hình nhập liệu (3s)...")
-            time.sleep(3)
+            print("   -> Chờ chuyển màn hình nhập liệu (2s)...")
+            time.sleep(2)
         else:
             print(f"⚠️ Không tìm thấy tọa độ server {sv_name}. Bỏ qua bước chọn server.")
 
@@ -250,6 +255,8 @@ def mogamevadangnhap(char_name, config):
 
         print("   -> Chọn nhân vật (Vào game)!")
         BackgroundInput.press_key(hwnd_game, win32con.VK_RETURN)
+        time.sleep(1)
+        BackgroundInput.press_key(hwnd_game, win32con.VK_RETURN)
 
         print(f"✅ Hoàn tất cho {char_name}. Nghỉ 5s...")
         time.sleep(5)
@@ -272,8 +279,8 @@ def main():
                     mogamevadangnhap(tennhanvat, cauhinh)
                     break
 
-            print("[WAIT] Chờ 15s quét lại...")
-            time.sleep(15)
+            print("[WAIT] Chờ 30s quét lại...")
+            time.sleep(30)
 
         except KeyboardInterrupt:
             print("Dừng tool.")
