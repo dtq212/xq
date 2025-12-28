@@ -587,13 +587,20 @@ DIEMDANHXUNGQUANH_MAP = {
 VUNGCAM_MAP = {
     BANDO_BACHMATRANG: [
         {"type": "circle", "x": 80, "y": 122, "r": 9.0},
+        {"type": "circle", "x": 95, "y": 54, "r": 6.0},
+        {"type": "circle", "x": 193, "y": 152, "r": 6.0},
         {"type": "line", "x1": 132, "y1": 159, "x2": 160, "y2": 139, "r": 9.0},
         {"type": "line", "x1": 131, "y1": 111, "x2": 160, "y2": 139, "r": 9.0},
+    ],
+    BANDO_TUONGLANG: [
+        {"type": "circle", "x": 175, "y": 50, "r": 6.0},
+        {"type": "circle", "x": 62, "y": 71, "r": 6.0},
+        {"type": "circle", "x": 154, "y": 142, "r": 6.0},
     ],
     BANDO_MALANGDAO: [
         {"type": "line", "x1": 116, "y1": 116, "x2": 145, "y2": 150, "r": 9.0},
         {"type": "line", "x1": 93, "y1": 96, "x2": 124, "y2": 118, "r": 9.0},
-    ]
+    ],
 }
 
 DICHUYENTANTHUTIENCO_MAP = {
