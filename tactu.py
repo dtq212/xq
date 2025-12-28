@@ -2484,12 +2484,10 @@ class TacTu:
             if not diemdanhxungquanhbandos:
                 if time.time() - self._thoidiemphatamlacmapgannhat > 5.0:
                     if self.moitruong.get_tenmonphai() == "maoson" and self._is_tudongvebanrac:
-                        phatam("Mao sơn lạc sang bản đồ lạ. Sử dụng xuyên phong hành")
                         self.moitruong.action_ngatdichuyen()
                         self.moitruong.action_thucthicaulenh("pf 4182.2")
                         self._thoidiemphatamlacmapgannhat = time.time()
                     elif self._is_tudongvebanrac and self._idbandofarmbanrac:
-                        phatam("Phái khác lạc sang bản đồ lạ. Sử dụng hồi thành phù")
                         self.moitruong.action_ngatdichuyen()
                         self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 1.)
                         self.action_sudunghoithanhphu()
