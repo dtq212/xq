@@ -301,7 +301,7 @@ class TacTu:
 
         is_yeucaunhatdo = self._yeucaunhatdo and not is_anhhuongboitruongnhom
 
-        if time.time() - self._thoidiemgapnguoichoigannhat < 5.0 and self.moitruong.get_idbandohientai() in BANDOFARMs and self.moitruong.get_idmaupk() == MAUPK_HOABINH:
+        if time.time() - self._thoidiemgapnguoichoigannhat < 10.0 and self.moitruong.get_idbandohientai() in BANDOFARMs and self.moitruong.get_idmaupk() == MAUPK_HOABINH:
             if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Bắt gặp người chơi trên bản đồ cự thú đảo")
             return
 
@@ -880,7 +880,7 @@ class TacTu:
         if self._is_danggomquai:
             return
 
-        if time.time() - self._thoidiemgapnguoichoigannhat < 5.0 and self.moitruong.get_idbandohientai() in BANDOFARMs and self.moitruong.get_idmaupk() == MAUPK_HOABINH:
+        if time.time() - self._thoidiemgapnguoichoigannhat < 10.0 and self.moitruong.get_idbandohientai() in BANDOFARMs and self.moitruong.get_idmaupk() == MAUPK_HOABINH:
             return
 
         tenmonphai = self.moitruong.get_tenmonphai()
@@ -2329,7 +2329,7 @@ class TacTu:
             self._yeucautudo = None
             return
 
-        if time.time() - self._thoidiemgapnguoichoigannhat < 5.0 and self.moitruong.get_idbandohientai() in BANDOFARMs and self.moitruong.get_idmaupk() == MAUPK_HOABINH:
+        if time.time() - self._thoidiemgapnguoichoigannhat < 10.0 and self.moitruong.get_idbandohientai() in BANDOFARMs and self.moitruong.get_idmaupk() == MAUPK_HOABINH:
             return
 
         while True:
@@ -2365,6 +2365,7 @@ class TacTu:
                         self._thoidiemphatamlacmapgannhat = time.time()
                     elif self._is_tudongvebanrac and self._idbandofarmbanrac:
                         self.moitruong.action_ngatdichuyen()
+                        self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 1.)
                         self.action_sudunghoithanhphu()
                         self._thoidiemphatamlacmapgannhat = time.time()
                     else:
@@ -2564,6 +2565,8 @@ class TacTu:
                 else:
                     self.moitruong.action_dichuyengiukhoangcachtoida(diachinpc, khoangcachtoida = 3.)
 
+            self._thoidiemsudunghoithanhphugannhat = time.time()
+
             time.sleep(1.0)
     
     def action_sudungvatphamhanhtrang(self, tenvatpham, is_boquaxacnhan = False, delay = 0.25):
@@ -2647,7 +2650,7 @@ class TacTu:
                     if self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon) and self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon) <= KHOANGCACHTOANMANHINH:
                         iddoituongnhanvatmuctieudangchon = self.moitruong.get_iddoituong(diachicosothongtinnhanvatmuctieudangchon)
                         if iddoituongnhanvatmuctieudangchon:
-                            if self.moitruong.get_idbandohientai() not in BANDOFARMs or time.time() - self._thoidiemgapnguoichoigannhat > 2.5 or self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon) <= 4.5:
+                            if self.moitruong.get_idbandohientai() not in BANDOFARMs or time.time() - self._thoidiemgapnguoichoigannhat > 5. or self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon) <= 4.5:
                                 self.moitruong.action_ralenhbaothumaosontancong(iddoituongbaothumaoson, iddoituongnhanvatmuctieudangchon)
 
                 break
@@ -3241,6 +3244,7 @@ class TacTu:
             if self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON:
                 print(f"[DI-CHUYEN] Chưa thấy {TANTHUTIENCO}, di chuyển đến vị trí (148, 145)...")
                 self.moitruong.action_dichuyengiukhoangcachtoidadiem(148, 145, khoangcachtoida = 3.)
+                self._thoidiemsudunghoithanhphugannhat = time.time()
             else:
                 print(f"[DI-CHUYEN] Không tìm thấy NPC {TANTHUTIENCO}. Đang tìm kiếm...")
             return
