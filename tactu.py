@@ -3233,7 +3233,7 @@ class TacTu:
                 self._trangthaiveban = 0
 
     def action_sudunghoithanhphu(self):
-        if time.time() - self._thoidiemsudunghoithanhphugannhat > 5.:
+        if time.time() - self._thoidiemsudunghoithanhphugannhat > 12.:
             self._thoidiemsudunghoithanhphugannhat = time.time()
             self.moitruong.action_thucthicaulenh("dGludmF0 2", delay = 0)
 
