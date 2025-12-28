@@ -639,10 +639,14 @@ class TacTu:
                         if not is_boquamuctieuhientai and vungdabichiemdongs:
                             qx = self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieudangchon)
                             qy = self.moitruong.get_toadoy(diachicosothongtinnhanvatmuctieudangchon)
+
+                            khoangcachtoidenmuctieu = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon)
                             for vung in vungdabichiemdongs:
-                                if math.dist((qx, qy), (vung["x"], vung["y"])) <= 9.0:
-                                    is_boquamuctieuhientai = True
-                                    break
+                                khoangcachbotdenmuctieu = math.dist((qx, qy), (vung["x"], vung["y"]))
+                                if khoangcachbotdenmuctieu <= 9.0:
+                                    if khoangcachtoidenmuctieu > khoangcachbotdenmuctieu:
+                                        is_boquamuctieuhientai = True
+                                        break
                             
                     if is_boquamuctieuhientai:
                         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
@@ -720,10 +724,13 @@ class TacTu:
                         is_cobotcanhtranh = False
                         qx = self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieuxemxet)
                         qy = self.moitruong.get_toadoy(diachicosothongtinnhanvatmuctieuxemxet)
+                        khoangcachtoidenmuctieu = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieuxemxet)
                         for vung in vungdabichiemdongs:
-                            if math.dist((qx, qy), (vung["x"], vung["y"])) <= 9.0:
-                                is_cobotcanhtranh = True
-                                break
+                            khoangcachbotdenmuctieu = math.dist((qx, qy), (vung["x"], vung["y"]))
+                            if khoangcachbotdenmuctieu <= 9.0:
+                                if khoangcachtoidenmuctieu > khoangcachbotdenmuctieu:
+                                    is_cobotcanhtranh = True
+                                    break
                         if is_cobotcanhtranh:
                             continue
                     
@@ -2895,10 +2902,14 @@ class TacTu:
             qy = self.moitruong.get_toadoy(diachidoituongxemxet)
 
             is_cobotkhacdangtranh = False
+
+            khoangcachtoidenquai = self.moitruong.get_khoangcach(diachidoituongxemxet)
             for vung in vungdabichiemdongs:
-                if math.dist((qx, qy), (vung["x"], vung["y"])) <= 9.0:
-                    is_cobotkhacdangtranh = True
-                    break
+                khoangcachbotdenquai = math.dist((qx, qy), (vung["x"], vung["y"]))
+                if khoangcachbotdenquai <= 9.0:
+                    if khoangcachtoidenquai > khoangcachbotdenquai:
+                        is_cobotkhacdangtranh = True
+                        break
 
             if is_cobotkhacdangtranh:
                 if iddoituongquai in self._danhsachidquaidagom:
