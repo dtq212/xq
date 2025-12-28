@@ -631,10 +631,14 @@ class TacTu:
                     elif self.moitruong.get_idmaupk() == MAUPK_HOABINH and is_muctieudangchonlabaothumaoson:
                         is_boquamuctieuhientai = True
                     elif self._is_tudongvebanrac:
-                        mx = self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieudangchon)
-                        my = self.moitruong.get_toadoy(diachicosothongtinnhanvatmuctieudangchon)
-                        if self._kiemtra_vungcam(mx, my):
+                        if self._idbandofarmbanrac and idbandohientai != self._idbandofarmbanrac:
                             is_boquamuctieuhientai = True
+
+                        if not is_boquamuctieuhientai:
+                            mx = self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieudangchon)
+                            my = self.moitruong.get_toadoy(diachicosothongtinnhanvatmuctieudangchon)
+                            if self._kiemtra_vungcam(mx, my):
+                                is_boquamuctieuhientai = True
 
                         if not is_boquamuctieuhientai and vungdabichiemdongs:
                             qx = self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieudangchon)
@@ -679,6 +683,9 @@ class TacTu:
 
                 if is_muctieudangxemxetlanguoichoi and self.moitruong.get_is_nhanvattontai(diachicosothongtinnhanvatmuctieuxemxet) and self.moitruong.get_idnguoichoi(diachicosothongtinnhanvatmuctieuxemxet) not in NHANVATCUAMINHs and self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieuxemxet) <= self._khoangcachtimkiemmuctieu and not self.moitruong.get_is_nhanvatdachet(diachicosothongtinnhanvatmuctieuxemxet):
                     self._thoidiemgapnguoichoigannhat = time.time()
+
+                if self._is_tudongvebanrac and self._idbandofarmbanrac and idbandohientai != self._idbandofarmbanrac:
+                    continue
 
                 iddoituongmuctieuxemxet = self.moitruong.get_iddoituong(diachicosothongtinnhanvatmuctieuxemxet)
                 if iddoituongmuctieuxemxet in self._idmuctieubiloi_map:
@@ -1347,7 +1354,7 @@ class TacTu:
                         break
                     if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_MANTHIENHOAVU) and self._is_nhieumuctieugan3 and is_muctieudangchonlanguoichoi:
                         is_vohieuhoadichuyen = True
-                        self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.5)
+                        self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 1.)
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_MANTHIENHOAVU)
                         break
                     if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_THAUCOTDINH) and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_THAUCOTDINH) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THAUCOTDINH,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 0):
@@ -2467,17 +2474,22 @@ class TacTu:
             idbandohientai = self.moitruong.get_idbandohientai()
             diemdanhxungquanhs = self._diemdanhxungquanhs
             if not diemdanhxungquanhs:
-                diemdanhxungquanhs = DIEMDANHXUNGQUANH_MAP.get(idbandohientai)
+                if self._is_tudongvebanrac and self._idbandofarmbanrac and self._idbandofarmbanrac != idbandohientai:
+                    diemdanhxungquanhs = []
+                else:
+                    diemdanhxungquanhs = DIEMDANHXUNGQUANH_MAP.get(idbandohientai)
             diemdanhxungquanhs = diemdanhxungquanhs or []
             diemdanhxungquanhbandos = [dd for dd in diemdanhxungquanhs if dd[2] == idbandohientai]
 
             if not diemdanhxungquanhbandos:
                 if time.time() - self._thoidiemphatamlacmapgannhat > 5.0:
                     if self.moitruong.get_tenmonphai() == "maoson" and self._is_tudongvebanrac:
+                        phatam("Mao sơn lạc sang bản đồ lạ. Sử dụng xuyên phong hành")
                         self.moitruong.action_ngatdichuyen()
                         self.moitruong.action_thucthicaulenh("pf 4182.2")
                         self._thoidiemphatamlacmapgannhat = time.time()
                     elif self._is_tudongvebanrac and self._idbandofarmbanrac:
+                        phatam("Phái khác lạc sang bản đồ lạ. Sử dụng hồi thành phù")
                         self.moitruong.action_ngatdichuyen()
                         self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 1.)
                         self.action_sudunghoithanhphu()
@@ -2874,11 +2886,22 @@ class TacTu:
             self._idquaidautien = 0
             return
 
-        if self.moitruong.get_idbandohientai() in BANDOKHONGPKs:
+        idbandohientai = self.moitruong.get_idbandohientai()
+
+        if self._is_tudongvebanrac and self._idbandofarmbanrac and self._idbandofarmbanrac != idbandohientai:
+            self._is_danggomquai = False
+            self._yeucaugomquai = None
+            self._idquaidangkeo = 0
+            self._danhsachidquaidagom.clear()
+            self._idquaidautien = 0
+            return
+        
+        if idbandohientai in BANDOKHONGPKs:
             self._is_danggomquai = False
             self._yeucaugomquai = None
             self._idquaidangkeo = 0
             return
+
 
         vungdabichiemdongs = []
         idnhanvathientai = self.moitruong.get_idnguoichoi()
@@ -2903,7 +2926,7 @@ class TacTu:
             is_canghilog = True
             self._thoidiemloggomquai = time.time()
         is_canghilog = False
-        if self.moitruong.get_is_nhanvatdachet() or self.moitruong.get_is_dangclickchuottrai() or self.moitruong.get_is_dangvankhi() or self.moitruong.get_idbandohientai() in BANDOKHONGPKs:
+        if self.moitruong.get_is_nhanvatdachet() or self.moitruong.get_is_dangclickchuottrai() or self.moitruong.get_is_dangvankhi() or idbandohientai in BANDOKHONGPKs:
             self._yeucaugomquai = None
             return
 

@@ -130,7 +130,7 @@ def timlauncherdangmo():
     return hwnd_found
 
 
-def timgamevadangnhap():
+def timcuasogamedangbiket():
     hwnd_found = 0
 
     def callback(hwnd, _):
@@ -151,13 +151,13 @@ def mogamevadangnhap(char_name, config):
     print(f"\n[MANAGER] >>> BẮT ĐẦU QUY TRÌNH CHO: {char_name}")
     try:
         print("[1] Kiểm tra và dọn dẹp các cửa sổ Game đang kẹt ở màn hình chờ...")
-        hwnd_game_stuck = timgamevadangnhap()
+        hwnd_game_stuck = timcuasogamedangbiket()
 
         if hwnd_game_stuck:
             print(f"   -> Phát hiện cửa sổ chờ (HWND: {hwnd_game_stuck}). Đang đóng để mở mới an toàn...")
             try:
                 win32gui.PostMessage(hwnd_game_stuck, win32con.WM_CLOSE, 0, 0)
-                time.sleep(15)
+                time.sleep(5)
             except Exception as e:
                 print(f"   -> Lỗi khi đóng cửa sổ cũ: {e}")
         else:
@@ -202,7 +202,7 @@ def mogamevadangnhap(char_name, config):
         hwnd_game = 0
         for i in range(60):
             time.sleep(1)
-            hwnd_game = timgamevadangnhap()
+            hwnd_game = timcuasogamedangbiket()
             if hwnd_game: break
 
         if not hwnd_game:
