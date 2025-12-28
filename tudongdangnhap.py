@@ -70,16 +70,16 @@ THONGTINDANGNHAP_MAP = {
     #     "server": "Kênh 4",
     # },
 
-    "3942": {
-        "user": "tholuumanh",
-        "pass": "hateva1",
-        "server": "Kênh 3",
-    },
-    "4137": {
-        "user": "doccocaubai",
-        "pass": "hateva1",
-        "server": "Kênh 3",
-    },
+    #"3942": {
+    #    "user": "tholuumanh",
+    #    "pass": "hateva1",
+    #    "server": "Kênh 3",
+    #},
+    #"4137": {
+    #    "user": "doccocaubai",
+    #    "pass": "hateva1",
+    #    "server": "Kênh 3",
+    #},
     "4599": {
         "user": "tieulyphidao",
         "pass": "hateva1",
