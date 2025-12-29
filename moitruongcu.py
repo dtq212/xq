@@ -242,7 +242,8 @@ class MoiTruong:
     def get_danhsachidnguoichoixungquanhs(self):
         i = -1
         danhsachidnguoichoixungquanhs = []
-        while True:
+        MAX_LOOP = 512
+        while i < MAX_LOOP:
             i += 1
             diachicosothongtinnhanvatxemxet = self.get_diachicosothongtindoituongx(i)
             if not diachicosothongtinnhanvatxemxet:
