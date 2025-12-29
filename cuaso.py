@@ -9,7 +9,6 @@ from hangso import *
 from loop import (
     LoopLamMoiTrangThaiMoiTruong,
     LoopTimKiemMucTieu,
-    LoopSuDungVatPham,
     LoopChinh,
     LoopPhu,
     LoopDieuPhoiDiChuyen
