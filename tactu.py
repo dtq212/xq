@@ -1296,6 +1296,11 @@ class TacTu:
                             is_ngatdichuyen = True
                             self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_THAUCOTDINH)
                             break
+                
+                if not is_anthan and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_MATAMTHUAT):
+                    self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_MATAMTHUAT)
+
+                
             break
         if is_ngatdichuyen:
             self.moitruong.action_ngatdichuyen()
@@ -1388,7 +1393,11 @@ class TacTu:
                         self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.5)
                         self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_THAUCOTDINH)
                         break
+                
 
+                if noilucconlai > 50 and not is_anthan and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_MATAMTHUAT):
+                    self.moitruong.action_sudungkynangvitri(*VITRIKYNANG_MATAMTHUAT)
+                
                 if khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN:
                     is_ngatdichuyen = True
                     self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.5)
