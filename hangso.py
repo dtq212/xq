@@ -452,7 +452,7 @@ BANDO_BATQUAITRAN = 894
 
 BANDO_MADAPHO = 211
 
-BANDOFARMs = (549, 541, 264, 510, 511, 512, 513, BANDO_BACHMATRANG, BANDO_TUONGLANG, BANDO_QUELANG, BANDO_MUCDA, BANDO_RANHGIOIDAMLAY, BANDO_MADAPHO)
+BANDOFARMs = (549, 541, 264, 510, 511, 512, 513, BANDO_BACHMATRANG, BANDO_TUONGLANG, BANDO_QUELANG, BANDO_MUCDA, BANDO_RANHGIOIDAMLAY, BANDO_MADAPHO, BANDO_KENHTRINHQUOC1, BANDO_KENHTRINHQUOC2)
 
 BANDOTUDONGLENSAUKHICHETs = (
     BANDO_RANHGIOIDAMLAY, BANDO_DIAGIOIDAMLAY, BANDO_DONGHAINGUTHON, BANDO_KENHTRINHQUOC1, BANDO_KENHTRINHQUOC2, BANDO_KENHTRINHQUOC3,
@@ -562,6 +562,8 @@ MALANGDAO = [(245, 193, 141), (242, 174, 141), (230, 147, 141), (217, 130, 141),
              (110, 52, 141), (107, 48, 141)]
 CULOC = [(64, 109, 131), (56, 89, 131), (76, 68, 131), (103, 53, 131), (120, 69, 131), (98, 91, 131), (90, 116, 131), (90, 130, 131), (98, 93, 131), (122, 118, 131), (160, 105, 131), (150, 64, 131), (130, 40, 131), (102, 52, 131)]
 MADAPHO = [(144, 141, 211), (103, 142, 211), (80, 113, 211), (78, 76, 211), (110, 70, 211), (117, 90, 211), (131, 97, 211), (118, 64, 211), (155, 61, 211), (182, 85, 211), (188, 119, 211), (168, 138, 211)]
+KENHTRINHQUOC1 = [(106, 101, 151), (90, 87, 151), (79, 77, 151), (76, 66, 151), (63, 53, 151), (74, 40, 151), (88, 36, 151), (101, 48, 151), (106, 51, 151), (83, 33, 151), (67, 46, 151), (63, 56, 151), (79, 65, 151), (83, 73, 151), (77, 81, 151), (93, 91, 151), (103, 100, 151)]
+KENHTRINHQUOC2 = [(126, 79, 152), (110, 66, 152), (90, 52, 152), (74, 41, 152), (62, 39, 152), (49, 52, 152), (56, 68, 152), (72, 79, 152), (87, 88, 152), (96, 97, 152), (101, 101, 152), (98, 99, 152), (83, 88, 152), (64, 73, 152), (50, 61, 152), (64, 41, 152), (90, 50, 152), (106, 63, 152), (118, 73, 152)]
 
 DIEMDANHXUNGQUANH_MAP = {
     BANDO_TRIEUTRUONGTHANH2: TRIEUTRUONGTHANH2,
@@ -582,6 +584,8 @@ DIEMDANHXUNGQUANH_MAP = {
     BANDO_MALANGDAO: MALANGDAO,
     BANDO_CULOC: CULOC,
     BANDO_MADAPHO: MADAPHO,
+    BANDO_KENHTRINHQUOC1: KENHTRINHQUOC1,
+    BANDO_KENHTRINHQUOC2: KENHTRINHQUOC2,
 }
 
 VUNGCAM_MAP = {
@@ -600,6 +604,16 @@ VUNGCAM_MAP = {
     BANDO_MALANGDAO: [
         {"type": "line", "x1": 116, "y1": 116, "x2": 145, "y2": 150, "r": 9.0},
         {"type": "line", "x1": 93, "y1": 96, "x2": 124, "y2": 118, "r": 9.0},
+    ],
+    BANDO_KENHTRINHQUOC1: [
+        {"type": "circle", "x": 108, "y": 57, "r": 6.0},
+        {"type": "circle", "x": 77, "y": 22, "r": 6.0},
+        {"type": "circle", "x": 112, "y": 106, "r": 6.0},
+    ],
+    BANDO_KENHTRINHQUOC2: [
+        {"type": "circle", "x": 47, "y": 38, "r": 6.0},
+        {"type": "circle", "x": 106, "y": 104, "r": 6.0},
+        {"type": "circle", "x": 132, "y": 83, "r": 6.0},
     ],
 }
 
@@ -683,7 +697,7 @@ HUYNHQUANGTHACH = "Huá»³nh Quang Tháº¡ch"
 
 CAPCUUDON = "Cáº¥p Cá»©u ÄÆ¡n"
 
-VATPHAMKHONGNHATs = ("ChuÃ´i Äao", "Vá» Kiáº¿m", "PhÃ¡ Cá»±u KhÃ´i GiÃ¡p", "Phi HÃ nh Phiáº¿n", HUYNHQUANGTHACH)
+VATPHAMKHONGNHATs = ("ChuÃ´i Äao", "Vá» Kiáº¿m", "PhÃ¡ Cá»±u KhÃ´i GiÃ¡p", "Phi HÃ nh Phiáº¿n", "PhÃ¡ Bá»‘ Y", HUYNHQUANGTHACH)
 VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUKIMBAOHOP, HOATLACHOAN, TUSAMDON, TANGBAODO, TIENTE, CHENBAC, GATAYNOEL, CAPCUUDON)
 VATPHAMTUDONGNHATFARMs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i", " Nháº«n", " TiÃªu", "Äáº§u CÃ¢n", "XÝ DiÔm", " Äáº§u CÃ¢n")
 VATPHAMXEPCHONGs = tuple()
