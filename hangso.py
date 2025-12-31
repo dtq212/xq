@@ -439,6 +439,7 @@ BANDO_CHIENTRUONG = 903
 BANDO_THANHKIEU = 701
 
 BANDO_BACHVANPHONG = 173
+BANDO_YENTRUONGTHANH1 = 71
 BANDO_YENTRUONGTHANH2 = 72
 BANDO_TRIEUTRUONGTHANH2 = 32
 BANDO_TANTRUONGTHANH2 = 52
@@ -564,11 +565,12 @@ CULOC = [(64, 109, 131), (56, 89, 131), (76, 68, 131), (103, 53, 131), (120, 69,
 MADAPHO = [(144, 141, 211), (103, 142, 211), (80, 113, 211), (78, 76, 211), (110, 70, 211), (117, 90, 211), (131, 97, 211), (118, 64, 211), (155, 61, 211), (182, 85, 211), (188, 119, 211), (168, 138, 211)]
 KENHTRINHQUOC1 = [(106, 101, 151), (90, 87, 151), (79, 77, 151), (76, 66, 151), (63, 53, 151), (74, 40, 151), (88, 36, 151), (101, 48, 151), (106, 51, 151), (83, 33, 151), (67, 46, 151), (63, 56, 151), (79, 65, 151), (83, 73, 151), (77, 81, 151), (93, 91, 151), (103, 100, 151)]
 KENHTRINHQUOC2 = [(126, 79, 152), (110, 66, 152), (90, 52, 152), (74, 41, 152), (62, 39, 152), (49, 52, 152), (56, 68, 152), (72, 79, 152), (87, 88, 152), (96, 97, 152), (101, 101, 152), (98, 99, 152), (83, 88, 152), (64, 73, 152), (50, 61, 152), (64, 41, 152), (90, 50, 152), (106, 63, 152), (118, 73, 152)]
-
+YENTRUONGTHANH1 = [(220, 123, 71), (200, 136, 71), (182, 148, 71), (161, 142, 71), (144, 128, 71), (121, 116, 71), (98, 101, 71), (71, 74, 71), (55, 65, 71), (77, 81, 71), (97, 97, 71), (122, 115, 71), (150, 132, 71), (175, 153, 71), (192, 140, 71), (215, 125, 71)]
 DIEMDANHXUNGQUANH_MAP = {
     BANDO_TRIEUTRUONGTHANH2: TRIEUTRUONGTHANH2,
     BANDO_TANTRUONGTHANH2: TANTRUONGTHANH2,
     BANDO_YENTRUONGTHANH2: YENTRUONGTHANH2,
+    BANDO_YENTRUONGTHANH1: YENTRUONGTHANH1,
 
     BANDO_LINHCOCDONG1: LINHCOCDONG1,
     BANDO_LINHCOCDONG2: LINHCOCDONG2,
@@ -698,8 +700,8 @@ HUYNHQUANGTHACH = "Huá»³nh Quang Tháº¡ch"
 CAPCUUDON = "Cáº¥p Cá»©u ÄÆ¡n"
 
 VATPHAMKHONGNHATs = ("ChuÃ´i Äao", "Vá» Kiáº¿m", "PhÃ¡ Cá»±u KhÃ´i GiÃ¡p", "Phi HÃ nh Phiáº¿n", "PhÃ¡ Bá»‘ Y", HUYNHQUANGTHACH)
-VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUKIMBAOHOP, HOATLACHOAN, TUSAMDON, TANGBAODO, TIENTE, CHENBAC, GATAYNOEL, CAPCUUDON)
-VATPHAMTUDONGNHATFARMs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i", " Nháº«n", " TiÃªu", "Äáº§u CÃ¢n", "XÝ DiÔm", " Äáº§u CÃ¢n")
+VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUKIMBAOHOP, HOATLACHOAN, TUSAMDON, TIENTE, CHENBAC, GATAYNOEL, CAPCUUDON)
+VATPHAMTUDONGNHATFARMs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i", " Nháº«n", " TiÃªu", "Äáº§u CÃ¢n", "XÝ DiÔm", " Äáº§u CÃ¢n", "NghÃªnh Phong Tráº£m")
 VATPHAMXEPCHONGs = tuple()
 
 VOTUHOCNHANs = ("VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 30)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 40)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 50)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 60)",)
@@ -723,7 +725,7 @@ KIEUDICHUYEN_TOADOCHUAN = 3
 BANDOCOMO = 395
 
 NHANVATTODOITUDONGs = tuple()
-NHANVATCUAMINHs = (3942, 4137, 2855, 2483, 2492, 2574, 3813, 3814, 4599, 4642)
+NHANVATCUAMINHs = (3942, 4137, 2855, 2483, 2492, 2574, 3813, 3814, 4599, 4642, 4676)
 NHANVATCUNGBANGs = (
     3236, 2303, 1, 19, 26, 27, 159, 1258, 395, 536, 39, 803, 528, 290, 38, 54, 436, 160, 62, 68, 434, 217, 56, 140,
     435, 1129, 53, 65, 163, 807, 1950, 37, 126, 42, 1860, 100, 1765, 2069, 1150, 1766, 655, 122, 36, 1369, 888,
