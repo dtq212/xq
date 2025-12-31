@@ -123,13 +123,13 @@ class LoopChinh:
         self.tactu.action_xulygomquai()
         self.tactu._action_sudungkynang()
 
-        #if self.moitruong.get_idnguoichoi() == 4642:
+        # if self.moitruong.get_idnguoichoi() == 4599:
         #    # self.tactu.action_sudungvatphamhanhtrang(TUSAMDON, delay = 5.)
-        #    self.moitruong.action_thucthicaulenh("tallk 29d# bonus.1")
+        #    self.moitruong.action_thucthicaulenh("tallk 294# bonus.1")
         #    time.sleep(0.25)
-        #    self.moitruong.action_thucthicaulenh("tallk 29d# bonus.28")
+        #    self.moitruong.action_thucthicaulenh("tallk 294# bonus.28")
         #    time.sleep(0.25)
-        #    self.moitruong.action_thucthicaulenh("tallk 29d# bonus.29")
+        #    self.moitruong.action_thucthicaulenh("tallk 294# bonus.29")
         #    time.sleep(0.25)
 
         # if diachidoituong := self.moitruong.get_diachicosothongtinnhanvatdangchichuot():
