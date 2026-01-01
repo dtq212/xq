@@ -1,6 +1,8 @@
 import threading
 import time
 import pymem.exception
+
+from hangso import BANDO_CHIENTRUONG
 from moitruong import MoiTruong
 from tactu import TacTu
 from tienich import phatam
@@ -157,7 +159,7 @@ class LoopPhu:
         self.tactu.action_tudongphucsinh()
         self.tactu.action_tudongdoimaupk()
         self.tactu.action_tudongsuado()
-        self.tactu.action_tudongvutdo()
+
         self.tactu.action_xulyvebanrac()
         self.tactu.action_tudongkhaikhoang()
 
@@ -168,7 +170,7 @@ class LoopPhu:
         self.tactu.action_dichuyentudo()
         self.tactu.action_nhatdo()
 
-        if self.moitruong.get_is_nhanvatdachet():
+        if self.moitruong.get_is_nhanvatdachet() and self.moitruong.get_idbandohientai() != BANDO_CHIENTRUONG:
             if time.time() - self.thoidiemthongbaochetgannhat > 5.:
                 self.thoidiemthongbaochetgannhat = time.time()
                 phatam("Nhân vật đã chết")
