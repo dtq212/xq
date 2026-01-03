@@ -401,6 +401,7 @@ THANTHUDAN = "Tháº§n ThÃº - Dáº§n"
 THANTHUCHUOT = "Tháº§n ThÃº - Chuá»™t"
 THANTHUTHO = "Tháº§n ThÃº - Thá»"
 THANTHUTHIN = "Tháº§n ThÃº - ThÃ¬n"
+THANTHUTINHLINHNOEL = "Tháº§n ThÃº - Tinh Linh Noel"
 
 TUILINHTHACHCAP1 = "TÃºi Linh Tháº¡ch cáº¥p 1"
 TUILINHTHACHCAP2 = "TÃºi Linh Tháº¡ch cáº¥p 2"
@@ -622,7 +623,7 @@ VUNGCAM_MAP = {
         {"type": "circle", "x": 132, "y": 83, "r": 6.0},
     ],
     510: [
-        {"type": "circle", "x": 166, "y": 23, "r": 6.0},
+        {"type": "circle", "x": 169, "y": 25, "r": 6.0},
         {"type": "circle", "x": 166, "y": 223, "r": 6.0},
     ],
 }
@@ -708,15 +709,14 @@ HUYNHQUANGTHACH = "Huá»³nh Quang Tháº¡ch"
 CAPCUUDON = "Cáº¥p Cá»©u ÄÆ¡n"
 
 VATPHAMKHONGNHATs = ("ChuÃ´i Äao", "Vá» Kiáº¿m", "PhÃ¡ Cá»±u KhÃ´i GiÃ¡p", "Phi HÃ nh Phiáº¿n", "PhÃ¡ Bá»‘ Y", HUYNHQUANGTHACH)
-VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUKIMBAOHOP, HOATLACHOAN, TUSAMDON, TIENTE, CHENBAC, GATAYNOEL, CAPCUUDON)
+VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, HOATLACHOAN, TUSAMDON, TIENTE, CAPCUUDON)
 VATPHAMTUDONGNHATFARMs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i", " Nháº«n", " TiÃªu", "Äáº§u CÃ¢n", "XÝ DiÔm", " Äáº§u CÃ¢n", "NghÃªnh Phong Tráº£m")
 VATPHAMXEPCHONGs = tuple()
 
 VOTUHOCNHANs = ("VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 30)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 40)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 50)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 60)",)
 
-BAOTHUVATPHAMs = (SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN, THANTHUMAYET, THANTHUDAN, THANTHUCHUOT, THIENTHAN, ACQUY)
-
-TENMUCTIEUKHONGTANCONGs = (SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN, THANTHUMAYET, THANTHUDAN, THIENTHAN, ACQUY, "Ã”n Tháº§n (cáº¥p 105)", "Ä\x90á»— Ä\x90á»™c (cáº¥p 116)", "SÆ¡n Nhung Tá»™c Gian Táº¿ (cáº¥")
+BAOTHUVATPHAMs = (THANTHUTINHLINHNOEL, SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN, THANTHUMAYET, THANTHUDAN, THANTHUCHUOT, THIENTHAN, ACQUY)
+TENMUCTIEUKHONGTANCONGs = (THANTHUTINHLINHNOEL, SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN, THANTHUMAYET, THANTHUDAN, THIENTHAN, ACQUY, "Ã”n Tháº§n (cáº¥p 105)", "Ä\x90á»— Ä\x90á»™c (cáº¥p 116)", "SÆ¡n Nhung Tá»™c Gian Táº¿ (cáº¥")
 
 YEUCAUDICHUYEN_NONE = 0
 YEUCAUDICHUYENNHATDO = 1
@@ -737,5 +737,5 @@ NHANVATCUAMINHs = (3942, 4137, 2855, 2483, 2492, 2574, 3813, 3814, 4599, 4642, 4
 NHANVATCUNGBANGs = (
     3236, 2303, 1, 19, 26, 27, 159, 1258, 395, 536, 39, 803, 528, 290, 38, 54, 436, 160, 62, 68, 434, 217, 56, 140,
     435, 1129, 53, 65, 163, 807, 1950, 37, 126, 42, 1860, 100, 1765, 2069, 1150, 1766, 655, 122, 36, 1369, 888,
-    592, 1095, 538, 2478, 2834, 2555, *NHANVATTODOITUDONGs)
+    592, 1095, 538, 2478, 2834, 2555, 807, 4599, 2331, 3943, 64, *NHANVATTODOITUDONGs)
 NHANVATNGUYHIEMs = tuple()

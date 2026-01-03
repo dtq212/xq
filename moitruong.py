@@ -109,6 +109,7 @@ class MoiTruong:
         self._idbandohientai = False
 
         self._thoidiemcohieuungtienthanvodichgannhat = 0.
+        self._thoidiemcohieuunglactuyetvongan = 0.
         self._thoidiemcohieuungkimcuongbathoaidongannhat = 0.
 
         self._thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat = 0.
@@ -325,6 +326,9 @@ class MoiTruong:
 
         if not self.get_is_cohieuungs((HIEUUNGKYNANG_TIENTHANVODICH,), macdinh = True, is_hieuungcoloi = 1):
             self._thoidiemcohieuungtienthanvodichgannhat = time.time()
+
+        if not self.get_is_cohieuungs((HIEUUNGKYNANG_LACTUYETVONGAN,), macdinh = True, is_hieuungcoloi = 1):
+            self._thoidiemcohieuunglactuyetvongan = time.time()
 
         if not self.get_is_cohieuungs((HIEUUNGKYNANG_KIMCUONGBATHOAIDON,), macdinh = True, is_hieuungcoloi = 1):
             self._thoidiemcohieuungkimcuongbathoaidongannhat = time.time()
@@ -927,17 +931,16 @@ class MoiTruong:
         thoigiangiancach = read_int(self.tientrinh, diachicosothongtinkynang + idvitrikynang * OFFSET_DIACHICOSOMOIKYNANG + 0x6A4C) == 0
 
         if is_kiemtranoiluc:
-            monphai = self.get_tenmonphai()
-            if monphai:
-                if self.get_noilucconlai() < NGUYENKHIYEUCAUKYNANGCAMVEQUAN_MAP.get(monphai, {}).get((idvitri_x, idvitri_y), 50):
-                    return False
-
+            if self.get_noilucconlai() < 50:
+                return False
+        
         return idkynang and is_dahockynang and thoigiangiancach and time.time() - self._thoidiemsudungkynangvitrigannhat_map.get((idvitri_x, idvitri_y), time.time() - delay - 1.) > delay
 
     def get_danhsachtennguoichoithanhviennhoms(self):
         return self._tennguoichoithanhviennhoms
 
-    def get_is_nhanvatchuasansang(self, diachicosothongtinnhanvat):
+    def get_is_nhanvatchuasansang(self, diachicosothongtinnhanvat = False):
+        diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
         #Chưa sẵn sàng: Vừa đăng nhập
         return read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0x29) == 1
 
