@@ -210,9 +210,7 @@ class CuaSo:
                 elif keyboard.is_pressed("ctrl+alt+shift+z"):
                     self.battat_tudongdichientruong()
                     time.sleep(0.3)
-                elif keyboard.is_pressed("ctrl+alt+shift+n"):
-                    self.battat_tudonglamnhiemvusugia()
-                    time.sleep(0.3)
+
                 elif keyboard.is_pressed("ctrl+alt+s"):
                     self.battat_uutienbaothumaoson()
                     time.sleep(0.3)
@@ -221,7 +219,7 @@ class CuaSo:
                     self.action_suado()
                     time.sleep(0.3)
 
-                elif keyboard.is_pressed("ctrl+alt+shift+x"):
+                elif keyboard.is_pressed("ctrl+alt+shift+n"):
                     self.tactu.battat_chedobufftoanbang()
                     time.sleep(0.3)
 

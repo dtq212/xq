@@ -397,7 +397,7 @@ HACLANTHACH = "Háº¯c LÃ¢n Tháº¡ch"
 SONGTUDUNGCAM = "Song Tá»­ DÅ©ng Cáº£m"
 SONGTUANHMINH = "Song Tá»­ Anh Minh"
 THANTHUMAYET = "Tháº§n ThÃº - Ma Yáº¿t"
-THANTHUDAN = "Tháº§n ThÃº - Dáº§n"
+THANTHUDAN = "Tháº§n ThÃº - Dáº§n (Giá»›i háº¡"
 THANTHUCHUOT = "Tháº§n ThÃº - Chuá»™t"
 THANTHUTHO = "Tháº§n ThÃº - Thá»"
 THANTHUTHIN = "Tháº§n ThÃº - ThÃ¬n"
@@ -749,7 +749,7 @@ KIEUDICHUYEN_TOADOCHUAN = 3
 
 BANDOCOMO = 395
 
-NHANVATTODOITUDONGs = (4599, 4676)
+NHANVATTODOITUDONGs = tuple()
 NHANVATCUAMINHs = (3942, 4137, 2855, 2483, 2492, 2574, 3813, 3814, 4599, 4642, 4676, 2303)
 NHANVATCUNGBANGs = (
     3236, 2303, 1, 19, 26, 27, 159, 1258, 395, 536, 39, 803, 528, 290, 38, 54, 436, 160, 62, 68, 434, 217, 56, 140,

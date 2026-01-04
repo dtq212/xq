@@ -1060,7 +1060,7 @@ class TacTu:
         phantramsinhlucthapnhat = 100.
 
         idnguoichoithanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms()
-        danhsachdiachidoituongdangxemxet = []
+        danhsachdiachidoituongdangxemxet = [self.moitruong.get_diachicosothongtinnhanvat1()]
         i = -1
         while True:
             i += 1
@@ -1162,8 +1162,6 @@ class TacTu:
             if is_ngatdichuyen and idtuthehientai == TUTHENHANVAT_DICHUYEN:
                 self.moitruong.action_ngatdichuyen()
                 self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, hientai + 0.5)
-
-            print("item duoc chon: {}".format(item))
 
             offset = random.uniform(0, 1.0) if loaikynang == "phudau" else 0
             is_ok = self.action_xulyuutiensudungkynang(loaikynang, vitrikynang, diachimuctieu, offset)
