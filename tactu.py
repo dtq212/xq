@@ -682,7 +682,7 @@ class TacTu:
 
                 if time.time() - self._thoidiemphatamanthan > 5.0:
                     if is_muctieudangxemxetlanguoichoi:
-                        if diachicosothongtinnhanvatmuctieuxemxet != self.moitruong.get_diachicosothongtinnhanvat1():
+                        if diachicosothongtinnhanvatmuctieuxemxet != self.moitruong.get_diachicosothongtinnhanvat1() and self.moitruong.get_idnguoichoi(diachicosothongtinnhanvatmuctieuxemxet) not in NHANVATCUAMINHs:
                             if self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_ANTHANTHUAT,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieuxemxet, is_hieuungcoloi = 1):
                                 if self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieuxemxet) <= KHOANGCACHTOIDAHOPLE:
                                     print("{} Có thích khách: {}".format(self.moitruong.get_tendoituong(), self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieuxemxet)))
@@ -976,15 +976,10 @@ class TacTu:
 
         for i, item in enumerate(danhsachuutien):
             vitrikynang, loaikynang, dieukien, khoangcachyeucau, muctieu_input, is_ngatdichuyen, is_ketthucvonglap = item
-
             if callable(dieukien) and not dieukien(): continue
-
             if vitrikynang and not self.moitruong.get_is_kynangsansang(*vitrikynang): continue
-
             diachimuctieu = muctieu_input if muctieu_input else diachimuctieu
-
             if not diachimuctieu and loaikynang in ("target", "phudau", "attack", "position", "position_min"): continue
-
             if loaikynang == "position_min":
                 if is_debug: print(f"[DEBUG] Position Min: Kiting away from {khoangcach:.1f}m")
                 self._yeucautancong = {
@@ -2982,7 +2977,7 @@ class TacTu:
         if tenmonphai == "vanmongcoc" and self._is_chedobufftoanbang:
             if is_dangtrongnhom:
                 if self.moitruong.get_is_truongnhom() or self._is_khongcongidebuff:
-                    self.moitruong.action_thoatkhoinhom(idnguoichoi)
+                    self.moitruong.action_thoatkhoinhom()
             else:
                 self.moitruong.action_kiemtravadongyloimoinhom(NHANVATCUNGBANGs)
             return
@@ -3004,7 +2999,7 @@ class TacTu:
         if is_dangtrongnhom:
             idtruongnhom = self.moitruong.get_idnguoichoitruongnhom()
             if idtruongnhom and idtruongnhom not in NHANVATTODOITUDONGs and NHANVATTODOITUDONGs and NHANVATTODOITUDONGs[0] in danhsachxungquanhs and idtruongnhom not in danhsachthanhviens:
-                self.moitruong.action_thoatkhoinhom(idtruongnhom)
+                self.moitruong.action_thoatkhoinhom()
                 return
 
         xephangcuatoi = NHANVATTODOITUDONGs.index(idnguoichoi)
@@ -3020,7 +3015,7 @@ class TacTu:
         if self.moitruong.get_is_truongnhom():
             if idnguoichoixephangcaonhat != idnguoichoi and idnguoichoixephangcaonhat not in danhsachthanhviens:
                 if len(danhsachthanhviens) <= 1:
-                    self.moitruong.action_thoatkhoinhom(idnguoichoi)
+                    self.moitruong.action_thoatkhoinhom()
                     return
 
             if len(danhsachthanhviens) < 5:

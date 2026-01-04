@@ -379,6 +379,11 @@ class MoiTruong:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x24)
 
+    def get_idphechientruong(self, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+        return read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0x10AD, 1)
+
     def get_is_dangmatketnoi(self):
         return not self.get_is_nhanvattontai()
 
@@ -1431,15 +1436,13 @@ class MoiTruong:
 
         return True
 
-    def action_thoatkhoinhom(self, idnguoichoitruongnhom, delay = 0.25):
+    def action_thoatkhoinhom(self, delay = 0.25):
         if time.time() - self._thoidiemthaotacnhomgannhat < delay:
-            return
-        if not idnguoichoitruongnhom:
             return
 
         self._thoidiemthaotacnhomgannhat = time.time()
 
-        self.auto_assemble_thaotacnhom("x", idnguoichoitruongnhom)
+        self.auto_assemble_thaotacnhom("x", self.get_idnguoichoi())
 
         return True
 
@@ -2767,3 +2770,4 @@ class MoiTruong:
 
         self._tennguoichoithanhviennhoms = tennguoichoithanhviennhoms
 
+    
