@@ -1347,13 +1347,15 @@ class MoiTruong:
         diachicosothongtinnhanvatmuctieudangchon = diachicosothongtinnhanvatmuctieu if diachicosothongtinnhanvatmuctieu else self.get_diachicosothongtinnhanvatmuctieudangchon()
 
         if not diachicosothongtinnhanvatmuctieudangchon:
-            return
+            return False
 
         if self.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon):
             idnguoichoi = self.get_idnguoichoi(diachicosothongtinnhanvatmuctieudangchon)
-            return self.auto_assemble_sudungtancongvatly(idnguoichoi)
+            self.auto_assemble_sudungtancongvatly(idnguoichoi)
         else:
-            return self.auto_assemble_sudungtancongvatly("{}#".format(hex(self.get_iddoituong(diachicosothongtinnhanvatmuctieudangchon)).replace("0x", "")))
+            self.auto_assemble_sudungtancongvatly("{}#".format(hex(self.get_iddoituong(diachicosothongtinnhanvatmuctieudangchon)).replace("0x", "")))
+
+        return True
 
     def action_sudungkynangmuctieunguoichoi(self, idkynang, idnguoichoi, delay = 0.05):
         if time.time() - self._thoidiemthucthicaulenhgannhat < delay:

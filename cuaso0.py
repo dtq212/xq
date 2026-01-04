@@ -221,6 +221,10 @@ class CuaSo:
                     self.action_suado()
                     time.sleep(0.3)
 
+                elif keyboard.is_pressed("ctrl+alt+shift+x"):
+                    self.tactu.battat_chedobufftoanbang()
+                    time.sleep(0.3)
+
             time.sleep(0.05)
 
     def battat_uutienbaothumaoson(self):

@@ -1,6 +1,7 @@
 import os
 import threading
 import time
+import traceback
 
 import keyboard
 from infi.systray import SysTrayIcon
@@ -31,6 +32,7 @@ def khoidong_looptonghop(moitruong, tactu, stop):
             l_chinh.step()
         except Exception as e:
             print(f"Lỗi luồng tổng hợp: {e}")
+            print(traceback.format_exc())
             time.sleep(1)
         time.sleep(0.1)
 
@@ -217,6 +219,10 @@ class CuaSo:
 
                 elif keyboard.is_pressed("ctrl+alt+shift+r"):
                     self.action_suado()
+                    time.sleep(0.3)
+
+                elif keyboard.is_pressed("ctrl+alt+shift+x"):
+                    self.tactu.battat_chedobufftoanbang()
                     time.sleep(0.3)
 
             time.sleep(0.05)

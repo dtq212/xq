@@ -112,6 +112,37 @@ class LoopChinh:
         self.tactu._action_sudungkynang()
 
 
+        #if self.moitruong.get_idnguoichoi() == 4676:
+        #   # self.tactu.action_sudungvatphamhanhtrang(TUSAMDON, delay = 5.)
+        #   self.moitruong.action_thucthicaulenh("tallk 28e# bonus.1")
+        #   time.sleep(0.25)
+        #   self.moitruong.action_thucthicaulenh("tallk 28e# bonus.28")
+        #   time.sleep(0.25)
+        #   self.moitruong.action_thucthicaulenh("tallk 28e# bonus.29")
+        #   time.sleep(0.25)
+
+        # if diachidoituong := self.moitruong.get_diachicosothongtinnhanvatdangchichuot():
+        #     print(self.moitruong.get_tendoituong(diachidoituong))
+            # print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
+            # print(self.moitruong.get_tendoituong(diachidoituong))
+        # print(self.moitruong.get_danhsachhieuungnhanvats())
+        #if self.moitruong.get_idnguoichoi() == 4599:
+        #    print(self.moitruong.get_danhsachvatphamhanhtrang_map().keys())
+
+        # print(self.moitruong.get_idkynang(0, 0))
+
+        # if self.moitruong.get_tendoituong() == "ThoLuuManh1":
+        #     self.moitruong.action_thucthicaulenh("noichuyen 1ed# gift.30", delay = 0)
+        #     time.sleep(0.5)
+            # if diachi := self.moitruong.action_timkiemnhanvat(iddoituong = self.moitruong.get_iddoituongbaothumaoson()):
+            #     print(hex(diachi))
+
+        # if self.moitruong.get_tendoituong() == "ThoLuuManh2":
+        #     print(self.moitruong.get_danhsachhieuungnhanvats())
+        #     if diachidoituong := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
+        #         print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
+        #         print(self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRONGTHUONG, ),
+
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
         self.moitruong = moitruong
