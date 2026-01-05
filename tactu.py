@@ -996,10 +996,10 @@ class TacTu:
                 }
                 return
             if loaikynang == "dichuyentiepcantamxa":
-                nguongantoan = khoangcachyeucau - (random.uniform(1.5, 2.) + thoigiandungim)
+                nguongantoan = khoangcachyeucau - (1.5 + thoigiandungim * 2)
                 if khoangcach >= nguongantoan:
                     if is_debug: print(f"[DEBUG] Position: Dist {khoangcach:.1f} >= Safe {nguongantoan:.1f} -> MOVE")
-                    khoangcachgiutoida = khoangcachyeucau - (random.uniform(1.5, 2.) + thoigiandungim) if thoigiandungim <= 4.5 else 0
+                    khoangcachgiutoida = khoangcachyeucau - (1.5 + thoigiandungim * 2) if thoigiandungim <= 4.5 else 0
                     self._yeucautancong = {
                         "yeucau": YEUCAUDICHUYENTANCONG,
                         "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
@@ -1009,12 +1009,13 @@ class TacTu:
                     return
                 else:
                     continue
+
             if loaikynang in ("sudungkynangmuctieu", "tancongvatly", "sudungkynangphudau") and diachimuctieu:
                 if khoangcach > khoangcachyeucau: continue
 
             if is_ngatdichuyen and idtuthehientai == TUTHENHANVAT_DICHUYEN:
                 self.moitruong.action_ngatdichuyen()
-                self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, hientai + 0.5)
+                self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, hientai + 0.1)
 
             if is_debug: print(f"[DEBUG] EXECUTE: {loaikynang} - {vitrikynang}")
 
@@ -1023,7 +1024,7 @@ class TacTu:
             is_ok = self.action_xulyuutiensudungkynang(loaikynang, vitrikynang, diachimuctieu, offset)
 
             if is_ok:
-                self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, hientai + 0.8)
+                self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, hientai + 0.1)
                 self._yeucautancong = None
                 if is_ketthucvonglap: return
             elif is_ketthucvonglap:
