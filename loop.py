@@ -1,5 +1,7 @@
 import threading
 import time
+import traceback
+
 import pymem.exception
 
 from hangso import BANDO_CHIENTRUONG
@@ -101,6 +103,7 @@ class LoopChinh:
                 self.step()
             except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
                 print("Luồng chính: {}, {}".format(err, self.moitruong.get_tendoituong()))
+                print(traceback.format_exc())
                 time.sleep(1)
             time.sleep(0.1)
 

@@ -187,6 +187,7 @@ class TacTu:
 
         self._thoidiemsudungbaothuvatphamgannhat = 0.
         self._thoidiemthietlaptrieuhoithudoilenhgannhat = 0.
+        self._thoidiemkiemtrakhongcongidebuffgannhat = 0.
 
     def __del__(self):
         try:
@@ -309,26 +310,30 @@ class TacTu:
 
         is_yeucaunhatdo = self._yeucaunhatdo and not is_anhhuongboitruongnhom
 
-        if time.time() - self._thoidiemgapnguoichoigannhat < 10.0 and self.moitruong.get_idbandohientai() in BANDOFARMs and self.moitruong.get_idmaupk() == MAUPK_HOABINH:
+        is_maupkhoabinh = self.moitruong.get_idmaupk() == MAUPK_HOABINH
+
+        if time.time() - self._thoidiemgapnguoichoigannhat < 10.0 and self.moitruong.get_idbandohientai() in BANDOFARMs and is_maupkhoabinh:
             if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Bắt gặp người chơi trên bản đồ cự thú đảo")
             return
 
+        diachimuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+        is_muctieulanguoichoi = diachimuctieudangchon and self.moitruong.get_is_nguoichoi(diachimuctieudangchon)
         yeucauduocchon = None
         lydochon = "KHÔNG CÓ"
 
-        if is_yeucaunhatdo:
+        if is_yeucaunhatdo and not is_muctieulanguoichoi:
             yeucauduocchon = self._yeucaunhatdo
             lydochon = "NHẶT ĐỒ"
-        elif self._yeucaukhaikhoang and not is_anhhuongboitruongnhom:
+        elif self._yeucaukhaikhoang:
             yeucauduocchon = self._yeucaukhaikhoang
             lydochon = "KHAI KHOÁNG"
-        elif self._yeucaugomquai and not is_anhhuongboitruongnhom and self._is_danggomquai:
+        elif self._yeucaugomquai and not is_anhhuongboitruongnhom and not is_muctieulanguoichoi:
             yeucauduocchon = self._yeucaugomquai
             lydochon = "GOM QUÁI"
         elif self._yeucautancong:
             yeucauduocchon = self._yeucautancong
             lydochon = "TẤN CÔNG"
-        elif self._yeucautheonhom:
+        elif self._yeucautheonhom and not is_muctieulanguoichoi:
             yeucauduocchon = self._yeucautheonhom
             lydochon = "THEO NHÓM"
         elif self._yeucautudo and not is_anhhuongboitruongnhom:
@@ -346,7 +351,7 @@ class TacTu:
             msg_diachimuctieudanggom = diachimuctieudanggom if yeucauduocchon else "None"
             print(f"[DEBUG-MOVE] Quyết định: {lydochon} | Đích: {msg_dich} | Mục tiêu: {msg_diachimuctieudanggom}")
 
-        if yeucauduocchon and yeucauduocchon.get("yeucau") == YEUCAUDICHUYENTANCONG and is_anhhuongboitruongnhom:
+        if yeucauduocchon and yeucauduocchon.get("yeucau") == YEUCAUDICHUYENTANCONG and is_anhhuongboitruongnhom and not is_muctieulanguoichoi:
             x_truongnhom = self.moitruong.get_toadoxtruongnhom()
             y_truongnhom = self.moitruong.get_toadoytruongnhom()
 
@@ -1065,7 +1070,7 @@ class TacTu:
             if not self.moitruong.get_is_nhanvattontai(diachidoituongdangxemxet): continue
 
             idnguoichoidangxemxet = self.moitruong.get_idnguoichoi(diachidoituongdangxemxet)
-            if idnguoichoidangxemxet == idnguoichoi or (idnguoichoithanhviennhoms and idnguoichoidangxemxet in idnguoichoithanhviennhoms):
+            if idnguoichoidangxemxet == idnguoichoi or (idnguoichoithanhviennhoms and idnguoichoidangxemxet in idnguoichoithanhviennhoms and self.moitruong.get_khoangcach(diachidoituongdangxemxet) < 12.):
                 danhsachdiachidoituongdangxemxet.append(diachidoituongdangxemxet)
 
         for diachidoituongdangxemxet in danhsachdiachidoituongdangxemxet:
@@ -2968,7 +2973,8 @@ class TacTu:
 
         if tenmonphai == "vanmongcoc" and self._is_chedobufftoanbang:
             if is_dangtrongnhom:
-                if self.moitruong.get_is_truongnhom() or self._is_khongcongidebuff:
+                if self.moitruong.get_is_truongnhom() or (self._is_khongcongidebuff and time.time() - self._thoidiemkiemtrakhongcongidebuffgannhat > 10.):
+                    self._thoidiemkiemtrakhongcongidebuffgannhat = time.time()
                     self.moitruong.action_thoatkhoinhom()
             else:
                 self.moitruong.action_kiemtravadongyloimoinhom(NHANVATCUNGBANGs)
