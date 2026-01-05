@@ -622,7 +622,7 @@ class TacTu:
 
                     is_boquamuctieuhientai = False
 
-                    is_muctieudangchonlabaothumaoson = any(tenbaothu in tendoituongmuctieudangchon for tenbaothu in (CUONGTHI, QUYTOT, THIENBINH))
+                    is_muctieudangchonlabaothumaoson = CUONGTHI in tendoituongmuctieudangchon
                     if is_bandokhongpk and (is_muctieudangchonlabaothumaoson or is_muctieudangchonlanguoichoi):
                         is_boquamuctieuhientai = True
                     elif not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
@@ -725,7 +725,7 @@ class TacTu:
 
                 tendoituongmuctieudangxemxet = self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieuxemxet)
 
-                is_muctieudangxemxetlabaothumaoson = any(tenbaothu in tendoituongmuctieudangxemxet for tenbaothu in (CUONGTHI, QUYTOT, THIENBINH))
+                is_muctieudangxemxetlabaothumaoson = CUONGTHI in tendoituongmuctieudangxemxet
 
                 if self._is_chidanhnguoichoi and not is_muctieudangxemxetlanguoichoi and not is_muctieudangxemxetlabaothumaoson:
                     continue
@@ -796,8 +796,8 @@ class TacTu:
                 tendoituongmuctieudangchon = self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon)
 
                 if self._is_uutienbaothumaoson:
-                    is_muctieuxemxetlabaothumaoson = any(tenbaothu in tendoituongmuctieuxemxet for tenbaothu in (CUONGTHI, QUYTOT, THIENBINH))
-                    is_muctieudangchonlabaothumaoson = any(tenbaothu in tendoituongmuctieudangchon for tenbaothu in (CUONGTHI, QUYTOT, THIENBINH)) if diachicosothongtinnhanvatmuctieudangchon else False
+                    is_muctieuxemxetlabaothumaoson = CUONGTHI in tendoituongmuctieuxemxet
+                    is_muctieudangchonlabaothumaoson = CUONGTHI in tendoituongmuctieudangchon if diachicosothongtinnhanvatmuctieudangchon else False
 
                     if is_muctieuxemxetlabaothumaoson:
                         if not is_muctieudangchonlabaothumaoson:
@@ -996,10 +996,10 @@ class TacTu:
                 }
                 return
             if loaikynang == "dichuyentiepcantamxa":
-                nguongantoan = khoangcachyeucau - (1.5 + thoigiandungim)
+                nguongantoan = khoangcachyeucau - (random.uniform(1.5, 2.) + thoigiandungim)
                 if khoangcach >= nguongantoan:
                     if is_debug: print(f"[DEBUG] Position: Dist {khoangcach:.1f} >= Safe {nguongantoan:.1f} -> MOVE")
-                    khoangcachgiutoida = khoangcachyeucau - (1.5 + thoigiandungim) if thoigiandungim <= 4.5 else 0
+                    khoangcachgiutoida = khoangcachyeucau - (random.uniform(1.5, 2.) + thoigiandungim) if thoigiandungim <= 4.5 else 0
                     self._yeucautancong = {
                         "yeucau": YEUCAUDICHUYENTANCONG,
                         "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
