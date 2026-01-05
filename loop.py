@@ -111,16 +111,29 @@ class LoopChinh:
         self.tactu.action_xulygomquai()
         self.tactu._action_sudungkynang()
 
-
-        #if self.moitruong.get_idnguoichoi() == 4676:
+        # if self.moitruong.get_idnguoichoi() == 4599:
         #   # self.tactu.action_sudungvatphamhanhtrang(TUSAMDON, delay = 5.)
-        #   self.moitruong.action_thucthicaulenh("tallk 28e# bonus.1")
+        #   self.moitruong.action_thucthicaulenh("tallk 280# bonus.1")
         #   time.sleep(0.25)
-        #   self.moitruong.action_thucthicaulenh("tallk 28e# bonus.28")
+        #   self.moitruong.action_thucthicaulenh("tallk 280# bonus.28")
         #   time.sleep(0.25)
-        #   self.moitruong.action_thucthicaulenh("tallk 28e# bonus.29")
+        #   self.moitruong.action_thucthicaulenh("tallk 280# bonus.29")
+        #   time.sleep(0.25)
+        
+        # if self.moitruong.get_idnguoichoi() == 4599:
+        #   self.moitruong.action_thucthicaulenh("talk 810a# info.58", delay = 0.)
+        #   time.sleep(0.25)
+        #   self.moitruong.action_thucthicaulenh("talk 810a# info.18", delay = 0.)
+        #   time.sleep(0.25)
+        #   self.moitruong.action_thucthicaulenh("talk 810a# info.20", delay = 0.)
+        #   time.sleep(0.25)
+        #   self.moitruong.action_thucthicaulenh("talk 810a# info.21", delay = 0.)
         #   time.sleep(0.25)
 
+        #
+        #
+        #
+        #
         # if diachidoituong := self.moitruong.get_diachicosothongtinnhanvatdangchichuot():
         #     print(self.moitruong.get_tendoituong(diachidoituong))
             # print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
