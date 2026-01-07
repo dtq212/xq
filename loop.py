@@ -144,7 +144,10 @@ class LoopChinh:
         # print(self.moitruong.get_danhsachhieuungnhanvats())
 
         # if self.moitruong.get_idnguoichoi() == 4599:
-        #    print(self.moitruong.get_danhsachvatphamhanhtrang_map().keys())
+        #     if diachidoituong := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
+        #         print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
+        #    # print(self.moitruong.get_danhsachvatphamhanhtrang_map().keys())
+        #     print(self.moitruong.get_idphechientruong())
 
         # while idvatphamtinhnguyendon := self.moitruong.action_timkiemvatphamhanhtrang("Tinh NguyÃªn Ä\x90Æ¡n"):
         #     self.moitruong.action_thucthicaulenh("pet 122189# fuse_yy {}#".format(hex(idvatphamtinhnguyendon)).replace("0x", ""), delay = 0.)

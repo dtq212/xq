@@ -32,24 +32,24 @@ TOADO_MAY_CHU = {
 }
 
 THONGTINDANGNHAP_MAP = {
-    "4599": {
-        "user": "tieulyphidao",
-        "pass": "hateva1",
-        "group": "KÊNH_2",
-        "server": 1,
-    },
+    #"4599": {
+    #    "user": "tieulyphidao",
+    #    "pass": "hateva1",
+    #    "group": "KÊNH_2",
+    #    "server": 1,
+    #},
     # "4676": {
     #     "user": "hoadataithe",
     #     "pass": "hateva1",
     #     "group": "KÊNH_2",
     #     "server": 2,
     # },
-    # "2303": {
-    #     "user": "laotsezu",
-    #     "pass": "hateva1",
-    #     "group": "KÊNH_BANG",
-    #     "server": 1,
-    # },
+    "2303": {
+        "user": "laotsezu",
+        "pass": "hateva1",
+        "group": "KÊNH_2",
+        "server": 1,
+    },
 }
 
 
