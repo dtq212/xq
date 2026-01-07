@@ -337,7 +337,7 @@ class TacTu:
         elif self._yeucautancong:
             yeucauduocchon = self._yeucautancong
             lydochon = "TẤN CÔNG"
-        elif self._yeucautheonhom and not is_muctieupk:
+        elif self._yeucautheonhom:
             yeucauduocchon = self._yeucautheonhom
             lydochon = "THEO NHÓM"
         elif self._yeucautudo and not is_anhhuongboitruongnhom:
@@ -355,7 +355,7 @@ class TacTu:
             msg_diachimuctieudanggom = diachimuctieudanggom if yeucauduocchon else "None"
             print(f"[DEBUG-MOVE] Quyết định: {lydochon} | Đích: {msg_dich} | Mục tiêu: {msg_diachimuctieudanggom}")
 
-        if yeucauduocchon and yeucauduocchon.get("yeucau") == YEUCAUDICHUYENTANCONG and is_anhhuongboitruongnhom and not is_muctieupk:
+        if yeucauduocchon and yeucauduocchon.get("yeucau") == YEUCAUDICHUYENTANCONG and is_anhhuongboitruongnhom:
             x_truongnhom = self.moitruong.get_toadoxtruongnhom()
             y_truongnhom = self.moitruong.get_toadoytruongnhom()
 
