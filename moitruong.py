@@ -311,7 +311,7 @@ class MoiTruong:
         if idtuthenhanvat == TUTHENHANVAT_DICHUYEN or self.get_is_dangvankhi():
             self._thoidiemtuthenhanvatkhongdichuyengannhat = time.time()
 
-        if idtuthenhanvat not in (TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO):
+        if idtuthenhanvat not in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT):
             self._thoidiemtuthenhanvattanconggannhat = time.time()
         elif time.time() - self._thoidiemtuthenhanvattanconggannhat > 0.5:
             self.set_idtuthenhanvat(TUTHENHANVAT_DELAYSAUTANCONG)
