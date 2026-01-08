@@ -38,12 +38,20 @@ THONGTINDANGNHAP_MAP = {
         "group": "KÊNH_2",
         "server": 1,
     },
-    # "4676": {
-    #     "user": "hoadataithe",
-    #     "pass": "hateva1",
-    #     "group": "KÊNH_2",
-    #     "server": 2,
-    # },
+    #"4676": {
+    #    "user": "hoadataithe",
+    #    "pass": "hateva1",
+    #    "group": "KÊNH_2",
+    #    "server": 1,
+    #},
+
+    #"3236": {
+    #    "user": "truymenh",
+    #    "pass": "hateva1",
+    #    "group": "KÊNH_2",
+    #    "server": 1,
+    #},
+
     "2303": {
         "user": "laotsezu",
         "pass": "hateva1",
