@@ -186,6 +186,7 @@ class TacTu:
         self._thoidiemsudungbaothuvatphamgannhat = 0.
         self._thoidiemthietlaptrieuhoithudoilenhgannhat = 0.
         self._thoidiemkiemtrakhongcongidebuffgannhat = 0.
+        self._thoidiemsudungthichsatgannhat = 0.
 
     def __del__(self):
         try:
@@ -952,6 +953,9 @@ class TacTu:
             self._is_vohieuhoadichuyenanthan = False
 
         noilucconlai = self.moitruong.get_noilucconlai()
+        
+        if not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_THICHSAT):
+            self._thoidiemsudungthichsatgannhat = time.time()
 
         danhsachuutien = [
             (VITRIKYNANG_ANTHANTHUAT, "sudungkynangkhongmuctieu", lambda: noilucconlai > 50 and is_muctieupk and not is_anthan and self.moitruong.get_idbandohientai() not in (BANDO_CHU, BANDO_CHIENTRUONG), 0, None, True, True),
@@ -972,7 +976,7 @@ class TacTu:
             (VITRIKYNANG_MANTHIENHOAVU, "sudungkynangmuctieu", lambda: noilucconlai > 50 and not is_bituocvukhi and not is_muctieucomatamthuat and self._is_nhieumuctieugan5 and is_muctieupk, KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
             (VITRIKYNANG_AMKICH, "sudungkynangmuctieu", lambda: noilucconlai > 50 and not is_bituocvukhi and not is_muctieucomatamthuat, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True, True),
             (VITRIKYNANG_HAPTINHMACHAM, "sudungkynangmuctieu", lambda: noilucconlai > 50 and not is_bituocvukhi and not is_muctieucomatamthuat and is_muctieulanguoichoi and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_HAPTINHMACHAM,), macdinh = False, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0), KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
-            (VITRIKYNANG_THICHSAT, "sudungkynangmuctieu", lambda: noilucconlai > 50 and not is_bituocvukhi and not is_muctieucomatamthuat, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True, True),
+            (VITRIKYNANG_THICHSAT, "sudungkynangmuctieu", lambda: noilucconlai > 50 and not is_bituocvukhi and not is_muctieucomatamthuat and time.time() - self._thoidiemsudungthichsatgannhat > 4., KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True, True),
             (VITRIKYNANG_MAIHOACHAM, "sudungkynangmuctieu", lambda: noilucconlai > 50 and not is_bituocvukhi and not is_muctieucomatamthuat, KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
             (VITRIKYNANG_MATAMTHUAT, "sudungkynangkhongmuctieu", lambda: noilucconlai > 50 and not is_bituocvukhi and diachimuctieu and not is_anthan, KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
             (None, "tancongvatly", lambda: True, KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
@@ -997,10 +1001,10 @@ class TacTu:
                 }
                 return
             if loaikynang == "dichuyentiepcantamxa":
-                nguongantoan = khoangcachyeucau - (1.5 + thoigiandungim * 2)
+                nguongantoan = khoangcachyeucau - (2. + thoigiandungim * 2)
                 if khoangcach >= nguongantoan:
                     if is_debug: print(f"[DEBUG] Position: Dist {khoangcach:.1f} >= Safe {nguongantoan:.1f} -> MOVE")
-                    khoangcachgiutoida = khoangcachyeucau - (1.5 + thoigiandungim * 2) if thoigiandungim <= 4.5 else 0
+                    khoangcachgiutoida = khoangcachyeucau - (2. + thoigiandungim * 2) if thoigiandungim <= 4.5 else 0
                     self._yeucautancong = {
                         "yeucau": YEUCAUDICHUYENTANCONG,
                         "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
@@ -1080,12 +1084,12 @@ class TacTu:
 
             (VITRIKYNANG_KHONGTHUNHAPBACHNHAN, "sudungkynangmuctieu", lambda: diachimuctieu and is_muctieupk and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_KHONGTHUNHAPBACHNHAN] and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN,), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True, True),
             (VITRIKYNANG_DAIHAIVOLUONG, "sudungkynangkhongmuctieu", lambda: diachimuctieu and self._is_nhieumuctieugan3 and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_DAIHAIVOLUONG], KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True, True),
-            (VITRIKYNANG_DAOHOALACANH, "sudungkynangkhongmuctieu", lambda: diachimuctieu and is_muctieupk and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_DAOHOALACANH], KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True, True),
+            (VITRIKYNANG_DAOHOALACANH, "sudungkynangkhongmuctieu", lambda: khoangcach < KHOANGCACHSUDUNGKYNANGCANCHIEN and diachimuctieu and is_muctieupk and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_DAOHOALACANH], KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True, True),
             (VITRIKYNANG_THONKINH, "sudungkynangmuctieu", lambda: diachimuctieu and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_THONKINH] and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRONGTHUONG,), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True, True),
             (VITRIKYNANG_LACKICH, "sudungkynangmuctieu", lambda: diachimuctieu and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_LACKICH] and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_LACKICH,), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True, True),
             (VITRIKYNANG_PHONGMAQUYET, "sudungkynangmuctieu", lambda: diachimuctieu and is_muctieupk and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_PHONGMAQUYET] and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRAMMAC,), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True, True),
             (VITRIKYNANG_NHATQUYENBATSON, "sudungkynangmuctieu", lambda: diachimuctieu and self.moitruong.get_capdonhanvat() >= 60 and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_NHATQUYENBATSON] and (is_muctieupk or not self._is_nhieumuctieugan3), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True, True),
-            (VITRIKYNANG_PHANTOA, "sudungkynangkhongmuctieu", lambda: diachimuctieu and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_PHANTOA] and (is_muctieupk or not self._is_nhieumuctieugan3) and self.moitruong.get_idtuthenhanvat(diachimuctieu) in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT, TUTHENHANVAT_DELAYSAUTANCONG), 0, None, True, True),
+            (VITRIKYNANG_PHANTOA, "sudungkynangkhongmuctieu", lambda: khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and diachimuctieu and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_PHANTOA] and (is_muctieupk or not self._is_nhieumuctieugan3) and self.moitruong.get_idtuthenhanvat(diachimuctieu) in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT, TUTHENHANVAT_DELAYSAUTANCONG), 0, None, True, True),
             (VITRIKYNANG_HACHODAOTAM, "sudungkynangmuctieu", lambda: nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_HACHODAOTAM], KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True, True),
 
             (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_BADONGQUYEN] and khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN, KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
@@ -2687,6 +2691,7 @@ class TacTu:
 
     def battat_chedobufftoanbang(self):
         self._is_chedobufftoanbang = not self._is_chedobufftoanbang
+        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_chedobufftoanbang:
             phatam("Bật chế độ buff toàn bang")
         else:
@@ -2694,6 +2699,7 @@ class TacTu:
 
     def battat_is_uutienbaothumaoson(self):
         self._is_uutienbaothumaoson = not self._is_uutienbaothumaoson
+        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_uutienbaothumaoson:
             phatam("Bật ưu tiên đánh đệ Mao Sơn")
         else:
@@ -2701,6 +2707,7 @@ class TacTu:
 
     def battat_is_tudongsudungkynang(self):
         self._is_tudongsudungkynang = not self._is_tudongsudungkynang
+        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_tudongsudungkynang:
             phatam("Bật tự động sử dụng kỹ năng")
         else:
@@ -2708,6 +2715,7 @@ class TacTu:
 
     def battat_is_thucsondao(self):
         self._is_thucsondao = not self._is_thucsondao
+        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_thucsondao:
             phatam("Bật thục sơn đao")
         else:
@@ -2715,6 +2723,7 @@ class TacTu:
 
     def battat_is_chantangcapdo(self):
         self._is_chantangcapdo = not self._is_chantangcapdo
+        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_chantangcapdo:
             phatam("Bật chặn tăng cấp độ")
         else:
@@ -2722,6 +2731,7 @@ class TacTu:
 
     def battat_is_tudongdichuyendiemdanhxungquanh(self):
         self._is_tudongdichuyendiemdanhxungquanh = not self._is_tudongdichuyendiemdanhxungquanh
+        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_tudongdichuyendiemdanhxungquanh:
             phatam("Bật tự động di chuyển điểm đánh xung quanh")
         else:
@@ -2731,6 +2741,7 @@ class TacTu:
 
     def battat_is_tudongbattheosaunhom(self):
         self._is_tudongbattheosaunhom = not self._is_tudongbattheosaunhom
+        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_tudongbattheosaunhom:
             phatam("Bật tự động bật tắt theo sau nhóm")
         else:
@@ -2738,6 +2749,7 @@ class TacTu:
 
     def battat_is_tudongtheosautruongnhom(self):
         self._is_tudongtheosautruongnhom = not self._is_tudongtheosautruongnhom
+        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_tudongtheosautruongnhom:
             phatam("Bật tự động theo sau trưởng nhóm")
         else:
@@ -2745,6 +2757,7 @@ class TacTu:
 
     def battat_is_tudongkhaikhoang(self):
         self._is_tudongkhaikhoang = not self._is_tudongkhaikhoang
+        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_tudongkhaikhoang:
             phatam("Bật tự động khai khoáng")
         else:
@@ -2754,6 +2767,7 @@ class TacTu:
         self._is_tudonggomquai = not self._is_tudonggomquai
         self._is_danggomquai = False
         self._danhsachidquaidagom.clear()
+        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_tudonggomquai:
             phatam("Bật tự động gom quái")
         else:
@@ -2763,6 +2777,7 @@ class TacTu:
         self._is_tudongvebanrac = not self._is_tudongvebanrac
         self._trangthaiveban = 0
 
+        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_tudongvebanrac:
             self._idbandofarmbanrac = self.moitruong.get_idbandohientai()
             phatam("Bật tự động về bán rác")
@@ -2772,6 +2787,7 @@ class TacTu:
 
     def battat_is_tudongdichientruong(self):
         self._is_tudongdichientruong = not self._is_tudongdichientruong
+        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_tudongdichientruong:
             phatam("Bật tự động đi chiến trường")
         else:
@@ -2780,6 +2796,7 @@ class TacTu:
     def battat_is_tudonglamnhiemvusugia(self):
         self._is_tudonglamnhiemvusugia = not self._is_tudonglamnhiemvusugia
         self._trangthailamnhiemvusugia = 0
+        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_tudonglamnhiemvusugia:
             phatam("Bật tự động làm nhiệm vụ sứ giả")
         else:

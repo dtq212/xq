@@ -95,15 +95,15 @@ class CuaSo:
 
                 if tennhanvat != self.tennhanvat:
                     if tennhanvat:
-                        if self.tennhanvat:
-                            self.tactu.luuthietlap(self.tennhanvat)
+                        # if self.tennhanvat:
+                        #     self.tactu.luuthietlap(self.tennhanvat)
                         self.tactu.taithietlap(tennhanvat)
 
                         if tennhanvat != last_hover_text:
                             self.systray.update(hover_text = tennhanvat)
                             last_hover_text = tennhanvat
                     elif self.tennhanvat:
-                        self.tactu.luuthietlap(self.tennhanvat)
+                        # self.tactu.luuthietlap(self.tennhanvat)
                         if CHUACHONHANVAT != last_hover_text:
                             self.systray.update(hover_text = CHUACHONHANVAT)
                             last_hover_text = CHUACHONHANVAT
@@ -112,7 +112,7 @@ class CuaSo:
 
                 elif tennhanvat and time.time() - self.thoidiemluuthietlapgannhat > 1.:
                     self.thoidiemluuthietlapgannhat = time.time()
-                    self.tactu.luuthietlap(tennhanvat)
+                    # self.tactu.luuthietlap(tennhanvat)
             else:
                 self.tennhanvat = False
                 if CHUACHONHANVAT != last_hover_text:
