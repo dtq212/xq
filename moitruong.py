@@ -2132,6 +2132,32 @@ class MoiTruong:
 
         return True
 
+    def action_dichuyen(self, x, y, delay = 0.25, is_rangbuoctrongmanhinh = False):
+        if self._is_vohieuhoadichuyen:
+            return
+
+        if self.get_is_cohieuungs((HIEUUNGKYNANG_ROILOAN,), macdinh = False, is_hieuungcoloi = 0):
+            cur_x = self.get_toadox(is_vitrihientai = True)
+            cur_y = self.get_toadoy(is_vitrihientai = True)
+
+            x = 2 * cur_x - x
+            y = 2 * cur_y - y
+
+            x = max(min(x, self._xmax - 25), 25)
+            y = max(min(y, self._ymax - 25), 25)
+
+        if time.time() - self._thoidiemdichuyengannhat < delay:
+            return
+
+        if is_rangbuoctrongmanhinh:
+            x = max(min(x, self._xmax - 25), 25)
+            y = max(min(y, self._ymax - 25), 25)
+
+        self._thoidiemdichuyengannhat = time.time()
+        self.auto_assemble_dichuyen(x, y)
+
+        return True
+
     def action_dichuyengiukhoangcachtoithieu(self, diachicosothongtinnhanvat2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 0.05):
         if not diachicosothongtinnhanvat2:
             return

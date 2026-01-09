@@ -4,7 +4,7 @@ import traceback
 
 import pymem.exception
 
-from hangso import BANDO_CHIENTRUONG
+from hangso import BANDO_CHIENTRUONG, BANDO_CHU, HOITHANHPHU
 from moitruong import MoiTruong
 from tactu import TacTu
 from tienich import phatam
@@ -232,3 +232,7 @@ class LoopPhu:
 
         if not self.moitruong.get_is_bathanhtrang():
             self.moitruong.set_is_batalt(True)
+
+        if self.moitruong.get_idbandohientai() == BANDO_CHU and self.moitruong.get_khoangcachdiem(292, 184) < 18 and self.moitruong.get_phantramsinhlucconlai() < 25:
+            self.tactu.action_sudungvatphamhanhtrang(HOITHANHPHU)
+            time.sleep(2.5)
