@@ -2224,41 +2224,41 @@ class MoiTruong:
 
         diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
 
-        x1, y1 = self.get_toadox(diachicosothongtinnhanvat1), self.get_toadoy(diachicosothongtinnhanvat1)
+        x1 = self.get_toadox(diachicosothongtinnhanvat1)
+        y1 = self.get_toadoy(diachicosothongtinnhanvat1)
 
-        khoangcach = round(math.dist((x1, y1), (x2, y2)), 2)
+        khoangcach_hientai = math.dist((x1, y1), (x2, y2))
 
-        if khoangcach <= khoangcachtoida:
+        if khoangcach_hientai <= khoangcachtoida + 0.5:
             return
 
-        khoangcachtoida = max(0., khoangcachtoida - 1.)  # Đi gần vào hơn khoảng cách tối đa 1 chút
-
-        deltax = x2 - x1
-        deltay = y1 - y2
-
-        khoangcachdichuyen = khoangcach - khoangcachtoida
-
-        if not round(khoangcachdichuyen):
+        if khoangcach_hientai == 0:
             return
 
-        if khoangcachdichuyentoida:
-            khoangcachdichuyen = min(khoangcachdichuyentoida * 1., khoangcachdichuyen)
+        dx_map = x1 - x2
+        dy_map = y1 - y2
 
-        if khoangcach > 0.:
-            deltax = int(khoangcachdichuyen * deltax / khoangcach)
-            deltay = int(khoangcachdichuyen * deltay / khoangcach)
+        world_x_target = x2 + (dx_map / khoangcach_hientai) * khoangcachtoida
+        world_y_target = y2 + (dy_map / khoangcach_hientai) * khoangcachtoida
 
-        if not deltax and not deltay:
-            return
+        dist_to_target = math.dist((x1, y1), (world_x_target, world_y_target))
+        if khoangcachdichuyentoida > 0 and dist_to_target > khoangcachdichuyentoida:
+            ratio = khoangcachdichuyentoida / dist_to_target
+            world_x_target = x1 + (world_x_target - x1) * ratio
+            world_y_target = y1 + (world_y_target - y1) * ratio
 
-        xmax = self._xmax
-        ymax = self._ymax
+        delta_screen_x = world_x_target - x1
+        delta_screen_y = y1 - world_y_target
 
-        toadomoidonvikhoangcachx = xmax / KHOANGCACHTOANMANHINH
-        toadomoidonvikhoangcachy = ymax / KHOANGCACHTOANMANHINH
+        toadomoidonvikhoangcachx = self._xmax / KHOANGCACHTOANMANHINH
+        toadomoidonvikhoangcachy = self._ymax / KHOANGCACHTOANMANHINH
 
-        xclick = int(self._centerx + deltax * toadomoidonvikhoangcachx)
-        yclick = int(self._centery + deltay * toadomoidonvikhoangcachy)
+        xclick = int(self._centerx + delta_screen_x * toadomoidonvikhoangcachx)
+        yclick = int(self._centery + delta_screen_y * toadomoidonvikhoangcachy)
+
+        if is_rangbuoctrongmanhinh:
+            xclick = max(min(xclick, self._xmax - 25), 25)
+            yclick = max(min(yclick, self._ymax - 25), 25)
 
         return self.action_dichuyen(xclick, yclick, delay = delay, is_rangbuoctrongmanhinh = is_rangbuoctrongmanhinh)
 
