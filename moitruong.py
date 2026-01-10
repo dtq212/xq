@@ -1436,6 +1436,18 @@ class MoiTruong:
 
         return True
 
+    def action_nhuongquyentruongnhom(self, idnguoichoi, delay = 0.25):
+        if time.time() - self._thoidiemthaotacnhomgannhat < delay:
+            return
+        if not idnguoichoi:
+            return
+
+        self._thoidiemthaotacnhomgannhat = time.time()
+
+        self.auto_assemble_thaotacnhom("=", idnguoichoi)
+
+        return True
+
     def action_thoatkhoinhom(self, delay = 0.25):
         if time.time() - self._thoidiemthaotacnhomgannhat < delay:
             return

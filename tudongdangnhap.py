@@ -38,12 +38,12 @@ THONGTINDANGNHAP_MAP = {
         "group": "KÊNH_2",
         "server": 1,
     },
-    #"4676": {
-    #    "user": "hoadataithe",
-    #    "pass": "hateva1",
-    #    "group": "KÊNH_2",
-    #    "server": 1,
-    #},
+    "4676": {
+        "user": "hoadataithe",
+        "pass": "hateva1",
+        "group": "KÊNH_2",
+        "server": 1,
+    },
 
     #"3236": {
     #    "user": "truymenh",
@@ -213,7 +213,7 @@ def mogamevadangnhap(char_name, config):
         BackgroundInput.press_key(hwnd_game, win32con.VK_RETURN)
 
         print(f"✅ Hoàn tất cho {char_name}. Nghỉ 5s...")
-        time.sleep(5)
+        time.sleep(15)
 
     except Exception as e:
         print(f"❌ Exception: {e}")
@@ -230,8 +230,8 @@ def main():
                     print(f"⚠️ {tennhanvat} vắng mặt -> Kích hoạt đăng nhập.")
                     mogamevadangnhap(tennhanvat, cauhinh)
                     break
-            print("[WAIT] Chờ 30s quét lại...")
-            time.sleep(30)
+            print("[WAIT] Chờ 5s quét lại...")
+            time.sleep(5)
         except KeyboardInterrupt:
             print("Dừng tool.")
             break

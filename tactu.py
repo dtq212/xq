@@ -189,6 +189,7 @@ class TacTu:
         self._thoidiemsudungthichsatgannhat = 0.
 
         self._is_battudongtancongvatly = False
+        self._thoidiemtodoigannhat_map = {}
 
     def __del__(self):
         try:
@@ -1098,7 +1099,6 @@ class TacTu:
             (VITRIKYNANG_NHATQUYENBATSON, "sudungkynangmuctieu", lambda: diachimuctieu and self.moitruong.get_capdonhanvat() >= 60 and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_NHATQUYENBATSON] and (is_muctieupk or not self._is_nhieumuctieugan3), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True, True),
             (VITRIKYNANG_PHANTOA, "sudungkynangkhongmuctieu", lambda: khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and diachimuctieu and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_PHANTOA] and (is_muctieupk or not self._is_nhieumuctieugan3) and self.moitruong.get_idtuthenhanvat(diachimuctieu) in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT, TUTHENHANVAT_DELAYSAUTANCONG), 0, None, True, True),
             (VITRIKYNANG_HACHODAOTAM, "sudungkynangmuctieu", lambda: nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_HACHODAOTAM], KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True, True),
-
             (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_BADONGQUYEN] and khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN, KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
             (None, "dichuyentiepcancanchien", lambda: diachimuctieu and khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN, 0, None, False, True),
             (None, "tancongvatly", lambda: diachimuctieu, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True, True),
@@ -2600,6 +2600,14 @@ class TacTu:
         idnguoichoi = self.moitruong.get_idnguoichoi()
         tenmonphai = self.moitruong.get_tenmonphai()
         is_dangtrongnhom = self.moitruong.get_is_dangnamtrongnhom()
+        idbandohientai = self.moitruong.get_idbandohientai()
+
+        danhsachuutientodoi = list(NHANVATTODOITUDONGs)
+
+        if idbandohientai == BANDO_CHIENTRUONG:
+            for nv in NHANVATTODOICHIENTRUONGS:
+                if nv not in danhsachuutientodoi:
+                    danhsachuutientodoi.append(nv)
 
         if tenmonphai == "vanmongcoc" and self._is_chedobufftoanbang:
             if is_dangtrongnhom:
@@ -2610,65 +2618,98 @@ class TacTu:
                 self.moitruong.action_kiemtravadongyloimoinhom(NHANVATCUNGBANGs)
             return
 
-        if self.moitruong.get_idbandohientai() == BANDO_CHIENTRUONG and not is_dangtrongnhom:
+        if idbandohientai == BANDO_CHIENTRUONG and not is_dangtrongnhom:
             self.moitruong.action_kiemtravadongyloimoinhom(NHANVATCUNGBANGs)
 
-        if not NHANVATTODOITUDONGs:
+        if not danhsachuutientodoi:
             return
 
-        if idnguoichoi not in NHANVATTODOITUDONGs:
+        if idnguoichoi not in danhsachuutientodoi:
             return
 
-        danhsachxungquanhs = self.moitruong.get_danhsachidnguoichoixungquanhs()
         danhsachthanhviens = self.moitruong.get_danhsachidnguoichoithanhviennhoms()
+        dongdoicanxuly = []
 
-        dongdoixungquanhs = [id for id in danhsachxungquanhs if id in NHANVATTODOITUDONGs]
+        if idbandohientai == BANDO_CHIENTRUONG:
+            for id_uu_tien in danhsachuutientodoi:
+                if id_uu_tien != idnguoichoi:
+                    dongdoicanxuly.append(id_uu_tien)
+        else:
+            danhsachxungquanhs = self.moitruong.get_danhsachidnguoichoixungquanhs()
+            dongdoicanxuly = [id for id in danhsachxungquanhs if id in danhsachuutientodoi]
 
-        if not dongdoixungquanhs and not is_dangtrongnhom:
+        if not dongdoicanxuly and not is_dangtrongnhom:
             return
 
         if is_dangtrongnhom:
             idtruongnhom = self.moitruong.get_idnguoichoitruongnhom()
-            if idtruongnhom and idtruongnhom not in NHANVATTODOITUDONGs and NHANVATTODOITUDONGs and NHANVATTODOITUDONGs[0] in danhsachxungquanhs and idtruongnhom not in danhsachthanhviens:
+            is_leader_invalid = False
+
+            if idtruongnhom and idtruongnhom not in danhsachuutientodoi and dongdoicanxuly:
+                if idbandohientai == BANDO_CHIENTRUONG:
+                    is_leader_invalid = True
+                else:
+                    danhsachxungquanhs_check = self.moitruong.get_danhsachidnguoichoixungquanhs()
+                    if dongdoicanxuly[0] in danhsachxungquanhs_check:
+                        is_leader_invalid = True
+
+            if is_leader_invalid and idtruongnhom not in danhsachthanhviens:
                 self.moitruong.action_thoatkhoinhom()
                 return
 
-        xephangcuatoi = NHANVATTODOITUDONGs.index(idnguoichoi)
+        xephangcuatoi = danhsachuutientodoi.index(idnguoichoi)
         idnguoichoixephangcaonhat = idnguoichoi
         giatrixephangcaonhat = xephangcuatoi
 
-        for id_dongdoi in dongdoixungquanhs:
-            xephangdongdoi = NHANVATTODOITUDONGs.index(id_dongdoi)
-            if xephangdongdoi < giatrixephangcaonhat:
-                giatrixephangcaonhat = xephangdongdoi
-                idnguoichoixephangcaonhat = id_dongdoi
+        for id_dongdoi in dongdoicanxuly:
+            if id_dongdoi in danhsachuutientodoi:
+                xephangdongdoi = danhsachuutientodoi.index(id_dongdoi)
+                if xephangdongdoi < giatrixephangcaonhat:
+                    giatrixephangcaonhat = xephangdongdoi
+                    idnguoichoixephangcaonhat = id_dongdoi
 
         if self.moitruong.get_is_truongnhom():
+            if danhsachthanhviens:
+                for thanhvien_id in danhsachthanhviens:
+                    if thanhvien_id in danhsachuutientodoi:
+                        xephangthanhvien = danhsachuutientodoi.index(thanhvien_id)
+                        if xephangthanhvien < xephangcuatoi:
+                            self.moitruong.action_nhuongquyentruongnhom(thanhvien_id)
+                            return
+
             if idnguoichoixephangcaonhat != idnguoichoi and idnguoichoixephangcaonhat not in danhsachthanhviens:
                 if len(danhsachthanhviens) <= 1:
                     self.moitruong.action_thoatkhoinhom()
                     return
 
             if len(danhsachthanhviens) < 5:
-                for id_dongdoi in dongdoixungquanhs:
+                hientai = time.time()
+                for id_dongdoi in dongdoicanxuly:
                     if id_dongdoi not in danhsachthanhviens:
-                        self.moitruong.action_moihoacxinvaonhom(id_dongdoi)
-                        break
+                        thoidiemmoigannhat = self._thoidiemtodoigannhat_map.get(id_dongdoi, 0)
+                        if hientai - thoidiemmoigannhat > 5.0:
+                            self.moitruong.action_moihoacxinvaonhom(id_dongdoi)
+                            self._thoidiemtodoigannhat_map[id_dongdoi] = hientai
+                            break
+                        else:
+                            continue
 
         elif is_dangtrongnhom:
             pass
-
         else:
-            self.moitruong.action_kiemtravadongyloimoinhom(NHANVATTODOITUDONGs)
+            self.moitruong.action_kiemtravadongyloimoinhom(danhsachuutientodoi)
 
-            if idnguoichoixephangcaonhat == idnguoichoi:
-                if dongdoixungquanhs:
-                    self.moitruong.action_moihoacxinvaonhom(dongdoixungquanhs[0])
+            if idnguoichoixephangcaonhat != idnguoichoi:
+                hientai = time.time()
+                target_id = idnguoichoixephangcaonhat
+                if hientai - self._thoidiemtodoigannhat_map.get(target_id, 0) > 5.0:
+                    self.moitruong.action_moihoacxinvaonhom(target_id)
+                    self._thoidiemtodoigannhat_map[target_id] = hientai
 
     def action_tudongphucsinh(self):
         if self._is_tudongphucsinh:
             if self.moitruong.get_is_nhanvatdachet():
-                time.sleep(2.5)
+                time.sleep(5.)
                 self.moitruong.action_phucsinh()
 
     def action_tudongdoimaupk(self):

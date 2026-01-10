@@ -198,6 +198,13 @@ class LoopPhu:
     def step(self):
         if not self.moitruong.get_is_nhanvattontai(): return
         if self.moitruong.get_is_dangmatketnoi(): return
+        
+
+        if self.moitruong.get_idbandohientai() == BANDO_CHU and self.moitruong.get_khoangcachdiem(292, 184) < 18 and self.moitruong.get_phantramsinhlucconlai() < 25:
+            self.moitruong.action_ngatdichuyen()
+            self.tactu.action_sudunghoithanhphu()
+            time.sleep(2.5)
+            return
 
         self.tactu.action_tudongsudungvatpham()
 
@@ -232,7 +239,3 @@ class LoopPhu:
 
         if not self.moitruong.get_is_bathanhtrang():
             self.moitruong.set_is_batalt(True)
-
-        if self.moitruong.get_idbandohientai() == BANDO_CHU and self.moitruong.get_khoangcachdiem(292, 184) < 18 and self.moitruong.get_phantramsinhlucconlai() < 25:
-            self.tactu.action_sudungvatphamhanhtrang(HOITHANHPHU)
-            time.sleep(2.5)
