@@ -11,6 +11,8 @@ LAUNCHER_TITLE = "client 1.01.68"
 GAME_TITLE_LOGIN_SCREEN = "Chien Quoc - Loan The Anh Hung"
 GAME_TITLE_PREFIX = "Chien Quoc ("
 
+DANH_SACH_CUA_SO_LOI = ["warning", "play"]
+
 TOADO_LAUNCHER = {
     "BTN_VAO_GAME": (530, 495)
 }
@@ -44,14 +46,6 @@ THONGTINDANGNHAP_MAP = {
         "group": "KÊNH_2",
         "server": 1,
     },
-
-    #"3236": {
-    #    "user": "truymenh",
-    #    "pass": "hateva1",
-    #    "group": "KÊNH_2",
-    #    "server": 1,
-    #},
-
     "2303": {
         "user": "laotsezu",
         "pass": "hateva1",
@@ -89,6 +83,22 @@ def timlauncherdangmo():
             title = win32gui.GetWindowText(hwnd)
             if title == LAUNCHER_TITLE:
                 hwnd_found = hwnd
+
+    win32gui.EnumWindows(callback, None)
+    return hwnd_found
+
+
+def timcuanhbaoloi():
+    hwnd_found = 0
+
+    def callback(hwnd, _):
+        nonlocal hwnd_found
+        if win32gui.IsWindowVisible(hwnd):
+            title = win32gui.GetWindowText(hwnd)
+            for loi_title in DANH_SACH_CUA_SO_LOI:
+                if loi_title.lower() == title.lower():
+                    hwnd_found = hwnd
+                    break
 
     win32gui.EnumWindows(callback, None)
     return hwnd_found
@@ -135,16 +145,47 @@ def mogamevadangnhap(char_name, config):
         else:
             print("   -> Mở file exe mới...")
             game_dir = os.path.dirname(DUONGDAN_GAME)
-            subprocess.Popen(DUONGDAN_GAME, cwd = game_dir)
-            for i in range(30):
-                hwnd_launcher = timlauncherdangmo()
-                if hwnd_launcher: break
-                time.sleep(1)
-                print(f"\r      Chờ Launcher... {i + 1}s", end = "")
-            print("")
+
+            max_retries = 3
+            success_open = False
+
+            for attempt in range(max_retries):
+                print(f"      [Lần thử {attempt + 1}/{max_retries}] Đang chạy lệnh mở game...")
+                subprocess.Popen(DUONGDAN_GAME, cwd=game_dir)
+
+                for i in range(50):
+                    hwnd_launcher = timlauncherdangmo()
+                    if hwnd_launcher:
+                        success_open = True
+                        break
+
+                    hwnd_error = timcuanhbaoloi()
+                    if hwnd_error:
+                        title_error = win32gui.GetWindowText(hwnd_error)
+                        print(f"\n      ⚠️ CẢNH BÁO: Phát hiện cửa sổ '{title_error}' (HWND: {hwnd_error}).")
+                        print("      -> Đang ấn Enter để xác nhận...")
+                        try:
+                            BackgroundInput.press_key(hwnd_error, win32con.VK_RETURN)
+                        except Exception as e:
+                            print(f"      -> Lỗi khi ấn Enter: {e}")
+
+                        print("      -> Chờ 15s để hệ thống ổn định...")
+                        time.sleep(15)
+                        continue
+
+                    time.sleep(2)
+                    print(f"\r      Chờ Launcher... {i + 1}", end="")
+
+                print("")
+
+                if success_open:
+                    break
+                else:
+                    print("      -> Hết thời gian chờ. Thử lại quy trình...")
+                    time.sleep(5)
 
         if not hwnd_launcher:
-            print("❌ Lỗi: Không bật được Launcher!")
+            print("❌ Lỗi: Không bật được Launcher sau nhiều lần thử!")
             return
 
         time.sleep(2)
@@ -195,7 +236,7 @@ def mogamevadangnhap(char_name, config):
         BackgroundInput.press_key(hwnd_game, win32con.VK_TAB)
         time.sleep(0.5)
         for _ in range(30):
-            BackgroundInput.press_key(hwnd_game, win32con.VK_BACK, delay = 0.01)
+            BackgroundInput.press_key(hwnd_game, win32con.VK_BACK, delay=0.01)
         time.sleep(0.5)
 
         BackgroundInput.type_text(hwnd_game, config["user"])
