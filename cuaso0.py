@@ -1,7 +1,6 @@
 import os
 import threading
 import time
-import traceback
 
 import keyboard
 from infi.systray import SysTrayIcon
@@ -18,26 +17,24 @@ from moitruong import MoiTruong
 from tactu import TacTu
 
 
-def khoidong_looptonghop(moitruong, tactu, stop):
-    l_lammoi = LoopLamMoiTrangThaiMoiTruong(moitruong, tactu, stop)
-    l_timkiem = LoopTimKiemMucTieu(moitruong, tactu, stop)
-    l_dieuphoi = LoopDieuPhoiDiChuyen(moitruong, tactu, stop)
-    l_chinh = LoopChinh(moitruong, tactu, stop)
+def khoidong_looplammoitrangthaimoitruong(moitruong, tactu, stop):
+    LoopLamMoiTrangThaiMoiTruong(moitruong, tactu, stop).loop()
 
-    while not stop.is_set() and moitruong.get_is_cuasogametontai():
-        try:
-            l_lammoi.step()
-            l_timkiem.step()
-            l_dieuphoi.step()
-            l_chinh.step()
-        except Exception as e:
-            print(f"Lỗi luồng tổng hợp: {e}")
-            print(traceback.format_exc())
-            time.sleep(1)
-        time.sleep(0.1)
+
+def khoidong_looptimkiemmuctieu(moitruong, tactu, stop):
+    LoopTimKiemMucTieu(moitruong, tactu, stop).loop()
+
+def khoidong_loopchinh(moitruong, tactu, stop):
+    LoopChinh(moitruong, tactu, stop).loop()
+
 
 def khoidong_loopphu(moitruong, tactu, stop):
     LoopPhu(moitruong, tactu, stop).loop()
+
+
+def khoidong_loopdieuphoidichuyen(moitruong, tactu, stop):
+    LoopDieuPhoiDiChuyen(moitruong, tactu, stop).loop()
+
 
 class CuaSo:
     def __init__(self, idcuaso):
@@ -47,8 +44,11 @@ class CuaSo:
         self.main_stop = threading.Event()
 
         self.luongs = (
-            threading.Thread(target = khoidong_looptonghop, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_looplammoitrangthaimoitruong, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_looptimkiemmuctieu, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_loopchinh, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopphu, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_loopdieuphoidichuyen, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
         )
 
         for luong in self.luongs:

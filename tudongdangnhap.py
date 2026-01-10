@@ -2,16 +2,16 @@ import os
 import subprocess
 import time
 import win32gui
-import shutil
 import win32con
 from moitruong import MoiTruong
 from background_input import BackgroundInput
 
-# DUONGDAN_GAME = r"D:\Games\ChienQuoc2D_New\ChienQuoc.exe"
 DUONGDAN_GAME = r"D:\Games\ChienQuoc2D_New\ChienQuoc.exe"
 LAUNCHER_TITLE = "client 1.01.68"
 GAME_TITLE_LOGIN_SCREEN = "Chien Quoc - Loan The Anh Hung"
 GAME_TITLE_PREFIX = "Chien Quoc ("
+
+DANH_SACH_CUA_SO_LOI = ["warning", "play"]
 
 TOADO_LAUNCHER = {
     "BTN_VAO_GAME": (530, 495)
@@ -21,81 +21,39 @@ TOADO_GAME = {
     "BTN_XACNHAN_SERVER": (760, 465),
 }
 
-TOADO_SERVER_LIST = {
-    "Kênh 1": (460, 185),
-    "Kênh 2": (550, 205),
-    "Kênh 3": (550, 225),
-    "Kênh 4": (550, 245),
+TOADO_CUM_MAY_CHU = {
+    "KÊNH_BANG": (190, 185),
+    "KÊNH_2": (190, 221),
+    "KÊNH_3": (190, 234),
+    "KÊNH_4": (190, 259),
+}
+
+TOADO_MAY_CHU = {
+    1: (377, 182),
+    2: (372, 206),
 }
 
 THONGTINDANGNHAP_MAP = {
-    # "ThoLuuManh1": {
-    #     "user": "tholuumanh1",
-    #     "pass": "hateva1",
-    #     "server": "Kênh 1",
-    # },
-    # "ThoLuuManh2": {
-    #     "user": "tholuumanh2",
-    #     "pass": "hateva1",
-    #     "server": "Kênh 1",
-    # },
-    # "ThoLuuManh3": {
-    #     "user": "tholuumanh3",
-    #     "pass": "hateva1",
-    #     "server": "Kênh 1",
-    # },
-    # "Zhuangzi1": {
-    #     "user": "zhuangzi1",
-    #     "pass": "hateva1",
-    #     "server": "Kênh 1",
-    # },
-    # "Zhuangzi2": {
-    #     "user": "zhuangzi2",
-    #     "pass": "hateva1",
-    #     "server": "Kênh 1",
-    # },
-    # "Xanh365": {
-    #     "user": "xanh365",
-    #     "pass": "hateva1",
-    #     "server": "Kênh 1",
-    # },
-    # "Dasshu": {
-    #     "user": "dasshu",
-    #     "pass": "hateva1",
-    #     "server": "Kênh 3",
-    # },
-    # "Dasmurai": {
-    #     "user": "dasmurai",
-    #     "pass": "hateva1",
-    #     "server": "Kênh 4",
-    # },
-
-    #"3942": {
-    #    "user": "tholuumanh",
-    #    "pass": "hateva1",
-    #    "server": "Kênh 3",
-    #},
-    #"4137": {
-    #    "user": "doccocaubai",
-    #    "pass": "hateva1",
-    #    "server": "Kênh 3",
-    #},
     "4599": {
         "user": "tieulyphidao",
         "pass": "hateva1",
-        "server": "Kênh 3",
+        "group": "KÊNH_2",
+        "server": 1,
     },
-    # "Laotsezu": {
-    #     "user": "laotsezu",
-    #     "pass": "hateva1",
-    #     "server": "Kênh 3",
-    # },
-    # "TruyÂ Má»‡nh": {
-    #     "user": "truymenh",
-    #     "pass": "hateva1",
-    #     "server": "Kênh 3",
-    # },
+    "4676": {
+        "user": "hoadataithe",
+        "pass": "hateva1",
+        "group": "KÊNH_2",
+        "server": 1,
+    },
+    "2303": {
+        "user": "laotsezu",
+        "pass": "hateva1",
+        "group": "KÊNH_2",
+        "server": 1,
+    },
 }
+
 
 def laydanhsachnhanvatonlines():
     online_chars = []
@@ -130,6 +88,22 @@ def timlauncherdangmo():
     return hwnd_found
 
 
+def timcuanhbaoloi():
+    hwnd_found = 0
+
+    def callback(hwnd, _):
+        nonlocal hwnd_found
+        if win32gui.IsWindowVisible(hwnd):
+            title = win32gui.GetWindowText(hwnd)
+            for loi_title in DANH_SACH_CUA_SO_LOI:
+                if loi_title.lower() == title.lower():
+                    hwnd_found = hwnd
+                    break
+
+    win32gui.EnumWindows(callback, None)
+    return hwnd_found
+
+
 def timcuasogamedangbiket():
     hwnd_found = 0
 
@@ -137,7 +111,6 @@ def timcuasogamedangbiket():
         nonlocal hwnd_found
         if win32gui.IsWindowVisible(hwnd):
             title = win32gui.GetWindowText(hwnd)
-
             if GAME_TITLE_LOGIN_SCREEN in title:
                 r = win32gui.GetWindowRect(hwnd)
                 w, h = r[2] - r[0], r[3] - r[1]
@@ -147,27 +120,22 @@ def timcuasogamedangbiket():
     win32gui.EnumWindows(callback, None)
     return hwnd_found
 
+
 def mogamevadangnhap(char_name, config):
     print(f"\n[MANAGER] >>> BẮT ĐẦU QUY TRÌNH CHO: {char_name}")
     try:
-        print("[1] Kiểm tra và dọn dẹp các cửa sổ Game đang kẹt ở màn hình chờ...")
         hwnd_game_stuck = timcuasogamedangbiket()
-
         if hwnd_game_stuck:
-            print(f"   -> Phát hiện cửa sổ chờ (HWND: {hwnd_game_stuck}). Đang đóng để mở mới an toàn...")
+            print(f"   -> Phát hiện cửa sổ chờ (HWND: {hwnd_game_stuck}). Đang đóng...")
             try:
                 win32gui.PostMessage(hwnd_game_stuck, win32con.WM_CLOSE, 0, 0)
                 time.sleep(5)
             except Exception as e:
                 print(f"   -> Lỗi khi đóng cửa sổ cũ: {e}")
-        else:
-            print("   -> Không có cửa sổ thừa. Sạch sẽ.")
 
-        print("[2] Tìm Launcher để khởi động game mới...")
         hwnd_launcher = timlauncherdangmo()
-
         if hwnd_launcher:
-            print(f"   -> Tìm thấy Launcher có sẵn (HWND: {hwnd_launcher}).")
+            print(f"   -> Tìm thấy Launcher (HWND: {hwnd_launcher}).")
             if win32gui.IsIconic(hwnd_launcher):
                 win32gui.ShowWindow(hwnd_launcher, win32con.SW_RESTORE)
             try:
@@ -175,30 +143,57 @@ def mogamevadangnhap(char_name, config):
             except:
                 pass
         else:
-            print("   -> Không có Launcher. Mở file exe mới...")
+            print("   -> Mở file exe mới...")
             game_dir = os.path.dirname(DUONGDAN_GAME)
-            process = subprocess.Popen(DUONGDAN_GAME, cwd = game_dir)
 
-            for i in range(30):
-                hwnd_launcher = timlauncherdangmo()
-                if hwnd_launcher: break
-                time.sleep(1)
-                print(f"\r      Chờ Launcher... {i + 1}s", end = "")
-            print("")
+            max_retries = 3
+            success_open = False
+
+            for attempt in range(max_retries):
+                print(f"      [Lần thử {attempt + 1}/{max_retries}] Đang chạy lệnh mở game...")
+                subprocess.Popen(DUONGDAN_GAME, cwd=game_dir)
+
+                for i in range(50):
+                    hwnd_launcher = timlauncherdangmo()
+                    if hwnd_launcher:
+                        success_open = True
+                        break
+
+                    hwnd_error = timcuanhbaoloi()
+                    if hwnd_error:
+                        title_error = win32gui.GetWindowText(hwnd_error)
+                        print(f"\n      ⚠️ CẢNH BÁO: Phát hiện cửa sổ '{title_error}' (HWND: {hwnd_error}).")
+                        print("      -> Đang ấn Enter để xác nhận...")
+                        try:
+                            BackgroundInput.press_key(hwnd_error, win32con.VK_RETURN)
+                        except Exception as e:
+                            print(f"      -> Lỗi khi ấn Enter: {e}")
+
+                        print("      -> Chờ 15s để hệ thống ổn định...")
+                        time.sleep(15)
+                        continue
+
+                    time.sleep(2)
+                    print(f"\r      Chờ Launcher... {i + 1}", end="")
+
+                print("")
+
+                if success_open:
+                    break
+                else:
+                    print("      -> Hết thời gian chờ. Thử lại quy trình...")
+                    time.sleep(5)
 
         if not hwnd_launcher:
-            print("❌ Lỗi: Không bật được Launcher!")
+            print("❌ Lỗi: Không bật được Launcher sau nhiều lần thử!")
             return
 
-        print(f"[3] Thao tác Launcher ({hwnd_launcher}). Click 'Vào Game'...")
         time.sleep(2)
         lx, ly = TOADO_LAUNCHER["BTN_VAO_GAME"]
-
         BackgroundInput.click(hwnd_launcher, lx, ly)
         time.sleep(1)
         BackgroundInput.click(hwnd_launcher, lx, ly)
 
-        print("[4] Đang đợi cửa sổ Game mới bật lên...")
         hwnd_game = 0
         for i in range(60):
             time.sleep(1)
@@ -206,82 +201,78 @@ def mogamevadangnhap(char_name, config):
             if hwnd_game: break
 
         if not hwnd_game:
-            print("❌ Lỗi: Cửa sổ Game không hiện lên sau khi bấm Launcher!")
+            print("❌ Lỗi: Cửa sổ Game không hiện lên!")
             return
 
         print(f"[5] Game đã lên (HWND: {hwnd_game}). Đợi load Login (2s)...")
         time.sleep(2)
 
-        print("[6] Bắt đầu đăng nhập...")
+        group_name = config.get("group")
+        server_index = config.get("server", 1)
 
-        sv_name = config["server"]
-        if sv_name in TOADO_SERVER_LIST:
-            print(f"   -> Chọn {sv_name}")
-            sx, sy = TOADO_SERVER_LIST[sv_name]
-            BackgroundInput.click(hwnd_game, sx, sy)
-            time.sleep(1)
+        if group_name in TOADO_CUM_MAY_CHU:
+            print(f"   -> Chọn cụm {group_name}")
+            gx, gy = TOADO_CUM_MAY_CHU[group_name]
+            BackgroundInput.click(hwnd_game, gx, gy)
+            time.sleep(0.5)
 
-            bx, by = TOADO_GAME["BTN_XACNHAN_SERVER"]
-            BackgroundInput.click(hwnd_game, bx, by)
-            print("   -> Chờ chuyển màn hình nhập liệu (2s)...")
-            time.sleep(2)
-        else:
-            print(f"⚠️ Không tìm thấy tọa độ server {sv_name}. Bỏ qua bước chọn server.")
+        try:
+            idx = int(server_index)
+            if idx in TOADO_MAY_CHU:
+                print(f"   -> Chọn server thứ {idx}")
+                sx, sy = TOADO_MAY_CHU[idx]
+                BackgroundInput.click(hwnd_game, sx, sy)
+                time.sleep(0.5)
+                bx, by = TOADO_GAME["BTN_XACNHAN_SERVER"]
+                BackgroundInput.click(hwnd_game, bx, by)
+                time.sleep(2)
+            else:
+                print(f"⚠️ Không có tọa độ cho server index {idx}")
+        except ValueError:
+            print(f"❌ Lỗi: Server index '{server_index}' không hợp lệ!")
+            return
 
         print("   -> Nhập Tài khoản & Mật khẩu...")
-
         BackgroundInput.press_key(hwnd_game, win32con.VK_TAB)
         time.sleep(0.5)
-
-        # Xóa sạch ô cũ (phòng hờ)
         for _ in range(30):
-            BackgroundInput.press_key(hwnd_game, win32con.VK_BACK, delay = 0.01)
+            BackgroundInput.press_key(hwnd_game, win32con.VK_BACK, delay=0.01)
         time.sleep(0.5)
 
         BackgroundInput.type_text(hwnd_game, config["user"])
         time.sleep(0.5)
-
         BackgroundInput.press_key(hwnd_game, win32con.VK_TAB)
         time.sleep(0.5)
-
         BackgroundInput.type_text(hwnd_game, config["pass"])
         time.sleep(0.5)
-
-        print("   -> Enter đăng nhập")
         BackgroundInput.press_key(hwnd_game, win32con.VK_RETURN)
 
         print("   -> Chờ load nhân vật (5s)...")
         time.sleep(5)
-
-        print("   -> Chọn nhân vật (Vào game)!")
         BackgroundInput.press_key(hwnd_game, win32con.VK_RETURN)
         time.sleep(1)
         BackgroundInput.press_key(hwnd_game, win32con.VK_RETURN)
 
         print(f"✅ Hoàn tất cho {char_name}. Nghỉ 5s...")
-        time.sleep(5)
+        time.sleep(15)
 
     except Exception as e:
         print(f"❌ Exception: {e}")
 
-def main():
-    print("=== TRÌNH QUẢN LÝ ĐĂNG NHẬP THÔNG MINH (TITLE CHECK) ===")
-    print(f"Màn hình Login: '{GAME_TITLE_LOGIN_SCREEN}'")
 
+def main():
+    print("=== TRÌNH QUẢN LÝ ĐĂNG NHẬP THÔNG MINH ===")
     while True:
         try:
             online = laydanhsachnhanvatonlines()
             print(f"\n[SCAN] Đang online: {online}")
-
             for tennhanvat, cauhinh in THONGTINDANGNHAP_MAP.items():
                 if tennhanvat not in online:
                     print(f"⚠️ {tennhanvat} vắng mặt -> Kích hoạt đăng nhập.")
                     mogamevadangnhap(tennhanvat, cauhinh)
                     break
-
-            print("[WAIT] Chờ 30s quét lại...")
-            time.sleep(30)
-
+            print("[WAIT] Chờ 5s quét lại...")
+            time.sleep(5)
         except KeyboardInterrupt:
             print("Dừng tool.")
             break
