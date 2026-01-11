@@ -2148,25 +2148,19 @@ class MoiTruong:
         if self._is_vohieuhoadichuyen:
             return
 
-        if self.get_is_cohieuungs((HIEUUNGKYNANG_ROILOAN,), macdinh = False, is_hieuungcoloi = 0):
-            cur_x = self.get_toadox(is_vitrihientai = True)
-            cur_y = self.get_toadoy(is_vitrihientai = True)
-
-            x = 2 * cur_x - x
-            y = 2 * cur_y - y
-
-            x = max(min(x, self._xmax - 25), 25)
-            y = max(min(y, self._ymax - 25), 25)
-
         if time.time() - self._thoidiemdichuyengannhat < delay:
             return
 
+        if self.get_is_cohieuungs((HIEUUNGKYNANG_ROILOAN,), macdinh=False, is_hieuungcoloi=0):
+            x = 2 * self._centerx - x
+            y = 2 * self._centery - y
         if is_rangbuoctrongmanhinh:
             x = max(min(x, self._xmax - 25), 25)
             y = max(min(y, self._ymax - 25), 25)
 
         self._thoidiemdichuyengannhat = time.time()
-        self.auto_assemble_dichuyen(x, y)
+        
+        self.auto_assemble_dichuyen(int(x), int(y))
 
         return True
 
@@ -2241,37 +2235,48 @@ class MoiTruong:
 
         khoangcach_hientai = math.dist((x1, y1), (x2, y2))
 
-        if khoangcach_hientai <= khoangcachtoida + 0.5:
+        # [FIX 1] Điều kiện dừng chuẩn xác hơn
+        # Chỉ dừng khi đã thực sự nằm TRONG tầm đánh (nhỏ hơn hoặc bằng).
+        # Tuyệt đối không cộng thêm (+ 0.5) dung sai ở đây vì đây là khoảng cách TỐI ĐA.
+        if khoangcach_hientai <= khoangcachtoida:
             return
 
         if khoangcach_hientai == 0:
             return
 
-        dx_map = x1 - x2
+        # [FIX 2] Tính toán điểm đến an toàn (Safety Buffer)
+        # Thay vì đi đến đúng rìa (ví dụ 10), hãy đi sâu vào trong 1 chút (ví dụ 9)
+        # Để đảm bảo lag game không làm mình bị tính là ngoài tầm.
+        khoangcach_mongmuon = max(1.0, khoangcachtoida - 1.0) 
+
+        dx_map = x1 - x2 # Vector hướng từ Mục tiêu -> Bản thân (để lùi lại)
         dy_map = y1 - y2
 
-        world_x_target = x2 + (dx_map / khoangcach_hientai) * khoangcachtoida
-        world_y_target = y2 + (dy_map / khoangcach_hientai) * khoangcachtoida
+        # Tìm tọa độ thế giới (World Coord) nằm trên đường thẳng nối Mục Tiêu-Bản Thân
+        # Cách mục tiêu đúng bằng khoảng cách mong muốn
+        world_x_target = x2 + (dx_map / khoangcach_hientai) * khoangcach_mongmuon
+        world_y_target = y2 + (dy_map / khoangcach_hientai) * khoangcach_mongmuon
 
+        # Xử lý giới hạn bước di chuyển (nếu có yêu cầu bước ngắn)
         dist_to_target = math.dist((x1, y1), (world_x_target, world_y_target))
         if khoangcachdichuyentoida > 0 and dist_to_target > khoangcachdichuyentoida:
             ratio = khoangcachdichuyentoida / dist_to_target
             world_x_target = x1 + (world_x_target - x1) * ratio
             world_y_target = y1 + (world_y_target - y1) * ratio
 
+        # Chuyển đổi từ tọa độ Thế giới sang Tọa độ Click trên màn hình
         delta_screen_x = world_x_target - x1
-        delta_screen_y = y1 - world_y_target
+        delta_screen_y = y1 - world_y_target # Lưu ý: Y game và Y màn hình thường ngược nhau
 
         toadomoidonvikhoangcachx = self._xmax / KHOANGCACHTOANMANHINH
         toadomoidonvikhoangcachy = self._ymax / KHOANGCACHTOANMANHINH
 
-        xclick = int(self._centerx + delta_screen_x * toadomoidonvikhoangcachx)
-        yclick = int(self._centery + delta_screen_y * toadomoidonvikhoangcachy)
+        # Tính điểm click từ tâm màn hình
+        xclick = self._centerx + delta_screen_x * toadomoidonvikhoangcachx
+        yclick = self._centery + delta_screen_y * toadomoidonvikhoangcachy
 
-        if is_rangbuoctrongmanhinh:
-            xclick = max(min(xclick, self._xmax - 25), 25)
-            yclick = max(min(yclick, self._ymax - 25), 25)
-
+        # Gọi action_dichuyen (Hàm này đã có logic xử lý Rối Loạn + Click tọa độ lớn)
+        # Truyền is_rangbuoctrongmanhinh từ tham số vào (thường là False để click full map)
         return self.action_dichuyen(xclick, yclick, delay = delay, is_rangbuoctrongmanhinh = is_rangbuoctrongmanhinh)
 
     def action_dichuyengiukhoangcachtoithieudiem(self, x2, y2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 0.05):
