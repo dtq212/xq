@@ -52,12 +52,18 @@ THONGTINDANGNHAP_MAP = {
         "group": "KÊNH_2",
         "server": 1,
     },
-    "3236": {
-        "user": "truymenh",
+    "5747": {
+        "user": "zhuangzi",
         "pass": "hateva1",
         "group": "KÊNH_2",
         "server": 1,
     },
+    #"3236": {
+    #    "user": "truymenh",
+    #    "pass": "hateva1",
+    #    "group": "KÊNH_2",
+    #    "server": 1,
+    #},
 }
 
 
@@ -169,11 +175,11 @@ def mogamevadangnhap(char_name, config):
                     if hwnd_error:
                         title_error = win32gui.GetWindowText(hwnd_error)
                         print(f"\n      ⚠️ CẢNH BÁO: Phát hiện cửa sổ '{title_error}' (HWND: {hwnd_error}).")
-                        print("      -> Đang ấn Enter để xác nhận...")
+                        print("      -> Đang gửi lệnh ĐÓNG cửa sổ lỗi...")
                         try:
-                            BackgroundInput.press_key(hwnd_error, win32con.VK_RETURN)
+                            win32gui.PostMessage(hwnd_error, win32con.WM_CLOSE, 0, 0)
                         except Exception as e:
-                            print(f"      -> Lỗi khi ấn Enter: {e}")
+                            print(f"      -> Lỗi khi đóng: {e}")
 
                         print("      -> Chờ 15s để hệ thống ổn định...")
                         time.sleep(15)
