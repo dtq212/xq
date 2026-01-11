@@ -2224,59 +2224,49 @@ class MoiTruong:
 
         return self.action_dichuyen(xclick, yclick, delay = delay)
 
+    
     def action_dichuyengiukhoangcachtoidadiem(self, x2, y2, khoangcachtoida, khoangcachdichuyentoida = 0, delay = 0.05, is_rangbuoctrongmanhinh = False):
         if x2 <= 0 or y2 <= 0:
             return
 
         diachicosothongtinnhanvat1 = self.get_diachicosothongtinnhanvat1()
 
-        x1 = self.get_toadox(diachicosothongtinnhanvat1)
-        y1 = self.get_toadoy(diachicosothongtinnhanvat1)
+        x1, y1 = self.get_toadox(diachicosothongtinnhanvat1), self.get_toadoy(diachicosothongtinnhanvat1)
 
-        khoangcach_hientai = math.dist((x1, y1), (x2, y2))
+        khoangcach = round(math.dist((x1, y1), (x2, y2)), 2)
 
-        # [FIX 1] Điều kiện dừng chuẩn xác hơn
-        # Chỉ dừng khi đã thực sự nằm TRONG tầm đánh (nhỏ hơn hoặc bằng).
-        # Tuyệt đối không cộng thêm (+ 0.5) dung sai ở đây vì đây là khoảng cách TỐI ĐA.
-        if khoangcach_hientai <= khoangcachtoida:
+        if khoangcach <= khoangcachtoida:
             return
 
-        if khoangcach_hientai == 0:
+        khoangcachtoida = max(0., khoangcachtoida - 1.5)
+
+        deltax = x2 - x1
+        deltay = y1 - y2
+
+        khoangcachdichuyen = khoangcach - khoangcachtoida
+
+        if not round(khoangcachdichuyen):
             return
 
-        # [FIX 2] Tính toán điểm đến an toàn (Safety Buffer)
-        # Thay vì đi đến đúng rìa (ví dụ 10), hãy đi sâu vào trong 1 chút (ví dụ 9)
-        # Để đảm bảo lag game không làm mình bị tính là ngoài tầm.
-        khoangcach_mongmuon = max(1.0, khoangcachtoida - 1.0) 
+        if khoangcachdichuyentoida:
+            khoangcachdichuyen = min(khoangcachdichuyentoida * 1., khoangcachdichuyen)
 
-        dx_map = x1 - x2 # Vector hướng từ Mục tiêu -> Bản thân (để lùi lại)
-        dy_map = y1 - y2
+        if khoangcach > 0.:
+            deltax = int(khoangcachdichuyen * deltax / khoangcach)
+            deltay = int(khoangcachdichuyen * deltay / khoangcach)
 
-        # Tìm tọa độ thế giới (World Coord) nằm trên đường thẳng nối Mục Tiêu-Bản Thân
-        # Cách mục tiêu đúng bằng khoảng cách mong muốn
-        world_x_target = x2 + (dx_map / khoangcach_hientai) * khoangcach_mongmuon
-        world_y_target = y2 + (dy_map / khoangcach_hientai) * khoangcach_mongmuon
+        if not deltax and not deltay:
+            return
 
-        # Xử lý giới hạn bước di chuyển (nếu có yêu cầu bước ngắn)
-        dist_to_target = math.dist((x1, y1), (world_x_target, world_y_target))
-        if khoangcachdichuyentoida > 0 and dist_to_target > khoangcachdichuyentoida:
-            ratio = khoangcachdichuyentoida / dist_to_target
-            world_x_target = x1 + (world_x_target - x1) * ratio
-            world_y_target = y1 + (world_y_target - y1) * ratio
+        xmax = self._xmax
+        ymax = self._ymax
 
-        # Chuyển đổi từ tọa độ Thế giới sang Tọa độ Click trên màn hình
-        delta_screen_x = world_x_target - x1
-        delta_screen_y = y1 - world_y_target # Lưu ý: Y game và Y màn hình thường ngược nhau
+        toadomoidonvikhoangcachx = xmax / KHOANGCACHTOANMANHINH
+        toadomoidonvikhoangcachy = ymax / KHOANGCACHTOANMANHINH
 
-        toadomoidonvikhoangcachx = self._xmax / KHOANGCACHTOANMANHINH
-        toadomoidonvikhoangcachy = self._ymax / KHOANGCACHTOANMANHINH
+        xclick = int(self._centerx + deltax * toadomoidonvikhoangcachx)
+        yclick = int(self._centery + deltay * toadomoidonvikhoangcachy)
 
-        # Tính điểm click từ tâm màn hình
-        xclick = self._centerx + delta_screen_x * toadomoidonvikhoangcachx
-        yclick = self._centery + delta_screen_y * toadomoidonvikhoangcachy
-
-        # Gọi action_dichuyen (Hàm này đã có logic xử lý Rối Loạn + Click tọa độ lớn)
-        # Truyền is_rangbuoctrongmanhinh từ tham số vào (thường là False để click full map)
         return self.action_dichuyen(xclick, yclick, delay = delay, is_rangbuoctrongmanhinh = is_rangbuoctrongmanhinh)
 
     def action_dichuyengiukhoangcachtoithieudiem(self, x2, y2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 0.05):
@@ -2299,7 +2289,7 @@ class MoiTruong:
             return
 
         if khoangcachdichuyentoida:
-            khoangcachdichuyen = min(khoangcachdichuyentoida * 1., khoangcachdichuyen)
+            khoangcachdichuyen = min(khoangcachdichuyentoida * 1.5, khoangcachdichuyen)
 
         if khoangcach > 0.:
             deltax = int(-1 * khoangcachdichuyen * deltax / khoangcach)

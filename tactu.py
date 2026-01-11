@@ -12,6 +12,7 @@ from tienich import taithietlap as util_taithietlap, phatam
 
 class TacTu:
     def __init__(self, moitruong: MoiTruong):
+        self._thoidiemdocsachgannhat = 0.
         self._thoidiemdichientruonggannhat = 0.
         self._thoidiembatdaudendiem = 0.
         self._thoidiemlogdebug = 0.
@@ -898,9 +899,23 @@ class TacTu:
                 if not self.action_sudungvatphamhanhtrang(CAPCUUDON):
                     self.action_sudungvatphamhanhtrang(HOATLACHOAN)
 
-            if time.time() - self._thoidiemsudungtusamdongannhat > 30. and self.moitruong.get_idnguoichoi() == 4599:
-                if self.action_sudungvatphamhanhtrang(TUSAMDON):
-                    self._thoidiemsudungtusamdongannhat = time.time()
+            if self.moitruong.get_idnguoichoi() == 4599:
+                if time.time() - self._thoidiemsudungtusamdongannhat > 30.:
+                    if self.action_sudungvatphamhanhtrang(TUSAMDON):
+                        self._thoidiemsudungtusamdongannhat = time.time()
+
+                if time.time() - self._thoidiemdocsachgannhat > 30.:
+                    sachcanhocs = [
+                        "Nháº\xadp MÃ´n Ä\x90Æ°á»\x9dng MÃ´n TÃ¢m",
+                        "Nháº\xadp MÃ´n Láº¡c Tuyáº¿t VÃ´ N",
+                        "Nháº\xadp MÃ´n Ä\x90Æ°á»\x9dng MÃ´n Ä\x90á»",
+                        "Nháº\xadp MÃ´n Cá»±c TÃ\xa0 SÃ¡t PhÃ¡"
+                    ]
+                    for sachcanhoc in sachcanhocs:
+                        if self.action_sudungvatphamhanhtrang(sachcanhoc):
+                            self._thoidiemdocsachgannhat = time.time()
+                            break
+                    
 
     def action_xulyuutiensudungkynang(self, loaikynang, vitrikynang, diachimuctieu, khoangcachphudau = 0):
         if loaikynang == "sudungkynangkhongmuctieu":
@@ -1008,6 +1023,7 @@ class TacTu:
                     "diachimuctieu": diachimuctieu,
                     "khoangcachtoida": 0
                 }
+                self._is_battudongtancongvatly = False
                 return
             if loaikynang == "dichuyentiepcantamxa":
                 nguongantoan = khoangcachyeucau - (1.5 + thoigiandungim * 2)
@@ -1020,6 +1036,7 @@ class TacTu:
                         "diachimuctieu": diachimuctieu,
                         "khoangcachtoida": max(0, khoangcachgiutoida)
                     }
+                    self._is_battudongtancongvatly = False
                     return
                 else:
                     continue
@@ -2591,14 +2608,25 @@ class TacTu:
             return
 
         danhsachthanhviens = self.moitruong.get_danhsachidnguoichoithanhviennhoms()
+        danhsachxungquanhs = self.moitruong.get_danhsachidnguoichoixungquanhs()
         dongdoicanxuly = []
 
         if idbandohientai == BANDO_CHIENTRUONG:
+            idphecuatoi = self.moitruong.get_idphechientruong()
             for id_uu_tien in danhsachuutientodoi:
-                if id_uu_tien != idnguoichoi:
+                if id_uu_tien == idnguoichoi: continue
+
+                if id_uu_tien in NHANVATTODOITUDONGs:
                     dongdoicanxuly.append(id_uu_tien)
+
+                elif id_uu_tien in NHANVATTODOICHIENTRUONGS:
+                    if id_uu_tien in danhsachxungquanhs:
+                        diachidoituong = self.moitruong.action_timkiemnhanvat(iddoituong = id_uu_tien)
+                        if diachidoituong:
+                            idphecuaho = self.moitruong.get_idphechientruong(diachidoituong)
+                            if idphecuaho == idphecuatoi:
+                                dongdoicanxuly.append(id_uu_tien)
         else:
-            danhsachxungquanhs = self.moitruong.get_danhsachidnguoichoixungquanhs()
             dongdoicanxuly = [id for id in danhsachxungquanhs if id in danhsachuutientodoi]
 
         if not dongdoicanxuly and not is_dangtrongnhom:
@@ -2612,8 +2640,7 @@ class TacTu:
                 if idbandohientai == BANDO_CHIENTRUONG:
                     is_leader_invalid = True
                 else:
-                    danhsachxungquanhs_check = self.moitruong.get_danhsachidnguoichoixungquanhs()
-                    if dongdoicanxuly[0] in danhsachxungquanhs_check:
+                    if dongdoicanxuly[0] in danhsachxungquanhs:
                         is_leader_invalid = True
 
             if is_leader_invalid and idtruongnhom not in danhsachthanhviens:
@@ -2644,10 +2671,10 @@ class TacTu:
                 if len(danhsachthanhviens) <= 1:
                     self.moitruong.action_thoatkhoinhom()
                     return
-                
+
                 if idbandohientai == BANDO_CHIENTRUONG and idnguoichoixephangcaonhat in dongdoicanxuly:
-                     self.moitruong.action_thoatkhoinhom()
-                     return
+                    self.moitruong.action_thoatkhoinhom()
+                    return
 
             if len(danhsachthanhviens) < 5:
                 hientai = time.time()
