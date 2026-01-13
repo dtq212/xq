@@ -972,27 +972,24 @@ class MoiTruong:
 
         tenmuctieu = self.get_tendoituong(diachicosothongtinnhanvat)
 
-        if tenmuctieu and any(tendemaoson in tenmuctieu for tendemaoson in (CUONGTHI, QUYTOT, THIENBINH)):
-            try:
-                tenchunhan = tenmuctieu.split("(")[1].split(")")[0].strip()
-                if tenchunhan:
-                    if tenchunhan == self.get_tendoituong():
-                        return False
-                    diachicosothongtinnhanvatchunhan = self.action_timkiemnhanvat(tennhanvat = tenchunhan)
-                    if diachicosothongtinnhanvatchunhan:
-                        return self.get_is_cothetancong(diachicosothongtinnhanvatchunhan)
-            except Exception:
-                pass
-
         if tenmuctieu:
-            if f"({self.get_tendoituong()})" in tenmuctieu:
+            if DAUBINH in tenmuctieu:
                 return False
-            elif self.get_is_dangnamtrongnhom():
-                danhsachtennguoichoithanhviennhom = self.get_danhsachtennguoichoithanhviennhoms()
+            elif any(tendemaoson in tenmuctieu for tendemaoson in (CUONGTHI, QUYTOT, THIENBINH)):
+                try:
+                    tenchunhan = tenmuctieu.split("(")[1].split(")")[0].strip()
+                    if tenchunhan:
+                        if tenchunhan == self.get_tendoituong():
+                            return False
+                        diachicosothongtinnhanvatchunhan = self.action_timkiemnhanvat(tennhanvat = tenchunhan)
+                        if diachicosothongtinnhanvatchunhan:
+                            return self.get_is_cothetancong(diachicosothongtinnhanvatchunhan)
+                except Exception:
+                    pass
 
-                for tenthanhviennhom in danhsachtennguoichoithanhviennhom:
-                    if f"({tenthanhviennhom})" in tenmuctieu:
-                        return False
+            else:
+                if "(" in tenmuctieu and ")" in tenmuctieu and "(cáº¥p" not in tenmuctieu:
+                    return False
 
         idmaupk = self.get_idmaupk()
 
