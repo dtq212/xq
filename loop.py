@@ -148,8 +148,8 @@ class LoopChinh:
             # print(self.moitruong.get_tendoituong(diachidoituong))
         # print(self.moitruong.get_danhsachhieuungnhanvats())
 
-        # if self.moitruong.get_idnguoichoi() == 4676:
-        #    print(self.moitruong.get_danhsachvatphamhanhtrang_map().keys())
+        # if self.moitruong.get_idnguoichoi() == 4599:
+            # print(self.moitruong.get_danhsachvatphamhanhtrang_map().keys())
             # if diachidoituong := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
             #     print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
            #  self.tactu.action_sudungvatphamhanhtrang("Nháº\xadp MÃ´n Ä\x90Æ°á»\x9dng MÃ´n Ä\x90á»")
@@ -222,14 +222,13 @@ class LoopPhu:
         self.moitruong.action_vohieuhoakhoanhvungkynang()
         self.moitruong.action_vohieuhoaphimspace()
 
-        self.moitruong.set_idvukhi(13)
-        self.moitruong.set_idcanh((7, 7))
-        self.moitruong.set_idngoaitrang(10003)
+        # self.moitruong.set_idvukhi(13)
+        # self.moitruong.set_idcanh((7, 7))
 
-        self.moitruong.set_mauvukhi((1, 1, 1))
-        self.moitruong.set_mauyphuc((1, 1, 1))
-        self.moitruong.set_mautoc((1, 1, 1))
-        self.moitruong.set_maucanh((1, 1, 1, 1, 1, 1))
+        # self.moitruong.set_mauvukhi((1, 1, 1))
+        # self.moitruong.set_mauyphuc((1, 1, 1))
+        # self.moitruong.set_mautoc((1, 1, 1))
+        # self.moitruong.set_maucanh((1, 1, 1, 1, 1, 1))
 
         self.tactu.action_chantangcapdo()
         self.tactu.action_tudongxepchongdo()
