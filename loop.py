@@ -223,7 +223,7 @@ class LoopPhu:
         self.moitruong.action_vohieuhoaphimspace()
 
         self.moitruong.set_idvukhi(13)
-        self.moitruong.set_idcanh((8, 8))
+        self.moitruong.set_idcanh((7, 7))
         self.moitruong.set_idngoaitrang(10003)
 
         self.moitruong.set_mauvukhi((1, 1, 1))
