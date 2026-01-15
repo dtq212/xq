@@ -1009,7 +1009,7 @@ class TacTu:
             (None, "dichuyengiukhoangcach", lambda: diachimuctieu and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and is_muctieupk, khoangcach + 1.5, None, False, True),
         ]
 
-        is_debug = self.moitruong.get_idnguoichoi() == 4599
+        is_debug = False
 
         for i, item in enumerate(danhsachuutien):
             vitrikynang, loaikynang, dieukien, khoangcachyeucau, muctieu_input, is_ngatdichuyen, is_ketthucvonglap = item
