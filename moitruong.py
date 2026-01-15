@@ -2537,11 +2537,113 @@ class MoiTruong:
             self._thoidiemsudungchucnangmorong5 = time.time()
         return is_ok
 
-    def get_idmonphai(self, diachicosothongtinnhanvat = None):
+    def get_idvukhi(self, diachicosothongtinnhanvat = None):
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
 
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1184)
+
+    def set_idvukhi(self, idvukhi, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+        
+        if self.get_idvukhi() != idvukhi:
+            return write_int(self.tientrinh, diachicosothongtinnhanvat + 0x1184, idvukhi)
+
+    def get_idngoaitrang(self, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+
+        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1174)
+
+    def set_idngoaitrang(self, idngoaitrang, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+
+        if self.get_idngoaitrang() != idngoaitrang:
+            return write_int(self.tientrinh, diachicosothongtinnhanvat + 0x1174, idngoaitrang)
+
+    def get_idcanh(self, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+
+        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x119C), read_int(self.tientrinh, diachicosothongtinnhanvat + 0x11A0)
+
+    def set_idcanh(self, idcanh, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+
+        if self.get_idcanh() != idcanh:
+            write_int(self.tientrinh, diachicosothongtinnhanvat + 0x119C, idcanh[0])
+            write_int(self.tientrinh, diachicosothongtinnhanvat + 0x11A0, idcanh[1])
+
+    def get_mauvukhi(self, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+
+        return read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xA4), read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xA5), read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xA6)
+
+    def set_mauvukhi(self, mauvukhi, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+
+        if self.get_mauvukhi() != mauvukhi:
+            write_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xA4, mauvukhi[0])
+            write_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xA5, mauvukhi[1])
+            write_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xA6, mauvukhi[2])
+
+    def get_maucanh(self, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+
+        return (read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xA8),
+                read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xA9),
+                read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xAA),
+                read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xB4),
+                read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xB5),
+                read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xB6))
+
+    def set_maucanh(self, maucanh, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+
+        if self.get_maucanh() != maucanh:
+            write_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xA8, maucanh[0])
+            write_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xA9, maucanh[1])
+            write_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xAA, maucanh[2])
+            write_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xB4, maucanh[3])
+            write_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xB5, maucanh[4])
+            write_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xB6, maucanh[5])
+
+    def get_mauyphuc(self, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+
+        return read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xB0), read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xB1), read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xB2)
+
+    def set_mauyphuc(self, mauyphuc, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+
+        if self.get_mauyphuc() != mauyphuc:
+            write_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xB0, mauyphuc[0])
+            write_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xB1, mauyphuc[1])
+            write_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xB2, mauyphuc[2])
+
+    def get_mautoc(self, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+
+        return read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xAC), read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xAD), read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xAE)
+
+    def set_mautoc(self, mautoc, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+
+        if self.get_mautoc() != mautoc:
+            write_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xAC, mautoc[0])
+            write_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xAD, mautoc[1])
+            write_short_int(self.tientrinh, diachicosothongtinnhanvat + 0xAE, mautoc[2])
 
     def get_is_vohieuhoadichuyen(self):
         return self._is_vohieuhoadichuyen

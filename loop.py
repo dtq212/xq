@@ -122,8 +122,13 @@ class LoopChinh:
         #  time.sleep(0.25)
         #  self.moitruong.action_thucthicaulenh("tallk 291# bonus.29")
         #  time.sleep(0.25)
-        
+        # x = 10000
         # if self.moitruong.get_idnguoichoi() == 4599:
+        #     while True:
+        #         x += 1
+        #         self.moitruong.set_idngoaitrang(x)
+        #         print("x: {}".format(x))
+        #         time.sleep(0.5)
         #   self.moitruong.action_thucthicaulenh("talk 810a# info.58", delay = 0.)
         #   time.sleep(0.25)
         #   self.moitruong.action_thucthicaulenh("talk 810a# info.18", delay = 0.)
@@ -216,6 +221,15 @@ class LoopPhu:
         self.moitruong.action_vohieuhoatrangthaichuotchonmuctieukynang()
         self.moitruong.action_vohieuhoakhoanhvungkynang()
         self.moitruong.action_vohieuhoaphimspace()
+
+        self.moitruong.set_idvukhi(13)
+        self.moitruong.set_idcanh((8, 8))
+        self.moitruong.set_idngoaitrang(10003)
+
+        self.moitruong.set_mauvukhi((1, 1, 1))
+        self.moitruong.set_mauyphuc((1, 1, 1))
+        self.moitruong.set_mautoc((1, 1, 1))
+        self.moitruong.set_maucanh((1, 1, 1, 1, 1, 1))
 
         self.tactu.action_chantangcapdo()
         self.tactu.action_tudongxepchongdo()
