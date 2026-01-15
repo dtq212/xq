@@ -1040,10 +1040,10 @@ class TacTu:
                 return
 
             if loaikynang == "dichuyentiepcantamxa":
-                nguongantoan = khoangcachyeucau - (1.5 + thoigiandungim * 2)
+                nguongantoan = khoangcachyeucau - (2.5 + thoigiandungim * 1)
                 if khoangcach >= nguongantoan:
                     if is_debug: print(f"[DEBUG] Position: Dist {khoangcach:.1f} >= Safe {nguongantoan:.1f} -> MOVE")
-                    khoangcachgiutoida = khoangcachyeucau - (1.5 + thoigiandungim * 2) if thoigiandungim <= 4.5 else 0
+                    khoangcachgiutoida = khoangcachyeucau - (2.5 + thoigiandungim * 1) if thoigiandungim <= 4.5 else 0
                     self._yeucautancong = {
                         "yeucau": YEUCAUDICHUYENTANCONG,
                         "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
@@ -1363,9 +1363,9 @@ class TacTu:
             if not diachimuctieu and loaikynang in ("sudungkynangmuctieu", "sudungkynangphudau", "tancongvatly", "dichuyentiepcantamxa"): continue
 
             if loaikynang == "dichuyentiepcantamxa":
-                nguongantoan = khoangcachyeucau - (1.5 + thoigiandungim)
+                nguongantoan = khoangcachyeucau - (2.5 + thoigiandungim)
                 if khoangcach_muctieu >= nguongantoan:
-                    khoangcachgiutoida = khoangcachyeucau - (1.5 + thoigiandungim) if thoigiandungim <= 4.5 else 0
+                    khoangcachgiutoida = khoangcachyeucau - (2.5 + thoigiandungim) if thoigiandungim <= 4.5 else 0
                     self._yeucautancong = {
                         "yeucau": YEUCAUDICHUYENTANCONG,
                         "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,

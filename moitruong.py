@@ -2232,10 +2232,10 @@ class MoiTruong:
 
         khoangcach = round(math.dist((x1, y1), (x2, y2)), 2)
 
+        khoangcachtoida = max(0., khoangcachtoida - 1.5)
+
         if khoangcach <= khoangcachtoida:
             return
-
-        khoangcachtoida = max(0., khoangcachtoida - 1.5)
 
         deltax = x2 - x1
         deltay = y1 - y2
