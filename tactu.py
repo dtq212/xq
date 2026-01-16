@@ -198,6 +198,7 @@ class TacTu:
         
         self._thoidiemsudungnhiephonchamgannhat = False
         self._is_kynangnhiephonchamsansang = False
+        self._thoidiembattathieuungphapbaogannhat = 0.
 
     def __del__(self):
         try:
@@ -997,10 +998,10 @@ class TacTu:
 
         danhsachuutien = [
             (None, "dichuyengiukhoangcach", lambda: not is_bidaohoalacanh and diachimuctieu and (time.time() - self._thoidiemsudungamkichgannhat < 1. or time.time() - self._thoidiemsudungnhiephonchamgannhat < 1. or is_muctieukhongthedichuyen) and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN + 1.5 and is_muctieupk, khoangcach + 3., None, False, True),
-            (VITRIKYNANG_ANTHANTHUAT, "sudungkynangkhongmuctieu", lambda: noilucconlai > 50 and diachimuctieu and is_muctieupk and not is_anthan and self.moitruong.get_idbandohientai() not in (BANDO_CHU, BANDO_CHIENTRUONG) and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN + 1.5 and self.moitruong.get_idtuthenhanvat(diachimuctieu) in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT), 0, None, True, True),
+            (VITRIKYNANG_ANTHANTHUAT, "sudungkynangkhongmuctieu", lambda: noilucconlai > 50 and diachimuctieu and is_muctieupk and not is_anthan and self.moitruong.get_idbandohientai() not in (BANDO_CHU, BANDO_CHIENTRUONG) and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN + 1.5 and self.moitruong.get_idtuthenhanvat(diachimuctieu) in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT), 0, None, False, True),
             (VITRIKYNANG_BISAT, "sudungkynangmuctieu", lambda: noilucconlai > 50 and diachimuctieu and is_muctieupk and is_anthan, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True, True),
-            (VITRIKYNANG_LACTUYETVONGAN, "sudungkynangkhongmuctieu", lambda: noilucconlai > 50 and is_muctieupk and not is_anthan and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_LACTUYETVONGAN,), True, is_hieuungcoloi = 1), 0, None, True, True),
-            (VITRIKYNANG_MATAMTHUAT, "sudungkynangkhongmuctieu", lambda: not is_bandochientruong and noilucconlai > 50 and diachimuctieu and not is_anthan and khoangcach > KHOANGCACHSUDUNGKYNANGTAMXA, KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
+            (VITRIKYNANG_LACTUYETVONGAN, "sudungkynangkhongmuctieu", lambda: noilucconlai > 50 and is_muctieupk and not is_anthan and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_LACTUYETVONGAN,), True, is_hieuungcoloi = 1), 0, None, False, True),
+            (VITRIKYNANG_MATAMTHUAT, "sudungkynangkhongmuctieu", lambda: not is_bandochientruong and noilucconlai > 50 and diachimuctieu and not is_anthan and khoangcach > KHOANGCACHSUDUNGKYNANGTAMXA, KHOANGCACHSUDUNGKYNANGTAMXA, None, False, True),
             (None, "dichuyentiepcantamxa", lambda: not is_bidaohoalacanh and diachimuctieu, KHOANGCACHSUDUNGKYNANGTAMXA, None, False, True),
             (VITRIKYNANG_AMKICH, "sudungkynangmuctieu", lambda: noilucconlai > 50 and is_bituocvukhi and diachimuctieu and not is_muctieucomatamthuat, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True, True),
             (VITRIKYNANG_THICHSAT, "sudungkynangmuctieu", lambda: noilucconlai > 50 and is_bituocvukhi and diachimuctieu and not is_muctieucomatamthuat, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True, True),
@@ -1011,6 +1012,7 @@ class TacTu:
             (VITRIKYNANG_SONGLONGDOATCHAU, "sudungkynangmuctieu", lambda: noilucconlai > 50 and diachimuctieu and not is_bituocvukhi and not is_muctieucomatamthuat, KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
             (VITRIKYNANG_MANTHIENHOAVU, "sudungkynangmuctieu", lambda: noilucconlai > 50 and not is_bituocvukhi and diachimuctieu and is_muctieupk, KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
             (VITRIKYNANG_MAIHOACHAM, "sudungkynangmuctieu", lambda: noilucconlai > 50 and not is_bituocvukhi and diachimuctieu and not is_muctieucomatamthuat, KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
+            (None, "battathieuungphapbao", lambda: diachimuctieu and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and time.time() - self._thoidiembattathieuungphapbaogannhat > 2., None, False, True),
             (VITRIKYNANG_AMKICH, "sudungkynangmuctieu", lambda: noilucconlai > 50 and not is_bituocvukhi and diachimuctieu and not is_muctieucomatamthuat, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True, True),
             (VITRIKYNANG_HAPTINHMACHAM, "sudungkynangmuctieu", lambda: noilucconlai > 50 and not is_bituocvukhi and diachimuctieu and not is_muctieucomatamthuat and is_muctieulanguoichoi and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_HAPTINHMACHAM,), macdinh = False, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0), KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
             (None, "tancongvatly", lambda: diachimuctieu and not self._is_battudongtancongvatly, KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
@@ -1026,6 +1028,12 @@ class TacTu:
             diachimuctieu = muctieu_input if muctieu_input else diachimuctieu
 
             if not diachimuctieu and loaikynang in ("sudungkynangmuctieu", "sudungkynangphudau", "tancongvatly", "dichuyentiepcantamxa", "dichuyentiepcancanchien", "dichuyengiukhoangcach"): continue
+
+            if loaikynang == "battathieuungphapbao":
+                self.moitruong.action_thucthicaulenh("pf2 908.6", delay = 0.)
+                self._thoidiembattathieuungphapbaogannhat = time.time()
+                if is_debug: print(f"[DEBUG] EXECUTE: {loaikynang} - {vitrikynang}")
+                return
 
             if loaikynang == "dichuyentiepcancanchien":
                 self._yeucautancong = {
@@ -3567,7 +3575,7 @@ class TacTu:
             if is_truongnhom and NHANVATTODOITUDONGs and self.moitruong.get_idnguoichoi() == NHANVATTODOITUDONGs[0]:
                 caulenh = "tallk {}# welcome.1002".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
-                time.sleep(4.)
+                time.sleep(1.)
 
                 if self.moitruong.get_is_dangmocuasoxacnhan():
                     noidungcuasoxacnhan = self.moitruong.get_noidungcuasomaxacnhan()
@@ -3576,25 +3584,78 @@ class TacTu:
                         maxacnhan = noidungcuasoxacnhan.split("(")[1].split(")")[0]
                         caulenh = "tallk {}# welcome.9999.{}".format(hex(idnpc).replace("0x", ""), maxacnhan)
                         self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
-                        self.moitruong.set_is_dangmocuasoxacnhan(0)
-                        time.sleep(2.)
+                        self.moitruong.set_is_dangmocuasoxacnhan(False)
+                        time.sleep(1.)
                     except IndexError:
                         print("Không tìm thấy mã xác nhận đúng định dạng")
 
                 caulenh = "tallk {}# welcome.1003".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
-                time.sleep(2.)
+                time.sleep(1.)
+                
+                if self.moitruong.get_is_dangmocuasoxacnhan():
+                    noidungcuasoxacnhan = self.moitruong.get_noidungcuasomaxacnhan()
+
+                    try:
+                        maxacnhan = noidungcuasoxacnhan.split("(")[1].split(")")[0]
+                        caulenh = "tallk {}# welcome.9999.{}".format(hex(idnpc).replace("0x", ""), maxacnhan)
+                        self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
+                        self.moitruong.set_is_dangmocuasoxacnhan(False)
+                        time.sleep(1.)
+                    except IndexError:
+                        print("Không tìm thấy mã xác nhận đúng định dạng")
+
             elif is_dangnamtrongnhom:
                 caulenh = "tallk {}# welcome.1003".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
-                time.sleep(2.)
+                time.sleep(1.)
+                
+
+                if self.moitruong.get_is_dangmocuasoxacnhan():
+                    noidungcuasoxacnhan = self.moitruong.get_noidungcuasomaxacnhan()
+
+                    try:
+                        maxacnhan = noidungcuasoxacnhan.split("(")[1].split(")")[0]
+                        caulenh = "tallk {}# welcome.9999.{}".format(hex(idnpc).replace("0x", ""), maxacnhan)
+                        self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
+                        self.moitruong.set_is_dangmocuasoxacnhan(False)
+                        time.sleep(1.)
+                    except IndexError:
+                        print("Không tìm thấy mã xác nhận đúng định dạng")
+
             else:
                 caulenh = "tallk {}# welcome.1001".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
-                time.sleep(2.)
+                time.sleep(1.)
+                
+                if self.moitruong.get_is_dangmocuasoxacnhan():
+                    noidungcuasoxacnhan = self.moitruong.get_noidungcuasomaxacnhan()
+
+                    try:
+                        maxacnhan = noidungcuasoxacnhan.split("(")[1].split(")")[0]
+                        caulenh = "tallk {}# welcome.9999.{}".format(hex(idnpc).replace("0x", ""), maxacnhan)
+                        self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
+                        self.moitruong.set_is_dangmocuasoxacnhan(False)
+                        time.sleep(1.)
+                    except IndexError:
+                        print("Không tìm thấy mã xác nhận đúng định dạng")
+                
                 caulenh = "tallk {}# welcome.1003".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
-                time.sleep(2.)
+                time.sleep(1.)
+                
+                if self.moitruong.get_is_dangmocuasoxacnhan():
+                    noidungcuasoxacnhan = self.moitruong.get_noidungcuasomaxacnhan()
+
+                    try:
+                        maxacnhan = noidungcuasoxacnhan.split("(")[1].split(")")[0]
+                        caulenh = "tallk {}# welcome.9999.{}".format(hex(idnpc).replace("0x", ""), maxacnhan)
+                        self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
+                        self.moitruong.set_is_dangmocuasoxacnhan(False)
+                        time.sleep(1.)
+                    except IndexError:
+                        print("Không tìm thấy mã xác nhận đúng định dạng")
+
 
     def action_tudonglamnhiemvusugia(self):
         if not self._is_tudonglamnhiemvusugia:

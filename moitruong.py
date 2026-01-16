@@ -260,11 +260,12 @@ class MoiTruong:
 
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
-            return False
+            return
         x = read_int(self.tientrinh, x + 0xADFD8C)
         if not x:
-            return False
-        return read_boolean(self.tientrinh, x + 0xB4)
+            return
+        
+        return write_boolean(self.tientrinh, x + 0xB4, is_dangmocuasoxacnhan)
 
     def get_noidungcuasomaxacnhan(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
@@ -1404,8 +1405,6 @@ class MoiTruong:
             return False
 
         self._thoidiemthucthicaulenhgannhat = time.time()
-
-        # print(f"action_sudungkynangmuctieukhacnguoichoi: {idkynang}")
 
         self.auto_assemble_sudungkynangmuctieukhacnguoichoi(idkynang, iddoituong)
 
