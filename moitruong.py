@@ -245,6 +245,36 @@ class MoiTruong:
             return False
         return read_int(self.tientrinh, x + 0xADFE18)
 
+    def get_is_dangmocuasoxacnhan(self):
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not x:
+            return False
+        x = read_int(self.tientrinh, x + 0xADFD8C)
+        if not x:
+            return False
+        return read_boolean(self.tientrinh, x + 0xB4)
+
+    def set_is_dangmocuasoxacnhan(self, is_dangmocuasoxacnhan):
+        if self.get_is_dangmocuasoxacnhan() == is_dangmocuasoxacnhan:
+            return
+
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not x:
+            return False
+        x = read_int(self.tientrinh, x + 0xADFD8C)
+        if not x:
+            return False
+        return read_boolean(self.tientrinh, x + 0xB4)
+
+    def get_noidungcuasomaxacnhan(self):
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not x:
+            return ""
+        x = read_int(self.tientrinh, x + 0xADFD8C)
+        if not x:
+            return ""
+        return read_string(self.tientrinh, x + 0xBC)
+
     def get_danhsachidnguoichoixungquanhs(self):
         i = -1
         danhsachidnguoichoixungquanhs = []

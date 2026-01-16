@@ -947,6 +947,8 @@ class TacTu:
 
     def _action_tancong_duongmon(self):
         if not self._is_tudongsudungkynang: return
+
+        if self.moitruong.get_is_dangclickchuottrai(): return
         if self.moitruong.get_is_nhanvatdachet(): return
         if self.moitruong.get_is_dangvankhi(): return
 
@@ -3565,21 +3567,34 @@ class TacTu:
             if is_truongnhom and NHANVATTODOITUDONGs and self.moitruong.get_idnguoichoi() == NHANVATTODOITUDONGs[0]:
                 caulenh = "tallk {}# welcome.1002".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
-                time.sleep(1.)
+                time.sleep(4.)
+
+                if self.moitruong.get_is_dangmocuasoxacnhan():
+                    noidungcuasoxacnhan = self.moitruong.get_noidungcuasomaxacnhan()
+
+                    try:
+                        maxacnhan = noidungcuasoxacnhan.split("(")[1].split(")")[0]
+                        caulenh = "tallk {}# welcome.9999.{}".format(hex(idnpc).replace("0x", ""), maxacnhan)
+                        self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
+                        self.moitruong.set_is_dangmocuasoxacnhan(0)
+                        time.sleep(2.)
+                    except IndexError:
+                        print("Không tìm thấy mã xác nhận đúng định dạng")
+
                 caulenh = "tallk {}# welcome.1003".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
-                time.sleep(1.)
+                time.sleep(2.)
             elif is_dangnamtrongnhom:
                 caulenh = "tallk {}# welcome.1003".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
-                time.sleep(1.)
+                time.sleep(2.)
             else:
                 caulenh = "tallk {}# welcome.1001".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
-                time.sleep(1.)
+                time.sleep(2.)
                 caulenh = "tallk {}# welcome.1003".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
-                time.sleep(1.)
+                time.sleep(2.)
 
     def action_tudonglamnhiemvusugia(self):
         if not self._is_tudonglamnhiemvusugia:
