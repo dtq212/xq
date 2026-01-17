@@ -114,6 +114,11 @@ class LoopChinh:
         self.tactu.action_xulygomquai()
         self.tactu._action_sudungkynang()
 
+        if self.moitruong.get_idnguoichoi() == 4599 and self.moitruong.get_idbandohientai() == BANDO_CHIENTRUONG:
+            if not self.moitruong.get_is_dangnamtrongnhom():
+                self.moitruong.action_thucthicaulenh("team + 4599", delay = 0)
+                time.sleep(0.5)
+
         #if self.moitruong.get_idnguoichoi() == 5747:
         #  # self.tactu.action_sudungvatphamhanhtrang(TUSAMDON, delay = 5.)
         #  self.moitruong.action_thucthicaulenh("tallk 291# bonus.1")
