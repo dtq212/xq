@@ -623,8 +623,6 @@ class TacTu:
                         is_boquamuctieuhientai = True
                     elif tendoituongmuctieudangchon in TENMUCTIEUKHONGTANCONGs:
                         is_boquamuctieuhientai = True
-                    elif "Noel" in tendoituongmuctieudangchon:
-                        is_boquamuctieuhientai = True
                     elif self._is_chidanhnguoichoi and not is_muctieudangchonpk:
                         is_boquamuctieuhientai = True
                     elif self._tenmuctieutancongs and tendoituongmuctieudangchon not in self._tenmuctieutancongs:
@@ -790,6 +788,7 @@ class TacTu:
                 def _thaydoimuctieuhientai():
                     if diachicosothongtinnhanvatmuctieudangchon:
                         self._diachicosomuctieuduphong = diachicosothongtinnhanvatmuctieudangchon
+                    self.moitruong._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
                     self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(diachicosothongtinnhanvatmuctieuxemxet)
                     self._is_battudongtancongvatly = False
 
@@ -1486,9 +1485,7 @@ class TacTu:
 
             if diachicosothongtinnhanvatmuctieudangchon:
                 khoangcach = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon)
-                is_muctieudangchonlanguoichoi = self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon)
                 thoigiantuthenhanvatdungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat() if idtuthenhanvat == TUTHENHANVAT_DUNGIM else 0.
-                thoigiantuthenhanvatkhongdichuyen = time.time() - self.moitruong.get_thoidiemtuthenhanvatkhongdichuyen() if idtuthenhanvat != TUTHENHANVAT_DICHUYEN else 0.
 
                 is_anhhuongboitruongnhom = self._is_tudongtheosautruongnhom and self.moitruong.get_is_dangnamtrongnhom() and not self.moitruong.get_is_truongnhom()
                 khoangcachhieuqua = KHOANGCACHSUDUNGKYNANGTAMXA
@@ -2723,10 +2720,6 @@ class TacTu:
                 if not iddoituongbaothumaoson:
                     break
 
-                # idhinhthuchanhvibaothumaoson = self.moitruong.get_idhinhthuchanhvibaothumaoson()
-                # if idhinhthuchanhvibaothumaoson:
-                #     self.moitruong.action_thucthicaulenh(f"pet {hex(iddoituongbaothumaoson)}# mode 0".replace("0x", ""))
-
                 diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
                 if self._is_danggomquai:
                     self.moitruong.action_ralenhbaothumaosontheosau(iddoituongbaothumaoson)
@@ -2970,8 +2963,6 @@ class TacTu:
             if tendoituongxemxet in self._tenmuctieukhongtancongs:
                 continue
             if self._tenmuctieutancongs and tendoituongxemxet not in self._tenmuctieutancongs:
-                continue
-            if "Noel" in tendoituongxemxet:
                 continue
 
             mx = self.moitruong.get_toadox(diachidoituongxemxet)
