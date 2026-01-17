@@ -24,6 +24,7 @@ def khoidong_looplammoitrangthaimoitruong(moitruong, tactu, stop):
 def khoidong_looptimkiemmuctieu(moitruong, tactu, stop):
     LoopTimKiemMucTieu(moitruong, tactu, stop).loop()
 
+
 def khoidong_loopchinh(moitruong, tactu, stop):
     LoopChinh(moitruong, tactu, stop).loop()
 
@@ -41,6 +42,7 @@ class CuaSo:
         self.moitruong = MoiTruong(idcuaso)
         self.tactu = TacTu(self.moitruong)
         self.tennhanvat = False
+        self.idnguoichoi = 0  # Thêm biến theo dõi ID người chơi
         self.main_stop = threading.Event()
 
         self.luongs = (
@@ -91,30 +93,43 @@ class CuaSo:
         while not self.main_stop.is_set() and self.moitruong.get_is_cuasogametontai():
             if not self.moitruong.get_is_dangmatketnoi():
                 thoi_gian_mat_ket_noi = 0
+
+                # Lấy cả tên và ID để xử lý
                 tennhanvat = self.moitruong.get_tendoituong()
+                idnguoichoi = self.moitruong.get_idnguoichoi()
 
-                if tennhanvat != self.tennhanvat:
-                    if tennhanvat:
-                        if self.tennhanvat:
-                            self.tactu.luuthietlap(self.tennhanvat)
-                        self.tactu.taithietlap(tennhanvat)
+                # Kiểm tra thay đổi dựa trên ID người chơi
+                if idnguoichoi != self.idnguoichoi:
+                    if idnguoichoi:
+                        # Lưu thiết lập cho ID cũ
+                        if self.idnguoichoi:
+                            self.tactu.luuthietlap(self.idnguoichoi)
 
-                        if tennhanvat != last_hover_text:
+                        # Tải thiết lập cho ID mới
+                        self.tactu.taithietlap(idnguoichoi)
+
+                        # Cập nhật hiển thị Systray
+                        if tennhanvat and tennhanvat != last_hover_text:
                             self.systray.update(hover_text = tennhanvat)
                             last_hover_text = tennhanvat
-                    elif self.tennhanvat:
-                        self.tactu.luuthietlap(self.tennhanvat)
+                    elif self.idnguoichoi:
+                        # Lưu thiết lập lần cuối khi thoát/mất ID
+                        self.tactu.luuthietlap(self.idnguoichoi)
                         if CHUACHONHANVAT != last_hover_text:
                             self.systray.update(hover_text = CHUACHONHANVAT)
                             last_hover_text = CHUACHONHANVAT
 
+                    self.idnguoichoi = idnguoichoi
                     self.tennhanvat = tennhanvat
 
-                elif tennhanvat and time.time() - self.thoidiemluuthietlapgannhat > 1.:
+                # Định kỳ lưu thiết lập theo ID
+                elif idnguoichoi and time.time() - self.thoidiemluuthietlapgannhat > 1.:
                     self.thoidiemluuthietlapgannhat = time.time()
-                    self.tactu.luuthietlap(tennhanvat)
+                    self.tactu.luuthietlap(idnguoichoi)
             else:
                 self.tennhanvat = False
+                self.idnguoichoi = 0  # Reset ID khi mất kết nối
+
                 if CHUACHONHANVAT != last_hover_text:
                     self.systray.update(hover_text = CHUACHONHANVAT)
                     last_hover_text = CHUACHONHANVAT

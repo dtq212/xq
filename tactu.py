@@ -206,7 +206,7 @@ class TacTu:
         except (pymem.exception.PymemError, pymem.exception.WinAPIError):
             pass
 
-    def luuthietlap(self, tennhanvat):
+    def luuthietlap(self, idnguoichoi):
         thietlap = {
             "_is_tudongbattheosaunhom": self._is_tudongbattheosaunhom,
             "_is_tudongtheosautruongnhom": self._is_tudongtheosautruongnhom,
@@ -227,11 +227,10 @@ class TacTu:
             "_is_chedobufftoanbang": self._is_chedobufftoanbang,
             "_is_tudongdichientruong": self._is_tudongdichientruong,
         }
+        util_luuthietlap(str(idnguoichoi), thietlap)
 
-        util_luuthietlap(tennhanvat, thietlap)
-
-    def taithietlap(self, tennhanvat):
-        thietlap = util_taithietlap(tennhanvat)
+    def taithietlap(self, idnguoichoi):
+        thietlap = util_taithietlap(str(idnguoichoi))
         if thietlap:
             if "_is_tudongbattheosaunhom" in thietlap:
                 self._is_tudongbattheosaunhom = thietlap["_is_tudongbattheosaunhom"]
@@ -2098,7 +2097,6 @@ class TacTu:
 
     def battat_chedobufftoanbang(self):
         self._is_chedobufftoanbang = not self._is_chedobufftoanbang
-        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_chedobufftoanbang:
             phatam("Bật chế độ buff toàn bang")
         else:
@@ -2106,7 +2104,6 @@ class TacTu:
 
     def battat_is_uutienbaothumaoson(self):
         self._is_uutienbaothumaoson = not self._is_uutienbaothumaoson
-        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_uutienbaothumaoson:
             phatam("Bật ưu tiên đánh đệ Mao Sơn")
         else:
@@ -2114,7 +2111,6 @@ class TacTu:
 
     def battat_is_tudongsudungkynang(self):
         self._is_tudongsudungkynang = not self._is_tudongsudungkynang
-        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_tudongsudungkynang:
             phatam("Bật tự động sử dụng kỹ năng")
         else:
@@ -2122,7 +2118,6 @@ class TacTu:
 
     def battat_is_thucsondao(self):
         self._is_thucsondao = not self._is_thucsondao
-        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_thucsondao:
             phatam("Bật thục sơn đao")
         else:
@@ -2130,7 +2125,6 @@ class TacTu:
 
     def battat_is_chantangcapdo(self):
         self._is_chantangcapdo = not self._is_chantangcapdo
-        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_chantangcapdo:
             phatam("Bật chặn tăng cấp độ")
         else:
@@ -2138,7 +2132,6 @@ class TacTu:
 
     def battat_is_tudongdichuyendiemdanhxungquanh(self):
         self._is_tudongdichuyendiemdanhxungquanh = not self._is_tudongdichuyendiemdanhxungquanh
-        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_tudongdichuyendiemdanhxungquanh:
             phatam("Bật tự động di chuyển điểm đánh xung quanh")
         else:
@@ -2148,7 +2141,6 @@ class TacTu:
 
     def battat_is_tudongbattheosaunhom(self):
         self._is_tudongbattheosaunhom = not self._is_tudongbattheosaunhom
-        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_tudongbattheosaunhom:
             phatam("Bật tự động bật tắt theo sau nhóm")
         else:
@@ -2156,7 +2148,6 @@ class TacTu:
 
     def battat_is_tudongtheosautruongnhom(self):
         self._is_tudongtheosautruongnhom = not self._is_tudongtheosautruongnhom
-        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_tudongtheosautruongnhom:
             phatam("Bật tự động theo sau trưởng nhóm")
         else:
@@ -2164,7 +2155,6 @@ class TacTu:
 
     def battat_is_tudongkhaikhoang(self):
         self._is_tudongkhaikhoang = not self._is_tudongkhaikhoang
-        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_tudongkhaikhoang:
             phatam("Bật tự động khai khoáng")
         else:
@@ -2174,7 +2164,6 @@ class TacTu:
         self._is_tudonggomquai = not self._is_tudonggomquai
         self._is_danggomquai = False
         self._danhsachidquaidagom.clear()
-        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_tudonggomquai:
             phatam("Bật tự động gom quái")
         else:
@@ -2184,7 +2173,6 @@ class TacTu:
         self._is_tudongvebanrac = not self._is_tudongvebanrac
         self._trangthaiveban = 0
 
-        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_tudongvebanrac:
             self._idbandofarmbanrac = self.moitruong.get_idbandohientai()
             phatam("Bật tự động về bán rác")
@@ -2194,7 +2182,6 @@ class TacTu:
 
     def battat_is_tudongdichientruong(self):
         self._is_tudongdichientruong = not self._is_tudongdichientruong
-        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_tudongdichientruong:
             phatam("Bật tự động đi chiến trường")
         else:
@@ -2203,7 +2190,6 @@ class TacTu:
     def battat_is_tudonglamnhiemvusugia(self):
         self._is_tudonglamnhiemvusugia = not self._is_tudonglamnhiemvusugia
         self._trangthailamnhiemvusugia = 0
-        self.luuthietlap(self.moitruong.get_tendoituong())
         if self._is_tudonglamnhiemvusugia:
             phatam("Bật tự động làm nhiệm vụ sứ giả")
         else:
