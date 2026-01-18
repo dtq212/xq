@@ -200,6 +200,8 @@ class TacTu:
         self._is_kynangnhiephonchamsansang = False
         self._thoidiembattathieuungphapbaogannhat = 0.
 
+        self._is_dasudungbaothuvatpham = False
+
     def __del__(self):
         try:
             self.moitruong.action_bochantangcapdo()
@@ -846,17 +848,17 @@ class TacTu:
             if self.moitruong.get_is_nhanvatdachet():
                 return
 
-            is_nhanvatchuasansang = self.moitruong.get_is_nhanvatchuasansang()
-            if is_nhanvatchuasansang:
-                if time.time() - self._thoidiemsudungbaothuvatphamgannhat > 1.:
-                    for baothuvatpham in BAOTHUVATPHAMs:
-                        if self.action_sudungvatphamhanhtrang(baothuvatpham):
-                            self._thoidiemsudungbaothuvatphamgannhat = time.time()
-                            break
-            if not is_nhanvatchuasansang:
-                if time.time() - self._thoidiemsudungbaothuvatphamgannhat < 1. and time.time() - self._thoidiemthietlaptrieuhoithudoilenhgannhat > 1.:
-                    self.moitruong.action_thucthicaulenh("pf 4131.@", delay = 0.)
-                    self._thoidiemthietlaptrieuhoithudoilenhgannhat = time.time()
+            noidungtrochuyen = self.moitruong.get_noidungtrochuyenmoinhat()
+            if noidungtrochuyen and "á»£i lá»‡nh" in noidungtrochuyen:
+                self._is_dasudungbaothuvatpham = True
+
+            if not self._is_dasudungbaothuvatpham and time.time() - self._thoidiemsudungbaothuvatphamgannhat > 1.:
+                for baothuvatpham in BAOTHUVATPHAMs:
+                    if self.action_sudungvatphamhanhtrang(baothuvatpham, delay = 0.):
+                        time.sleep(0.5)
+                        self.moitruong.action_thucthicaulenh("pf 4131.@", delay = 0.)
+                        self._thoidiemsudungbaothuvatphamgannhat = time.time()
+                        break
 
             diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
 

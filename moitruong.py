@@ -1,6 +1,7 @@
 import ctypes
 import random
 import time
+import traceback
 
 import pymem
 import win32gui
@@ -586,12 +587,6 @@ class MoiTruong:
             return False
 
         return read_int(self.tientrinh, x + 0x23C + 0x16C * y)
-
-    def get_noidungtrochuyengannhat(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
-        if not x:
-            return False
-        return read_int(self.tientrinh, x + 0xADFDD8)
 
     def get_idmaupk(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
@@ -2943,11 +2938,11 @@ class MoiTruong:
         self._tennguoichoithanhviennhoms = tennguoichoithanhviennhoms
 
     def action_thietlaphooknoidungtrochuyen(self):
-        if not hasattr(self, "_addr_ptr_noidungchat"):
-            self._addr_ptr_noidungchat = self.tientrinh.allocate(4)
+        if not hasattr(self, "_addr_buffer_noidungchat"):
+            self._addr_buffer_noidungchat = self.tientrinh.allocate(128)
 
         if not hasattr(self, "_addr_hook_chat_script"):
-            self._addr_hook_chat_script = self.tientrinh.allocate(128)
+            self._addr_hook_chat_script = self.tientrinh.allocate(256)
 
         HOOK_OFFSET = 0x5964
         addr_at_hook = self.diachixq + HOOK_OFFSET
@@ -2957,38 +2952,41 @@ class MoiTruong:
 
         asm_script = f"""
             pushad
-            mov eax, ebp
-            mov [{self._addr_ptr_noidungchat}], eax
+            mov esi, ebp
+            mov edi, {self._addr_buffer_noidungchat}
+            mov ecx, 128
+        loop_copy:
+            mov al, byte ptr [esi]
+            mov byte ptr [edi], al
+            test al, al
+            jz end_copy
+            inc esi
+            inc edi
+            dec ecx
+            jnz loop_copy
+            mov byte ptr [edi], 0
+        end_copy:
             popad
-
             mov ecx, [edx + 0xADFDD8]
-
             push {addr_return}
             ret
         """
 
         encoding, count = ks.asm(asm_script)
         if not encoding:
-            raise Exception("Lỗi biên dịch ASM với Keystone")
+            raise Exception("Lỗi compile ASM Keystone")
 
         write_bytes(self.tientrinh, self._addr_hook_chat_script, bytes(encoding), len(encoding))
 
         relative_offset = self._addr_hook_chat_script - (addr_at_hook + 5)
-
-        patch_bytes = b'\xE9' + relative_offset.to_bytes(4, byteorder = 'little', signed = True) + b'\x90'
-
+        patch_bytes = b"\xE9" + relative_offset.to_bytes(4, byteorder = "little", signed = True) + b"\x90"
         write_bytes(self.tientrinh, addr_at_hook, patch_bytes, len(patch_bytes))
 
-        print(f"Đã hook chat tại {hex(addr_at_hook)} -> script tại {hex(self._addr_hook_chat_script)}")
+        print(f"Hook Deep Copy OK: {hex(addr_at_hook)} -> Script {hex(self._addr_hook_chat_script)} -> Buffer {hex(self._addr_buffer_noidungchat)}")
+
         return True
 
     def get_noidungtrochuyenmoinhat(self):
-        if not hasattr(self, "_addr_ptr_noidungchat"):
+        if not hasattr(self, "_addr_buffer_noidungchat"):
             return ""
-
-        ptr_to_chat_string = read_int(self.tientrinh, self._addr_ptr_noidungchat)
-
-        if not ptr_to_chat_string or ptr_to_chat_string == 0:
-            return ""
-
-        return read_string(self.tientrinh, ptr_to_chat_string)
+        return read_string(self.tientrinh, self._addr_buffer_noidungchat, sobytes = 128)
