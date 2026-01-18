@@ -40,6 +40,7 @@ def khoidong_loopdieuphoidichuyen(moitruong, tactu, stop):
 class CuaSo:
     def __init__(self, idcuaso):
         self.moitruong = MoiTruong(idcuaso)
+        self.moitruong.action_thietlaphooknoidungtrochuyen()
         self.tactu = TacTu(self.moitruong)
         self.tennhanvat = False
         self.idnguoichoi = 0  # Thêm biến theo dõi ID người chơi
