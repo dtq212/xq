@@ -230,10 +230,10 @@ class LoopPhu:
         # self.moitruong.set_idvukhi(13)
         # self.moitruong.set_idcanh((7, 7))
 
-        # self.moitruong.set_mauvukhi((1, 1, 1))
-        # self.moitruong.set_mauyphuc((1, 1, 1))
-        # self.moitruong.set_mautoc((1, 1, 1))
-        # self.moitruong.set_maucanh((1, 1, 1, 1, 1, 1))
+        # self.moitruong.set_mauvukhi((1, 1, 255))
+        # self.moitruong.set_mauyphuc((1, 1, 255))
+        # self.moitruong.set_mautoc((1, 1, 255))
+        # self.moitruong.set_maucanh((1, 1, 255, 1, 1, 255))
 
         self.tactu.action_chantangcapdo()
         self.tactu.action_tudongxepchongdo()
