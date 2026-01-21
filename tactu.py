@@ -992,10 +992,10 @@ class TacTu:
             is_ok = True
 
         elif loaikynang == "sudungcaoboctacdan":
-            if self.moitruong.action_timkiemvatphamhanhtrang(CAOBOCTACDAN) and diachimuctieu:
+            if diachimuctieu:
                 iddoituongmuctieu = self.moitruong.get_iddoituong(diachimuctieu)
                 iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(CAOBOCTACDAN)
-                if iddoituongmuctieu > 0 and iddoituongvatpham:
+                if iddoituongmuctieu and iddoituongvatpham:
                     if self.moitruong.action_thucthicaulenh("use {}# for {}#".format(hex(iddoituongvatpham).replace("0x", ""), hex(iddoituongmuctieu).replace("0x", "")), delay = 0.0):
                         self._thoidiemsudungcaoboctacdangannhat = time.time()
                         is_ok = True
@@ -1017,8 +1017,9 @@ class TacTu:
                 is_ok = self.moitruong.action_sudungkynangvitriphudau(*vitrikynang, diachicosothongtinnhanvat2 = diachimuctieu, khoangcachphudau = offset)
 
         if is_ok:
-            self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.1)
-            self._yeucautancong = None
+            if is_ngatdichuyen:
+                self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.1)
+                self._yeucautancong = None
             return True
 
         return False
