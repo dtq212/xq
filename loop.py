@@ -154,8 +154,8 @@ class LoopChinh:
         # print(self.moitruong.get_danhsachhieuungnhanvats())
 
         # if self.moitruong.get_idnguoichoi() == 4599:
-        #     print(self.moitruong.get_danhsachhieuungnhanvats())
-            # print(self.moitruong.get_danhsachvatphamhanhtrang_map().keys())
+        #    print(self.moitruong.get_danhsachhieuungnhanvats())
+        #    print(self.moitruong.get_danhsachvatphamhanhtrang_map().keys())
             # if diachidoituong := self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
             #     print(self.moitruong.get_danhsachhieuungnhanvats(diachidoituong))
            #  self.tactu.action_sudungvatphamhanhtrang("Nháº\xadp MÃ´n Ä\x90Æ°á»\x9dng MÃ´n Ä\x90á»")

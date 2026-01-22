@@ -2585,6 +2585,20 @@ class MoiTruong:
         if self.get_idvukhi() != idvukhi:
             return write_int(self.tientrinh, diachicosothongtinnhanvat + 0x1184, idvukhi)
 
+    def get_idloaivukhi(self, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+
+        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1180)
+
+    def set_idloaivukhi(self, idloaivukhi, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+        
+        if self.get_idloaivukhi() != idloaivukhi:
+            return write_int(self.tientrinh, diachicosothongtinnhanvat + 0x1180, idloaivukhi)
+
+
     def get_idngoaitrang(self, diachicosothongtinnhanvat = None):
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
