@@ -1275,7 +1275,6 @@ class TacTu:
             if self.moitruong.get_khoangcach(diachidoituongdangxemxet) >= 12.: continue
 
             priority = -1
-
             if self.moitruong.get_is_nguoichoi(diachidoituongdangxemxet):
                 idnguoichoidangxemxet = self.moitruong.get_idnguoichoi(diachidoituongdangxemxet)
 
@@ -1284,36 +1283,38 @@ class TacTu:
                 if idnguoichoithanhviennhoms and idnguoichoidangxemxet in idnguoichoithanhviennhoms:
                     priority = 1
 
-                elif idnguoichoidangxemxet in NGUOICHOICUNGBANGs:
+                elif idnguoichoidangxemxet in NHANVATCUNGBANGs:
                     priority = 2
-
-            elif "(TieuLyPhiDao)" in self.moitruong.get_tendoituong(diachidoituongdangxemxet):
-                priority = 3
 
             if priority != -1:
                 danhsachungviens.append((priority, diachidoituongdangxemxet))
 
         danhsachungviens.sort(key = lambda x: x[0])
 
-        danhsachdiachidoituongdangxemxet = [x[1] for x in danhsachungviens]
+        for item in danhsachungviens:
+            priority, diachidoituongdangxemxet = item
 
-        for diachidoituongdangxemxet in danhsachdiachidoituongdangxemxet:
+            is_chi_la_nguoi_cung_bang = (priority == 2)
+
             if self.moitruong.get_is_nhanvatdachet(diachidoituongdangxemxet) and self.moitruong.get_idbandohientai() != BANDO_CHIENTRUONG:
                 idnguoichoi_target = self.moitruong.get_idnguoichoi(diachidoituongdangxemxet)
                 if time.time() - self._thoidiemcaituhoansinh_map.get(idnguoichoi_target, 0) > 5.0:
                     if not diachidoituongcanhoisinh:
                         diachidoituongcanhoisinh = diachidoituongdangxemxet
+                continue
 
             if not diachidoituongcanbufftaytranquyet:
                 if self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCGIAP, HIEUUNGKYNANG_THUCCOT), macdinh = False, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 0):
                     diachidoituongcanbufftaytranquyet = diachidoituongdangxemxet
 
             phantramsinhlucconlai = self.moitruong.get_phantramsinhlucconlai(diachidoituongdangxemxet)
-
             if not diachidoituongcanbommau:
                 if phantramsinhlucconlai < phantramsinhlucthapnhat and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THIEUDOT,), macdinh = False, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 0):
                     phantramsinhlucthapnhat = phantramsinhlucconlai
                     diachidoituongcanbommau = diachidoituongdangxemxet
+
+            if is_chi_la_nguoi_cung_bang:
+                continue
 
             if phantramsinhlucconlai >= 25. or self.moitruong.get_idbandohientai() in BANDOKHONGPKs:
                 if not diachidoituongcanbuffnoicong and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KIMCHAMDOACH,), macdinh = True, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 1):
