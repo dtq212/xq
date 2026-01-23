@@ -665,7 +665,7 @@ class TacTu:
                         dist_curr = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon)
                         for vung in vungdabichiemdongs:
                             if math.dist((mx, my), (vung["x"], vung["y"])) <= 9.0 and dist_curr > math.dist((mx, my), (vung["x"], vung["y"])):
-                                is_boquamuctieuhientai = True;
+                                is_boquamuctieuhientai = True
                                 break
 
             if is_boquamuctieuhientai:
@@ -723,7 +723,7 @@ class TacTu:
                     if self.moitruong.get_is_nhanvattontai(diachicosothongtinnhanvatmuctieuxemxet) and \
                             diachicosothongtinnhanvatmuctieuxemxet != self.moitruong.get_diachicosothongtinnhanvat1() and \
                             self.moitruong.get_idnguoichoi(diachicosothongtinnhanvatmuctieuxemxet) not in NHANVATCUAMINHs:
-                        msg = "{} Có thích khách/GM: {}".format(self.moitruong.get_tendoituong(), tendoituongmuctieuxemxet)
+                        msg = "{} Có thích khách: {}".format(self.moitruong.get_tendoituong(), tendoituongmuctieuxemxet)
                         print(msg)
                         phatam(msg)
                         self._thoidiemphatamanthan = curr_time
@@ -823,7 +823,9 @@ class TacTu:
                 if hp_new <= 5:
                     immortal_new = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TIENTHANVODICH, HIEUUNGKYNANG_KIMCUONGBATHOAIDON), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieuxemxet, is_hieuungcoloi = 1)
 
-                if immortal_curr and (hp_new > 5 or not immortal_new):
+                is_vanmongcoc = self.moitruong.get_tenmonphai() == "vanmongcoc"
+
+                if not is_vanmongcoc and immortal_curr and (hp_new > 5 or not immortal_new):
                     _thuchien_doi_muctieu_vonglap()
                     continue
 
@@ -1252,25 +1254,21 @@ class TacTu:
         if not self._is_tudongsudungkynang: return
         if self.moitruong.get_is_dangclickchuottrai(): return
         if self.moitruong.get_is_nhanvatdachet(): return
-        if self.moitruong.get_is_dangvankhi(): return
 
         idnguoichoi = self.moitruong.get_idnguoichoi()
         diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
         is_muctieulanguoichoi = diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu)
 
-        # --- KHỞI TẠO BIẾN CHÍNH (Ưu tiên Nhóm) ---
         diachidoituongcanhoisinh = None
         diachidoituongcanbufftaytranquyet = None
         diachidoituongcanbommau = None
         phantramsinhlucthapnhat = 100.
 
-        # --- KHỞI TẠO BIẾN DỰ PHÒNG (Ưu tiên Bang/DS NGUOICHOICUNGBANGs) ---
         diachidoituongcanhoisinhduphong = None
         diachidoituongcanbufftaytranquyetduphong = None
         diachidoituongcanbommauduphong = None
         phantramsinhlucthapnhatduphong = 100.
 
-        # Các biến buff khác (chỉ ưu tiên nhóm)
         diachidoituongcanbuffnoicong = None
         diachidoituongcanbuffngoaicong = None
         diachidoituongcanbuffsinhluctoida = None
@@ -1381,6 +1379,7 @@ class TacTu:
             (VITRIKYNANG_CUONGTHETHUAT, "sudungkynanglendongdoi", lambda: diachidoituongcanbuffsinhluctoida, KHOANGCACHSUDUNGKYNANGTAMXA, diachidoituongcanbuffsinhluctoida, True, True),
             (VITRIKYNANG_PHONGANTHUAT, "sudungkynangmuctieu", lambda: diachimuctieu and is_muctieulanguoichoi and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRAMMAC, HIEUUNGKYNANG_CHOANG), False, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0), KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
             (VITRIKYNANG_HUYENQUANGTHIEMANH, "sudungkynangmuctieu", lambda: diachimuctieu and is_muctieulanguoichoi and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_MULOA, HIEUUNGKYNANG_CHOANG), False, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0), KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
+            (VITRIKYNANG_TOANPHONGQUYET, lambda: diachimuctieu and is_muctieulanguoichoi, KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
             (None, "dichuyentiepcantamxa", lambda: diachimuctieu and (self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHONGANTHUAT) or self.moitruong.get_is_kynangsansang(*VITRIKYNANG_HUYENQUANGTHIEMANH)), KHOANGCACHSUDUNGKYNANGTAMXA, None, False, True),
         ]
 
