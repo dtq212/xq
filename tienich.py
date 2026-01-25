@@ -51,6 +51,17 @@ def write_bytes(process, address, value, n_bytes):
 def read_string(process, address, sobytes = 32):
     return process.read_string(address, sobytes, encoding = STRING_ENCODING)
 
+def read_string2(process, address, sobytes = 32):
+    try:
+        raw_data = process.read_bytes(address, sobytes)
+        if b"\x00" in raw_data:
+            raw_data = raw_data.split(b"\x00")[0]
+        text = raw_data.decode("utf-8", errors = "replace")
+        clean_text = re.sub(r"\x1b[a-zA-Z0-9]", "", text)
+        return clean_text
+    except Exception as e:
+        print(f"Lỗi đọc chuỗi tại {address}: {e}")
+        return ""
 
 def write_string(process, address, value):
     return process.write_string(address, value)

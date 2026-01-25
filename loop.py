@@ -119,14 +119,19 @@ class LoopChinh:
                 self.moitruong.action_thucthicaulenh("team + 4599", delay = 0)
                 time.sleep(0.5)
 
-        #if self.moitruong.get_idnguoichoi() == 5747:
-        #  # self.tactu.action_sudungvatphamhanhtrang(TUSAMDON, delay = 5.)
-        #  self.moitruong.action_thucthicaulenh("tallk 291# bonus.1")
+        # if self.moitruong.get_idnguoichoi() == 4676:
+        #  self.moitruong.action_thucthicaulenh("tallk 28d# bonus.1")
         #  time.sleep(0.25)
-        #  self.moitruong.action_thucthicaulenh("tallk 291# bonus.28")
+        #  # self.moitruong.action_thucthicaulenh("tallk 28d# bonus.28")
+        #  self.moitruong.action_thucthicaulenh("tallk 28d# bonus.22")
         #  time.sleep(0.25)
-        #  self.moitruong.action_thucthicaulenh("tallk 291# bonus.29")
+        #  # self.moitruong.action_thucthicaulenh("tallk 28d# bonus.29")
+        #  self.moitruong.action_thucthicaulenh("tallk 28d# bonus.23")
         #  time.sleep(0.25)
+
+        if self.moitruong.get_idnguoichoi() == 4676:
+            for i in range(24 * 4):
+                print(self.moitruong.get_motavatphamhanhtrang(i))
         # x = 10000
         # if self.moitruong.get_idnguoichoi() == 4599:
         #     while True:
