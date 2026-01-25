@@ -885,7 +885,7 @@ class TacTu:
                 return
 
             noidungtrochuyen = self.moitruong.get_noidungtrochuyenmoinhat()
-            if noidungtrochuyen and "á»£i lá»‡nh" in noidungtrochuyen:
+            if noidungtrochuyen and "Đợi lệnh" in noidungtrochuyen:
                 self._is_dasudungbaothuvatpham = True
 
             if not self._is_dasudungbaothuvatpham and time.time() - self._thoidiemsudungbaothuvatphamgannhat > 1.:
@@ -942,10 +942,10 @@ class TacTu:
 
                 if time.time() - self._thoidiemdocsachgannhat > 30.:
                     sachcanhocs = [
-                        "Nháº\xadp MÃ´n Ä\x90Æ°á»\x9dng MÃ´n TÃ¢m",
-                        "Nháº\xadp MÃ´n Láº¡c Tuyáº¿t VÃ´ N",
-                        "Nháº\xadp MÃ´n Ä\x90Æ°á»\x9dng MÃ´n Ä\x90á»",
-                        "Nháº\xadp MÃ´n Cá»±c TÃ\xa0 SÃ¡t PhÃ¡"
+                        "Nhập Môn Đường Môn Tâm Pháp",
+                        "Nhập Môn Lạc Tuyết Vô Ngân",
+                        "Nhập Môn Đường Môn Độc Kinh",
+                        "Nhập Môn Cực Tà Sát Pháp"
                     ]
                     for sachcanhoc in sachcanhocs:
                         if self.action_sudungvatphamhanhtrang(sachcanhoc):
@@ -2823,15 +2823,9 @@ class TacTu:
                 break
 
     def action_tudongbanrac(self):
-        chutiemtaphoa = "Chá»§ Tiá»‡m Táº¡p HÃ³a"
-        chutuulau = "Tá» KhÆ°Æ¡ng"
-        quansuvosongthanh = "QuÃ¢n SÆ° VÃ´ Song ThÃ\xa0nh"
-
-        diachi_npc = self.moitruong.action_timkiemnhanvat(chutiemtaphoa)
+        diachi_npc = self.moitruong.action_timkiemnhanvat(CHUTIEMTAPHOA)
         if not diachi_npc:
-            diachi_npc = self.moitruong.action_timkiemnhanvat(chutuulau)
-            if not diachi_npc:
-                diachi_npc = self.moitruong.action_timkiemnhanvat(quansuvosongthanh)
+            diachi_npc = self.moitruong.action_timkiemnhanvat(CHUTIEMTAPHOA)
             if not diachi_npc:
                 return
 
@@ -3209,7 +3203,7 @@ class TacTu:
         if self.moitruong.get_is_nhanvatdachet() or self.moitruong.get_is_dangvankhi():
             return
 
-        chutiemtaphoa = "Chá»§ Tiá»‡m Táº¡p HÃ³a"
+        chutiemtaphoa = "Chủ Tiệm Tạp Hóa"
 
         if self._trangthaiveban == 0:
             is_dayhanhtrang = self.moitruong.get_is_dayhanhtrang()
@@ -3443,7 +3437,7 @@ class TacTu:
                 if not diachidoituong: break
 
                 tendoituong = self.moitruong.get_tendoituong(diachidoituong)
-                if tendoituong and ("Khoáng" in tendoituong or "KhoÃ¡ng" in tendoituong):
+                if tendoituong and ("Khoáng" in tendoituong):
                     iddoituong = self.moitruong.get_iddoituong(diachidoituong)
                     if iddoituong <= 0: continue
                     if iddoituong in self._idkhoangbiloi_map: continue

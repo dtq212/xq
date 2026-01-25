@@ -1,6 +1,130 @@
 CHUACHONHANVAT = "Chưa chọn nhân vật"
 STRING_ENCODING = "mbcs"
 
+CHUTIEMSUACHUA = "Chủ Tiệm Sửa Chữa"
+CHUTIEMTAPHOA = "Chủ Tiệm Tạp Hóa"
+TANTHUTIENCO = "Tân Thủ Tiên Cô"
+SUGIAMONPHAI = "Sứ Giả Môn Phái"
+XAPHU = "Xa Phu"
+TRUONGQUALAO = "Trương Quả Lão"
+QUANSUVOSONGTHANH = "Quân Sư Vô Song Thành"
+HYDUONG = "Hỷ Đường"
+
+TAITAOHOAN = "Tái Tạo Hoàn"
+TIENTE = "Tiền Tệ"
+CAOCAPBAOTHUTHUCPHAM = "Thức Ăn Bảo Thú Cao Cấp"
+ANXAPHU = "Ân Xá Phù"
+TUKIMBAOHOP = "Tử Kim Bảo Hộp"
+NHANSAM = "Nhân Sâm"
+TIEUPHAPLUCTHACH = "Tiểu Pháp Lực Thạch"
+TIEUHUYETTHACH = "Tiểu Huyết Thạch"
+HONGCAU = "Hồng Cầu"
+HOACAU = "Hoa Cầu"
+LAMCAU = "Lam Cầu"
+HACCAU = "Hắc Cầu"
+SOTRIDUOC = "Sơ Trị Dược"
+GATAYNOEL = "Gà Tây Noel"
+LIXI = "Phong Bao Lì Xì"
+HACLANTHACH = "Hắc Lân Thạch"
+
+SONGTUDUNGCAM = "Song Tử Dũng Cảm"
+SONGTUANHMINH = "Song Tử Anh Minh"
+THANTHUMAYET = "Thần Thú - Ma Yết"
+THANTHUDAN = "Thần Thú - Dần (Giới hạ"
+THANTHUDAN2 = "Thần Thú - Dần (Giới hạn"
+THANTHUCHUOT = "Thần Thú - Chuột"
+THANTHUTHO = "Thần Thú - Thỏ"
+THANTHUTHIN = "Thần Thú - Thìn"
+THANTHUTINHLINHNOEL = "Thần Thú - Tinh Linh Noel"
+THIENTHANTHANH = "Thần Thú - Thỏ"
+
+TIEUDAOTAN = "Tiêu Dao Tán"
+QUYNGUYENDON = "Quy Nguyên Đơn"
+KIMTANGTAN = "Kim Tang Tán"
+KHIMACHDON = "Khí Mạch Đơn"
+XALOITU = " Xá Lợi Tử"
+NGANHANHTU = "Ngân Hạnh Tử"
+TUTINHDON = "Tử Tinh Đơn"
+PHUCSINHDON = "Phục Sinh Đơn"
+
+TUILINHTHACHCAP1 = "Túi Linh Thạch cấp 1"
+TUILINHTHACHCAP2 = "Túi Linh Thạch cấp 2"
+HOATLACHOAN = "Hoạt Lạc Hoàn"
+THIENNGUYENDON = "Thiên Nguyên Đơn"
+
+PHIHANHPHU = "Phi Hành Phù"
+KIMCUONGBATHOAIDON = "Kim Cương Bất Hoại Đơn"
+HOITHANHPHU = "Hồi Thành Phù"
+
+PHITACDOATNGANTRUYENTONG = "Phỉ Tặc-Đoạt Ngân Truyền"
+BACHKHOI = "RBạch Khởi"
+LIEMPHA = "BLiêm Pha"
+BATQUAITRAN = "RBát Quái Trận"
+LAOQUANGIA = "RSứ Giả Nhiệm Vụ"
+AOANHMADAO = "Ảo Ảnh Ma Đạo"
+THIENTHAN = "Thiên Thần"
+ACQUY = "Ác Quỷ"
+SUGIANHIEMVU = "RSứ Giả Nhiệm Vụ"
+
+TUSAMDONTRUNG = "Tử Sâm Đơn - Trung"
+TUSAMDONTHUONG = "Tử Sâm Đơn - Thượng"
+TUSAMDONSO = "Tử Sâm Đơn - Sơ"
+CHENBAC = "Chén Bạc"
+MANHGHEPNGOCBOI = "Mảnh Ghép Ngọc Bội"
+SOCAPDOANTHACH = "Sơ Cấp Đoạn Thạch"
+CAOCAPDOANTHACH = "Cao Cấp Đoạn Thạch"
+
+DOANTHACHDACBIETSOCAPDUOIDAT = "Đoạn Thạch Đặc Biệt Sơ"
+DOANTHACHDACBIETSOCAPHANHTRANG = "Đoạn Thạch Đặc Biệt S"
+DOANTHACHDACBIETCAOCAPDUOIDAT = "Đoạn Thạch Đặc Biệt Ca"
+DOANTHACHDACBIETCAOCAPHANHTRANG = "Đoạn Thạch Đặc Biệt C"
+
+HOPQUAQUYDI = "Hộp Quà Quỷ Dị"
+HOPQUAQUYDICAOCAP = "Hộp Quà Quỷ Dị Cao Cấp"
+PHIEUTROCHOI = "Phiếu Trò Chơi"
+HUYENTHUTHOMENHDON = "Huyễn Thú Thọ Mệnh Đơn"
+HUYENTHUDON = "Huyễn Thú Đơn"
+LACTINHCHITIEN = "Lạc Tinh Chi Tiễn"
+TUINGANBAO = "Túi Ngân Bảo"
+TUINGANLUONG = "Túi Ngân Lượng"
+TUINGANXU = "Túi Ngân Xu"
+CAOBOCTACDAN = "Cao Bộc Tạc Đạn"
+NHIEPHONLINH = "Nhiếp Hồn Linh"
+HUYNHQUANGTHACH = "Huỳnh Quang Thạch"
+CAPCUUDON = "Cấp Cứu Đơn"
+THIENLYHUUTINH = "Thiên Lý Hữu Tình"
+DAIHUYETTHACH = "Đại Huyết Thạch"
+DAIPHAPLUCTHACH = "Đại Pháp Lực Thạch"
+THOHANHCHAU = "Thổ Hành Châu"
+TRANKY = "Trận Kì"
+TUSAMDON = "Tử Sâm Đơn"
+TAYGAU = "Tay Gấu"
+TUIQUAVOSONG = "Túi Quà Vô Song"
+
+TOAILANG = "Toái Lăng"
+TOAISA = "Toái Sa"
+TOAIMABO = "Toái Ma Bố"
+NHIEPHONTHACH = "Nhiếp Hồn Thạch"
+DASOI = "Da Sói"
+LYHON = "Ly Hồn"
+LYPHACH = "Ly Phách"
+DONGVATBIMAO = "Động Vật Bi Mao"
+TANGBAODO = "Tàng Bảo Đồ"
+BUAGIAY = "Bùa Giấy"
+DAUBINH = "Đậu Binh"
+CUONGTHI = "Cương Thi"
+QUYTOT = "Quỷ Tốt"
+THIENBINH = "Thiên Binh"
+
+TENBANDO_TE = "Tề"
+TENBANDO_HAN = "Hàn"
+TENBANDO_TRIEU = "Triệu"
+TENBANDO_NGUY = "Nguỵ"
+TENBANDO_TAN = "Tần"
+TENBANDO_SO = "Sở"
+TENBANDO_YEN = "Yên"
+TENBANDO_CHU = "Chu"
+
 KHOANGCACHNUAMANHINH = 9.
 KHOANGCACHTOANMANHINH = 18.
 
@@ -348,88 +472,7 @@ TRANGTHAIVANKHI_VANKHITHANHCONG = 2
 TRANGTHAIVANKHI_VANKHITHATBAI = 3
 
 SOLUONGVATPHAMHANHTRANGTOIDA = 24 * 4 - 1
-CHUTIEMSUACHUA = "Chá»§ Tiá»‡m Sá»­a Chá»¯a"
-PHITACDOATNGANTRUYENTONG = "Phá»‰ Táº·c-Äoáº¡t NgÃ¢n Truyá»"
-TANTHUTIENCO = "TÃ¢n Thá»§ TiÃªn CÃ´"
-SUGIAMONPHAI = "Sá»© Giáº£ MÃ´n PhÃ¡i"
-XAPHU = "Xa Phu"
-TRUONGQUALAO = "TrÆ°Æ¡ng Quáº£ LÃ£o"
-BACHKHOI = "RBáº¡ch Khá»Ÿi"
-LIEMPHA = "BLiÃªm Pha"
-BATQUAITRAN = "RBÃ¡t QuÃ¡i Tráº­n"
-LAOQUANGIA = "RSá»© Giáº£ Nhiá»‡m Vá»¥"
-AOANHMADAO = "áº¢o áº¢nh Ma Äáº¡o"
-QUANSUVOSONGTHANH = "QuÃ¢n SÆ° VÃ´ Song ThÃ\xa0nh"
-THIENTHAN = "ThiÃªn Tháº§n"
-ACQUY = "Ãc Quá»·"
 
-HYDUONG = "Há»· ÄÆ°á»ng"
-
-TUSAMDONTRUNG = "Tá»­ SÃ¢m ÄÆ¡n - Trung"
-TUSAMDONTHUONG = "Tá»­ SÃ¢m ÄÆ¡n - ThÆ°á»£ng"
-TUSAMDONSO = "Tá»­ SÃ¢m ÄÆ¡n - SÆ¡"
-CHENBAC = "ChÃ©n Báº¡c"
-MANHGHEPNGOCBOI = "Máº£nh GhÃ©p Ngá»c Bá»™i"
-SOCAPDOANTHACH = "SÆ¡ Cáº¥p Äoáº¡n Tháº¡ch"
-CAOCAPDOANTHACH = "Cao Cáº¥p Äoáº¡n Tháº¡ch"
-DOANTHACHDACBIETSOCAPDUOIDAT = "Äoáº¡n Tháº¡ch Äáº·c Biá»‡t SÆ"
-DOANTHACHDACBIETSOCAPHANHTRANG = "Ä\x90oáº¡n Tháº¡ch Ä\x90áº·c Biá»‡t S"
-DOANTHACHDACBIETCAOCAPDUOIDAT = "Äoáº¡n Tháº¡ch Äáº·c Biá»‡t Ca"
-
-DOANTHACHDACBIETCAOCAPHANHTRANG = "Ä\x90oáº¡n Tháº¡ch Ä\x90áº·c Biá»‡t C"
-HUYETLONGCHIEUTHU = "Huyáº¿t Long Chiáº¿u ThÆ°"
-TAITAOHOAN = "TÃ¡i Táº¡o HoÃ n"
-TIENTE = "Tiá»n Tá»‡"
-CAOCAPBAOTHUTHUCPHAM = "Thá»©c Ä‚n Báº£o ThÃº Cao Cáº¥p"
-ANXAPHU = "Ã‚n XÃ¡ PhÃ¹"
-TUKIMBAOHOP = "Tá»­ Kim Báº£o Há»™p"
-TUKIMBAOHOP = TUKIMBAOHOP
-NHANSAM = "NhÃ¢n SÃ¢m"
-TIEUPHAPLUCTHACH = "Tiá»ƒu PhÃ¡p Lá»±c Tháº¡ch"
-TIEUHUYETTHACH = "Tiá»ƒu Huyáº¿t Tháº¡ch"
-HONGCAU = "Há»“ng Cáº§u"
-HOACAU = "Hoa Cáº§u"
-LAMCAU = "Lam Cáº§u"
-HACCAU = "Háº¯c Cáº§u"
-CHANGIABAORUONG = "ChÃ¢n Giáº£ Báº£o RÆ°Æ¡ng"
-SINHKHITAN = "Sinh KhÃ­ TÃ¡n [KhoÃ¡]"
-SOTRIDUOC = "SÆ¡ Trá»‹ DÆ°á»£c"
-MANHGHEPPHAPBAO = "Máº£nh GhÃ©p PhÃ¡p Báº£o"
-MANHGHEPTIENDONG = "Máº£nh GhÃ©p TiÃªn Äá»“ng"
-MANHGHEPNGOCNU = "Máº£nh GhÃ©p Ngá»c Ná»¯"
-VIRUS_BIENCHUNG = "Virus Biáº¿n Chá»§ng"
-PHAMTHIENTHU = "Pháº©m ThiÃªn ThÃº"
-RUONGBAOTHACHTIEU = "RÆ°Æ¡ng Báº£o Tháº¡ch(Tiá»ƒu)"
-RUONGBAOTHACHDAI = "RÆ°Æ¡ng Báº£o Tháº¡ch(Äáº¡i)"
-GATAYNOEL = "GÃ  TÃ¢y Noel"
-LIXI = "Phong Bao LÃ¬ XÃ¬"
-HACLANTHACH = "Háº¯c LÃ¢n Tháº¡ch"
-SONGTUDUNGCAM = "Song Tá»­ DÅ©ng Cáº£m"
-SONGTUANHMINH = "Song Tá»­ Anh Minh"
-THANTHUMAYET = "Tháº§n ThÃº - Ma Yáº¿t"
-THANTHUDAN = "Tháº§n ThÃº - Dáº§n (Giá»›i háº"
-THANTHUDAN2 = "Tháº§n ThÃº - Dáº§n (Giá»›i háº¡"
-THANTHUCHUOT = "Tháº§n ThÃº - Chuá»™t"
-THANTHUTHO = "Tháº§n ThÃº - Thá»"
-THANTHUTHIN = "Tháº§n ThÃº - ThÃ¬n"
-THANTHUTINHLINHNOEL = "Tháº§n ThÃº - Tinh Linh Noel"
-
-TIEUDAOTAN = "TiÃªu Dao TÃ¡n"
-QUYNGUYENDON = "Quy NguyÃªn Ä\x90Æ¡n"
-KIMTANGTAN = "Kim Tang TÃ¡n"
-KHIMACHDON = "KhÃ\xad Máº¡ch Ä\x90Æ¡n"
-XALOITU = " XÃ¡ Lá»£i Tá»\xad"
-NGANHANHTU = "NgÃ¢n Háº¡nh Tá»\xad"
-TUTINHDON = "Tá»\xad Tinh Ä\x90Æ¡n"
-PHUCSINHDON = "Phá»¥c Sinh Ä\x90Æ¡n"
-
-TUILINHTHACHCAP1 = "TÃºi Linh Tháº¡ch cáº¥p 1"
-TUILINHTHACHCAP2 = "TÃºi Linh Tháº¡ch cáº¥p 2"
-HOATLACHOAN = "Hoáº¡t Láº¡c HoÃ n"
-THIENNGUYENDON = "ThiÃªn NguyÃªn ÄÆ¡n"
-
-HOPQUAQUYDI = "Há»™p QuÃ  Quá»· Dá»‹"
-HOPQUAQUYDICAOCAP = "Há»™p QuÃ  Quá»· Dá»‹ Cao Cáº¥p"
 
 PHELIEMPHA = 66
 PHEBACHKHOI = 82
@@ -528,10 +571,6 @@ GOs = {
     (1, -1): 8,
 }
 
-PHIHANHPHU = "Phi HÃ nh PhÃ¹"
-KIMCUONGBATHOAIDON = "Kim CÆ°Æ¡ng Báº¥t Hoáº¡i Ä\x90Æ¡n"
-HOITHANHPHU = "Há»“i ThÃ nh PhÃ¹"
-
 BANDO_TEQUOC = 10
 BANDO_HANQUOC = 20
 BANDO_TRIEUQUOC = 30
@@ -542,38 +581,51 @@ BANDO_YENQUOC = 70
 BANDO_CULOC = 131
 BANDO_MADAPHO = 211
 
-TENBANDO_TE = "Tá»"
-TENBANDO_HAN = "HÃ n"
-TENBANDO_TRIEU = "Triá»‡u"
-TENBANDO_NGUY = "Nguá»µ"
-TENBANDO_TAN = "Táº§n"
-TENBANDO_SO = "Sá»Ÿ"
-TENBANDO_YEN = "YÃªn"
-TENBANDO_CHU = "Chu"
+BAOTHUVATPHAMs = (THANTHUTINHLINHNOEL, SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN, THANTHUMAYET, THANTHUDAN, THANTHUDAN2, THANTHUCHUOT, THIENTHAN, ACQUY)
+
+TENMUCTIEUKHONGTANCONGs = (
+    THANTHUTINHLINHNOEL, SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN,
+    THANTHUMAYET, THANTHUDAN, THANTHUDAN2, THIENTHAN, ACQUY,
+    "Ôn Thần (cấp 105)", "Đỗ Độc (cấp 116)", "Sơn Nhung Tộc Gian Tế (cấ"
+)
+
+TENNGUOICHOICUNGBANGs = ("Libra", "Pe.Na", "TiểuBạch", "Gái Nhảy", "GiàLàng", "Già Làng", "Seraphine", "Nhí Nhố", "(BL)KFC", "Yũn")
+
+VATPHAMKHONGNHATs = (
+    "Chuôi Đao", "Vỏ Kiếm", "Phá Cựu Khôi Giáp",
+    "Phi Hành Phiến", "Phá Bố Y", HUYNHQUANGTHACH
+)
+
+VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUSAMDON, CAPCUUDON, TOAILANG)
+
+VATPHAMKHONGBANs = (
+    *VATPHAMTUDONGNHATs, *BAOTHUVATPHAMs,
+    TIEUDAOTAN, QUYNGUYENDON, KIMTANGTAN, KHIMACHDON, XALOITU, NGANHANHTU,
+    TUTINHDON, PHUCSINHDON, CAOCAPBAOTHUTHUCPHAM, ANXAPHU, TIEUHUYETTHACH,
+    TIEUPHAPLUCTHACH, DAIHUYETTHACH, DAIPHAPLUCTHACH, NHANSAM, TAITAOHOAN,
+    HOITHANHPHU, THIENLYHUUTINH, PHIHANHPHU, THOHANHCHAU, NHIEPHONLINH, CAOBOCTACDAN
+)
+
+VATPHAMTUDONGNHATFARMs = (
+    "Kiếm", "Đao", "Mâu", "Thủ", "Thương", "Sáo", "Bổng", " Y", "Giáp",
+    "Côn", "Kích", " Bào", " Lý", " Mạo", "Phi Phong", " Nguyệt",
+    "Quan", " Bào", " Liên", " Quần", " Hài", " Nhẫn", " Tiêu",
+    "Đầu Cân", "Xú Diêm", " Đầu Cân", "Nghênh Phong Trảm"
+)
+
+VATPHAMXEPCHONGs = tuple()
 
 BANDOKHONGPKs = (BANDO_TANTHUTHON, BANDO_CHU, BANDO_THUCSON, BANDO_VANMONGCOC, BANDO_TEQUOC, BANDO_HANQUOC, BANDO_TRIEUQUOC, BANDO_NGUYQUOC, BANDO_TANQUOC, BANDO_SOQUOC, BANDO_YENQUOC)
 
 
-TEQUOC = [(127, 87, 10), (137, 96, 10), (152, 104, 10), (164, 104, 10), (170, 84, 10), (148, 86, 10), (156, 61, 10), (171, 82, 10), (181, 96, 10), (198, 87, 10), (212, 82, 10), (169, 107, 10), (189, 125, 10), (226, 103, 10), (249, 95, 10), (220, 134, 10), (202, 154, 10), (202, 157, 10), (173, 177, 10), (166, 194, 10), (131, 213, 10), (133, 206, 10), (160, 203, 10), (171, 243, 10), (183, 196, 10), (190, 233, 10), (205, 234, 10), (227, 241, 10), (235, 215, 10), (198, 168, 10), (236, 174, 10), (247, 200, 10),
-          (268, 138, 10), (312, 119, 10), (297, 131, 10), (324, 142, 10), (338, 172, 10), (291, 195, 10), (256, 192, 10), (266, 159, 10)]
+TEQUOC = [(127, 87, 10), (137, 96, 10), (152, 104, 10), (164, 104, 10), (170, 84, 10), (148, 86, 10), (156, 61, 10), (171, 82, 10), (181, 96, 10), (198, 87, 10), (212, 82, 10), (169, 107, 10), (189, 125, 10), (226, 103, 10), (249, 95, 10), (220, 134, 10), (202, 154, 10), (202, 157, 10), (173, 177, 10), (166, 194, 10), (131, 213, 10), (133, 206, 10), (160, 203, 10), (171, 243, 10), (183, 196, 10), (190, 233, 10), (205, 234, 10), (227, 241, 10), (235, 215, 10), (198, 168, 10), (236, 174, 10), (247, 200, 10), (268, 138, 10), (312, 119, 10), (297, 131, 10), (324, 142, 10), (338, 172, 10), (291, 195, 10), (256, 192, 10), (266, 159, 10)]
 HANQUOC = [(110, 106, 20), (134, 122, 20), (156, 136, 20), (174, 153, 20), (150, 168, 20), (112, 193, 20), (166, 190, 20), (192, 183, 20), (233, 209, 20), (262, 182, 20), (239, 165, 20), (221, 138, 20), (252, 147, 20), (255, 112, 20), (274, 134, 20), (278, 113, 20), (274, 134, 20), (255, 112, 20), (252, 147, 20), (221, 138, 20), (239, 165, 20), (262, 182, 20), (233, 209, 20), (192, 183, 20), (166, 190, 20), (112, 193, 20), (150, 168, 20), (174, 153, 20), (156, 136, 20), (134, 122, 20), (110, 106, 20)]
-TRIEUQUOC = [(112, 108, 30), (64, 140, 30), (103, 159, 30), (134, 178, 30), (143, 115, 30), (176, 140, 30), (209, 156, 30), (243, 143, 30), (261, 115, 30), (257, 148, 30), (277, 162, 30), (308, 178, 30), (286, 192, 30), (254, 208, 30), (230, 226, 30), (214, 207, 30), (171, 206, 30), (163, 225, 30), (171, 206, 30), (214, 207, 30), (230, 226, 30), (254, 208, 30), (286, 192, 30), (308, 178, 30), (277, 162, 30), (257, 148, 30), (261, 115, 30), (243, 143, 30), (209, 156, 30), (176, 140, 30), (143, 115, 30),
-             (134, 178, 30), (103, 159, 30), (64, 140, 30), (112, 108, 30)]
-NGUYQUOC = [(254, 90, 40), (218, 116, 40), (178, 105, 40), (187, 132, 40), (195, 161, 40), (236, 179, 40), (258, 216, 40), (231, 206, 40), (204, 189, 40), (166, 178, 40), (146, 160, 40), (131, 131, 40), (119, 104, 40), (94, 135, 40), (117, 150, 40), (87, 177, 40), (130, 215, 40), (87, 177, 40), (117, 150, 40), (94, 135, 40), (119, 104, 40), (131, 131, 40), (146, 160, 40), (166, 178, 40), (204, 189, 40), (231, 206, 40), (258, 216, 40), (236, 179, 40), (195, 161, 40), (187, 132, 40), (178, 105, 40),
-            (218, 116, 40), (254, 90, 40)]
-TANQUOC = [(136, 81, 50), (161, 92, 50), (185, 53, 50), (206, 71, 50), (169, 92, 50), (188, 108, 50), (202, 123, 50), (223, 125, 50), (235, 113, 50), (253, 127, 50), (229, 139, 50), (213, 165, 50), (185, 177, 50), (174, 194, 50), (143, 204, 50), (171, 237, 50), (202, 197, 50), (218, 236, 50), (239, 235, 50), (254, 191, 50), (285, 166, 50), (248, 161, 50), (285, 166, 50), (254, 191, 50), (239, 235, 50), (218, 236, 50), (202, 197, 50), (171, 237, 50), (143, 204, 50), (174, 194, 50), (185, 177, 50),
-           (213, 165, 50), (229, 139, 50), (253, 127, 50), (235, 113, 50), (223, 125, 50), (202, 123, 50), (188, 108, 50), (169, 92, 50), (206, 71, 50), (185, 53, 50), (161, 92, 50), (136, 81, 50)]
+TRIEUQUOC = [(112, 108, 30), (64, 140, 30), (103, 159, 30), (134, 178, 30), (143, 115, 30), (176, 140, 30), (209, 156, 30), (243, 143, 30), (261, 115, 30), (257, 148, 30), (277, 162, 30), (308, 178, 30), (286, 192, 30), (254, 208, 30), (230, 226, 30), (214, 207, 30), (171, 206, 30), (163, 225, 30), (171, 206, 30), (214, 207, 30), (230, 226, 30), (254, 208, 30), (286, 192, 30), (308, 178, 30), (277, 162, 30), (257, 148, 30), (261, 115, 30), (243, 143, 30), (209, 156, 30), (176, 140, 30), (143, 115, 30), (134, 178, 30), (103, 159, 30), (64, 140, 30), (112, 108, 30)]
+NGUYQUOC = [(254, 90, 40), (218, 116, 40), (178, 105, 40), (187, 132, 40), (195, 161, 40), (236, 179, 40), (258, 216, 40), (231, 206, 40), (204, 189, 40), (166, 178, 40), (146, 160, 40), (131, 131, 40), (119, 104, 40), (94, 135, 40), (117, 150, 40), (87, 177, 40), (130, 215, 40), (87, 177, 40), (117, 150, 40), (94, 135, 40), (119, 104, 40), (131, 131, 40), (146, 160, 40), (166, 178, 40), (204, 189, 40), (231, 206, 40), (258, 216, 40), (236, 179, 40), (195, 161, 40), (187, 132, 40), (178, 105, 40), (218, 116, 40), (254, 90, 40)]
+TANQUOC = [(136, 81, 50), (161, 92, 50), (185, 53, 50), (206, 71, 50), (169, 92, 50), (188, 108, 50), (202, 123, 50), (223, 125, 50), (235, 113, 50), (253, 127, 50), (229, 139, 50), (213, 165, 50), (185, 177, 50), (174, 194, 50), (143, 204, 50), (171, 237, 50), (202, 197, 50), (218, 236, 50), (239, 235, 50), (254, 191, 50), (285, 166, 50), (248, 161, 50), (285, 166, 50), (254, 191, 50), (239, 235, 50), (218, 236, 50), (202, 197, 50), (171, 237, 50), (143, 204, 50), (174, 194, 50), (185, 177, 50), (213, 165, 50), (229, 139, 50), (253, 127, 50), (235, 113, 50), (223, 125, 50), (202, 123, 50), (188, 108, 50), (169, 92, 50), (206, 71, 50), (185, 53, 50), (161, 92, 50), (136, 81, 50)]
 SOQUOC = [(105, 167, 60), (116, 130, 60), (141, 158, 60), (140, 118, 60), (168, 128, 60), (159, 96, 60), (193, 107, 60), (176, 67, 60), (217, 58, 60), (214, 92, 60), (213, 113, 60), (236, 134, 60), (259, 156, 60), (299, 172, 60), (324, 156, 60), (312, 125, 60), (296, 105, 60), (275, 90, 60), (229, 92, 60), (220, 61, 60), (203, 100, 60), (175, 70, 60), (180, 108, 60), (182, 127, 60), (155, 98, 60), (158, 143, 60), (136, 120, 60), (116, 122, 60), (85, 153, 60), (109, 162, 60), (133, 163, 60)]
 
-YENQUOC = [
-    (355, 147, 70), (331, 129, 70), (327, 165, 70), (307, 148, 70), (291, 178, 70),
-    (293, 197, 70), (270, 180, 70), (240, 158, 70), (221, 137, 70), (224, 78, 70),
-    (205, 53, 70), (184, 92, 70), (187, 133, 70), (160, 146, 70), (129, 173, 70),
-    (105, 193, 70), (111, 163, 70), (139, 145, 70), (128, 144, 70), (110, 141, 70),
-    (88, 133, 70), (74, 127, 70), (69, 130, 70), (50, 151, 70), (84, 115, 70),
-    (106, 102, 70), (129, 98, 70), (142, 88, 70), (139, 89, 70), (133, 98, 70),
-    (102, 98, 70), (82, 119, 70)
-]
+YENQUOC = [ (355, 147, 70), (331, 129, 70), (327, 165, 70), (307, 148, 70), (291, 178, 70), (293, 197, 70), (270, 180, 70), (240, 158, 70), (221, 137, 70), (224, 78, 70), (205, 53, 70), (184, 92, 70), (187, 133, 70), (160, 146, 70), (129, 173, 70), (105, 193, 70), (111, 163, 70), (139, 145, 70), (128, 144, 70), (110, 141, 70), (88, 133, 70), (74, 127, 70), (69, 130, 70), (50, 151, 70), (84, 115, 70), (106, 102, 70), (129, 98, 70), (142, 88, 70), (139, 89, 70), (133, 98, 70), (102, 98, 70), (82, 119, 70)]
 
 TRIEUTRUONGTHANH2 = [(52, 82, 32), (63, 92, 32), (76, 104, 32), (90, 112, 32), (104, 122, 32), (116, 133, 32), (129, 142, 32), (144, 150, 32), (162, 164, 32), (176, 156, 32), (191, 145, 32), (206, 136, 32), (218, 126, 32), (230, 118, 32)]
 TANTRUONGTHANH2 = [(232, 111, 52), (219, 102, 52), (205, 90, 52), (192, 80, 52), (176, 81, 52), (162, 94, 52), (149, 106, 52), (134, 116, 52), (118, 128, 52), (98, 141, 52), (84, 131, 52), (67, 121, 52), (51, 106, 52), (29, 92, 52)]
@@ -586,15 +638,13 @@ LOANDAO1 = [(92, 122, 321), (110, 108, 321), (124, 95, 321), (145, 109, 321), (1
 LOANDAO2 = [(46, 98, 322), (65, 84, 322), (56, 65, 322), (70, 52, 322), (86, 63, 322), (129, 31, 322), (165, 59, 322), (143, 75, 322), (124, 63, 322), (107, 76, 322), (127, 93, 322), (142, 103, 322), (184, 74, 322), (142, 104, 322), (127, 95, 322), (104, 111, 322), (85, 126, 322), (67, 112, 322), (84, 99, 322), (67, 85, 322)]
 
 TANTHUTHON = [(174, 119, 1), (212, 90, 1), (229, 99, 1), (210, 143, 1), (240, 133, 1), (285, 127, 1), (307, 150, 1), (241, 176, 1), (213, 189, 1), (214, 218, 1), (244, 236, 1), (295, 198, 1), (315, 175, 1), (273, 192, 1), (245, 203, 1)]
-BACHMATRANG = [(115, 46, 264), (92, 67, 264), (69, 95, 264), (88, 107, 264), (115, 132, 264), (128, 91, 264), (149, 73, 264), (172, 71, 264), (197, 83, 264), (213, 98, 264), (180, 146, 264), (149, 172, 264), (44, 98, 142), (73, 116, 142), (105, 73, 142), (140, 50, 142), (143, 71, 142), (161, 93, 142), (178, 91, 142), (197, 110, 142), (215, 125, 142), (238, 114, 142), (249, 112, 142), (225, 128, 142), (198, 141, 142), (164, 159, 142), (151, 161, 142), (177, 129, 142), (153, 103, 142), (116, 95, 142),
-               (88, 108, 142), (69, 113, 142)]
+BACHMATRANG = [(115, 46, 264), (92, 67, 264), (69, 95, 264), (88, 107, 264), (115, 132, 264), (128, 91, 264), (149, 73, 264), (172, 71, 264), (197, 83, 264), (213, 98, 264), (180, 146, 264), (149, 172, 264), (44, 98, 142), (73, 116, 142), (105, 73, 142), (140, 50, 142), (143, 71, 142), (161, 93, 142), (178, 91, 142), (197, 110, 142), (215, 125, 142), (238, 114, 142), (249, 112, 142), (225, 128, 142), (198, 141, 142), (164, 159, 142), (151, 161, 142), (177, 129, 142), (153, 103, 142), (116, 95, 142), (88, 108, 142), (69, 113, 142)]
 TUONGLANG = [(140, 56, 21), (158, 59, 21), (174, 63, 21), (169, 76, 21), (178, 81, 21), (180, 97, 21), (178, 108, 21), (164, 110, 21), (154, 105, 21), (146, 101, 21), (128, 96, 21), (101, 103, 21), (80, 100, 21), (71, 97, 21), (71, 78, 21), (82, 66, 21), (110, 71, 21), (117, 77, 21), (123, 95, 21), (95, 108, 21), (72, 105, 21), (107, 117, 21), (128, 132, 21), (154, 128, 21)]
 QUELANG = [(129, 47, 242), (132, 68, 242), (117, 77, 242), (124, 92, 242), (127, 104, 242), (126, 119, 242), (105, 122, 242), (88, 112, 242), (70, 90, 242), (54, 84, 242), (58, 78, 242), (75, 75, 242), (87, 62, 242), (92, 65, 242), (107, 63, 242), (125, 56, 242), (131, 53, 242)]
 MUCDA = [(57, 90, 241), (76, 60, 241), (100, 48, 241), (125, 43, 241), (132, 49, 241), (134, 77, 241), (142, 60, 241), (155, 64, 241), (161, 91, 241), (152, 102, 241), (137, 116, 241), (109, 125, 241), (100, 130, 241), (101, 113, 241), (84, 105, 241), (74, 95, 241), (93, 93, 241), (94, 82, 241)]
 
 RANHGIOIDAMLAY = [(89, 94, 163), (76, 87, 163), (67, 77, 163), (79, 61, 163), (90, 36, 163), (91, 40, 163), (92, 55, 163), (103, 63, 163), (98, 71, 163), (112, 65, 163), (125, 64, 163), (130, 74, 163), (113, 86, 163), (100, 93, 163), (89, 97, 163)]
-MALANGDAO = [(245, 193, 141), (242, 174, 141), (230, 147, 141), (217, 130, 141), (216, 160, 141), (222, 178, 141), (223, 200, 141), (208, 199, 141), (202, 174, 141), (184, 156, 141), (171, 147, 141), (163, 149, 141), (147, 148, 141), (130, 137, 141), (124, 124, 141), (114, 113, 141), (96, 101, 141), (73, 93, 141), (69, 87, 141), (73, 69, 141), (88, 68, 141), (105, 75, 141), (123, 91, 141), (138, 103, 141), (147, 117, 141), (158, 120, 141), (164, 108, 141), (147, 85, 141), (135, 75, 141), (118, 67, 141),
-             (110, 52, 141), (107, 48, 141)]
+MALANGDAO = [(245, 193, 141), (242, 174, 141), (230, 147, 141), (217, 130, 141), (216, 160, 141), (222, 178, 141), (223, 200, 141), (208, 199, 141), (202, 174, 141), (184, 156, 141), (171, 147, 141), (163, 149, 141), (147, 148, 141), (130, 137, 141), (124, 124, 141), (114, 113, 141), (96, 101, 141), (73, 93, 141), (69, 87, 141), (73, 69, 141), (88, 68, 141), (105, 75, 141), (123, 91, 141), (138, 103, 141), (147, 117, 141), (158, 120, 141), (164, 108, 141), (147, 85, 141), (135, 75, 141), (118, 67, 141), (110, 52, 141), (107, 48, 141)]
 CULOC = [(64, 109, 131), (56, 89, 131), (76, 68, 131), (103, 53, 131), (120, 69, 131), (98, 91, 131), (90, 116, 131), (90, 130, 131), (98, 93, 131), (122, 118, 131), (160, 105, 131), (150, 64, 131), (130, 40, 131), (102, 52, 131)]
 MADAPHO = [(144, 141, 211), (103, 142, 211), (80, 113, 211), (78, 76, 211), (110, 70, 211), (117, 90, 211), (131, 97, 211), (118, 64, 211), (155, 61, 211), (182, 85, 211), (188, 119, 211), (168, 138, 211)]
 KENHTRINHQUOC1 = [(106, 101, 151), (90, 87, 151), (79, 77, 151), (76, 66, 151), (63, 53, 151), (74, 40, 151), (88, 36, 151), (101, 48, 151), (106, 51, 151), (83, 33, 151), (67, 46, 151), (63, 56, 151), (79, 65, 151), (83, 73, 151), (77, 81, 151), (93, 91, 151), (103, 100, 151)]
@@ -718,57 +768,6 @@ DICHUYENTANTHUTIENCO_MAP = {
     ],
 }
 
-TOAILANG = "ToÃ¡i LÄƒng"
-TOAISA = "ToÃ¡i Sa"
-TOAIMABO = "ToÃ¡i Ma Bá»‘"
-NHIEPHONTHACH = "Nhiáº¿p Há»“n Tháº¡ch"
-DASOI = "Da SÃ³i"
-LYHON = "Ly Há»“n"
-LYPHACH = "Ly PhÃ¡ch"
-DONGVATBIMAO = "Äá»™ng Váº­t Bi Mao"
-TANGBAODO = "TÃ ng Báº£o Äá»“"
-BUAGIAY = "BÃ¹a Giáº¥y"
-
-DAUBINH = "Äáº­u Binh"
-CUONGTHI = "CÆ°Æ¡ng Thi"
-QUYTOT = "Quá»· Tá»‘t"
-THIENBINH = "ThiÃªn Binh"
-THIENTHANTHANH = "Tháº§n ThÃº - Thá»"
-TRANKY = "Tráº­n KÃ¬"
-TUSAMDON = "Tá»­ SÃ¢m ÄÆ¡n"
-TAYGAU = "Tay Gáº¥u"
-TUIQUAVOSONG = "TÃºi QuÃ  VÃ´ Song"
-
-SUGIANHIEMVU = "RSá»© Giáº£ Nhiá»‡m Vá»¥"
-PHIEUTROCHOI = "Phiáº¿u TrÃ² ChÆ¡i"
-HUYENTHUTHOMENHDON = "Huyá»…n ThÃº Thá» Má»‡nh ÄÆ¡n"
-HUYENTHUDON = "Huyá»…n ThÃº ÄÆ¡n"
-LACTINHCHITIEN = "Láº¡c Tinh Chi Tiá»…n"
-TUINGANBAO = "TÃºi NgÃ¢n Báº£o"
-TUINGANLUONG = "TÃºi NgÃ¢n LÆ°á»£ng"
-TUINGANXU = "TÃºi NgÃ¢n Xu"
-CAOBOCTACDAN = "Cao Bá»™c Táº¡c Ä\x90áº¡n"
-NHIEPHONLINH = "Nhiáº¿p Há»“n Linh"
-
-HUYNHQUANGTHACH = "Huá»³nh Quang Tháº¡ch"
-
-CAPCUUDON = "Cáº¥p Cá»©u ÄÆ¡n"
-THIENLYHUUTINH = "ThiÃªn LÃ½ Há»¯u TÃ¬nh"
-DAIHUYETTHACH = "Ä\x90áº¡i Huyáº¿t Tháº¡ch"
-DAIPHAPLUCTHACH = "Ä\x90áº¡i PhÃ¡p Lá»±c Tháº¡ch"
-THOHANHCHAU = "Thá»• HÃ\xa0nh ChÃ¢u"
-BAOTHUVATPHAMs = (THANTHUTINHLINHNOEL, SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN, THANTHUMAYET, THANTHUDAN, THANTHUDAN2, THANTHUCHUOT, THIENTHAN, ACQUY)
-TENMUCTIEUKHONGTANCONGs = (THANTHUTINHLINHNOEL, SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN, THANTHUMAYET, THANTHUDAN, THANTHUDAN2, THIENTHAN, ACQUY, "Ã”n Tháº§n (cáº¥p 105)", "Ä\x90á»— Ä\x90á»™c (cáº¥p 116)", "SÆ¡n Nhung Tá»™c Gian Táº¿ (cáº¥")
-TENNGUOICHOICUNGBANGs = ("Libra", "Pe.Na", "Tiá»ƒuBáº¡ch", "GÃ¡iÂ Nháº£y", "GiÃ LÃ ng", "GiÃ Â LÃ ng", "Seraphine", "NhÃ­Â Nhá»‘", "(BL)KFC", "YÅ©n")
-
-VATPHAMKHONGNHATs = ("ChuÃ´i Äao", "Vá» Kiáº¿m", "PhÃ¡ Cá»±u KhÃ´i GiÃ¡p", "Phi HÃ nh Phiáº¿n", "PhÃ¡ Bá»‘ Y", HUYNHQUANGTHACH)
-VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUSAMDON, CAPCUUDON, TOAILANG)
-VATPHAMKHONGBANs = (*VATPHAMTUDONGNHATs, *BAOTHUVATPHAMs, TIEUDAOTAN, QUYNGUYENDON, KIMTANGTAN, KHIMACHDON, XALOITU, NGANHANHTU, TUTINHDON, PHUCSINHDON, CAOCAPBAOTHUTHUCPHAM, ANXAPHU, TIEUHUYETTHACH, TIEUPHAPLUCTHACH, DAIHUYETTHACH, DAIPHAPLUCTHACH, NHANSAM, TAITAOHOAN, HOITHANHPHU, THIENLYHUUTINH, PHIHANHPHU, THOHANHCHAU, NHIEPHONLINH, CAOBOCTACDAN, )
-VATPHAMTUDONGNHATFARMs = ("Kiáº¿m", "Äao", "MÃ¢u", "Thá»§", "ThÆ°Æ¡ng", "SÃ¡o", "Bá»•ng", " Y", "GiÃ¡p", "CÃ´n", "KÃ­ch", " BÃ o", " LÃ½", " Máº¡o", "Phi Phong", " Nguyá»‡t", "Quan", " BÃ o", " LiÃªn", " Quáº§n", " HÃ i", " Nháº«n", " TiÃªu", "Äáº§u CÃ¢n", "XÝ DiÔm", " Äáº§u CÃ¢n", "NghÃªnh Phong Tráº£m")
-VATPHAMXEPCHONGs = tuple()
-
-VOTUHOCNHANs = ("VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 30)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 40)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 50)", "VÃ´ Tá»± Há»\x8dc NhÃ¢n (cáº¥p 60)",)
-
 LOAIVUKHI_KIEM = 62
 LOAIVUKHI_AMKHI = 69
 
@@ -789,7 +788,4 @@ BANDOCOMO = 395
 NHANVATTODOITUDONGs = (4599, )
 NHANVATTODOICHIENTRUONGS = (3236, )
 NHANVATCUAMINHs = (3942, 4137, 2855, 2483, 2492, 2574, 3813, 3814, 4599, 4642, 4676, 2303)
-NHANVATCUNGBANGs = (1337, 
-     19, 26, 27, 159, 1258, 395, 536, 39, 803, 528, 290, 38, 54, 436, 160, 62, 68, 434, 217, 56, 140,
-    435, 1129, 53, 65, 163, 807, 1950, 37, 126, 42, 1860, 100, 2069, 1766, 655, 122, 36, 1369, 
-    592, 1095, 538, 2478, 2834,  807, 2331, 3943, 64, 3941, 682, 4005, 654, 600, 2338, 42, 1741, 42, 2962, 13, 121, 4599, 2303, 4676, 404, 1150, *NHANVATTODOITUDONGs)
+NHANVATCUNGBANGs = (*NHANVATTODOITUDONGs, 1337, 19, 26, 27, 159, 1258, 395, 536, 39, 803, 528, 290, 38, 54, 436, 160, 62, 68, 434, 217, 56, 140, 435, 1129, 53, 65, 163, 807, 1950, 37, 126, 42, 1860, 100, 2069, 1766, 655, 122, 36, 1369, 592, 1095, 538, 2478, 2834,  807, 2331, 3943, 64, 3941, 682, 4005, 654, 600, 2338, 42, 1741, 42, 2962, 13, 121, 4599, 2303, 4676, 404, 1150, )

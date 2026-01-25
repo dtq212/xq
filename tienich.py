@@ -6,12 +6,8 @@ import sys
 import threading
 
 import gtts
-import playsound
 import pygame
 import unicodedata
-
-from hangso import STRING_ENCODING
-
 
 def to_hex(val, nbits):
   return hex((val + (1 << nbits)) % (1 << nbits))
@@ -48,19 +44,43 @@ def write_bytes(process, address, value, n_bytes):
     return process.write_bytes(address, value, n_bytes)
 
 
-def read_string(process, address, sobytes = 32):
-    return process.read_string(address, sobytes, encoding = STRING_ENCODING)
-
-def read_string2(process, address, sobytes = 32):
+def read_string(process, address, max_length = 256):
     try:
-        raw_data = process.read_bytes(address, sobytes)
-        if b"\x00" in raw_data:
-            raw_data = raw_data.split(b"\x00")[0]
-        text = raw_data.decode("utf-8", errors = "replace")
-        clean_text = re.sub(r"\x1b[a-zA-Z0-9]", "", text)
-        return clean_text
-    except Exception as e:
-        print(f"Lỗi đọc chuỗi tại {address}: {e}")
+        buff = process.read_bytes(address, max_length)
+        if b'\x00' in buff:
+            buff = buff.split(b'\x00')[0]
+        text = buff.decode('utf-8', errors = 'replace')
+        clean_text = re.sub(r'\x1b[a-zA-Z0-9]', '', text)
+        return clean_text.strip()
+
+    except Exception:
+        return ""
+
+def read_string(process, address, max_length = 2048):
+    try:
+        initial_size = 256
+        if initial_size > max_length: initial_size = max_length
+        buffer = process.read_bytes(address, initial_size)
+        null_index = buffer.find(b'\x00')
+        if null_index != -1:
+            raw_data = buffer[:null_index]
+        else:
+            current_offset = initial_size
+            raw_data = buffer
+
+            while len(raw_data) < max_length:
+                try:
+                    chunk = process.read_bytes(address + current_offset, 128)
+                    if b'\x00' in chunk:
+                        raw_data += chunk[:chunk.index(b'\x00')]
+                        break
+                    raw_data += chunk
+                    current_offset += 128
+                except:
+                    break
+        text = raw_data.decode('utf-8', errors = 'replace')
+        return re.sub(r'\x1b[a-zA-Z0-9]', '', text).strip()
+    except Exception:
         return ""
 
 def write_string(process, address, value):

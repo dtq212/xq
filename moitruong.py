@@ -1031,7 +1031,7 @@ class MoiTruong:
                     pass
 
             else:
-                if "(" in tenmuctieu and ")" in tenmuctieu and "(cáº¥p" not in tenmuctieu:
+                if "(" in tenmuctieu and ")" in tenmuctieu and "(cấp" not in tenmuctieu:
                     return False
 
         idmaupk = self.get_idmaupk()
