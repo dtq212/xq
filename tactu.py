@@ -217,6 +217,8 @@ class TacTu:
         self._is_tudongdaotangbaodo = False
         self._yeucaudaotangbaodo = None
 
+        self._thoidiemdichuyendaotangbaodogannhat = 0.
+
     def __del__(self):
         try:
             self.moitruong.action_bochantangcapdo()
@@ -376,6 +378,7 @@ class TacTu:
         elif self._yeucaudaotangbaodo and not is_muctieupk:
             yeucauduocchon = self._yeucaudaotangbaodo
             lydochon = "ĐÀO TÀNG BẢO ĐỒ"
+            self._thoidiemdichuyendaotangbaodogannhat = time.time()
         elif self._yeucaugomquai and not is_anhhuongboitruongnhom and not is_muctieupk:
             yeucauduocchon = self._yeucaugomquai
             lydochon = "GOM QUÁI"
@@ -3667,26 +3670,6 @@ class TacTu:
                     except IndexError:
                         print("Không tìm thấy mã xác nhận đúng định dạng")
 
-
-    def action_tudonglamnhiemvusugia(self):
-        if not self._is_tudonglamnhiemvusugia:
-            return
-
-        if self.moitruong.get_is_nhanvatdachet() or self.moitruong.get_is_dangvankhi():
-            return
-
-        diachinpc = self.moitruong.action_timkiemnhanvat(SUGIANHIEMVU)
-
-        if diachinpc and self.moitruong.get_khoangcach(diachinpc) <= 12.0:
-            idnpc = self.moitruong.get_iddoituong(diachinpc)
-            if idnpc:
-                time.sleep(1.)
-                caulenh = "talk {}# bonus.{}".format(hex(idnpc).replace("0x", ""), int(self.moitruong.get_capdonhanvat() / 10))
-                self.moitruong.action_thucthicaulenh(caulenh, delay = 0)
-                time.sleep(1.)
-                caulenh = "talk {}# welcome.1".format(hex(idnpc).replace("0x", ""))
-                self.moitruong.action_thucthicaulenh(caulenh, delay = .0)
-
     def action_tudongdaotangbaodo(self):
         self._yeucaudaotangbaodo = None
 
@@ -3710,27 +3693,35 @@ class TacTu:
             timthay = re.search(r"Vị trí:\s*(.*?)\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)", mota)
 
             if timthay:
-                tenbando_trongmota = timthay.group(1).strip()
+                tenbando = timthay.group(1).strip()
                 x_dich = int(timthay.group(2))
                 y_dich = int(timthay.group(3))
 
-                idbando_dich = IDBANDO_MAP.get(tenbando_trongmota)
+                idbando = IDBANDO_MAP.get(tenbando)
 
-                if idbando_dich == idbandohientai:
-                    khoangcach = self.moitruong.get_khoangcachdiem(x_dich, y_dich, is_vitrihientai = True)
+                if idbando == idbandohientai:
+                    x_hientai = self.moitruong.get_toadox(is_vitrihientai = True)
+                    y_hientai = self.moitruong.get_toadoy(is_vitrihientai = True)
 
-                    if khoangcach <= 2.0:
-                        print(f"Đang đào tàng bảo đồ tại {tenbando_trongmota} ({x_dich}, {y_dich})")
+                    khoangcach = math.sqrt((x_hientai - x_dich) ** 2 + (y_hientai - y_dich) ** 2)
+
+                    if khoangcach < 1.0:
+                        print("Đang đào bảo đồ tại {} ({}, {})".format(tenbando, x_dich, y_dich))
                         iddoituong = self.moitruong.get_iddoituongvatphamhanhtrang(i)
                         if iddoituong:
                             self.moitruong.action_sudungvatpham(iddoituong)
                             time.sleep(1.0)
-                            return
                     else:
                         self._yeucaudaotangbaodo = {
                             "yeucau": YEUCAUDICHUYENDAOTANGBAODO,
                             "toadodich": (x_dich, y_dich),
-                            "kieudichuyen": 0,
+                            "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
                             "khoangcachtoida": 0
                         }
-                        return
+
+                    print("self._yeucaudaotangbaodo: {}".format(self._yeucaudaotangbaodo))
+                        
+                    return
+        else:
+            phatam("{}: Không tìm thấy tàng bảo đồ ở bản đồ hiện tại".format(self.moitruong.get_tendoituong()))
+            time.sleep(5.)

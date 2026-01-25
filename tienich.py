@@ -61,7 +61,7 @@ def read_string(process, address, max_length = 2048):
         initial_size = 256
         if initial_size > max_length: initial_size = max_length
         buffer = process.read_bytes(address, initial_size)
-        null_index = buffer.find(b'\x00')
+        null_index = buffer.find(b"\x00")
         if null_index != -1:
             raw_data = buffer[:null_index]
         else:
@@ -71,14 +71,14 @@ def read_string(process, address, max_length = 2048):
             while len(raw_data) < max_length:
                 try:
                     chunk = process.read_bytes(address + current_offset, 128)
-                    if b'\x00' in chunk:
-                        raw_data += chunk[:chunk.index(b'\x00')]
+                    if b"\x00" in chunk:
+                        raw_data += chunk[:chunk.index(b"\x00")]
                         break
                     raw_data += chunk
                     current_offset += 128
                 except:
                     break
-        text = raw_data.decode('utf-8', errors = 'replace')
+        text = raw_data.decode("utf-8", errors = "replace")
         return re.sub(r'\x1b[a-zA-Z0-9]', '', text).strip()
     except Exception:
         return ""

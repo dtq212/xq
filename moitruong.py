@@ -2444,19 +2444,19 @@ class MoiTruong:
 
         return x > 0
 
-    def action_khoitaothongtinbando(self, delay = 1.):
-        # TODO: Chưa xử lý
+    def action_tudongtimduong(self, x, y, idbando, delay = 1.):
         return
-        if time.time() - self._thoidiemkhoitaothongtinbandogannhat < delay:
+
+        if time.time() - self._thoidiemdichuyengannhat < delay:
             return
 
-        if self.get_is_dakhoitaothongtinbando():
+        if not self.get_is_dakhoitaothongtinbando():
+            time.sleep(0.5)
+            self.action_khoitaothongtinbando()
             return
 
-        self._thoidiemkhoitaothongtinbandogannhat = time.time()
-        self.auto_assemble_khoitaothongtinbando()
-
-        return True
+        self._thoidiemdichuyengannhat = time.time()
+        self.auto_assemble_tudongtimduong(x, y, idbando)
 
     def action_phucsinh(self, is_duoccuu = False, delay = 2.5):
         if time.time() - self._thoidiemphucsinhgannhat < delay:
@@ -3022,6 +3022,45 @@ class MoiTruong:
 
         return True
 
+    def auto_assemble_tudongtimduong(self, x, y, idbando):
+        if x <= 0 or y <= 0 or idbando <= 0:
+            return
+
+        if not hasattr(self, "_diachiautoassembletudongtimduong") or self._diachiautoassembletudongtimduong == 0:
+            self._diachiautoassembletudongtimduong = self.tientrinh.allocate(128)
+
+            addr_base_ptr = self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME
+            offset_struct = 0xADFDEC
+            addr_func_timduong = self.diachixq + 0xD7230
+
+            asm_script = f"""
+                mov eax, {addr_base_ptr}
+                mov esi, [eax]
+                mov esi, [esi + {offset_struct}]
+    
+                push {y}
+                push {x}
+                push {idbando}
+    
+                mov ecx, esi
+                mov eax, {addr_func_timduong}
+                call eax
+    
+                ret
+            """
+
+            ks = Ks(KS_ARCH_X86, KS_MODE_32)
+            encoding, count = ks.asm(asm_script)
+
+            if not encoding:
+                print("Lỗi compile ASM Tự động tìm đường")
+                return
+
+            write_bytes(self.tientrinh, self._diachiautoassembletudongtimduong, bytes(encoding), len(encoding))
+
+        self.tientrinh.start_thread(self._diachiautoassembletudongtimduong)
+        time.sleep(0.05)
+    
     def get_noidungtrochuyenmoinhat(self):
         if not hasattr(self, "_addr_buffer_noidungchat"):
             return ""
