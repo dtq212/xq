@@ -129,9 +129,10 @@ class LoopChinh:
         #  self.moitruong.action_thucthicaulenh("tallk 28d# bonus.23")
         #  time.sleep(0.25)
 
-        if self.moitruong.get_idnguoichoi() == 4676:
-            for i in range(24 * 4):
-                print(self.moitruong.get_motavatphamhanhtrang(i))
+        # if self.moitruong.get_idnguoichoi() == 4676:
+        #     for i in range(24 * 4):
+        #         print("Vật phẩm thứ #{}: {}".format(i, self.moitruong.get_motavatphamhanhtrang(i)))
+
         # x = 10000
         # if self.moitruong.get_idnguoichoi() == 4599:
         #     while True:
@@ -249,6 +250,7 @@ class LoopPhu:
 
         self.tactu.action_xulyvebanrac()
         self.tactu.action_tudongkhaikhoang()
+        self.tactu.action_tudongdaotangbaodo()
 
         self.tactu.action_tudongtrieuhoibaothudautien()
         self.tactu.action_tudongdieukhienbaothumaoson()

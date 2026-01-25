@@ -241,11 +241,27 @@ class MoiTruong:
             return False
         return read_string(self.tientrinh, x + idvitri * 0x20 + 0x1A8)
 
+    def truyvan_motavatphamhanhtrang(self, idvitri):
+        x = self.get_diachicosothongtinvatphamhanhtrang()
+        if not x:
+            return False
+        iddoituongvatphamhanhtrang = self.get_iddoituongvatphamhanhtrang(idvitri)
+        if not iddoituongvatphamhanhtrang:
+            return False
+        is_ok = self.action_thucthicaulenh("desc {}#".format(hex(iddoituongvatphamhanhtrang)).replace("0x", ""), delay = 0.)
+        if is_ok:
+            time.sleep(0.25)
+        return is_ok
+
     def get_motavatphamhanhtrang(self, idvitri):
         x = self.get_diachicosothongtinvatphamhanhtrang()
         if not x:
             return False
-        return read_string2(self.tientrinh, x + idvitri * 0x44C + 0xF52, 1024)
+        mota = read_string(self.tientrinh, x + idvitri * 0x44C + 0xF52, 1024)
+        if not mota and self.get_iddoituongvatphamhanhtrang(idvitri):
+            self.truyvan_motavatphamhanhtrang(idvitri)
+            mota = read_string(self.tientrinh, x + idvitri * 0x44C + 0xF52, 1024)
+        return mota
 
     def get_diachicosothongtinkynang(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
@@ -3009,4 +3025,4 @@ class MoiTruong:
     def get_noidungtrochuyenmoinhat(self):
         if not hasattr(self, "_addr_buffer_noidungchat"):
             return ""
-        return read_string(self.tientrinh, self._addr_buffer_noidungchat, sobytes = 128)
+        return read_string(self.tientrinh, self._addr_buffer_noidungchat)

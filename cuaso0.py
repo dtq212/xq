@@ -238,8 +238,8 @@ class CuaSo:
                 elif keyboard.is_pressed("ctrl+alt+shift+n"):
                     self.tactu.battat_chedobufftoanbang()
                     time.sleep(0.3)
-                elif keyboard.is_pressed("ctrl+alt+shift+k"):
-                    self.tactu.battat_is_tudongkhaikhoang()
+                elif keyboard.is_pressed("ctrl+alt+shift+i"):
+                    self.battat_tudongdaotangbaodo()
                     time.sleep(0.3)
 
             time.sleep(0.05)
@@ -318,3 +318,6 @@ class CuaSo:
 
     def action_suado(self):
         self.tactu.action_suado()
+
+    def battat_tudongdaotangbaodo(self):
+        self.tactu.battat_tudongdaotangbaodo()

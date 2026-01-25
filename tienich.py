@@ -102,8 +102,6 @@ def _phatam(noidung, is_block):
         print(f"phatam (thread): {noidung}")
         tenfile = slugify(noidung)
 
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-
         duongdanthumucamthanh = os.path.join(os.getcwd(), "_internal", "amthanh")
 
         if not os.path.exists(duongdanthumucamthanh):

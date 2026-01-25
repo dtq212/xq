@@ -1,5 +1,6 @@
 import math
 import random
+import re
 import time
 
 import pymem
@@ -213,6 +214,9 @@ class TacTu:
         self._thoidiemsudungcaoboctacdangannhat = 0.
         self._soluongcaoboctacdan = 0
 
+        self._is_tudongdaotangbaodo = False
+        self._yeucaudaotangbaodo = None
+
     def __del__(self):
         try:
             self.moitruong.action_bochantangcapdo()
@@ -240,6 +244,8 @@ class TacTu:
             "_is_chedobufftoanbang": self._is_chedobufftoanbang,
             "_is_tudongdichientruong": self._is_tudongdichientruong,
             "_is_tudongkhaikhoang": self._is_tudongkhaikhoang,
+            "_is_tudongkhaikhoang": self._is_tudongkhaikhoang,
+            "_is_tudongdaotangbaodo": self._is_tudongdaotangbaodo,
         }
         util_luuthietlap(str(idnguoichoi), thietlap)
 
@@ -303,6 +309,12 @@ class TacTu:
             if "_is_tudongkhaikhoang" in thietlap:
                 self._is_tudongkhaikhoang = thietlap["_is_tudongkhaikhoang"]
 
+            if "_is_tudongkhaikhoang" in thietlap:
+                self._is_tudongkhaikhoang = thietlap["_is_tudongkhaikhoang"]
+
+            if "_is_tudongdaotangbaodo" in thietlap:
+                self._is_tudongdaotangbaodo = thietlap["_is_tudongdaotangbaodo"]
+
     def _kiemtrathuchienvohieuhoadichuyen(self):
         if self._is_yeucauvohieuhoadichuyen:
             self.moitruong.action_vohieuhoadichuyen()
@@ -361,6 +373,9 @@ class TacTu:
         elif self._yeucaukhaikhoang and not is_muctieupk:
             yeucauduocchon = self._yeucaukhaikhoang
             lydochon = "KHAI KHOÁNG"
+        elif self._yeucaudaotangbaodo and not is_muctieupk:
+            yeucauduocchon = self._yeucaudaotangbaodo
+            lydochon = "ĐÀO TÀNG BẢO ĐỒ"
         elif self._yeucaugomquai and not is_anhhuongboitruongnhom and not is_muctieupk:
             yeucauduocchon = self._yeucaugomquai
             lydochon = "GOM QUÁI"
@@ -731,9 +746,7 @@ class TacTu:
                     if self.moitruong.get_is_nhanvattontai(diachicosothongtinnhanvatmuctieuxemxet) and \
                             diachicosothongtinnhanvatmuctieuxemxet != self.moitruong.get_diachicosothongtinnhanvat1() and \
                             self.moitruong.get_idnguoichoi(diachicosothongtinnhanvatmuctieuxemxet) not in NHANVATCUAMINHs:
-                        msg = "{} Có thích khách: {}".format(self.moitruong.get_tendoituong(), tendoituongmuctieuxemxet)
-                        print(msg)
-                        phatam(msg)
+                        phatam("{} Có thích khách: {}".format(self.moitruong.get_tendoituong(), tendoituongmuctieuxemxet))
                         self._thoidiemphatamanthan = curr_time
                 continue
             if not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieuxemxet): continue
@@ -2216,6 +2229,13 @@ class TacTu:
         else:
             phatam("Tắt tự động về bán rác")
 
+    def battat_tudongdaotangbaodo(self):
+        self._is_tudongdaotangbaodo = not self._is_tudongdaotangbaodo
+        if self._is_tudongdaotangbaodo:
+            phatam("Bật tự động đào tàng bảo đồ")
+        else:
+            phatam("Tắt tự động đào tàng bảo đồ")
+
     def battat_is_tudongdichientruong(self):
         self._is_tudongdichientruong = not self._is_tudongdichientruong
         if self._is_tudongdichientruong:
@@ -3666,3 +3686,51 @@ class TacTu:
                 time.sleep(1.)
                 caulenh = "talk {}# welcome.1".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh, delay = .0)
+
+    def action_tudongdaotangbaodo(self):
+        self._yeucaudaotangbaodo = None
+
+        if not self._is_tudongdaotangbaodo:
+            return
+
+        if self.moitruong.get_is_nhanvatdachet() or self.moitruong.get_is_dangvankhi():
+            return
+
+        idbandohientai = self.moitruong.get_idbandohientai()
+
+        for i in range(SOLUONGVATPHAMHANHTRANGTOIDA):
+            tenvatpham = self.moitruong.get_tenvatphamhanhtrang(i)
+            if not tenvatpham or tenvatpham != TANGBAODO:
+                continue
+
+            mota = self.moitruong.get_motavatphamhanhtrang(i)
+            if not mota:
+                continue
+
+            timthay = re.search(r"Vị trí:\s*(.*?)\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)", mota)
+
+            if timthay:
+                tenbando_trongmota = timthay.group(1).strip()
+                x_dich = int(timthay.group(2))
+                y_dich = int(timthay.group(3))
+
+                idbando_dich = IDBANDO_MAP.get(tenbando_trongmota)
+
+                if idbando_dich == idbandohientai:
+                    khoangcach = self.moitruong.get_khoangcachdiem(x_dich, y_dich, is_vitrihientai = True)
+
+                    if khoangcach <= 2.0:
+                        print(f"Đang đào tàng bảo đồ tại {tenbando_trongmota} ({x_dich}, {y_dich})")
+                        iddoituong = self.moitruong.get_iddoituongvatphamhanhtrang(i)
+                        if iddoituong:
+                            self.moitruong.action_sudungvatpham(iddoituong)
+                            time.sleep(1.0)
+                            return
+                    else:
+                        self._yeucaudaotangbaodo = {
+                            "yeucau": YEUCAUDICHUYENDAOTANGBAODO,
+                            "toadodich": (x_dich, y_dich),
+                            "kieudichuyen": 0,
+                            "khoangcachtoida": 0
+                        }
+                        return
