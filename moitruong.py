@@ -1127,7 +1127,7 @@ class MoiTruong:
         return self._thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat
 
     def set_diachicosothongtinnhanvatmuctieudangchon(self, diachicosothongtinnhanvat):
-        if self.get_diachicosothongtinnhanvatmuctieudangchon() != diachicosothongtinnhanvat:
+        if self._diachicosothongtinnhanvatmuctieudangchon != diachicosothongtinnhanvat:
             self._diachicosothongtinnhanvatmuctieudangchon = diachicosothongtinnhanvat
 
     def action_phananhdiachicosothongtinnhanvatmuctieudangchoningame(self, delay = 0.5):
