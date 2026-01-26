@@ -33,6 +33,10 @@ TOADO_MAY_CHU = {
     2: (372, 206),
 }
 
+TOADO_CHON_NHANVAT = {
+    2: (369, 146) 
+}
+
 THONGTINDANGNHAP_MAP = {
     #"4599": {
     #    "user": "tieulyphidao",
@@ -52,18 +56,25 @@ THONGTINDANGNHAP_MAP = {
         "group": "KÊNH_2",
         "server": 1,
     },
+    "1904": {
+        "user": "thopvna",
+        "pass": "hateva1",
+        "group": "KÊNH_2",
+        "server": 1,
+        "char_index": 2,
+    },
     #"5747": {
     #    "user": "zhuangzi",
     #    "pass": "hateva1",
     #    "group": "KÊNH_2",
     #    "server": 1,
     #},
-    "3236": {
-        "user": "truymenh",
-        "pass": "hateva1",
-        "group": "KÊNH_3",
-        "server": 1,
-    },
+    #"3236": {
+    #    "user": "truymenh",
+    #    "pass": "hateva1",
+    #    "group": "KÊNH_3",
+    #    "server": 1,
+    #},
 }
 
 
@@ -261,6 +272,21 @@ def mogamevadangnhap(char_name, config):
 
         print("   -> Chờ load nhân vật (5s)...")
         time.sleep(5)
+
+        char_idx = config.get("char_index", 1)
+
+        if char_idx == 2:
+            print("   -> Phát hiện cấu hình: Chọn nhân vật số 2")
+            if 2 in TOADO_CHON_NHANVAT:
+                cx, cy = TOADO_CHON_NHANVAT[2]
+                BackgroundInput.click(hwnd_game, cx, cy)
+                time.sleep(1) # Chờ game nhận click
+            else:
+                print("⚠️ Chưa thiết lập tọa độ cho nhân vật 2, sẽ chọn mặc định!")
+        else:
+            print("   -> Chọn nhân vật số 1 (Mặc định)")
+            # Nhân vật 1 thường được game tự chọn sẵn nên không cần click
+
         BackgroundInput.press_key(hwnd_game, win32con.VK_RETURN)
         time.sleep(1)
         BackgroundInput.press_key(hwnd_game, win32con.VK_RETURN)

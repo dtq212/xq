@@ -128,6 +128,7 @@ class MoiTruong:
         self._thoidiemboquadichuyencungtoadogannhat = 0.
 
         self._thoidiemnhanvatkhongsansanggannhat = 0.
+        self._diachiautoassembletudongtimduong = None
 
     def __del__(self):
         def safe_free(flag_name, addr_name):
@@ -1537,11 +1538,12 @@ class MoiTruong:
 
     def auto_assemble_thucthicaulenh(self, caulenh):
         # print(f"auto_assemble_thucthicaulenh: {caulenh}")
+        
         if not self._is_dasetupautoassemblethucthicaulenh:
             self._diachiautoassemblethucthicaulenh = self.tientrinh.allocate(128)
 
             write_bytes(self.tientrinh, self._diachiautoassemblethucthicaulenh, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblethucthicaulenh + 1, len(caulenh))
+            write_int(self.tientrinh, self._diachiautoassemblethucthicaulenh + 1, len(caulenh.encode("utf-8")))
 
             write_bytes(self.tientrinh, self._diachiautoassemblethucthicaulenh + 5, bytes.fromhex("68"), 1)
             write_int(self.tientrinh, self._diachiautoassemblethucthicaulenh + 6, self._diachiautoassemblethucthicaulenh + 19)
@@ -1556,11 +1558,11 @@ class MoiTruong:
 
             self._is_dasetupautoassemblethucthicaulenh = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblethucthicaulenh + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblethucthicaulenh + 1, len(caulenh))
+            if read_int(self.tientrinh, self._diachiautoassemblethucthicaulenh + 1) != len(caulenh.encode("utf-8")):
+                write_int(self.tientrinh, self._diachiautoassemblethucthicaulenh + 1, len(caulenh.encode("utf-8")))
             if read_string(self.tientrinh, self._diachiautoassemblethucthicaulenh + 19) != caulenh:
                 write_string(self.tientrinh, self._diachiautoassemblethucthicaulenh + 19, caulenh)
-
+        
         self.tientrinh.start_thread(self._diachiautoassemblethucthicaulenh)
         time.sleep(0.05)
 
@@ -1572,7 +1574,7 @@ class MoiTruong:
             self._diachiautoassembleralenhbaothumaosontancong = self.tientrinh.allocate(128)
 
             write_bytes(self.tientrinh, self._diachiautoassembleralenhbaothumaosontancong, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassembleralenhbaothumaosontancong + 1, len(caulenh))
+            write_int(self.tientrinh, self._diachiautoassembleralenhbaothumaosontancong + 1, len(caulenh.encode("utf-8")))
 
             write_bytes(self.tientrinh, self._diachiautoassembleralenhbaothumaosontancong + 5, bytes.fromhex("68"), 1)
             write_int(self.tientrinh, self._diachiautoassembleralenhbaothumaosontancong + 6, self._diachiautoassembleralenhbaothumaosontancong + 19)
@@ -1587,8 +1589,8 @@ class MoiTruong:
 
             self._is_dasetupautoassembleralenhbaothumaosontancong = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassembleralenhbaothumaosontancong + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassembleralenhbaothumaosontancong + 1, len(caulenh))
+            if read_int(self.tientrinh, self._diachiautoassembleralenhbaothumaosontancong + 1) != len(caulenh.encode("utf-8")):
+                write_int(self.tientrinh, self._diachiautoassembleralenhbaothumaosontancong + 1, len(caulenh.encode("utf-8")))
             if read_string(self.tientrinh, self._diachiautoassembleralenhbaothumaosontancong + 19) != caulenh:
                 write_string(self.tientrinh, self._diachiautoassembleralenhbaothumaosontancong + 19, caulenh)
 
@@ -1603,7 +1605,7 @@ class MoiTruong:
             self._diachiautoassembleralenhbaothumaosontheosau = self.tientrinh.allocate(128)
 
             write_bytes(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 1, len(caulenh))
+            write_int(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 1, len(caulenh.encode("utf-8")))
 
             write_bytes(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 5, bytes.fromhex("68"), 1)
             write_int(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 6, self._diachiautoassembleralenhbaothumaosontheosau + 19)
@@ -1618,8 +1620,8 @@ class MoiTruong:
 
             self._is_dasetupautoassembleralenhbaothumaosontheosau = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 1, len(caulenh))
+            if read_int(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 1) != len(caulenh.encode("utf-8")):
+                write_int(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 1, len(caulenh.encode("utf-8")))
             if read_string(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 19) != caulenh:
                 write_string(self.tientrinh, self._diachiautoassembleralenhbaothumaosontheosau + 19, caulenh)
 
@@ -1633,7 +1635,7 @@ class MoiTruong:
             self._diachiautoassemblethaotacnhom = self.tientrinh.allocate(128)
 
             write_bytes(self.tientrinh, self._diachiautoassemblethaotacnhom, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1, len(caulenh))
+            write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1, len(caulenh.encode("utf-8")))
 
             write_bytes(self.tientrinh, self._diachiautoassemblethaotacnhom + 5, bytes.fromhex("68"), 1)
             write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 6, self._diachiautoassemblethaotacnhom + 19)
@@ -1648,8 +1650,8 @@ class MoiTruong:
 
             self._is_dasetupautoassemblethaotacnhom = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1, len(caulenh))
+            if read_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1) != len(caulenh.encode("utf-8")):
+                write_int(self.tientrinh, self._diachiautoassemblethaotacnhom + 1, len(caulenh.encode("utf-8")))
             if read_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19) != caulenh:
                 write_string(self.tientrinh, self._diachiautoassemblethaotacnhom + 19, caulenh)
 
@@ -1662,7 +1664,7 @@ class MoiTruong:
             self._diachiautoassemblesudungkynang = self.tientrinh.allocate(128)
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynang, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungkynang + 1, len(caulenh))
+            write_int(self.tientrinh, self._diachiautoassemblesudungkynang + 1, len(caulenh.encode("utf-8")))
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynang + 5, bytes.fromhex("68"), 1)
             write_int(self.tientrinh, self._diachiautoassemblesudungkynang + 6, self._diachiautoassemblesudungkynang + 19)
@@ -1677,8 +1679,8 @@ class MoiTruong:
 
             self._is_dasetupautoassemblesudungkynang = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblesudungkynang + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblesudungkynang + 1, len(caulenh))
+            if read_int(self.tientrinh, self._diachiautoassemblesudungkynang + 1) != len(caulenh.encode("utf-8")):
+                write_int(self.tientrinh, self._diachiautoassemblesudungkynang + 1, len(caulenh.encode("utf-8")))
             if read_string(self.tientrinh, self._diachiautoassemblesudungkynang + 19) != caulenh:
                 write_string(self.tientrinh, self._diachiautoassemblesudungkynang + 19, caulenh)
 
@@ -1691,7 +1693,7 @@ class MoiTruong:
             self._diachiautoassemblesudungtancongvatly = self.tientrinh.allocate(128)
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungtancongvatly, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungtancongvatly + 1, len(caulenh))
+            write_int(self.tientrinh, self._diachiautoassemblesudungtancongvatly + 1, len(caulenh.encode("utf-8")))
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungtancongvatly + 5, bytes.fromhex("68"), 1)
             write_int(self.tientrinh, self._diachiautoassemblesudungtancongvatly + 6, self._diachiautoassemblesudungtancongvatly + 19)
@@ -1706,8 +1708,8 @@ class MoiTruong:
 
             self._is_dasetupautoassemblesudungtancongvatly = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblesudungtancongvatly + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblesudungtancongvatly + 1, len(caulenh))
+            if read_int(self.tientrinh, self._diachiautoassemblesudungtancongvatly + 1) != len(caulenh.encode("utf-8")):
+                write_int(self.tientrinh, self._diachiautoassemblesudungtancongvatly + 1, len(caulenh.encode("utf-8")))
             if read_string(self.tientrinh, self._diachiautoassemblesudungtancongvatly + 19) != caulenh:
                 write_string(self.tientrinh, self._diachiautoassemblesudungtancongvatly + 19, caulenh)
 
@@ -1720,7 +1722,7 @@ class MoiTruong:
             self._diachiautoassemblesudungkynangmuctieunguoichoi = self.tientrinh.allocate(128)
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 1, len(caulenh))
+            write_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 1, len(caulenh.encode("utf-8")))
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 5, bytes.fromhex("68"), 1)
             write_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 6, self._diachiautoassemblesudungkynangmuctieunguoichoi + 19)
@@ -1735,8 +1737,8 @@ class MoiTruong:
 
             self._is_dasetupautoassemblesudungkynangmuctieunguoichoi = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 1, len(caulenh))
+            if read_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 1) != len(caulenh.encode("utf-8")):
+                write_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 1, len(caulenh.encode("utf-8")))
             if read_string(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 19) != caulenh:
                 write_string(self.tientrinh, self._diachiautoassemblesudungkynangmuctieunguoichoi + 19, caulenh)
 
@@ -1749,7 +1751,7 @@ class MoiTruong:
             self._diachiautoassemblesudungkynangmuctieukhacnguoichoi = self.tientrinh.allocate(128)
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 1, len(caulenh))
+            write_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 1, len(caulenh.encode("utf-8")))
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 5, bytes.fromhex("68"), 1)
             write_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 6, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 19)
@@ -1764,8 +1766,8 @@ class MoiTruong:
 
             self._is_dasetupautoassemblesudungkynangmuctieukhacnguoichoi = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 1, len(caulenh))
+            if read_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 1) != len(caulenh.encode("utf-8")):
+                write_int(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 1, len(caulenh.encode("utf-8")))
             if read_string(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 19) != caulenh:
                 write_string(self.tientrinh, self._diachiautoassemblesudungkynangmuctieukhacnguoichoi + 19, caulenh)
 
@@ -1778,7 +1780,7 @@ class MoiTruong:
             self._diachiautoassemblesudungkynangtoado = self.tientrinh.allocate(128)
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangtoado, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 1, len(caulenh))
+            write_int(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 1, len(caulenh.encode("utf-8")))
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 5, bytes.fromhex("68"), 1)
             write_int(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 6, self._diachiautoassemblesudungkynangtoado + 19)
@@ -1793,8 +1795,8 @@ class MoiTruong:
 
             self._is_dasetupautoassemblesudungkynangtoado = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 1, len(caulenh))
+            if read_int(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 1) != len(caulenh.encode("utf-8")):
+                write_int(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 1, len(caulenh.encode("utf-8")))
             if read_string(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 19) != caulenh:
                 write_string(self.tientrinh, self._diachiautoassemblesudungkynangtoado + 19, caulenh)
 
@@ -1808,7 +1810,7 @@ class MoiTruong:
             self._diachiautoassembletrochuyenvoinpc = self.tientrinh.allocate(128)
 
             write_bytes(self.tientrinh, self._diachiautoassembletrochuyenvoinpc, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 1, len(caulenh))
+            write_int(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 1, len(caulenh.encode("utf-8")))
 
             write_bytes(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 5, bytes.fromhex("68"), 1)
             write_int(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 6, self._diachiautoassembletrochuyenvoinpc + 19)
@@ -1823,8 +1825,8 @@ class MoiTruong:
 
             self._is_dasetupautoassembletrochuyenvoinpc = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 1, len(caulenh))
+            if read_int(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 1) != len(caulenh.encode("utf-8")):
+                write_int(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 1, len(caulenh.encode("utf-8")))
             if read_string(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 19) != caulenh:
                 write_string(self.tientrinh, self._diachiautoassembletrochuyenvoinpc + 19, caulenh)
 
@@ -1838,7 +1840,7 @@ class MoiTruong:
             self._diachiautoassembledichuyenvatphamhanhtrang = self.tientrinh.allocate(128)
 
             write_bytes(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 1, len(caulenh))
+            write_int(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 1, len(caulenh.encode("utf-8")))
 
             write_bytes(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 5, bytes.fromhex("68"), 1)
             write_int(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 6, self._diachiautoassembledichuyenvatphamhanhtrang + 19)
@@ -1853,8 +1855,8 @@ class MoiTruong:
 
             self._is_dasetupautoassembledichuyenvatphamhanhtrang = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 1, len(caulenh))
+            if read_int(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 1) != len(caulenh.encode("utf-8")):
+                write_int(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 1, len(caulenh.encode("utf-8")))
             if read_string(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 19) != caulenh:
                 write_string(self.tientrinh, self._diachiautoassembledichuyenvatphamhanhtrang + 19, caulenh)
 
@@ -1871,7 +1873,7 @@ class MoiTruong:
             self._diachiautoassemblesudungvatpham = self.tientrinh.allocate(128)
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungvatpham, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungvatpham + 1, len(caulenh))
+            write_int(self.tientrinh, self._diachiautoassemblesudungvatpham + 1, len(caulenh.encode("utf-8")))
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungvatpham + 5, bytes.fromhex("68"), 1)
             write_int(self.tientrinh, self._diachiautoassemblesudungvatpham + 6, self._diachiautoassemblesudungvatpham + 19)
@@ -1886,8 +1888,8 @@ class MoiTruong:
 
             self._is_dasetupautoassemblesudungvatpham = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblesudungvatpham + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblesudungvatpham + 1, len(caulenh))
+            if read_int(self.tientrinh, self._diachiautoassemblesudungvatpham + 1) != len(caulenh.encode("utf-8")):
+                write_int(self.tientrinh, self._diachiautoassemblesudungvatpham + 1, len(caulenh.encode("utf-8")))
             if read_string(self.tientrinh, self._diachiautoassemblesudungvatpham + 19) != caulenh:
                 write_string(self.tientrinh, self._diachiautoassemblesudungvatpham + 19, caulenh)
 
@@ -1902,7 +1904,7 @@ class MoiTruong:
             self._diachiautoassemblekhaikhoang = self.tientrinh.allocate(128)
 
             write_bytes(self.tientrinh, self._diachiautoassemblekhaikhoang, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblekhaikhoang + 1, len(caulenh))
+            write_int(self.tientrinh, self._diachiautoassemblekhaikhoang + 1, len(caulenh.encode("utf-8")))
 
             write_bytes(self.tientrinh, self._diachiautoassemblekhaikhoang + 5, bytes.fromhex("68"), 1)
             write_int(self.tientrinh, self._diachiautoassemblekhaikhoang + 6, self._diachiautoassemblekhaikhoang + 19)
@@ -1917,8 +1919,8 @@ class MoiTruong:
 
             self._is_dasetupautoassemblekhaikhoang = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblekhaikhoang + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblekhaikhoang + 1, len(caulenh))
+            if read_int(self.tientrinh, self._diachiautoassemblekhaikhoang + 1) != len(caulenh.encode("utf-8")):
+                write_int(self.tientrinh, self._diachiautoassemblekhaikhoang + 1, len(caulenh.encode("utf-8")))
             if read_string(self.tientrinh, self._diachiautoassemblekhaikhoang + 19) != caulenh:
                 write_string(self.tientrinh, self._diachiautoassemblekhaikhoang + 19, caulenh)
 
@@ -1933,7 +1935,7 @@ class MoiTruong:
             self._diachiautoassemblenhatdotoado = self.tientrinh.allocate(128)
 
             write_bytes(self.tientrinh, self._diachiautoassemblenhatdotoado, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblenhatdotoado + 1, len(caulenh))
+            write_int(self.tientrinh, self._diachiautoassemblenhatdotoado + 1, len(caulenh.encode("utf-8")))
 
             write_bytes(self.tientrinh, self._diachiautoassemblenhatdotoado + 5, bytes.fromhex("68"), 1)
             write_int(self.tientrinh, self._diachiautoassemblenhatdotoado + 6, self._diachiautoassemblenhatdotoado + 19)
@@ -1948,8 +1950,8 @@ class MoiTruong:
 
             self._is_dasetupautoassemblenhatdotoado = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblenhatdotoado + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblenhatdotoado + 1, len(caulenh))
+            if read_int(self.tientrinh, self._diachiautoassemblenhatdotoado + 1) != len(caulenh.encode("utf-8")):
+                write_int(self.tientrinh, self._diachiautoassemblenhatdotoado + 1, len(caulenh.encode("utf-8")))
             if read_string(self.tientrinh, self._diachiautoassemblenhatdotoado + 19) != caulenh:
                 write_string(self.tientrinh, self._diachiautoassemblenhatdotoado + 19, caulenh)
 
@@ -2020,39 +2022,35 @@ class MoiTruong:
         self.tientrinh.start_thread(self._diachiautoassemblenhatdo)
 
     def auto_assemble_khoitaothongtinbando(self):
-        print("MoiTruong.auto_assemble_khoitaothongtinbando - No parameters")
-        # TODO: Chưa xử lý
-        print("{} auto_assemble_khoitaothongtinbando".format(self.get_tendoituong()))
-        if not self._is_dasetupautoassemblekhoitaothongtinbando:
-            self._diachiautoassemblekhoitaothongtinbando = self.tientrinh.allocate(64)
+        print("Khởi tạo thông tin bản đồ")
+        if not hasattr(self, "_diachiautoassemblekhoitaothongtinbando"):
+            self._diachiautoassemblekhoitaothongtinbando = self.tientrinh.allocate(128)
 
-            write_bytes(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando, bytes.fromhex("8B 0D"), 2)
-            write_int(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 2, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+            addr_base_ptr = self.diachixq + 0x380B44
+            addr_func_init = self.diachixq + 0x3C100
 
-            write_bytes(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 6, bytes.fromhex("BF"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 7, 100)
+            asm_script = f"""
+                mov eax, {addr_base_ptr}
+                mov ecx, [eax]          
 
-            write_bytes(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 11, bytes.fromhex("BE 01002020"), 5)
+                push 0x01002020         
+                push 0x64               
 
-            write_bytes(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 16, bytes.fromhex("56"), 1)
-            write_bytes(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 17, bytes.fromhex("57"), 1)
+                mov eax, {addr_func_init}
+                call eax                
+                ret
+            """
 
-            write_bytes(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 18, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 19, self.diachixq + 0x3C020 - (self._diachiautoassemblekhoitaothongtinbando + 18) - 5)
+            ks = Ks(KS_ARCH_X86, KS_MODE_32)
+            encoding, count = ks.asm(asm_script)
 
-            write_bytes(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 23, bytes.fromhex("8B 35"), 2)
-            write_int(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 25, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+            if not encoding:
+                return
 
-            write_bytes(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 29, bytes.fromhex("8B B6"), 2)
-            write_int(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 31, 0xADFDEC)
-
-            write_bytes(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 35, bytes.fromhex("B0 00 88 06"), 4)
-
-            write_bytes(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando + 39, bytes.fromhex("C3"), 1)
-            self._is_dasetupautoassemblekhoitaothongtinbando = True
+            write_bytes(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando, bytes(encoding), len(encoding))
 
         self.tientrinh.start_thread(self._diachiautoassemblekhoitaothongtinbando)
-        time.sleep(0.05)
+        time.sleep(0.1)
 
     def action_nhatdo(self, diachicosothongtinvatpham, delay = 0.05):
         if time.time() - self._thoidiemnhatdogannhat < delay:
@@ -2444,19 +2442,25 @@ class MoiTruong:
 
         return x > 0
 
-    def action_tudongtimduong(self, x, y, idbando, delay = 1.):
-        return
+    def action_tudongtimduong(self, x, y, idbando):
+        a = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not a:
+            return False
 
-        if time.time() - self._thoidiemdichuyengannhat < delay:
-            return
+        a = read_int(self.tientrinh, a + 0xADFDEC)
 
-        if not self.get_is_dakhoitaothongtinbando():
-            time.sleep(0.5)
-            self.action_khoitaothongtinbando()
-            return
+        if not a:
+            self.auto_assemble_khoitaothongtinbando()
+            return False
 
-        self._thoidiemdichuyengannhat = time.time()
-        self.auto_assemble_tudongtimduong(x, y, idbando)
+        if read_int(self.tientrinh, a + 0x37C534) != x:
+            write_int(self.tientrinh, a + 0x37C534, x)
+
+        if read_int(self.tientrinh, a + 0x37C538) != y:
+            write_int(self.tientrinh, a + 0x37C538, y)
+
+        if read_int(self.tientrinh, a + 0x37C85C) != idbando:
+            write_int(self.tientrinh, a + 0x37C85C, idbando)
 
     def action_phucsinh(self, is_duoccuu = False, delay = 2.5):
         if time.time() - self._thoidiemphucsinhgannhat < delay:
@@ -2862,7 +2866,7 @@ class MoiTruong:
             self._diachiautoassemblesudungvatphambaothu = self.tientrinh.allocate(128)
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungvatphambaothu, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 1, len(caulenh))
+            write_int(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 1, len(caulenh.encode("utf-8")))
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 5, bytes.fromhex("68"), 1)
             write_int(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 6, self._diachiautoassemblesudungvatphambaothu + 19)
@@ -2877,8 +2881,8 @@ class MoiTruong:
 
             self._is_dasetupautoassemblesudungvatphambaothu = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 1, len(caulenh))
+            if read_int(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 1) != len(caulenh.encode("utf-8")):
+                write_int(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 1, len(caulenh.encode("utf-8")))
             if read_string(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 19) != caulenh:
                 write_string(self.tientrinh, self._diachiautoassemblesudungvatphambaothu + 19, caulenh)
 
@@ -2891,7 +2895,7 @@ class MoiTruong:
             self._diachiautoassembletrieuhoibaothu = self.tientrinh.allocate(128)
 
             write_bytes(self.tientrinh, self._diachiautoassembletrieuhoibaothu, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 1, len(caulenh))
+            write_int(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 1, len(caulenh.encode("utf-8")))
 
             write_bytes(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 5, bytes.fromhex("68"), 1)
             write_int(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 6, self._diachiautoassembletrieuhoibaothu + 19)
@@ -2906,8 +2910,8 @@ class MoiTruong:
 
             self._is_dasetupautoassembletrieuhoibaothu = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 1, len(caulenh))
+            if read_int(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 1) != len(caulenh.encode("utf-8")):
+                write_int(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 1, len(caulenh.encode("utf-8")))
             if read_string(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 19) != caulenh:
                 write_string(self.tientrinh, self._diachiautoassembletrieuhoibaothu + 19, caulenh)
 
@@ -2920,7 +2924,7 @@ class MoiTruong:
             self._diachiautoassemblesudungkynangbaothu = self.tientrinh.allocate(128)
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangbaothu, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 1, len(caulenh))
+            write_int(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 1, len(caulenh.encode("utf-8")))
 
             write_bytes(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 5, bytes.fromhex("68"), 1)
             write_int(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 6, self._diachiautoassemblesudungkynangbaothu + 19)
@@ -2935,8 +2939,8 @@ class MoiTruong:
 
             self._is_dasetupautoassemblesudungkynangbaothu = True
         else:
-            if read_int(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 1) != len(caulenh):
-                write_int(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 1, len(caulenh))
+            if read_int(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 1) != len(caulenh.encode("utf-8")):
+                write_int(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 1, len(caulenh.encode("utf-8")))
             if read_string(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 19) != caulenh:
                 write_string(self.tientrinh, self._diachiautoassemblesudungkynangbaothu + 19, caulenh)
 
@@ -2974,92 +2978,51 @@ class MoiTruong:
         self._tennguoichoithanhviennhoms = tennguoichoithanhviennhoms
 
     def action_thietlaphooknoidungtrochuyen(self):
-        if not hasattr(self, "_addr_buffer_noidungchat"):
-            self._addr_buffer_noidungchat = self.tientrinh.allocate(128)
-
-        if not hasattr(self, "_addr_hook_chat_script"):
-            self._addr_hook_chat_script = self.tientrinh.allocate(256)
-
         HOOK_OFFSET = 0x5964
         addr_at_hook = self.diachixq + HOOK_OFFSET
         addr_return = self.diachixq + HOOK_OFFSET + 6
 
-        ks = Ks(KS_ARCH_X86, KS_MODE_32)
+        if not hasattr(self, "_addr_buffer_noidungchat"):
+            self._addr_buffer_noidungchat = self.tientrinh.allocate(128)
+        
+        if not hasattr(self, "_addr_hook_chat_script"):
+            self._addr_hook_chat_script = self.tientrinh.allocate(256)
 
-        asm_script = f"""
-            pushad
-            mov esi, ebp
-            mov edi, {self._addr_buffer_noidungchat}
-            mov ecx, 128
-        loop_copy:
-            mov al, byte ptr [esi]
-            mov byte ptr [edi], al
-            test al, al
-            jz end_copy
-            inc esi
-            inc edi
-            dec ecx
-            jnz loop_copy
-            mov byte ptr [edi], 0
-        end_copy:
-            popad
-            mov ecx, [edx + 0xADFDD8]
-            push {addr_return}
-            ret
-        """
+            ks = Ks(KS_ARCH_X86, KS_MODE_32)
 
-        encoding, count = ks.asm(asm_script)
-        if not encoding:
-            raise Exception("Lỗi compile ASM Keystone")
+            asm_script = f"""
+                pushad
+                mov esi, ebp
+                mov edi, {self._addr_buffer_noidungchat}
+                mov ecx, 128
+            loop_copy:
+                mov al, byte ptr [esi]
+                mov byte ptr [edi], al
+                test al, al
+                jz end_copy
+                inc esi
+                inc edi
+                dec ecx
+                jnz loop_copy
+                mov byte ptr [edi], 0
+            end_copy:
+                popad
+                mov ecx, [edx + 0xADFDD8]
+                push {addr_return}
+                ret
+            """
 
-        write_bytes(self.tientrinh, self._addr_hook_chat_script, bytes(encoding), len(encoding))
+            encoding, count = ks.asm(asm_script)
+            if not encoding:
+                raise Exception("Lỗi compile ASM Keystone")
+
+            write_bytes(self.tientrinh, self._addr_hook_chat_script, bytes(encoding), len(encoding))
 
         relative_offset = self._addr_hook_chat_script - (addr_at_hook + 5)
         patch_bytes = b"\xE9" + relative_offset.to_bytes(4, byteorder = "little", signed = True) + b"\x90"
         write_bytes(self.tientrinh, addr_at_hook, patch_bytes, len(patch_bytes))
 
-        print(f"Hook Deep Copy OK: {hex(addr_at_hook)} -> Script {hex(self._addr_hook_chat_script)} -> Buffer {hex(self._addr_buffer_noidungchat)}")
-
         return True
-
-    def auto_assemble_tudongtimduong(self, x, y, idbando):
-        if x <= 0 or y <= 0 or idbando <= 0:
-            return
-
-        if not hasattr(self, "_diachiautoassembletudongtimduong") or self._diachiautoassembletudongtimduong == 0:
-            self._diachiautoassembletudongtimduong = self.tientrinh.allocate(128)
-
-            addr_base_ptr = self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME
-            offset_struct = 0xADFDEC
-            addr_func_timduong = self.diachixq + 0xD7230
-
-            asm_script = f"""
-                mov eax, {addr_base_ptr}
-                mov esi, [eax]
-                mov esi, [esi + {offset_struct}]
-    
-                push {y}
-                push {x}
-                push {idbando}
-    
-                mov ecx, esi
-                mov eax, {addr_func_timduong}
-                call eax
-    
-                ret
-            """
-
-            ks = Ks(KS_ARCH_X86, KS_MODE_32)
-            encoding, count = ks.asm(asm_script)
-
-            if not encoding:
-                print("Lỗi compile ASM Tự động tìm đường")
-                return
-
-            write_bytes(self.tientrinh, self._diachiautoassembletudongtimduong, bytes(encoding), len(encoding))
-
-        self.tientrinh.start_thread(self._diachiautoassembletudongtimduong)
-        time.sleep(0.05)
     
     def get_noidungtrochuyenmoinhat(self):
         if not hasattr(self, "_addr_buffer_noidungchat"):

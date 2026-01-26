@@ -4,7 +4,7 @@ import traceback
 
 import pymem.exception
 
-from hangso import BANDO_CHIENTRUONG, BANDO_CHU, HOITHANHPHU, TANTHUTHON
+from hangso import BANDO_CHIENTRUONG, BANDO_CHU, HOITHANHPHU, TANTHUTHON, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM
 from moitruong import MoiTruong
 from tactu import TacTu
 from tienich import phatam
@@ -199,7 +199,7 @@ class LoopPhu:
         if not self.moitruong.get_is_bathanhtrang():
             self.moitruong.set_is_batalt(True)
 
-        if self.moitruong.get_idnguoichoi() in (1904, 4676) and self.moitruong.get_idbandohientai() == TANTHUTHON:
+        if self.moitruong.get_idnguoichoi() in (1904, 4676, 2303) and self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
             diachi = self.moitruong.action_timkiemnhanvat("Thiên Sứ Trao Đổi")
             if diachi and self.moitruong.get_khoangcach(diachi) <= 3.:
              self.moitruong.action_thucthicaulenh("tallk {}# bonus.1".format(hex(self.moitruong.get_iddoituong(diachi))).replace("0x", ""))
