@@ -981,7 +981,7 @@ class MoiTruong:
 
         return read_int(self.tientrinh, diachicosothongtinkynang + idvitrikynang * OFFSET_DIACHICOSOMOIKYNANG + 0x6830)
 
-    def get_is_kynangsansang(self, idvitri_x, idvitri_y, delay = 0., is_kiemtranoiluc = False):
+    def get_is_kynangsansang(self, idvitri_x, idvitri_y, delay = 0.):
         diachicosothongtinkynang = self.get_diachicosothongtinkynang()
         if not diachicosothongtinkynang:
             return False
@@ -991,11 +991,7 @@ class MoiTruong:
         is_dahockynang = True
         thoigiangiancach = read_int(self.tientrinh, diachicosothongtinkynang + idvitrikynang * OFFSET_DIACHICOSOMOIKYNANG + 0x6A4C) == 0
 
-        if is_kiemtranoiluc:
-            if self.get_noilucconlai() < 50:
-                return False
-        
-        return idkynang and is_dahockynang and thoigiangiancach and time.time() - self._thoidiemsudungkynangvitrigannhat_map.get((idvitri_x, idvitri_y), time.time() - delay - 1.) > delay
+        return idkynang and is_dahockynang and thoigiangiancach and time.time() - self._thoidiemsudungkynangvitrigannhat_map.get((idvitri_x, idvitri_y), 0.) > delay
 
     def get_danhsachtennguoichoithanhviennhoms(self):
         return self._tennguoichoithanhviennhoms
