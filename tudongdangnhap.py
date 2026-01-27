@@ -38,31 +38,31 @@ TOADO_CHON_NHANVAT = {
 }
 
 THONGTINDANGNHAP_MAP = {
-    #"4599": {
-    #    "user": "tieulyphidao",
+    "4599": {
+        "user": "tieulyphidao",
+        "pass": "hateva1",
+        "group": "KÊNH_3",
+        "server": 1,
+    },
+    #"4676": {
+    #    "user": "hoadataithe",
     #    "pass": "hateva1",
-    #    "group": "KÊNH_3",
+    #    "group": "KÊNH_2",
     #    "server": 1,
     #},
-    "4676": {
-        "user": "hoadataithe",
-        "pass": "hateva1",
-        "group": "KÊNH_2",
-        "server": 1,
-    },
-    "2303": {
-        "user": "laotsezu",
-        "pass": "hateva1",
-        "group": "KÊNH_2",
-        "server": 1,
-    },
-    "1904": {
-        "user": "thopvna",
-        "pass": "hateva1",
-        "group": "KÊNH_2",
-        "server": 1,
-        "char_index": 2,
-    },
+    #"2303": {
+    #    "user": "laotsezu",
+    #    "pass": "hateva1",
+    #    "group": "KÊNH_2",
+    #    "server": 1,
+    #},
+    #"1904": {
+    #    "user": "thopvna",
+    #    "pass": "hateva1",
+    #    "group": "KÊNH_2",
+    #    "server": 1,
+    #    "char_index": 2,
+    #},
     #"5747": {
     #    "user": "zhuangzi",
     #    "pass": "hateva1",
