@@ -38,24 +38,24 @@ TOADO_CHON_NHANVAT = {
 }
 
 THONGTINDANGNHAP_MAP = {
-    "4599": {
-        "user": "tieulyphidao",
-        "pass": "hateva1",
-        "group": "KÊNH_3",
-        "server": 1,
-    },
+    #"4599": {
+    #    "user": "tieulyphidao",
+    #    "pass": "hateva1",
+    #    "group": "KÊNH_3",
+    #    "server": 1,
+    #},
     #"4676": {
     #    "user": "hoadataithe",
     #    "pass": "hateva1",
     #    "group": "KÊNH_2",
     #    "server": 1,
     #},
-    #"2303": {
-    #    "user": "laotsezu",
-    #    "pass": "hateva1",
-    #    "group": "KÊNH_2",
-    #    "server": 1,
-    #},
+    "2303": {
+        "user": "laotsezu",
+        "pass": "hateva1",
+        "group": "KÊNH_3",
+        "server": 1,
+    },
     #"1904": {
     #    "user": "thopvna",
     #    "pass": "hateva1",
@@ -69,12 +69,12 @@ THONGTINDANGNHAP_MAP = {
     #    "group": "KÊNH_2",
     #    "server": 1,
     #},
-    #"3236": {
-    #    "user": "truymenh",
-    #    "pass": "hateva1",
-    #    "group": "KÊNH_3",
-    #    "server": 1,
-    #},
+    "3236": {
+        "user": "truymenh",
+        "pass": "hateva1",
+        "group": "KÊNH_2",
+        "server": 1,
+    },
 }
 
 
