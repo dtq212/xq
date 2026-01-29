@@ -1002,7 +1002,7 @@ class MoiTruong:
         return read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0x29) == 1
 
     def get_is_baothugiangho(self, tendoituong):
-        return "(" in tendoituong and ")" in tendoituong and "(cấp" not in tendoituong
+        return "(" in tendoituong and "(cấp" not in tendoituong
 
     def get_is_cothetancong(self, diachicosothongtinnhanvat):
         if not diachicosothongtinnhanvat:
@@ -1040,6 +1040,8 @@ class MoiTruong:
                     if tenchunhan:
                         if tenchunhan == self.get_tendoituong():
                             return False
+                        elif tenchunhan in TENNGUOICHOICUNGBANGs:
+                            return False
                         diachicosothongtinnhanvatchunhan = self.action_timkiemnhanvat(tennhanvat = tenchunhan)
                         if diachicosothongtinnhanvatchunhan:
                             return self.get_is_cothetancong(diachicosothongtinnhanvatchunhan)
@@ -1050,6 +1052,8 @@ class MoiTruong:
                     tenchunhan = tenmuctieu.split("(")[1].split(")")[0].strip()
                     if tenchunhan:
                         if tenchunhan == self.get_tendoituong():
+                            return False
+                        elif tenchunhan in TENNGUOICHOICUNGBANGs:
                             return False
                         diachicosothongtinnhanvatchunhan = self.action_timkiemnhanvat(tennhanvat = tenchunhan)
                         if diachicosothongtinnhanvatchunhan:

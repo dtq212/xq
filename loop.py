@@ -118,6 +118,8 @@ class LoopChinh:
             if not self.moitruong.get_is_dangnamtrongnhom():
                 self.moitruong.action_thucthicaulenh("team + 4599", delay = 0)
                 time.sleep(0.5)
+        #if self.moitruong.get_idnguoichoi() == 4676:
+        #    print(str(self.moitruong.get_danhsachvatphamhanhtrang_map()))
 
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
