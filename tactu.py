@@ -937,22 +937,23 @@ class TacTu:
 
             diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
 
+            is_bandokhongpk = self.moitruong.get_idbandohientai() not in BANDOKHONGPKs
             if time.time() - self._thoidiemkiemtrahieuunggannhat > 2.5:
                 self._thoidiemkiemtrahieuunggannhat = time.time()
 
-                if (self.moitruong.get_idbandohientai() not in BANDOKHONGPKs or self.moitruong.get_phantramnoilucconlai() < 25.) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_PHAPLUCTHACH,), True, is_hieuungcoloi = 1):
+                if ((is_bandokhongpk and self.moitruong.get_phantramnoilucconlai() < 25.) or (not is_bandokhongpk and self.moitruong.get_phantramnoilucconlai() < 75.)) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_PHAPLUCTHACH,), True, is_hieuungcoloi = 1):
                     if not self.moitruong.action_timkiemvatphamhanhtrang(TIEUPHAPLUCTHACH):
                         pass
                     else:
                         self.action_sudungvatphamhanhtrang(TIEUPHAPLUCTHACH)
 
-                if self.moitruong.get_tenmonphai() in ("camvequan", "daohoanguyen", "duongmon") and self.moitruong.get_idbandohientai() not in BANDOKHONGPKs and self.moitruong.get_phantramsinhlucconlai() < 75. and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_HUYETTHACH,), True, is_hieuungcoloi = 1):
+                if self.moitruong.get_tenmonphai() in ("camvequan", "daohoanguyen", "duongmon") and is_bandokhongpk and self.moitruong.get_phantramsinhlucconlai() < 75. and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_HUYETTHACH,), True, is_hieuungcoloi = 1):
                     if not self.moitruong.action_timkiemvatphamhanhtrang(TIEUHUYETTHACH):
                         pass
                     else:
                         self.action_sudungvatphamhanhtrang(TIEUHUYETTHACH)
 
-                if diachicosothongtinnhanvatmuctieudangchon and self.moitruong.get_idbandohientai() not in BANDOKHONGPKs and time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() > 1.:
+                if diachicosothongtinnhanvatmuctieudangchon and is_bandokhongpk and time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() > 1.:
                     if self.moitruong.get_tenmonphai() == "camvequan" and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THIENNGUYENDON,), macdinh = True, is_hieuungcoloi = 1):
                         self.action_sudungvatphamhanhtrang(THIENNGUYENDON)
 
@@ -963,7 +964,7 @@ class TacTu:
                     self.action_sudungvatphamhanhtrang(ANXAPHU)
 
             phantramsinhlucconlai = self.moitruong.get_phantramsinhlucconlai()
-            if self._is_tudongsudungkynang and self.moitruong.get_idbandohientai() not in BANDOKHONGPKs and time.time() - self._thoidiemsudungsotriduocgannhat > 5. and self.moitruong.get_idmaupk() != MAUPK_HOABINH and phantramsinhlucconlai <= 75:
+            if self._is_tudongsudungkynang and is_bandokhongpk and time.time() - self._thoidiemsudungsotriduocgannhat > 5. and self.moitruong.get_idmaupk() != MAUPK_HOABINH and phantramsinhlucconlai <= 75:
                 if not self.action_sudungvatphamhanhtrang(CAPCUUDON, delay = 0.):
                     self.action_sudungvatphamhanhtrang(HOATLACHOAN, delay = 0.)
                 self._thoidiemsudungsotriduocgannhat = time.time()
