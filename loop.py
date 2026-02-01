@@ -210,3 +210,5 @@ class LoopPhu:
              time.sleep(0.25)
              self.moitruong.action_thucthicaulenh("tallk {}# bonus.23".format(hex(self.moitruong.get_iddoituong(diachi))).replace("0x", ""))
              time.sleep(0.25)
+
+        

@@ -1013,7 +1013,7 @@ class MoiTruong:
 
         if self.get_is_nhanvatdachet(diachicosothongtinnhanvat):
             return False
-
+        
         idloainhanvat = self.get_idloainhanvat(diachicosothongtinnhanvat)
 
         if idloainhanvat == LOAIMUCTIEU_NGUOICHOICUNGNHOM:
@@ -1410,7 +1410,7 @@ class MoiTruong:
 
         return True
 
-    def action_sudungtancongvatly(self, diachicosothongtinnhanvatmuctieu, delay = 0.05):
+    def action_sudungtancongvatly(self, diachicosothongtinnhanvatmuctieu, delay = 0.):
         if time.time() - self._thoidiemsudungtancongvatlygannhat < delay:
             return False
 
@@ -1697,8 +1697,9 @@ class MoiTruong:
         self.tientrinh.start_thread(self._diachiautoassemblesudungkynang)
         time.sleep(0.05)
 
-    def auto_assemble_sudungtancongvatly(self, iddoituong):
-        caulenh = "kill {}".format(iddoituong)
+    def auto_assemble_sudungtancongvatly(self, iddoituong, caulenh = False):
+        caulenh = caulenh or "kill"
+        caulenh = "{} {}".format(caulenh, iddoituong)
         if not self._is_dasetupautoassemblesudungtancongvatly:
             self._diachiautoassemblesudungtancongvatly = self.tientrinh.allocate(128)
 
