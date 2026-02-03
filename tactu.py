@@ -2762,9 +2762,10 @@ class TacTu:
                     if self.moitruong.get_idkynangbaothu(i) == IDKYNANGBAOTHU_THIENCAN6s:
                         diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
 
-                        if diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG, ), macdinh = False, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangbaothusansang(i) and self.moitruong.get_noilucconlaibaothudautien() >= 60:
-                            if self.moitruong.action_sudungthaotacbaothu(iddoituongbaothu, 2):
-                                self.moitruong.action_sudungkynangbaothu(IDKYNANGBAOTHU_THIENCAN6s, diachimuctieu)
+                        if diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu) and self.moitruong.get_is_cothegaychoang(diachimuctieu) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG, ), macdinh = False, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0) and self.moitruong.get_is_kynangbaothusansang(i) and self.moitruong.get_noilucconlaibaothudautien() >= 60:
+                            if self.moitruong.get_tenmonphai() != "duongmon" or (not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NHIEPHONCHAM) and time.time() - self._thoidiemsudungnhiephonchamgannhat >= 6.):
+                                if self.moitruong.action_sudungthaotacbaothu(iddoituongbaothu, 2):
+                                    self.moitruong.action_sudungkynangbaothu(IDKYNANGBAOTHU_THIENCAN6s, diachimuctieu)
 
                         if time.time() - self._thoidiemhoiphucbaothugannhat > 5.:
                             if self.moitruong.get_noilucconlaibaothudautien() <= 60:
