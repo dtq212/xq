@@ -2832,6 +2832,12 @@ class MoiTruong:
             return False
         return read_int(self.tientrinh, diachicoso + 0x490)
 
+    def get_phantramsinhlucconlaibaothudautien(self):
+        diachicoso = self.get_diachicosobaothudautien()
+        if not diachicoso:
+            return 100.
+        return self.get_sinhlucconlaibaothudautien() / max(1, self.get_sinhluctoidabaothudautien())
+
     def get_noilucconlaibaothudautien(self):
         diachicoso = self.get_diachicosobaothudautien()
         if not diachicoso:

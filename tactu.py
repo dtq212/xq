@@ -2766,8 +2766,8 @@ class TacTu:
                             if self.moitruong.action_sudungthaotacbaothu(iddoituongbaothu, 2):
                                 self.moitruong.action_sudungkynangbaothu(IDKYNANGBAOTHU_THIENCAN6s, diachimuctieu)
 
-                        if self.moitruong.get_noilucconlaibaothudautien() <= 50:
-                            if time.time() - self._thoidiemhoiphucbaothugannhat > 5.:
+                        if time.time() - self._thoidiemhoiphucbaothugannhat > 5.:
+                            if self.moitruong.get_noilucconlaibaothudautien() <= 50:
                                 iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang("Lão Tửu")
                                 if iddoituongvatpham:
                                     if self.moitruong.action_sudungvatphambaothu(iddoituongvatpham, iddoituongbaothu):
@@ -2775,6 +2775,16 @@ class TacTu:
                                 else:
                                     phatam("Hết lão tửu")
                                     self._thoidiemhoiphucbaothugannhat = time.time()
+
+                            if self.moitruong.get_phantramsinhlucconlaibaothudautien() <= 45:
+                                iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang("Trái Đào")
+                                if iddoituongvatpham:
+                                    if self.moitruong.action_sudungvatphambaothu(iddoituongvatpham, iddoituongbaothu):
+                                        self._thoidiemhoiphucbaothugannhat = time.time()
+                                else:
+                                    phatam("Hết trái đào")
+                                    self._thoidiemhoiphucbaothugannhat = time.time()
+
                         break
                 break
 
