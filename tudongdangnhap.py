@@ -6,8 +6,8 @@ import win32con
 from moitruong import MoiTruong
 from background_input import BackgroundInput
 
-DUONGDAN_GAME = r"D:\Games\ChienQuoc2D_New\ChienQuoc.exe"
-LAUNCHER_TITLE = "client 1.01.68"
+DUONGDAN_GAME = r"D:\Games\ChienQuoc2D\xq.exe"
+LAUNCHER_TITLE = "client 1.01.69"
 GAME_TITLE_LOGIN_SCREEN = "Chien Quoc - Loan The Anh Hung"
 GAME_TITLE_PREFIX = "Chien Quoc ("
 
@@ -44,22 +44,22 @@ THONGTINDANGNHAP_MAP = {
         "group": "KÊNH_2",
         "server": 1,
     },
-    #"4676": {
-    #    "user": "hoadataithe",
-    #    "pass": "hateva1",
-    #    "group": "KÊNH_2",
-    #    "server": 1,
-    #},
+    "4676": {
+        "user": "hoadataithe",
+        "pass": "hateva1",
+        "group": "KÊNH_2",
+        "server": 1,
+    },
     "2303": {
         "user": "laotsezu",
         "pass": "hateva1",
-        "group": "KÊNH_3",
+        "group": "KÊNH_2",
         "server": 1,
     },
     #"1904": {
     #    "user": "thopvna",
     #    "pass": "hateva1",
-    #    "group": "KÊNH_2",
+    #    "group": "KÊNH_3",
     #    "server": 1,
     #    "char_index": 2,
     #},
