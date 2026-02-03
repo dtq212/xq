@@ -2762,19 +2762,20 @@ class TacTu:
                     if self.moitruong.get_idkynangbaothu(i) == IDKYNANGBAOTHU_THIENCAN6s:
                         diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
 
-                        # if diachimuctieu and self.moitruong.get_is_kynangbaothusansang(i) and self.moitruong.get_noilucconlaibaothudautien() >= 50:
-                        #     if self.moitruong.action_sudungthaotacbaothu(iddoituongbaothu, 2):
-                        #         self.moitruong.action_sudungkynangbaothu(IDKYNANGBAOTHU_THIENCAN6s, diachimuctieu)
-                        #
-                        # if self.moitruong.get_noilucconlaibaothudautien() <= 50:
-                        #     if time.time() - self._thoidiemhoiphucbaothugannhat > 5.:
-                        #         iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang("Lão Tửu")
-                        #         if iddoituongvatpham:
-                        #             if self.moitruong.action_sudungvatphambaothu(iddoituongvatpham, iddoituongbaothu):
-                        #                 self._thoidiemhoiphucbaothugannhat = time.time()
-                        #         else:
-                        #             phatam("Hết lão tửu")
-                        #             self._thoidiemhoiphucbaothugannhat = time.time()
+                        if diachimuctieu and self.moitruong.get_is_kynangbaothusansang(i) and self.moitruong.get_noilucconlaibaothudautien() >= 50:
+                            if self.moitruong.action_sudungthaotacbaothu(iddoituongbaothu, 2):
+                                self.moitruong.action_sudungkynangbaothu(IDKYNANGBAOTHU_THIENCAN6s, diachimuctieu)
+
+                        if self.moitruong.get_noilucconlaibaothudautien() <= 50:
+                            if time.time() - self._thoidiemhoiphucbaothugannhat > 5.:
+                                iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang("Lão Tửu")
+                                if iddoituongvatpham:
+                                    if self.moitruong.action_sudungvatphambaothu(iddoituongvatpham, iddoituongbaothu):
+                                        self._thoidiemhoiphucbaothugannhat = time.time()
+                                else:
+                                    phatam("Hết lão tửu")
+                                    self._thoidiemhoiphucbaothugannhat = time.time()
+                        break
                 break
 
     def action_tudongbanrac(self):
