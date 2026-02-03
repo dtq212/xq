@@ -87,6 +87,7 @@ DAUBINH = "Đậu Binh"
 CUONGTHI = "Cương Thi"
 QUYTOT = "Quỷ Tốt"
 THIENBINH = "Thiên Binh"
+THIENTUONG = "Thiên Tướng"
 
 TENBANDO_TE = "Tề"
 TENBANDO_HAN = "Hàn"
