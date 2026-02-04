@@ -60,7 +60,6 @@ class LoopTimKiemMucTieu:
         self.tactu.action_tudongtimkiemmuctieu()
         self.moitruong.action_phananhdiachicosothongtinnhanvatmuctieudangchoningame()
 
-
 class LoopDieuPhoiDiChuyen:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
         self.moitruong = moitruong
@@ -189,7 +188,6 @@ class LoopPhu:
         self.tactu.action_tudongdaotangbaodo()
 
         self.tactu.action_tudongtrieuhoibaothudautien()
-        self.tactu.action_tudongsudungkynangbaothu()
         self.tactu.action_tudongdichientruong()
         self.tactu.action_dichuyentudo()
         self.tactu.action_nhatdo()

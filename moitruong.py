@@ -2783,17 +2783,23 @@ class MoiTruong:
             return False
         return read_boolean(self.tientrinh, diachicoso + 0x1AE8)
 
-    def get_idkynangbaothu(self, idvitri):
+    def get_idkynangbaothudautien(self, idvitri):
         diachicoso = self.get_diachicosobaothudautien()
         if not diachicoso:
             return False
-        return read_int(self.tientrinh, diachicoso + idvitri * 0x228 + 0xB88)
+        return read_int(self.tientrinh, diachicoso + idvitri * 0x228 + 0x2E8)
 
-    def get_is_kynangbaothusansang(self, idvitri):
+    def get_tenkynangbaothudautien(self, idvitri):
         diachicoso = self.get_diachicosobaothudautien()
         if not diachicoso:
             return False
-        return read_int(self.tientrinh, diachicoso + idvitri * 0x228 + 0xDA4) == 0
+        return read_string(self.tientrinh, diachicoso + idvitri * 0x228 + 0x2EC)
+
+    def get_is_kynangbaothudautiensansang(self, idvitri):
+        diachicoso = self.get_diachicosobaothudautien()
+        if not diachicoso:
+            return False
+        return read_int(self.tientrinh, diachicoso + idvitri * 0x228 + 0x504) == 0
 
     def get_iddoituongbaothudautien(self):
         diachicoso = self.get_diachicosobaothudautien()

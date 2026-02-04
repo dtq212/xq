@@ -29,7 +29,6 @@ class TacTu:
         self._is_thucsondao = False
         self.moitruong = moitruong
 
-        # Thiết lập có lưu
         self._is_tudongtheosautruongnhom = False
         self._is_tudongbattheosaunhom = True
         self._is_tudongtimkiemmuctieu = True
@@ -2782,11 +2781,12 @@ class TacTu:
                 if not iddoituongbaothu:
                     break
 
-                for i in range(3):
-                    if self.moitruong.get_idkynangbaothu(i) == IDKYNANGBAOTHU_THIENCAN6s:
+                for i in range(10):
+                    print(self.moitruong.get_tenkynangbaothudautien(i))
+                    if self.moitruong.get_idkynangbaothudautien(i) == IDKYNANGBAOTHU_THIENCAN6s:
                         diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
 
-                        if diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu) and self.moitruong.get_is_cothegaychoang(diachimuctieu) and self.moitruong.get_is_kynangbaothusansang(i) and self.moitruong.get_noilucconlaibaothudautien() >= 60:
+                        if diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu) and self.moitruong.get_is_cothegaychoang(diachimuctieu) and self.moitruong.get_is_kynangbaothudautiensansang(i) and self.moitruong.get_noilucconlaibaothudautien() >= 60:
                             if self.moitruong.get_tenmonphai() != "duongmon" or (not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NHIEPHONCHAM) and time.time() - self._thoidiemsudungnhiephonchamgannhat >= 8.):
                                 if self.moitruong.action_sudungthaotacbaothu(iddoituongbaothu, 2, delay = 0.):
                                     self.moitruong.action_sudungkynangbaothu(IDKYNANGBAOTHU_THIENCAN6s, diachimuctieu, delay = 2.)
@@ -2801,7 +2801,7 @@ class TacTu:
                                     phatam("Hết lão tửu")
                                     self._thoidiemhoiphucbaothugannhat = time.time()
 
-                            if self.moitruong.get_phantramsinhlucconlaibaothudautien() <= 45:
+                            if self.moitruong.get_phantramsinhlucconlaibaothudautien() <= 60:
                                 iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang("Trái Đào")
                                 if iddoituongvatpham:
                                     if self.moitruong.action_sudungvatphambaothu(iddoituongvatpham, iddoituongbaothu):
