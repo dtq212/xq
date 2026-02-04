@@ -2782,7 +2782,6 @@ class TacTu:
                     break
 
                 for i in range(10):
-                    print(self.moitruong.get_tenkynangbaothudautien(i))
                     if self.moitruong.get_idkynangbaothudautien(i) == IDKYNANGBAOTHU_THIENCAN6s:
                         diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
 
