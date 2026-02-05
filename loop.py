@@ -118,8 +118,13 @@ class LoopChinh:
             if not self.moitruong.get_is_dangnamtrongnhom():
                 self.moitruong.action_thucthicaulenh("team + 4599", delay = 0)
                 time.sleep(0.5)
-        #if self.moitruong.get_idnguoichoi() == 4676:
-        #    print(str(self.moitruong.get_danhsachvatphamhanhtrang_map()))
+        # if self.moitruong.get_idnguoichoi() == 4676:
+        #    # print(str(self.moitruong.get_danhsachvatphamhanhtrang_map()))
+        #     tinhnguyendon = self.moitruong.action_timkiemvatphamhanhtrang("Tinh Nguyên Đơn")
+        #     if tinhnguyendon:
+        #         self.moitruong.action_thucthicaulenh("pet 103bf0# fuse_yy {}#".format(hex(tinhnguyendon)).replace("0x", ""), delay = 0.)
+        #         time.sleep(0.25)
+
 
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
@@ -187,7 +192,8 @@ class LoopPhu:
         self.tactu.action_tudongkhaikhoang()
         self.tactu.action_tudongdaotangbaodo()
 
-        self.tactu.action_tudongtrieuhoibaothudautien()
+        if self.moitruong.get_idnguoichoi() != 4676:
+            self.tactu.action_tudongtrieuhoibaothudautien()
         self.tactu.action_tudongdichientruong()
         self.tactu.action_dichuyentudo()
         self.tactu.action_nhatdo()

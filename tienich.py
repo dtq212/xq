@@ -43,19 +43,6 @@ def read_bytes(process, address, n_bytes):
 def write_bytes(process, address, value, n_bytes):
     return process.write_bytes(address, value, n_bytes)
 
-
-def read_string(process, address, max_length = 256):
-    try:
-        buff = process.read_bytes(address, max_length)
-        if b'\x00' in buff:
-            buff = buff.split(b'\x00')[0]
-        text = buff.decode('utf-8', errors = 'replace')
-        clean_text = re.sub(r'\x1b[a-zA-Z0-9]', '', text)
-        return clean_text.strip()
-
-    except Exception:
-        return ""
-
 def read_string(process, address, max_length = 2048):
     try:
         initial_size = 256
@@ -78,7 +65,7 @@ def read_string(process, address, max_length = 2048):
                     current_offset += 128
                 except:
                     break
-        text = raw_data.decode("utf-8", errors = "replace")
+        text = raw_data.decode("utf-8", errors = "ignore")
         return re.sub(r'\x1b[a-zA-Z0-9]', '', text).strip()
     except Exception:
         return ""

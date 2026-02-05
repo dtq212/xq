@@ -2863,16 +2863,6 @@ class MoiTruong:
 
         return True
 
-    def action_sudungthaotacbaothu(self, iddoituong, idkynang, delay = 0.2):
-        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
-            return False
-
-        self._thoidiemthucthicaulenhgannhat = time.time()
-
-        self.auto_assemble_sudungthaotacbaothu(iddoituong, idkynang)
-
-        return True
-
     def auto_assemble_sudungvatphambaothu(self, iddoituongvatpham, iddoituongpet):
         caulenh = "use {}# pet {}#".format(hex(iddoituongvatpham), hex(iddoituongpet)).replace("0x", "")
         if not self._is_dasetupautoassemblesudungvatphambaothu:
@@ -2930,6 +2920,16 @@ class MoiTruong:
 
         self.tientrinh.start_thread(self._diachiautoassembletrieuhoibaothu)
         time.sleep(0.05)
+
+    def action_sudungthaotacbaothu(self, iddoituong, idkynang, delay = 0.2):
+        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
+            return False
+
+        self._thoidiemthucthicaulenhgannhat = time.time()
+
+        self.auto_assemble_sudungthaotacbaothu(iddoituong, idkynang)
+
+        return True
 
     def auto_assemble_sudungthaotacbaothu(self, iddoituong, idkynang):
         caulenh = "pet {}# {}".format(hex(iddoituong), idkynang).replace("0x", "")

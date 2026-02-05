@@ -13,6 +13,7 @@ from tienich import taithietlap as util_taithietlap, phatam
 
 class TacTu:
     def __init__(self, moitruong: MoiTruong):
+        self._thoidiemthietlaptudongsudungkynangthiencangannhat = 0.
         self._thoidiemyeucaubaothuvatphamdoilenhgannhat = 0.
         self._thoidiemtamngungsudungkynang = 0.
         self._thoidiemhoiphucbaothugannhat = 0.
@@ -944,6 +945,11 @@ class TacTu:
                 self._thoidiemtamngungsudungkynang = time.time() + 0.5
                 self._thoidiemyeucaubaothuvatphamdoilenhgannhat = time.time()
                 self.moitruong.action_thucthicaulenh("pf 4131.@", delay = 0.)
+
+                chienthucaotuyet = self.moitruong.action_timkiemvatphamhanhtrang("Chiến Thú Cáo Tuyết")
+                if chienthucaotuyet:
+                    self.moitruong.action_sudungvatpham(chienthucaotuyet, delay = 0.)
+
 
             if not self._is_dasudungbaothuvatpham and time.time() - self._thoidiemsudungbaothuvatphamgannhat > 1.:
                 for baothuvatpham in BAOTHUVATPHAMs:
@@ -2777,6 +2783,9 @@ class TacTu:
                 if self.moitruong.get_is_nhanvatdachet():
                     break
 
+                if not self.moitruong.get_is_datrieuhoibaothudautien():
+                    break
+
                 iddoituongbaothu = self.moitruong.get_iddoituongbaothudautien()
                 if not iddoituongbaothu:
                     break
@@ -2786,9 +2795,9 @@ class TacTu:
                         diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
 
                         if diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu) and self.moitruong.get_is_cothegaychoang(diachimuctieu) and self.moitruong.get_is_kynangbaothudautiensansang(i) and self.moitruong.get_noilucconlaibaothudautien() >= 60:
-                            if self.moitruong.get_tenmonphai() != "duongmon" or (not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NHIEPHONCHAM) and time.time() - self._thoidiemsudungnhiephonchamgannhat >= 8.):
-                                if self.moitruong.action_sudungthaotacbaothu(iddoituongbaothu, 2, delay = 0.):
-                                    self.moitruong.action_sudungkynangbaothu(IDKYNANGBAOTHU_THIENCAN6s, diachimuctieu, delay = 2.)
+                            if self.moitruong.get_tenmonphai() != "duongmon" or ((not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NHIEPHONCHAM) or self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG, ), macdinh = False, is_hieuungcoloi = 0)) and time.time() - self._thoidiemsudungnhiephonchamgannhat >= 8.):
+                                self.moitruong.action_sudungthaotacbaothu(iddoituongbaothu, 2, delay = 0.)
+                                self.moitruong.action_sudungkynangbaothu(IDKYNANGBAOTHU_THIENCAN6s, diachimuctieu, delay = 0.)
 
                         if time.time() - self._thoidiemhoiphucbaothugannhat > 5.:
                             if self.moitruong.get_noilucconlaibaothudautien() <= 60:
@@ -2802,6 +2811,9 @@ class TacTu:
 
                             if self.moitruong.get_phantramsinhlucconlaibaothudautien() <= 60:
                                 iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang("Trái Đào")
+                                if not iddoituongvatpham:
+                                    iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang("Chuối")
+
                                 if iddoituongvatpham:
                                     if self.moitruong.action_sudungvatphambaothu(iddoituongvatpham, iddoituongbaothu):
                                         self._thoidiemhoiphucbaothugannhat = time.time()
