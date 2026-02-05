@@ -121,8 +121,9 @@ class LoopChinh:
         # if self.moitruong.get_idnguoichoi() == 4676:
         #    # print(str(self.moitruong.get_danhsachvatphamhanhtrang_map()))
         #     tinhnguyendon = self.moitruong.action_timkiemvatphamhanhtrang("Tinh Nguyên Đơn")
+        #     iddoituongbaothudautien = self.moitruong.get_iddoituongbaothudautien()
         #     if tinhnguyendon:
-        #         self.moitruong.action_thucthicaulenh("pet 103bf0# fuse_yy {}#".format(hex(tinhnguyendon)).replace("0x", ""), delay = 0.)
+        #         self.moitruong.action_thucthicaulenh("pet {}# fuse_yy {}#".format(hex(iddoituongbaothudautien), hex(tinhnguyendon)).replace("0x", ""), delay = 0.)
         #         time.sleep(0.25)
 
 
