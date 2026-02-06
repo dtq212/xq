@@ -113,11 +113,11 @@ class LoopChinh:
             return
 
         if self.moitruong.get_is_dangmocuasoxacnhan():
+            phatam("Mã xác nhận")
             time.sleep(1.0)
             noidungcuasoxacnhan = self.moitruong.get_noidungcuasomaxacnhan()
-
             try:
-                maxacnhan = noidungcuasoxacnhan.split("(")[1].split(")")[0]
+                maxacnhan = noidungcuasoxacnhan.split(":")[1].strip()
                 if maxacnhan.isnumeric():
                     caulenh = "captcha2 {}".format(maxacnhan)
                     self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)

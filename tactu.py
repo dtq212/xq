@@ -2797,8 +2797,8 @@ class TacTu:
                     if idkynangbaothu == IDKYNANGBAOTHU_THIENCAN6s:
                         diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
 
-                        if diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu) and self.moitruong.get_is_cothegaychoang(diachimuctieu) and self.moitruong.get_is_kynangbaothudautiensansang(i) and self.moitruong.get_noilucconlaibaothudautien() >= 60:
-                            if self.moitruong.get_tenmonphai() != "duongmon" or ((not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NHIEPHONCHAM) or self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG, ), macdinh = False, is_hieuungcoloi = 0)) and time.time() - self._thoidiemsudungnhiephonchamgannhat >= 8.):
+                        if diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu) and self.moitruong.get_is_cothegaychoang(diachimuctieu) and self.moitruong.get_is_kynangbaothudautiensansang(i) and self.moitruong.get_noilucconlaibaothudautien() >= 60 and time.time() - self._thoidiemsudungnhiephonchamgannhat >= 8.:
+                            if not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NHIEPHONCHAM) or self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG, ), macdinh = False, is_hieuungcoloi = 0):
                                 self.moitruong.action_sudungthaotacbaothu(iddoituongbaothu, 2, delay = 0.)
                                 self.moitruong.action_sudungkynangbaothu(idkynangbaothu, diachimuctieu, delay = 0.)
 
@@ -2812,7 +2812,7 @@ class TacTu:
                                     phatam("Hết lão tửu")
                                     self._thoidiemhoiphucbaothugannhat = time.time()
 
-                            if self.moitruong.get_phantramsinhlucconlaibaothudautien() <= 60:
+                            if self.moitruong.get_sinhluctoidabaothudautien() - self.moitruong.get_sinhlucconlaibaothudautien() >= 1000:
                                 iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang("Trái Đào")
                                 if not iddoituongvatpham:
                                     iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang("Chuối")
