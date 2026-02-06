@@ -113,6 +113,7 @@ class LoopChinh:
             return
 
         if self.moitruong.get_is_dangmocuasoxacnhan():
+            time.sleep(1.0)
             noidungcuasoxacnhan = self.moitruong.get_noidungcuasomaxacnhan()
 
             try:
