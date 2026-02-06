@@ -118,10 +118,11 @@ class LoopChinh:
 
             try:
                 maxacnhan = noidungcuasoxacnhan.split("(")[1].split(")")[0]
-                caulenh = "captcha2 {}".format(maxacnhan)
-                self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
-                self.moitruong.set_is_dangmocuasoxacnhan(False)
-                time.sleep(1.)
+                if maxacnhan.isnumeric():
+                    caulenh = "captcha2 {}".format(maxacnhan)
+                    self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
+                    self.moitruong.set_is_dangmocuasoxacnhan(False)
+                    time.sleep(1.)
             except IndexError:
                 print("Không tìm thấy mã xác nhận đúng định dạng")
 
