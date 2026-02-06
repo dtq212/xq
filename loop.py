@@ -107,8 +107,25 @@ class LoopChinh:
             time.sleep(0.1)
 
     def step(self):
-        if not self.moitruong.get_is_nhanvattontai(): return
-        if self.moitruong.get_is_dangmatketnoi(): return
+        if not self.moitruong.get_is_nhanvattontai():
+            return
+        if self.moitruong.get_is_dangmatketnoi():
+            return
+
+        if self.moitruong.get_is_dangmocuasoxacnhan():
+            noidungcuasoxacnhan = self.moitruong.get_noidungcuasomaxacnhan()
+
+            try:
+                maxacnhan = noidungcuasoxacnhan.split("(")[1].split(")")[0]
+                caulenh = "captcha2 {}".format(maxacnhan)
+                self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
+                self.moitruong.set_is_dangmocuasoxacnhan(False)
+                time.sleep(1.)
+            except IndexError:
+                print("Không tìm thấy mã xác nhận đúng định dạng")
+
+            return
+
         self.tactu._action_theonhom()
         self.tactu.action_xulygomquai()
         self.tactu._action_sudungkynang()
@@ -118,6 +135,7 @@ class LoopChinh:
             if not self.moitruong.get_is_dangnamtrongnhom():
                 self.moitruong.action_thucthicaulenh("team + 4599", delay = 0)
                 time.sleep(0.5)
+
         # if self.moitruong.get_idnguoichoi() == 4676:
         #    # print(str(self.moitruong.get_danhsachvatphamhanhtrang_map()))
         #     tinhnguyendon = self.moitruong.action_timkiemvatphamhanhtrang("Tinh Nguyên Đơn")

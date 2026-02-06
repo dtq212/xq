@@ -1370,6 +1370,8 @@ class TacTu:
                     priority = 1
                 elif idnguoichoidangxemxet in NHANVATCUNGBANGs:
                     priority = 2
+            elif "(TieuLyPhiDao)" in self.moitruong.get_tendoituong(diachidoituongdangxemxet):
+                priority = 1
 
             if priority != -1:
                 danhsachungviens.append((priority, diachidoituongdangxemxet))
@@ -2284,8 +2286,8 @@ class TacTu:
 
         if self.moitruong.get_is_dayhanhtrang():
             if time.time() - self._thoidiemphatamdayhanhtrang > 5.0:
-                if not self._is_tudongvebanrac:
-                    phatam("Hành trang đầy")
+                #if not self._is_tudongvebanrac:
+                #    phatam("Hành trang đầy")
                 self._thoidiemphatamdayhanhtrang = time.time()
 
             self._diachicosovatphamdangnhat = False
@@ -2791,13 +2793,14 @@ class TacTu:
                     break
 
                 for i in range(10):
-                    if self.moitruong.get_idkynangbaothudautien(i) == IDKYNANGBAOTHU_THIENCAN6s:
+                    idkynangbaothu = self.moitruong.get_idkynangbaothudautien(i)
+                    if idkynangbaothu == IDKYNANGBAOTHU_THIENCAN6s:
                         diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
 
                         if diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu) and self.moitruong.get_is_cothegaychoang(diachimuctieu) and self.moitruong.get_is_kynangbaothudautiensansang(i) and self.moitruong.get_noilucconlaibaothudautien() >= 60:
                             if self.moitruong.get_tenmonphai() != "duongmon" or ((not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NHIEPHONCHAM) or self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG, ), macdinh = False, is_hieuungcoloi = 0)) and time.time() - self._thoidiemsudungnhiephonchamgannhat >= 8.):
                                 self.moitruong.action_sudungthaotacbaothu(iddoituongbaothu, 2, delay = 0.)
-                                self.moitruong.action_sudungkynangbaothu(IDKYNANGBAOTHU_THIENCAN6s, diachimuctieu, delay = 0.)
+                                self.moitruong.action_sudungkynangbaothu(idkynangbaothu, diachimuctieu, delay = 0.)
 
                         if time.time() - self._thoidiemhoiphucbaothugannhat > 5.:
                             if self.moitruong.get_noilucconlaibaothudautien() <= 60:
