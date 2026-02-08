@@ -22,6 +22,16 @@ OFFSET_DIACHICOSOTHONGTINNHANVATX = 0x1BDA60
 
 class MoiTruong:
     def __init__(self, idcuaso):
+        self._thoidiemthietlapchedobaothugannhat = 0.
+        self._thoidiemsudungthaotacbaothugannhat = 0.
+        self._thoidiemtrieuhoibaothugannhat = 0.
+        self._thoidiemsudungvatphambaothugannhat = 0.
+        self._thoidiemsudungvatphamgannhat = 0.
+        self._thoidiemtrochuyenvoinpcgannhat = 0.
+        self._thoidiemkhaikhoanggannhat = 0.
+        self._thoidiemdichuyenvatphamhanhtranggannhat = 0.
+        self._thoidiemsudungkynangtoadogannhat = 0.
+        self._thoidiemnhatdotoadogannhat = 0.
         self.idcuaso = idcuaso
         idtientrinh = ctypes.c_ulong()
         ctypes.windll.user32.GetWindowThreadProcessId(self.idcuaso, ctypes.byref(idtientrinh))
@@ -56,6 +66,7 @@ class MoiTruong:
         self._is_dasetupautoassembledichuyenvatphamhanhtrang = False
         self._is_dasetupautoassembletrieuhoibaothu = False
         self._is_dasetupautoassemblesudungthaotacbaothu = False
+        self._is_dasetupautoassemblesudungthietlapchedobaothu = False
         self._is_dasetupautoassemblesudungkynangbaothu = False
         self._is_dasetupautoassemblesudungvatpham = False
         self._is_dasetupautoassemblesudungvatphambaothu = False
@@ -154,6 +165,7 @@ class MoiTruong:
             ("_is_dasetupautoassemblekhoitaothongtinbando", "_diachiautoassemblekhoitaothongtinbando"),
             ("_is_dasetupautoassemblethucthicaulenh", "_diachiautoassemblethucthicaulenh"),
             ("_is_dasetupautoassemblesudungthaotacbaothu", "_diachiautoassemblesudungthaotacbaothu"),
+            ("_is_dasetupautoassemblesudungthietlapchedobaothu", "_diachiautoassemblesudungthietlapchedobaothu"),
             ("_is_dasetupautoassemblesudungkynangbaothu", "_diachiautoassemblesudungkynangbaothu"),
             ("_is_dasetupautoassembleralenhbaothutancong", "_diachiautoassembleralenhbaothutancong"),
             ("_is_dasetupautoassembleralenhbaothutheosau", "_diachiautoassembleralenhbaothutheosau"),
@@ -1275,26 +1287,17 @@ class MoiTruong:
     def action_vohieuhoakhoanhvungkynang(self):
         # TODO: Chưa xử lý
         return
-        if read_bytes(self.tientrinh, self.diachixq + 0x76148, 1) != bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0x76148, bytes.fromhex("90 90"), 2)
 
     def action_tatvohieuhoakhoanhvungkynang(self):
         # TODO: Chưa xử lý
         return
-        if read_bytes(self.tientrinh, self.diachixq + 0x76148, 1) == bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0x76148, bytes.fromhex("88 01"), 2)
-
     def action_vohieuhoaphimspace(self):
         # TODO: Chưa xử lý
         return
-        if read_bytes(self.tientrinh, self.diachixq + 0x3D8CB + 0x6, 1) != bytes.fromhex("00"):
-            write_bytes(self.tientrinh, self.diachixq + 0x3D8CB + 0x6, bytes.fromhex("00"), 1)
 
     def action_tatvohieuhoaphimspace(self):
         # TODO: Chưa xử lý
         return
-        if read_bytes(self.tientrinh, self.diachixq + 0x3D8CB + 0x6, 1) != bytes.fromhex("01"):
-            write_bytes(self.tientrinh, self.diachixq + 0x3D8CB + 0x6, bytes.fromhex("01"), 1)
 
     def action_vohieuhieuungmuloa(self):
         if read_bytes(self.tientrinh, self.diachixq + 0x4C0E + 0x6, 1) != bytes.fromhex("00"):
@@ -1409,30 +1412,30 @@ class MoiTruong:
         return True
 
     def action_nhatdotoado(self, toadox, toadoy, delay = 0.05):
-        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
+        if time.time() - self._thoidiemnhatdotoadogannhat < delay:
             return False
 
-        self._thoidiemthucthicaulenhgannhat = time.time()
+        self._thoidiemnhatdotoadogannhat = time.time()
 
         self.auto_assemble_nhatdotoado(toadox, toadoy)
 
         return True
 
     def action_khaikhoang(self, iddoituong, delay = 0.05):
-        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
+        if time.time() - self._thoidiemkhaikhoanggannhat < delay:
             return False
 
-        self._thoidiemthucthicaulenhgannhat = time.time()
+        self._thoidiemkhaikhoanggannhat = time.time()
 
         self.auto_assemble_khaikhoang(iddoituong)
 
         return True
 
     def action_sudungkynang(self, idkynang, delay = 0.05):
-        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
+        if time.time() - self._thoidiemsudungkynanggannhat < delay:
             return False
 
-        self._thoidiemthucthicaulenhgannhat = time.time()
+        self._thoidiemsudungkynanggannhat = time.time()
 
         self.auto_assemble_sudungkynang(idkynang)
 
@@ -1458,60 +1461,60 @@ class MoiTruong:
         return True
 
     def action_sudungkynangmuctieunguoichoi(self, idkynang, idnguoichoi, delay = 0.05):
-        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
+        if time.time() - self._thoidiemsudungkynangmuctieugannhat < delay:
             return False
 
-        self._thoidiemthucthicaulenhgannhat = time.time()
+        self._thoidiemsudungkynangmuctieugannhat = time.time()
 
         self.auto_assemble_sudungkynangmuctieunguoichoi(idkynang, idnguoichoi)
 
         return True
 
     def action_sudungkynangmuctieukhacnguoichoi(self, idkynang, iddoituong, delay = 0.05):
-        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
+        if time.time() - self._thoidiemsudungkynangmuctieugannhat < delay:
             return False
 
-        self._thoidiemthucthicaulenhgannhat = time.time()
+        self._thoidiemsudungkynangmuctieugannhat = time.time()
 
         self.auto_assemble_sudungkynangmuctieukhacnguoichoi(idkynang, iddoituong)
 
         return True
 
     def action_sudungkynangtoado(self, idkynang, toadox, toadoy, delay = 0.05):
-        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
+        if time.time() - self._thoidiemsudungkynangtoadogannhat < delay:
             return False
 
-        self._thoidiemthucthicaulenhgannhat = time.time()
+        self._thoidiemsudungkynangtoadogannhat = time.time()
 
         self.auto_assemble_sudungkynangtoado(idkynang, toadox, toadoy)
 
         return True
 
     def action_dichuyenvatphamhanhtrang(self, iddoituong, vitri, delay = 0.4):
-        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
+        if time.time() - self._thoidiemdichuyenvatphamhanhtranggannhat < delay:
             return False
 
-        self._thoidiemthucthicaulenhgannhat = time.time()
+        self._thoidiemdichuyenvatphamhanhtranggannhat = time.time()
 
         self.auto_assemble_dichuyenvatphamhanhtrang(iddoituong, vitri)
 
         return True
 
     def action_trochuyenvoinpc(self, iddoituong, noidungtrochuyen, delay = 0.2):
-        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
+        if time.time() - self._thoidiemtrochuyenvoinpcgannhat < delay:
             return False
 
-        self._thoidiemthucthicaulenhgannhat = time.time()
+        self._thoidiemtrochuyenvoinpcgannhat = time.time()
 
         self.auto_assemble_trochuyenvoinpc(iddoituong, noidungtrochuyen)
 
         return True
 
     def action_sudungvatpham(self, iddoituong, is_boquaxacnhan = False, delay = 0.2):
-        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
+        if time.time() - self._thoidiemsudungvatphamgannhat < delay:
             return False
 
-        self._thoidiemthucthicaulenhgannhat = time.time()
+        self._thoidiemsudungvatphamgannhat = time.time()
 
         self.auto_assemble_sudungvatpham(iddoituong, is_boquaxacnhan)
 
@@ -2216,22 +2219,6 @@ class MoiTruong:
         if time.time() - self._thoidiemdichuyengannhat < delay:
             return
 
-        if is_rangbuoctrongmanhinh:
-            x = max(min(x, self._xmax - 25), 25)
-            y = max(min(y, self._ymax - 25), 25)
-
-        self._thoidiemdichuyengannhat = time.time()
-        self.auto_assemble_dichuyen(x, y)
-
-        return True
-
-    def action_dichuyen(self, x, y, delay = 0.2, is_rangbuoctrongmanhinh = False):
-        if self._is_vohieuhoadichuyen:
-            return
-
-        if time.time() - self._thoidiemdichuyengannhat < delay:
-            return
-
         if self.get_is_cohieuungs((HIEUUNGKYNANG_ROILOAN,), macdinh = False, is_hieuungcoloi = 0):
             x = 2 * self._centerx - x
             y = 2 * self._centery - y
@@ -2857,20 +2844,20 @@ class MoiTruong:
         return read_int(self.tientrinh, diachicoso + 0x498)
 
     def action_sudungvatphambaothu(self, iddoituongvatpham, iddoituongbaothu, delay = 0.2):
-        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
+        if time.time() - self._thoidiemsudungvatphambaothugannhat < delay:
             return False
 
-        self._thoidiemthucthicaulenhgannhat = time.time()
+        self._thoidiemsudungvatphambaothugannhat = time.time()
 
         self.auto_assemble_sudungvatphambaothu(iddoituongvatpham, iddoituongbaothu)
 
         return True
 
     def action_trieuhoibaothu(self, iddoituong, delay = 0.2):
-        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
+        if time.time() - self._thoidiemtrieuhoibaothugannhat < delay:
             return False
 
-        self._thoidiemthucthicaulenhgannhat = time.time()
+        self._thoidiemtrieuhoibaothugannhat = time.time()
 
         self.auto_assemble_trieuhoibaothu(iddoituong)
 
@@ -2935,10 +2922,10 @@ class MoiTruong:
         time.sleep(0.05)
 
     def action_sudungthaotacbaothu(self, iddoituong, idkynang, delay = 0.2):
-        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
+        if time.time() - self._thoidiemsudungthaotacbaothugannhat < delay:
             return False
 
-        self._thoidiemthucthicaulenhgannhat = time.time()
+        self._thoidiemsudungthaotacbaothugannhat = time.time()
 
         self.auto_assemble_sudungthaotacbaothu(iddoituong, idkynang)
 
@@ -2971,6 +2958,45 @@ class MoiTruong:
                 write_string(self.tientrinh, self._diachiautoassemblesudungthaotacbaothu + 19, caulenh)
 
         self.tientrinh.start_thread(self._diachiautoassemblesudungthaotacbaothu)
+        time.sleep(0.05)
+
+    def action_sudungthietlapchedobaothu(self, iddoituong, idkynang, delay = 0.2):
+        if time.time() - self._thoidiemthietlapchedobaothugannhat < delay:
+            return False
+
+        self._thoidiemthietlapchedobaothugannhat = time.time()
+
+        self.auto_assemble_sudungthietlapchedobaothu(iddoituong, idkynang)
+
+        return True
+
+    def auto_assemble_sudungthietlapchedobaothu(self, iddoituong, idkynang):
+        caulenh = "pet {}# {}".format(hex(iddoituong), idkynang).replace("0x", "")
+        if not self._is_dasetupautoassemblesudungthietlapchedobaothu:
+            self._diachiautoassemblesudungthietlapchedobaothu = self.tientrinh.allocate(128)
+
+            write_bytes(self.tientrinh, self._diachiautoassemblesudungthietlapchedobaothu, bytes.fromhex("68"), 1)
+            write_int(self.tientrinh, self._diachiautoassemblesudungthietlapchedobaothu + 1, len(caulenh.encode("utf-8")))
+
+            write_bytes(self.tientrinh, self._diachiautoassemblesudungthietlapchedobaothu + 5, bytes.fromhex("68"), 1)
+            write_int(self.tientrinh, self._diachiautoassemblesudungthietlapchedobaothu + 6, self._diachiautoassemblesudungthietlapchedobaothu + 19)
+
+            write_bytes(self.tientrinh, self._diachiautoassemblesudungthietlapchedobaothu + 10, bytes.fromhex("E8"), 1)
+            write_int(self.tientrinh, self._diachiautoassemblesudungthietlapchedobaothu + 11, self.diachixq + 0x95450 - (self._diachiautoassemblesudungthietlapchedobaothu + 10) - 5)
+
+            write_bytes(self.tientrinh, self._diachiautoassemblesudungthietlapchedobaothu + 15, bytes.fromhex("83 C4 08"), 3)
+            write_bytes(self.tientrinh, self._diachiautoassemblesudungthietlapchedobaothu + 18, bytes.fromhex("C3"), 1)
+
+            write_string(self.tientrinh, self._diachiautoassemblesudungthietlapchedobaothu + 19, caulenh)
+
+            self._is_dasetupautoassemblesudungthietlapchedobaothu = True
+        else:
+            if read_int(self.tientrinh, self._diachiautoassemblesudungthietlapchedobaothu + 1) != len(caulenh.encode("utf-8")):
+                write_int(self.tientrinh, self._diachiautoassemblesudungthietlapchedobaothu + 1, len(caulenh.encode("utf-8")))
+            if read_string(self.tientrinh, self._diachiautoassemblesudungthietlapchedobaothu + 19) != caulenh:
+                write_string(self.tientrinh, self._diachiautoassemblesudungthietlapchedobaothu + 19, caulenh)
+
+        self.tientrinh.start_thread(self._diachiautoassemblesudungthietlapchedobaothu)
         time.sleep(0.05)
 
     def action_sudungkynangbaothu(self, idkynang, diachimuctieu, delay = 1.):
