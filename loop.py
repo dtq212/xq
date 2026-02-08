@@ -114,7 +114,7 @@ class LoopChinh:
 
         if self.moitruong.get_is_dangmocuasoxacnhan():
             phatam("Mã xác nhận")
-            time.sleep(1.0)
+            time.sleep(2.0)
             noidungcuasoxacnhan = self.moitruong.get_noidungcuasomaxacnhan()
             try:
                 maxacnhan = noidungcuasoxacnhan.split(":")[1].strip()
