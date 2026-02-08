@@ -1593,7 +1593,7 @@ class TacTu:
                 id_nd = self.moitruong.get_idnguoichoi(addr)
                 if id_nd in idnguoichoithanhviennhoms and id_nd != self.moitruong.get_idnguoichoi():
                     danhsachungviens.append(addr)
-                elif "(TieuLyPhiDao)" in self.moitruong.get_tendoituong(addr):
+                elif "(TieuLyPhiDao)" in self.moitruong.get_tendoituong(addr) and 4599 in idnguoichoithanhviennhoms:
                     danhsachungviens.append(addr)
                 elif "({})".format(self.moitruong.get_tendoituong(addr)) in TENNGUOICHOICUNGBANGs or "( {} )".format(self.moitruong.get_tendoituong(addr)) in TENNGUOICHOICUNGBANGs:
                     danhsachungviens.append(addr)
@@ -1671,7 +1671,7 @@ class TacTu:
                 id_nd = self.moitruong.get_idnguoichoi(addr)
                 if id_nd in idnguoichoithanhviennhoms and id_nd != self.moitruong.get_idnguoichoi():
                     danhsachungviens.append(addr)
-                elif "(TieuLyPhiDao)" in self.moitruong.get_tendoituong(addr):
+                elif "(TieuLyPhiDao)" in self.moitruong.get_tendoituong(addr) and 4599 in idnguoichoithanhviennhoms:
                     danhsachungviens.append(addr)
                 elif "({})".format(self.moitruong.get_tendoituong(addr)) in TENNGUOICHOICUNGBANGs or "( {} )".format(self.moitruong.get_tendoituong(addr)) in TENNGUOICHOICUNGBANGs:
                     danhsachungviens.append(addr)
