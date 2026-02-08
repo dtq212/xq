@@ -193,6 +193,7 @@ class LoopPhu:
         self.moitruong.action_vohieuhoatrangthaichuotchonmuctieukynang()
         self.moitruong.action_vohieuhoakhoanhvungkynang()
         self.moitruong.action_vohieuhoaphimspace()
+        self.moitruong.action_vohieuhieuungmuloa()
 
         # self.moitruong.set_idvukhi(13)
         # self.moitruong.set_idcanh((7, 7))

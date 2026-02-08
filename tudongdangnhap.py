@@ -50,12 +50,12 @@ THONGTINDANGNHAP_MAP = {
         "group": "KÊNH_2",
         "server": 1,
     },
-    "2303": {
-        "user": "laotsezu",
-        "pass": "hateva1",
-        "group": "KÊNH_2",
-        "server": 1,
-    },
+    #"2303": {
+    #    "user": "laotsezu",
+    #    "pass": "hateva1",
+    #    "group": "KÊNH_2",
+    #    "server": 1,
+    #},
     #"1904": {
     #    "user": "thopvna",
     #    "pass": "hateva1",

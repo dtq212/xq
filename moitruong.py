@@ -132,6 +132,7 @@ class MoiTruong:
 
         self._thoidiemnhanvatkhongsansanggannhat = 0.
         self._diachiautoassembletudongtimduong = None
+        self._diachicosonhanvatbaothudautien = False
 
     def __del__(self):
         def safe_free(flag_name, addr_name):
@@ -421,6 +422,8 @@ class MoiTruong:
 
         if self.get_is_nhanvatchuasansang(self.get_diachicosothongtinnhanvat1()):
             self._thoidiemnhanvatkhongsansanggannhat = time.time()
+        
+        self._diachicosonhanvatbaothudautien = self.action_timkiemnhanvat(tenchunhan = self.get_tendoituong()) if self.get_is_datrieuhoibaothudautien() else False
 
     def get_is_cothegaychoang(self, diachicosothongtinnhanvat, thoigiangiancach = 2.0):
         if not diachicosothongtinnhanvat:
@@ -1292,6 +1295,10 @@ class MoiTruong:
         return
         if read_bytes(self.tientrinh, self.diachixq + 0x3D8CB + 0x6, 1) != bytes.fromhex("01"):
             write_bytes(self.tientrinh, self.diachixq + 0x3D8CB + 0x6, bytes.fromhex("01"), 1)
+
+    def action_vohieuhieuungmuloa(self):
+        if read_bytes(self.tientrinh, self.diachixq + 0x4C0E + 0x6, 1) != bytes.fromhex("00"):
+            write_bytes(self.tientrinh, self.diachixq + 0x4C0E + 0x6, bytes.fromhex("00"), 1)
 
     def action_vohieuhoadichuyen(self):
         if read_bytes(self.tientrinh, self.diachixq + 0x9BE38, 1) != bytes.fromhex("EB"):
@@ -2553,8 +2560,8 @@ class MoiTruong:
 
         return vatphamhanhtrang_map
 
-    def action_timkiemnhanvat(self, tennhanvat = None, idnguoichoi = None, iddoituong = None, tennhanvatchua = None):
-        if not tennhanvat and not idnguoichoi and not iddoituong and not tennhanvatchua:
+    def action_timkiemnhanvat(self, tennhanvat = None, idnguoichoi = None, iddoituong = None, tennhanvatchua = None, tenchunhan = None):
+        if not tennhanvat and not idnguoichoi and not iddoituong and not tennhanvatchua and not tenchunhan:
             return False
 
         i = 0
@@ -2588,12 +2595,15 @@ class MoiTruong:
 
                 if iddoituongxemxet != iddoituong:
                     continue
-
+            if tenchunhan:
+                tennhanvatxemxet = self.get_tendoituong(diachicosothongtinnhanvatxemxet)
+                if not tennhanvatxemxet or "({})".format(tenchunhan) not in tennhanvatxemxet:
+                    continue
             if tennhanvatchua:
                 tennhanvatxemxet = self.get_tendoituong(diachicosothongtinnhanvatxemxet)
-                if tennhanvatxemxet or tennhanvatchua not in tennhanvatxemxet:
+                if not tennhanvatxemxet or tennhanvatchua not in tennhanvatxemxet:
                     continue
-
+            
             return diachicosothongtinnhanvatxemxet
 
         return False
@@ -2770,6 +2780,9 @@ class MoiTruong:
 
     def get_tenmonphai(self):
         return MONPHAI_MAP.get(self.get_idkynang(0, 0))
+
+    def get_diachicosonhanvatbaothudautien(self):
+        return self._diachicosonhanvatbaothudautien
 
     def get_diachicosobaothudautien(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
@@ -2960,12 +2973,11 @@ class MoiTruong:
         self.tientrinh.start_thread(self._diachiautoassemblesudungthaotacbaothu)
         time.sleep(0.05)
 
-    def action_sudungkynangbaothu(self, idkynang, diachimuctieu, delay = 0.2):
+    def action_sudungkynangbaothu(self, idkynang, diachimuctieu, delay = 1.):
         if idkynang in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idkynang] < delay:
             return False
         if not diachimuctieu:
             return False
-
         if self.get_is_nguoichoi(diachimuctieu):
             caulenh = "pf5 {} {}".format(idkynang, self.get_idnguoichoi(diachimuctieu)).replace("0x", "")
         else:
