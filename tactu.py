@@ -2488,7 +2488,7 @@ class TacTu:
                     break
 
                 idkynangbaothu_map = {self.moitruong.get_idkynangbaothudautien(i): i for i in range(11)}
-                idkynangbaothucothesudungs = {IDKYNANGBAOTHU_THOIDICHTHUAT, IDKYNANGBAOTHU_THIENCAN, IDKYNANGBAOTHU_CAOCAPTHIENCAN, IDKYNANGBAOTHU_CAOCAPTHIEUDOT, IDKYNANGBAOTHU_PHONGMATHUAT}
+                idkynangbaothucothesudungs = {KYNANGBAOTHU_THOIDICHTHUAT, KYNANGBAOTHU_THIENCAN, KYNANGBAOTHU_CAOCAPTHIENCAN, KYNANGBAOTHU_CAOCAPTHIEUDOT, KYNANGBAOTHU_PHONGMATHUAT}
                 if set(idkynangbaothu_map.keys()) & idkynangbaothucothesudungs:
                     if time.time() - self._thoidiemhoiphucbaothugannhat > 5.:
                         if self.moitruong.get_noilucconlaibaothudautien() <= 120:
@@ -2516,40 +2516,40 @@ class TacTu:
                     diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
 
                     if diachimuctieu and (self.moitruong.get_is_nguoichoi(diachimuctieu) or CUONGTHI in self.moitruong.get_tendoituong(diachimuctieu)) and self.moitruong.get_noilucconlaibaothudautien() >= 60:
-                        if IDKYNANGBAOTHU_CAOCAPTHIENCAN in idkynangbaothu_map and self.moitruong.get_is_kynangbaothudautiensansang(idkynangbaothu_map[IDKYNANGBAOTHU_CAOCAPTHIENCAN]) and self.moitruong.get_is_cothegaychoang(diachimuctieu) and time.time() - self._thoidiemsudungnhiephonchamgannhat >= 8. and (not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NHIEPHONCHAM) or self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), macdinh = False, is_hieuungcoloi = 0)):
+                        if KYNANGBAOTHU_CAOCAPTHIENCAN in idkynangbaothu_map and self.moitruong.get_is_kynangbaothudautiensansang(idkynangbaothu_map[KYNANGBAOTHU_CAOCAPTHIENCAN]) and self.moitruong.get_is_cothegaychoang(diachimuctieu) and time.time() - self._thoidiemsudungnhiephonchamgannhat >= 8. and (not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NHIEPHONCHAM) or self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), macdinh = False, is_hieuungcoloi = 0)):
                             if not diachicosonhanvatbaothu or time.time() - self._thoidiemsudungthaotacbaothugannhat > 0.25:
                                 self._thoidiemsudungthaotacbaothugannhat = time.time()
                                 self.moitruong.action_sudungthaotacbaothu(iddoituongbaothu, 2, delay = 0.)
                             if diachicosonhanvatbaothu:
-                                self.moitruong.action_sudungkynangbaothu(IDKYNANGBAOTHU_CAOCAPTHIENCAN, diachimuctieu)
+                                self.moitruong.action_sudungkynangbaothu(KYNANGBAOTHU_CAOCAPTHIENCAN, diachimuctieu)
                             break
-                        if IDKYNANGBAOTHU_THIENCAN in idkynangbaothu_map and self.moitruong.get_is_kynangbaothudautiensansang(idkynangbaothu_map[IDKYNANGBAOTHU_THIENCAN]) and self.moitruong.get_is_cothegaychoang(diachimuctieu) and time.time() - self._thoidiemsudungnhiephonchamgannhat >= 8. and (not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NHIEPHONCHAM) or self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), macdinh = False, is_hieuungcoloi = 0)):
+                        if KYNANGBAOTHU_THIENCAN in idkynangbaothu_map and self.moitruong.get_is_kynangbaothudautiensansang(idkynangbaothu_map[KYNANGBAOTHU_THIENCAN]) and self.moitruong.get_is_cothegaychoang(diachimuctieu) and time.time() - self._thoidiemsudungnhiephonchamgannhat >= 8. and (not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NHIEPHONCHAM) or self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), macdinh = False, is_hieuungcoloi = 0)):
                             if not diachicosonhanvatbaothu or time.time() - self._thoidiemsudungthaotacbaothugannhat > 0.25:
                                 self._thoidiemsudungthaotacbaothugannhat = time.time()
                                 self.moitruong.action_sudungthaotacbaothu(iddoituongbaothu, 2, delay = 0.)
                             if diachicosonhanvatbaothu:
-                                self.moitruong.action_sudungkynangbaothu(IDKYNANGBAOTHU_THIENCAN, diachimuctieu)
+                                self.moitruong.action_sudungkynangbaothu(KYNANGBAOTHU_THIENCAN, diachimuctieu)
                             break
-                        if IDKYNANGBAOTHU_PHONGMATHUAT in idkynangbaothu_map and self.moitruong.get_is_kynangbaothudautiensansang(idkynangbaothu_map[IDKYNANGBAOTHU_PHONGMATHUAT]) and self.moitruong.get_idloaivukhi(diachimuctieu) == LOAIVUKHI_KIEM and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRAMMAC, HIEUUNGKYNANG_CHOANG), macdinh = False, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0):
+                        if KYNANGBAOTHU_PHONGMATHUAT in idkynangbaothu_map and self.moitruong.get_is_kynangbaothudautiensansang(idkynangbaothu_map[KYNANGBAOTHU_PHONGMATHUAT]) and self.moitruong.get_idloaivukhi(diachimuctieu) == LOAIVUKHI_KIEM and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRAMMAC, HIEUUNGKYNANG_CHOANG), macdinh = False, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0):
                             if not diachicosonhanvatbaothu or time.time() - self._thoidiemsudungthaotacbaothugannhat > 0.25:
                                 self._thoidiemsudungthaotacbaothugannhat = time.time()
                                 self.moitruong.action_sudungthaotacbaothu(iddoituongbaothu, 2, delay = 0.)
                             if diachicosonhanvatbaothu:
-                                self.moitruong.action_sudungkynangbaothu(IDKYNANGBAOTHU_PHONGMATHUAT, diachimuctieu)
+                                self.moitruong.action_sudungkynangbaothu(KYNANGBAOTHU_PHONGMATHUAT, diachimuctieu)
                             break
-                        if IDKYNANGBAOTHU_THOIDICHTHUAT in idkynangbaothu_map and self.moitruong.get_is_kynangbaothudautiensansang(idkynangbaothu_map[IDKYNANGBAOTHU_THOIDICHTHUAT]) and self.moitruong.get_idloaivukhi(diachimuctieu) not in (LOAIVUKHI_KIEM, LOAIVUKHI_AMKHI) and self.moitruong.get_khoangcach(diachimuctieu) <= 4.5:
+                        if KYNANGBAOTHU_THOIDICHTHUAT in idkynangbaothu_map and self.moitruong.get_is_kynangbaothudautiensansang(idkynangbaothu_map[KYNANGBAOTHU_THOIDICHTHUAT]) and self.moitruong.get_idloaivukhi(diachimuctieu) not in (LOAIVUKHI_KIEM, LOAIVUKHI_AMKHI) and self.moitruong.get_khoangcach(diachimuctieu) <= 4.5:
                             if not diachicosonhanvatbaothu or time.time() - self._thoidiemsudungthaotacbaothugannhat > 0.25:
                                 self._thoidiemsudungthaotacbaothugannhat = time.time()
                                 self.moitruong.action_sudungthaotacbaothu(iddoituongbaothu, 2, delay = 0.)
                             if diachicosonhanvatbaothu:
-                                self.moitruong.action_sudungkynangbaothu(IDKYNANGBAOTHU_THOIDICHTHUAT, diachimuctieu)
+                                self.moitruong.action_sudungkynangbaothu(KYNANGBAOTHU_THOIDICHTHUAT, diachimuctieu)
                             break
-                        if IDKYNANGBAOTHU_CAOCAPTHIEUDOT in idkynangbaothu_map and self.moitruong.get_is_kynangbaothudautiensansang(idkynangbaothu_map[IDKYNANGBAOTHU_CAOCAPTHIEUDOT]) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THIEUDOT, ), macdinh = False, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0):
+                        if KYNANGBAOTHU_CAOCAPTHIEUDOT in idkynangbaothu_map and self.moitruong.get_is_kynangbaothudautiensansang(idkynangbaothu_map[KYNANGBAOTHU_CAOCAPTHIEUDOT]) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THIEUDOT, ), macdinh = False, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0):
                             if not diachicosonhanvatbaothu or time.time() - self._thoidiemsudungthaotacbaothugannhat > 0.25:
                                 self._thoidiemsudungthaotacbaothugannhat = time.time()
                                 self.moitruong.action_sudungthaotacbaothu(iddoituongbaothu, 2, delay = 0.)
                             if diachicosonhanvatbaothu:
-                                self.moitruong.action_sudungkynangbaothu(IDKYNANGBAOTHU_CAOCAPTHIEUDOT, diachimuctieu)
+                                self.moitruong.action_sudungkynangbaothu(KYNANGBAOTHU_CAOCAPTHIEUDOT, diachimuctieu)
                             break
 
                 break
