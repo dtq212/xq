@@ -3056,7 +3056,7 @@ class MoiTruong:
         self.tientrinh.start_thread(self._diachiautoassemblethietlapchedobaothu)
         time.sleep(0.05)
 
-    def action_sudungkynangbaothu(self, idkynang, diachimuctieu, delay = 1.):
+    def action_sudungkynangbaothu(self, idkynang, diachimuctieu, delay = 0.5):
         if idkynang in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idkynang] < delay:
             return False
         if not diachimuctieu:
