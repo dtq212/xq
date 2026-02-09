@@ -2500,7 +2500,7 @@ class TacTu:
                                 phatam("Hết lão tửu")
                                 self._thoidiemhoiphucbaothugannhat = time.time()
 
-                        if self.moitruong.get_sinhluctoidabaothudautien() - self.moitruong.get_sinhlucconlaibaothudautien() >= 1000:
+                        if self.moitruong.get_sinhluctoidabaothudautien() - self.moitruong.get_sinhlucconlaibaothudautien() >= 1200:
                             iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang("Trái Đào")
                             if not iddoituongvatpham:
                                 iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang("Chuối")
