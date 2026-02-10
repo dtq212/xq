@@ -770,6 +770,11 @@ class MoiTruong:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x11B8) == 11
 
+    def get_is_anthan(self, diachicosothongtinnhanvat = None):
+        if diachicosothongtinnhanvat is None:
+            diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
+        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x162C) == 257
+
     def get_soluonghieuungnhanvat(self, diachicosothongtinnhanvat = None):
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
