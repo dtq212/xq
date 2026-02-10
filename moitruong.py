@@ -438,20 +438,16 @@ class MoiTruong:
         if self.get_tenmonphai() == "duongmon" and not self.get_is_cohieuungs((HIEUUNGKYNANG_LACTUYETVONGAN,), macdinh = True, is_hieuungcoloi = 1):
             self._thoidiemcohieuunglactuyetvongan = time.time()
 
-        # if not self.get_is_cohieuungs((HIEUUNGKYNANG_KIMCUONGBATHOAIDON,), macdinh = True, is_hieuungcoloi = 1):
-        #     self._thoidiemcohieuungkimcuongbathoaidongannhat = time.time()
-
         idnguoichoitruongnhom = self.get_idnguoichoitruongnhom()
         if idnguoichoitruongnhom and not self.get_diachicosothongtinnhanvattruongnhom():
             self._diachicosothongtinnhanvattruongnhom = self.action_timkiemnhanvat(idnguoichoi = idnguoichoitruongnhom)
 
         if self.get_is_nhanvatchuasansang(self.get_diachicosothongtinnhanvat1()):
             self._thoidiemnhanvatkhongsansanggannhat = time.time()
-        
-        self._diachicosonhanvatbaothudautien = self.action_timkiemnhanvat(tenchunhan = self.get_tendoituong()) if self.get_is_datrieuhoibaothudautien() else False
+
         self._is_nhanvatbichoang = self.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG, ), macdinh = False, is_hieuungcoloi = 0)
     
-    def get_is_nhanvatbichoang():
+    def get_is_nhanvatbichoang(self):
         return self._is_nhanvatbichoang
 
     def get_is_cothegaychoang(self, diachicosothongtinnhanvat, thoigiangiancach = 2.0):
@@ -496,7 +492,7 @@ class MoiTruong:
         if diachicosothongtinnhanvat is None:
             diachicosothongtinnhanvat = self.get_diachicosothongtinnhanvat1()
         return read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0x10AD, 1)
-
+    
     def get_is_dangmatketnoi(self):
         return not self.get_is_nhanvattontai()
 
@@ -2825,8 +2821,29 @@ class MoiTruong:
     def get_tenmonphai(self):
         return MONPHAI_MAP.get(self.get_idkynang(0, 0))
 
-    def get_diachicosonhanvatbaothudautien(self):
-        return self._diachicosonhanvatbaothudautien
+    def get_toadoxbaothudautien(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0x1B4)
+
+    def get_toadoybaothudautien(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0x1B8)
+
+    def get_idbandobaothudautien(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0x1E4)
+
+    def get_tenbaothudautien(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        if not x:
+            return False
+        return read_string(self.tientrinh, x + 0x188)
 
     def get_diachicosobaothudautien(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)

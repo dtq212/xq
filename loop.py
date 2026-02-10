@@ -171,7 +171,7 @@ class LoopPhu:
             try:
                 self.step()
             except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
-                print("Luồng phụ: {}".format(err))
+                print("Luồng phụ: {}: {}".format(err, traceback.format_exc()))
                 time.sleep(1)
             time.sleep(0.5)
 
