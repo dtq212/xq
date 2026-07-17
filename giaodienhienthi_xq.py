@@ -8,8 +8,10 @@ class GiaoDienHienThi:
         self.shared_data = shared_data
         self.command_dict = command_dict
 
-        self.root.title("Trò Chơi - Bảng Điều Khiển VIP")
-        self.root.geometry("650x850")
+        self.last_active_hwnd = None
+
+        self.root.title("Trò chơi - Bảng Điều Khiển VIP")
+        self.root.geometry("350x850")
         self.root.attributes('-topmost', True)
 
         frame_top = tk.Frame(self.root)
@@ -39,7 +41,6 @@ class GiaoDienHienThi:
         self.tree.configure(yscroll = scrollbar.set)
         scrollbar.pack(side = tk.RIGHT, fill = tk.Y)
 
-        # --- Khung chứa Trạng thái & Phím tắt (Phần dưới) ---
         frame_bottom = tk.LabelFrame(self.root, text = "Trạng Thái & Phím Tắt (Chọn nhân vật ở trên để điều khiển)", padx = 10, pady = 10)
         frame_bottom.pack(fill = tk.BOTH, expand = False, padx = 5, pady = 5)
 
@@ -59,7 +60,6 @@ class GiaoDienHienThi:
             "chantangcap": tk.BooleanVar()
         }
 
-        # --- Group 1: Cơ bản & Farm ---
         self._create_check(frame_bottom, "Tự động sử dụng kỹ năng  [Ctrl + F]", self.vars["sudungkynang"], "battat_tudongsudungkynang")
         self._create_check(frame_bottom, "Tự động gom quái  [Ctrl+Alt+Shift+G]", self.vars["gomquai"], "battat_tudonggomquai")
         self._create_check(frame_bottom, "Tự động Farm & Bán rác  [Ctrl+Alt+Shift+H]", self.vars["vebanrac"], "battat_tudongvebanrac")
@@ -69,22 +69,19 @@ class GiaoDienHienThi:
 
         ttk.Separator(frame_bottom, orient = 'horizontal').pack(fill = 'x', pady = 5)
 
-        # --- Group 2: PK & Tùy chọn ---
-        # Riêng phần "Chỉ đánh Người chơi", chúng ta gửi lệnh chung là "toggle_chidanhnguoichoi"
+        self._create_check(frame_bottom, "Tự tìm mục tiêu (Mặc định)", self.vars["timmuctieu"], "battat_tudongtimkiemmuctieu")
         self._create_check(frame_bottom, "Chỉ đánh Người chơi  [Ctrl+D/Ctrl+A]", self.vars["chidanhnguoichoi"], "toggle_chidanhnguoichoi")
         self._create_check(frame_bottom, "Ưu tiên Bảo thú Mao Sơn  [Ctrl+Alt+S]", self.vars["uutienmaoson"], "battat_uutienbaothumaoson")
         self._create_check(frame_bottom, "Chế độ Buff toàn bang  [Ctrl+Alt+Shift+N]", self.vars["bufftoanbang"], "battat_chedobufftoanbang")
 
         ttk.Separator(frame_bottom, orient = 'horizontal').pack(fill = 'x', pady = 5)
 
-        # --- Group 3: Hoạt động ---
         self._create_check(frame_bottom, "Tự động Khai khoáng  [Ctrl+Alt+Shift+K]", self.vars["khaikhoang"], "battat_tudongkhaikhoang")
         self._create_check(frame_bottom, "Đào Tàng bảo đồ  [Ctrl+Alt+Shift+I]", self.vars["daobaodo"], "battat_tudongdaotangbaodo")
         self._create_check(frame_bottom, "Đi Chiến trường  [Ctrl+Alt+Shift+Z]", self.vars["chientruong"], "battat_tudongdichientruong")
 
         ttk.Separator(frame_bottom, orient = 'horizontal').pack(fill = 'x', pady = 5)
 
-        # --- Group 4: Danh sách Tấn công / Bỏ qua ---
         tk.Label(frame_bottom, text = "[Ctrl+C] Thêm | [Ctrl+Alt+C] Xóa danh sách Tấn công", font = ("Arial", 9, "bold")).pack(anchor = tk.W)
         self.lbl_tancong = tk.Label(frame_bottom, text = "→ Trống", fg = "red", justify = tk.LEFT, wraplength = 600)
         self.lbl_tancong.pack(anchor = tk.W, pady = (0, 10))
@@ -96,8 +93,6 @@ class GiaoDienHienThi:
         self.update_ui()
 
     def _create_check(self, parent, text, variable, cmd_name = None):
-        """Tạo Checkbox có khả năng gửi lệnh trực tiếp vào command_dict khi click"""
-
         def on_click():
             hwnd = self.get_selected_hwnd()
             if hwnd and cmd_name:
@@ -116,7 +111,19 @@ class GiaoDienHienThi:
 
     def update_ui(self):
         selected_item = self.tree.selection()
-        selected_hwnd = self.tree.item(selected_item[0], 'values')[0] if selected_item else None
+        selected_hwnd = str(self.tree.item(selected_item[0], 'values')[0]) if selected_item else None
+
+        current_active_hwnd = None
+        for hwnd, info in self.shared_data.items():
+            if info.get("is_window_active"):
+                current_active_hwnd = str(hwnd)
+                break
+
+        if current_active_hwnd and current_active_hwnd != self.last_active_hwnd:
+            selected_hwnd = current_active_hwnd
+            self.last_active_hwnd = current_active_hwnd
+        elif current_active_hwnd is None:
+            pass
 
         for item in self.tree.get_children():
             self.tree.delete(item)
@@ -132,7 +139,7 @@ class GiaoDienHienThi:
 
             item_id = self.tree.insert("", tk.END, values = (hwnd, name, f"{hp}%", f"{mp}%", map_id, pos, status))
 
-            if str(hwnd) == str(selected_hwnd):
+            if str(hwnd) == selected_hwnd:
                 self.tree.selection_set(item_id)
 
         hwnd_to_show = self.get_selected_hwnd()
