@@ -50,6 +50,8 @@ class TroChoiManager:
         root = tk.Tk()
         gui = GiaoDienHienThi(root, self.shared_data, self.command_dict)
 
+        root.protocol("WM_DELETE_WINDOW", self.stop_all)
+
         import threading
         t_scan = threading.Thread(target = self.loop_scan, daemon = True)
         t_scan.start()
@@ -59,7 +61,7 @@ class TroChoiManager:
 
         print("--- ĐANG CHẠY MANAGER CHIẾN QUỐC ---")
         try:
-            root.mainloop()
+            root.mainloop()  # Chạy vòng lặp UI
         except KeyboardInterrupt:
             pass
         self.stop_all()
@@ -70,6 +72,7 @@ class TroChoiManager:
             for hwnd in game_hwnds:
                 if hwnd not in self.bot_processes:
                     p = Process(target = run_bot_process, args = (hwnd, self.shared_data, self.command_dict))
+                    p.daemon = True
                     p.start()
                     self.bot_processes[hwnd] = p
 
@@ -139,14 +142,20 @@ class TroChoiManager:
 
                 if cmd:
                     self.command_dict[hwnd] = cmd
-                    time.sleep(0.3)
+                    time.sleep(0.3)  # Giảm dội phím
             time.sleep(0.05)
 
     def stop_all(self):
-        for p in self.bot_processes.values(): p.terminate()
+        print("\nĐang dọn dẹp và thoát...")
+        for p in self.bot_processes.values():
+            try:
+                p.terminate()
+            except Exception:
+                pass
         os._exit(0)
 
 
 if __name__ == "__main__":
     freeze_support()
-    TroChoiManager().run()
+    manager = TroChoiManager()
+    manager.run()
