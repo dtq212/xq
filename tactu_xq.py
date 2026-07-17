@@ -594,9 +594,6 @@ class TacTu:
         def _thaydoimuctieu(diachimuctieu):
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(diachimuctieu)
             self.moitruong._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
-
-            print("Thay đổi mục tiêu: {}".format(diachimuctieu))
-
             self._is_battudongtancongvatly = False
 
         idbandohientai = self.moitruong.get_idbandohientai()
