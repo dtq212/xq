@@ -139,7 +139,8 @@ class TroChoiManager:
                     cmd = "battat_chedobufftoanbang"
                 elif keyboard.is_pressed("ctrl+alt+shift+i"):
                     cmd = "battat_tudongdaotangbaodo"
-
+                elif keyboard.is_pressed("ctrl+alt+shift+y"):
+                    cmd = "action_muauto"
                 if cmd:
                     self.command_dict[hwnd] = cmd
                     time.sleep(0.3)  # Giảm dội phím

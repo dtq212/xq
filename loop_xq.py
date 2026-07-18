@@ -139,10 +139,10 @@ class LoopChinh:
         self.tactu._action_sudungkynang()
         self.tactu.action_tudongsudungkynangbaothu()
 
-        if self.moitruong.get_idnguoichoi() == 4599 and self.moitruong.get_idbandohientai() == BANDO_CHIENTRUONG:
-            if not self.moitruong.get_is_dangnamtrongnhom():
-                self.moitruong.action_thucthicaulenh("team + 4599", delay = 0)
-                time.sleep(0.5)
+        # if self.moitruong.get_idnguoichoi() == 4599 and self.moitruong.get_idbandohientai() == BANDO_CHIENTRUONG:
+        #     if not self.moitruong.get_is_dangnamtrongnhom():
+        #         self.moitruong.action_thucthicaulenh("team + 4599", delay = 0)
+        #         time.sleep(0.5)
 
 
 class LoopPhu:
@@ -205,8 +205,8 @@ class LoopPhu:
         self.tactu.action_tudongkhaikhoang()
         self.tactu.action_tudongdaotangbaodo()
 
-        if self.moitruong.get_idnguoichoi() != 4676:
-            self.tactu.action_tudongtrieuhoibaothudautien()
+        # if self.moitruong.get_idnguoichoi() != 4676:
+        #     self.tactu.action_tudongtrieuhoibaothudautien()
 
         self.tactu.action_tudongdichientruong()
         self.tactu.action_dichuyentudo()
@@ -219,3 +219,5 @@ class LoopPhu:
 
         if not self.moitruong.get_is_bathanhtrang():
             self.moitruong.set_is_batalt(True)
+
+        self.moitruong.set_is_batautoingame(False)
