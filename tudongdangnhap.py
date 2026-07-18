@@ -69,10 +69,10 @@ TOADO_GAME = {
 }
 
 TOADO_CUM_MAY_CHU = {
-    "KÊNH_1": (190, 185),
-    "KÊNH_2": (190, 221),
-    "KÊNH_3": (190, 234),
-    "KÊNH_4": (190, 259),
+    1: (190, 185),
+    2: (190, 221),
+    3: (190, 234),
+    4: (190, 259),
 }
 
 TOADO_MAY_CHU = {
@@ -88,13 +88,13 @@ THONGTINDANGNHAP_MAP = {
     "59309": {
         "user": "kngaivacham",
         "pass": "hateva",
-        "group": "KÊNH_1",
+        "group": 1,
         "server": 1,
     },
     "59306": {
         "user": "dtq21295",
         "pass": "hateva",
-        "group": "KÊNH_1",
+        "group": 1,
         "server": 2,
     },
 }
