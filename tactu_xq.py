@@ -3023,8 +3023,7 @@ class TacTu:
                 self._thoidiemhoithanhphu = 0
 
         elif self._trangthaiveban == 1:
-            diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = CHUTIEMTAPHOA)
-            if diachinpc:
+            if self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON:
                 print("[AUTO-SELL] Đã về thành công. Chuyển sang di chuyển.")
                 self._trangthaiveban = 2
                 return

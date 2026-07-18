@@ -4,7 +4,7 @@ import traceback
 
 import pymem.exception
 
-from hangso_xq import BANDO_CHIENTRUONG, BANDO_CHU, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM
+from hangso_xq import BANDO_CHIENTRUONG, BANDO_CHU, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, BANDOFARMs
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
 from tienich_xq import phatam
@@ -219,8 +219,10 @@ class LoopPhu:
 
         if not self.moitruong.get_is_bathanhtrang():
             self.moitruong.set_is_batalt(True)
+
         self.moitruong.set_is_batautoingame(False)
-        if not self.moitruong.get_is_batchucnangmorong():
+        if self.moitruong.get_idbandohientai() != BANDO_TANTHUTHON:
             self.moitruong.action_batchucnangmorong()
+
         self.moitruong.action_vohieuhoahookchienquoc2()
         self.tactu.action_muauto()

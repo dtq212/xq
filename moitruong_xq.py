@@ -213,7 +213,9 @@ class MoiTruong:
         caulenh = f"pet {hex(iddoituongbaothu)}# 2".replace("0x", "")
         return self.action_thucthicaulenh(caulenh, delay = 0.)
 
-    def action_batchucnangmorong(self, delay = 1.):
+    def action_batchucnangmorong(self, delay = 0.5):
+        if self.get_is_dangbatchucnangmorong():
+            return False
         if time.time() - self._thoidiembatchucnangmoronggannhat < delay:
             return False
         self._thoidiembatchucnangmoronggannhat = time.time()
@@ -225,6 +227,17 @@ class MoiTruong:
         b = read_int(self.tientrinh, x + 0xAEBC10)
         c = read_int(self.tientrinh, x + 0xAEBC14)
         caulenh = f"auto open {a:04d}{b:04d}{c:04d}"
+
+        return self.action_thucthicaulenh(caulenh, delay = 0.)
+
+    def action_tatchucnangmorong(self, delay = 0.5):
+        if not self.get_is_dangbatchucnangmorong():
+            return False
+        if time.time() - self._thoidiembatchucnangmoronggannhat < delay:
+            return False
+        self._thoidiembatchucnangmoronggannhat = time.time()
+
+        caulenh = f"auto close"
 
         return self.action_thucthicaulenh(caulenh, delay = 0.)
 
@@ -1111,9 +1124,9 @@ class MoiTruong:
             x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
             if x: write_boolean(self.tientrinh, x + 0xAEC924, is_batautoingame)
 
-    
 
-    def get_is_batchucnangmorong(self):
+
+    def get_is_dangbatchucnangmorong(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
