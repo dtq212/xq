@@ -40,7 +40,7 @@ class TroChoiManager:
         def callback(hwnd, _):
             if win32gui.IsWindowVisible(hwnd):
                 title = win32gui.GetWindowText(hwnd)
-                if title and "Chien Quoc" in title:
+                if title and "Chien Quoc 2" in title:
                     ds_hwnd.append(hwnd)
 
         win32gui.EnumWindows(callback, None)

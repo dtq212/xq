@@ -221,3 +221,4 @@ class LoopPhu:
             self.moitruong.set_is_batalt(True)
 
         self.moitruong.set_is_batautoingame(False)
+        self.tactu.action_muauto()
