@@ -1218,7 +1218,8 @@ class TacTu:
             (VITRIKYNANG_PHONGMAQUYET, "sudungkynangmuctieu", lambda: diachimuctieu and is_muctieupk and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_PHONGMAQUYET] and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRAMMAC,), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
             # (VITRIKYNANG_NHATQUYENBATSON, "sudungkynangmuctieu", lambda: diachimuctieu and self.moitruong.get_capdonhanvat() >= 60 and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_NHATQUYENBATSON] and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and (is_muctieupk or not self._is_nhieumuctieugan3), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
             (VITRIKYNANG_HACHODAOTAM, "sudungkynangmuctieu", lambda: diachimuctieu and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_HACHODAOTAM] and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and diachimuctieu != self.moitruong.get_diachicosothongtinnhanvat1(), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
-            (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: diachimuctieu and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_BADONGQUYEN] and khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN and idtuthenhanvat == TUTHENHANVAT_DICHUYEN and is_muctieupk, KHOANGCACHSUDUNGKYNANGTAMXA - 3, None, False),
+            # (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: diachimuctieu and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_BADONGQUYEN] and khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN and idtuthenhanvat == TUTHENHANVAT_DICHUYEN and is_muctieupk, KHOANGCACHSUDUNGKYNANGTAMXA - 3, None, False),
+            (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: diachimuctieu and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_BADONGQUYEN] and khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN, KHOANGCACHSUDUNGKYNANGTAMXA - 3, None, False),
             (None, "dichuyentiepcancanchien", lambda: diachimuctieu and khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN, 0, None, False),
             (None, "tancongvatly", lambda: diachimuctieu and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
         ]
@@ -3003,7 +3004,7 @@ class TacTu:
 
     def _action_xulyvebanrac_phaikhac(self):
         if self._trangthaiveban == 0:
-            diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = QUANSUVOSONGTHANH)
+            diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = CHUTIEMTAPHOA)
 
             if diachinpc and self.moitruong.get_khoangcach(diachinpc) <= 12.0:
                 if not self.moitruong.get_is_dayhanhtrang():
@@ -3022,7 +3023,7 @@ class TacTu:
                 self._thoidiemhoithanhphu = 0
 
         elif self._trangthaiveban == 1:
-            diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = QUANSUVOSONGTHANH)
+            diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = CHUTIEMTAPHOA)
             if diachinpc:
                 print("[AUTO-SELL] Đã về thành công. Chuyển sang di chuyển.")
                 self._trangthaiveban = 2
@@ -3035,7 +3036,7 @@ class TacTu:
                 self._thoidiemhoithanhphu = time.time()
 
         elif self._trangthaiveban == 2:
-            diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = QUANSUVOSONGTHANH)
+            diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = CHUTIEMTAPHOA)
             if not diachinpc:
                 self._trangthaiveban = 1
                 return
