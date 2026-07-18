@@ -68,19 +68,19 @@ TOADO_GAME = {
     "BTN_XACNHAN_SERVER": (760, 465),
 }
 
-TOADO_CUM_MAY_CHU = {
+TOADO_CUMMAYCHU = {
     1: (190, 185),
     2: (190, 221),
     3: (190, 234),
     4: (190, 259),
 }
 
-TOADO_MAY_CHU = {
+TOADO_MAYCHU = {
     1: (377, 182),
     2: (372, 206),
 }
 
-TOADO_CHON_NHANVAT = {
+TOADO_CHONNHANVAT = {
     2: (369, 146)
 }
 
@@ -255,17 +255,17 @@ def mogamevadangnhap(char_name, config):
         group_name = config.get("group")
         server_index = config.get("server", 1)
 
-        if group_name in TOADO_CUM_MAY_CHU:
+        if group_name in TOADO_CUMMAYCHU:
             print(f"   -> Chọn cụm {group_name}")
-            gx, gy = TOADO_CUM_MAY_CHU[group_name]
+            gx, gy = TOADO_CUMMAYCHU[group_name]
             click(hwnd_game, gx, gy)
             time.sleep(0.5)
 
         try:
             idx = int(server_index)
-            if idx in TOADO_MAY_CHU:
+            if idx in TOADO_MAYCHU:
                 print(f"   -> Chọn server thứ {idx}")
-                sx, sy = TOADO_MAY_CHU[idx]
+                sx, sy = TOADO_MAYCHU[idx]
                 click(hwnd_game, sx, sy)
                 time.sleep(0.5)
                 bx, by = TOADO_GAME["BTN_XACNHAN_SERVER"]
@@ -299,8 +299,8 @@ def mogamevadangnhap(char_name, config):
 
         if char_idx == 2:
             print("   -> Phát hiện cấu hình: Chọn nhân vật số 2")
-            if 2 in TOADO_CHON_NHANVAT:
-                cx, cy = TOADO_CHON_NHANVAT[2]
+            if 2 in TOADO_CHONNHANVAT:
+                cx, cy = TOADO_CHONNHANVAT[2]
                 click(hwnd_game, cx, cy)
                 time.sleep(1) # Chờ game nhận click
             else:
