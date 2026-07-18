@@ -14,6 +14,7 @@ OFFSET_DIACHICOSOTHONGTINNHANVATX = 0x1BDA60
 
 class MoiTruong:
     def __init__(self, idcuaso):
+        self._thoidiembatchucnangmoronggannhat = 0.
         self.idcuaso = idcuaso
         idtientrinh = ctypes.c_ulong()
         ctypes.windll.user32.GetWindowThreadProcessId(self.idcuaso, ctypes.byref(idtientrinh))
@@ -210,6 +211,21 @@ class MoiTruong:
             return False
         self._thoidiemralenhbaothutheosau = time.time()
         caulenh = f"pet {hex(iddoituongbaothu)}# 2".replace("0x", "")
+        return self.action_thucthicaulenh(caulenh, delay = 0.)
+
+    def action_batchucnangmorong(self, delay = 1.):
+        if time.time() - self._thoidiembatchucnangmoronggannhat < delay:
+            return False
+        self._thoidiembatchucnangmoronggannhat = time.time()
+
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not x:
+            return False
+        a = read_int(self.tientrinh, x + 0xAEBC0C)
+        b = read_int(self.tientrinh, x + 0xAEBC10)
+        c = read_int(self.tientrinh, x + 0xAEBC14)
+        caulenh = f"auto open {a:04d}{b:04d}{c:04d}"
+
         return self.action_thucthicaulenh(caulenh, delay = 0.)
 
     def action_nhatdotoado(self, toadox, toadoy, delay = 0.05):
@@ -1095,6 +1111,8 @@ class MoiTruong:
             x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
             if x: write_boolean(self.tientrinh, x + 0xAEC924, is_batautoingame)
 
+    
+
     def get_is_batchucnangmorong(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
@@ -1228,6 +1246,10 @@ class MoiTruong:
 
     def action_tatvohieuhoaphimspace(self):
         pass
+
+    def action_vohieuhoahookchienquoc2(self):
+        if read_bytes(self.tientrinh, self.diachixq + 0x95450, 1) != bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + 0x95450, b'\x90\x90\x90\x90\x90', 5)
 
     def action_vohieuhieuungmuloa(self):
         if read_bytes(self.tientrinh, self.diachixq + 0x4C0E + 0x6, 1) != bytes.fromhex("00"): write_bytes(self.tientrinh, self.diachixq + 0x4C0E + 0x6, bytes.fromhex("00"), 1)
@@ -1600,8 +1622,8 @@ class MoiTruong:
     def set_mauyphuc(self, mauyphuc, diachi = None):
         diachi = diachi or self.get_diachicosothongtinnhanvat1()
         if self.get_mauyphuc() != mauyphuc:
-            write_short_int(self.tientrinh, diachi + 0xB0, mauyphuc[0]);
-            write_short_int(self.tientrinh, diachi + 0xB1, mauyphuc[1]);
+            write_short_int(self.tientrinh, diachi + 0xB0, mauyphuc[0])
+            write_short_int(self.tientrinh, diachi + 0xB1, mauyphuc[1])
             write_short_int(self.tientrinh, diachi + 0xB2, mauyphuc[2])
 
     def get_mautoc(self, diachi = None):
@@ -1611,8 +1633,8 @@ class MoiTruong:
     def set_mautoc(self, mautoc, diachi = None):
         diachi = diachi or self.get_diachicosothongtinnhanvat1()
         if self.get_mautoc() != mautoc:
-            write_short_int(self.tientrinh, diachi + 0xAC, mautoc[0]);
-            write_short_int(self.tientrinh, diachi + 0xAD, mautoc[1]);
+            write_short_int(self.tientrinh, diachi + 0xAC, mautoc[0])
+            write_short_int(self.tientrinh, diachi + 0xAD, mautoc[1])
             write_short_int(self.tientrinh, diachi + 0xAE, mautoc[2])
 
     def get_is_vohieuhoadichuyen(self):
@@ -1769,3 +1791,4 @@ class MoiTruong:
     def get_noidungtrochuyenmoinhat(self):
         if not hasattr(self, "_addr_buffer_noidungchat"): return ""
         return read_string(self.tientrinh, self._addr_buffer_noidungchat)
+

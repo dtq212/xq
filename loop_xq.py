@@ -219,6 +219,8 @@ class LoopPhu:
 
         if not self.moitruong.get_is_bathanhtrang():
             self.moitruong.set_is_batalt(True)
-
         self.moitruong.set_is_batautoingame(False)
+        if not self.moitruong.get_is_batchucnangmorong():
+            self.moitruong.action_batchucnangmorong()
+        self.moitruong.action_vohieuhoahookchienquoc2()
         self.tactu.action_muauto()

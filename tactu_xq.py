@@ -3048,7 +3048,7 @@ class TacTu:
                 diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = CHUTIEMTAPHOA)
                 if self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON:
                     if not diachinpc:
-                        self.moitruong.action_dichuyengiukhoangcachtoidadiem(X_TAPHOA, Y_TAPHOA, khoangcachtoida = 3.)
+                        self.moitruong.action_dichuyengiukhoangcachtoidadiem(X_CHUTIEMTAPHOA_TANTHUTHON, Y_CHUTIEMTAPHOA_TANTHUTHON, khoangcachtoida = 3.)
                     else:
                         khoangcach = self.moitruong.get_khoangcach(diachinpc)
                         if khoangcach <= 12.0:
