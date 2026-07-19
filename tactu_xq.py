@@ -3097,6 +3097,11 @@ class TacTu:
                 print(f"[DI-CHUYEN] Chưa thấy {TANTHUTIENCO}, di chuyển đến vị trí (148, 145)...")
                 self.moitruong.action_dichuyengiukhoangcachtoidadiem(148, 145, khoangcachtoida = 3.)
                 self._thoidiemsudunghoithanhphugannhat = time.time()
+            elif self.moitruong.get_idbandohientai() == BANDO_CHU:
+                print(f"[DI-CHUYEN] Chưa thấy {TANTHUTIENCO}, di chuyển đến vị trí (322, 132)...")
+                self.moitruong.action_dichuyengiukhoangcachtoidadiem(X_TANTHUTIENCO_CHU, Y_TANTHUTIENCO_CHU, khoangcachtoida = 3.)
+                self._thoidiemsudunghoithanhphugannhat = time.time()
+
             else:
                 print(f"[DI-CHUYEN] Không tìm thấy NPC {TANTHUTIENCO}. Đang tìm kiếm...")
             return
