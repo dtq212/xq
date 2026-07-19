@@ -238,6 +238,9 @@ class TacTu:
         self._idnguoichoibuffkimchamgannhat = 0
         self._idnguoichoibuffcuongthethuatgannhat = 0
 
+        self._buoc_truyentong_npc = 0
+        self._thoidiem_truyentong_npc = 0.
+
     def __del__(self):
         try:
             self.moitruong.action_bochantangcapdo()
@@ -2140,7 +2143,38 @@ class TacTu:
                 self._iddiemdanhxungquanhhientai = next_index
                 self._diemdanhxungquanhhientai = diemdanhxungquanhs[next_index]
                 self._thoidiembatdaudendiem = time.time()
+                target_map = self._diemdanhxungquanhhientai[2]
 
+            if idbandohientai != target_map and idbandohientai in (BANDO_TANTHUTHON, BANDO_CHU):
+                diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = TANTHUTIENCO)
+
+                if not diachinpc:
+                    if idbandohientai == BANDO_TANTHUTHON:
+                        yeucautudomoi = {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (148, 145, idbandohientai), "khoangcachtoida": 0}
+                    elif idbandohientai == BANDO_CHU:
+                        yeucautudomoi = {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (X_TANTHUTIENCO_CHU, Y_TANTHUTIENCO_CHU, idbandohientai), "khoangcachtoida": 0}
+                else:
+                    khoangcach = self.moitruong.get_khoangcach(diachinpc)
+                    if khoangcach > 6.0:
+                        x_npc = self.moitruong.get_toadox(diachinpc, is_vitrihientai = True)
+                        y_npc = self.moitruong.get_toadoy(diachinpc, is_vitrihientai = True)
+                        yeucautudomoi = {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x_npc, y_npc, idbandohientai), "khoangcachtoida": 0}
+                    else:
+                        steps = DICHUYENTANTHUTIENCO_MAP.get(target_map)
+                        if steps:
+                            idnpc = self.moitruong.get_iddoituong(diachinpc)
+                            hex_id = hex(idnpc).replace("0x", "")
+                            print(f"[Move] Đang sử dụng {TANTHUTIENCO} để phù lên map {target_map}...")
+                            for step in steps:
+                                caulenh = f"talk {hex_id}# {step}"
+                                self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
+                                time.sleep(1.0)
+                            if self.moitruong.get_is_danghiencuasotuychon():
+                                self.moitruong.set_is_danghiencuasotuychon(False)
+                        yeucautudomoi = None
+
+                self._yeucautudo = yeucautudomoi
+                break
             yeucautudomoi = {
                 "yeucau": YEUCAUDICHUYENDICHUYENTUDO,
                 "toadodich": self._diemdanhxungquanhhientai,
@@ -2562,6 +2596,9 @@ class TacTu:
                 self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
                 sovatphamdaban += 1
                 time.sleep(1.5)
+
+        caulenh = "buy {}# 2 1 1500".format(hex(idnpc).replace("0x", ""))
+        self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
 
     def _tinhkhoangcachdendoanthang(self, px, py, x1, y1, x2, y2):
         dx = x2 - x1
