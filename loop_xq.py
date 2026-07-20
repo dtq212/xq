@@ -151,6 +151,7 @@ class LoopPhu:
         self.tactu = tactu
         self.stop = stop
         self.thoidiemthongbaochetgannhat = time.time()
+        self.thoidiempfgannhat = time.time()
 
     def __del__(self):
         try:
@@ -221,8 +222,10 @@ class LoopPhu:
             self.moitruong.set_is_batalt(True)
 
         self.moitruong.set_is_batautoingame(False)
-        if self.moitruong.get_idbandohientai() not in BANDOKHONGPKs:
+        if self.moitruong.get_idbandohientai() not in BANDOKHONGPKs and self.tactu._is_tudongsudungkynang:
             self.moitruong.action_batchucnangmorong()
+            if time.time() - self.moitruong._thoidiemsudungkynanggannhat > 2.5 and time.time() - self.thoidiempfgannhat > 2.5:
+                self.moitruong.action_thucthicaulenh("pf 12345")
 
         self.moitruong.action_vohieuhoahookchienquoc2()
         self.tactu.action_muauto()
