@@ -223,7 +223,7 @@ class LoopPhu:
 
         self.moitruong.set_is_batautoingame(False)
         if self.moitruong.get_idbandohientai() not in BANDOKHONGPKs and self.tactu._is_tudongsudungkynang:
-            if time.time() - self.moitruong._thoidiemsudungkynanggannhat > 2.5:
+            if time.time() - self.moitruong._thoidiemsudungkynanggannhat > 5.:
                 self.moitruong.action_tatchucnangmorong()
             else:
                 self.moitruong.action_batchucnangmorong()
