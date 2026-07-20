@@ -1,9 +1,7 @@
-import os
 import threading
 import time
 import traceback
 
-from hangso_xq import *
 from loop_xq import (
     LoopLamMoiTrangThaiMoiTruong,
     LoopTimKiemMucTieu,
@@ -152,6 +150,11 @@ class CuaSo:
                     "_is_tudongdichientruong": self.tactu._is_tudongdichientruong,
                     "_is_tudongdaotangbaodo": self.tactu._is_tudongdaotangbaodo,
 
+                    "_is_chidanhnguoichoi": self.tactu._is_chidanhnguoichoi,
+                    "_is_uutienbaothumaoson": self.tactu._is_uutienbaothumaoson,
+                    "_is_chedobufftoanbang": self.tactu._is_chedobufftoanbang,
+                    "_is_chantangcapdo": self.tactu._is_chantangcapdo,
+
                     "_tenmuctieutancongs": ", ".join(self.tactu._tenmuctieutancongs),
                     "_tenmuctieukhongtancongs": ", ".join(self.tactu._tenmuctieukhongtancongs)
                 }
@@ -223,7 +226,8 @@ class CuaSo:
                     self.tactu.battat_chedobufftoanbang()
                 elif cmd == "battat_tudongdaotangbaodo":
                     self.tactu.battat_tudongdaotangbaodo()
-
+                elif cmd == "action_muauto":
+                    self.tactu.action_muauto()
                 self.command_dict[self.idcuaso] = None
 
             time.sleep(0.15)
