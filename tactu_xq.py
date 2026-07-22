@@ -1672,7 +1672,7 @@ class TacTu:
 
         danhsachuutien = [
             (VITRIKYNANG_TINHTAMQUYET, "sudungkynangkhongmuctieu", lambda: noiluc > 50 and self.moitruong.get_is_cohieuungs(HIEUUNGBATLOITHUCSONCOTHEGIAIs, macdinh = False, is_hieuungcoloi = 0), 0, None, True),
-            (VITRIKYNANG_TIENTHANVODICH, "sudungkynangkhongmuctieu", lambda: noiluc > 50 and (phantramsinhluc <= 25 or (is_muctieupk and phantramsinhluc <= 50)), 0, None, True),
+            # (VITRIKYNANG_TIENTHANVODICH, "sudungkynangkhongmuctieu", lambda: noiluc > 50 and (phantramsinhluc <= 25 or (is_muctieupk and phantramsinhluc <= 50)), 0, None, True),
             (VITRIKYNANG_TIEUCHUTHIEN, "sudungkynanglendongdoi", lambda: noiluc > 50 and diachidongdoicanbuff, KHOANGCACHSUDUNGKYNANGTAMXA, diachidongdoicanbuff, False),
             (VITRIKYNANG_LUUTINHTRUYMANG, "sudungkynangmuctieu", lambda: noiluc > 50 and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DICHUYEN, KHOANGCACHSUDUNGKYNANGTAMXA, None, False),
             (VITRIKYNANG_LUCPHACHHOASON, "sudungkynangmuctieu", lambda: noiluc > 50 and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
@@ -1681,8 +1681,8 @@ class TacTu:
             (VITRIKYNANG_DONDAOTRUCNHAP, "sudungkynangmuctieu", lambda: noiluc > 50, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
             (VITRIKYNANG_NGHENHPHONGTRAM, "sudungkynangmuctieu", lambda: noiluc > 50, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
             (VITRIKYNANG_TIENKHI, "sudungkynanglenbanthan", lambda: noiluc > 50 and phantramsinhluc <= 75, 0, None, True),
-            (VITRIKYNANG_LANGKHONGCHIHUYET, "sudungkynangmuctieu", lambda: noiluc > 50 and is_muctieupk and 4.5 <= khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
-            (VITRIKYNANG_VANKIEMXUYENTAM, "sudungkynangmuctieu", lambda: noiluc > 50 and is_muctieupk, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
+            # (VITRIKYNANG_LANGKHONGCHIHUYET, "sudungkynangmuctieu", lambda: noiluc > 50 and is_muctieupk and 4.5 <= khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
+            # (VITRIKYNANG_VANKIEMXUYENTAM, "sudungkynangmuctieu", lambda: noiluc > 50 and is_muctieupk, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
             (None, "dichuyentiepcancanchien", lambda: diachimuctieu and khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN, 0, None, False),
             (None, "tancongvatly", lambda: diachimuctieu, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
         ]
