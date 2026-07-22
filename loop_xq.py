@@ -211,7 +211,7 @@ class LoopPhu:
 
         self.tactu.action_tudongdichientruong()
         self.tactu.action_dichuyentudo()
-        self.tactu.action_nhatdo()
+        self.tactu.action_tudongnhatdo()
 
         if self.moitruong.get_is_nhanvatdachet() and self.moitruong.get_idbandohientai() != BANDO_CHIENTRUONG:
             if time.time() - self.thoidiemthongbaochetgannhat > 5.0:

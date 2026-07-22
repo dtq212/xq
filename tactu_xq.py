@@ -1956,10 +1956,18 @@ class TacTu:
 
         return
 
-    def action_nhatdo(self):
+    def action_tudongnhatdo(self):
         yeucaunhatdomoi = None
 
         if not self._is_tudongnhatdo:
+            self._yeucaunhatdo = None
+            return
+
+        is_dangnamtrongnhom = self.moitruong.get_is_dangnamtrongnhom()
+        is_truongnhom = self.moitruong.get_is_truongnhom()
+
+        if is_dangnamtrongnhom and not is_truongnhom:
+            self._diachicosovatphamdangnhat = False
             self._yeucaunhatdo = None
             return
 
