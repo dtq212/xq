@@ -91,17 +91,31 @@ THONGTINDANGNHAP_MAP = {
         "group": 1,
         "server": 1,
     },
-    "59306": {
+    # "59306": {
+    #     "user": "dtq21295",
+    #     "pass": "hateva",
+    #     "group": 1,
+    #     "server": 1,
+    # },
+    # "59410": {
+    #     "user": "tholuumanh",
+    #     "pass": "hateva",
+    #     "group": 1,
+    #     "server": 1,
+    # },
+    "59393": {
         "user": "dtq21295",
         "pass": "hateva",
         "group": 1,
         "server": 1,
+        "char_index": 2,
     },
-    "59410": {
+    "59458": {
         "user": "tholuumanh",
         "pass": "hateva",
         "group": 1,
         "server": 1,
+        "char_index": 2,
     },
 }
 
