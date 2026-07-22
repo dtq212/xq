@@ -1722,8 +1722,8 @@ class TacTu:
                 if self._solanthatbaikhaithien == 5:
                     self._thoidiembiphatkhaithien = time.time()
 
-            is_duocphepsudungkhaithientichdia = is_khaithientichdiasansang and self._solanthatbaikhaithien < 5 and idtuthenhanvat not in (TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO)
-            is_duocphepsudungluutinhtruymang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG) and idtuthenhanvat not in (TUTHENHANVAT_TANCONG, TUTHENHANVAT_SUDUNGKYNANGPHUTRO)
+            is_duocphepsudungkhaithientichdia = is_khaithientichdiasansang and self._solanthatbaikhaithien < 5 and idtuthenhanvat not in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT)
+            is_duocphepsudungluutinhtruymang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG) and idtuthenhanvat not in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT)
 
             is_sudungkhaithientichdiaantoan = not is_khaithientichdiabicam or is_sudungkhaithientichdiathatbai
             is_bimatamthuat = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_MATAMTHUAT,), macdinh = False, is_hieuungcoloi = 1, diachicosothongtinnhanvat = diachimuctieu)
