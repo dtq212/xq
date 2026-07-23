@@ -53,7 +53,7 @@ def press_combo(hwnd, modifier, key, delay=0.1):
     _safe_post_message(hwnd, win32con.WM_KEYUP, modifier, 0)
     time.sleep(delay)
 
-DUONGDAN_GAME = r"D:\Games\ChienQuoc2\ChienQuoc2\ChienQuoc2 - Live\xq.exe"
+DUONGDAN_GAME = r"C:\Users\Admin\Desktop\ChienQuoc2\ChienQuoc2 - Live\xq.exe"
 LAUNCHER_TITLE = "client 1.01.80"
 GAME_TITLE_LOGIN_SCREEN = "Chien Quoc 2 - That Hung Tranh Ba.1.01.80"
 GAME_TITLE_PREFIX = "Chien Quoc 2 ("
@@ -115,6 +115,13 @@ THONGTINDANGNHAP_MAP = {
         "pass": "hateva",
         "group": 1,
         "server": 2,
+        "char_index": 2,
+    },
+    "59394": {
+        "user": "kngaivacham",
+        "pass": "hateva",
+        "group": 1,
+        "server": 1,
         "char_index": 2,
     },
 }
