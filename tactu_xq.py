@@ -2157,6 +2157,8 @@ class TacTu:
         if self._is_tudongdichuyendiemdanhxungquanh:
             vatphamtudongnhats = (*vatphamtudongnhats, HOATLACHOAN, TIENTE)
 
+        is_bandofarms = self.moitruong.get_idbandohientai() in BANDOFARMs
+
         if not self._diachicosovatphamdangnhat:
             danhsachvatpham = []
             i = -1
@@ -2180,7 +2182,7 @@ class TacTu:
                     pass
                 elif tenvatpham in vatphamtudongnhats:
                     is_cannhat = True
-                elif VATPHAMTUDONGNHATFARMs and self.moitruong.get_idbandohientai() in BANDOFARMs and any(x in tenvatpham for x in VATPHAMTUDONGNHATFARMs):
+                elif VATPHAMTUDONGNHATFARMs and is_bandofarms and any(x in tenvatpham for x in VATPHAMTUDONGNHATFARMs):
                     is_cannhat = True
                 elif self._tenvatphamnhats and tenvatpham in self._tenvatphamnhats:
                     is_cannhat = True
@@ -2208,7 +2210,10 @@ class TacTu:
 
             if khoangcach <= 3.0:
                 if time.time() - self._thoidiemnhatdogannhat_map.get(self._diachicosovatphamdangnhat, 0) > 0.2:
-                    self.moitruong.action_nhatdo(self._diachicosovatphamdangnhat)
+                    if is_bandofarms:
+                        self.moitruong.action_nhatdoxungquanh()
+                    else:
+                        self.moitruong.action_nhatdo(self._diachicosovatphamdangnhat)
                     self._thoidiemnhatdogannhat_map[self._diachicosovatphamdangnhat] = time.time()
 
         self._yeucaunhatdo = yeucaunhatdomoi
