@@ -1574,8 +1574,6 @@ class TacTu:
                 id_nd = self.moitruong.get_idnguoichoi(addr)
                 if id_nd in idnguoichoithanhviennhoms and id_nd != self.moitruong.get_idnguoichoi():
                     danhsachungviens.append(addr)
-                elif "(TieuLyPhiDao)" in self.moitruong.get_tendoituong(addr) and 4599 in idnguoichoithanhviennhoms:
-                    danhsachungviens.append(addr)
                 elif "({})".format(self.moitruong.get_tendoituong(addr)) in TENNGUOICHOICUNGBANGs or "( {} )".format(self.moitruong.get_tendoituong(addr)) in TENNGUOICHOICUNGBANGs:
                     danhsachungviens.append(addr)
 
@@ -1603,7 +1601,7 @@ class TacTu:
             (VITRIKYNANG_LUCPHACHHOASON, "sudungkynangmuctieu", lambda: is_muctieupk and self.moitruong.get_is_cothegaychoang(diachimuctieu), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
             (VITRIKYNANG_PHAKHONGKICH, "sudungkynangmuctieu", lambda: is_muctieupk and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRONGTHUONG,), macdinh = True, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
             (VITRIKYNANG_VANKIEMXUYENTAM, "sudungkynangmuctieu", lambda: is_muctieupk, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
-            (VITRIKYNANG_NGUKIEMPHITIEN, "sudungkynangkhongmuctieu", lambda: not is_muctieupk and self.moitruong.get_noilucconlai() > 70 and khoangcach <= KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN, 0, None, True),
+            # (VITRIKYNANG_NGUKIEMPHITIEN, "sudungkynangkhongmuctieu", lambda: not is_muctieupk and self.moitruong.get_noilucconlai() > 70 and khoangcach <= KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN, 0, None, True),
             (VITRIKYNANG_NGUKIEMTHUAT, "sudungkynangmuctieu", lambda: diachimuctieu, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
             (VITRIKYNANG_TIENNHANCHILO, "sudungkynangmuctieu", lambda: diachimuctieu and not is_muctieupk, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
             (None, "dichuyentiepcantamxa", lambda: diachimuctieu and khoangcach > KHOANGCACHSUDUNGKYNANGTAMXA, KHOANGCACHSUDUNGKYNANGTAMXA, None, False),
@@ -1611,8 +1609,11 @@ class TacTu:
         ]
 
         for vitrikynang, loaikynang, dieukien, khoangcachyeucau, target, is_ngat in danhsachuutien:
-            if callable(dieukien) and not dieukien(): continue
-            if vitrikynang and not self.moitruong.get_is_kynangsansang(*vitrikynang): continue
+            if callable(dieukien) and not dieukien():
+                continue
+
+            if vitrikynang and not self.moitruong.get_is_kynangsansang(*vitrikynang):
+                continue
 
             if self.action_xulyuutiensudungkynang(loaikynang, vitrikynang, target if target else diachimuctieu, khoangcachyeucau, is_ngat):
                 if vitrikynang == VITRIKYNANG_TIEUCHUTHIEN and target:
@@ -2156,6 +2157,8 @@ class TacTu:
         if self._is_tudongdichuyendiemdanhxungquanh:
             vatphamtudongnhats = (*vatphamtudongnhats, HOATLACHOAN, TIENTE)
 
+        is_bandofarms = self.moitruong.get_idbandohientai() in BANDOFARMs
+
         if not self._diachicosovatphamdangnhat:
             danhsachvatpham = []
             i = -1
@@ -2175,17 +2178,17 @@ class TacTu:
 
                 is_cannhat = False
 
+                khoangcach = self.moitruong.get_khoangcach(diachivatpham)
                 if tenvatpham in VATPHAMKHONGNHATs:
                     pass
                 elif tenvatpham in vatphamtudongnhats:
                     is_cannhat = True
-                elif VATPHAMTUDONGNHATFARMs and self.moitruong.get_idbandohientai() in BANDOFARMs and any(x in tenvatpham for x in VATPHAMTUDONGNHATFARMs):
+                elif VATPHAMTUDONGNHATFARMs and is_bandofarms and any(x in tenvatpham for x in VATPHAMTUDONGNHATFARMs) and khoangcach <= 3.:
                     is_cannhat = True
                 elif self._tenvatphamnhats and tenvatpham in self._tenvatphamnhats:
                     is_cannhat = True
 
                 if is_cannhat:
-                    khoangcach = self.moitruong.get_khoangcach(diachivatpham)
                     if khoangcach < KHOANGCACHTOANMANHINH:
                         danhsachvatpham.append((khoangcach, diachivatpham))
 
@@ -2196,18 +2199,22 @@ class TacTu:
 
         if self._diachicosovatphamdangnhat:
             khoangcach = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat)
-            yeucaunhatdomoi = {
-                "yeucau": YEUCAUDICHUYENNHATDO,
-                "toadodich": (
-                    self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True),
-                    self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True)
-                ),
-                "khoangcachtoida": 0
-            }
 
-            if khoangcach <= 3.0:
+            if khoangcach > 3.:
+                yeucaunhatdomoi = {
+                    "yeucau": YEUCAUDICHUYENNHATDO,
+                    "toadodich": (
+                        self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True),
+                        self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True)
+                    ),
+                    "khoangcachtoida": 0
+                }
+            elif khoangcach <= 3.0:
                 if time.time() - self._thoidiemnhatdogannhat_map.get(self._diachicosovatphamdangnhat, 0) > 0.2:
-                    self.moitruong.action_nhatdo(self._diachicosovatphamdangnhat)
+                    if is_bandofarms:
+                        self.moitruong.action_nhatdoxungquanh()
+                    else:
+                        self.moitruong.action_nhatdo(self._diachicosovatphamdangnhat)
                     self._thoidiemnhatdogannhat_map[self._diachicosovatphamdangnhat] = time.time()
 
         self._yeucaunhatdo = yeucaunhatdomoi
