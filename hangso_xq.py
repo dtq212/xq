@@ -600,6 +600,7 @@ VATPHAMTUDONGNHATFARMs = (
     "Côn", "Kích", " Bào", " Lý", " Mạo", "Phi Phong", " Nguyệt",
     "Quan", " Bào", " Liên", " Quần", " Hài", " Nhẫn", " Tiêu",
     "Đầu Cân", "Xú Diêm", " Đầu Cân", "Nghênh Phong Trảm", " Mão", " Tố Quần",
+    "Tơ Nhện", "Kịch Độc Châm", "Đuôi Bọ Cạp",
 )
 
 VATPHAMXEPCHONGs = tuple(["Toái Lăng", "Lá", "Hoạt Lạc Hoàn", "Lam Cầu", "Hắc Cầu"])

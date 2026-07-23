@@ -2178,17 +2178,17 @@ class TacTu:
 
                 is_cannhat = False
 
+                khoangcach = self.moitruong.get_khoangcach(diachivatpham)
                 if tenvatpham in VATPHAMKHONGNHATs:
                     pass
                 elif tenvatpham in vatphamtudongnhats:
                     is_cannhat = True
-                elif VATPHAMTUDONGNHATFARMs and is_bandofarms and any(x in tenvatpham for x in VATPHAMTUDONGNHATFARMs):
+                elif VATPHAMTUDONGNHATFARMs and is_bandofarms and any(x in tenvatpham for x in VATPHAMTUDONGNHATFARMs) and khoangcach <= 3.:
                     is_cannhat = True
                 elif self._tenvatphamnhats and tenvatpham in self._tenvatphamnhats:
                     is_cannhat = True
 
                 if is_cannhat:
-                    khoangcach = self.moitruong.get_khoangcach(diachivatpham)
                     if khoangcach < KHOANGCACHTOANMANHINH:
                         danhsachvatpham.append((khoangcach, diachivatpham))
 
@@ -2199,16 +2199,17 @@ class TacTu:
 
         if self._diachicosovatphamdangnhat:
             khoangcach = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat)
-            yeucaunhatdomoi = {
-                "yeucau": YEUCAUDICHUYENNHATDO,
-                "toadodich": (
-                    self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True),
-                    self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True)
-                ),
-                "khoangcachtoida": 0
-            }
 
-            if khoangcach <= 3.0:
+            if khoangcach > 3.:
+                yeucaunhatdomoi = {
+                    "yeucau": YEUCAUDICHUYENNHATDO,
+                    "toadodich": (
+                        self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True),
+                        self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True)
+                    ),
+                    "khoangcachtoida": 0
+                }
+            elif khoangcach <= 3.0:
                 if time.time() - self._thoidiemnhatdogannhat_map.get(self._diachicosovatphamdangnhat, 0) > 0.2:
                     if is_bandofarms:
                         self.moitruong.action_nhatdoxungquanh()
