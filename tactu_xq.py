@@ -1597,7 +1597,7 @@ class TacTu:
             (VITRIKYNANG_TIENTHANVODICH, "sudungkynangkhongmuctieu", lambda: phantramsinhluc <= 25 or (is_muctieupk and phantramsinhluc <= 50), 0, None, True),
             (VITRIKYNANG_TIEUCHUTHIEN, "sudungkynanglendongdoi", lambda: diachidongdoicanbuff, KHOANGCACHSUDUNGKYNANGTAMXA, diachidongdoicanbuff, False),
             (VITRIKYNANG_BANGPHACHNGANTAM, "sudungkynangkhongmuctieu", lambda: not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_BANGPHACHNGANTAM, HIEUUNGKYNANG_LANHNGUYETTAMPHAP), True, is_hieuungcoloi = 1), 0, None, True),
-            # (VITRIKYNANG_LANGKHONGCHIHUYET, "sudungkynangmuctieu", lambda: is_muctieupk and self.moitruong.get_is_cothegaychoang(diachimuctieu), KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
+            (VITRIKYNANG_LANGKHONGCHIHUYET, "sudungkynangmuctieu", lambda: is_muctieupk and self.moitruong.get_is_cothegaychoang(diachimuctieu), KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
             (VITRIKYNANG_LUCPHACHHOASON, "sudungkynangmuctieu", lambda: is_muctieupk and self.moitruong.get_is_cothegaychoang(diachimuctieu), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
             (VITRIKYNANG_PHAKHONGKICH, "sudungkynangmuctieu", lambda: is_muctieupk and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRONGTHUONG,), macdinh = True, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
             (VITRIKYNANG_VANKIEMXUYENTAM, "sudungkynangmuctieu", lambda: is_muctieupk, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
