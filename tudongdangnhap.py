@@ -85,12 +85,12 @@ TOADO_CHONNHANVAT = {
 }
 
 THONGTINDANGNHAP_MAP = {
-    "59309": {
-        "user": "kngaivacham",
-        "pass": "hateva",
-        "group": 1,
-        "server": 1,
-    },
+    # "59309": {
+    #     "user": "kngaivacham",
+    #     "pass": "hateva",
+    #     "group": 1,
+    #     "server": 1,
+    # },
     # "59306": {
     #     "user": "dtq21295",
     #     "pass": "hateva",
