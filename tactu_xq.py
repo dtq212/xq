@@ -3733,3 +3733,5 @@ class TacTu:
                 self.moitruong.action_tatchucnangmorong()
             else:
                 self.moitruong.action_batchucnangmorong()
+        else:
+            self.moitruong.action_tatchucnangmorong()
