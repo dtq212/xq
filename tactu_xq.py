@@ -1608,7 +1608,7 @@ class TacTu:
         for addr in danhsachungviens:
             id_nd = self.moitruong.get_idnguoichoi(addr)
             is_thieuhieuung = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NOIKHANG,), diachicosothongtinnhanvat = addr, macdinh = True, is_hieuungcoloi = 1)
-            is_quathoigian = self.moitruong.get_diachicosothongtinnhanvat1() != addr and self.moitruong.get_is_nguoichoi(addr) and time.time() - self._thoidiembuffnoikhanggannhat_map.get(id_nd, 0) > 60
+            is_quathoigian = False # self.moitruong.get_diachicosothongtinnhanvat1() != addr and self.moitruong.get_is_nguoichoi(addr) and time.time() - self._thoidiembuffnoikhanggannhat_map.get(id_nd, 0) > 60
 
             if is_thieuhieuung or is_quathoigian:
                 diachidongdoicanbuff = addr
@@ -1629,7 +1629,7 @@ class TacTu:
             (VITRIKYNANG_LUCPHACHHOASON, "sudungkynangmuctieu", lambda: is_muctieupk and self.moitruong.get_is_cothegaychoang(diachimuctieu), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
             (VITRIKYNANG_PHAKHONGKICH, "sudungkynangmuctieu", lambda: is_muctieupk and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRONGTHUONG,), macdinh = True, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
             (VITRIKYNANG_VANKIEMXUYENTAM, "sudungkynangmuctieu", lambda: is_muctieupk, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
-            (VITRIKYNANG_NGUKIEMPHITIEN, "sudungkynangkhongmuctieu", lambda: not is_muctieupk and self.moitruong.get_noilucconlai() > 70 and khoangcach <= KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN, 0, None, True),
+            (VITRIKYNANG_NGUKIEMPHITIEN, "sudungkynangkhongmuctieu", lambda: diachimuctieu and self.moitruong.get_noilucconlai() > 70 and khoangcach <= KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN, 0, None, True),
             (VITRIKYNANG_NGUKIEMTHUAT, "sudungkynangmuctieu", lambda: diachimuctieu, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
             (VITRIKYNANG_TIENNHANCHILO, "sudungkynangmuctieu", lambda: diachimuctieu and not is_muctieupk, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
             (None, "dichuyentiepcancanchien", lambda: diachimuctieu and KHOANGCACHSUDUNGKYNANGCANCHIEN < khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA, 0, None, False),
@@ -2218,7 +2218,7 @@ class TacTu:
                     pass
                 elif tenvatpham in vatphamtudongnhats:
                     is_cannhat = True
-                elif VATPHAMTUDONGNHATFARMs and is_bandofarms and any(x in tenvatpham for x in VATPHAMTUDONGNHATFARMs) and khoangcach <= 3.:
+                elif VATPHAMTUDONGNHATFARMs and is_bandofarms and any(x in tenvatpham for x in VATPHAMTUDONGNHATFARMs):
                     is_cannhat = True
                 elif self._tenvatphamnhats and tenvatpham in self._tenvatphamnhats:
                     is_cannhat = True
@@ -2248,7 +2248,7 @@ class TacTu:
                     self.moitruong.action_nhatdo(self._diachicosovatphamdangnhat)
                     self._thoidiemnhatdogannhat_map[self._diachicosovatphamdangnhat] = time.time()
         elif is_bandofarms:
-            self.moitruong.action_nhatdoxungquanh()
+            self.moitruong.action_nhatdoxungquanh(delay = 0.5)
 
         self._yeucaunhatdo = yeucaunhatdomoi
 
