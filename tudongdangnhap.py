@@ -81,7 +81,11 @@ TOADO_MAYCHU = {
 }
 
 TOADO_CHONNHANVAT = {
-    2: (369, 146)
+    2: (369, 146),
+    3: (369, 146),
+    4: (369, 146),
+    5: (369, 146),
+    6: (369, 146),
 }
 
 THONGTINDANGNHAP_MAP = {
