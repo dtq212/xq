@@ -2191,7 +2191,10 @@ class TacTu:
 
         vatphamtudongnhats = VATPHAMTUDONGNHATs
         if self._is_tudongdichuyendiemdanhxungquanh:
-            vatphamtudongnhats = (*vatphamtudongnhats, HOATLACHOAN, TIENTE)
+            vatphamtudongnhats = (*vatphamtudongnhats, TIENTE, "Tơ Nhện", "Kịch Độc Châm", "Đuôi Bọ Cạp", "Ly Hồn", "Ly Phách")
+
+        if self.moitruong.get_idnguoichoi() == 59500:
+            print(vatphamtudongnhats)
 
         is_bandofarms = self.moitruong.get_idbandohientai() in BANDOFARMs
 
@@ -2246,10 +2249,9 @@ class TacTu:
             if khoangcach <= 3.:
                 if is_bandofarms:
                     self.moitruong.action_nhatdoxungquanh(delay = 0.2)
-                else:
-                    if time.time() - self._thoidiemnhatdogannhat_map.get(self._diachicosovatphamdangnhat, 0) > 0.2:
-                        self.moitruong.action_nhatdo(self._diachicosovatphamdangnhat)
-                        self._thoidiemnhatdogannhat_map[self._diachicosovatphamdangnhat] = time.time()
+                elif time.time() - self._thoidiemnhatdogannhat_map.get(self._diachicosovatphamdangnhat, 0) > 0.2:
+                    self.moitruong.action_nhatdo(self._diachicosovatphamdangnhat)
+                    self._thoidiemnhatdogannhat_map[self._diachicosovatphamdangnhat] = time.time()
         elif is_bandofarms:
             self.moitruong.action_nhatdoxungquanh(delay = 0.5)
 
