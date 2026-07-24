@@ -3,6 +3,7 @@ import subprocess
 import time
 
 import pywintypes
+import win32process
 import win32gui
 import win32con
 from moitruong_xq import MoiTruong
@@ -114,7 +115,7 @@ THONGTINDANGNHAP_MAP = {
         "server": 1,
         "char_index": 2,
     },
-    "59504": {
+    "59506": {
         "user": "thichvacham",
         "pass": "hateva",
         "group": 1,
@@ -138,6 +139,32 @@ THONGTINDANGNHAP_MAP = {
 }
 
 
+def kiem_tra_va_dong_cua_so_treo(hwnd):
+    try:
+        win32gui.PostMessage(hwnd, win32con.WM_NCMOUSEMOVE, 0, 0)
+        time.sleep(0.2)
+
+        win32gui.SendMessageTimeout(
+            hwnd,
+            win32con.WM_GETTEXTLENGTH,
+            0,
+            0,
+            win32con.SMTO_NORMAL,
+            1000
+        )
+        return False
+
+    except Exception:
+        print(f"⚠️ Phát hiện cửa sổ bị đơ ngầm (HWND: {hwnd}). Đang thực hiện dọn dẹp...")
+        try:
+            _, pid = win32process.GetWindowThreadProcessId(hwnd)
+            subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output = True)
+            print(f"✅ Đã đóng thành công cửa sổ lỗi (PID: {pid}).")
+            return True
+        except Exception as e:
+            print(f"❌ Lỗi khi cố gắng dọn dẹp cửa sổ: {e}")
+            return False
+
 def laydanhsachnhanvatonlines():
     online_chars = []
 
@@ -145,11 +172,16 @@ def laydanhsachnhanvatonlines():
         if win32gui.IsWindowVisible(hwnd):
             title = win32gui.GetWindowText(hwnd)
             if GAME_TITLE_PREFIX in title:
+                is_hung = kiem_tra_va_dong_cua_so_treo(hwnd)
+                if is_hung:
+                    return
+
                 try:
                     mt = MoiTruong(hwnd)
                     if mt.get_is_nhanvattontai():
                         idnguoichoi = mt.get_idnguoichoi()
-                        if idnguoichoi: online_chars.append(str(idnguoichoi))
+                        if idnguoichoi:
+                            online_chars.append(str(idnguoichoi))
                 except:
                     pass
 
@@ -335,17 +367,12 @@ def mogamevadangnhap(char_name, config):
 
         char_idx = config.get("char_index", 1)
 
-        if char_idx == 2:
-            print("   -> Phát hiện cấu hình: Chọn nhân vật số 2")
-            if 2 in TOADO_CHONNHANVAT:
-                cx, cy = TOADO_CHONNHANVAT[2]
-                click(hwnd_game, cx, cy)
-                time.sleep(1) # Chờ game nhận click
-            else:
-                print("⚠️ Chưa thiết lập tọa độ cho nhân vật 2, sẽ chọn mặc định!")
+        if char_idx >= 2:
+            cx, cy = TOADO_CHONNHANVAT.get(char_idx)
+            click(hwnd_game, cx, cy)
+            time.sleep(1)
         else:
             print("   -> Chọn nhân vật số 1 (Mặc định)")
-            # Nhân vật 1 thường được game tự chọn sẵn nên không cần click
 
         press_key(hwnd_game, win32con.VK_RETURN)
         time.sleep(1)

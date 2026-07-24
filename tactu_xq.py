@@ -14,6 +14,7 @@ from tienich_xq import taithietlap as util_taithietlap, phatam
 class TacTu:
     def __init__(self, moitruong: MoiTruong):
         self._idquaidautien = 0
+        self._thoidiemvohieuhoabatchucnangmoronggannhat = 0.
         self._thoidiemsudungthaotacbaothugannhat = 0.
         self._thoidiemthietlaptudongsudungkynangthiencangannhat = 0.
         self._thoidiemyeucaubaothuvatphamdoilenhgannhat = 0.
@@ -2234,19 +2235,21 @@ class TacTu:
 
         if self._diachicosovatphamdangnhat:
             khoangcach = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat)
-            if khoangcach > 3.:
-                yeucaunhatdomoi = {
-                    "yeucau": YEUCAUDICHUYENNHATDO,
-                    "toadodich": (
-                        self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True),
-                        self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True)
-                    ),
-                    "khoangcachtoida": 0
-                }
-            elif khoangcach <= 3.0:
-                if time.time() - self._thoidiemnhatdogannhat_map.get(self._diachicosovatphamdangnhat, 0) > 0.2:
-                    self.moitruong.action_nhatdo(self._diachicosovatphamdangnhat)
-                    self._thoidiemnhatdogannhat_map[self._diachicosovatphamdangnhat] = time.time()
+            yeucaunhatdomoi = {
+                "yeucau": YEUCAUDICHUYENNHATDO,
+                "toadodich": (
+                    self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True),
+                    self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True)
+                ),
+                "khoangcachtoida": 0
+            }
+            if khoangcach <= 3.:
+                if is_bandofarms:
+                    self.moitruong.action_nhatdoxungquanh(delay = 0.2)
+                else:
+                    if time.time() - self._thoidiemnhatdogannhat_map.get(self._diachicosovatphamdangnhat, 0) > 0.2:
+                        self.moitruong.action_nhatdo(self._diachicosovatphamdangnhat)
+                        self._thoidiemnhatdogannhat_map[self._diachicosovatphamdangnhat] = time.time()
         elif is_bandofarms:
             self.moitruong.action_nhatdoxungquanh(delay = 0.5)
 
@@ -2354,6 +2357,7 @@ class TacTu:
                 target_map = self._diemdanhxungquanhhientai[2]
 
             if idbandohientai != target_map and idbandohientai in (BANDO_TANTHUTHON, BANDO_CHU):
+                self._thoidiemvohieuhoabatchucnangmoronggannhat = time.time() + 1.
                 diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = TANTHUTIENCO)
 
                 if not diachinpc:
@@ -3732,7 +3736,7 @@ class TacTu:
             return
 
         if self.moitruong.get_idbandohientai() not in BANDOKHONGPKs:
-            if self.moitruong.get_is_dangbatchucnangmorong() and time.time() - self.moitruong._thoidiemcochucnangmoronggannhat > 10.:
+            if not self._is_tudongsudungkynang or (self.moitruong.get_is_dangbatchucnangmorong() and time.time() - self.moitruong._thoidiemcochucnangmoronggannhat > 10.) or time.time() - self._thoidiemvohieuhoabatchucnangmoronggannhat < 0.:
                 self.moitruong.action_tatchucnangmorong()
             else:
                 self.moitruong.action_batchucnangmorong()
