@@ -335,7 +335,7 @@ def mogamevadangnhap(char_name, config):
 
         char_idx = config.get("char_index", 1)
 
-        if char_idx == 2:
+        if char_idx >= 2:
             print("   -> Phát hiện cấu hình: Chọn nhân vật số 2")
             if 2 in TOADO_CHONNHANVAT:
                 cx, cy = TOADO_CHONNHANVAT[2]
