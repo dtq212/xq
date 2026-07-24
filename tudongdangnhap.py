@@ -336,16 +336,11 @@ def mogamevadangnhap(char_name, config):
         char_idx = config.get("char_index", 1)
 
         if char_idx >= 2:
-            print("   -> Phát hiện cấu hình: Chọn nhân vật số 2")
-            if 2 in TOADO_CHONNHANVAT:
-                cx, cy = TOADO_CHONNHANVAT[2]
-                click(hwnd_game, cx, cy)
-                time.sleep(1) # Chờ game nhận click
-            else:
-                print("⚠️ Chưa thiết lập tọa độ cho nhân vật 2, sẽ chọn mặc định!")
+            cx, cy = TOADO_CHONNHANVAT.get(char_idx)
+            click(hwnd_game, cx, cy)
+            time.sleep(1)
         else:
             print("   -> Chọn nhân vật số 1 (Mặc định)")
-            # Nhân vật 1 thường được game tự chọn sẵn nên không cần click
 
         press_key(hwnd_game, win32con.VK_RETURN)
         time.sleep(1)
