@@ -32,8 +32,8 @@ class TacTu:
         self._is_thucsondao = False
         self.moitruong = moitruong
 
-        self._is_tudongtheosautruongnhom = False
-        self._is_tudongbattheosaunhom = True
+        self._is_tudongtheosautruongnhom = True
+        self._is_tudongbattheosaunhom = False
         self._is_tudongtimkiemmuctieu = True
         self._is_tudongsudungkynang = True
         self._is_tudongsudungvatpham = True
@@ -71,7 +71,7 @@ class TacTu:
         self._thoidiemphatamketduonggannhat = 0.
         self._is_uutienmuctieupk = True
 
-        self._khoangcachtoidatruongnhom = 9
+        self._khoangcachtoidatruongnhom = 3.
 
         self._tenmuctieutancongs = set()
         self._tenmuctieukhongtancongs = set(TENMUCTIEUKHONGTANCONGs)
