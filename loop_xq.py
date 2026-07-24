@@ -223,9 +223,9 @@ class LoopPhu:
 
         self.moitruong.set_is_batautoingame(False)
         if self.moitruong.get_idbandohientai() not in BANDOKHONGPKs and self.tactu._is_tudongsudungkynang:
-            if not self.moitruong.get_is_dangbatchucnangmorong() or time.time() - self.moitruong._thoidiemsudungkynanggannhat < 10. or time.time() - self.moitruong._thoidiemsudungkynangmuctieugannhat < 10. or time.time() - self.moitruong._thoidiemsudungkynangtoadogannhat < 10.:
+            if not self.moitruong.get_is_dangbatchucnangmorong() or time.time() - self.moitruong._thoidiemsudungkynanggannhat < 7.5 or time.time() - self.moitruong._thoidiemsudungkynangmuctieugannhat < 7.5 or time.time() - self.moitruong._thoidiemsudungkynangtoadogannhat < 7.5:
                 self.moitruong.action_batchucnangmorong()
-            elif time.time() - self.moitruong._thoidiembatchucnangmoronggannhat > 10.:
+            elif time.time() - self.moitruong._thoidiembatchucnangmoronggannhat > 7.5:
                 self.moitruong.action_tatchucnangmorong()
 
         self.moitruong.action_vohieuhoahookchienquoc2()
