@@ -2197,16 +2197,12 @@ class TacTu:
             self._yeucaunhatdo = None
             return
 
-        if self.moitruong.get_idtuthenhanvat() in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT):
-            return
-
         if self._diachicosovatphamdangnhat:
             if not self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat):
                 self._diachicosovatphamdangnhat = False
             elif time.time() - self._thoidiemthaydoivatphamdangnhatgannhat > 10:
                 self._diachicosovatphamkhongnhat_map[self._diachicosovatphamdangnhat] = time.time()
                 self._diachicosovatphamdangnhat = False
-                # phatam("Bỏ qua vật phẩm lỗi")
 
         vatphamtudongnhats = VATPHAMTUDONGNHATs
         if self._is_tudongdichuyendiemdanhxungquanh:
@@ -2268,6 +2264,7 @@ class TacTu:
                 elif time.time() - self._thoidiemnhatdogannhat_map.get(self._diachicosovatphamdangnhat, 0) > 0.2:
                     self.moitruong.action_nhatdo(self._diachicosovatphamdangnhat)
                     self._thoidiemnhatdogannhat_map[self._diachicosovatphamdangnhat] = time.time()
+
         elif is_bandofarms:
             self.moitruong.action_nhatdoxungquanh(delay = 0.5)
 
@@ -2825,7 +2822,7 @@ class TacTu:
                 caulenh = "sell ! {}# {}# 30".format(hex(idnpc).replace("0x", ""), hex(iddoituongvatphamhanhtrang).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
                 sovatphamdaban += 1
-                time.sleep(1.5)
+                time.sleep(2.)
 
         caulenh = "buy {}# 2 1 1500".format(hex(idnpc).replace("0x", ""))
         self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
