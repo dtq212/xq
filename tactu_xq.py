@@ -3728,6 +3728,9 @@ class TacTu:
     def action_tudongbatautoingame(self):
         self.moitruong.set_is_batautoingame(False)
 
+        if self.moitruong.get_is_dangvankhi():
+            return
+
         if self.moitruong.get_idbandohientai() not in BANDOKHONGPKs:
             if self.moitruong.get_is_dangbatchucnangmorong() and time.time() - self.moitruong._thoidiemcochucnangmoronggannhat > 10.:
                 self.moitruong.action_tatchucnangmorong()
