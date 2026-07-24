@@ -11,7 +11,7 @@ class GiaoDienHienThi:
         self.last_active_hwnd = None
 
         self.root.title("Trò chơi - Bảng Điều Khiển VIP")
-        self.root.geometry("350x850")
+        self.root.geometry("400x850")
         self.root.attributes('-topmost', True)
 
         frame_top = tk.Frame(self.root)
@@ -57,13 +57,43 @@ class GiaoDienHienThi:
             "khaikhoang": tk.BooleanVar(),
             "daobaodo": tk.BooleanVar(),
             "chientruong": tk.BooleanVar(),
-            "chantangcap": tk.BooleanVar()
+            "chantangcap": tk.BooleanVar(),
+            "khoangcachtheosau": tk.DoubleVar(value=9.0)
         }
 
         self._create_check(frame_bottom, "Tự động sử dụng kỹ năng  [Ctrl + F]", self.vars["sudungkynang"], "battat_tudongsudungkynang")
         self._create_check(frame_bottom, "Tự động gom quái  [Ctrl+Alt+Shift+G]", self.vars["gomquai"], "battat_tudonggomquai")
         self._create_check(frame_bottom, "Tự động Farm & Bán rác  [Ctrl+Alt+Shift+H]", self.vars["vebanrac"], "battat_tudongvebanrac")
-        self._create_check(frame_bottom, "Theo sau trưởng nhóm  [Ctrl+Alt+F]", self.vars["theotruongnhom"], "battat_tudongtheosautruongnhom")
+
+        frame_theosau = tk.Frame(frame_bottom)
+        frame_theosau.pack(anchor=tk.W)
+
+        def on_click_theosau():
+            hwnd = self.get_selected_hwnd()
+            if hwnd:
+                self.command_dict[hwnd] = "battat_tudongtheosautruongnhom"
+
+        cb_theosau = tk.Checkbutton(frame_theosau, text="Theo sau trưởng nhóm  [Ctrl+Alt+F]",
+                                    variable=self.vars["theotruongnhom"], command=on_click_theosau)
+        cb_theosau.pack(side=tk.LEFT)
+
+        tk.Label(frame_theosau, text=" Khoảng cách:").pack(side=tk.LEFT)
+
+        def on_khoangcach_change(*args):
+            hwnd = self.get_selected_hwnd()
+            if hwnd:
+                try:
+                    val = self.vars["khoangcachtheosau"].get()
+                    self.command_dict[hwnd] = f"set_khoangcachtheosau:{val}"
+                except tk.TclError:
+                    pass
+
+        self.spin_khoangcach = ttk.Spinbox(frame_theosau, from_=1.0, to=50.0, increment=1.0, width=5,
+                                           textvariable=self.vars["khoangcachtheosau"], command=on_khoangcach_change)
+        self.spin_khoangcach.pack(side=tk.LEFT)
+        self.spin_khoangcach.bind("<Return>", on_khoangcach_change)
+        self.spin_khoangcach.bind("<FocusOut>", on_khoangcach_change)
+
         self._create_check(frame_bottom, "Bật/Tắt theo sau nhóm  [Ctrl+Alt+T]", self.vars["battheosaunhom"], "battat_tudongbattheosaunhom")
         self._create_check(frame_bottom, "Chặn tăng cấp độ  [Ctrl+Alt+Shift+C]", self.vars["chantangcap"], "battat_chantangcapdo")
 
@@ -150,6 +180,13 @@ class GiaoDienHienThi:
             self.vars["gomquai"].set(info.get("_is_tudonggomquai", False))
             self.vars["vebanrac"].set(info.get("_is_tudongvebanrac", False))
             self.vars["theotruongnhom"].set(info.get("_is_tudongtheosautruongnhom", False))
+            if self.root.focus_get() != getattr(self, 'spin_khoangcach', None):
+                try:
+                    kc_moi = info.get("_khoangcachtoidatruongnhom", 9.0)
+                    if abs(self.vars["khoangcachtheosau"].get() - kc_moi) > 0.01:
+                        self.vars["khoangcachtheosau"].set(kc_moi)
+                except tk.TclError:
+                    pass
             self.vars["battheosaunhom"].set(info.get("_is_tudongbattheosaunhom", False))
             self.vars["timmuctieu"].set(info.get("_is_tudongtimkiemmuctieu", False))
             self.vars["khaikhoang"].set(info.get("_is_tudongkhaikhoang", False))

@@ -156,7 +156,8 @@ class CuaSo:
                     "_is_chantangcapdo": self.tactu._is_chantangcapdo,
 
                     "_tenmuctieutancongs": ", ".join(self.tactu._tenmuctieutancongs),
-                    "_tenmuctieukhongtancongs": ", ".join(self.tactu._tenmuctieukhongtancongs)
+                    "_tenmuctieukhongtancongs": ", ".join(self.tactu._tenmuctieukhongtancongs),
+                    "_khoangcachtoidatruongnhom": self.tactu._khoangcachtoidatruongnhom,
                 }
                 self.shared_data[self.idcuaso] = info
 
@@ -172,6 +173,12 @@ class CuaSo:
             if cmd:
                 if cmd == "battat_tudongdichuyendiemdanhxungquanh":
                     self.tactu.battat_is_tudongdichuyendiemdanhxungquanh()
+                elif isinstance(cmd, str) and cmd.startswith("set_khoangcachtheosau:"):
+                    try:
+                        khoangcach = float(cmd.split(":")[1])
+                        self.tactu.thietlap_khoangcachtheosau(khoangcach)
+                    except Exception:
+                        pass
                 elif cmd == "battat_chantangcapdo":
                     self.tactu.battat_is_chantangcapdo()
                 elif cmd == "battat_tudongkhaikhoang":

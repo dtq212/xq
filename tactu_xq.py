@@ -278,6 +278,7 @@ class TacTu:
             "_is_tudonglamnhiemvusugia": getattr(self, "_is_tudonglamnhiemvusugia", False),
             "_tenmuctieukhongtancongs": self._tenmuctieukhongtancongs,
             "_tenvatphamnhats": self._tenvatphamnhats,
+            "_khoangcachtoidatruongnhom": self._khoangcachtoidatruongnhom,
         }
         util_luuthietlap(str(idnguoichoi), thietlap)
 
@@ -313,7 +314,10 @@ class TacTu:
             if "_is_tudonglamnhiemvusugia" in thietlap: self._is_tudonglamnhiemvusugia = thietlap["_is_tudonglamnhiemvusugia"]
             if "_tenmuctieukhongtancongs" in thietlap: self._tenmuctieukhongtancongs = thietlap["_tenmuctieukhongtancongs"]
             if "_tenvatphamnhats" in thietlap: self._tenvatphamnhats = thietlap["_tenvatphamnhats"]
+            if "_khoangcachtoidatruongnhom" in thietlap: self._khoangcachtoidatruongnhom = float(thietlap["_khoangcachtoidatruongnhom"])
 
+    def thietlap_khoangcachtheosau(self, khoangcach):
+        self._khoangcachtoidatruongnhom = float(khoangcach)
     def _kiemtrathuchienvohieuhoadichuyen(self):
         if self._is_yeucauvohieuhoadichuyen:
             self.moitruong.action_vohieuhoadichuyen()
