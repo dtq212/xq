@@ -114,6 +114,13 @@ THONGTINDANGNHAP_MAP = {
         "server": 1,
         "char_index": 2,
     },
+    "59504": {
+        "user": "thichvacham",
+        "pass": "hateva",
+        "group": 1,
+        "server": 1,
+        "char_index": 2,
+    },
     "59500": {
         "user": "tholuumanh",
         "pass": "hateva",
