@@ -17,7 +17,7 @@ class GiaoDienHienThi:
         frame_top = tk.Frame(self.root)
         frame_top.pack(fill = tk.BOTH, expand = True, padx = 5, pady = 5)
 
-        columns = ("hwnd", "name", "hp", "mp", "map", "pos", "status")
+        columns = ("hwnd", "name", "hp", "mp", "map")
         self.tree = ttk.Treeview(frame_top, columns = columns, show = "headings", height = 8)
 
         self.tree.heading("hwnd", text = "HWND")
@@ -30,10 +30,6 @@ class GiaoDienHienThi:
         self.tree.column("mp", width = 50, anchor = tk.CENTER)
         self.tree.heading("map", text = "Bản đồ")
         self.tree.column("map", width = 60, anchor = tk.CENTER)
-        self.tree.heading("pos", text = "Tọa độ")
-        self.tree.column("pos", width = 80, anchor = tk.CENTER)
-        self.tree.heading("status", text = "Trạng thái")
-        self.tree.column("status", width = 120, anchor = tk.W)
 
         self.tree.pack(side = tk.LEFT, fill = tk.BOTH, expand = True)
 
