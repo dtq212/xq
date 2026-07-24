@@ -1004,9 +1004,10 @@ class TacTu:
 
         khoangcach = self.moitruong.get_khoangcach(diachimuctieu) if diachimuctieu else 0.
 
-        if is_ngatdichuyen and idtuthenhanvat == TUTHENHANVAT_DICHUYEN:
+        if is_ngatdichuyen and idtuthenhanvat == TUTHENHANVAT_DICHUYEN and khoangcach <= khoangcachyeucau:
             self.moitruong.action_ngatdichuyen()
             self._thoidiemtamngungdichuyensudungkynang = max(getattr(self, "_thoidiemtamngungdichuyensudungkynang", 0), time.time() + 0.5)
+            return True
 
         if loaikynang in ("sudungkynangmuctieu", "tancongvatly", "sudungkynangphudau", "sudungkynanglendongdoi"):
             khoangcachthucteyeucau = khoangcachyeucau
