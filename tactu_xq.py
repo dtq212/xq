@@ -143,7 +143,7 @@ class TacTu:
         self._solansudungkhaithientichdia = 0
         self._solansudungluutinhtruymang = 0
 
-        self._is_chantangcapdo = True
+        self._is_chantangcapdo = False
 
         self._trangthaikhaithientichdia = {
             "is_danglui": False,
