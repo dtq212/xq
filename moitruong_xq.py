@@ -15,6 +15,8 @@ OFFSET_DIACHICOSOTHONGTINNHANVATX = 0x1BDA60
 class MoiTruong:
     def __init__(self, idcuaso):
         self._thoidiembatchucnangmoronggannhat = 0.
+        self._thoidiemtatchucnangmoronggannhat = 0.
+        self._thoidiemcochucnangmoronggannhat = 0.
         self.idcuaso = idcuaso
         idtientrinh = ctypes.c_ulong()
         ctypes.windll.user32.GetWindowThreadProcessId(self.idcuaso, ctypes.byref(idtientrinh))
@@ -233,9 +235,9 @@ class MoiTruong:
     def action_tatchucnangmorong(self, delay = 0.5):
         if not self.get_is_dangbatchucnangmorong():
             return False
-        if time.time() - self._thoidiembatchucnangmoronggannhat < delay:
+        if time.time() - self._thoidiemtatchucnangmoronggannhat < delay:
             return False
-        self._thoidiembatchucnangmoronggannhat = time.time()
+        self._thoidiemtatchucnangmoronggannhat = time.time()
 
         caulenh = f"auto close"
 
@@ -697,6 +699,9 @@ class MoiTruong:
         self._diachicosonhanvatbaothudautien = self.action_timkiemnhanvat(tenchunhan = self.get_tendoituong()) if self.get_is_datrieuhoibaothudautien() else False
         self._is_nhanvatbichoang = self.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), macdinh = False, is_hieuungcoloi = 0)
 
+        if not self.get_is_dangbatchucnangmorong():
+            self._thoidiemcochucnangmoronggannhat = time.time()
+
     def get_is_nhanvatbichoang(self):
         return self._is_nhanvatbichoang
 
@@ -1123,8 +1128,6 @@ class MoiTruong:
         if self.get_is_batautoingame() != is_batautoingame:
             x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
             if x: write_boolean(self.tientrinh, x + 0xAEC924, is_batautoingame)
-
-
 
     def get_is_dangbatchucnangmorong(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)

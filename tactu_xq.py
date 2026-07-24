@@ -3724,3 +3724,12 @@ class TacTu:
             self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
             self.moitruong.action_ngatdichuyen()
             time.sleep(5.0)
+
+    def action_tudongbatautoingame(self):
+        self.moitruong.set_is_batautoingame(False)
+
+        if self.moitruong.get_idbandohientai() not in BANDOKHONGPKs:
+            if self.moitruong.get_is_dangbatchucnangmorong() and time.time() - self.moitruong._thoidiemcochucnangmoronggannhat > 10.:
+                self.moitruong.action_tatchucnangmorong()
+            else:
+                self.moitruong.action_batchucnangmorong()
