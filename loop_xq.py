@@ -89,7 +89,7 @@ class LoopDieuPhoiDiChuyen:
     def step(self):
         if not self.moitruong.get_is_nhanvattontai() or self.moitruong.get_is_dangmatketnoi():
             return
-        self.tactu.action_xulydichuyenuutien()
+        self.tactu.action_xulyuutiendichuyen()
 
 
 class LoopChinh:
