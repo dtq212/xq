@@ -14,6 +14,7 @@ from tienich_xq import taithietlap as util_taithietlap, phatam
 class TacTu:
     def __init__(self, moitruong: MoiTruong):
         self._idquaidautien = 0
+        self._thoidiemvohieuhoatatchucnangmoronggannhat = 0.
         self._thoidiemvohieuhoabatchucnangmoronggannhat = 0.
         self._thoidiemsudungthaotacbaothugannhat = 0.
         self._thoidiemthietlaptudongsudungkynangthiencangannhat = 0.
@@ -676,6 +677,9 @@ class TacTu:
 
             is_boquamuctieuhientai = False
 
+            if self.moitruong.get_is_nhanvatdachet(diachicosothongtinnhanvatmuctieudangchon):
+                self._thoidiemvohieuhoatatchucnangmoronggannhat = max(self._thoidiemvohieuhoatatchucnangmoronggannhat, time.time() + 10.)
+
             if is_bandokhongpk and is_muctieupk:
                 is_boquamuctieuhientai = True
             elif not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
@@ -1009,9 +1013,14 @@ class TacTu:
 
         khoangcach = self.moitruong.get_khoangcach(diachimuctieu) if diachimuctieu else 0.
 
+        is_thucsonngukiemphitien = self.moitruong.get_tenmonphai() == "thucson" and vitrikynang == VITRIKYNANG_NGUKIEMPHITIEN
         if is_ngatdichuyen and idtuthenhanvat == TUTHENHANVAT_DICHUYEN and khoangcach <= khoangcachyeucau:
             self.moitruong.action_ngatdichuyen()
-            self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.5)
+            self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.1)
+
+            if is_thucsonngukiemphitien:
+                self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 1.)
+
             return False, True
 
         if time.time() - self.moitruong._thoidiembatchucnangmoronggannhat < 0.5 or time.time() - self.moitruong._thoidiemtatchucnangmoronggannhat < 0.5:
@@ -1085,6 +1094,9 @@ class TacTu:
             offset = random.uniform(0, 1.0) if loaikynang == "sudungkynangphudau" else 0
             if loaikynang == "sudungkynangkhongmuctieu":
                 self.moitruong.action_sudungkynangvitri(*vitrikynang)
+                if is_thucsonngukiemphitien:
+                    self._thoidiemvohieuhoatatchucnangmoronggannhat = max(self._thoidiemvohieuhoatatchucnangmoronggannhat, time.time() + 1.)
+                    self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 1.)
             elif loaikynang == "sudungkynanglenbanthan":
                 self.moitruong.action_sudungkynangvitrilenbanthan(*vitrikynang)
             elif loaikynang == "tancongvatly":
@@ -1098,7 +1110,7 @@ class TacTu:
                 self.moitruong.action_sudungkynangvitriphudau(*vitrikynang, diachimuctieu, khoangcachphudau = offset)
 
         if is_ngatdichuyen:
-            self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.5)
+            self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.1)
             self._yeucautancong = None
 
         return True, True
@@ -3743,7 +3755,8 @@ class TacTu:
 
         if self.moitruong.get_idbandohientai() not in BANDOKHONGPKs:
             if not self._is_tudongsudungkynang or (self.moitruong.get_is_dangbatchucnangmorong() and time.time() - self.moitruong._thoidiemcochucnangmoronggannhat > 10.) or time.time() - self._thoidiemvohieuhoabatchucnangmoronggannhat < 0.:
-                self.moitruong.action_tatchucnangmorong()
+                if time.time() - self._thoidiemvohieuhoatatchucnangmoronggannhat > 0.:
+                    self.moitruong.action_tatchucnangmorong()
             else:
                 self.moitruong.action_batchucnangmorong()
         else:
