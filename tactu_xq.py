@@ -2173,7 +2173,8 @@ class TacTu:
         if self.moitruong.get_is_dayhanhtrang():
             if time.time() - self._thoidiemphatamdayhanhtrang > 5.0:
                 if not self._is_tudongvebanrac:
-                    phatam("Hành trang đầy")
+                    # phatam("Hành trang đầy")
+                    pass
                 self._thoidiemphatamdayhanhtrang = time.time()
 
             self._diachicosovatphamdangnhat = False
