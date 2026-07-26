@@ -1018,20 +1018,18 @@ class TacTu:
             khoangcachthucteyeucau = khoangcachyeucau
             if thoigiandungim > 0.5:
                 if khoangcachyeucau >= KHOANGCACHSUDUNGKYNANGTAMXA:
-                    khoangcachthucteyeucau -= 1.5
+                    khoangcachthucteyeucau = khoangcachthucteyeucau - 1.5 - thoigiandungim
                 elif khoangcachyeucau > KHOANGCACHSUDUNGKYNANGCANCHIEN:
-                    khoangcachthucteyeucau -= 0.5
+                    khoangcachthucteyeucau = khoangcachthucteyeucau - 0.5 - thoigiandungim
 
             if khoangcach > khoangcachthucteyeucau:
-                if khoangcach <= khoangcachyeucau:
-                    self._yeucautancong = {
-                        "yeucau": YEUCAUDICHUYENTANCONG,
-                        "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
-                        "diachimuctieu": diachimuctieu,
-                        "khoangcachtoida": max(0, khoangcachthucteyeucau - 0.5)
-                    }
-                    return False, True
-                return False, False
+                self._yeucautancong = {
+                    "yeucau": YEUCAUDICHUYENTANCONG,
+                    "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
+                    "diachimuctieu": diachimuctieu,
+                    "khoangcachtoida": max(0, khoangcachthucteyeucau - 0.5)
+                }
+                return False, True
 
         if loaikynang == "dichuyentiepcancanchien":
             self._yeucautancong = {
@@ -1052,16 +1050,13 @@ class TacTu:
             return True, True
 
         elif loaikynang == "dichuyentiepcantamxa":
-            nguongantoan = khoangcachyeucau - (1.5 + thoigiandungim)
-            if khoangcach >= nguongantoan:
-                self._yeucautancong = {
-                    "yeucau": YEUCAUDICHUYENTANCONG,
-                    "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
-                    "diachimuctieu": diachimuctieu,
-                    "khoangcachtoida": 0,
-                }
-                return True, True
-            return False, False
+            self._yeucautancong = {
+                "yeucau": YEUCAUDICHUYENTANCONG,
+                "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
+                "diachimuctieu": diachimuctieu,
+                "khoangcachtoida": 0,
+            }
+            return True, True
 
         if loaikynang == "battathieuungphapbao":
             self.moitruong.action_thucthicaulenh("pf2 908.6", delay = 0.)
@@ -1577,7 +1572,6 @@ class TacTu:
         if not hasattr(self, "_idnguoichoibuffnoikhanggannhat"): self._idnguoichoibuffnoikhanggannhat = 0
 
         idtuthenhanvat = self.moitruong.get_idtuthenhanvat()
-        thoigiandungim = time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimcomuctieugannhat() if idtuthenhanvat == TUTHENHANVAT_DUNGIM else 0.
 
         diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
         is_muctieupk = diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu)
