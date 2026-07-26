@@ -123,13 +123,6 @@ THONGTINDANGNHAP_MAP = {
         "server": 1,
         "char_index": 2,
     },
-    "59503": {
-        "user": "dtq21295",
-        "pass": "hateva",
-        "group": 1,
-        "server": 1,
-        "char_index": 6,
-    },
     "59506": {
         "user": "thichvacham",
         "pass": "hateva",
@@ -137,8 +130,22 @@ THONGTINDANGNHAP_MAP = {
         "server": 2,
         "char_index": 3,
     },
+    # "59503": {
+    #     "user": "dtq21295",
+    #     "pass": "hateva",
+    #     "group": 1,
+    #     "server": 1,
+    #     "char_index": 6,
+    # },
     "59500": {
         "user": "tholuumanh",
+        "pass": "hateva",
+        "group": 1,
+        "server": 1,
+        "char_index": 3,
+    },
+    "59562": {
+        "user": "ngoclasat",
         "pass": "hateva",
         "group": 1,
         "server": 2,
