@@ -8,8 +8,10 @@ import win32gui
 import win32con
 from moitruong_xq import MoiTruong
 
+
 def make_lparam(x, y):
     return (y << 16) | (x & 0xFFFF)
+
 
 def _safe_post_message(hwnd, msg, wparam, lparam):
     try:
@@ -19,32 +21,37 @@ def _safe_post_message(hwnd, msg, wparam, lparam):
             return
         raise e
 
-def click(hwnd, x, y, delay=0.1):
+
+def click(hwnd, x, y, delay = 0.1):
     lparam = make_lparam(x, y)
     _safe_post_message(hwnd, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lparam)
     time.sleep(0.05)
     _safe_post_message(hwnd, win32con.WM_LBUTTONUP, 0, lparam)
     time.sleep(delay)
 
-def right_click(hwnd, x, y, delay=0.1):
+
+def right_click(hwnd, x, y, delay = 0.1):
     lparam = make_lparam(x, y)
     _safe_post_message(hwnd, win32con.WM_RBUTTONDOWN, win32con.MK_RBUTTON, lparam)
     time.sleep(0.05)
     _safe_post_message(hwnd, win32con.WM_RBUTTONUP, 0, lparam)
     time.sleep(delay)
 
-def press_key(hwnd, key_code, delay=0.1):
+
+def press_key(hwnd, key_code, delay = 0.1):
     _safe_post_message(hwnd, win32con.WM_KEYDOWN, key_code, 0)
     time.sleep(0.05)
     _safe_post_message(hwnd, win32con.WM_KEYUP, key_code, 0)
     time.sleep(delay)
 
-def type_text(hwnd, text, delay=0.05):
+
+def type_text(hwnd, text, delay = 0.05):
     for char in text:
         _safe_post_message(hwnd, win32con.WM_CHAR, ord(char), 0)
         time.sleep(delay)
 
-def press_combo(hwnd, modifier, key, delay=0.1):
+
+def press_combo(hwnd, modifier, key, delay = 0.1):
     _safe_post_message(hwnd, win32con.WM_KEYDOWN, modifier, 0)
     time.sleep(0.05)
     _safe_post_message(hwnd, win32con.WM_KEYDOWN, key, 0)
@@ -53,6 +60,7 @@ def press_combo(hwnd, modifier, key, delay=0.1):
     time.sleep(0.05)
     _safe_post_message(hwnd, win32con.WM_KEYUP, modifier, 0)
     time.sleep(delay)
+
 
 DUONGDAN_GAME = r"C:\Users\Admin\Desktop\ChienQuoc2\ChienQuoc2 - Live\xq.exe"
 LAUNCHER_TITLE = "client 1.01.80"
@@ -165,6 +173,7 @@ def kiem_tra_va_dong_cua_so_treo(hwnd):
             print(f"❌ Lỗi khi cố gắng dọn dẹp cửa sổ: {e}")
             return False
 
+
 def laydanhsachnhanvatonlines():
     online_chars = []
 
@@ -266,9 +275,9 @@ def mogamevadangnhap(char_name, config):
 
             for attempt in range(max_retries):
                 print(f"      [Lần thử {attempt + 1}/{max_retries}] Đang chạy lệnh mở game...")
-                subprocess.Popen(DUONGDAN_GAME, cwd=game_dir)
+                subprocess.Popen(DUONGDAN_GAME, cwd = game_dir)
 
-                for i in range(50):
+                for i in range(15):
                     hwnd_launcher = timlauncherdangmo()
                     if hwnd_launcher:
                         success_open = True
@@ -289,7 +298,7 @@ def mogamevadangnhap(char_name, config):
                         continue
 
                     time.sleep(2)
-                    print(f"\r      Chờ Launcher... {i + 1}", end="")
+                    print(f"\r      Chờ Launcher... {i + 1}", end = "")
 
                 print("")
 
@@ -351,7 +360,7 @@ def mogamevadangnhap(char_name, config):
         press_key(hwnd_game, win32con.VK_TAB)
         time.sleep(0.5)
         for _ in range(30):
-            press_key(hwnd_game, win32con.VK_BACK, delay=0.01)
+            press_key(hwnd_game, win32con.VK_BACK, delay = 0.01)
         time.sleep(0.5)
 
         type_text(hwnd_game, config["user"])

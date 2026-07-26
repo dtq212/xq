@@ -1631,8 +1631,8 @@ class TacTu:
             (VITRIKYNANG_LUCPHACHHOASON, "sudungkynangmuctieu", lambda: is_muctieupk and self.moitruong.get_is_cothegaychoang(diachimuctieu), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
             (VITRIKYNANG_PHAKHONGKICH, "sudungkynangmuctieu", lambda: is_muctieupk and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRONGTHUONG,), macdinh = True, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
             (VITRIKYNANG_VANKIEMXUYENTAM, "sudungkynangmuctieu", lambda: is_muctieupk, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
-            (VITRIKYNANG_NGUKIEMPHITIEN, "sudungkynangkhongmuctieu", lambda: diachimuctieu and self.moitruong.get_noilucconlai() > 70 and khoangcach <= KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN, 0, None, True),
             (VITRIKYNANG_NGUKIEMTHUAT, "sudungkynangmuctieu", lambda: diachimuctieu, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
+            (VITRIKYNANG_NGUKIEMPHITIEN, "sudungkynangkhongmuctieu", lambda: diachimuctieu and self.moitruong.get_noilucconlai() > 70 and khoangcach <= KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN, 0, None, True),
             (VITRIKYNANG_TIENNHANCHILO, "sudungkynangmuctieu", lambda: diachimuctieu and not is_muctieupk, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
             (None, "dichuyentiepcancanchien", lambda: diachimuctieu and KHOANGCACHSUDUNGKYNANGCANCHIEN < khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA, 0, None, False),
             (None, "dichuyentiepcantamxa", lambda: diachimuctieu and khoangcach > KHOANGCACHSUDUNGKYNANGTAMXA, KHOANGCACHSUDUNGKYNANGTAMXA, None, False),
@@ -2174,21 +2174,12 @@ class TacTu:
         if self.moitruong.get_is_dayhanhtrang():
             if time.time() - self._thoidiemphatamdayhanhtrang > 5.0:
                 if not self._is_tudongvebanrac:
-                   phatam("Hành trang đầy")
+                    phatam("Hành trang đầy")
                 self._thoidiemphatamdayhanhtrang = time.time()
 
             self._diachicosovatphamdangnhat = False
             self._yeucaunhatdo = None
             return
-
-        if self._diachicosovatphamdangnhat:
-            if not self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat):
-                self._diachicosovatphamdangnhat = False
-            elif self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat) >= KHOANGCACHTOANMANHINH:
-                self._diachicosovatphamdangnhat = False
-            elif time.time() - self._thoidiemthaydoivatphamdangnhatgannhat > 10:
-                self._diachicosovatphamkhongnhat_map[self._diachicosovatphamdangnhat] = time.time()
-                self._diachicosovatphamdangnhat = False
 
         vatphamtudongnhats = VATPHAMTUDONGNHATs
         if self._is_tudongdichuyendiemdanhxungquanh:
@@ -2196,43 +2187,59 @@ class TacTu:
 
         is_bandofarms = self.moitruong.get_idbandohientai() in BANDOFARMs
 
-        if not self._diachicosovatphamdangnhat:
-            danhsachvatpham = []
-            i = -1
-            while True:
-                i += 1
-                diachivatpham = self.moitruong.get_diachicosothongtindoituongx(i)
-                if not diachivatpham:
-                    break
+        def kiemtradieukiennhat(tenvatpham):
+            if tenvatpham in VATPHAMKHONGNHATs:
+                return False
+            if tenvatpham in vatphamtudongnhats:
+                return True
+            if VATPHAMTUDONGNHATFARMs and is_bandofarms and any(x in tenvatpham for x in VATPHAMTUDONGNHATFARMs):
+                return True
+            if self._tenvatphamnhats and tenvatpham in self._tenvatphamnhats:
+                return True
+            return False
 
-                if not self.moitruong.get_is_vatphamtontai(diachivatpham):
-                    continue
+        if self._diachicosovatphamdangnhat:
+            tenvatphamhientai = self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat)
 
-                if time.time() - self._diachicosovatphamkhongnhat_map.get(diachivatpham, 0) < 60:
-                    continue
+            if not self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat):
+                self._diachicosovatphamdangnhat = False
+            elif self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat) >= KHOANGCACHTOANMANHINH:
+                self._diachicosovatphamdangnhat = False
+            elif not kiemtradieukiennhat(tenvatphamhientai):
+                self._diachicosovatphamdangnhat = False
+            elif time.time() - self._thoidiemthaydoivatphamdangnhatgannhat > 10:
+                self._diachicosovatphamkhongnhat_map[self._diachicosovatphamdangnhat] = time.time()
+                self._diachicosovatphamdangnhat = False
 
-                tenvatpham = self.moitruong.get_tendoituong(diachivatpham)
+        danhsachvatpham = []
+        i = -1
+        while True:
+            i += 1
+            diachivatpham = self.moitruong.get_diachicosothongtindoituongx(i)
+            if not diachivatpham:
+                break
 
-                is_cannhat = False
+            if not self.moitruong.get_is_vatphamtontai(diachivatpham):
+                continue
 
-                khoangcach = self.moitruong.get_khoangcach(diachivatpham)
-                if tenvatpham in VATPHAMKHONGNHATs:
-                    pass
-                elif tenvatpham in vatphamtudongnhats:
-                    is_cannhat = True
-                elif VATPHAMTUDONGNHATFARMs and is_bandofarms and any(x in tenvatpham for x in VATPHAMTUDONGNHATFARMs):
-                    is_cannhat = True
-                elif self._tenvatphamnhats and tenvatpham in self._tenvatphamnhats:
-                    is_cannhat = True
+            if time.time() - self._diachicosovatphamkhongnhat_map.get(diachivatpham, 0) < 60:
+                continue
 
-                if is_cannhat:
-                    if khoangcach < KHOANGCACHTOANMANHINH:
-                        danhsachvatpham.append((khoangcach, diachivatpham))
+            tenvatpham = self.moitruong.get_tendoituong(diachivatpham)
+            khoangcach = self.moitruong.get_khoangcach(diachivatpham)
 
-            if danhsachvatpham:
-                danhsachvatpham.sort(key = lambda x: x[0])
-                self._diachicosovatphamdangnhat = danhsachvatpham[0][1]
+            if kiemtradieukiennhat(tenvatpham) and khoangcach < KHOANGCACHTOANMANHINH:
+                danhsachvatpham.append((khoangcach, diachivatpham))
+
+        if danhsachvatpham:
+            danhsachvatpham.sort(key = lambda x: x[0])
+            diachi_gannhat = danhsachvatpham[0][1]
+
+            if diachi_gannhat != self._diachicosovatphamdangnhat:
+                self._diachicosovatphamdangnhat = diachi_gannhat
                 self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
+        else:
+            self._diachicosovatphamdangnhat = False
 
         if self._diachicosovatphamdangnhat:
             khoangcach = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat)
@@ -2357,8 +2364,12 @@ class TacTu:
                 self._thoidiembatdaudendiem = time.time()
                 target_map = self._diemdanhxungquanhhientai[2]
 
-            if idbandohientai != target_map and idbandohientai in (BANDO_TANTHUTHON, BANDO_CHU):
+            is_khacbando = idbandohientai != target_map
+
+            if is_khacbando:
                 self._thoidiemvohieuhoabatchucnangmoronggannhat = time.time() + 1.
+
+            if is_khacbando and idbandohientai in (BANDO_TANTHUTHON, BANDO_CHU):
                 diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = TANTHUTIENCO)
 
                 if not diachinpc:
@@ -3737,7 +3748,9 @@ class TacTu:
             return
 
         if self.moitruong.get_idbandohientai() not in BANDOKHONGPKs:
-            if not self._is_tudongsudungkynang or (self.moitruong.get_is_dangbatchucnangmorong() and time.time() - self.moitruong._thoidiemcochucnangmoronggannhat > 10.) or time.time() - self._thoidiemvohieuhoabatchucnangmoronggannhat < 0.:
+            if time.time() - self._thoidiemvohieuhoabatchucnangmoronggannhat < 0.:
+                self.moitruong.action_tatchucnangmorong()
+            elif not self._is_tudongsudungkynang or (self.moitruong.get_is_dangbatchucnangmorong() and time.time() - self.moitruong._thoidiemcochucnangmoronggannhat > 10.):
                 if time.time() - self._thoidiemvohieuhoatatchucnangmoronggannhat > 0.:
                     self.moitruong.action_tatchucnangmorong()
             else:
