@@ -3349,6 +3349,7 @@ class TacTu:
     def action_sudunghoithanhphu(self):
         if time.time() - self._thoidiemsudunghoithanhphugannhat > 12.:
             self._thoidiemsudunghoithanhphugannhat = time.time()
+            self._thoidiemvohieuhoatatchucnangmoronggannhat = time.time() + 10.
             self.action_sudungvatphamhanhtrang(HOITHANHPHU)
 
     def action_dichuyenlenbandofarm(self):
