@@ -1125,6 +1125,10 @@ class MoiTruong:
         return read_boolean(self.tientrinh, x + 0xAEC924) if x else False
 
     def set_is_batautoingame(self, is_batautoingame):
+        if not is_batautoingame:
+            if read_bytes(self.tientrinh, self.diachixq + 0x6EC9, 1) != bytes.fromhex("90"):
+                write_bytes(self.tientrinh, self.diachixq + 0x6EC9, bytes.fromhex("90 90 90 90 90 90 90 90 90 90"), 10)
+
         if self.get_is_batautoingame() != is_batautoingame:
             x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
             if x: write_boolean(self.tientrinh, x + 0xAEC924, is_batautoingame)
@@ -1198,7 +1202,8 @@ class MoiTruong:
         if read_int(self.tientrinh, self.diachixq + 0x1B377 + 0x6) != TUTHENHANVAT_DELAYSAUTANCONG: write_int(self.tientrinh, self.diachixq + 0x1B377 + 0x6, TUTHENHANVAT_DELAYSAUTANCONG)
 
     def action_vohieuhoathietlapmuctieu(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0xA20F0, 1) != bytes.fromhex("90"): write_bytes(self.tientrinh, self.diachixq + 0xA20F0, bytes.fromhex("90 90 90 90 90"), 5)
+        if read_bytes(self.tientrinh, self.diachixq + 0xA20F0, 1) != bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + 0xA20F0, bytes.fromhex("90 90 90 90 90"), 5)
         if read_bytes(self.tientrinh, self.diachixq + 0xA20F8, 1) != bytes.fromhex("90"): write_bytes(self.tientrinh, self.diachixq + 0xA20F8, bytes.fromhex("90 90 90 90 90 90"), 6)
         if read_bytes(self.tientrinh, self.diachixq + 0xA20FE, 1) != bytes.fromhex("90"): write_bytes(self.tientrinh, self.diachixq + 0xA20FE, bytes.fromhex("90 90 90 90 90"), 5)
         if read_bytes(self.tientrinh, self.diachixq + 0xA2106, 1) != bytes.fromhex("90"): write_bytes(self.tientrinh, self.diachixq + 0xA2106, bytes.fromhex("90 90 90 90 90 90"), 6)
