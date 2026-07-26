@@ -2181,7 +2181,7 @@ class TacTu:
 
         vatphamtudongnhats = VATPHAMTUDONGNHATs
         if self._is_tudongdichuyendiemdanhxungquanh:
-            vatphamtudongnhats = (*vatphamtudongnhats, TIENTE, "Tơ Nhện", "Kịch Độc Châm", "Đuôi Bọ Cạp", "Ly Hồn", "Ly Phách")
+            vatphamtudongnhats = (*vatphamtudongnhats, TIENTE, "Tơ Nhện", "Kịch Độc Châm", "Đuôi Bọ Cạp", "Ly Hồn", "Ly Phách", "Ma Tinh thạch")
 
         is_bandofarms = self.moitruong.get_idbandohientai() in BANDOFARMs
 
