@@ -1015,21 +1015,24 @@ class TacTu:
             return False, True
 
         if loaikynang in ("sudungkynangmuctieu", "tancongvatly", "sudungkynangphudau", "sudungkynanglendongdoi"):
-            khoangcachthucteyeucau = khoangcachyeucau
-            if thoigiandungim > 0.5:
-                if khoangcachyeucau >= KHOANGCACHSUDUNGKYNANGTAMXA:
-                    khoangcachthucteyeucau = khoangcachthucteyeucau - 1.5 - thoigiandungim
-                elif khoangcachyeucau > KHOANGCACHSUDUNGKYNANGCANCHIEN:
-                    khoangcachthucteyeucau = khoangcachthucteyeucau - 0.5 - thoigiandungim
+            if khoangcach <= khoangcachyeucau:
+                khoangcachthucteyeucau = khoangcachyeucau
+                if thoigiandungim > 0.5:
+                    if khoangcachyeucau >= KHOANGCACHSUDUNGKYNANGTAMXA:
+                        khoangcachthucteyeucau = khoangcachthucteyeucau - 1.5 - thoigiandungim
+                    elif khoangcachyeucau > KHOANGCACHSUDUNGKYNANGCANCHIEN:
+                        khoangcachthucteyeucau = khoangcachthucteyeucau - 0.5 - thoigiandungim
 
-            if khoangcach > khoangcachthucteyeucau:
-                self._yeucautancong = {
-                    "yeucau": YEUCAUDICHUYENTANCONG,
-                    "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
-                    "diachimuctieu": diachimuctieu,
-                    "khoangcachtoida": max(0, khoangcachthucteyeucau - 0.5)
-                }
-                return False, True
+                if khoangcach > khoangcachthucteyeucau:
+                    self._yeucautancong = {
+                        "yeucau": YEUCAUDICHUYENTANCONG,
+                        "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
+                        "diachimuctieu": diachimuctieu,
+                        "khoangcachtoida": max(0, khoangcachthucteyeucau - 0.5)
+                    }
+                    return False, True
+            else:
+                return False, False
 
         if loaikynang == "dichuyentiepcancanchien":
             self._yeucautancong = {
