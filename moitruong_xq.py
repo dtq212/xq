@@ -1740,13 +1740,17 @@ class MoiTruong:
         return self._thoidiemsudungkynangvitrigannhat_map.get((idvitri_x, idvitri_y), macdinh)
 
     def action_sudungkynangvitrimuctieu(self, idvitri_x, idvitri_y, diachicosothongtinnhanvatmuctieu = False, is_khongkiemtracothetancong = False, delay = 0.2):
-        if time.time() - self._thoidiemsudungkynanggannhat < 0.05: return
+        if time.time() - self._thoidiemsudungkynanggannhat < 0.05:
+            return
         idvitri = (idvitri_x, idvitri_y)
-        if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay: return
+        if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
+            return
         idkynang = self.get_idkynang(idvitri_x, idvitri_y)
-        if not idkynang: return
+        if not idkynang:
+            return
         diachi = diachicosothongtinnhanvatmuctieu if diachicosothongtinnhanvatmuctieu else self.get_diachicosothongtinnhanvatmuctieudangchon()
-        if not diachi or (not is_khongkiemtracothetancong and not self.get_is_cothetancong(diachi)): return
+        if not diachi or (not is_khongkiemtracothetancong and not self.get_is_cothetancong(diachi)):
+            return
         is_ok = False
         if self.get_is_nguoichoi(diachi):
             idnguoichoi = self.get_idnguoichoi(diachi)
