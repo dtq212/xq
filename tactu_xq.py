@@ -1029,7 +1029,7 @@ class TacTu:
 
         if is_ngatdichuyen and idtuthenhanvat == TUTHENHANVAT_DICHUYEN and khoangcach <= khoangcachyeucau:
             self.moitruong.action_ngatdichuyen()
-            self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.5)
+            self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.1)
             return False, True
 
         if time.time() - self.moitruong._thoidiembatchucnangmoronggannhat < 0.5 or time.time() - self.moitruong._thoidiemtatchucnangmoronggannhat < 0.5:
