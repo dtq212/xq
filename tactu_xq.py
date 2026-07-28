@@ -2254,14 +2254,15 @@ class TacTu:
 
         if self._diachicosovatphamdangnhat:
             khoangcach = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat)
-            yeucaunhatdomoi = {
-                "yeucau": YEUCAUDICHUYENNHATDO,
-                "toadodich": (
-                    self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True),
-                    self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True)
-                ),
-                "khoangcachtoida": 1.5
-            }
+            if khoangcach > 1.5:
+                yeucaunhatdomoi = {
+                    "yeucau": YEUCAUDICHUYENNHATDO,
+                    "toadodich": (
+                        self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True),
+                        self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True)
+                    ),
+                    "khoangcachtoida": 0.5
+                }
             if khoangcach <= 3.:
                 if is_bandofarms:
                     self.moitruong.action_nhatdoxungquanh(delay = 0.2)
