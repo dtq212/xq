@@ -1536,6 +1536,16 @@ class MoiTruong:
             return self.get_iddoituongvatphamhanhtrang(i)
         return False
 
+    def action_timkiemvitrivatphamhanhtrang(self, tenvatpham = None):
+        if not tenvatpham: return False
+        i = -1
+        while True:
+            if i >= SOLUONGVATPHAMHANHTRANGTOIDA: break
+            i += 1
+            if tenvatpham and self.get_tenvatphamhanhtrang(i) != tenvatpham: continue
+            return i
+        return False
+
     def get_danhsachvatphamhanhtrang_map(self):
         i = -1
         vatphamhanhtrang_map = {}
@@ -1669,10 +1679,13 @@ class MoiTruong:
     def get_is_dayhanhtrang(self):
         i = -1
         while True:
-            if i >= SOLUONGVATPHAMHANHTRANGTOIDA: break
+            if i >= SOLUONGVATPHAMHANHTRANGTOIDA:
+                break
             i += 1
-            if i % 10 == 0: time.sleep(0.001)
-            if not self.get_iddoituongvatphamhanhtrang(i): return False
+            if i % 10 == 0:
+                time.sleep(0.001)
+            if not self.get_iddoituongvatphamhanhtrang(i):
+                return False
         return True
 
     def get_tenmonphai(self):

@@ -2837,8 +2837,12 @@ class TacTu:
                 sovatphamdaban += 1
                 time.sleep(2.)
 
-        caulenh = "buy {}# 2 1 1500".format(hex(idnpc).replace("0x", ""))
-        self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
+        vitrihoithanhphu = self.moitruong.action_timkiemvitrivatphamhanhtrang(HOITHANHPHU)
+        soluonghoithanhphu = self.moitruong.get_soluongvatphamhanhtrang(vitrihoithanhphu) if vitrihoithanhphu else 0
+
+        if soluonghoithanhphu < 30:
+            caulenh = "buy {}# 2 {} 1500".format(hex(idnpc).replace("0x", ""), 30 - soluonghoithanhphu)
+            self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
 
     def _tinhkhoangcachdendoanthang(self, px, py, x1, y1, x2, y2):
         dx = x2 - x1
