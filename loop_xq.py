@@ -4,7 +4,7 @@ import traceback
 
 import pymem.exception
 
-from hangso_xq import BANDO_CHIENTRUONG, BANDO_CHU, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, BANDOFARMs, BANDOKHONGPKs
+from hangso_xq import BANDO_CHIENTRUONG, BANDO_CHU, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, BANDOFARMs, BANDOKHONGPKs, HOITHANHPHU, SOLUONGVATPHAMHANHTRANGTOIDA
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
 from tienich_xq import phatam

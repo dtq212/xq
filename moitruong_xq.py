@@ -1537,12 +1537,14 @@ class MoiTruong:
         return False
 
     def action_timkiemvitrivatphamhanhtrang(self, tenvatpham = None):
-        if not tenvatpham: return False
+        if not tenvatpham:
+            return False
         i = -1
         while True:
             if i >= SOLUONGVATPHAMHANHTRANGTOIDA: break
             i += 1
-            if tenvatpham and self.get_tenvatphamhanhtrang(i) != tenvatpham: continue
+            if tenvatpham and self.get_tenvatphamhanhtrang(i) != tenvatpham:
+                continue
             return i
         return False
 
