@@ -1796,8 +1796,8 @@ class MoiTruong:
         write_int(self.tientrinh, self.diachixq + 0x380AFC, idlenhdichuyen)
 
     def action_ngatdichuyen(self):
-        if self.get_idlenhdichuyen() != 0:
-            self.set_idlenhdichuyen(0)
+        # if self.get_idlenhdichuyen() != 0:
+        self.set_idlenhdichuyen(0)
 
     def action_nhatdo(self, diachi, delay = 0.05):
         if time.time() - self._thoidiemnhatdogannhat < delay: return
