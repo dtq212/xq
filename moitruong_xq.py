@@ -1508,12 +1508,15 @@ class MoiTruong:
         return True
 
     def action_phucsinh(self, is_duoccuu = False, delay = 2.5):
-        if time.time() - self._thoidiemphucsinhgannhat < delay or not self.get_is_nhanvatdachet(): return
+        if time.time() - self._thoidiemphucsinhgannhat < delay or not self.get_is_nhanvatdachet():
+            return False
         self._thoidiemphucsinhgannhat = time.time()
-        self.action_thucthicaulenh("desc revive", delay = 0.)
-        time.sleep(1.)
-        if self.get_is_danghiencuasotuychon():
-            self.set_is_danghiencuasotuychon(False)
+        if self.action_thucthicaulenh("desc revive", delay = 0.):
+            time.sleep(1.)
+            if self.get_is_danghiencuasotuychon():
+                self.set_is_danghiencuasotuychon(False)
+            return True
+        return False
 
     def action_doimaupk(self, idmaupk, delay = 1.):
         if time.time() - self._thoidiemmaupkgannhat < delay or self.get_idmaupk() == idmaupk:

@@ -2557,7 +2557,8 @@ class TacTu:
                     else:
                         return
                     dfgdfb += 1
-                self.moitruong.action_phucsinh()
+                if self.moitruong.action_phucsinh():
+                    self._xoatrangthaisaukhichet()
 
     def action_tudongdoimaupk(self):
         if self._is_tudongdoimaupk and self.moitruong.get_idbandohientai() not in BANDOFARMs:
@@ -3761,3 +3762,34 @@ class TacTu:
                 self.moitruong.action_batchucnangmorong()
         else:
             self.moitruong.action_tatchucnangmorong()
+
+    def _xoatrangthaisaukhichet(self):
+        self._yeucaunhatdo = None
+        self._yeucautheonhom = None
+        self._yeucautancong = None
+        self._yeucautudo = None
+        self._yeucaugomquai = None
+        self._yeucaukhaikhoang = None
+        self._yeucaudaotangbaodo = None
+
+        self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
+        self._diachicosomuctieuduphong = 0
+        self._diachicosovatphamdangnhat = False
+        self._diachicosokhaikhoang = 0
+        self._diachicosonhanvatmuctieudangdichuyenkhaithien = 0
+
+        self._is_danggomquai = False
+        self._danhsachidquaidagom.clear()
+        self._idquaidautien = 0
+        self._idquaidangkeo = 0
+
+        self._trangthaiveban = 0
+
+        self._idmuctieudangtheokiemtraket = 0
+        self._thoidiemdungimkiemtraket = 0.
+        self._idmuctieubiloi_map.clear()
+        self._idkhoangbiloi_map.clear()
+
+        self._trangthaikhaithientichdia["is_danglui"] = False
+        self._trangthaikhaithientichdia["idmuctieu"] = 0
+        self._solanthatbaikhaithien = 0
