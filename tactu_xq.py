@@ -2214,7 +2214,7 @@ class TacTu:
 
             if not self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat):
                 self._diachicosovatphamdangnhat = False
-            elif self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat) >= KHOANGCACHTOANMANHINH:
+            elif self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat) >= KHOANGCACHNHATDO:
                 self._diachicosovatphamdangnhat = False
             elif not kiemtradieukiennhat(tenvatphamhientai):
                 self._diachicosovatphamdangnhat = False
@@ -2239,7 +2239,7 @@ class TacTu:
             tenvatpham = self.moitruong.get_tendoituong(diachivatpham)
             khoangcach = self.moitruong.get_khoangcach(diachivatpham)
 
-            if kiemtradieukiennhat(tenvatpham) and khoangcach < KHOANGCACHTOANMANHINH:
+            if kiemtradieukiennhat(tenvatpham) and khoangcach < KHOANGCACHNHATDO:
                 danhsachvatpham.append((khoangcach, diachivatpham))
 
         if danhsachvatpham:
