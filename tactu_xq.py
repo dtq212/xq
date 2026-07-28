@@ -2261,7 +2261,7 @@ class TacTu:
                         self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True),
                         self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True)
                     ),
-                    "khoangcachtoida": 0.5
+                    "khoangcachtoida": 0
                 }
             if khoangcach <= 3.:
                 if is_bandofarms:
