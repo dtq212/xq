@@ -1577,8 +1577,7 @@ class TacTu:
 
         idtuthenhanvat = self.moitruong.get_idtuthenhanvat()
 
-        if idtuthenhanvat != TUTHENHANVAT_DICHUYEN:
-            thoigiankhongdichuyen = time.time() - self.moitruong.get_thoidiemtuthenhanvatkhongdichuyen()
+        thoigiankhongdichuyen = time.time() - self.moitruong.get_thoidiemtuthenhanvatkhongdichuyen()
 
         diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
         is_muctieupk = diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu)
