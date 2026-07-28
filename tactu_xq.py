@@ -1009,7 +1009,8 @@ class TacTu:
         if loaikynang in ("sudungkynangmuctieu", "tancongvatly", "sudungkynanglendongdoi"):
             if khoangcach <= khoangcachyeucau:
                 khoangcachthucteyeucau = khoangcachyeucau
-                if thoigiandungim > 0.5 and (time.time() - self.moitruong._thoidiemsudungkynanggannhat < 0.5 or time.time() - self.moitruong._thoidiemsudungtancongvatlygannhat < 0.5):
+                # if thoigiandungim > 0.5 and (time.time() - self.moitruong._thoidiemsudungkynanggannhat < 0.5 or time.time() - self.moitruong._thoidiemsudungtancongvatlygannhat < 0.5):
+                if thoigiandungim > 0.5:
                     if khoangcachyeucau >= KHOANGCACHSUDUNGKYNANGTAMXA:
                         khoangcachthucteyeucau = khoangcachthucteyeucau - 1.5 - thoigiandungim
                     elif khoangcachyeucau > KHOANGCACHSUDUNGKYNANGCANCHIEN:
