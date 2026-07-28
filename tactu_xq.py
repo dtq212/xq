@@ -1549,7 +1549,8 @@ class TacTu:
         if self._yeucaunhatdo:
             diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
             if diachimuctieu:
-                is_muctieupk = self.moitruong.get_is_nguoichoi(diachimuctieu) or "Cương Thi" in self.moitruong.get_tendoituong(diachimuctieu) or self.moitruong.get_is_baothugiangho(self.moitruong.get_tendoituong(diachimuctieu))
+                tendoituongmuctieuhientai = self.moitruong.get_tendoituong(diachimuctieu)
+                is_muctieupk = self.moitruong.get_is_nguoichoi(diachimuctieu) or "Trộm Bảo Phi Tặc" in tendoituongmuctieuhientai or "Cương Thi" in tendoituongmuctieuhientai or self.moitruong.get_is_baothugiangho(tendoituongmuctieuhientai)
                 if not is_muctieupk:
                     return
 
@@ -1643,9 +1644,9 @@ class TacTu:
             # (VITRIKYNANG_NGUKIEMPHITIEN, "sudungkynangkhongmuctieu", lambda: diachimuctieu and self._is_nhieumuctieugan9 and self.moitruong.get_noilucconlai() > 70 and khoangcach <= KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN, 0, None, True),
             (VITRIKYNANG_BANGTAMTHUC, "sudungkynangmuctieu", lambda: diachimuctieu, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
             (VITRIKYNANG_TIENNHANCHILO, "sudungkynangmuctieu", lambda: diachimuctieu, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
-            (None, "dichuyentiepcancanchien", lambda: diachimuctieu and KHOANGCACHSUDUNGKYNANGCANCHIEN < khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA, 0, None, False),
+            # (None, "dichuyentiepcancanchien", lambda: diachimuctieu and KHOANGCACHSUDUNGKYNANGCANCHIEN < khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA, 0, None, False),
             (None, "dichuyentiepcantamxa", lambda: diachimuctieu and khoangcach > KHOANGCACHSUDUNGKYNANGTAMXA, KHOANGCACHSUDUNGKYNANGTAMXA, None, False),
-            (None, "tancongvatly", lambda: diachimuctieu, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
+            # (None, "tancongvatly", lambda: diachimuctieu, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
         ]
 
         for vitrikynang, loaikynang, dieukien, khoangcachyeucau, target, is_ngat in danhsachuutien:
