@@ -134,9 +134,9 @@ class LoopChinh:
                 print("Không tìm thấy mã xác nhận đúng định dạng")
             return
 
-        self.tactu._action_theonhom()
+        self.tactu.action_theonhom()
         self.tactu.action_xulygomquai()
-        self.tactu._action_sudungkynang()
+        self.tactu.action_sudungkynang()
         self.tactu.action_tudongsudungkynangbaothu()
 
         # if self.moitruong.get_idnguoichoi() == 4599 and self.moitruong.get_idbandohientai() == BANDO_CHIENTRUONG:
@@ -178,12 +178,6 @@ class LoopPhu:
 
     def step(self):
         if not self.moitruong.get_is_nhanvattontai() or self.moitruong.get_is_dangmatketnoi():
-            return
-
-        if self.moitruong.get_idbandohientai() == BANDO_CHU and self.moitruong.get_khoangcachdiem(292, 184) < 18 and self.moitruong.get_phantramsinhlucconlai() < 25:
-            self.moitruong.action_ngatdichuyen()
-            self.tactu.action_sudunghoithanhphu()
-            time.sleep(2.5)
             return
 
         self.moitruong.action_vohieuhoathietlapmuctieu()

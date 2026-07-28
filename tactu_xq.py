@@ -528,7 +528,7 @@ class TacTu:
                     khoangcachphudau = 0
                 )
 
-    def _action_theonhom(self):
+    def action_theonhom(self):
         self._yeucautheonhom = None
 
         if not self._is_tudongtheosautruongnhom:
@@ -1538,7 +1538,7 @@ class TacTu:
             if is_break:
                 return
 
-    def _action_sudungkynang(self):
+    def action_sudungkynang(self):
         self._yeucautancong = None
 
         if self._trangthaiveban != 0:
