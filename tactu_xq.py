@@ -2562,7 +2562,7 @@ class TacTu:
         if self._is_tudongphucsinh:
             if self.moitruong.get_is_nhanvatdachet() and self.moitruong.get_idnguoichoi() != 4599:
                 dfgdfb = 1
-                while dfgdfb <= 10:
+                while dfgdfb <= 30:
                     if self.moitruong.get_is_nhanvatdachet():
                         time.sleep(1.)
                     else:
