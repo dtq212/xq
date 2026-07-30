@@ -13,6 +13,7 @@ from tienich_xq import taithietlap as util_taithietlap, phatam
 
 class TacTu:
     def __init__(self, moitruong: MoiTruong):
+        self._diachicosovatphamnhatduphong = False
         self._idquaidautien = 0
         self._thoidiemvohieuhoatatchucnangmoronggannhat = 0.
         self._thoidiemvohieuhoabatchucnangmoronggannhat = 0.
@@ -2203,7 +2204,6 @@ class TacTu:
         if self.moitruong.get_is_dayhanhtrang():
             if time.time() - self._thoidiemphatamdayhanhtrang > 5.0:
                 if not self._is_tudongvebanrac:
-                    # phatam("Hành trang đầy")
                     pass
                 self._thoidiemphatamdayhanhtrang = time.time()
 
@@ -2228,18 +2228,34 @@ class TacTu:
                 return True
             return False
 
+        is_vatphamdangnhathople = True
+
         if self._diachicosovatphamdangnhat:
             tenvatphamhientai = self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat)
 
             if not self.moitruong.get_is_vatphamtontai(self._diachicosovatphamdangnhat):
-                self._diachicosovatphamdangnhat = False
+                is_vatphamdangnhathople = False
             elif self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat) >= KHOANGCACHNHATDO:
-                self._diachicosovatphamdangnhat = False
+                is_vatphamdangnhathople = False
             elif not kiemtradieukiennhat(tenvatphamhientai):
-                self._diachicosovatphamdangnhat = False
+                is_vatphamdangnhathople = False
             elif time.time() - self._thoidiemthaydoivatphamdangnhatgannhat > 10:
                 self._diachicosovatphamkhongnhat_map[self._diachicosovatphamdangnhat] = time.time()
-                self._diachicosovatphamdangnhat = False
+                is_vatphamdangnhathople = False
+        else:
+            is_vatphamdangnhathople = False
+
+        if not is_vatphamdangnhathople:
+            self._diachicosovatphamdangnhat = False
+
+            diachiduphong = self._diachicosovatphamnhatduphong
+            if diachiduphong:
+                if self.moitruong.get_is_vatphamtontai(diachiduphong):
+                    tenvatphamduphong = self.moitruong.get_tendoituong(diachiduphong)
+                    if self.moitruong.get_khoangcach(diachiduphong) < KHOANGCACHNHATDO and kiemtradieukiennhat(tenvatphamduphong):
+                        self._diachicosovatphamdangnhat = diachiduphong
+                        self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
+                self._diachicosovatphamnhatduphong = False
 
         danhsachvatpham = []
         i = -1
@@ -2263,17 +2279,23 @@ class TacTu:
 
         if danhsachvatpham:
             danhsachvatpham.sort(key = lambda x: x[0])
-            diachi_gannhat = danhsachvatpham[0][1]
+            diachigannhat = danhsachvatpham[0][1]
 
-            if diachi_gannhat != self._diachicosovatphamdangnhat:
-                self._diachicosovatphamdangnhat = diachi_gannhat
+            if diachigannhat != self._diachicosovatphamdangnhat:
+                self._diachicosovatphamdangnhat = diachigannhat
                 self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
+
+            if len(danhsachvatpham) > 1:
+                self._diachicosovatphamnhatduphong = danhsachvatpham[1][1]
+            else:
+                self._diachicosovatphamnhatduphong = False
         else:
             self._diachicosovatphamdangnhat = False
+            self._diachicosovatphamnhatduphong = False
 
         if self._diachicosovatphamdangnhat:
             khoangcach = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat)
-            if khoangcach > 3.:
+            if khoangcach > 1.5:
                 yeucaunhatdomoi = {
                     "yeucau": YEUCAUDICHUYENNHATDO,
                     "toadodich": (
