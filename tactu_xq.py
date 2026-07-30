@@ -1029,7 +1029,7 @@ class TacTu:
 
         if is_ngatdichuyen and idtuthenhanvat == TUTHENHANVAT_DICHUYEN and khoangcach <= khoangcachyeucau:
             self.moitruong.action_ngatdichuyen()
-            self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.1)
+            self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.25)
             return False, True
 
         if time.time() - self.moitruong._thoidiembatchucnangmoronggannhat < 0.5 or time.time() - self.moitruong._thoidiemtatchucnangmoronggannhat < 0.5:
@@ -2196,7 +2196,7 @@ class TacTu:
 
         vatphamtudongnhats = VATPHAMTUDONGNHATs
         if self._is_tudongdichuyendiemdanhxungquanh:
-            vatphamtudongnhats = (*vatphamtudongnhats, TIENTE, "Tơ Nhện", "Kịch Độc Châm", "Đuôi Bọ Cạp", "Ly Hồn", "Ly Phách", "Ma Tinh thạch")
+            vatphamtudongnhats = (*vatphamtudongnhats, TIENTE, "Tơ Nhện", "Kịch Độc Châm", "Đuôi Bọ Cạp", "Ly Hồn", "Ly Phách", "Ma Tinh thạch", "Trái Táo", "Trái lê", "Phá Bố Y", "Toái Lăng", "Tơ Tằm", "Da Rắn")
 
         is_bandofarms = self.moitruong.get_idbandohientai() in BANDOFARMs
 
@@ -2821,7 +2821,7 @@ class TacTu:
                 return
 
         khoangcach = self.moitruong.get_khoangcach(diachi_npc)
-        if khoangcach > 12.0:
+        if khoangcach > 3.0:
             return
 
         idnpc = self.moitruong.get_iddoituong(diachi_npc)
@@ -3210,7 +3210,7 @@ class TacTu:
             diachi_npc = self.moitruong.action_timkiemnhanvat(chutiemtaphoa)
             is_dangganchutiemtaphoa = False
             if diachi_npc:
-                if self.moitruong.get_khoangcach(diachi_npc) <= 12.0:
+                if self.moitruong.get_khoangcach(diachi_npc) <= 3.0:
                     is_dangganchutiemtaphoa = True
 
             if is_dangganchutiemtaphoa:
@@ -3246,7 +3246,7 @@ class TacTu:
                 diachi_npc = self.moitruong.action_timkiemnhanvat(chutiemtaphoa)
                 if diachi_npc:
                     khoangcach = self.moitruong.get_khoangcach(diachi_npc)
-                    if khoangcach <= 12.0:
+                    if khoangcach <= 3.0:
                         print("[AUTO-SELL] Đã gặp NPC, bắt đầu bán")
                         self._trangthaiveban = 3
                     else:
@@ -3290,7 +3290,7 @@ class TacTu:
         if self._trangthaiveban == 0:
             diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = CHUTIEMTAPHOA)
 
-            if diachinpc and self.moitruong.get_khoangcach(diachinpc) <= 12.0:
+            if diachinpc and self.moitruong.get_khoangcach(diachinpc) <= 3.0:
                 if not self.moitruong.get_is_dayhanhtrang():
                     if self._idbandofarmbanrac != 0:
                         print("[AUTO-SELL] Đứng cạnh NPC và túi đã gọn. Tiếp tục quay lại bãi farm.")
@@ -3331,15 +3331,15 @@ class TacTu:
                 diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = CHUTIEMTAPHOA)
                 if self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON:
                     if not diachinpc:
-                        self.moitruong.action_dichuyengiukhoangcachtoidadiem(X_CHUTIEMTAPHOA_TANTHUTHON, Y_CHUTIEMTAPHOA_TANTHUTHON, khoangcachtoida = 3.)
+                        self.moitruong.action_dichuyengiukhoangcachtoidadiem(X_CHUTIEMTAPHOA_TANTHUTHON, Y_CHUTIEMTAPHOA_TANTHUTHON, khoangcachtoida = 0.)
                     else:
                         khoangcach = self.moitruong.get_khoangcach(diachinpc)
-                        if khoangcach <= 12.0:
+                        if khoangcach <= 3.0:
                             print("[AUTO-SELL] Đã tìm thấy NPC, chuẩn bị bán đồ...")
                             self._trangthaiveban = 3
                             return
                         else:
-                            self.moitruong.action_dichuyengiukhoangcachtoida(diachinpc, khoangcachtoida = 3.)
+                            self.moitruong.action_dichuyengiukhoangcachtoida(diachinpc, khoangcachtoida = 0.)
                 else:
                     if not diachinpc:
                         print("[AUTO-SELL] Đang chờ load map hoặc chưa về thành...")

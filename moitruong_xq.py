@@ -702,6 +702,8 @@ class MoiTruong:
         if not self.get_is_dangbatchucnangmorong():
             self._thoidiemcochucnangmoronggannhat = time.time()
 
+
+
     def get_is_nhanvatbichoang(self):
         return self._is_nhanvatbichoang
 
@@ -1502,9 +1504,28 @@ class MoiTruong:
         if not a:
             self.auto_assemble_khoitaothongtinbando()
             return False
-        if read_int(self.tientrinh, a + 0x37C534) != x: write_int(self.tientrinh, a + 0x37C534, x)
-        if read_int(self.tientrinh, a + 0x37C538) != y: write_int(self.tientrinh, a + 0x37C538, y)
-        if read_int(self.tientrinh, a + 0x37C85C) != idbando: write_int(self.tientrinh, a + 0x37C85C, idbando)
+        if read_int(self.tientrinh, a + 0x37C534) != x:
+            write_int(self.tientrinh, a + 0x37C534, x)
+        if read_int(self.tientrinh, a + 0x37C538) != y:
+            write_int(self.tientrinh, a + 0x37C538, y)
+        if read_int(self.tientrinh, a + 0x37C85C) != idbando:
+            write_int(self.tientrinh, a + 0x37C85C, idbando)
+        return True
+
+    def action_ngungtudongtimduong(self):
+        a = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not a:
+            return False
+        a = read_int(self.tientrinh, a + 0xADFDEC)
+        if not a:
+            self.auto_assemble_khoitaothongtinbando()
+            return False
+        if read_int(self.tientrinh, a + 0x37C534) != 0:
+            write_int(self.tientrinh, a + 0x37C534, 0)
+        if read_int(self.tientrinh, a + 0x37C538) != 0:
+            write_int(self.tientrinh, a + 0x37C538, 0)
+        if read_int(self.tientrinh, a + 0x37C85C) != 0:
+            write_int(self.tientrinh, a + 0x37C85C, 0)
         return True
 
     def action_phucsinh(self, is_duoccuu = False, delay = 2.5):
@@ -1813,6 +1834,7 @@ class MoiTruong:
     def action_ngatdichuyen(self):
         # if self.get_idlenhdichuyen() != 0:
         self.set_idlenhdichuyen(0)
+        self.action_ngungtudongtimduong()
 
     def action_nhatdo(self, diachi, delay = 0.05):
         if time.time() - self._thoidiemnhatdogannhat < delay: return
