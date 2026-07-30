@@ -373,7 +373,22 @@ class TacTu:
         yeucauduocchon = None
         lydochon = "KHÔNG CÓ"
 
-        if self._yeucautancong:
+        is_yeucaunhatdoganhon = False
+        if is_yeucaunhatdo and not is_muctieupk and self._is_tudongvebanrac:
+            khoangcachnhatdo = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat) if self._diachicosovatphamdangnhat else KHOANGCACHTOIDAHOPLE
+            khoangcachtancong = KHOANGCACHTOIDAHOPLE
+            if self._yeucautancong and self._yeucautancong.get("diachimuctieu"):
+                khoangcachtancong = self.moitruong.get_khoangcach(self._yeucautancong.get("diachimuctieu"))
+            elif diachimuctieudangchon:
+                khoangcachtancong = self.moitruong.get_khoangcach(diachimuctieudangchon)
+
+            if khoangcachnhatdo < khoangcachtancong:
+                is_yeucaunhatdoganhon = True
+
+        if is_yeucaunhatdoganhon:
+            yeucauduocchon = self._yeucaunhatdo
+            lydochon = "NHẶT ĐỒ (GẦN HƠN MỤC TIÊU)"
+        elif self._yeucautancong:
             yeucauduocchon = self._yeucautancong
             lydochon = "TẤN CÔNG"
         elif is_yeucaunhatdo and not is_muctieupk:
@@ -1545,6 +1560,18 @@ class TacTu:
             return
         if self._is_danggomquai:
             return
+
+        if self._yeucaunhatdo:
+            diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+            if diachimuctieu:
+                tendoituongmuctieuhientai = self.moitruong.get_tendoituong(diachimuctieu)
+                is_muctieupk = self.moitruong.get_is_nguoichoi(diachimuctieu) or "Trộm Bảo Phi Tặc" in tendoituongmuctieuhientai or "Cương Thi" in tendoituongmuctieuhientai or self.moitruong.get_is_baothugiangho(tendoituongmuctieuhientai)
+                if not is_muctieupk:
+                    if self._is_tudongvebanrac:
+                        khoangcachmuctieu = self.moitruong.get_khoangcach(diachimuctieu)
+                        khoangcachnhat = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat) if self._diachicosovatphamdangnhat else KHOANGCACHTOIDAHOPLE
+                        if khoangcachnhat < khoangcachmuctieu:
+                            return
 
         if self.moitruong.get_is_nhanvatchuasansang(self.moitruong.get_diachicosothongtinnhanvat1()):
             return
