@@ -1,3 +1,4 @@
+import ast
 import threading
 import time
 import traceback
@@ -158,6 +159,9 @@ class CuaSo:
                     "_tenmuctieutancongs": ", ".join(self.tactu._tenmuctieutancongs),
                     "_tenmuctieukhongtancongs": ", ".join(self.tactu._tenmuctieukhongtancongs),
                     "_khoangcachtoidatruongnhom": self.tactu._khoangcachtoidatruongnhom,
+
+                    "_is_tudongdichuyendiemdanhxungquanh": self.tactu._is_tudongdichuyendiemdanhxungquanh,
+                    "_diemdanhxungquanhs": self.tactu._diemdanhxungquanhs,
                 }
                 self.shared_data[self.idcuaso] = info
 
@@ -179,6 +183,26 @@ class CuaSo:
                         self.tactu.thietlap_khoangcachtheosau(khoangcach)
                     except Exception:
                         pass
+                elif isinstance(cmd, str) and cmd.startswith("them_diemdanh_nhaptay:"):
+                    try:
+                        toa_do_str = cmd.split(":", 1)[1].strip()
+                        danh_sach_diem = ast.literal_eval(toa_do_str)
+                        if isinstance(danh_sach_diem, list):
+                            for diem in danh_sach_diem:
+                                if isinstance(diem, (list, tuple)) and len(diem) >= 3:
+                                    x = int(diem[0])
+                                    y = int(diem[1])
+                                    map_id = int(diem[2])
+                                    self.tactu.them_diemdanhxungquanh((x, y, map_id))
+                        elif isinstance(danh_sach_diem, tuple) and len(danh_sach_diem) >= 3:
+                            x = int(danh_sach_diem[0])
+                            y = int(danh_sach_diem[1])
+                            map_id = int(danh_sach_diem[2])
+                            self.tactu.them_diemdanhxungquanh((x, y, map_id))
+
+                    except Exception as e:
+                        print(f"Lỗi khi phân tích cú pháp toạ độ: {e}")
+
                 elif cmd == "battat_chantangcapdo":
                     self.tactu.battat_is_chantangcapdo()
                 elif cmd == "battat_tudongkhaikhoang":

@@ -54,7 +54,8 @@ class GiaoDienHienThi:
             "daobaodo": tk.BooleanVar(),
             "chientruong": tk.BooleanVar(),
             "chantangcap": tk.BooleanVar(),
-            "khoangcachtheosau": tk.DoubleVar(value=9.0)
+            "khoangcachtheosau": tk.DoubleVar(value = 9.0),
+            "diemdanhxungquanh": tk.BooleanVar()
         }
 
         self._create_check(frame_bottom, "Tự động sử dụng kỹ năng  [Ctrl + F]", self.vars["sudungkynang"], "battat_tudongsudungkynang")
@@ -62,18 +63,18 @@ class GiaoDienHienThi:
         self._create_check(frame_bottom, "Tự động Farm & Bán rác  [Ctrl+Alt+Shift+H]", self.vars["vebanrac"], "battat_tudongvebanrac")
 
         frame_theosau = tk.Frame(frame_bottom)
-        frame_theosau.pack(anchor=tk.W)
+        frame_theosau.pack(anchor = tk.W)
 
         def on_click_theosau():
             hwnd = self.get_selected_hwnd()
             if hwnd:
                 self.command_dict[hwnd] = "battat_tudongtheosautruongnhom"
 
-        cb_theosau = tk.Checkbutton(frame_theosau, text="Theo sau trưởng nhóm  [Ctrl+Alt+F]",
-                                    variable=self.vars["theotruongnhom"], command=on_click_theosau)
-        cb_theosau.pack(side=tk.LEFT)
+        cb_theosau = tk.Checkbutton(frame_theosau, text = "Theo sau trưởng nhóm  [Ctrl+Alt+F]",
+                                    variable = self.vars["theotruongnhom"], command = on_click_theosau)
+        cb_theosau.pack(side = tk.LEFT)
 
-        tk.Label(frame_theosau, text=" Khoảng cách:").pack(side=tk.LEFT)
+        tk.Label(frame_theosau, text = " Khoảng cách:").pack(side = tk.LEFT)
 
         def on_khoangcach_change(*args):
             hwnd = self.get_selected_hwnd()
@@ -84,9 +85,9 @@ class GiaoDienHienThi:
                 except tk.TclError:
                     pass
 
-        self.spin_khoangcach = ttk.Spinbox(frame_theosau, from_=1.0, to=50.0, increment=1.0, width=5,
-                                           textvariable=self.vars["khoangcachtheosau"], command=on_khoangcach_change)
-        self.spin_khoangcach.pack(side=tk.LEFT)
+        self.spin_khoangcach = ttk.Spinbox(frame_theosau, from_ = 1.0, to = 50.0, increment = 1.0, width = 5,
+                                           textvariable = self.vars["khoangcachtheosau"], command = on_khoangcach_change)
+        self.spin_khoangcach.pack(side = tk.LEFT)
         self.spin_khoangcach.bind("<Return>", on_khoangcach_change)
         self.spin_khoangcach.bind("<FocusOut>", on_khoangcach_change)
 
@@ -105,6 +106,35 @@ class GiaoDienHienThi:
         self._create_check(frame_bottom, "Tự động Khai khoáng  [Ctrl+Alt+Shift+K]", self.vars["khaikhoang"], "battat_tudongkhaikhoang")
         self._create_check(frame_bottom, "Đào Tàng bảo đồ  [Ctrl+Alt+Shift+I]", self.vars["daobaodo"], "battat_tudongdaotangbaodo")
         self._create_check(frame_bottom, "Đi Chiến trường  [Ctrl+Alt+Shift+Z]", self.vars["chientruong"], "battat_tudongdichientruong")
+
+        ttk.Separator(frame_bottom, orient = 'horizontal').pack(fill = 'x', pady = 5)
+
+        self._create_check(frame_bottom, "Di chuyển điểm đánh xung quanh [Ctrl+Alt+Shift+P]", self.vars["diemdanhxungquanh"], "battat_tudongdichuyendiemdanhxungquanh")
+
+        frame_nhapdiem = tk.Frame(frame_bottom)
+        frame_nhapdiem.pack(anchor = tk.W, pady = 2)
+        tk.Label(frame_nhapdiem, text = "Nhập toạ độ (x,y,map):").pack(side = tk.LEFT)
+
+        self.str_nhapdiemdanh = tk.StringVar()
+        entry_diemdanh = ttk.Entry(frame_nhapdiem, textvariable=self.str_nhapdiemdanh, width=50)
+        entry_diemdanh.pack(side = tk.LEFT, padx = 5)
+
+        def on_add_diemdanh():
+            hwnd = self.get_selected_hwnd()
+            if hwnd:
+                val = self.str_nhapdiemdanh.get()
+                if val:
+                    self.command_dict[hwnd] = f"them_diemdanh_nhaptay:{val}"
+                    self.str_nhapdiemdanh.set("")
+
+        ttk.Button(frame_nhapdiem, text = "Thêm", command = on_add_diemdanh, width = 6).pack(side = tk.LEFT)
+
+        def on_clear_diemdanh():
+            hwnd = self.get_selected_hwnd()
+            if hwnd:
+                self.command_dict[hwnd] = "botoanbo_diemdanhxungquanh"
+
+        ttk.Button(frame_nhapdiem, text = "Xoá hết", command = on_clear_diemdanh, width = 8).pack(side = tk.LEFT, padx = 5)
 
         ttk.Separator(frame_bottom, orient = 'horizontal').pack(fill = 'x', pady = 5)
 
@@ -193,6 +223,8 @@ class GiaoDienHienThi:
             self.vars["uutienmaoson"].set(info.get("_is_uutienbaothumaoson", False))
             self.vars["bufftoanbang"].set(info.get("_is_chedobufftoanbang", False))
             self.vars["chantangcap"].set(info.get("_is_chantangcapdo", False))
+
+            self.vars["diemdanhxungquanh"].set(info.get("_is_tudongdichuyendiemdanhxungquanh", False))
 
             tancong = info.get("_tenmuctieutancongs", "")
             boqua = info.get("_tenmuctieukhongtancongs", "")

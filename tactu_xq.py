@@ -3809,18 +3809,18 @@ class TacTu:
         if self.moitruong.get_is_dangvankhi():
             return
 
-        self.moitruong.action_batchucnangmorong()
+        # self.moitruong.action_batchucnangmorong()
 
-        # if self.moitruong.get_idbandohientai() not in BANDOKHONGPKs:
-        #     if time.time() - self._thoidiemvohieuhoabatchucnangmoronggannhat < 0.:
-        #         self.moitruong.action_tatchucnangmorong()
-        #     elif not self._is_tudongsudungkynang or (self.moitruong.get_is_dangbatchucnangmorong() and time.time() - self.moitruong._thoidiemcochucnangmoronggannhat > 10.):
-        #         if time.time() - self._thoidiemvohieuhoatatchucnangmoronggannhat > 0.:
-        #             self.moitruong.action_tatchucnangmorong()
-        #     else:
-        #         self.moitruong.action_batchucnangmorong()
-        # else:
-        #     self.moitruong.action_tatchucnangmorong()
+        if self.moitruong.get_idbandohientai() not in BANDOKHONGPKs:
+            if time.time() - self._thoidiemvohieuhoabatchucnangmoronggannhat < 0.:
+                self.moitruong.action_tatchucnangmorong()
+            elif not self._is_tudongsudungkynang or (self.moitruong.get_is_dangbatchucnangmorong() and time.time() - self.moitruong._thoidiemcochucnangmoronggannhat > 10.):
+                if time.time() - self._thoidiemvohieuhoatatchucnangmoronggannhat > 0.:
+                    self.moitruong.action_tatchucnangmorong()
+            else:
+                self.moitruong.action_batchucnangmorong()
+        else:
+            self.moitruong.action_tatchucnangmorong()
 
     def _xoatrangthaisaukhichet(self):
         self._yeucaunhatdo = None
