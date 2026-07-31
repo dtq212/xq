@@ -597,6 +597,9 @@ class TacTu:
         return khoangcachtoidatruongnhom
 
     def _kiemtra_vungcam(self, x, y):
+        if self.moitruong.get_is_dangbatchucnangmorong():
+            return False
+
         idbandohientai = self.moitruong.get_idbandohientai()
         if idbandohientai in VUNGCAM_MAP:
             danhsachvungcam = VUNGCAM_MAP[idbandohientai]
