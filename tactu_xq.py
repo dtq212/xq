@@ -3811,6 +3811,9 @@ class TacTu:
 
         # self.moitruong.action_batchucnangmorong()
 
+        if self.moitruong.get_idbandohientai() == 701:
+            return
+
         if self.moitruong.get_idbandohientai() not in BANDOKHONGPKs:
             if time.time() - self._thoidiemvohieuhoabatchucnangmoronggannhat < 0.:
                 self.moitruong.action_tatchucnangmorong()
