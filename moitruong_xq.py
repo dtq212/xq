@@ -1553,7 +1553,10 @@ class MoiTruong:
         while True:
             if i >= SOLUONGVATPHAMHANHTRANGTOIDA: break
             i += 1
-            if tenvatpham and self.get_tenvatphamhanhtrang(i) != tenvatpham: continue
+            if tenvatpham and self.get_tenvatphamhanhtrang(i) != tenvatpham:
+                if self.get_idnguoichoi() == 59394:
+                    print("{}, {}".format(tenvatpham, self.get_tenvatphamhanhtrang(i)))
+                continue
             return self.get_iddoituongvatphamhanhtrang(i)
         return False
 
