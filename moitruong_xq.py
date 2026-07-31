@@ -4,8 +4,9 @@ from keystone import Ks, KS_ARCH_X86, KS_MODE_32
 from hangso_xq import *
 from tienich_xq import *
 
-OFFSET_DIACHICOSOTHONGTINGAME = 0x380B44
-OFFSET_DIACHICOSOTHONGTINNHANVAT1 = 0x380AF8
+OFFSET_DIACHICOSOTHONGTINGAME = 0x349038 # 0x380B44
+OFFSET_DIACHICOSOTHONGTINNHANVAT1 = 0x348FEC # 0x380AF8
+OFFSET_DIACHITHONGTINCHISONHANVAT = 0x348FD0
 OFFSET_DIACHICOSOHIEUUNGNHANVAT = 0x1638
 OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT = 0x13C
 OFFSET_DIACHICOSOMOIKYNANG = 0x224
@@ -162,6 +163,8 @@ class MoiTruong:
         diachi_lenh_call = scan_diachi + 2
         khoang_cach_call = read_int(self.tientrinh, diachi_lenh_call + 1)
         diachi_ham = diachi_lenh_call + 5 + khoang_cach_call
+
+        print("Địa chỉ hàm: {}".format(hex(diachi_ham)))
 
         self.diachihamthucthicaulenh = self.tientrinh.allocate(256)
         diachidulieu = self.diachihamthucthicaulenh + 0x40
@@ -501,19 +504,19 @@ class MoiTruong:
         return True
 
     def get_sinhlucconlai(self):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHITHONGTINCHISONHANVAT)
         return read_int(self.tientrinh, x + 0x152C) if x else False
 
     def get_sinhluctoida(self):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHITHONGTINCHISONHANVAT)
         return read_int(self.tientrinh, x + 0x1530) if x else False
 
     def get_noilucconlai(self):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHITHONGTINCHISONHANVAT)
         return read_int(self.tientrinh, x + 0x1534) if x else False
 
     def get_noiluctoida(self):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHITHONGTINCHISONHANVAT)
         return read_int(self.tientrinh, x + 0x1538) if x else False
 
     def get_phantramnoilucconlai(self):
@@ -521,22 +524,22 @@ class MoiTruong:
         return (self.get_noilucconlai() * 100. / noiluctoida) if noiluctoida else 0
 
     def get_nguyenkhiconlai(self):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHITHONGTINCHISONHANVAT)
         return read_int(self.tientrinh, x + 0x1560) if x else False
 
     def get_capdonhanvat(self):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHITHONGTINCHISONHANVAT)
         return read_int(self.tientrinh, x + 0x15B0) if x else False
 
     def get_idbandohientai(self):
         return self._idbandohientai
 
     def _get_idbandohientai(self):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHITHONGTINCHISONHANVAT)
         return read_int(self.tientrinh, x + 0x15F4) if x else False
 
     def get_diempk(self):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHITHONGTINCHISONHANVAT)
         return read_int(self.tientrinh, x + 0x1568) if x else False
 
     def get_diachicosothongtinnhanvat1(self):
@@ -1271,8 +1274,8 @@ class MoiTruong:
         pass
 
     def action_vohieuhoahookchienquoc2(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x95450, 1) != bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0x95450, b'\x90\x90\x90\x90\x90', 5)
+        if read_bytes(self.tientrinh, self.diachixq + 0x16C700, 1) != bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + 0x16C700, b'\x90\x90\x90\x90\x90\x90\x90', 7)
 
     def action_vohieuhieuungmuloa(self):
         if read_bytes(self.tientrinh, self.diachixq + 0x4C0E + 0x6, 1) != bytes.fromhex("00"): write_bytes(self.tientrinh, self.diachixq + 0x4C0E + 0x6, bytes.fromhex("00"), 1)

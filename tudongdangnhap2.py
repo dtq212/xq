@@ -63,9 +63,9 @@ def press_combo(hwnd, modifier, key, delay = 0.1):
 
 
 DUONGDAN_GAME = r"D:\Games\ChienQuoc2\ChienQuoc2\ChienQuoc2 - Live\xq.exe"
-LAUNCHER_TITLE = "client 1.01.80"
-GAME_TITLE_LOGIN_SCREEN = "Chien Quoc 2 - That Hung Tranh Ba.1.01.80"
-GAME_TITLE_PREFIX = "Chien Quoc 2 ("
+LAUNCHER_TITLE = "client 1.01.81"
+GAME_TITLE_LOGIN_SCREEN = "Chiến Quốc 2 - Thất Hùng Tranh Bá.1.01.81"
+GAME_TITLE_PREFIX = "Chiến Quốc 2 Vô Kỵ"
 
 DANH_SACH_CUA_SO_LOI = ["warning", "play"]
 

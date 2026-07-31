@@ -116,6 +116,8 @@ class LoopChinh:
             time.sleep(0.1)
 
     def step(self):
+        self.moitruong.khoitaohamthucthicaulenh()
+
         if not self.moitruong.get_is_nhanvattontai() or self.moitruong.get_is_dangmatketnoi():
             return
 
