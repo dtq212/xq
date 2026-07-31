@@ -15,15 +15,15 @@ from tactu_xq import TacTu
 
 def khoidong_looptonghop(moitruong, tactu, stop):
     l_lammoi = LoopLamMoiTrangThaiMoiTruong(moitruong, tactu, stop)
-    # l_timkiem = LoopTimKiemMucTieu(moitruong, tactu, stop)
-    # l_dieuphoi = LoopDieuPhoiDiChuyen(moitruong, tactu, stop)
+    l_timkiem = LoopTimKiemMucTieu(moitruong, tactu, stop)
+    l_dieuphoi = LoopDieuPhoiDiChuyen(moitruong, tactu, stop)
     l_chinh = LoopChinh(moitruong, tactu, stop)
 
     while not stop.is_set() and moitruong.get_is_cuasogametontai():
         try:
             l_lammoi.step()
-            # l_timkiem.step()
-            # l_dieuphoi.step()
+            l_timkiem.step()
+            l_dieuphoi.step()
             l_chinh.step()
         except Exception as e:
             print(f"Lỗi luồng tổng hợp: {e}")
@@ -52,7 +52,7 @@ class CuaSo:
 
         self.luongs = (
             threading.Thread(target = khoidong_looptonghop, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
-            #threading.Thread(target = khoidong_loopphu, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_loopphu, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
         )
 
         for luong in self.luongs:
