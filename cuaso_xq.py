@@ -14,14 +14,14 @@ from tactu_xq import TacTu
 
 
 def khoidong_looptonghop(moitruong, tactu, stop):
-    # l_lammoi = LoopLamMoiTrangThaiMoiTruong(moitruong, tactu, stop)
+    l_lammoi = LoopLamMoiTrangThaiMoiTruong(moitruong, tactu, stop)
     # l_timkiem = LoopTimKiemMucTieu(moitruong, tactu, stop)
     # l_dieuphoi = LoopDieuPhoiDiChuyen(moitruong, tactu, stop)
     l_chinh = LoopChinh(moitruong, tactu, stop)
 
     while not stop.is_set() and moitruong.get_is_cuasogametontai():
         try:
-            # l_lammoi.step()
+            l_lammoi.step()
             # l_timkiem.step()
             # l_dieuphoi.step()
             l_chinh.step()
@@ -59,7 +59,7 @@ class CuaSo:
             luong.start()
 
         threading.Thread(target = self.loop_xulyphimtat, daemon = True).start()
-        # threading.Thread(target = self.loop_hienthigiaodien, daemon = True).start()
+        threading.Thread(target = self.loop_hienthigiaodien, daemon = True).start()
 
     def __del__(self):
         self.tatauto()
