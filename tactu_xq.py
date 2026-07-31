@@ -2215,8 +2215,10 @@ class TacTu:
             return
 
         vatphamtudongnhats = VATPHAMTUDONGNHATs
-        if self._is_tudongdichuyendiemdanhxungquanh:
-            vatphamtudongnhats = (*vatphamtudongnhats, TIENTE, "Tơ Nhện", "Kịch Độc Châm", "Đuôi Bọ Cạp", "Ly Hồn", "Ly Phách", "Ma Tinh thạch", "Trái Táo", "Trái lê", "Phá Bố Y", "Toái Lăng", "Tơ Tằm", "Da Rắn")
+        if self._is_tudongvebanrac:
+            vatphamtudongnhats = (*vatphamtudongnhats,
+                TIENTE, "Tơ Nhện", "Kịch Độc Châm", "Đuôi Bọ Cạp", "Ly Hồn", "Ly Phách", "Ma Tinh thạch", "Trái Táo", "Trái lê", "Phá Bố Y", "Toái Lăng", "Tơ Tằm", "Da Rắn", "Ống Tên", "Bao Kiếm", "Cán Đao", "Toái Sa"
+            )
 
         is_bandofarms = self.moitruong.get_idbandohientai() in BANDOFARMs
 
