@@ -113,10 +113,10 @@ class GiaoDienHienThi:
 
         frame_nhapdiem = tk.Frame(frame_bottom)
         frame_nhapdiem.pack(anchor = tk.W, pady = 2)
-        tk.Label(frame_nhapdiem, text = "Nhập toạ độ (x,y,map):").pack(side = tk.LEFT)
+        tk.Label(frame_nhapdiem, text = "Tọa độ:").pack(side = tk.LEFT)
 
         self.str_nhapdiemdanh = tk.StringVar()
-        entry_diemdanh = ttk.Entry(frame_nhapdiem, textvariable=self.str_nhapdiemdanh, width=50)
+        entry_diemdanh = ttk.Entry(frame_nhapdiem, textvariable=self.str_nhapdiemdanh, width=30)
         entry_diemdanh.pack(side = tk.LEFT, padx = 5)
 
         def on_add_diemdanh():
@@ -135,6 +135,10 @@ class GiaoDienHienThi:
                 self.command_dict[hwnd] = "botoanbo_diemdanhxungquanh"
 
         ttk.Button(frame_nhapdiem, text = "Xoá hết", command = on_clear_diemdanh, width = 8).pack(side = tk.LEFT, padx = 5)
+
+        tk.Label(frame_bottom, text = "Danh sách điểm đánh hiện tại:", font = ("Arial", 9, "bold")).pack(anchor = tk.W, pady = (5, 0))
+        self.lbl_danhsachdiem = tk.Label(frame_bottom, text = "→ Trống", fg = "red", justify = tk.LEFT, wraplength = 350)
+        self.lbl_danhsachdiem.pack(anchor = tk.W, pady = (0, 5))
 
         ttk.Separator(frame_bottom, orient = 'horizontal').pack(fill = 'x', pady = 5)
 
@@ -237,5 +241,10 @@ class GiaoDienHienThi:
                 text = f"→ {boqua}" if boqua else "→ Trống",
                 fg = "green" if boqua else "red"
             )
-
+            diemdanhs = info.get("_diemdanhxungquanhs", [])
+            if diemdanhs:
+                text_hienthi = f"→ Đang có {len(diemdanhs)} điểm: {diemdanhs}"
+                self.lbl_danhsachdiem.config(text = text_hienthi, fg = "blue")
+            else:
+                self.lbl_danhsachdiem.config(text = "→ Trống", fg = "red")
         self.root.after(500, self.update_ui)
