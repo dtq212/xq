@@ -1834,6 +1834,10 @@ class MoiTruong:
 
     def action_ngatdichuyen(self):
         # if self.get_idlenhdichuyen() != 0:
+
+        if read_bytes(self.tientrinh, self.diachixq + 0x48789, 1) != bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + 0x48789, bytes.fromhex("90 90 90 90 90"), 5)
+
         self.set_idlenhdichuyen(0)
         self.action_ngungtudongtimduong()
 
