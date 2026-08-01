@@ -255,6 +255,9 @@ class TacTu:
         self._diachicosonhanvatmuctieudangdichuyenluutinh = 0
         self._thoidiembatdaudichuyenluutinh = 0.
 
+        self._is_khaithientichdiasansang = False
+        self._is_luutinhtruymangsansang = False
+
     def __del__(self):
         try:
             self.moitruong.action_bochantangcapdo()
@@ -358,6 +361,8 @@ class TacTu:
             if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Đang VẬN KHÍ")
             return
         if time.time() - self._thoidiemtamngungdichuyensudungkynang < 0.:
+            if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DICHUYEN:
+                self.moitruong.action_ngatdichuyen()
             if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Đang tạm ngưng để dùng SKILL")
             return
         if self._trangthaiveban != 0:
@@ -530,7 +535,13 @@ class TacTu:
                     x_banthan = self.moitruong.get_toadox(is_vitrihientai = True)
                     y_banthan = self.moitruong.get_toadoy(is_vitrihientai = True)
                     if math.dist((x_banthan, y_banthan), (x_dich, y_dich)) > 3.:
-                        if self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA):
+                        is_khaithiensansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA)
+                        if self._is_khaithientichdiasansang and not is_khaithiensansang:
+                            self._thoidiemtamngungdichuyensudungkynang = time.time() + 0.5
+
+                        self._is_khaithientichdiasansang = is_khaithiensansang
+
+                        if is_khaithiensansang:
                             if self._solanthatbaikhaithien >= self._solanthatbaikhaithientoida and time.time() - self._thoidiembiphatkhaithien > 3.0:
                                 self._solanthatbaikhaithien = 0
                                 self._thoidiembiphatkhaithien = 0
@@ -544,6 +555,7 @@ class TacTu:
                             if self._solanthatbaikhaithien < self._solanthatbaikhaithientoida:
                                 idkynang = self.moitruong.get_idkynang(*VITRIKYNANG_KHAITHIENTICHDIA)
                                 if idkynang and self.moitruong.action_sudungkynangtoado(idkynang, int(x_dich), int(y_dich), delay = 0.05):
+                                    # (ĐÃ XÓA dòng thiết lập thời gian ngưng di chuyển ở đây)
                                     self._thoidiemtamngungkhaithientichdia = time.time()
                                     self._solansudungkhaithientichdia += 1
                                     return
@@ -1086,7 +1098,6 @@ class TacTu:
                 return False, False
 
         if is_ngatdichuyen and idtuthenhanvat == TUTHENHANVAT_DICHUYEN and khoangcach <= khoangcachyeucau:
-            self.moitruong.action_ngatdichuyen()
             self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.25)
             return False, True
 
@@ -1771,6 +1782,12 @@ class TacTu:
 
             is_luutinhtruymangsansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG)
 
+            if self._is_luutinhtruymangsansang and not is_luutinhtruymangsansang:
+                if khoangcach <= 1.5:
+                    self._thoidiemtamngungdichuyensudungkynang = time.time() + 0.5
+
+            self._is_luutinhtruymangsansang = is_luutinhtruymangsansang
+
             if self._solanthatbailuutinhtruymang >= self._solanthatbailuutinhtruymangtoida and time.time() - self._thoidiembiphatluutinhtruymang > 3.0:
                 self._solanthatbailuutinhtruymang = 0
                 self._thoidiembiphatluutinhtruymang = 0.
@@ -1791,8 +1808,6 @@ class TacTu:
 
             if khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and is_duocphepsudungluutinhtruymang and not is_bimatamthuat:
                 self._yeucautancong = None
-                self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.5)
-
                 if self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_LUUTINHTRUYMANG):
                     self._thoidiemtamngungluutinhtruymang = time.time()
                     self._solansudungluutinhtruymang += 1
@@ -1918,9 +1933,6 @@ class TacTu:
                         break
 
             break
-
-        if is_ngatdichuyen:
-            self.moitruong.action_ngatdichuyen()
 
     def battat_chedobufftoanbang(self):
         self._is_chedobufftoanbang = not self._is_chedobufftoanbang
