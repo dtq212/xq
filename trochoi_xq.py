@@ -125,7 +125,7 @@ class TroChoiManager:
                     cmd = "tat_pk"
                 elif keyboard.is_pressed("ctrl+p"):
                     cmd = "them_diemdanhxungquanh"
-                elif keyboard.is_pressed("ctrl+v"):
+                elif keyboard.is_pressed("ctrl+b"):
                     cmd = "them_diemdanhxungquanh"
                 elif keyboard.is_pressed("ctrl+alt+shift+g"):
                     cmd = "battat_tudonggomquai"
