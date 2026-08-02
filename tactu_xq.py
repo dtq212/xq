@@ -525,7 +525,7 @@ class TacTu:
             toadodich = yeucauduocchon.get("toadodich")
             diachimuctieu = diachimuctieudanggom
 
-            if self._is_thucsondao and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DICHUYEN and self.moitruong.get_noilucconlai() > 50 :
+            if self.moitruong.get_tenmonphai() == "thucson" and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DICHUYEN and self.moitruong.get_noilucconlai() > 50 :
                 x_dich, y_dich = None, None
                 if toadodich:
                     x_dich, y_dich = toadodich[0], toadodich[1]
@@ -1210,7 +1210,7 @@ class TacTu:
         is_muctieulacuongthi = diachimuctieu and CUONGTHI in self.moitruong.get_tendoituong(diachimuctieu)
         is_muctieulabaothugiangho = diachimuctieu and self.moitruong.get_is_baothugiangho(self.moitruong.get_tendoituong(diachimuctieu))
         is_muctieulanguoichoi = diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu)
-        is_muctieugiukhoangcach = is_muctieulanguoichoi and self.moitruong.get_idloaivukhi(diachimuctieu) not in (LOAIVUKHI_KIEM, LOAIVUKHI_AMKHI)
+        is_muctieugiukhoangcach = (is_muctieulanguoichoi and self.moitruong.get_idloaivukhi(diachimuctieu) not in (LOAIVUKHI_KIEM, LOAIVUKHI_AMKHI)) or self._is_tudongdichuyendiemdanhxungquanh
         is_muctieupk = is_muctieulanguoichoi or is_muctieulacuongthi or is_muctieulabaothugiangho
 
         khoangcach = self.moitruong.get_khoangcach(diachimuctieu) if diachimuctieu else 0
