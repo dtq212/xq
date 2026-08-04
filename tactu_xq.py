@@ -1210,7 +1210,7 @@ class TacTu:
         is_muctieulacuongthi = diachimuctieu and CUONGTHI in self.moitruong.get_tendoituong(diachimuctieu)
         is_muctieulabaothugiangho = diachimuctieu and self.moitruong.get_is_baothugiangho(self.moitruong.get_tendoituong(diachimuctieu))
         is_muctieulanguoichoi = diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu)
-        is_muctieugiukhoangcach = (is_muctieulanguoichoi and self.moitruong.get_idloaivukhi(diachimuctieu) not in (LOAIVUKHI_KIEM, LOAIVUKHI_AMKHI)) or self._is_tudongdichuyendiemdanhxungquanh
+        is_muctieugiukhoangcach = (is_muctieulanguoichoi and self.moitruong.get_idloaivukhi(diachimuctieu) not in (LOAIVUKHI_KIEM, LOAIVUKHI_AMKHI)) # or self._is_tudongdichuyendiemdanhxungquanh
         is_muctieupk = is_muctieulanguoichoi or is_muctieulacuongthi or is_muctieulabaothugiangho
 
         khoangcach = self.moitruong.get_khoangcach(diachimuctieu) if diachimuctieu else 0
@@ -2059,7 +2059,7 @@ class TacTu:
         phatam("Bỏ thiết lập tên mục tiêu không tấn công".format(len(self._tenmuctieukhongtancongs)))
 
     def action_muauto(self):
-        self.moitruong.action_thucthicaulenh("auto buy 5 1", delay = 0.)
+        self.moitruong.action_thucthicaulenh("auto buy 5 10", delay = 0.)
     def action_tudongvutdo(self):
         if time.time() - self._thoidiemvutdogannhat < 1.:
             return
@@ -3716,13 +3716,16 @@ class TacTu:
         if self.moitruong.get_idmaupk() != MAUPK_HOABINH:
             return
 
-        if time.time() - self._thoidiemvohieuhoabatchucnangmoronggannhat < 0.:
-            self.moitruong.action_tatchucnangmorong()
-        elif not self._is_tudongsudungkynang or (self.moitruong.get_is_dangbatchucnangmorong() and time.time() - self.moitruong._thoidiemcochucnangmoronggannhat > 10.):
-            if time.time() - self._thoidiemvohieuhoatatchucnangmoronggannhat > 0.:
+        if self.moitruong.get_idbandohientai() not in BANDOKHONGPKs:
+            if time.time() - self._thoidiemvohieuhoabatchucnangmoronggannhat < 0.:
                 self.moitruong.action_tatchucnangmorong()
+            elif not self._is_tudongsudungkynang or (self.moitruong.get_is_dangbatchucnangmorong() and time.time() - self.moitruong._thoidiemcochucnangmoronggannhat > 10.):
+                if time.time() - self._thoidiemvohieuhoatatchucnangmoronggannhat > 0.:
+                    self.moitruong.action_tatchucnangmorong()
+            else:
+                self.moitruong.action_batchucnangmorong()
         else:
-            self.moitruong.action_batchucnangmorong()
+            self.moitruong.action_tatchucnangmorong()
 
     def _xoatrangthaisaukhichet(self):
         self._yeucaunhatdo = None

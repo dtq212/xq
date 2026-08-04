@@ -130,7 +130,7 @@ THONGTINDANGNHAP_MAP = {
         "server": 2,
         "char_index": 3,
     }, 
-    "59503": {
+    "59306": {
         "user": "dtq21295",
         "pass": "hateva",
         "group": 1,
