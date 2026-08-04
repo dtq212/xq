@@ -121,14 +121,14 @@ THONGTINDANGNHAP_MAP = {
         "pass": "hateva",
         "group": 1,
         "server": 1,
-        "char_index": 3,
+        "char_index": 5,
     },
     "59845": {
         "user": "ngoclasat",
         "pass": "hateva",
         "group": 1,
         "server": 1,
-        "char_index": 3,
+        "char_index": 5,
     }, 
     # "59306": {
     #     "user": "dtq21295",
