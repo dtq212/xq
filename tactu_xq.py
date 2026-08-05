@@ -259,6 +259,7 @@ class TacTu:
         self._is_luutinhtruymangsansang = False
 
         self._is_dangchaybukhoangcach = False
+        self._thoidiemvohieuquadichuyennhatdo = 0.0
 
     def __del__(self):
         try:
@@ -373,7 +374,7 @@ class TacTu:
 
         is_anhhuongboitruongnhom = self._is_tudongtheosautruongnhom and self.moitruong.get_is_dangnamtrongnhom() and not self.moitruong.get_is_truongnhom()
 
-        is_yeucaunhatdo = self._yeucaunhatdo and not is_anhhuongboitruongnhom
+        is_yeucaunhatdo = self._yeucaunhatdo and not is_anhhuongboitruongnhom and time.time() - self._thoidiemvohieuquadichuyennhatdo > 0.
 
         is_maupkhoabinh = self.moitruong.get_idmaupk() == MAUPK_HOABINH
 
@@ -539,7 +540,7 @@ class TacTu:
                     if math.dist((x_banthan, y_banthan), (x_dich, y_dich)) > 3.:
                         is_khaithiensansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA)
                         if self._is_khaithientichdiasansang and not is_khaithiensansang:
-                            self._thoidiemtamngungdichuyensudungkynang = time.time() + 0.5
+                            self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.5)
 
                         self._is_khaithientichdiasansang = is_khaithiensansang
 
@@ -1004,7 +1005,7 @@ class TacTu:
             if noidungtrochuyen and ("Hành động" in noidungtrochuyen or "Đợi lệnh" in noidungtrochuyen):
                 self._is_dasudungbaothuvatpham = True
             if not self._is_dasudungbaothuvatpham and time.time() - self._thoidiemsudungbaothuvatphamgannhat < 1.5 and time.time() - self._thoidiemyeucaubaothuvatphamdoilenhgannhat > 0.25:
-                self._thoidiemtamngungsudungkynang = time.time() + 0.5
+                self._thoidiemtamngungsudungkynang = max(self._thoidiemtamngungsudungkynang, time.time() + 0.5)
                 self._thoidiemyeucaubaothuvatphamdoilenhgannhat = time.time()
                 self.moitruong.action_thucthicaulenh("pf 4131.@", delay = 0.)
 
@@ -1088,7 +1089,7 @@ class TacTu:
                 return False, False
 
         if is_ngatdichuyen and idtuthenhanvat == TUTHENHANVAT_DICHUYEN and khoangcach <= khoangcachyeucau:
-            self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.25)
+            self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.1)
             return False, True
 
         if time.time() - self.moitruong._thoidiembatchucnangmoronggannhat < 0.5 or time.time() - self.moitruong._thoidiemtatchucnangmoronggannhat < 0.5:
@@ -1138,20 +1139,26 @@ class TacTu:
         else:
             if loaikynang == "sudungkynangkhongmuctieu":
                 self.moitruong.action_sudungkynangvitri(*vitrikynang)
+                self._thoidiemvohieuquadichuyennhatdo = max(self._thoidiemvohieuquadichuyennhatdo, time.time() + 0.5)
             elif loaikynang == "sudungkynanglenbanthan":
                 self.moitruong.action_sudungkynangvitrilenbanthan(*vitrikynang)
+                self._thoidiemvohieuquadichuyennhatdo = max(self._thoidiemvohieuquadichuyennhatdo, time.time() + 0.5)
             elif loaikynang == "tancongvatly":
                 if self.moitruong.action_sudungtancongvatly(diachimuctieu):
                     self._is_battudongtancongvatly = True
+                    self._thoidiemvohieuquadichuyennhatdo = max(self._thoidiemvohieuquadichuyennhatdo, time.time() + 0.5)
             elif loaikynang == "sudungkynangmuctieu":
                 self.moitruong.action_sudungkynangvitrimuctieu(*vitrikynang, diachicosothongtinnhanvatmuctieu = diachimuctieu)
+                self._thoidiemvohieuquadichuyennhatdo = max(self._thoidiemvohieuquadichuyennhatdo, time.time() + 0.5)
             elif loaikynang == "sudungkynanglendongdoi":
                 self.moitruong.action_sudungkynangvitrimuctieu(*vitrikynang, diachicosothongtinnhanvatmuctieu = diachimuctieu, is_khongkiemtracothetancong = True)
+                self._thoidiemvohieuquadichuyennhatdo = max(self._thoidiemvohieuquadichuyennhatdo, time.time() + 0.5)
             elif loaikynang == "sudungkynangphudau":
                 self.moitruong.action_sudungkynangvitriphudau(*vitrikynang, diachimuctieu, khoangcachphudau = khoangcachyeucau)
+                self._thoidiemvohieuquadichuyennhatdo = max(self._thoidiemvohieuquadichuyennhatdo, time.time() + 0.5)
 
         if is_ngatdichuyen:
-            self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.5)
+            self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.1)
             self._yeucautancong = None
 
         return True, True
@@ -1632,8 +1639,8 @@ class TacTu:
         is_contranky = self.moitruong.action_timkiemvatphamhanhtrang(TRANKY)
 
         danhsachuutien = [
-            (VITRIKYNANG_DAUCHUYENTINHDI, "sudungkynangkhongmuctieu", lambda: noilucconlai > 600 and not diachidoituongcanbommau and not is_cohieuungdauchuyentinhdi, None, None, False),
-            (VITRIKYNANG_DAUCHUYENTINHDI, "sudungkynangkhongmuctieu", lambda: noilucconlai > 600 and diachidoituongcanbommau and is_cohieuungdauchuyentinhdi, None, None, False),
+            (VITRIKYNANG_DAUCHUYENTINHDI, "sudungkynangkhongmuctieu", lambda: noilucconlai > 600 and not diachidoituongcanbommau and not is_cohieuungdauchuyentinhdi, KHOANGCACHSUDUNGKYNANGTAMXA, None, False),
+            (VITRIKYNANG_DAUCHUYENTINHDI, "sudungkynangkhongmuctieu", lambda: diachidoituongcanbommau and is_cohieuungdauchuyentinhdi, KHOANGCACHSUDUNGKYNANGTAMXA, None, False),
             (VITRIKYNANG_CAITUHOANSINH, "sudungkynanglendongdoi", lambda: noilucconlai > 200 and diachidoituongcanhoisinh, KHOANGCACHSUDUNGKYNANGTAMXA, diachidoituongcanhoisinh, True),
             (VITRIKYNANG_TAYTRANQUYET, "sudungkynanglendongdoi", lambda: noilucconlai > 200 and diachidoituongcanbufftaytranquyet, KHOANGCACHSUDUNGKYNANGTAMXA, diachidoituongcanbufftaytranquyet, True),
             (VITRIKYNANG_CAMLOTRI, "sudungkynanglendongdoi", lambda: noilucconlai > 200 and not is_cohieuungdauchuyentinhdi and diachidoituongcanbommau and (not is_bandochientruong and phantramsinhlucthapnhat <= 75 or phantramsinhlucthapnhat < 25), KHOANGCACHSUDUNGKYNANGTAMXA, diachidoituongcanbommau, True),
@@ -1698,7 +1705,7 @@ class TacTu:
                 tendoituongmuctieuhientai = self.moitruong.get_tendoituong(diachimuctieu)
                 is_muctieupk = self.moitruong.get_is_nguoichoi(diachimuctieu) or "Trộm Bảo Phi Tặc" in tendoituongmuctieuhientai or "Cương Thi" in tendoituongmuctieuhientai or self.moitruong.get_is_baothugiangho(tendoituongmuctieuhientai)
                 if not is_muctieupk:
-                    if self._is_tudongvebanrac:
+                    if self._is_tudongvebanrac and time.time() - self._thoidiemvohieuquadichuyennhatdo > 0.:
                         khoangcachmuctieu = self.moitruong.get_khoangcach(diachimuctieu)
                         khoangcachnhat = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat) if self._diachicosovatphamdangnhat else KHOANGCACHTOIDAHOPLE
                         if khoangcachnhat < khoangcachmuctieu:
@@ -1857,7 +1864,7 @@ class TacTu:
 
             if self._is_luutinhtruymangsansang and not is_luutinhtruymangsansang:
                 if khoangcach <= 1.5:
-                    self._thoidiemtamngungdichuyensudungkynang = time.time() + 0.5
+                    self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.5)
 
             self._is_luutinhtruymangsansang = is_luutinhtruymangsansang
 
@@ -2297,7 +2304,7 @@ class TacTu:
             is_khacbando = idbandohientai != target_map
 
             if is_khacbando:
-                self._thoidiemvohieuhoabatchucnangmoronggannhat = time.time() + 1.
+                self._thoidiemvohieuhoabatchucnangmoronggannhat = max(self._thoidiemvohieuhoabatchucnangmoronggannhat, time.time() + 1.)
 
             if is_khacbando and idbandohientai in (BANDO_TANTHUTHON, BANDO_CHU):
                 diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = TANTHUTIENCO)
