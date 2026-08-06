@@ -48,7 +48,7 @@ class TacTu:
         self._is_tudongtodoi = True
         self._is_tudongphucsinh = True
         self._is_tudongsuavatpham = True
-        self._is_tudongtrieuhoibaothudautien = True
+        self._is_tudongtrieuhoibaothudautien = False
         self._is_tudongchaylenbandovuachet = True
         self._is_tudongxepchongvatpham = True
         self._is_tudongkhaikhoang = False
