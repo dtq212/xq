@@ -13,6 +13,8 @@ from tienich_xq import taithietlap as util_taithietlap, phatam
 
 class TacTu:
     def __init__(self, moitruong: MoiTruong):
+        self._thoidiemkiemtranpcmuavatphamgannhat = 0.
+        self._is_tudongmuavatpham = True
         self._diachicosovatphamnhatduphong = False
         self._idquaidautien = 0
         self._thoidiemvohieuhoatatchucnangmoronggannhat = 0.
@@ -2528,6 +2530,39 @@ class TacTu:
     def action_tatpk(self):
         self.moitruong.action_doimaupk(MAUPK_HOABINH)
 
+    def action_tudongmuavatpham(self, delay = 3.):
+        if self._is_tudongmuavatpham:
+            if time.time() - self._thoidiemkiemtranpcmuavatphamgannhat < delay:
+                return
+            self._thoidiemkiemtranpcmuavatphamgannhat = time.time()
+
+            diachicosothongtinnhanvatchutiemtaphoa = self.moitruong.action_timkiemnhanvat(CHUTIEMTAPHOA)
+
+            if diachicosothongtinnhanvatchutiemtaphoa and self.moitruong.get_khoangcach(diachicosothongtinnhanvatchutiemtaphoa) <= 12.0:
+                idnpc = self.moitruong.get_iddoituong(diachicosothongtinnhanvatchutiemtaphoa)
+                vitrihoithanhphu = self.moitruong.action_timkiemvitrivatphamhanhtrang(HOITHANHPHU)
+                soluonghoithanhphu = self.moitruong.get_soluongvatphamhanhtrang(vitrihoithanhphu) if vitrihoithanhphu >= 0 else 0
+
+                if soluonghoithanhphu < 30:
+                    caulenh = "buy {}# 2 {} 1500".format(hex(idnpc).replace("0x", ""), 30 - soluonghoithanhphu)
+                    self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
+
+                if self.moitruong.get_tenmonphai() == "vanmongcoc":
+                    vitritranky = self.moitruong.action_timkiemvitrivatphamhanhtrang(TRANKY)
+                    soluongtranky = self.moitruong.get_soluongvatphamhanhtrang(vitritranky) if vitritranky >= 0 else 0
+
+                    if soluongtranky < 999:
+                        caulenh = "buy {}# 6 {} 60".format(hex(idnpc).replace("0x", ""), 999 - soluongtranky)
+                        self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
+
+                if self._is_tudongtrieuhoibaothudautien:
+                    vitribaothuthucpham = self.moitruong.action_timkiemvitrivatphamhanhtrang(CAOCAPBAOTHUTHUCPHAM)
+                    soluongbaothuthucpham = self.moitruong.get_soluongvatphamhanhtrang(vitribaothuthucpham) if vitribaothuthucpham >= 0 else 0
+
+                    if soluongbaothuthucpham < 30:
+                        caulenh = "buy {}# 18 {} 400".format(hex(idnpc).replace("0x", ""), 30 - soluongbaothuthucpham)
+                        self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
+
     def action_tudongsuado(self, delay = 3.):
         if self._is_tudongsuado:
             if time.time() - self._thoidiemkiemtranpcsuadogannhat < delay:
@@ -2782,21 +2817,6 @@ class TacTu:
                     self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
                     sovatphamdaban += 1
                     time.sleep(2.)
-
-        vitrihoithanhphu = self.moitruong.action_timkiemvitrivatphamhanhtrang(HOITHANHPHU)
-        soluonghoithanhphu = self.moitruong.get_soluongvatphamhanhtrang(vitrihoithanhphu) if vitrihoithanhphu >= 0 else 0
-
-        if soluonghoithanhphu < 30:
-            caulenh = "buy {}# 2 {} 1500".format(hex(idnpc).replace("0x", ""), 30 - soluonghoithanhphu)
-            self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
-
-        if self.moitruong.get_tenmonphai() == "vanmongcoc":
-            vitritranky = self.moitruong.action_timkiemvitrivatphamhanhtrang(TRANKY)
-            soluongtranky = self.moitruong.get_soluongvatphamhanhtrang(vitritranky) if vitritranky >= 0 else 0
-
-            if soluongtranky < 999:
-                caulenh = "buy {}# 6 {} 1500".format(hex(idnpc).replace("0x", ""), 999 - soluongtranky)
-                self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
 
     def _tinhkhoangcachdendoanthang(self, px, py, x1, y1, x2, y2):
         dx = x2 - x1
