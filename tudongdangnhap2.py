@@ -123,12 +123,19 @@ THONGTINDANGNHAP_MAP = {
     #     "server": 1,
     #     "char_index": 2,
     # },
-    "59503": {
-        "user": "dtq21295",
+    "59844": {
+        "user": "tholuumanh",
         "pass": "hateva",
         "group": 1,
         "server": 1,
-        "char_index": 6,
+        "char_index": 5,
+    },
+    "59845": {
+        "user": "ngoclasat",
+        "pass": "hateva",
+        "group": 1,
+        "server": 1,
+        "char_index": 5,
     },
     # "59506": {
     #     "user": "thichvacham",
