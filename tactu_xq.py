@@ -1054,6 +1054,13 @@ class TacTu:
                 if not self.action_sudungvatphamhanhtrang(CAPCUUDON, delay = 0.):
                     self.action_sudungvatphamhanhtrang(HOATLACHOAN, delay = 0.)
 
+            # if self.moitruong.get_idnguoichoi() == 59845:
+            #     if not self.moitruong.action_timkiemvatphamhanhtrang(TUIQUAVOSONG):
+            #         self.moitruong.action_thucthicaulenh("buyitem ! 5 6 1", delay = 0.)
+            #         time.sleep(0.2)
+            #     self.action_sudungvatphamhanhtrang(TUIQUAVOSONG, delay = 0.)
+            #     time.sleep(0.2)
+
     def action_xulyuutiensudungkynang(self, loaikynang, vitrikynang, diachimuctieu, khoangcachyeucau = 0, is_yeucaukhongdichuyen = False, is_ngatdichuyen = False):
         idtuthenhanvat = self.moitruong.get_idtuthenhanvat()
         thoigiandungim = 0.
