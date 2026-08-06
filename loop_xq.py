@@ -190,11 +190,12 @@ class LoopPhu:
 
         self.tactu.action_tudongsudungvatpham()
         self.tactu.action_chantangcapdo()
-        self.tactu.action_tudongxepchongdo()
+        self.tactu.action_tudongxepchongvatpham()
         self.tactu.action_tudongtodoi()
         self.tactu.action_tudongphucsinh()
         self.tactu.action_tudongdoimaupk()
-        self.tactu.action_tudongsuado()
+        self.tactu.action_tudongmuavatpham()
+        self.tactu.action_tudongsuavatpham()
 
         self.tactu.action_xulyvebanrac()
         self.tactu.action_tudongkhaikhoang()
@@ -204,7 +205,7 @@ class LoopPhu:
 
         self.tactu.action_tudongdichientruong()
         self.tactu.action_dichuyentudo()
-        self.tactu.action_tudongnhatdo()
+        self.tactu.action_tudongnhatvatpham()
 
         if self.moitruong.get_is_nhanvatdachet() and self.moitruong.get_idbandohientai() != BANDO_CHIENTRUONG:
             if time.time() - self.thoidiemthongbaochetgannhat > 5.0:

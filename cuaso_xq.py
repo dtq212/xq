@@ -254,8 +254,8 @@ class CuaSo:
                     self.tactu.battat_is_tudongdichientruong()
                 elif cmd == "battat_uutienbaothumaoson":
                     self.tactu.battat_is_uutienbaothumaoson()
-                elif cmd == "action_suado":
-                    self.tactu.action_suado()
+                elif cmd == "action_suavatpham":
+                    self.tactu.action_suavatpham()
                 elif cmd == "battat_chedobufftoanbang":
                     self.tactu.battat_chedobufftoanbang()
                 elif cmd == "battat_tudongdaotangbaodo":
