@@ -55,7 +55,8 @@ class GiaoDienHienThi:
             "chientruong": tk.BooleanVar(),
             "chantangcap": tk.BooleanVar(),
             "khoangcachtheosau": tk.DoubleVar(value = 9.0),
-            "diemdanhxungquanh": tk.BooleanVar()
+            "diemdanhxungquanh": tk.BooleanVar(),
+            "trieuhoibaothu": tk.BooleanVar()
         }
 
         self._create_check(frame_bottom, "Tự động sử dụng kỹ năng  [Ctrl + F]", self.vars["sudungkynang"], "battat_tudongsudungkynang")
@@ -97,6 +98,7 @@ class GiaoDienHienThi:
         ttk.Separator(frame_bottom, orient = 'horizontal').pack(fill = 'x', pady = 5)
 
         self._create_check(frame_bottom, "Tự tìm mục tiêu (Mặc định)", self.vars["timmuctieu"], "battat_tudongtimkiemmuctieu")
+        self._create_check(frame_bottom, "Tự động gọi Bảo thú", self.vars["trieuhoibaothu"], "battat_tudongtrieuhoibaothudautien")
         self._create_check(frame_bottom, "Chỉ đánh Người chơi  [Ctrl+D/Ctrl+A]", self.vars["chidanhnguoichoi"], "toggle_chidanhnguoichoi")
         self._create_check(frame_bottom, "Ưu tiên Bảo thú Mao Sơn  [Ctrl+Alt+S]", self.vars["uutienmaoson"], "battat_uutienbaothumaoson")
         self._create_check(frame_bottom, "Chế độ Buff toàn bang  [Ctrl+Alt+Shift+N]", self.vars["bufftoanbang"], "battat_chedobufftoanbang")
@@ -219,6 +221,7 @@ class GiaoDienHienThi:
                     pass
             self.vars["battheosaunhom"].set(info.get("_is_tudongbattheosaunhom", False))
             self.vars["timmuctieu"].set(info.get("_is_tudongtimkiemmuctieu", False))
+            self.vars["trieuhoibaothu"].set(info.get("_is_tudongtrieuhoibaothudautien", False))
             self.vars["khaikhoang"].set(info.get("_is_tudongkhaikhoang", False))
             self.vars["chientruong"].set(info.get("_is_tudongdichientruong", False))
             self.vars["daobaodo"].set(info.get("_is_tudongdaotangbaodo", False))

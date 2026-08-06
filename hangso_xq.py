@@ -12,7 +12,7 @@ HYDUONG = "Hỷ Đường"
 
 TAITAOHOAN = "Tái Tạo Hoàn"
 TIENTE = "Tiền Tệ"
-CAOCAPBAOTHUTHUCPHAM = "Thức Ăn Bảo Thú Cao Cấp"
+CAOCAPBAOTHUTHUCPHAM = "Cao Cấp Bảo Thú Thực Phẩm"
 ANXAPHU = "Ân Xá Phù"
 TUKIMBAOHOP = "Tử Kim Bảo Hộp"
 NHANSAM = "Nhân Sâm"

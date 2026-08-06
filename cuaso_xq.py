@@ -162,6 +162,7 @@ class CuaSo:
 
                     "_is_tudongdichuyendiemdanhxungquanh": self.tactu._is_tudongdichuyendiemdanhxungquanh,
                     "_diemdanhxungquanhs": self.tactu._diemdanhxungquanhs,
+                    "_is_tudongtrieuhoibaothudautien": self.tactu._is_tudongtrieuhoibaothudautien,
                 }
                 self.shared_data[self.idcuaso] = info
 
@@ -238,6 +239,8 @@ class CuaSo:
                     self.tactu.action_batpk()
                 elif cmd == "tat_pk":
                     self.tactu.action_tatpk()
+                elif cmd == "battat_tudongtrieuhoibaothudautien":
+                    self.tactu.battat_tudongtrieuhoibaothudautien()
                 elif cmd == "them_diemdanhxungquanh":
                     if self.moitruong.get_is_dangmobando():
                         self.tactu.them_diemdanhxungquanh((self.moitruong.get_toadoxbandochichuot(), self.moitruong.get_toadoybandochichuot(), self.moitruong.get_idbandochichuot()))

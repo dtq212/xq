@@ -200,8 +200,7 @@ class LoopPhu:
         self.tactu.action_tudongkhaikhoang()
         self.tactu.action_tudongdaotangbaodo()
 
-        # if self.moitruong.get_idnguoichoi() != 4676:
-        #     self.tactu.action_tudongtrieuhoibaothudautien()
+        self.tactu.action_tudongtrieuhoibaothudautien()
 
         self.tactu.action_tudongdichientruong()
         self.tactu.action_dichuyentudo()

@@ -22,7 +22,7 @@ class TacTu:
         self._thoidiemyeucaubaothuvatphamdoilenhgannhat = 0.
         self._thoidiemtamngungsudungkynang = 0.
         self._thoidiemhoiphucbaothugannhat = 0.
-        self._is_tudongsudungkynangbaothu = True
+        self._is_tudongsudungkynangbaothu = False
         self._thoidiemdocsachgannhat = 0.
         self._thoidiemdichientruonggannhat = 0.
         self._thoidiembatdaudendiem = 0.
@@ -298,6 +298,7 @@ class TacTu:
             "_tenmuctieukhongtancongs": self._tenmuctieukhongtancongs,
             "_tenvatphamnhats": self._tenvatphamnhats,
             "_khoangcachtoidatruongnhom": self._khoangcachtoidatruongnhom,
+            "_is_tudongtrieuhoibaothudautien": self._is_tudongtrieuhoibaothudautien,
         }
         util_luuthietlap(str(idnguoichoi), thietlap)
 
@@ -333,9 +334,18 @@ class TacTu:
             if "_tenmuctieukhongtancongs" in thietlap: self._tenmuctieukhongtancongs = thietlap["_tenmuctieukhongtancongs"]
             if "_tenvatphamnhats" in thietlap: self._tenvatphamnhats = thietlap["_tenvatphamnhats"]
             if "_khoangcachtoidatruongnhom" in thietlap: self._khoangcachtoidatruongnhom = float(thietlap["_khoangcachtoidatruongnhom"])
+            if "_is_tudongtrieuhoibaothudautien" in thietlap: self._is_tudongtrieuhoibaothudautien = thietlap["_is_tudongtrieuhoibaothudautien"]
+
+    def battat_tudongtrieuhoibaothudautien(self):
+        self._is_tudongtrieuhoibaothudautien = not self._is_tudongtrieuhoibaothudautien
+        if self._is_tudongtrieuhoibaothudautien:
+            phatam("Bật tự động triệu hồi bảo thú")
+        else:
+            phatam("Tắt tự động triệu hồi bảo thú")
 
     def thietlap_khoangcachtheosau(self, khoangcach):
         self._khoangcachtoidatruongnhom = float(khoangcach)
+
     def _kiemtrathuchienvohieuhoadichuyen(self):
         if self._is_yeucauvohieuhoadichuyen:
             self.moitruong.action_vohieuhoadichuyen()
