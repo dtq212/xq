@@ -178,7 +178,6 @@ class TacTu:
         self._thoidiemphatamlacmapgannhat = 0.
         self._thoidiemphatamdayhanhtrang = 0.
 
-        self._thoidiemgapnguoichoigannhat = 0.
         self._thoidiemdichuyentudogannhat = 0.
 
         self._is_tudongdichientruong = False
@@ -389,10 +388,6 @@ class TacTu:
         is_yeucaunhatvatpham = self._yeucaunhatvatpham and not is_anhhuongboitruongnhom and time.time() - self._thoidiemvohieuquadichuyennhatvatpham > 0.
 
         is_maupkhoabinh = self.moitruong.get_idmaupk() == MAUPK_HOABINH
-
-        if time.time() - self._thoidiemgapnguoichoigannhat < 30.0 and self.moitruong.get_idbandohientai() in BANDOFARMs and is_maupkhoabinh:
-            if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Bắt gặp người chơi trên bản đồ cự thú đảo")
-            return
 
         diachimuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
         is_muctieudangchonlanguoichoi = diachimuctieudangchon and self.moitruong.get_is_nguoichoi(diachimuctieudangchon)
@@ -906,9 +901,6 @@ class TacTu:
                 if khoangcachmuctieuxemxettoimuctieudemquaixungquanh <= 7.0:
                     demmuctieugan7 += 1
                 demmuctieugan9 += 1
-
-            if is_muctieuxemxetlanguoichoi and self.moitruong.get_is_nhanvattontai(diachicosothongtinnhanvatmuctieuxemxet) and self.moitruong.get_idnguoichoi(diachicosothongtinnhanvatmuctieuxemxet) not in NHANVATCUAMINHs and khoangcachmuctieuxemxettoibanthan <= khoangcachtimkiem and not self.moitruong.get_is_nhanvatdachet(diachicosothongtinnhanvatmuctieuxemxet):
-                self._thoidiemgapnguoichoigannhat = thoidiemhientai
 
             if diachicosothongtinnhanvatmuctieuxemxet == diachicosothongtinnhanvatmuctieudangchon:
                 continue
@@ -1730,13 +1722,12 @@ class TacTu:
                 if not is_muctieupk:
                     if self._is_tudongvebanrac and time.time() - self._thoidiemvohieuquadichuyennhatvatpham > 0.:
                         khoangcachmuctieu = self.moitruong.get_khoangcach(diachimuctieu)
-                        khoangcachnhat = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat) if self._diachicosovatphamdangnhat else KHOANGCACHTOIDAHOPLE
-                        if khoangcachnhat < khoangcachmuctieu:
+                        # khoangcachnhat = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat) if self._diachicosovatphamdangnhat else KHOANGCACHTOIDAHOPLE
+                        khoangcachnhatmuctieu = self.moitruong.get_khoangcach(diachimuctieu, self._diachicosovatphamdangnhat) if self._diachicosovatphamdangnhat else KHOANGCACHTOIDAHOPLE
+                        if khoangcachnhatmuctieu < khoangcachmuctieu :
                             return
 
         if self.moitruong.get_is_nhanvatchuasansang(self.moitruong.get_diachicosothongtinnhanvat1()):
-            return
-        if time.time() - self._thoidiemgapnguoichoigannhat < 10.0 and self.moitruong.get_idbandohientai() in BANDOFARMs and self.moitruong.get_idmaupk() == MAUPK_HOABINH:
             return
         if time.time() - self._thoidiemtamngungsudungkynang < 0.:
             return
@@ -2230,9 +2221,6 @@ class TacTu:
 
         if self._diachicosokhaikhoang:
             self._yeucautudo = None
-            return
-
-        if time.time() - self._thoidiemgapnguoichoigannhat < 15.0 and self.moitruong.get_idbandohientai() in BANDOFARMs and self.moitruong.get_idmaupk() == MAUPK_HOABINH:
             return
 
         while True:
