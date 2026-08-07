@@ -6,12 +6,16 @@ from multiprocessing import Process, Manager, freeze_support
 
 import keyboard
 import win32gui
+import csv
+import subprocess
+import win32process
 
 from cuaso_xq import CuaSo
 from giaodienhienthi_xq import GiaoDienHienThi
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
+GAME_TITLE_PREFIX = "Chien Quoc 2 ("
 
 def run_bot_process(hwnd, shared_data, command_dict):
     try:
@@ -46,6 +50,46 @@ class TroChoiManager:
         win32gui.EnumWindows(callback, None)
         return ds_hwnd
 
+    def _dondeptientrinhaovuabithoatgame(self):
+        valid_pids = set()
+
+        def callback(hwnd, _):
+            if win32gui.IsWindowVisible(hwnd):
+                title = win32gui.GetWindowText(hwnd)
+                if GAME_TITLE_PREFIX in title:
+                    _, pid = win32process.GetWindowThreadProcessId(hwnd)
+                    valid_pids.add(pid)
+
+        win32gui.EnumWindows(callback, None)
+
+        xq_pids = set()
+        try:
+            output = subprocess.check_output(
+                ['tasklist', '/FI', 'IMAGENAME eq xq.exe', '/FO', 'CSV', '/NH']
+            ).decode('utf-8', errors = 'ignore')
+
+            reader = csv.reader(output.splitlines())
+            for row in reader:
+                if len(row) > 1 and 'xq.exe' in row[0].lower():
+                    xq_pids.add(int(row[1]))
+        except subprocess.CalledProcessError:
+            pass
+        except Exception as e:
+            print(f"❌ Lỗi khi lấy danh sách tiến trình: {e}")
+
+        ghost_pids = xq_pids - valid_pids
+
+        if ghost_pids:
+            print(f"[CLEANUP] Đang kiểm tra các tiến trình xq.exe bị treo ngầm...")
+
+        for pid in ghost_pids:
+            print(f"   ⚠️ Phát hiện xq.exe ảo (PID: {pid}). Đang tiến hành kill...")
+            try:
+                subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output = True)
+                print(f"   ✅ Đã dọn dẹp thành công xq.exe ảo (PID: {pid}).")
+            except Exception as e:
+                print(f"   ❌ Lỗi khi kill PID {pid}: {e}")
+
     def run(self):
         root = tk.Tk()
         gui = GiaoDienHienThi(root, self.shared_data, self.command_dict)
@@ -61,13 +105,15 @@ class TroChoiManager:
 
         print("--- ĐANG CHẠY MANAGER CHIẾN QUỐC ---")
         try:
-            root.mainloop()  # Chạy vòng lặp UI
+            root.mainloop()
         except KeyboardInterrupt:
             pass
         self.stop_all()
 
     def loop_scan(self):
         while True:
+            self._dondeptientrinhaovuabithoatgame()
+
             game_hwnds = self._timcuasogame()
             for hwnd in game_hwnds:
                 if hwnd not in self.bot_processes:
@@ -145,7 +191,7 @@ class TroChoiManager:
                     cmd = "action_muauto"
                 if cmd:
                     self.command_dict[hwnd] = cmd
-                    time.sleep(0.3)  # Giảm dội phím
+                    time.sleep(0.3)
             time.sleep(0.05)
 
     def stop_all(self):

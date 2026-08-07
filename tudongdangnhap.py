@@ -461,7 +461,7 @@ def main():
     print("=== TRÌNH QUẢN LÝ ĐĂNG NHẬP THÔNG MINH ===")
     while True:
         try:
-            dondeptientrinhaovuabithoatgame()
+            #dondeptientrinhaovuabithoatgame()
 
             online = laydanhsachnhanvatonlines()
             print(f"\n[SCAN] Đang online: {online}")
