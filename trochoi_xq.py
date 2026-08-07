@@ -6,6 +6,7 @@ from multiprocessing import Process, Manager, freeze_support
 
 import keyboard
 import win32gui
+# Thêm các thư viện cần thiết để xử lý tiến trình rác
 import csv
 import subprocess
 import win32process
@@ -15,7 +16,9 @@ from giaodienhienthi_xq import GiaoDienHienThi
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
+# Thêm hằng số tên game để nhận diện cửa sổ
 GAME_TITLE_PREFIX = "Chien Quoc 2 ("
+
 
 def run_bot_process(hwnd, shared_data, command_dict):
     try:
@@ -37,6 +40,9 @@ class TroChoiManager:
         self.shared_data = self.manager.dict()
         self.command_dict = self.manager.dict()
         self.bot_processes = {}
+
+        self.tien_trinh_cho = {}
+        self.thoi_gian_cho_phep = 3.0
 
     def _timcuasogame(self):
         ds_hwnd = []
@@ -78,17 +84,28 @@ class TroChoiManager:
             print(f"❌ Lỗi khi lấy danh sách tiến trình: {e}")
 
         ghost_pids = xq_pids - valid_pids
-
-        if ghost_pids:
-            print(f"[CLEANUP] Đang kiểm tra các tiến trình xq.exe bị treo ngầm...")
+        thoi_gian_hien_tai = time.time()
 
         for pid in ghost_pids:
-            print(f"   ⚠️ Phát hiện xq.exe ảo (PID: {pid}). Đang tiến hành kill...")
-            try:
-                subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output = True)
-                print(f"   ✅ Đã dọn dẹp thành công xq.exe ảo (PID: {pid}).")
-            except Exception as e:
-                print(f"   ❌ Lỗi khi kill PID {pid}: {e}")
+            if pid not in self.tien_trinh_cho:
+                self.tien_trinh_cho[pid] = thoi_gian_hien_tai
+            else:
+                thoi_gian_da_qua = thoi_gian_hien_tai - self.tien_trinh_cho[pid]
+                if thoi_gian_da_qua >= self.thoi_gian_cho_phep:
+                    print(f"   ⚠️ Tiến trình ảo (PID: {pid}) đã treo {thoi_gian_da_qua:.1f}s. Đang dọn dẹp...")
+                    try:
+                        subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output = True)
+                        print(f"   ✅ Đã đóng thành công xq.exe ảo (PID: {pid}).")
+                    except Exception as e:
+                        print(f"   ❌ Lỗi khi đóng PID {pid}: {e}")
+
+        pids_can_xoa = []
+        for pid in self.tien_trinh_cho:
+            if pid not in ghost_pids:
+                pids_can_xoa.append(pid)
+
+        for pid in pids_can_xoa:
+            del self.tien_trinh_cho[pid]
 
     def run(self):
         root = tk.Tk()
