@@ -93,7 +93,7 @@ CUONGTHI = "Cương Thi"
 QUYTOT = "Quỷ Tốt"
 THIENBINH = "Thiên Binh"
 THIENTUONG = "Thiên Tướng"
-
+TROMBAOPHITAC = "Trộm Bảo Phi Tặc"
 TENBANDO_TE = "Tề"
 TENBANDO_HAN = "Hàn"
 TENBANDO_TRIEU = "Triệu"
