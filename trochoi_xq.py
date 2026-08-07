@@ -16,10 +16,6 @@ from giaodienhienthi_xq import GiaoDienHienThi
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-# Thêm hằng số tên game để nhận diện cửa sổ
-GAME_TITLE_PREFIX = "Chien Quoc 2 ("
-
-
 def run_bot_process(hwnd, shared_data, command_dict):
     try:
         bot = CuaSo(hwnd, shared_data, command_dict)
@@ -41,8 +37,7 @@ class TroChoiManager:
         self.command_dict = self.manager.dict()
         self.bot_processes = {}
 
-        self.tien_trinh_cho = {}
-        self.thoi_gian_cho_phep = 3.0
+        self._thoidiemdondeptientrinhgannhat = time.time()
 
     def _timcuasogame(self):
         ds_hwnd = []
@@ -62,7 +57,7 @@ class TroChoiManager:
         def callback(hwnd, _):
             if win32gui.IsWindowVisible(hwnd):
                 title = win32gui.GetWindowText(hwnd)
-                if GAME_TITLE_PREFIX in title:
+                if title and "Chien Quoc 2" in title:
                     _, pid = win32process.GetWindowThreadProcessId(hwnd)
                     valid_pids.add(pid)
 
@@ -84,28 +79,17 @@ class TroChoiManager:
             print(f"❌ Lỗi khi lấy danh sách tiến trình: {e}")
 
         ghost_pids = xq_pids - valid_pids
-        thoi_gian_hien_tai = time.time()
 
-        for pid in ghost_pids:
-            if pid not in self.tien_trinh_cho:
-                self.tien_trinh_cho[pid] = thoi_gian_hien_tai
-            else:
-                thoi_gian_da_qua = thoi_gian_hien_tai - self.tien_trinh_cho[pid]
-                if thoi_gian_da_qua >= self.thoi_gian_cho_phep:
-                    print(f"   ⚠️ Tiến trình ảo (PID: {pid}) đã treo {thoi_gian_da_qua:.1f}s. Đang dọn dẹp...")
-                    try:
-                        subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output = True)
-                        print(f"   ✅ Đã đóng thành công xq.exe ảo (PID: {pid}).")
-                    except Exception as e:
-                        print(f"   ❌ Lỗi khi đóng PID {pid}: {e}")
+        if ghost_pids:
+            print(f"[CLEANUP] Đang kiểm tra các tiến trình xq.exe bị treo ngầm...")
 
-        pids_can_xoa = []
-        for pid in self.tien_trinh_cho:
-            if pid not in ghost_pids:
-                pids_can_xoa.append(pid)
-
-        for pid in pids_can_xoa:
-            del self.tien_trinh_cho[pid]
+            for pid in ghost_pids:
+                print(f"   ⚠️ Phát hiện xq.exe ảo (PID: {pid}). Đang tiến hành kill...")
+                try:
+                    subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output = True)
+                    print(f"   ✅ Đã đóng thành công xq.exe ảo (PID: {pid}).")
+                except Exception as e:
+                    print(f"   ❌ Lỗi khi kill PID {pid}: {e}")
 
     def run(self):
         root = tk.Tk()
@@ -129,7 +113,9 @@ class TroChoiManager:
 
     def loop_scan(self):
         while True:
-            self._dondeptientrinhaovuabithoatgame()
+            if time.time() - self._thoidiemdondeptientrinhgannhat > 2.:
+                self._dondeptientrinhaovuabithoatgame()
+                self._thoidiemdondeptientrinhgannhat = time.time()
 
             game_hwnds = self._timcuasogame()
             for hwnd in game_hwnds:
