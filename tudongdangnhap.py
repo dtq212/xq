@@ -7,7 +7,8 @@ import win32process
 import win32gui
 import win32con
 from moitruong_xq import MoiTruong
-
+import csv
+import win32api
 
 def make_lparam(x, y):
     return (y << 16) | (x & 0xFFFF)
@@ -403,16 +404,130 @@ def mogamevadangnhap(char_name, config):
         press_key(hwnd_game, win32con.VK_RETURN)
 
         print(f"✅ Hoàn tất cho {char_name}. Nghỉ 5s...")
+
+        print("   -> Đang sắp xếp lại các cửa sổ game...")
+        sap_xep_cua_so_game()
+
         time.sleep(15)
 
     except Exception as e:
         print(f"❌ Exception: {e}")
+def don_dep_process_xq_ao():
+    """
+    Quét và tiêu diệt các process xq.exe chạy ngầm không có cửa sổ game hợp lệ.
+    """
+    # Bước 1: Lấy danh sách Process ID (PID) của các cửa sổ game CÓ THẬT
+    valid_pids = set() # Sử dụng set (tập hợp) để so sánh cho nhanh
+    
+    def callback(hwnd, _):
+        if win32gui.IsWindowVisible(hwnd):
+            title = win32gui.GetWindowText(hwnd)
+            # Nếu tiêu đề có chứa tiền tố game
+            if GAME_TITLE_PREFIX in title:
+                _, pid = win32process.GetWindowThreadProcessId(hwnd)
+                valid_pids.add(pid)
 
+    win32gui.EnumWindows(callback, None)
 
+    # Bước 2: Lấy tất cả PID của tiến trình xq.exe đang chạy ngầm trên hệ thống
+    xq_pids = set()
+    try:
+        # Dùng lệnh tasklist của Windows để lấy danh sách xq.exe dưới dạng CSV
+        output = subprocess.check_output(
+            ['tasklist', '/FI', 'IMAGENAME eq xq.exe', '/FO', 'CSV', '/NH']
+        ).decode('utf-8', errors='ignore')
+
+        reader = csv.reader(output.splitlines())
+        for row in reader:
+            if len(row) > 1 and 'xq.exe' in row[0].lower():
+                xq_pids.add(int(row[1])) # Cột 2 trong CSV của tasklist là PID
+    except subprocess.CalledProcessError:
+        # Sẽ nhảy vào đây nếu không có tiến trình xq.exe nào đang chạy (không sao cả)
+        pass
+    except Exception as e:
+        print(f"❌ Lỗi khi lấy danh sách tiến trình: {e}")
+
+    # Bước 3: Tìm ra các process ảo bằng phép trừ tập hợp và Kill chúng
+    ghost_pids = xq_pids - valid_pids
+    
+    if ghost_pids:
+        print(f"[CLEANUP] Đang kiểm tra các tiến trình xq.exe bị treo ngầm...")
+        
+    for pid in ghost_pids:
+        print(f"   ⚠️ Phát hiện xq.exe ảo (PID: {pid}). Đang tiến hành kill...")
+        try:
+            # Ép buộc đóng tiến trình (/F) theo PID (/PID)
+            subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output=True)
+            print(f"   ✅ Đã dọn dẹp thành công xq.exe ảo (PID: {pid}).")
+        except Exception as e:
+            print(f"   ❌ Lỗi khi kill PID {pid}: {e}")
+
+def sap_xep_cua_so_game():
+    """
+    Tìm tất cả các cửa sổ game đang mở và tự động sắp xếp chúng
+    dàn đều trên màn hình theo dạng lưới (grid).
+    """
+    # 1. Tìm tất cả HWND của các cửa sổ game hợp lệ
+    danh_sach_hwnd = []
+
+    def callback(hwnd, _):
+        if win32gui.IsWindowVisible(hwnd):
+            title = win32gui.GetWindowText(hwnd)
+            # Chỉ lấy các cửa sổ có tên bắt đầu bằng "Chien Quoc 2 ("
+            if GAME_TITLE_PREFIX in title:
+                danh_sach_hwnd.append(hwnd)
+
+    win32gui.EnumWindows(callback, None)
+
+    if not danh_sach_hwnd:
+        return  # Không có cửa sổ nào thì thoát luôn
+
+    # 2. Lấy kích thước thật của màn hình máy tính
+    screen_width = win32api.GetSystemMetrics(0)  # Chiều rộng (VD: 1920)
+    # screen_height = win32api.GetSystemMetrics(1) # Chiều cao (VD: 1080) - Lưu lại nếu sau này cần
+
+    # 3. Kích thước ước tính của một cửa sổ game (bạn có thể tinh chỉnh con số này)
+    # Dựa vào hàm timcuasogamedangbiket của bạn, width ~ 810, height ~ 630
+    window_width = 810
+    window_height = 630
+
+    # 4. Tính toán số lượng cột tối đa có thể xếp vừa trên màn hình
+    so_cot = screen_width // window_width
+    if so_cot == 0:
+        so_cot = 1  # Đảm bảo ít nhất có 1 cột dù màn hình nhỏ
+
+    # 5. Duyệt qua từng cửa sổ và đặt tọa độ
+    for index, hwnd in enumerate(danh_sach_hwnd):
+        # Tính toán hàng và cột dựa trên số thứ tự (index)
+        hang = index // so_cot
+        cot = index % so_cot
+
+        # Tính tọa độ X (ngang) và Y (dọc)
+        toado_x = cot * window_width
+        toado_y = hang * window_height
+
+        try:
+            # Di chuyển cửa sổ.
+            # Dùng cờ SWP_NOSIZE để giữ nguyên kích thước cửa sổ.
+            # Dùng cờ SWP_NOZORDER để không làm thay đổi thứ tự lớp của cửa sổ.
+            win32gui.SetWindowPos(
+                hwnd,
+                0,  # Không quan tâm đến Z-order vì đã có cờ SWP_NOZORDER
+                toado_x,
+                toado_y,
+                0,
+                0,
+                win32con.SWP_NOSIZE | win32con.SWP_NOZORDER
+            )
+        except Exception as e:
+            print(f"   ❌ Lỗi khi di chuyển cửa sổ (HWND: {hwnd}): {e}")
 def main():
     print("=== TRÌNH QUẢN LÝ ĐĂNG NHẬP THÔNG MINH ===")
     while True:
         try:
+            # Thêm dòng này: Dọn dẹp process ảo trước khi thực hiện các bước khác
+            don_dep_process_xq_ao()
+
             online = laydanhsachnhanvatonlines()
             print(f"\n[SCAN] Đang online: {online}")
             for tennhanvat, cauhinh in THONGTINDANGNHAP_MAP.items():

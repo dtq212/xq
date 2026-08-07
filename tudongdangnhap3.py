@@ -63,8 +63,8 @@ def press_combo(hwnd, modifier, key, delay = 0.1):
 
 
 DUONGDAN_GAME = r"C:\Users\Ngoc\Desktop\ChienQuoc2\ChienQuoc2 - Live\xq.exe"
-LAUNCHER_TITLE = "client 1.01.80"
-GAME_TITLE_LOGIN_SCREEN = "Chien Quoc 2 - That Hung Tranh Ba.1.01.80"
+LAUNCHER_TITLE = "client 1.01.82"
+GAME_TITLE_LOGIN_SCREEN = "Chien Quoc 2 - That Hung Tranh Ba.1.01.82"
 GAME_TITLE_PREFIX = "Chien Quoc 2 ("
 
 DANH_SACH_CUA_SO_LOI = ["warning", "play"]
@@ -97,32 +97,35 @@ TOADO_CHONNHANVAT = {
     6: (560, 352),
 }
 
-THONGTINDANGNHAP_MAP = {
-    # "59309": {
-    #     "user": "kngaivacham",
-    #     "pass": "hateva",
-    #     "group": 1,
-    #     "server": 1,
-    # },
-    # "59306": {
-    #     "user": "dtq21295",
-    #     "pass": "hateva",
-    #     "group": 1,
-    #     "server": 2,
-    # },
-    # "59410": {
-    #     "user": "tholuumanh",
-    #     "pass": "hateva",
-    #     "group": 1,
-    #     "server": 1,
-    # },
-    # "59394": {
-    #     "user": "kngaivacham",
-    #     "pass": "hateva",
-    #     "group": 1,
-    #     "server": 1,
-    #     "char_index": 2,
-    # },
+THONGTINDANGNHAP_MAP = {  
+    #"59759": {
+    #    "user": "kngaivacham",
+    #    "pass": "hateva",
+    #    "group": 1,
+    #    "server": 2,
+    #    "char_index": 6,
+    #},
+    #"59758": {
+    #    "user": "thichvacham",
+    #    "pass": "hateva",
+    #    "group": 1,
+    #    "server": 2,
+    #    "char_index": 6,
+    #}, 
+    "59394": {
+        "user": "kngaivacham",
+        "pass": "hateva",
+        "group": 1,
+        "server": 1,
+        "char_index": 2,
+    },
+    "59506": {
+        "user": "thichvacham",
+        "pass": "hateva",
+        "group": 1,
+        "server": 1,
+        "char_index": 3,
+    }, 
     "59503": {
         "user": "dtq21295",
         "pass": "hateva",
@@ -130,20 +133,7 @@ THONGTINDANGNHAP_MAP = {
         "server": 1,
         "char_index": 6,
     },
-    # "59506": {
-    #     "user": "thichvacham",
-    #     "pass": "hateva",
-    #     "group": 1,
-    #     "server": 2,
-    #     "char_index": 3,
-    # },
-    # "59500": {
-    #     "user": "tholuumanh",
-    #     "pass": "hateva",
-    #     "group": 1,
-    #     "server": 2,
-    #     "char_index": 3,
-    # },
+
 }
 
 
@@ -277,7 +267,7 @@ def mogamevadangnhap(char_name, config):
                 print(f"      [Lần thử {attempt + 1}/{max_retries}] Đang chạy lệnh mở game...")
                 subprocess.Popen(DUONGDAN_GAME, cwd = game_dir)
 
-                for i in range(15):
+                for i in range(5):
                     hwnd_launcher = timlauncherdangmo()
                     if hwnd_launcher:
                         success_open = True
