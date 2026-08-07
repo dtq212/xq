@@ -1,15 +1,86 @@
+DUONGDAN_GAME = r"C:\Users\Admin\Desktop\ChienQuoc2\ChienQuoc2 - Live\xq.exe"
+LAUNCHER_TITLE = "client 1.01.82"
+GAME_TITLE_LOGIN_SCREEN = "Chien Quoc 2 - That Hung Tranh Ba.1.01.82"
+GAME_TITLE_PREFIX = "Chien Quoc 2 ("
+
+DANH_SACH_CUA_SO_LOI = ["warning", "play"]
+
+TOADO_LAUNCHER = {
+    "BTN_VAO_GAME": (530, 495)
+}
+
+TOADO_GAME = {
+    "BTN_XACNHAN_SERVER": (760, 465),
+}
+
+TOADO_CUMMAYCHU = {
+    1: (190, 185),
+    2: (190, 221),
+    3: (190, 234),
+    4: (190, 259),
+}
+
+TOADO_MAYCHU = {
+    1: (377, 182),
+    2: (372, 206),
+}
+
+TOADO_CHONNHANVAT = {
+    2: (369, 146),
+    3: (560, 146),
+    4: (188, 352),
+    5: (369, 352),
+    6: (560, 352),
+}
+
+THONGTINDANGNHAP_MAP = {
+    "59844": {
+        "user": "tholuumanh",
+        "pass": "hateva",
+        "group": 1,
+        "server": 2,
+        "char_index": 5,
+        "vitricuaso": 1, # Thêm dòng này (1: Trái trên)
+    },
+    "59845": {
+        "user": "ngoclasat",
+        "pass": "hateva",
+        "group": 1,
+        "server": 2,
+        "char_index": 5,
+        "vitricuaso": 2, # Thêm dòng này (2: Phải trên)
+    }, 
+    "59636": {
+        "user": "shoudi",
+        "pass": "hateva",
+        "group": 1,
+        "server": 2,
+        "char_index": 3,
+        "vitricuaso": 3, # Thêm dòng này (3: Trái dưới)
+    },
+    "59637": {
+        "user": "yuuhou",
+        "pass": "hateva",
+        "group": 1,
+        "server": 2,
+        "char_index": 3,
+        "vitricuaso": 4, # Thêm dòng này (4: Phải dưới)
+    },
+}
+
+import csv
 import os
 import subprocess
 import time
 
 import pywintypes
-import win32process
-import win32gui
-import win32con
-from moitruong_xq import MoiTruong
-import csv
 import win32api
-import re
+import win32con
+import win32gui
+import win32process
+
+from moitruong_xq import MoiTruong
+
 
 def make_lparam(x, y):
     return (y << 16) | (x & 0xFFFF)
@@ -63,108 +134,7 @@ def press_combo(hwnd, modifier, key, delay = 0.1):
     _safe_post_message(hwnd, win32con.WM_KEYUP, modifier, 0)
     time.sleep(delay)
 
-
-DUONGDAN_GAME = r"C:\Users\Admin\Desktop\ChienQuoc2\ChienQuoc2 - Live\xq.exe"
-LAUNCHER_TITLE = "client 1.01.82"
-GAME_TITLE_LOGIN_SCREEN = "Chien Quoc 2 - That Hung Tranh Ba.1.01.82"
-GAME_TITLE_PREFIX = "Chien Quoc 2 ("
-
-DANH_SACH_CUA_SO_LOI = ["warning", "play"]
-
-TOADO_LAUNCHER = {
-    "BTN_VAO_GAME": (530, 495)
-}
-
-TOADO_GAME = {
-    "BTN_XACNHAN_SERVER": (760, 465),
-}
-
-TOADO_CUMMAYCHU = {
-    1: (190, 185),
-    2: (190, 221),
-    3: (190, 234),
-    4: (190, 259),
-}
-
-TOADO_MAYCHU = {
-    1: (377, 182),
-    2: (372, 206),
-}
-
-TOADO_CHONNHANVAT = {
-    2: (369, 146),
-    3: (560, 146),
-    4: (188, 352),
-    5: (369, 352),
-    6: (560, 352),
-}
-
-THONGTINDANGNHAP_MAP = {
-    # "59309": {
-    #     "user": "kngaivacham",
-    #     "pass": "hateva",
-    #     "group": 1,
-    #     "server": 1,
-    # },
-    # "59306": {
-    #     "user": "dtq21295",
-    #     "pass": "hateva",
-    #     "group": 1,
-    #     "server": 2,
-    # },
-    # "59410": {
-    #     "user": "tholuumanh",
-    #     "pass": "hateva",
-    #     "group": 1,
-    #     "server": 1,
-    # },
-    "59844": {
-        "user": "tholuumanh",
-        "pass": "hateva",
-        "group": 1,
-        "server": 2,
-        "char_index": 5,
-    },
-    "59845": {
-        "user": "ngoclasat",
-        "pass": "hateva",
-        "group": 1,
-        "server": 2,
-        "char_index": 5,
-    }, 
-
-    "59636": {
-        "user": "shoudi",
-        "pass": "hateva",
-        "group": 1,
-        "server": 2,
-        "char_index": 3,
-    },
-    "59637": {
-        "user": "yuuhou",
-        "pass": "hateva",
-        "group": 1,
-        "server": 2,
-        "char_index": 3,
-    },
-    # "59500": {
-    #     "user": "tholuumanh",
-    #     "pass": "hateva",
-    #     "group": 1,
-    #     "server": 1,
-    #     "char_index": 3,
-    # },
-    # "59562": {
-    #     "user": "ngoclasat",
-    #     "pass": "hateva",
-    #     "group": 1,
-    #     "server": 2,
-    #     "char_index": 3,
-    # },
-}
-
-
-def kiem_tra_va_dong_cua_so_treo(hwnd):
+def kiemtravadongcuasotreo(hwnd):
     try:
         win32gui.PostMessage(hwnd, win32con.WM_NCMOUSEMOVE, 0, 0)
         time.sleep(0.2)
@@ -198,7 +168,7 @@ def laydanhsachnhanvatonlines():
         if win32gui.IsWindowVisible(hwnd):
             title = win32gui.GetWindowText(hwnd)
             if GAME_TITLE_PREFIX in title:
-                is_hung = kiem_tra_va_dong_cua_so_treo(hwnd)
+                is_hung = kiemtravadongcuasotreo(hwnd)
                 if is_hung:
                     return
 
@@ -346,6 +316,10 @@ def mogamevadangnhap(char_name, config):
             return
 
         print(f"[5] Game đã lên (HWND: {hwnd_game}). Đợi load Login (2s)...")
+
+        vitri = config.get("vitricuaso", 1)
+        dichuyencuasotheovitri(hwnd_game, vitri)
+
         time.sleep(2)
 
         group_name = config.get("group")
@@ -406,17 +380,14 @@ def mogamevadangnhap(char_name, config):
 
         print(f"✅ Hoàn tất cho {char_name}. Nghỉ 5s...")
 
-        print("   -> Đang sắp xếp lại các cửa sổ game...")
-        sap_xep_cua_so_game()
-
         time.sleep(15)
 
     except Exception as e:
         print(f"❌ Exception: {e}")
 
-def don_dep_process_xq_ao():
+def dondeptientrinhaovuabithoatgame():
     valid_pids = set()
-    
+
     def callback(hwnd, _):
         if win32gui.IsWindowVisible(hwnd):
             title = win32gui.GetWindowText(hwnd)
@@ -442,10 +413,10 @@ def don_dep_process_xq_ao():
         print(f"❌ Lỗi khi lấy danh sách tiến trình: {e}")
 
     ghost_pids = xq_pids - valid_pids
-    
+
     if ghost_pids:
         print(f"[CLEANUP] Đang kiểm tra các tiến trình xq.exe bị treo ngầm...")
-        
+
     for pid in ghost_pids:
         print(f"   ⚠️ Phát hiện xq.exe ảo (PID: {pid}). Đang tiến hành kill...")
         try:
@@ -454,71 +425,43 @@ def don_dep_process_xq_ao():
         except Exception as e:
             print(f"   ❌ Lỗi khi kill PID {pid}: {e}")
 
-
-def sap_xep_cua_so_game():
-    thu_tu_tai_khoan = list(THONGTINDANGNHAP_MAP.keys())
-    danh_sach_cua_so = []
-
-    def callback(hwnd, _):
-        if win32gui.IsWindowVisible(hwnd):
-            title = win32gui.GetWindowText(hwnd)
-            if GAME_TITLE_PREFIX in title:
-                match = re.search(r'\((.*?)\)', title)
-                if match:
-                    id_tai_khoan = match.group(1)
-                    if id_tai_khoan in thu_tu_tai_khoan:
-                        vi_tri_uu_tien = thu_tu_tai_khoan.index(id_tai_khoan)
-                        danh_sach_cua_so.append((vi_tri_uu_tien, hwnd))
-                    else:
-                        danh_sach_cua_so.append((999, hwnd))
-
-    win32gui.EnumWindows(callback, None)
-
-    if not danh_sach_cua_so:
-        return
-
-    danh_sach_cua_so.sort(key = lambda x: x[0])
-
+def dichuyencuasotheovitri(hwnd, vitricuaso):
     screen_width = win32api.GetSystemMetrics(0)
     screen_height = win32api.GetSystemMetrics(1)
     window_width = 810
     window_height = 630
     taskbar_height = 40
 
+    index_goc = (vitricuaso - 1) % 4
+
     toa_do_4_goc = [
-        (0, 0),
-        (screen_width - window_width, 0),
-        (0, screen_height - window_height - taskbar_height),
-        (screen_width - window_width, screen_height - window_height - taskbar_height)
+        (0, 0),                                                                  # 1 (Index 0): Trái Trên
+        (screen_width - window_width, 0),                                        # 2 (Index 1): Phải Trên
+        (0, screen_height - window_height - taskbar_height),                     # 3 (Index 2): Trái Dưới
+        (screen_width - window_width, screen_height - window_height - taskbar_height) # 4 (Index 3): Phải Dưới
     ]
 
-    for i, (vi_tri_uu_tien, hwnd) in enumerate(danh_sach_cua_so):
-        vi_tri_goc = i % 4
-        vong_lap = i // 4
+    toado_x, toado_y = toa_do_4_goc[index_goc]
 
-        offset = vong_lap * 20
-
-        toado_x = toa_do_4_goc[vi_tri_goc][0] + offset
-        toado_y = toa_do_4_goc[vi_tri_goc][1] + offset
-
-        try:
-            win32gui.SetWindowPos(
-                hwnd,
-                0,
-                toado_x,
-                toado_y,
-                0,
-                0,
-                win32con.SWP_NOSIZE | win32con.SWP_NOZORDER
-            )
-        except Exception as e:
-            print(f"   ❌ Lỗi khi di chuyển cửa sổ (HWND: {hwnd}): {e}")
+    try:
+        win32gui.SetWindowPos(
+            hwnd,
+            0,
+            toado_x,
+            toado_y,
+            0,
+            0,
+            win32con.SWP_NOSIZE | win32con.SWP_NOZORDER
+        )
+        print(f"   -> [GIAO DIỆN] Đã ghim cửa sổ vào vị trí số {vitricuaso}.")
+    except Exception as e:
+        print(f"   ❌ Lỗi khi di chuyển cửa sổ: {e}")
 
 def main():
     print("=== TRÌNH QUẢN LÝ ĐĂNG NHẬP THÔNG MINH ===")
     while True:
         try:
-            don_dep_process_xq_ao()
+            dondeptientrinhaovuabithoatgame()
 
             online = laydanhsachnhanvatonlines()
             print(f"\n[SCAN] Đang online: {online}")
