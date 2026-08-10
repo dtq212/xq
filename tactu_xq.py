@@ -3746,8 +3746,6 @@ class TacTu:
         if self.moitruong.get_is_dangvankhi():
             return
 
-        # self.moitruong.action_batchucnangmorong()
-
         if self.moitruong.get_idbandohientai() in (701, 395, 894):
             return
 
@@ -3756,8 +3754,6 @@ class TacTu:
 
         if self.moitruong.get_idbandohientai() not in BANDOKHONGPKs:
             if time.time() - self._thoidiemvohieuhoabatchucnangmoronggannhat < 0.:
-                self.moitruong.action_tatchucnangmorong()
-            elif self.moitruong.get_tenmonphai() == "daohoanguyen" and self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_DATINCUONGLUC,), True, is_hieuungcoloi = 1):
                 self.moitruong.action_tatchucnangmorong()
             elif not self._is_tudongsudungkynang or (self.moitruong.get_is_dangbatchucnangmorong() and time.time() - self.moitruong._thoidiemcochucnangmoronggannhat > 10.):
                 if time.time() - self._thoidiemvohieuhoatatchucnangmoronggannhat > 0.:
