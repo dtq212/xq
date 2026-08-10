@@ -37,8 +37,6 @@ class TroChoiManager:
         self.command_dict = self.manager.dict()
         self.bot_processes = {}
 
-        self._thoidiemdondeptientrinhgannhat = time.time()
-
     def _timcuasogame(self):
         ds_hwnd = []
 
@@ -50,46 +48,6 @@ class TroChoiManager:
 
         win32gui.EnumWindows(callback, None)
         return ds_hwnd
-
-    def _dondeptientrinhaovuabithoatgame(self):
-        valid_pids = set()
-
-        def callback(hwnd, _):
-            if win32gui.IsWindowVisible(hwnd):
-                title = win32gui.GetWindowText(hwnd)
-                if title and "Chien Quoc 2" in title:
-                    _, pid = win32process.GetWindowThreadProcessId(hwnd)
-                    valid_pids.add(pid)
-
-        win32gui.EnumWindows(callback, None)
-
-        xq_pids = set()
-        try:
-            output = subprocess.check_output(
-                ['tasklist', '/FI', 'IMAGENAME eq xq.exe', '/FO', 'CSV', '/NH']
-            ).decode('utf-8', errors = 'ignore')
-
-            reader = csv.reader(output.splitlines())
-            for row in reader:
-                if len(row) > 1 and 'xq.exe' in row[0].lower():
-                    xq_pids.add(int(row[1]))
-        except subprocess.CalledProcessError:
-            pass
-        except Exception as e:
-            print(f"❌ Lỗi khi lấy danh sách tiến trình: {e}")
-
-        ghost_pids = xq_pids - valid_pids
-
-        if ghost_pids:
-            print(f"[CLEANUP] Đang kiểm tra các tiến trình xq.exe bị treo ngầm...")
-
-            for pid in ghost_pids:
-                print(f"   ⚠️ Phát hiện xq.exe ảo (PID: {pid}). Đang tiến hành kill...")
-                try:
-                    subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output = True)
-                    print(f"   ✅ Đã đóng thành công xq.exe ảo (PID: {pid}).")
-                except Exception as e:
-                    print(f"   ❌ Lỗi khi kill PID {pid}: {e}")
 
     def run(self):
         root = tk.Tk()
@@ -113,10 +71,6 @@ class TroChoiManager:
 
     def loop_scan(self):
         while True:
-            if time.time() - self._thoidiemdondeptientrinhgannhat > 2.:
-                self._dondeptientrinhaovuabithoatgame()
-                self._thoidiemdondeptientrinhgannhat = time.time()
-
             game_hwnds = self._timcuasogame()
             for hwnd in game_hwnds:
                 if hwnd not in self.bot_processes:

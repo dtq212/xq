@@ -1,11 +1,85 @@
+DUONGDAN_GAME = r"C:\Users\Ngoc\Desktop\ChienQuoc2\ChienQuoc2 - Live\xq.exe"
+LAUNCHER_TITLE = "client 1.01.82"
+GAME_TITLE_LOGIN_SCREEN = "Chien Quoc 2 - That Hung Tranh Ba.1.01.82"
+GAME_TITLE_PREFIX = "Chien Quoc 2 ("
+
+DANH_SACH_CUA_SO_LOI = ["warning", "play"]
+
+TOADO_LAUNCHER = {
+    "BTN_VAO_GAME": (530, 495)
+}
+
+TOADO_GAME = {
+    "BTN_XACNHAN_SERVER": (760, 465),
+}
+
+TOADO_CUMMAYCHU = {
+    1: (190, 185),
+    2: (190, 221),
+    3: (190, 234),
+    4: (190, 259),
+}
+
+TOADO_MAYCHU = {
+    1: (377, 182),
+    2: (372, 206),
+}
+
+TOADO_CHONNHANVAT = {
+    2: (369, 146),
+    3: (560, 146),
+    4: (188, 352),
+    5: (369, 352),
+    6: (560, 352),
+}
+
+THONGTINDANGNHAP_MAP = {
+    "59394": {
+        "user": "kngaivacham",
+        "pass": "hateva",
+        "group": 1,
+        "server": 1,
+        "char_index": 2,
+        "vitricuaso": 1,
+    },
+    "59506": {
+        "user": "thichvacham",
+        "pass": "hateva",
+        "group": 1,
+        "server": 1,
+        "char_index": 3,
+        "vitricuaso": 2,
+    },
+    "59636": {
+        "user": "shoudi",
+        "pass": "hateva",
+        "group": 1,
+        "server": 2,
+        "char_index": 3,
+        "vitricuaso": 3,
+    },
+    "59637": {
+        "user": "yuuhou",
+        "pass": "hateva",
+        "group": 1,
+        "server": 2,
+        "char_index": 3,
+        "vitricuaso": 4,
+    },
+}
+
+
+import csv
 import os
 import subprocess
 import time
 
 import pywintypes
-import win32process
-import win32gui
+import win32api
 import win32con
+import win32gui
+import win32process
+
 from moitruong_xq import MoiTruong
 
 
@@ -61,83 +135,7 @@ def press_combo(hwnd, modifier, key, delay = 0.1):
     _safe_post_message(hwnd, win32con.WM_KEYUP, modifier, 0)
     time.sleep(delay)
 
-
-DUONGDAN_GAME = r"C:\Users\Ngoc\Desktop\ChienQuoc2\ChienQuoc2 - Live\xq.exe"
-LAUNCHER_TITLE = "client 1.01.82"
-GAME_TITLE_LOGIN_SCREEN = "Chien Quoc 2 - That Hung Tranh Ba.1.01.82"
-GAME_TITLE_PREFIX = "Chien Quoc 2 ("
-
-DANH_SACH_CUA_SO_LOI = ["warning", "play"]
-
-TOADO_LAUNCHER = {
-    "BTN_VAO_GAME": (530, 495)
-}
-
-TOADO_GAME = {
-    "BTN_XACNHAN_SERVER": (760, 465),
-}
-
-TOADO_CUMMAYCHU = {
-    1: (190, 185),
-    2: (190, 221),
-    3: (190, 234),
-    4: (190, 259),
-}
-
-TOADO_MAYCHU = {
-    1: (377, 182),
-    2: (372, 206),
-}
-
-TOADO_CHONNHANVAT = {
-    2: (369, 146),
-    3: (560, 146),
-    4: (188, 352),
-    5: (369, 352),
-    6: (560, 352),
-}
-
-THONGTINDANGNHAP_MAP = {  
-    #"59759": {
-    #    "user": "kngaivacham",
-    #    "pass": "hateva",
-    #    "group": 1,
-    #    "server": 2,
-    #    "char_index": 6,
-    #},
-    #"59758": {
-    #    "user": "thichvacham",
-    #    "pass": "hateva",
-    #    "group": 1,
-    #    "server": 2,
-    #    "char_index": 6,
-    #}, 
-    "59394": {
-        "user": "kngaivacham",
-        "pass": "hateva",
-        "group": 1,
-        "server": 1,
-        "char_index": 2,
-    },
-    "59506": {
-        "user": "thichvacham",
-        "pass": "hateva",
-        "group": 1,
-        "server": 1,
-        "char_index": 3,
-    }, 
-    "59503": {
-        "user": "dtq21295",
-        "pass": "hateva",
-        "group": 1,
-        "server": 1,
-        "char_index": 6,
-    },
-
-}
-
-
-def kiem_tra_va_dong_cua_so_treo(hwnd):
+def kiemtravadongcuasotreo(hwnd):
     try:
         win32gui.PostMessage(hwnd, win32con.WM_NCMOUSEMOVE, 0, 0)
         time.sleep(0.2)
@@ -171,7 +169,7 @@ def laydanhsachnhanvatonlines():
         if win32gui.IsWindowVisible(hwnd):
             title = win32gui.GetWindowText(hwnd)
             if GAME_TITLE_PREFIX in title:
-                is_hung = kiem_tra_va_dong_cua_so_treo(hwnd)
+                is_hung = kiemtravadongcuasotreo(hwnd)
                 if is_hung:
                     return
 
@@ -267,7 +265,7 @@ def mogamevadangnhap(char_name, config):
                 print(f"      [Lần thử {attempt + 1}/{max_retries}] Đang chạy lệnh mở game...")
                 subprocess.Popen(DUONGDAN_GAME, cwd = game_dir)
 
-                for i in range(5):
+                for i in range(15):
                     hwnd_launcher = timlauncherdangmo()
                     if hwnd_launcher:
                         success_open = True
@@ -319,6 +317,10 @@ def mogamevadangnhap(char_name, config):
             return
 
         print(f"[5] Game đã lên (HWND: {hwnd_game}). Đợi load Login (2s)...")
+
+        vitri = config.get("vitricuaso", 1)
+        dichuyencuasotheovitri(hwnd_game, vitri)
+
         time.sleep(2)
 
         group_name = config.get("group")
@@ -378,16 +380,89 @@ def mogamevadangnhap(char_name, config):
         press_key(hwnd_game, win32con.VK_RETURN)
 
         print(f"✅ Hoàn tất cho {char_name}. Nghỉ 5s...")
+
         time.sleep(15)
 
     except Exception as e:
         print(f"❌ Exception: {e}")
 
+def dondeptientrinhaovuabithoatgame():
+    valid_pids = set()
+
+    def callback(hwnd, _):
+        if win32gui.IsWindowVisible(hwnd):
+            title = win32gui.GetWindowText(hwnd)
+            if GAME_TITLE_PREFIX in title:
+                _, pid = win32process.GetWindowThreadProcessId(hwnd)
+                valid_pids.add(pid)
+
+    win32gui.EnumWindows(callback, None)
+
+    xq_pids = set()
+    try:
+        output = subprocess.check_output(
+            ['tasklist', '/FI', 'IMAGENAME eq xq.exe', '/FO', 'CSV', '/NH']
+        ).decode('utf-8', errors='ignore')
+
+        reader = csv.reader(output.splitlines())
+        for row in reader:
+            if len(row) > 1 and 'xq.exe' in row[0].lower():
+                xq_pids.add(int(row[1]))
+    except subprocess.CalledProcessError:
+        pass
+    except Exception as e:
+        print(f"❌ Lỗi khi lấy danh sách tiến trình: {e}")
+
+    ghost_pids = xq_pids - valid_pids
+
+    if ghost_pids:
+        print(f"[CLEANUP] Đang kiểm tra các tiến trình xq.exe bị treo ngầm...")
+
+    for pid in ghost_pids:
+        print(f"   ⚠️ Phát hiện xq.exe ảo (PID: {pid}). Đang tiến hành kill...")
+        try:
+            subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output=True)
+            print(f"   ✅ Đã dọn dẹp thành công xq.exe ảo (PID: {pid}).")
+        except Exception as e:
+            print(f"   ❌ Lỗi khi kill PID {pid}: {e}")
+
+def dichuyencuasotheovitri(hwnd, vitricuaso):
+    screen_width = win32api.GetSystemMetrics(0)
+    screen_height = win32api.GetSystemMetrics(1)
+    window_width = 810
+    window_height = 630
+    taskbar_height = 40
+
+    index_goc = (vitricuaso - 1) % 4
+
+    toa_do_4_goc = [
+        (0, 0),                                                                  # 1 (Index 0): Trái Trên
+        (screen_width - window_width, 0),                                        # 2 (Index 1): Phải Trên
+        (0, screen_height - window_height - taskbar_height),                     # 3 (Index 2): Trái Dưới
+        (screen_width - window_width, screen_height - window_height - taskbar_height) # 4 (Index 3): Phải Dưới
+    ]
+
+    toado_x, toado_y = toa_do_4_goc[index_goc]
+
+    try:
+        win32gui.SetWindowPos(
+            hwnd,
+            0,
+            toado_x,
+            toado_y,
+            0,
+            0,
+            win32con.SWP_NOSIZE | win32con.SWP_NOZORDER
+        )
+        print(f"   -> [GIAO DIỆN] Đã ghim cửa sổ vào vị trí số {vitricuaso}.")
+    except Exception as e:
+        print(f"   ❌ Lỗi khi di chuyển cửa sổ: {e}")
 
 def main():
     print("=== TRÌNH QUẢN LÝ ĐĂNG NHẬP THÔNG MINH ===")
     while True:
         try:
+            dondeptientrinhaovuabithoatgame()
             online = laydanhsachnhanvatonlines()
             print(f"\n[SCAN] Đang online: {online}")
             for tennhanvat, cauhinh in THONGTINDANGNHAP_MAP.items():
@@ -403,7 +478,6 @@ def main():
         except Exception as e:
             print(f"Lỗi vòng lặp chính: {e}")
             time.sleep(5)
-
 
 if __name__ == "__main__":
     main()

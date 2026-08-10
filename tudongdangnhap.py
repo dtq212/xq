@@ -49,22 +49,6 @@ THONGTINDANGNHAP_MAP = {
         "server": 2,
         "char_index": 5,
         "vitricuaso": 2, # Thêm dòng này (2: Phải trên)
-    }, 
-    "59636": {
-        "user": "shoudi",
-        "pass": "hateva",
-        "group": 1,
-        "server": 2,
-        "char_index": 3,
-        "vitricuaso": 3, # Thêm dòng này (3: Trái dưới)
-    },
-    "59637": {
-        "user": "yuuhou",
-        "pass": "hateva",
-        "group": 1,
-        "server": 2,
-        "char_index": 3,
-        "vitricuaso": 4, # Thêm dòng này (4: Phải dưới)
     },
 }
 
@@ -461,8 +445,7 @@ def main():
     print("=== TRÌNH QUẢN LÝ ĐĂNG NHẬP THÔNG MINH ===")
     while True:
         try:
-            #dondeptientrinhaovuabithoatgame()
-
+            dondeptientrinhaovuabithoatgame()
             online = laydanhsachnhanvatonlines()
             print(f"\n[SCAN] Đang online: {online}")
             for tennhanvat, cauhinh in THONGTINDANGNHAP_MAP.items():
