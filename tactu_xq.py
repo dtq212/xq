@@ -3746,7 +3746,7 @@ class TacTu:
         if self.moitruong.get_is_dangvankhi():
             return
 
-        if self.moitruong.get_idbandohientai() in (701, 395, 894):
+        if self.moitruong.get_idbandohientai() in (701, 395, 894, 135):
             return
 
         if self.moitruong.get_idmaupk() != MAUPK_HOABINH:

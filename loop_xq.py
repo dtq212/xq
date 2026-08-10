@@ -1,3 +1,4 @@
+import re
 import threading
 import time
 import traceback
@@ -144,6 +145,26 @@ class LoopChinh:
         #         self.moitruong.action_thucthicaulenh("team + 4599", delay = 0)
         #         time.sleep(0.5)
 
+        # if self.moitruong.get_idnguoichoi() == 59844:
+        #     self.moitruong.truyvan_motavatphamhanhtrang(0)
+        #     motavatpham = self.moitruong.get_motavatphamhanhtrang(0)
+        #     print("Mô tả vật phẩm: {}".format(motavatpham))
+        #
+        #     match = re.search(r"Khí huyết:\s*\+(\d+)", motavatpham)
+        #
+        #     if match:
+        #         khihuyethientai = int(match.group(1))
+        #         print(f"Đã tìm thấy Khí huyết: {khihuyethientai}")
+        #
+        #         if khihuyethientai > 540:
+        #             print("Khí huyết > 540. Dừng tiến trình!")
+        #             self.stop.set()
+        #             return
+        #         else:
+        #             self.moitruong.action_thucthicaulenh("talk 15bc# accept.15b75c8# 0", delay = 0)
+        #             time.sleep(1.)
+        #     else:
+        #         print("Không tìm thấy dòng Khí huyết trong mô tả vật phẩm này.")
 
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
