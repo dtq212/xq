@@ -38,7 +38,7 @@ THONGTINDANGNHAP_MAP = {
         "user": "tholuumanh",
         "pass": "hateva",
         "group": 1,
-        "server": 2,
+        "server": 1,
         "char_index": 5,
         "vitricuaso": 1, # Thêm dòng này (1: Trái trên)
     },
@@ -46,7 +46,7 @@ THONGTINDANGNHAP_MAP = {
         "user": "ngoclasat",
         "pass": "hateva",
         "group": 1,
-        "server": 2,
+        "server": 1,
         "char_index": 5,
         "vitricuaso": 2, # Thêm dòng này (2: Phải trên)
     },
