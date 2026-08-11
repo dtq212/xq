@@ -2811,16 +2811,16 @@ class TacTu:
 
             tenvatphamhanhtrang = self.moitruong.get_tenvatphamhanhtrang(i)
             if iddoituongvatphamhanhtrang and iddoituongvatphamhanhtrang > 0 and tenvatphamhanhtrang not in VATPHAMKHONGBANs and "Nhập môn" not in tenvatphamhanhtrang:
-                caulenh = "sell ! {}# {}# 30".format(hex(idnpc).replace("0x", ""), hex(iddoituongvatphamhanhtrang).replace("0x", ""))
-                self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
-                sovatphamdaban += 1
-                time.sleep(2.)
-                #motavatpham = self.moitruong.get_motavatphamhanhtrang(i)
-                #if "Phong Ấn" not in motavatpham or ("35 cấp" not in motavatpham and "30 cấp" not in motavatpham):
-                #    caulenh = "sell ! {}# {}# 30".format(hex(idnpc).replace("0x", ""), hex(iddoituongvatphamhanhtrang).replace("0x", ""))
-                #    self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
-                #    sovatphamdaban += 1
-                #    time.sleep(2.)
+                # caulenh = "sell ! {}# {}# 30".format(hex(idnpc).replace("0x", ""), hex(iddoituongvatphamhanhtrang).replace("0x", ""))
+                # self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
+                # sovatphamdaban += 1
+                # time.sleep(2.)
+                motavatpham = self.moitruong.get_motavatphamhanhtrang(i)
+                if "Phong Ấn" not in motavatpham or ("35 cấp" not in motavatpham and "30 cấp" not in motavatpham):
+                   caulenh = "sell ! {}# {}# 30".format(hex(idnpc).replace("0x", ""), hex(iddoituongvatphamhanhtrang).replace("0x", ""))
+                   self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
+                   sovatphamdaban += 1
+                   time.sleep(2.)
 
     def _tinhkhoangcachdendoanthang(self, px, py, x1, y1, x2, y2):
         dx = x2 - x1
