@@ -2816,7 +2816,7 @@ class TacTu:
                 # sovatphamdaban += 1
                 # time.sleep(2.)
                 motavatpham = self.moitruong.get_motavatphamhanhtrang(i)
-                if "Phong Ấn" not in motavatpham or ("35 cấp" not in motavatpham and "30 cấp" not in motavatpham):
+                if "Phong Ấn" not in motavatpham or ("35 cấp" not in motavatpham and "30 cấp" not in motavatpham and "60 cấp" not in motavatpham):
                    caulenh = "sell ! {}# {}# 30".format(hex(idnpc).replace("0x", ""), hex(iddoituongvatphamhanhtrang).replace("0x", ""))
                    self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
                    sovatphamdaban += 1
