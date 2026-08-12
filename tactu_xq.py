@@ -3669,47 +3669,47 @@ class TacTu:
             mota = self.moitruong.get_motavatphamhanhtrang(i)
             if not mota: continue
 
-            timthay = re.search(r"Vị trí:\s*(.*?)\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)", mota)
+            timthay = re.search(r"Vị trí: \s*(.*?)\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)", mota)
             if timthay:
-                tenbando_trongmota = timthay.group(1).strip()
+                tenbandotrongmota = timthay.group(1).strip()
                 x_dich = int(timthay.group(2))
                 y_dich = int(timthay.group(3))
 
-                idbando_dich = IDBANDO_MAP.get(tenbando_trongmota)
+                idbandodich = IDBANDO_MAP.get(tenbandotrongmota)
 
-                if idbando_dich == idbandohientai:
+                if idbandodich == idbandohientai:
                     khoangcach = math.sqrt((x_hientai - x_dich) ** 2 + (y_hientai - y_dich) ** 2)
                     if khoangcach < 1.:
-                        print(f"[DAOTAOBAODO] Đang đào tại {tenbando_trongmota} ({x_dich}, {y_dich})")
+                        print(f"[DAOTAOBAODO] Đang đào tại {tenbandotrongmota} ({x_dich}, {y_dich})")
                         iddoituong = self.moitruong.get_iddoituongvatphamhanhtrang(i)
                         if iddoituong:
                             self.moitruong.action_sudungvatpham(iddoituong)
                             time.sleep(1.0)
                     else:
-                        self.moitruong.action_tudongtimduong(x_dich, y_dich, idbando_dich)
+                        self.moitruong.action_tudongtimduong(x_dich, y_dich, idbandodich)
                     return
 
         self.moitruong.action_tudongtimduong(0, 0, 0)
 
-        quoc_gia_can_den = None
+        quocgiacanden = None
         for i in range(SOLUONGVATPHAMHANHTRANGTOIDA):
             tenvatpham = self.moitruong.get_tenvatphamhanhtrang(i)
             if tenvatpham == TANGBAODO:
                 mota = self.moitruong.get_motavatphamhanhtrang(i)
                 if mota:
-                    timthay = re.search(r"Vị trí:\s*(.*?)\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)", mota)
+                    timthay = re.search(r"Vị trí: \s*(.*?)\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)", mota)
                     if timthay:
-                        tenbando_trongmota = timthay.group(1).strip()
-                        quoc_gia_can_den = f"{tenbando_trongmota} Quốc"
+                        tenbandotrongmota = timthay.group(1).strip()
+                        quocgiacanden = f"{tenbandotrongmota} Quốc"
                         break
 
-        if not quoc_gia_can_den:
+        if not quocgiacanden:
             if self.moitruong.get_idbandohientai() != BANDO_TANTHUTHON:
                 phatam("{} hết tàng bảo đồ".format(self.moitruong.get_tendoituong()))
                 time.sleep(5)
             return
 
-        print(f"[DAOTAOBAODO] Hết map hiện tại. Chuẩn bị sang: {quoc_gia_can_den}")
+        print(f"[DAOTAOBAODO] Hết map hiện tại. Chuẩn bị sang: {quocgiacanden}")
 
         if idbandohientai != BANDO_TANTHUTHON:
             if time.time() - self._thoidiemsudunghoithanhphugannhat > 12.0:
@@ -3719,8 +3719,8 @@ class TacTu:
                 self._thoidiemsudunghoithanhphugannhat = time.time()
             return
 
-        chu_dich_tram_name = "Chủ Dịch Trạm"
-        diachinpc = self.moitruong.action_timkiemnhanvat(chu_dich_tram_name)
+        tenchudichtram = "Chủ Dịch Trạm"
+        diachinpc = self.moitruong.action_timkiemnhanvat(tenchudichtram)
 
         if not diachinpc:
             return
@@ -3735,8 +3735,9 @@ class TacTu:
             self.moitruong.action_ngatdichuyen()
             timestamp = int(time.time())
             hex_id = hex(idnpc).replace("0x", "")
-            caulenh = f"talk {hex_id}# goto.! {quoc_gia_can_den} t{timestamp}"
-            self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
+            caulenh = f"talk {hex_id}# goto.! {quocgiacanden} t{timestamp}"
+            self.moitruong.action_thucthicaulenh2(caulenh, delay = 0.0)
+            print(hex(self.moitruong.diachihamthucthicaulenh2))
             self.moitruong.action_ngatdichuyen()
             time.sleep(5.0)
 

@@ -14,6 +14,9 @@ OFFSET_DIACHICOSOTHONGTINNHANVATX = 0x1BDA60
 
 class MoiTruong:
     def __init__(self, idcuaso):
+        self._is_dasetupautoassemblethucthicaulenh2 = False
+        self._thoidiemthucthicaulenh2gannhat = 0.
+        self.diachihamthucthicaulenh2 = 0
         self._thoidiembatchucnangmoronggannhat = 0.
         self._thoidiemtatchucnangmoronggannhat = 0.
         self._thoidiemcochucnangmoronggannhat = 0.
@@ -199,6 +202,38 @@ class MoiTruong:
         write_bytes(self.tientrinh, diachidulieu + 4, chuoi_bytes + b"\x00", len(chuoi_bytes) + 1)
 
         self.tientrinh.start_thread(self.diachihamthucthicaulenh)
+        return True
+
+    def action_thucthicaulenh2(self, caulenh, delay = 0.05):
+        if time.time() - self._thoidiemthucthicaulenh2gannhat < delay:
+            return False
+        self._thoidiemthucthicaulenh2gannhat = time.time()
+
+        if not self._is_dasetupautoassemblethucthicaulenh2:
+            self.diachihamthucthicaulenh2 = self.tientrinh.allocate(128)
+
+            write_bytes(self.tientrinh, self.diachihamthucthicaulenh2, bytes.fromhex("68"), 1)
+            write_int(self.tientrinh, self.diachihamthucthicaulenh2 + 1, len(caulenh.encode("utf-8")))
+
+            write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 5, bytes.fromhex("68"), 1)
+            write_int(self.tientrinh, self.diachihamthucthicaulenh2 + 6, self.diachihamthucthicaulenh2 + 19)
+
+            write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 10, bytes.fromhex("E8"), 1)
+            write_int(self.tientrinh, self.diachihamthucthicaulenh2 + 11, self.diachixq + 0x95450 - (self.diachihamthucthicaulenh2 + 10) - 5)
+
+            write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 15, bytes.fromhex("83 C4 08"), 3)
+            write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 18, bytes.fromhex("C3"), 1)
+
+            write_string(self.tientrinh, self.diachihamthucthicaulenh2 + 19, caulenh)
+
+            self._is_dasetupautoassemblethucthicaulenh2 = True
+        else:
+            if read_int(self.tientrinh, self.diachihamthucthicaulenh2 + 1) != len(caulenh.encode("utf-8")):
+                write_int(self.tientrinh, self.diachihamthucthicaulenh2 + 1, len(caulenh.encode("utf-8")))
+            if read_string(self.tientrinh, self.diachihamthucthicaulenh2 + 19) != caulenh:
+                write_string(self.tientrinh, self.diachihamthucthicaulenh2 + 19, caulenh)
+
+        self.tientrinh.start_thread(self.diachihamthucthicaulenh2)
         return True
 
     def action_ralenhbaothutancong(self, iddoituongbaothu, iddoituongnhanvatmuctieudangchon, delay = 0.4):
