@@ -1063,7 +1063,7 @@ class TacTu:
             #     self.action_sudungvatphamhanhtrang(TUIQUAVOSONG, delay = 0.)
             #     time.sleep(0.2)
 
-            if self.moitruong.get_idnguoichoi() == 59844:
+            if self.moitruong.get_idnguoichoi() in (59844, 59845):
                 if time.time() - self._thoidiemsudungtusamdongannhat > 30.:
                     if self.action_sudungvatphamhanhtrang(TUSAMDON):
                         self._thoidiemsudungtusamdongannhat = time.time()
