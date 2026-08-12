@@ -5,7 +5,7 @@ import traceback
 
 import pymem.exception
 
-from hangso_xq import BANDO_CHIENTRUONG, BANDO_CHU, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, BANDOFARMs, BANDOKHONGPKs, HOITHANHPHU, SOLUONGVATPHAMHANHTRANGTOIDA
+from hangso_xq import BANDO_CHIENTRUONG, BANDO_CHU, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, BANDOFARMs, BANDOKHONGPKs, HOITHANHPHU, SOLUONGVATPHAMHANHTRANGTOIDA, LAMCAU
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
 from tienich_xq import phatam
@@ -170,6 +170,20 @@ class LoopChinh:
         #
         #     else:
         #         print("Không tìm thấy dòng Ngoại Công trong mô tả vật phẩm này.")
+
+        if self.moitruong.get_idnguoichoi() == 59996:
+            diachithiensutraodoi = self.moitruong.action_timkiemnhanvat("Thiên Sứ Trao Đổi")
+            if not diachithiensutraodoi:
+                return
+            idthiensutraodoi = self.moitruong.get_iddoituong(diachithiensutraodoi)
+            if not idthiensutraodoi:
+                return
+            if self.moitruong.get_khoangcach(diachithiensutraodoi) > 6:
+                return
+            if not self.moitruong.action_timkiemvatphamhanhtrang(LAMCAU):
+                return
+            self.moitruong.action_thucthicaulenh("talk {}# bonus.29".format(hex(idthiensutraodoi).replace("0x", "")), delay = 0)
+            time.sleep(0.25)
 
 class LoopPhu:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
