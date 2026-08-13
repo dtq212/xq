@@ -1073,6 +1073,11 @@ class TacTu:
                 if time.time() - self._thoidiemdocsachgannhat > 30.:
                     sachcanhocs = [
                         "Nhập môn Cơ Quan",
+                        "Nhập môn Thái Cổ Thần Quy",
+                        "Nhập môn Hộ Thể Kim Cang",
+                        "Nhập môn Quyền Cước Chi",
+                        "Nhập môn Kim Cương Bất H",
+                        "Nhập môn Chu Thiên Vận Ch",
                     ]
                     for sachcanhoc in sachcanhocs:
                         if self.action_sudungvatphamhanhtrang(sachcanhoc):
