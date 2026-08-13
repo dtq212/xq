@@ -2089,7 +2089,7 @@ class TacTu:
         phatam("Bỏ thiết lập tên mục tiêu không tấn công".format(len(self._tenmuctieukhongtancongs)))
 
     def action_muauto(self):
-        if time.time() - self._thoidiemmuaautogannhat < 5.:
+        if time.time() - self._thoidiemmuaautogannhat < 0.25:
             return
         self._thoidiemmuaautogannhat = time.time()
         self.moitruong.action_thucthicaulenh("auto buy 5 10", delay = 0.)
