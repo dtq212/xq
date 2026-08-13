@@ -279,11 +279,11 @@ class LoopPhu:
         self.moitruong.action_vohieuhoahookchienquoc2()
         self.tactu.action_muauto()
 
-        if self.moitruong.get_idnguoichoi() in [59503, ] and self.moitruong.get_idbandohientai() == BANDO_YENTRUONGTHANH3 and self.tactu._is_tudongvebanrac:
+        if self.moitruong.get_idnguoichoi() in [59503, 59996] and self.moitruong.get_idbandohientai() == BANDO_YENTRUONGTHANH3 and self.tactu._is_tudongvebanrac:
             for i in range(6, SOLUONGVATPHAMHANHTRANGTOIDA):
                 tenvatphamhanhtrang = self.moitruong.get_tenvatphamhanhtrang(i)
                 if tenvatphamhanhtrang and tenvatphamhanhtrang not in VATPHAMKHONGBANs or tenvatphamhanhtrang in ("Phá Cựu Giáp", ):
                     motavatpham = self.moitruong.get_motavatphamhanhtrang(i)
                     if "Phong Ấn" not in motavatpham:
-                        self.moitruong.action_thucthicaulenh("drop ! {}#30".format(hex(self.moitruong.get_iddoituongvatphamhanhtrang(i))).replace("0x", ""))
+                        self.moitruong.action_thucthicaulenh2("drop ! {}#30".format(hex(self.moitruong.get_iddoituongvatphamhanhtrang(i))).replace("0x", ""))
                         break

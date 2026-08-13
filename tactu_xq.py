@@ -2092,7 +2092,7 @@ class TacTu:
         if time.time() - self._thoidiemmuaautogannhat < 0.25:
             return
         self._thoidiemmuaautogannhat = time.time()
-        self.moitruong.action_thucthicaulenh("auto buy 5 10", delay = 0.)
+        self.moitruong.action_thucthicaulenh2("auto buy 5 10", delay = 0.)
 
     def action_tudongvutdo(self):
         if time.time() - self._thoidiemvutdogannhat < 1.:
