@@ -13,6 +13,7 @@ from tienich_xq import taithietlap as util_taithietlap, phatam
 
 class TacTu:
     def __init__(self, moitruong: MoiTruong):
+        self._thoidiemmuaautogannhat = 0.
         self._thoidiemkiemtranpcmuavatphamgannhat = 0.
         self._is_tudongmuavatpham = True
         self._diachicosovatphamnhatduphong = False
@@ -2076,7 +2077,10 @@ class TacTu:
         phatam("Bỏ thiết lập tên mục tiêu không tấn công".format(len(self._tenmuctieukhongtancongs)))
 
     def action_muauto(self):
-        self.moitruong.action_thucthicaulenh("auto buy 5 10", delay = 5.)
+        if time.time() - self._thoidiemmuaautogannhat < 0.5:
+            return
+        self._thoidiemmuaautogannhat = time.time()
+        self.moitruong.action_thucthicaulenh("auto buy 5 10", delay = 0.)
 
     def action_tudongvutdo(self):
         if time.time() - self._thoidiemvutdogannhat < 1.:

@@ -59,7 +59,7 @@ THONGTINDANGNHAP_MAP = {
         "vitricuaso": 3,
     },
     "59503": {
-        "user": "dtq2195",
+        "user": "dtq21295",
         "pass": "hateva",
         "group": 1,
         "server": 2,
