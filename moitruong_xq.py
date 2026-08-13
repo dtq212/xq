@@ -269,6 +269,7 @@ class MoiTruong:
         a = read_int(self.tientrinh, x + 0xAEBC0C)
         b = read_int(self.tientrinh, x + 0xAEBC10)
         c = read_int(self.tientrinh, x + 0xAEBC14)
+
         caulenh = f"auto open {a:04d}{b:04d}{c:04d}"
 
         return self.action_thucthicaulenh(caulenh, delay = 0.)
@@ -1181,8 +1182,7 @@ class MoiTruong:
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVAT1)
         if not x:
             return True
-        danhhieu = read_string(self.tientrinh, x + 0x1136)
-        return danhhieu == "Tự Động Đánh"
+        return read_string(self.tientrinh, x + 0x1136) == "Tự Động Đánh"
 
     def get_is_bathanhtrang(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
