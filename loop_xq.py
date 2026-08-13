@@ -282,8 +282,8 @@ class LoopPhu:
         if self.moitruong.get_idnguoichoi() == 59503:
             for i in range(6, SOLUONGVATPHAMHANHTRANGTOIDA):
                 tenvatphamhanhtrang = self.moitruong.get_tenvatphamhanhtrang(i)
-                if tenvatphamhanhtrang not in VATPHAMKHONGBANs or tenvatphamhanhtrang in ("Phá Cựu Giáp", ):
+                if tenvatphamhanhtrang and tenvatphamhanhtrang not in VATPHAMKHONGBANs or tenvatphamhanhtrang in ("Phá Cựu Giáp", ):
                     motavatpham = self.moitruong.get_motavatphamhanhtrang(i)
                     if "Phong Ấn" not in motavatpham:
-                        self.moitruong.action_thucthicaulenh("drop ! {}#1".format(hex(self.moitruong.get_iddoituongvatphamhanhtrang(i))).replace("0x", ""), delay = 0)
-                        time.sleep(0.25)
+                        self.moitruong.action_thucthicaulenh("drop ! {}#30".format(hex(self.moitruong.get_iddoituongvatphamhanhtrang(i))).replace("0x", ""))
+                        break

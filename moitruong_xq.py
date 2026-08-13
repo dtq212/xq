@@ -202,8 +202,8 @@ class MoiTruong:
         write_bytes(self.tientrinh, diachidulieu + 4, chuoi_bytes + b"\x00", len(chuoi_bytes) + 1)
 
 
-        if self.get_iddoituong() == 59996:
-            print("câu lệnh: {}".format(caulenh))
+        if self.get_idnguoichoi() in (59996, 59503):
+            print("{} Câu lệnh: {}".format(self.get_idnguoichoi(), caulenh))
 
         self.tientrinh.start_thread(self.diachihamthucthicaulenh)
         return True
@@ -257,8 +257,10 @@ class MoiTruong:
     def action_batchucnangmorong(self, delay = 1.):
         if self.get_is_dangbatchucnangmorong():
             return False
+
         if time.time() - self._thoidiembatchucnangmoronggannhat < delay:
             return False
+
         self._thoidiembatchucnangmoronggannhat = time.time()
 
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
@@ -1176,13 +1178,10 @@ class MoiTruong:
             if x: write_boolean(self.tientrinh, x + 0xAEC924, is_batautoingame)
 
     def get_is_dangbatchucnangmorong(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVAT1)
         if not x:
-            return False
-        x = read_int(self.tientrinh, x + 0xAE1F9C)
-        if not x:
-            return False
-        return read_boolean(self.tientrinh, x + 0x4) if x else False
+            return True
+        return read_string(self.tientrinh, x + 0x3DA4) == "Tự Động Đánh"
 
     def get_is_bathanhtrang(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
