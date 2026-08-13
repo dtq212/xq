@@ -202,7 +202,7 @@ class MoiTruong:
         write_bytes(self.tientrinh, diachidulieu + 4, chuoi_bytes + b"\x00", len(chuoi_bytes) + 1)
 
 
-        if self.get_idnguoichoi() in (59996, 59503):
+        if self.get_idnguoichoi() == 59844:
             print("{} Câu lệnh: {}".format(self.get_idnguoichoi(), caulenh))
 
         self.tientrinh.start_thread(self.diachihamthucthicaulenh)
