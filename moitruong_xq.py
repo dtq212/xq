@@ -201,6 +201,10 @@ class MoiTruong:
         write_int(self.tientrinh, diachidulieu, len(chuoi_bytes))
         write_bytes(self.tientrinh, diachidulieu + 4, chuoi_bytes + b"\x00", len(chuoi_bytes) + 1)
 
+
+        if self.get_iddoituong() == 59996:
+            print("câu lệnh: {}".format(caulenh))
+
         self.tientrinh.start_thread(self.diachihamthucthicaulenh)
         return True
 
@@ -250,7 +254,7 @@ class MoiTruong:
         caulenh = f"pet {hex(iddoituongbaothu)}# 2".replace("0x", "")
         return self.action_thucthicaulenh(caulenh, delay = 0.)
 
-    def action_batchucnangmorong(self, delay = 0.5):
+    def action_batchucnangmorong(self, delay = 1.):
         if self.get_is_dangbatchucnangmorong():
             return False
         if time.time() - self._thoidiembatchucnangmoronggannhat < delay:
@@ -267,7 +271,7 @@ class MoiTruong:
 
         return self.action_thucthicaulenh(caulenh, delay = 0.)
 
-    def action_tatchucnangmorong(self, delay = 0.5):
+    def action_tatchucnangmorong(self, delay = 1.):
         if not self.get_is_dangbatchucnangmorong():
             return False
         if time.time() - self._thoidiemtatchucnangmoronggannhat < delay:

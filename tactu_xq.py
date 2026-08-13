@@ -2123,14 +2123,12 @@ class TacTu:
                 TIENTE, "Tơ Nhện", "Kịch Độc Châm", "Đuôi Bọ Cạp", "Ly Hồn", "Ly Phách", "Ma Tinh thạch", "Trái Táo", "Trái lê", "Phá Bố Y", "Toái Lăng", "Tơ Tằm", "Da Rắn", "Ống Tên", "Bao Kiếm", "Cán Đao", "Toái Sa"
             )
 
-        is_bandofarms = self.moitruong.get_idbandohientai() in BANDOFARMs
-
         def kiemtradieukiennhat(tenvatpham):
             if tenvatpham in VATPHAMKHONGNHATs:
                 return False
             if tenvatpham in vatphamtudongnhats:
                 return True
-            if VATPHAMTUDONGNHATFARMs and is_bandofarms and self._is_tudongvebanrac and any(x in tenvatpham for x in VATPHAMTUDONGNHATFARMs):
+            if VATPHAMTUDONGNHATFARMs and self._is_tudongvebanrac and any(x in tenvatpham for x in VATPHAMTUDONGNHATFARMs):
                 return True
             if self._tenvatphamnhats and tenvatpham in self._tenvatphamnhats:
                 return True
@@ -2213,13 +2211,13 @@ class TacTu:
                     "khoangcachtoida": 0
                 }
             if khoangcach <= 3.:
-                if is_bandofarms:
+                if self._is_tudongvebanrac:
                     self.moitruong.action_nhatvatphamxungquanh(delay = 0.2)
                 elif time.time() - self._thoidiemnhatvatphamgannhat_map.get(self._diachicosovatphamdangnhat, 0) > 0.2:
                     self.moitruong.action_nhatvatpham(self._diachicosovatphamdangnhat)
                     self._thoidiemnhatvatphamgannhat_map[self._diachicosovatphamdangnhat] = time.time()
 
-        elif is_bandofarms and self._is_tudongvebanrac:
+        elif self._is_tudongvebanrac:
             self.moitruong.action_nhatvatphamxungquanh(delay = 0.5)
 
         self._yeucaunhatvatpham = yeucaunhatvatphammoi
@@ -2816,7 +2814,7 @@ class TacTu:
                 # sovatphamdaban += 1
                 # time.sleep(2.)
                 motavatpham = self.moitruong.get_motavatphamhanhtrang(i)
-                if "Phong Ấn" not in motavatpham or ("35 cấp" not in motavatpham and "30 cấp" not in motavatpham and "60 cấp" not in motavatpham):
+                if "Phong Ấn" not in motavatpham or ("35 cấp" not in motavatpham and "30 cấp" not in motavatpham and "60 cấp" not in motavatpham and "65 cấp" not in motavatpham):
                    caulenh = "sell ! {}# {}# 30".format(hex(idnpc).replace("0x", ""), hex(iddoituongvatphamhanhtrang).replace("0x", ""))
                    self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
                    sovatphamdaban += 1
