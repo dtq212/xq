@@ -279,7 +279,7 @@ class LoopPhu:
         self.moitruong.action_vohieuhoahookchienquoc2()
         self.tactu.action_muauto()
 
-        if self.moitruong.get_idnguoichoi() in [59503, 59996]:
+        if self.moitruong.get_idnguoichoi() in [59503, 59996] and self.moitruong.get_idbandohientai() not in BANDOKHONGPKs:
             for i in range(6, SOLUONGVATPHAMHANHTRANGTOIDA):
                 tenvatphamhanhtrang = self.moitruong.get_tenvatphamhanhtrang(i)
                 if tenvatphamhanhtrang and tenvatphamhanhtrang not in VATPHAMKHONGBANs or tenvatphamhanhtrang in ("Phá Cựu Giáp", ):

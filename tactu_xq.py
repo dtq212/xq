@@ -679,6 +679,9 @@ class TacTu:
         if not self._is_tudongtimkiemmuctieu:
             return
 
+        if self.moitruong.get_idbandohientai() in BANDOKHONGPKs:
+            return
+
         def _thaydoimuctieu(diachimuctieu):
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(diachimuctieu)
             self.moitruong._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
@@ -1331,9 +1334,6 @@ class TacTu:
                             break
 
         phantramsinhlucconlai = self.moitruong.get_phantramsinhlucconlai()
-        if self.moitruong.get_idnguoichoi() == 59844:
-            if diachimuctieu:
-                print(tendoituongmuctieu)
 
         danhsachuutien = [
             (VITRIKYNANG_TRANCOTHANUY, "sudungkynangkhongmuctieu", lambda: nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_TRANCOTHANUY] and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRANCOTHANUY,), True, is_hieuungcoloi = 1), 0, None, False, False),
