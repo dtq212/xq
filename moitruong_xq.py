@@ -1181,7 +1181,8 @@ class MoiTruong:
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVAT1)
         if not x:
             return True
-        return read_string(self.tientrinh, x + 0x3DA4) == "Tự Động Đánh"
+        danhhieu = read_string(self.tientrinh, x + 0x1136)
+        return danhhieu == "Tự Động Đánh"
 
     def get_is_bathanhtrang(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)

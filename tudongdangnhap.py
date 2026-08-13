@@ -58,6 +58,14 @@ THONGTINDANGNHAP_MAP = {
         "char_index": 5,
         "vitricuaso": 3,
     },
+    "59503": {
+        "user": "dtq2195",
+        "pass": "hateva",
+        "group": 1,
+        "server": 2,
+        "char_index": 6,
+        "vitricuaso": 4,
+    },
 }
 
 import csv
