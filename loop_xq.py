@@ -5,7 +5,7 @@ import traceback
 
 import pymem.exception
 
-from hangso_xq import BANDO_CHIENTRUONG, BANDO_CHU, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, BANDOFARMs, BANDOKHONGPKs, HOITHANHPHU, SOLUONGVATPHAMHANHTRANGTOIDA, LAMCAU, HACCAU, VATPHAMKHONGBANs
+from hangso_xq import BANDO_CHIENTRUONG, BANDO_CHU, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, BANDOFARMs, BANDOKHONGPKs, HOITHANHPHU, SOLUONGVATPHAMHANHTRANGTOIDA, LAMCAU, HACCAU, VATPHAMKHONGBANs, YENTRUONGTHANH2, BANDO_YENTRUONGTHANH3
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
 from tienich_xq import phatam
@@ -279,7 +279,7 @@ class LoopPhu:
         self.moitruong.action_vohieuhoahookchienquoc2()
         self.tactu.action_muauto()
 
-        if self.moitruong.get_idnguoichoi() in [59503, 59996] and self.moitruong.get_idbandohientai() not in BANDOKHONGPKs:
+        if self.moitruong.get_idnguoichoi() in [59503, ] and self.moitruong.get_idbandohientai() == BANDO_YENTRUONGTHANH3:
             for i in range(6, SOLUONGVATPHAMHANHTRANGTOIDA):
                 tenvatphamhanhtrang = self.moitruong.get_tenvatphamhanhtrang(i)
                 if tenvatphamhanhtrang and tenvatphamhanhtrang not in VATPHAMKHONGBANs or tenvatphamhanhtrang in ("Phá Cựu Giáp", ):
