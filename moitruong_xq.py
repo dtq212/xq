@@ -802,7 +802,15 @@ class MoiTruong:
 
     def get_tendoituong(self, diachicosothongtinnhanvat = None):
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
-        return read_string(self.tientrinh, diachicosothongtinnhanvat + 0x10AC)
+        tendoituong = read_string(self.tientrinh, diachicosothongtinnhanvat + 0x10AC)
+
+        if tendoituong:
+            if "( Cấp" in tendoituong:
+                tendoituong = tendoituong.split("( Cấp")[0].strip()
+            elif "(Cấp" in tendoituong:
+                tendoituong = tendoituong.split("(Cấp")[0].strip()
+
+        return tendoituong
 
     def get_tennhanvatchichuot(self):
         diachi = self.get_diachicosothongtinnhanvatdangchichuot()
@@ -1113,7 +1121,7 @@ class MoiTruong:
         return read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0x29) == 1
 
     def get_is_baothugiangho(self, tendoituong):
-        return "(" in tendoituong and "( " not in tendoituong
+        return "(" in tendoituong
 
     def get_is_cothetancong(self, diachicosothongtinnhanvat):
         if not diachicosothongtinnhanvat or not self.get_is_nhanvattontai(diachicosothongtinnhanvat) or self.get_is_nhanvatdachet(diachicosothongtinnhanvat): return False
@@ -1126,7 +1134,7 @@ class MoiTruong:
         if tenmuctieu:
             if DAUBINH in tenmuctieu:
                 return False
-            elif any(tendemaoson in tenmuctieu for tendemaoson in (CUONGTHI, QUYTOT, THIENBINH)):
+            elif any(tenbaothu in tenmuctieu for tenbaothu in BAOTHUKYNANGTRIEUHOIs):
                 try:
                     tenchunhan = tenmuctieu.split("(")[1].split(")")[0].strip()
                     if tenchunhan:

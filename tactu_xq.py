@@ -659,22 +659,6 @@ class TacTu:
             khoangcachtoidatruongnhom -= 1.5
         return khoangcachtoidatruongnhom
 
-    def _kiemtra_vungcam(self, x, y):
-        if self.moitruong.get_is_dangbatchucnangmorong():
-            return False
-
-        idbandohientai = self.moitruong.get_idbandohientai()
-        if idbandohientai in VUNGCAM_MAP:
-            danhsachvungcam = VUNGCAM_MAP[idbandohientai]
-            for vung in danhsachvungcam:
-                if vung["type"] == "circle":
-                    if math.dist((x, y), (vung["x"], vung["y"])) <= vung["r"]:
-                        return True
-                elif vung["type"] == "line":
-                    if self._tinhkhoangcachdendoanthang(x, y, vung["x1"], vung["y1"], vung["x2"], vung["y2"]) <= vung["r"]:
-                        return True
-        return False
-
     def action_tudongtimkiemmuctieu(self):
         if not self._is_tudongtimkiemmuctieu:
             return
@@ -778,21 +762,11 @@ class TacTu:
                 is_boquamuctieuhientai = True
             elif self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_ANTHANTHUAT,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvatmuctieudangchon, is_hieuungcoloi = 1):
                 is_boquamuctieuhientai = True
-            if not is_boquamuctieuhientai and self._is_tudongvebanrac:
-                if self._idbandofarmbanrac and idbandohientai != self._idbandofarmbanrac:
-                    is_boquamuctieuhientai = True
-                if not is_boquamuctieuhientai:
-                    toadox = self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieudangchon)
-                    toadoy = self.moitruong.get_toadoy(diachicosothongtinnhanvatmuctieudangchon)
-                    if self._kiemtra_vungcam(toadox, toadoy):
-                        is_boquamuctieuhientai = True
 
-                    if not is_boquamuctieuhientai and vungdabichiemdongs:
-                        khoangcachhientai = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon)
-                        for vung in vungdabichiemdongs:
-                            if math.dist((toadox, toadoy), (vung["x"], vung["y"])) <= 9.0 and khoangcachhientai > math.dist((toadox, toadoy), (vung["x"], vung["y"])):
-                                is_boquamuctieuhientai = True
-                                break
+            if not is_boquamuctieuhientai and self._diemdanhxungquanhs:
+                danhsachbandohople = [diem[2] for diem in self._diemdanhxungquanhs if len(diem) >= 3]
+                if danhsachbandohople and idbandohientai not in danhsachbandohople:
+                    is_boquamuctieuhientai = True
 
             if is_boquamuctieuhientai:
                 _thaydoimuctieu(0)
@@ -861,28 +835,16 @@ class TacTu:
             is_muctieuxemxetlabaothugiangho = self.moitruong.get_is_baothugiangho(tendoituongmuctieuxemxet)
             is_muctieuxemxetpk = is_muctieuxemxetlanguoichoi or is_muctieuxemxetlacuongthi # or is_muctieuxemxetlabaothugiangho
 
-            if self._is_tudongvebanrac and self._idbandofarmbanrac and idbandohientai != self._idbandofarmbanrac:
-                continue
             if is_muctieuxemxetlacuongthi and TENNGUOICHOICUNGBANGs and any("( {} )".format(n) in tendoituongmuctieuxemxet for n in TENNGUOICHOICUNGBANGs):
                 continue
             if self._is_chidanhnguoichoi and not is_muctieuxemxetpk:
                 continue
             if is_bandokhongpk and is_muctieuxemxetpk:
                 continue
-
-            if self._is_tudongvebanrac:
-                toadox, toadoy = self.moitruong.get_toadox(diachicosothongtinnhanvatmuctieuxemxet), self.moitruong.get_toadoy(diachicosothongtinnhanvatmuctieuxemxet)
-                if self._kiemtra_vungcam(toadox, toadoy):
+            if self._diemdanhxungquanhs:
+                danhsachbandohople = [diem[2] for diem in self._diemdanhxungquanhs if len(diem) >= 3]
+                if danhsachbandohople and idbandohientai not in danhsachbandohople:
                     continue
-                if vungdabichiemdongs:
-                    is_cobotcanhtranh = False
-                    for vung in vungdabichiemdongs:
-                        if math.dist((toadox, toadoy), (vung["x"], vung["y"])) <= 9.0 and khoangcachmuctieuxemxettoibanthan > math.dist((toadox, toadoy), (vung["x"], vung["y"])):
-                            is_cobotcanhtranh = True
-                            break
-                    if is_cobotcanhtranh:
-                        continue
-
             if is_anhhuongboitruongnhom:
                 khoangcachmuctieuxemxettoitruongnhom = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieuxemxet, diachicosothongtinnhanvattruongnhom)
                 if khoangcachmuctieuxemxettoitruongnhom >= khoangcachtimkiem: continue
@@ -2055,20 +2017,30 @@ class TacTu:
             phatam("Tắt tự động đi chiến trường")
 
     def them_tenmuctieutancong(self, tenmuctieutancong):
-        if tenmuctieutancong and tenmuctieutancong not in self._tenmuctieutancongs:
-            self._tenmuctieutancongs.add(tenmuctieutancong)
+        if tenmuctieutancong:
+            if "( Cấp" in tenmuctieutancong:
+                tenmuctieutancong = tenmuctieutancong.split("( Cấp")[0].strip()
+            elif "(Cấp" in tenmuctieutancong:
+                tenmuctieutancong = tenmuctieutancong.split("(Cấp")[0].strip()
 
-            if self._tenmuctieutancongs:
-                print("Danh sách mục tiêu tấn công: {}".format(self._tenmuctieutancongs))
-                phatam("Thêm tên mục tiêu tấn công. Tổng cộng {}".format(len(self._tenmuctieutancongs)))
+            if tenmuctieutancong not in self._tenmuctieutancongs:
+                self._tenmuctieutancongs.add(tenmuctieutancong)
+                if self._tenmuctieutancongs:
+                    print("Danh sách mục tiêu tấn công: {}".format(self._tenmuctieutancongs))
+                    phatam("Thêm tên mục tiêu tấn công. Tổng cộng {}".format(len(self._tenmuctieutancongs)))
 
     def them_tenmuctieukhongtancong(self, tenmuctieukhongtancong):
-        if tenmuctieukhongtancong and tenmuctieukhongtancong not in self._tenmuctieukhongtancongs:
-            self._tenmuctieukhongtancongs.add(tenmuctieukhongtancong)
+        if tenmuctieukhongtancong:
+            if "( Cấp" in tenmuctieukhongtancong:
+                tenmuctieukhongtancong = tenmuctieukhongtancong.split("( Cấp")[0].strip()
+            elif "(Cấp" in tenmuctieukhongtancong:
+                tenmuctieukhongtancong = tenmuctieukhongtancong.split("(Cấp")[0].strip()
 
-            if self._tenmuctieukhongtancongs:
-                print("Danh sách mục tiêu không tấn công: {}".format(self._tenmuctieukhongtancongs))
-                phatam("Thêm tên mục tiêu không tấn công. Tổng cộng {}".format(len(self._tenmuctieukhongtancongs)))
+            if tenmuctieukhongtancong not in self._tenmuctieukhongtancongs:
+                self._tenmuctieukhongtancongs.add(tenmuctieukhongtancong)
+                if self._tenmuctieukhongtancongs:
+                    print("Danh sách mục tiêu không tấn công: {}".format(self._tenmuctieukhongtancongs))
+                    phatam("Thêm tên mục tiêu không tấn công. Tổng cộng {}".format(len(self._tenmuctieukhongtancongs)))
 
     def them_tenvatphamnhat(self, tenvatphamnhat):
         if tenvatphamnhat and tenvatphamnhat not in self._tenvatphamnhats:
@@ -2327,7 +2299,7 @@ class TacTu:
                             if time.time() - self._thoidiembatdaudendiem > 10.0:
                                 canchuyendendiemtieptheo = True
             else:
-                if time.time() - self._thoidiembatdaudendiem > 45.0:
+                if time.time() - self._thoidiembatdaudendiem > 90.0:
                     print("[Move] Quá thời gian chuyển map/đến điểm khác map -> Bỏ qua điểm này.")
                     canchuyendendiemtieptheo = True
 
@@ -2983,9 +2955,6 @@ class TacTu:
 
             mx = self.moitruong.get_toadox(diachidoituongxemxet)
             my = self.moitruong.get_toadoy(diachidoituongxemxet)
-
-            if self._kiemtra_vungcam(mx, my):
-                continue
 
             iddoituongquai = self.moitruong.get_iddoituong(diachidoituongxemxet)
             if iddoituongquai in self._idmuctieubiloi_map:
