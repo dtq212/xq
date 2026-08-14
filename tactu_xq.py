@@ -1702,7 +1702,7 @@ class TacTu:
             if diachimuctieu:
                 tendoituongmuctieuhientai = self.moitruong.get_tendoituong(diachimuctieu)
                 is_muctieuhientailacuongthi = tendoituongmuctieuhientai and any(tenbaothu in tendoituongmuctieuhientai for tenbaothu in BAOTHUKYNANGTRIEUHOIs)
-                is_muctieupk = self.moitruong.get_is_nguoichoi(diachimuctieu) or TROMBAOPHITAC in tendoituongmuctieuhientai or is_muctieuhientailacuongthi  # or self.moitruong.get_is_baothugiangho(tendoituongmuctieuhientai)
+                is_muctieupk = self.moitruong.get_is_nguoichoi(diachimuctieu) or tendoituongmuctieuhientai == TROMBAOPHITAC or is_muctieuhientailacuongthi  # or self.moitruong.get_is_baothugiangho(tendoituongmuctieuhientai)
                 if not is_muctieupk:
                     if self._is_tudongvebanrac and time.time() - self._thoidiemvohieuquadichuyennhatvatpham > 0.:
                         khoangcachmuctieu = self.moitruong.get_khoangcach(diachimuctieu)
@@ -2056,7 +2056,7 @@ class TacTu:
         phatam("Bỏ thiết lập tên mục tiêu không tấn công".format(len(self._tenmuctieukhongtancongs)))
 
     def action_muauto(self):
-        if time.time() - self._thoidiemmuaautogannhat < 0.25:
+        if time.time() - self._thoidiemmuaautogannhat < 2.5:
             return
         self._thoidiemmuaautogannhat = time.time()
         self.moitruong.action_thucthicaulenh2("auto buy 5 10", delay = 0.)
@@ -2374,14 +2374,10 @@ class TacTu:
         idbandohientai = self.moitruong.get_idbandohientai()
 
         danhsachuutientodoi = []
-        try:
-            from hangso_xq import NHANVATTODOITUDONGs_MAP, SOLUONGTHANHVIENNHOMTOIDA, NHANVATCUNGBANGs
-            for team_name, members in NHANVATTODOITUDONGs_MAP.items():
-                if idnguoichoi in members:
-                    danhsachuutientodoi = list(members)
-                    break
-        except ImportError:
-            return
+        for thanhvientodoitudongs in NHANVATTODOITUDONGs_LIST:
+            if idnguoichoi in thanhvientodoitudongs:
+                danhsachuutientodoi = list(thanhvientodoitudongs)
+                break
 
         if not danhsachuutientodoi:
             return
@@ -2401,23 +2397,23 @@ class TacTu:
         danhsachthanhviens = self.moitruong.get_danhsachidnguoichoithanhviennhoms()
         danhsachxungquanhs = self.moitruong.get_danhsachidnguoichoixungquanhs()
 
-        dongdoicanxuly = [id for id in danhsachxungquanhs if id in danhsachuutientodoi]
+        dongdoicanxulys = [id for id in danhsachxungquanhs if id in danhsachuutientodoi]
 
-        if not dongdoicanxuly and not is_dangtrongnhom:
+        if not dongdoicanxulys and not is_dangtrongnhom:
             return
 
         if is_dangtrongnhom:
             idtruongnhom = self.moitruong.get_idnguoichoitruongnhom()
-            is_leader_invalid = False
+            is_truongnhomkhonghople = False
 
-            if idtruongnhom and idtruongnhom not in danhsachuutientodoi and dongdoicanxuly:
+            if idtruongnhom and idtruongnhom not in danhsachuutientodoi and dongdoicanxulys:
                 if idbandohientai == BANDO_CHIENTRUONG:
-                    is_leader_invalid = True
+                    is_truongnhomkhonghople = True
                 else:
-                    if dongdoicanxuly[0] in danhsachxungquanhs:
-                        is_leader_invalid = True
+                    if dongdoicanxulys[0] in danhsachxungquanhs:
+                        is_truongnhomkhonghople = True
 
-            if is_leader_invalid and idtruongnhom not in danhsachthanhviens:
+            if is_truongnhomkhonghople and idtruongnhom not in danhsachthanhviens:
                 self.moitruong.action_thoatkhoinhom()
                 return
 
@@ -2425,12 +2421,12 @@ class TacTu:
         idnguoichoixephangcaonhat = idnguoichoi
         giatrixephangcaonhat = xephangcuatoi
 
-        for id_dongdoi in dongdoicanxuly:
-            if id_dongdoi in danhsachuutientodoi:
-                xephangdongdoi = danhsachuutientodoi.index(id_dongdoi)
+        for iddongdoi in dongdoicanxulys:
+            if iddongdoi in danhsachuutientodoi:
+                xephangdongdoi = danhsachuutientodoi.index(iddongdoi)
                 if xephangdongdoi < giatrixephangcaonhat:
                     giatrixephangcaonhat = xephangdongdoi
-                    idnguoichoixephangcaonhat = id_dongdoi
+                    idnguoichoixephangcaonhat = iddongdoi
 
         if self.moitruong.get_is_truongnhom():
             if danhsachthanhviens:
@@ -2446,17 +2442,17 @@ class TacTu:
                     self.moitruong.action_thoatkhoinhom()
                     return
 
-                if idbandohientai == BANDO_CHIENTRUONG and idnguoichoixephangcaonhat in dongdoicanxuly:
+                if idbandohientai == BANDO_CHIENTRUONG and idnguoichoixephangcaonhat in dongdoicanxulys:
                     self.moitruong.action_thoatkhoinhom()
                     return
 
             if len(danhsachthanhviens) < SOLUONGTHANHVIENNHOMTOIDA:
-                for id_dongdoi in dongdoicanxuly:
-                    if id_dongdoi not in danhsachthanhviens:
-                        thoidiemmoigannhat = self._thoidiemtodoigannhat_map.get(id_dongdoi, 0)
+                for iddongdoi in dongdoicanxulys:
+                    if iddongdoi not in danhsachthanhviens:
+                        thoidiemmoigannhat = self._thoidiemtodoigannhat_map.get(iddongdoi, 0)
                         if time.time() - thoidiemmoigannhat > 5.0:
-                            self.moitruong.action_moihoacxinvaonhom(id_dongdoi)
-                            self._thoidiemtodoigannhat_map[id_dongdoi] = time.time()
+                            self.moitruong.action_moihoacxinvaonhom(iddongdoi)
+                            self._thoidiemtodoigannhat_map[iddongdoi] = time.time()
                             break
                         else:
                             continue
@@ -2467,10 +2463,10 @@ class TacTu:
             self.moitruong.action_kiemtravadongyloimoinhom(danhsachuutientodoi)
 
             if idnguoichoixephangcaonhat != idnguoichoi:
-                target_id = idnguoichoixephangcaonhat
-                if time.time() - self._thoidiemtodoigannhat_map.get(target_id, 0) > 5.0:
-                    self.moitruong.action_moihoacxinvaonhom(target_id)
-                    self._thoidiemtodoigannhat_map[target_id] = time.time()
+                idnguoichoicantodoi = idnguoichoixephangcaonhat
+                if time.time() - self._thoidiemtodoigannhat_map.get(idnguoichoicantodoi, 0) > 5.0:
+                    self.moitruong.action_moihoacxinvaonhom(idnguoichoicantodoi)
+                    self._thoidiemtodoigannhat_map[idnguoichoicantodoi] = time.time()
 
     def action_tudongphucsinh(self):
         if self._is_tudongphucsinh:
@@ -3701,8 +3697,7 @@ class TacTu:
             timestamp = int(time.time())
             hex_id = hex(idnpc).replace("0x", "")
             caulenh = f"talk {hex_id}# goto.! {quocgiacanden} t{timestamp}"
-            self.moitruong.action_thucthicaulenh2(caulenh, delay = 0.0)
-            print(hex(self.moitruong.diachihamthucthicaulenh2))
+            self.moitruong.action_thucthicaulenh2(caulenh)
             self.moitruong.action_ngatdichuyen()
             time.sleep(5.0)
 
