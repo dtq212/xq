@@ -280,8 +280,10 @@ def mogamevadangnhap(char_name, config):
                         except Exception as e:
                             print(f"      -> Lỗi khi đóng: {e}")
 
-                        print("      -> Chờ 15s để hệ thống ổn định...")
-                        time.sleep(15)
+                        dondeptientrinhaovuabithoatgame()
+
+                        print("      -> Chờ 1s để hệ thống ổn định...")
+                        time.sleep(1)
                         continue
 
                     time.sleep(2)

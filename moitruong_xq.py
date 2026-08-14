@@ -254,7 +254,7 @@ class MoiTruong:
         caulenh = f"pet {hex(iddoituongbaothu)}# 2".replace("0x", "")
         return self.action_thucthicaulenh(caulenh, delay = 0.)
 
-    def action_batchucnangmorong(self, delay = 1.):
+    def action_batchucnangmorong(self, delay = 5.):
         if self.get_is_dangbatchucnangmorong():
             return False
 
