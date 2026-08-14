@@ -581,6 +581,18 @@ class MoiTruong:
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
         return read_int(self.tientrinh, x + 0x1568) if x else False
 
+    def get_iddoituongbaothumaoson(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0x184)
+
+    def get_tendoituongbaothumaoson(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        if not x:
+            return False
+        return read_string(self.tientrinh, x + 0x188)
+
     def get_diachicosothongtinnhanvat1(self):
         return read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVAT1)
 
