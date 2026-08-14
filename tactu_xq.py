@@ -3361,9 +3361,6 @@ class TacTu:
             self.moitruong.set_is_danghiencuasotuychon(False)
 
     def action_tudongkhaikhoang(self):
-        yeucaukhaikhoangmoi = None
-        diachikhoangvatmoi = 0
-
         if not self._is_tudongkhaikhoang:
             self._yeucaukhaikhoang = None
             self._diachicosokhaikhoang = 0
