@@ -282,9 +282,7 @@ def mogamevadangnhap(char_name, config):
 
                         dondeptientrinhaovuabithoatgame()
 
-                        print("      -> Chờ 1s để hệ thống ổn định...")
-                        time.sleep(1)
-                        continue
+                        break
 
                     time.sleep(2)
                     print(f"\r      Chờ Launcher... {i + 1}", end = "")
