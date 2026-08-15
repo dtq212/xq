@@ -687,7 +687,7 @@ class MoiTruong:
             return False
         iddoituongvatphamhanhtrang = self.get_iddoituongvatphamhanhtrang(idvitri)
         if not iddoituongvatphamhanhtrang: return False
-        is_ok = self.action_thucthicaulenh("desc {}#".format(hex(iddoituongvatphamhanhtrang)).replace("0x", ""), delay = 0.)
+        is_ok = self.action_thucthicaulenh("desc {}#".format(hex(iddoituongvatphamhanhtrang)).replace("0x", ""))
         if is_ok: time.sleep(0.2)
         return is_ok
 
@@ -1656,7 +1656,7 @@ class MoiTruong:
         if time.time() - self._thoidiemphucsinhgannhat < delay or not self.get_is_nhanvatdachet():
             return False
         self._thoidiemphucsinhgannhat = time.time()
-        self.action_thucthicaulenh("desc revive", delay = 0.)
+        self.action_thucthicaulenh("desc revive")
         time.sleep(1.)
         if self.get_is_danghiencuasotuychon():
             self.set_is_danghiencuasotuychon(False)
@@ -1665,7 +1665,7 @@ class MoiTruong:
     def action_doimaupk(self, idmaupk, delay = 1.):
         if time.time() - self._thoidiemmaupkgannhat < delay or self.get_idmaupk() == idmaupk:
             return
-        is_ok = self.action_thucthicaulenh("set !attack {}".format(idmaupk), delay = delay)
+        is_ok = self.action_thucthicaulenh("set !attack {}".format(idmaupk))
         if is_ok:
             self.set_idmaupk(idmaupk)
             self._thoidiemmaupkgannhat = time.time()
@@ -1731,13 +1731,13 @@ class MoiTruong:
         if time.time() - self._thoidiemsuavatphamgannhat < delay: return
         idthosuavatpham = self.get_iddoituong(diachicosonhanvatthosuavatpham)
         if not idthosuavatpham: return
-        is_ok = self.action_thucthicaulenh("repair ! {}# all".format(hex(idthosuavatpham).replace("0x", "")), delay = delay, douutien = DOUUTIEN_THAP)
+        is_ok = self.action_thucthicaulenh("repair ! {}# all".format(hex(idthosuavatpham).replace("0x", "")), douutien = DOUUTIEN_THAP)
         if is_ok: self._thoidiemsuavatphamgannhat = time.time()
         return is_ok
 
     def action_sudungchucnangmorong5(self, delay = 2.5):
         if time.time() - self._thoidiemsudungchucnangmorong5 < delay: return
-        is_ok = self.action_thucthicaulenh("auto 5 1", delay = delay)
+        is_ok = self.action_thucthicaulenh("auto 5 1")
         if is_ok: self._thoidiemsudungchucnangmorong5 = time.time()
         return is_ok
 

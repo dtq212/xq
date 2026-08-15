@@ -143,7 +143,7 @@ class LoopChinh:
 
         # if self.moitruong.get_idnguoichoi() == 4599 and self.moitruong.get_idbandohientai() == BANDO_CHIENTRUONG:
         #     if not self.moitruong.get_is_dangnamtrongnhom():
-        #         self.moitruong.action_thucthicaulenh("team + 4599", delay = 0)
+        #         self.moitruong.action_thucthicaulenh("team + 4599")
         #         time.sleep(0.5)
 
         # if self.moitruong.get_idnguoichoi() == 59845:
@@ -163,10 +163,10 @@ class LoopChinh:
         #             return
         #         else:
         #             if self.moitruong.action_timkiemvatphamhanhtrang("Thẻ Giảm Giá"):
-        #                 self.moitruong.action_thucthicaulenh("talk 15bc# accept.1773237# 1", delay = 0)
+        #                 self.moitruong.action_thucthicaulenh("talk 15bc# accept.1773237# 1")
         #                 time.sleep(0.05)
         #             else:
-        #                 self.moitruong.action_thucthicaulenh("buyitem ! 5 3 1", delay = 0)
+        #                 self.moitruong.action_thucthicaulenh("buyitem ! 5 3 1")
         #                 time.sleep(0.05)
         #
         #     else:
@@ -183,13 +183,13 @@ class LoopChinh:
         #         return
         #     if not self.moitruong.action_timkiemvatphamhanhtrang(LAMCAU) or not self.moitruong.action_timkiemvatphamhanhtrang(HACCAU):
         #         return
-        #     self.moitruong.action_thucthicaulenh("talk {}# bonus.29".format(hex(idthiensutraodoi).replace("0x", "")), delay = 0)
+        #     self.moitruong.action_thucthicaulenh("talk {}# bonus.29".format(hex(idthiensutraodoi).replace("0x", "")))
         #     time.sleep(0.25)
         #
         #     iddoituongtuivaibaobo = self.moitruong.action_timkiemvatphamhanhtrang("Bao Vải Ma Bố")
         #
         #     if iddoituongtuivaibaobo:
-        #         self.moitruong.action_thucthicaulenh("drop ! {}#1".format(hex(iddoituongtuivaibaobo)).replace("0x", ""), delay = 0)
+        #         self.moitruong.action_thucthicaulenh("drop ! {}#1".format(hex(iddoituongtuivaibaobo)).replace("0x", ""))
         #         time.sleep(0.25)
         #
         # if self.moitruong.get_idnguoichoi() in (59844, 59845):
@@ -201,7 +201,7 @@ class LoopChinh:
         #
         #         caulenh = "pet {}# fuse_yy {}#".format(iddoituongbaothudautien, idtinhnguyendon)
         #         print()
-        #         self.moitruong.action_thucthicaulenh(caulenh, delay = 0)
+        #         self.moitruong.action_thucthicaulenh(caulenh)
         #         time.sleep(0.25)
 
 

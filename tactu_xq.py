@@ -1024,7 +1024,7 @@ class TacTu:
 
             # if self.moitruong.get_idnguoichoi() == 59845:
             #     if not self.moitruong.action_timkiemvatphamhanhtrang(TUIQUAVOSONG):
-            #         self.moitruong.action_thucthicaulenh("buyitem ! 5 6 1", delay = 0.)
+            #         self.moitruong.action_thucthicaulenh("buyitem ! 5 6 1")
             #         time.sleep(0.2)
             #     self.action_sudungvatphamhanhtrang(TUIQUAVOSONG, delay = 0.)
             #     time.sleep(0.2)
@@ -2022,7 +2022,7 @@ class TacTu:
         if time.time() - self._thoidiemmuaautogannhat < 5.:
             return
         self._thoidiemmuaautogannhat = time.time()
-        self.moitruong.action_thucthicaulenh2("auto buy 5 10", delay = 0.)
+        self.moitruong.action_thucthicaulenh2("auto buy 5 10")
 
     def action_tudongvutdo(self):
         if time.time() - self._thoidiemvutdogannhat < 1.:
@@ -2293,7 +2293,7 @@ class TacTu:
                             print(f"[Move] Đang sử dụng {TANTHUTIENCO} để phù lên map {target_map}...")
                             for step in steps:
                                 caulenh = f"talk {hex_id}# {step}"
-                                self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
+                                self.moitruong.action_thucthicaulenh(caulenh)
                                 time.sleep(1.0)
                             if self.moitruong.get_is_danghiencuasotuychon():
                                 self.moitruong.set_is_danghiencuasotuychon(False)
@@ -3173,7 +3173,7 @@ class TacTu:
                 if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
                     print("[AUTO-SELL] Đã đứng yên. Sử dụng Xuyên không hành (Về thành)")
                     self.moitruong.action_ngatdichuyen()
-                    self.moitruong.action_thucthicaulenh("pf 4182.1", delay = 0.)
+                    self.moitruong.action_thucthicaulenh("pf 4182.1")
                     self._thoidiemchuyentrangthai = time.time()
 
         elif self._trangthaiveban == 2:
@@ -3218,7 +3218,7 @@ class TacTu:
                 if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
                     print("[AUTO-SELL] Đã đứng yên. Sử dụng Xuyên không hành (Quay lại)")
                     self.moitruong.action_ngatdichuyen()
-                    self.moitruong.action_thucthicaulenh("pf 4182.2", delay = 0.)
+                    self.moitruong.action_thucthicaulenh("pf 4182.2")
                     self._thoidiemchuyentrangthai = time.time()
 
     def _action_xulyvebanrac_phaikhac(self):
@@ -3346,7 +3346,7 @@ class TacTu:
 
         for step in steps:
             caulenh = f"talk {hex_id}# {step}"
-            self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
+            self.moitruong.action_thucthicaulenh(caulenh)
             time.sleep(1.0)
 
         if self.moitruong.get_is_danghiencuasotuychon():
@@ -3519,7 +3519,7 @@ class TacTu:
 
             if is_truongnhom and NHANVATTODOITUDONGs and self.moitruong.get_idnguoichoi() == NHANVATTODOITUDONGs[0]:
                 caulenh = "talk {}# welcome.2".format(hex(idnpc).replace("0x", ""))
-                self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
+                self.moitruong.action_thucthicaulenh(caulenh)
                 time.sleep(0.25)
                 # time.sleep(1.)
 
@@ -3529,14 +3529,14 @@ class TacTu:
                 #     try:
                 #         maxacnhan = noidungcuasoxacnhan.split("(")[1].split(")")[0]
                 #         caulenh = "talk {}# welcome.9999.{}".format(hex(idnpc).replace("0x", ""), maxacnhan)
-                #         self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
+                #         self.moitruong.action_thucthicaulenh(caulenh)
                 #         self.moitruong.set_is_dangmocuasoxacnhan(False)
                 #         time.sleep(1.)
                 #     except IndexError:
                 #         print("Không tìm thấy mã xác nhận đúng định dạng")
 
                 caulenh = "talk {}# welcome.3".format(hex(idnpc).replace("0x", ""))
-                self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
+                self.moitruong.action_thucthicaulenh(caulenh)
                 time.sleep(0.25)
                 # time.sleep(1.)
 
@@ -3546,7 +3546,7 @@ class TacTu:
                 #     try:
                 #         maxacnhan = noidungcuasoxacnhan.split("(")[1].split(")")[0]
                 #         caulenh = "talk {}# welcome.9999.{}".format(hex(idnpc).replace("0x", ""), maxacnhan)
-                #         self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
+                #         self.moitruong.action_thucthicaulenh(caulenh)
                 #         self.moitruong.set_is_dangmocuasoxacnhan(False)
                 #         time.sleep(1.)
                 #     except IndexError:
@@ -3554,7 +3554,7 @@ class TacTu:
 
             elif is_dangnamtrongnhom:
                 caulenh = "talk {}# welcome.3".format(hex(idnpc).replace("0x", ""))
-                self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
+                self.moitruong.action_thucthicaulenh(caulenh)
                 time.sleep(0.25)
                 # time.sleep(1.)
 
@@ -3564,7 +3564,7 @@ class TacTu:
                 #     try:
                 #         maxacnhan = noidungcuasoxacnhan.split("(")[1].split(")")[0]
                 #         caulenh = "talk {}# welcome.9999.{}".format(hex(idnpc).replace("0x", ""), maxacnhan)
-                #         self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
+                #         self.moitruong.action_thucthicaulenh(caulenh)
                 #         self.moitruong.set_is_dangmocuasoxacnhan(False)
                 #         time.sleep(1.)
                 #     except IndexError:
@@ -3572,7 +3572,7 @@ class TacTu:
 
             else:
                 caulenh = "talk {}# welcome.1".format(hex(idnpc).replace("0x", ""))
-                self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
+                self.moitruong.action_thucthicaulenh(caulenh)
                 time.sleep(0.25)
                 # time.sleep(1.)
 
@@ -3582,14 +3582,14 @@ class TacTu:
                 #     try:
                 #         maxacnhan = noidungcuasoxacnhan.split("(")[1].split(")")[0]
                 #         caulenh = "talk {}# welcome.9999.{}".format(hex(idnpc).replace("0x", ""), maxacnhan)
-                #         self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
+                #         self.moitruong.action_thucthicaulenh(caulenh)
                 #         self.moitruong.set_is_dangmocuasoxacnhan(False)
                 #         time.sleep(1.)
                 #     except IndexError:
                 #         print("Không tìm thấy mã xác nhận đúng định dạng")
 
                 caulenh = "talk {}# welcome.3".format(hex(idnpc).replace("0x", ""))
-                self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
+                self.moitruong.action_thucthicaulenh(caulenh)
                 time.sleep(0.25)
                 # time.sleep(1.)
                 #
@@ -3599,7 +3599,7 @@ class TacTu:
                 #     try:
                 #         maxacnhan = noidungcuasoxacnhan.split("(")[1].split(")")[0]
                 #         caulenh = "talk {}# welcome.9999.{}".format(hex(idnpc).replace("0x", ""), maxacnhan)
-                #         self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
+                #         self.moitruong.action_thucthicaulenh(caulenh)
                 #         self.moitruong.set_is_dangmocuasoxacnhan(False)
                 #         time.sleep(1.)
                 #     except IndexError:
