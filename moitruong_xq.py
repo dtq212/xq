@@ -14,6 +14,8 @@ OFFSET_DIACHICOSOTHONGTINNHANVATX = 0x1BDA60
 
 class MoiTruong:
     def __init__(self, idcuaso):
+        self._thoidiemralenhbaothumaosontheosau = 0.
+        self._thoidiemralenhbaothumaosontancong = 0.
         self._is_dasetupautoassemblethucthicaulenh2 = False
         self._thoidiemthucthicaulenh2gannhat = 0.
         self.diachihamthucthicaulenh2 = 0
@@ -459,6 +461,26 @@ class MoiTruong:
 
         self._thoidiemsudungkynangvitrigannhat_map[idkynang] = time.time()
         return self.action_thucthicaulenh(caulenh, delay = 0.)
+
+    def action_ralenhbaothumaosontancong(self, iddoituongbaothumaoson, iddoituongnhanvatmuctieudangchon, delay = 0.5):
+        if time.time() - self._thoidiemralenhbaothumaosontancong < delay:
+            return False
+
+        self._thoidiemralenhbaothumaosontancong = time.time()
+
+        self.action_thucthicaulenh2(f"pet {hex(iddoituongbaothumaoson)}# 1 {hex(iddoituongnhanvatmuctieudangchon)}#".replace("0x", ""), delay = 0.)
+
+        return True
+
+    def action_ralenhbaothumaosontheosau(self, iddoituongbaothumaoson, delay = 0.5):
+        if time.time() - self._thoidiemralenhbaothumaosontheosau < delay:
+            return False
+
+        self._thoidiemralenhbaothumaosontheosau = time.time()
+
+        self.action_thucthicaulenh2(f"pet {hex(iddoituongbaothumaoson)}# 2".replace("0x", ""), delay = 0.)
+
+        return True
 
     def auto_assemble_nhatvatpham(self):
         if not self._is_dasetupautoassemblenhatvatpham:

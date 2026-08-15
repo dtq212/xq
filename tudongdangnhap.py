@@ -58,12 +58,12 @@ THONGTINDANGNHAP_MAP = {
         "char_index": 5,
         "vitricuaso": 3,
     },
-    "59503": {
+    "60055": {
         "user": "dtq21295",
         "pass": "hateva",
         "group": 1,
-        "server": 2,
-        "char_index": 6,
+        "server": 1,
+        "char_index": 5,
         "vitricuaso": 4,
     },
 }
