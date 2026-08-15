@@ -3512,93 +3512,24 @@ class TacTu:
 
             self._thoidiemdichientruonggannhat = time.time()
 
-            if is_truongnhom and NHANVATTODOITUDONGs and self.moitruong.get_idnguoichoi() == NHANVATTODOITUDONGs[0]:
+            if is_truongnhom:
                 caulenh = "talk {}# welcome.2".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh)
                 time.sleep(0.25)
-                # time.sleep(1.)
-
-                # if self.moitruong.get_is_dangmocuasoxacnhan():
-                #     noidungcuasoxacnhan = self.moitruong.get_noidungcuasomaxacnhan()
-
-                #     try:
-                #         maxacnhan = noidungcuasoxacnhan.split("(")[1].split(")")[0]
-                #         caulenh = "talk {}# welcome.9999.{}".format(hex(idnpc).replace("0x", ""), maxacnhan)
-                #         self.moitruong.action_thucthicaulenh(caulenh)
-                #         self.moitruong.set_is_dangmocuasoxacnhan(False)
-                #         time.sleep(1.)
-                #     except IndexError:
-                #         print("Không tìm thấy mã xác nhận đúng định dạng")
-
                 caulenh = "talk {}# welcome.3".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh)
                 time.sleep(0.25)
-                # time.sleep(1.)
-
-                # if self.moitruong.get_is_dangmocuasoxacnhan():
-                #     noidungcuasoxacnhan = self.moitruong.get_noidungcuasomaxacnhan()
-                #
-                #     try:
-                #         maxacnhan = noidungcuasoxacnhan.split("(")[1].split(")")[0]
-                #         caulenh = "talk {}# welcome.9999.{}".format(hex(idnpc).replace("0x", ""), maxacnhan)
-                #         self.moitruong.action_thucthicaulenh(caulenh)
-                #         self.moitruong.set_is_dangmocuasoxacnhan(False)
-                #         time.sleep(1.)
-                #     except IndexError:
-                #         print("Không tìm thấy mã xác nhận đúng định dạng")
-
             elif is_dangnamtrongnhom:
                 caulenh = "talk {}# welcome.3".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh)
                 time.sleep(0.25)
-                # time.sleep(1.)
-
-                # if self.moitruong.get_is_dangmocuasoxacnhan():
-                #     noidungcuasoxacnhan = self.moitruong.get_noidungcuasomaxacnhan()
-
-                #     try:
-                #         maxacnhan = noidungcuasoxacnhan.split("(")[1].split(")")[0]
-                #         caulenh = "talk {}# welcome.9999.{}".format(hex(idnpc).replace("0x", ""), maxacnhan)
-                #         self.moitruong.action_thucthicaulenh(caulenh)
-                #         self.moitruong.set_is_dangmocuasoxacnhan(False)
-                #         time.sleep(1.)
-                #     except IndexError:
-                #         print("Không tìm thấy mã xác nhận đúng định dạng")
-
             else:
                 caulenh = "talk {}# welcome.1".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh)
                 time.sleep(0.25)
-                # time.sleep(1.)
-
-                # if self.moitruong.get_is_dangmocuasoxacnhan():
-                #     noidungcuasoxacnhan = self.moitruong.get_noidungcuasomaxacnhan()
-                #
-                #     try:
-                #         maxacnhan = noidungcuasoxacnhan.split("(")[1].split(")")[0]
-                #         caulenh = "talk {}# welcome.9999.{}".format(hex(idnpc).replace("0x", ""), maxacnhan)
-                #         self.moitruong.action_thucthicaulenh(caulenh)
-                #         self.moitruong.set_is_dangmocuasoxacnhan(False)
-                #         time.sleep(1.)
-                #     except IndexError:
-                #         print("Không tìm thấy mã xác nhận đúng định dạng")
-
                 caulenh = "talk {}# welcome.3".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh)
                 time.sleep(0.25)
-                # time.sleep(1.)
-                #
-                # if self.moitruong.get_is_dangmocuasoxacnhan():
-                #     noidungcuasoxacnhan = self.moitruong.get_noidungcuasomaxacnhan()
-                #
-                #     try:
-                #         maxacnhan = noidungcuasoxacnhan.split("(")[1].split(")")[0]
-                #         caulenh = "talk {}# welcome.9999.{}".format(hex(idnpc).replace("0x", ""), maxacnhan)
-                #         self.moitruong.action_thucthicaulenh(caulenh)
-                #         self.moitruong.set_is_dangmocuasoxacnhan(False)
-                #         time.sleep(1.)
-                #     except IndexError:
-                #         print("Không tìm thấy mã xác nhận đúng định dạng")
 
     def action_tudongdaotangbaodo(self):
         self._yeucaudaotangbaodo = None
@@ -3698,7 +3629,7 @@ class TacTu:
         if self.moitruong.get_is_dangvankhi():
             return
 
-        if self.moitruong.get_idbandohientai() in (701, 395, 894, 135):
+        if self.moitruong.get_idbandohientai() in (701, 395, 894, 135, BANDO_CHIENTRUONG):
             return
 
         if self.moitruong.get_idmaupk() != MAUPK_HOABINH:
