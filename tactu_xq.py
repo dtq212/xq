@@ -388,10 +388,9 @@ class TacTu:
 
         diachimuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
         is_muctieudangchonlanguoichoi = diachimuctieudangchon and self.moitruong.get_is_nguoichoi(diachimuctieudangchon)
-        tendoituongmuctieudangchon = diachimuctieudangchon and self.moitruong.get_tendoituong(diachimuctieudangchon)
-        is_muctieudangchonlacuongthi = tendoituongmuctieudangchon and any(tenbaothu in tendoituongmuctieudangchon for tenbaothu in BAOTHUKYNANGTRIEUHOIs)
-        is_muctieudangchonlabaothugiangho = diachimuctieudangchon and self.moitruong.get_is_baothugiangho(tendoituongmuctieudangchon)
-        is_muctieupk = is_muctieudangchonlanguoichoi or is_muctieudangchonlacuongthi  # or is_muctieudangchonlabaothugiangho
+        is_muctieudangchonlacuongthi = self.moitruong.get_is_baothukynangtrieuhoi(diachimuctieudangchon)
+        is_muctieudangchonlabaothugiangho = self.moitruong.get_is_baothugiangho(diachimuctieudangchon)
+        is_muctieupk = is_muctieudangchonlanguoichoi or is_muctieudangchonlacuongthi or is_muctieudangchonlabaothugiangho
 
         yeucauduocchon = None
         lydochon = "KHÔNG CÓ"
@@ -727,10 +726,10 @@ class TacTu:
         if diachicosothongtinnhanvatmuctieudangchon:
             tendoituongmuctieudangchon = self.moitruong.get_tendoituong(diachicosothongtinnhanvatmuctieudangchon)
             is_muctieudangchonlanguoichoi = self.moitruong.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon)
-            is_muctieudangchonlacuongthi = any(tenbaothu in tendoituongmuctieudangchon for tenbaothu in BAOTHUKYNANGTRIEUHOIs)
-            is_muctieudangchonlabaothugiangho = self.moitruong.get_is_baothugiangho(tendoituongmuctieudangchon)
+            is_muctieudangchonlacuongthi = self.moitruong.get_is_baothukynangtrieuhoi(diachicosothongtinnhanvatmuctieudangchon)
+            is_muctieudangchonlabaothugiangho = self.moitruong.get_is_baothugiangho(diachicosothongtinnhanvatmuctieudangchon)
 
-            is_muctieupk = is_muctieudangchonlanguoichoi or is_muctieudangchonlacuongthi  # or is_muctieudangchonlabaothugiangho
+            is_muctieupk = is_muctieudangchonlanguoichoi or is_muctieudangchonlacuongthi  or is_muctieudangchonlabaothugiangho
 
             thongtinmuctieuhientai["ten"] = tendoituongmuctieudangchon
             thongtinmuctieuhientai["is_nguoichoi"] = is_muctieudangchonlanguoichoi
@@ -830,12 +829,10 @@ class TacTu:
             if self._tenmuctieukhongtancongs and tendoituongmuctieuxemxet in self._tenmuctieukhongtancongs:
                 continue
 
-            is_muctieuxemxetlacuongthi = tendoituongmuctieuxemxet and any(tenbaothu in tendoituongmuctieuxemxet for tenbaothu in BAOTHUKYNANGTRIEUHOIs)
-            is_muctieuxemxetlabaothugiangho = self.moitruong.get_is_baothugiangho(tendoituongmuctieuxemxet)
-            is_muctieuxemxetpk = is_muctieuxemxetlanguoichoi or is_muctieuxemxetlacuongthi  # or is_muctieuxemxetlabaothugiangho
+            is_muctieuxemxetlacuongthi = self.moitruong.get_is_baothukynangtrieuhoi(diachicosothongtinnhanvatmuctieuxemxet)
+            is_muctieuxemxetlabaothugiangho = self.moitruong.get_is_baothugiangho(diachicosothongtinnhanvatmuctieuxemxet)
+            is_muctieuxemxetpk = is_muctieuxemxetlanguoichoi or is_muctieuxemxetlacuongthi  or is_muctieuxemxetlabaothugiangho
 
-            if is_muctieuxemxetlacuongthi and TENNGUOICHOICUNGBANGs and any("( {} )".format(n) in tendoituongmuctieuxemxet for n in TENNGUOICHOICUNGBANGs):
-                continue
             if self._is_chidanhnguoichoi and not is_muctieuxemxetpk:
                 continue
             if is_bandokhongpk and is_muctieuxemxetpk:
@@ -1186,12 +1183,11 @@ class TacTu:
         diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
 
         is_muctieusudungphapluc = diachimuctieu and self.moitruong.get_idloaivukhi(diachimuctieu) in (LOAIVUKHI_KIEM, LOAIVUKHI_AMKHI)
-        tendoituongmuctieu = diachimuctieu and self.moitruong.get_tendoituong(diachimuctieu)
-        is_muctieulacuongthi = tendoituongmuctieu and any(tenbaothu in tendoituongmuctieu for tenbaothu in BAOTHUKYNANGTRIEUHOIs)
-        is_muctieulabaothugiangho = diachimuctieu and self.moitruong.get_is_baothugiangho(tendoituongmuctieu)
-        is_muctieulanguoichoi = diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu)
+        is_muctieulacuongthi = self.moitruong.get_is_baothukynangtrieuhoi(diachimuctieu)
+        is_muctieulabaothugiangho = self.moitruong.get_is_baothugiangho(diachimuctieu)
+        is_muctieulanguoichoi = self.moitruong.get_is_nguoichoi(diachimuctieu)
         is_muctieugiukhoangcach = (is_muctieulanguoichoi and self.moitruong.get_idloaivukhi(diachimuctieu) not in (LOAIVUKHI_KIEM, LOAIVUKHI_AMKHI))  # or self._is_tudongdichuyendiemdanhxungquanh
-        is_muctieupk = is_muctieulanguoichoi or is_muctieulacuongthi  # or is_muctieulabaothugiangho
+        is_muctieupk = is_muctieulanguoichoi or is_muctieulacuongthi  or is_muctieulabaothugiangho
 
         khoangcach = self.moitruong.get_khoangcach(diachimuctieu) if diachimuctieu else 0
 
@@ -1262,11 +1258,10 @@ class TacTu:
 
         idtuthenhanvat = self.moitruong.get_idtuthenhanvat()
         diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
-        is_muctieulanguoichoi = diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu)
-        tendoituongmuctieu = diachimuctieu and self.moitruong.get_tendoituong(diachimuctieu)
-        is_muctieulacuongthi = tendoituongmuctieu and any(tenbaothu in tendoituongmuctieu for tenbaothu in BAOTHUKYNANGTRIEUHOIs)
-        is_muctieulabaothugiangho = diachimuctieu and self.moitruong.get_is_baothugiangho(tendoituongmuctieu)
-        is_muctieupk = is_muctieulanguoichoi or is_muctieulacuongthi  # or is_muctieulabaothugiangho
+        is_muctieulanguoichoi = self.moitruong.get_is_nguoichoi(diachimuctieu)
+        is_muctieulacuongthi = self.moitruong.get_is_baothukynangtrieuhoi(diachimuctieu)
+        is_muctieulabaothugiangho = self.moitruong.get_is_baothugiangho(diachimuctieu)
+        is_muctieupk = is_muctieulanguoichoi or is_muctieulacuongthi  or is_muctieulabaothugiangho
         khoangcach = self.moitruong.get_khoangcach(diachimuctieu) if diachimuctieu else 0
         nguyenkhiconlai = self.moitruong.get_nguyenkhiconlai()
 
@@ -1398,18 +1393,17 @@ class TacTu:
         phantramnoilucconlai = self.moitruong.get_phantramnoilucconlai()
         phantramsinhlucconlai = self.moitruong.get_phantramsinhlucconlai()
 
-        is_muctieulanguoichoi = diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu)
-        tendoituongmuctieu = diachimuctieu and self.moitruong.get_tendoituong(diachimuctieu)
-        is_muctieulacuongthi = tendoituongmuctieu and any(tenbaothu in tendoituongmuctieu for tenbaothu in BAOTHUKYNANGTRIEUHOIs)
-        is_muctieulabaothugiangho = diachimuctieu and self.moitruong.get_is_baothugiangho(tendoituongmuctieu)
-        is_muctieupk = is_muctieulanguoichoi or is_muctieulacuongthi  # or is_muctieulabaothugiangho
+        is_muctieulanguoichoi = self.moitruong.get_is_nguoichoi(diachimuctieu)
+        is_muctieulacuongthi = self.moitruong.get_is_baothukynangtrieuhoi(diachimuctieu)
+        is_muctieulabaothugiangho = self.moitruong.get_is_baothugiangho(diachimuctieu)
+        is_muctieupk = is_muctieulanguoichoi or is_muctieulacuongthi  or is_muctieulabaothugiangho
 
         danhsachuutien = [
             (VITRIKYNANG_HUYETMACHU, "sudungkynangkhongmuctieu", lambda: phantramsinhlucconlai > 25 and phantramnoilucconlai <= 50, 0, None, True, False),
             (VITRIKYNANG_THANTUEPHAPCHU, "sudungkynangkhongmuctieu", lambda: noilucconlai > 150 and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THANTUEPHAPCHU,), macdinh = True, is_hieuungcoloi = 1), 0, None, True, False),
             (VITRIKYNANG_PHUCMAQUYET, "sudungkynangmuctieu", lambda: diachimuctieu and noilucconlai > 50 and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA, KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
-            (VITRIKYNANG_THUCGIAP, "sudungkynangmuctieu", lambda: diachimuctieu and noilucconlai > 50 and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and not self.moitruong.get_is_cohieuungs((VITRIKYNANG_THUCGIAP,) and (is_muctieupk or not self._is_nhieumuctieugan3), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu), KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
-            (VITRIKYNANG_THUCCOT, "sudungkynangmuctieu", lambda: diachimuctieu and noilucconlai > 50 and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and not self.moitruong.get_is_cohieuungs((VITRIKYNANG_THUCCOT,) and (is_muctieupk or not self._is_nhieumuctieugan3), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu), KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
+            (VITRIKYNANG_THUCGIAP, "sudungkynangmuctieu", lambda: diachimuctieu and noilucconlai > 50 and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and not self.moitruong.get_is_cohieuungs((VITRIKYNANG_THUCGIAP,), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu) and (is_muctieupk or not self._is_nhieumuctieugan3), KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
+            (VITRIKYNANG_THUCCOT, "sudungkynangmuctieu", lambda: diachimuctieu and noilucconlai > 50 and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and not self.moitruong.get_is_cohieuungs((VITRIKYNANG_THUCCOT,), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu) and (is_muctieupk or not self._is_nhieumuctieugan3), KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
             # (VITRIKYNANG_LOIDONGCUUTHIEN, "sudungkynangkhongmuctieu", lambda: diachimuctieu and noilucconlai > 50 and self._is_nhieumuctieugan3 and khoangcach <= KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN, KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN, None, True, True),
             (None, "dichuyentiepcantamxa", lambda: diachimuctieu and khoangcach > KHOANGCACHSUDUNGKYNANGTAMXA, KHOANGCACHSUDUNGKYNANGTAMXA, None, False, False),
         ]
@@ -1670,12 +1664,10 @@ class TacTu:
             diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
             if diachimuctieu:
                 tendoituongmuctieuhientai = self.moitruong.get_tendoituong(diachimuctieu)
-                is_muctieuhientailacuongthi = tendoituongmuctieuhientai and any(tenbaothu in tendoituongmuctieuhientai for tenbaothu in BAOTHUKYNANGTRIEUHOIs)
-                is_muctieupk = self.moitruong.get_is_nguoichoi(diachimuctieu) or tendoituongmuctieuhientai == TROMBAOPHITAC or is_muctieuhientailacuongthi  # or self.moitruong.get_is_baothugiangho(tendoituongmuctieuhientai)
+                is_muctieupk = self.moitruong.get_is_nguoichoi(diachimuctieu) or tendoituongmuctieuhientai == TROMBAOPHITAC or self.moitruong.get_is_baothukynangtrieuhoi(diachimuctieu) or self.moitruong.get_is_baothugiangho(diachimuctieu)
                 if not is_muctieupk:
                     if self._is_tudongvebanrac and time.time() - self._thoidiemvohieuquadichuyennhatvatpham > 0.:
                         khoangcachmuctieu = self.moitruong.get_khoangcach(diachimuctieu)
-                        # khoangcachnhat = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat) if self._diachicosovatphamdangnhat else KHOANGCACHTOIDAHOPLE
                         khoangcachnhatmuctieu = self.moitruong.get_khoangcach(diachimuctieu, self._diachicosovatphamdangnhat) if self._diachicosovatphamdangnhat else KHOANGCACHTOIDAHOPLE
                         if khoangcachnhatmuctieu < khoangcachmuctieu:
                             return
@@ -2671,8 +2663,7 @@ class TacTu:
                     if self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon) and self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon) <= KHOANGCACHTOANMANHINH:
                         iddoituongnhanvatmuctieudangchon = self.moitruong.get_iddoituong(diachicosothongtinnhanvatmuctieudangchon)
                         if iddoituongnhanvatmuctieudangchon:
-                            if self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon) <= KHOANGCACHSUDUNGKYNANGTAMXA:
-                                self.moitruong.action_ralenhbaothumaosontancong(iddoituongbaothumaoson, iddoituongnhanvatmuctieudangchon)
+                            self.moitruong.action_ralenhbaothumaosontancong(iddoituongbaothumaoson, iddoituongnhanvatmuctieudangchon)
 
                 break
 
@@ -2863,9 +2854,7 @@ class TacTu:
 
         diachimuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
         if diachimuctieudangchon:
-            tendoituongmuctieudangchon = self.moitruong.get_tendoituong(diachimuctieudangchon)
-            is_muctieudangchonlacuongthi = tendoituongmuctieudangchon and any(tenbaothu in tendoituongmuctieudangchon for tenbaothu in BAOTHUKYNANGTRIEUHOIs)
-            if self.moitruong.get_is_nguoichoi(diachimuctieudangchon) or is_muctieudangchonlacuongthi:  # or self.moitruong.get_is_baothugiangho(tendoituongmuctieudangchon):
+            if self.moitruong.get_is_nguoichoi(diachimuctieudangchon) or self.moitruong.get_is_baothukynangtrieuhoi(diachimuctieudangchon) or self.moitruong.get_is_baothugiangho(diachimuctieudangchon):
                 self._is_danggomquai = False
                 self._yeucaugomquai = None
                 self._idquaidangkeo = 0

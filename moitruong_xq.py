@@ -1172,6 +1172,8 @@ class MoiTruong:
         return read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0x28) if diachicosothongtinnhanvat else False
 
     def get_is_nguoichoi(self, diachicosothongtinnhanvat):
+        if not diachicosothongtinnhanvat:
+            return
         return self.get_idloainhanvat(diachicosothongtinnhanvat) in (LOAIMUCTIEU_NGUOICHOIKHACNHOM, LOAIMUCTIEU_NGUOICHOICUNGNHOM)
 
     def get_is_npc(self, diachicosothongtinnhanvat):
@@ -1196,8 +1198,40 @@ class MoiTruong:
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
         return read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0x29) == 1
 
-    def get_is_baothugiangho(self, tendoituong):
-        return "(" in tendoituong
+    def get_is_baothugiangho(self, diachicosodoituong):
+        if not diachicosodoituong:
+            return False
+        tendoituong = read_string(self.tientrinh, diachicosodoituong + 0x10AC)
+        if not tendoituong:
+            return False
+        return "(" in tendoituong and "( " not in tendoituong
+
+    def get_is_baothukynangtrieuhoi(self, diachicosodoituong):
+        if not diachicosodoituong:
+            return False
+        tendoituong = read_string(self.tientrinh, diachicosodoituong + 0x10AC)
+        if not tendoituong:
+            return False
+        return tendoituong.count("(") == 2
+
+    def get_tenchunhan(self, diachicosodoituong):
+        if not diachicosodoituong:
+            return False
+
+        tendoituong = self.get_tendoituong(diachicosodoituong)
+
+        if not tendoituong:
+            return False
+
+        if "(" in tendoituong and ")" in tendoituong:
+            try:
+                tenchunhan = tendoituong.split("(")[1].split(")")[0].strip()
+                if tenchunhan:
+                    return tenchunhan
+            except Exception:
+                pass
+
+        return False
 
     def get_is_cothetancong(self, diachicosothongtinnhanvat):
         if not diachicosothongtinnhanvat or not self.get_is_nhanvattontai(diachicosothongtinnhanvat) or self.get_is_nhanvatdachet(diachicosothongtinnhanvat): return False
@@ -1208,27 +1242,12 @@ class MoiTruong:
 
         tenmuctieu = self.get_tendoituong(diachicosothongtinnhanvat)
         if tenmuctieu:
-            if DAUBINH in tenmuctieu:
-                return False
-            elif any(tenbaothu in tenmuctieu for tenbaothu in BAOTHUKYNANGTRIEUHOIs):
-                try:
-                    tenchunhan = tenmuctieu.split("(")[1].split(")")[0].strip()
-                    if tenchunhan:
-                        if tenchunhan == self.get_tendoituong() or tenchunhan in TENNGUOICHOICUNGBANGs: return False
-                        diachicosothongtinnhanvatchunhan = self.action_timkiemnhanvat(tennhanvat = tenchunhan)
-                        if diachicosothongtinnhanvatchunhan: return self.get_is_cothetancong(diachicosothongtinnhanvatchunhan)
-                except Exception:
-                    pass
-            elif self.get_is_baothugiangho(tenmuctieu):
-                return False
-                try:
-                    tenchunhan = tenmuctieu.split("(")[1].split(")")[0].strip()
-                    if tenchunhan:
-                        if tenchunhan == self.get_tendoituong() or tenchunhan in TENNGUOICHOICUNGBANGs: return False
-                        diachicosothongtinnhanvatchunhan = self.action_timkiemnhanvat(tennhanvat = tenchunhan)
-                        if diachicosothongtinnhanvatchunhan: return self.get_is_cothetancong(diachicosothongtinnhanvatchunhan)
-                except Exception:
-                    pass
+            if self.get_is_baothukynangtrieuhoi(diachicosothongtinnhanvat) or self.get_is_baothugiangho(diachicosothongtinnhanvat):
+                tenchunhan = self.get_tenchunhan(diachicosothongtinnhanvat)
+                if tenchunhan:
+                    if tenchunhan == self.get_tendoituong() or tenchunhan in TENNGUOICHOICUNGBANGs: return False
+                    diachicosothongtinnhanvatchunhan = self.action_timkiemnhanvat(tennhanvat = tenchunhan)
+                    if diachicosothongtinnhanvatchunhan: return self.get_is_cothetancong(diachicosothongtinnhanvatchunhan)
 
         idmaupk = self.get_idmaupk()
         if idmaupk == MAUPK_HOABINH and idloainhanvat in (LOAIMUCTIEU_NGUOICHOIKHACNHOM, LOAIMUCTIEU_NGUOICHOICUNGNHOM):
