@@ -660,7 +660,8 @@ class TacTu:
         if not self._is_tudongtimkiemmuctieu:
             return
 
-        if self.moitruong.get_idbandohientai() in BANDOKHONGPKs:
+        idbandohientai = self.moitruong.get_idbandohientai()
+        if idbandohientai in BANDOKHONGPKs:
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             return
 
@@ -669,7 +670,7 @@ class TacTu:
             self.moitruong._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
             self._is_battudongtancongvatly = False
 
-        idbandohientai = self.moitruong.get_idbandohientai()
+        idbandohientai = idbandohientai
         if idbandohientai != self._idbandomuctieudangchon:
             self._idbandomuctieudangchon = idbandohientai
             self._diachicosomuctieuduphong = 0
@@ -729,7 +730,7 @@ class TacTu:
             is_muctieudangchonlacuongthi = self.moitruong.get_is_baothukynangtrieuhoi(diachicosothongtinnhanvatmuctieudangchon)
             is_muctieudangchonlabaothugiangho = self.moitruong.get_is_baothugiangho(diachicosothongtinnhanvatmuctieudangchon)
 
-            is_muctieupk = is_muctieudangchonlanguoichoi or is_muctieudangchonlacuongthi  or is_muctieudangchonlabaothugiangho
+            is_muctieupk = is_muctieudangchonlanguoichoi or (idbandohientai != BANDO_CHIENTRUONG and (is_muctieudangchonlacuongthi or is_muctieudangchonlabaothugiangho))
 
             thongtinmuctieuhientai["ten"] = tendoituongmuctieudangchon
             thongtinmuctieuhientai["is_nguoichoi"] = is_muctieudangchonlanguoichoi
@@ -753,8 +754,6 @@ class TacTu:
             elif self._tenmuctieutancongs and tendoituongmuctieudangchon not in self._tenmuctieutancongs:
                 is_boquamuctieuhientai = True
             elif self._tenmuctieukhongtancongs and tendoituongmuctieudangchon in self._tenmuctieukhongtancongs:
-                is_boquamuctieuhientai = True
-            elif is_muctieudangchonlacuongthi and TENNGUOICHOICUNGBANGs and any("( {} )".format(n) in tendoituongmuctieudangchon for n in TENNGUOICHOICUNGBANGs):
                 is_boquamuctieuhientai = True
             elif self.moitruong.get_idmaupk() == MAUPK_HOABINH and is_muctieupk:
                 is_boquamuctieuhientai = True
@@ -831,7 +830,7 @@ class TacTu:
 
             is_muctieuxemxetlacuongthi = self.moitruong.get_is_baothukynangtrieuhoi(diachicosothongtinnhanvatmuctieuxemxet)
             is_muctieuxemxetlabaothugiangho = self.moitruong.get_is_baothugiangho(diachicosothongtinnhanvatmuctieuxemxet)
-            is_muctieuxemxetpk = is_muctieuxemxetlanguoichoi or is_muctieuxemxetlacuongthi  or is_muctieuxemxetlabaothugiangho
+            is_muctieuxemxetpk = is_muctieuxemxetlanguoichoi or (idbandohientai != BANDO_CHIENTRUONG and (is_muctieuxemxetlacuongthi or is_muctieuxemxetlabaothugiangho))
 
             if self._is_chidanhnguoichoi and not is_muctieuxemxetpk:
                 continue
@@ -1478,8 +1477,6 @@ class TacTu:
                     priority = 1
                 elif idnguoichoidangxemxet in NHANVATCUNGBANGs:
                     priority = 2
-            elif "( {} )".format(self.moitruong.get_tendoituong(diachidoituongdangxemxet)) in TENNGUOICHOICUNGBANGs or "( {} )".format(self.moitruong.get_tendoituong(diachidoituongdangxemxet)) in TENNGUOICHOICUNGBANGs:
-                priority = 2
             if priority != -1:
                 danhsachungviens.append((priority, diachidoituongdangxemxet))
 
@@ -1719,8 +1716,6 @@ class TacTu:
                 id_nd = self.moitruong.get_idnguoichoi(addr)
                 if id_nd in idnguoichoithanhviennhoms and id_nd != self.moitruong.get_idnguoichoi():
                     danhsachungviens.append(addr)
-                elif "( {} )".format(self.moitruong.get_tendoituong(addr)) in TENNGUOICHOICUNGBANGs or "( {} )".format(self.moitruong.get_tendoituong(addr)) in TENNGUOICHOICUNGBANGs:
-                    danhsachungviens.append(addr)
 
         for addr in danhsachungviens:
             id_nd = self.moitruong.get_idnguoichoi(addr)
@@ -1796,8 +1791,6 @@ class TacTu:
                 if self.moitruong.get_khoangcach(addr) > KHOANGCACHSUDUNGKYNANGTAMXA: continue
                 id_nd = self.moitruong.get_idnguoichoi(addr)
                 if id_nd in idnguoichoithanhviennhoms and id_nd != self.moitruong.get_idnguoichoi():
-                    danhsachungviens.append(addr)
-                elif "( {} )".format(self.moitruong.get_tendoituong(addr)) in TENNGUOICHOICUNGBANGs or "( {} )".format(self.moitruong.get_tendoituong(addr)) in TENNGUOICHOICUNGBANGs:
                     danhsachungviens.append(addr)
 
         for addr in danhsachungviens:
