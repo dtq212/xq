@@ -6,7 +6,7 @@ import time
 import pymem
 
 from hangso_xq import *
-from moitruong_xq import MoiTruong
+from moitruong_xq import MoiTruong, DOUUTIEN_THAP, DOUUTIEN_KHANCAP, DOUUTIEN_CAO
 from tienich_xq import luuthietlap as util_luuthietlap
 from tienich_xq import taithietlap as util_taithietlap, phatam
 
@@ -975,7 +975,7 @@ class TacTu:
             if not self._is_dasudungbaothuvatpham and time.time() - self._thoidiemsudungbaothuvatphamgannhat < 1.5 and time.time() - self._thoidiemyeucaubaothuvatphamdoilenhgannhat > 0.25:
                 self._thoidiemtamngungsudungkynang = max(self._thoidiemtamngungsudungkynang, time.time() + 0.5)
                 self._thoidiemyeucaubaothuvatphamdoilenhgannhat = time.time()
-                self.moitruong.action_thucthicaulenh("pf 4131.@", delay = 0.)
+                self.moitruong.action_thucthicaulenh("pf 4131.@", douutien = DOUUTIEN_KHANCAP)
 
             if not self._is_dasudungbaothuvatpham and time.time() - self._thoidiemsudungbaothuvatphamgannhat > 1.5:
                 for baothuvatpham in BAOTHUVATPHAMs:
@@ -1109,7 +1109,7 @@ class TacTu:
             return True, True
 
         elif loaikynang == "battathieuungphapbao":
-            self.moitruong.action_thucthicaulenh("pf2 908.6", delay = 0.)
+            self.moitruong.action_thucthicaulenh("pf2 908.6", douutien = DOUUTIEN_CAO)
             self._thoidiembattathieuungphapbaogannhat = time.time()
 
         elif loaikynang == "sudungcaoboctacdan":
@@ -1120,7 +1120,7 @@ class TacTu:
                         caulenh = "use {}# for {}".format(hex(iddoituongvatpham).replace("0x", ""), self.moitruong.get_idnguoichoi(diachimuctieu))
                     else:
                         caulenh = "use {}# for {}#".format(hex(iddoituongvatpham).replace("0x", ""), hex(self.moitruong.get_iddoituong(diachimuctieu)).replace("0x", ""))
-                    if self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0):
+                    if self.moitruong.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO):
                         self._thoidiemsudungcaoboctacdangannhat = time.time()
         else:
             if loaikynang == "sudungkynangkhongmuctieu":
@@ -2033,7 +2033,7 @@ class TacTu:
         if not iddoituongvatpham:
             return
 
-        is_ok = self.moitruong.action_thucthicaulenh("drop ! {}#1".format(hex(iddoituongvatpham)).replace("0x", ""))
+        is_ok = self.moitruong.action_thucthicaulenh("drop ! {}#1".format(hex(iddoituongvatpham)).replace("0x", ""), douutien = DOUUTIEN_THAP)
         if is_ok:
             self._thoidiemvutdogannhat = time.time()
 
@@ -2471,7 +2471,7 @@ class TacTu:
 
                 if soluonghoithanhphu < 30:
                     caulenh = "buy {}# 2 {} 1500".format(hex(idnpc).replace("0x", ""), 30 - soluonghoithanhphu)
-                    self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
+                    self.moitruong.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_THAP)
 
                 if self.moitruong.get_tenmonphai() == "vanmongcoc":
                     vitritranky = self.moitruong.action_timkiemvitrivatphamhanhtrang(TRANKY)
@@ -2479,7 +2479,7 @@ class TacTu:
 
                     if soluongtranky < 999:
                         caulenh = "buy {}# 6 {} 60".format(hex(idnpc).replace("0x", ""), 999 - soluongtranky)
-                        self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
+                        self.moitruong.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_THAP)
 
                 if self.moitruong.get_tenmonphai() == "maoson":
                     vitribuagiay = self.moitruong.action_timkiemvitrivatphamhanhtrang(BUAGIAY)
@@ -2487,7 +2487,7 @@ class TacTu:
 
                     if soluongbuagiay < 999:
                         caulenh = "buy {}# 1 {} 10".format(hex(idnpc).replace("0x", ""), 999 - soluongbuagiay)
-                        self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
+                        self.moitruong.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_THAP)
 
                 if self._is_tudongtrieuhoibaothudautien:
                     vitribaothuthucpham = self.moitruong.action_timkiemvitrivatphamhanhtrang(CAOCAPBAOTHUTHUCPHAM)
@@ -2495,7 +2495,7 @@ class TacTu:
 
                     if soluongbaothuthucpham < 30:
                         caulenh = "buy {}# 18 {} 400".format(hex(idnpc).replace("0x", ""), 30 - soluongbaothuthucpham)
-                        self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
+                        self.moitruong.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_THAP)
 
     def action_tudongsuavatpham(self, delay = 3.):
         if self._is_tudongsuavatpham:
@@ -2641,7 +2641,7 @@ class TacTu:
                         self._thoidiemtudongtrieuhoibaothudautien = time.time()
                     break
                 break
-    
+
     def action_tudongdieukhienbaothumaoson(self):
         if self._is_tudongdieukhienbaothumaoson:
             while True:
@@ -2650,7 +2650,7 @@ class TacTu:
                 if self.moitruong.get_is_nhanvatdachet():
                     break
 
-                if self.moitruong.get_tenmonphai() not in ("maoson", ):
+                if self.moitruong.get_tenmonphai() not in ("maoson",):
                     break
 
                 iddoituongbaothumaoson = self.moitruong.get_iddoituongbaothumaoson()
@@ -2675,7 +2675,7 @@ class TacTu:
             while True:
                 if self.moitruong.get_tenmonphai() in ("maoson", "vanmongcoc"):
                     break
-                    
+
                 if self.moitruong.get_is_nhanvatdachet():
                     break
 
@@ -2754,7 +2754,7 @@ class TacTu:
                             break
 
                 break
-    
+
     def action_tudongbanrac(self):
         diachi_npc = self.moitruong.action_timkiemnhanvat(CHUTIEMTAPHOA)
         if not diachi_npc:
@@ -2776,14 +2776,10 @@ class TacTu:
 
             tenvatphamhanhtrang = self.moitruong.get_tenvatphamhanhtrang(i)
             if iddoituongvatphamhanhtrang and iddoituongvatphamhanhtrang > 0 and tenvatphamhanhtrang not in VATPHAMKHONGBANs and "Nhập môn" not in tenvatphamhanhtrang:
-                # caulenh = "sell ! {}# {}# 30".format(hex(idnpc).replace("0x", ""), hex(iddoituongvatphamhanhtrang).replace("0x", ""))
-                # self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
-                # sovatphamdaban += 1
-                # time.sleep(2.)
                 motavatpham = self.moitruong.get_motavatphamhanhtrang(i)
                 if "Phong Ấn" not in motavatpham or ("35 cấp" not in motavatpham and "30 cấp" not in motavatpham and "60 cấp" not in motavatpham and "65 cấp" not in motavatpham):
                     caulenh = "sell ! {}# {}# 30".format(hex(idnpc).replace("0x", ""), hex(iddoituongvatphamhanhtrang).replace("0x", ""))
-                    self.moitruong.action_thucthicaulenh(caulenh, delay = 0.)
+                    self.moitruong.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_THAP)
                     sovatphamdaban += 1
                     time.sleep(2.)
 

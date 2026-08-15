@@ -128,7 +128,7 @@ class LoopChinh:
                 maxacnhan = noidungcuasoxacnhan.split(":")[1].strip()
                 if maxacnhan.isnumeric():
                     caulenh = f"captcha2 {maxacnhan}"
-                    self.moitruong.action_thucthicaulenh(caulenh, delay = 0.0)
+                    self.moitruong.action_thucthicaulenh(caulenh)
                     self.moitruong.set_is_dangmocuasoxacnhan(False)
                     time.sleep(1.0)
             except IndexError:
@@ -139,6 +139,7 @@ class LoopChinh:
         self.tactu.action_xulygomquai()
         self.tactu.action_sudungkynang()
         self.tactu.action_tudongsudungkynangbaothu()
+        self.tactu.action_tudongdieukhienbaothumaoson()
 
         # if self.moitruong.get_idnguoichoi() == 4599 and self.moitruong.get_idbandohientai() == BANDO_CHIENTRUONG:
         #     if not self.moitruong.get_is_dangnamtrongnhom():
@@ -261,7 +262,6 @@ class LoopPhu:
         self.tactu.action_tudongdaotangbaodo()
 
         self.tactu.action_tudongtrieuhoibaothudautien()
-        self.tactu.action_tudongdieukhienbaothumaoson()
 
         self.tactu.action_tudongdichientruong()
         self.tactu.action_dichuyentudo()
@@ -286,5 +286,5 @@ class LoopPhu:
                 if tenvatphamhanhtrang and tenvatphamhanhtrang not in VATPHAMKHONGBANs or tenvatphamhanhtrang in ("Phá Cựu Giáp", ):
                     motavatpham = self.moitruong.get_motavatphamhanhtrang(i)
                     if "Phong Ấn" not in motavatpham:
-                        self.moitruong.action_thucthicaulenh2("drop ! {}#30".format(hex(self.moitruong.get_iddoituongvatphamhanhtrang(i))).replace("0x", ""), delay = 0.)
+                        self.moitruong.action_thucthicaulenh2("drop ! {}#30".format(hex(self.moitruong.get_iddoituongvatphamhanhtrang(i))).replace("0x", ""))
                         break

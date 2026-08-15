@@ -4,12 +4,29 @@ from keystone import Ks, KS_ARCH_X86, KS_MODE_32
 from hangso_xq import *
 from tienich_xq import *
 
+import queue
+import threading
+import time
+from dataclasses import dataclass, field
+
 OFFSET_DIACHICOSOTHONGTINGAME = 0x380B44
 OFFSET_DIACHICOSOTHONGTINNHANVAT1 = 0x380AF8
 OFFSET_DIACHICOSOHIEUUNGNHANVAT = 0x1638
 OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT = 0x13C
 OFFSET_DIACHICOSOMOIKYNANG = 0x224
 OFFSET_DIACHICOSOTHONGTINNHANVATX = 0x1BDA60
+
+DOUUTIEN_KHANCAP = 1  # Dành cho bơm máu, giải hiệu ứng, cứu sinh
+DOUUTIEN_CAO = 3  # Dành cho kỹ năng tấn công, PK
+DOUUTIEN_TRUNGBINH = 5  # Dành cho di chuyển, buff cơ bản, gọi pet
+DOUUTIEN_THAP = 10  # Dành cho nhặt đồ, gom rác, nói chuyện NPC
+
+
+@dataclass(order = True)
+class LenhThucThi:
+    douutien: int
+    thoigiantao: float
+    caulenh: str = field(compare = False)
 
 
 class MoiTruong:
@@ -116,7 +133,19 @@ class MoiTruong:
         self.diachihamthucthicaulenh = 0
         self.diachihamdichuyen = 0
 
+        self.hangdoicaulenh = queue.PriorityQueue()
+        self.caulenhdangchos = set()
+        self.is_hangdoidangchay = True
+
+        self.luongxulylenh = threading.Thread(target = self._xulyhangdoicaulenh, daemon = True)
+        self.luongxulylenh.start()
+
     def __del__(self):
+        self.is_hangdoidangchay = False
+
+        if hasattr(self, "luongxulylenh") and self.luongxulylenh.is_alive():
+            self.luongxulylenh.join(timeout = 1.0)
+
         def safe_free_old(flag_name, addr_name):
             try:
                 if getattr(self, flag_name, False):
@@ -148,6 +177,29 @@ class MoiTruong:
 
         if self.diachihamthucthicaulenh:
             safe_free(self.diachihamthucthicaulenh)
+
+    def _xulyhangdoicaulenh(self):
+        while self.is_hangdoidangchay:
+            try:
+                lenhthucthi = self.hangdoicaulenh.get(timeout = 0.05)
+
+                if lenhthucthi.caulenh in self.caulenhdangchos:
+                    self.caulenhdangchos.remove(lenhthucthi.caulenh)
+
+                if not self.diachihamthucthicaulenh:
+                    self.khoitaohamthucthicaulenh()
+
+                if self.diachihamthucthicaulenh:
+                    diachidulieu = self.diachihamthucthicaulenh + 0x40
+                    chuoi_bytes = lenhthucthi.caulenh.encode("utf-8")
+                    write_int(self.tientrinh, diachidulieu, len(chuoi_bytes))
+                    write_bytes(self.tientrinh, diachidulieu + 4, chuoi_bytes + b"\x00", len(chuoi_bytes) + 1)
+                    self.tientrinh.start_thread(self.diachihamthucthicaulenh)
+                self.hangdoicaulenh.task_done()
+            except queue.Empty:
+                continue
+            except Exception as e:
+                print(f"[LỖI XỬ LÝ LỆNH]: {e}")
 
     def khoitaohamthucthicaulenh(self):
         if self.diachihamthucthicaulenh:
@@ -185,29 +237,21 @@ class MoiTruong:
         encoding, _ = ks.asm(asm_code)
         write_bytes(self.tientrinh, self.diachihamthucthicaulenh, bytes(encoding), len(encoding))
 
-    def action_thucthicaulenh(self, caulenh, delay = 0.05):
-        if not self.diachihamthucthicaulenh:
-            self.khoitaohamthucthicaulenh()
-
-        if not self.diachihamthucthicaulenh:
+    def action_thucthicaulenh(self, caulenh, douutien = DOUUTIEN_TRUNGBINH):
+        if caulenh in self.caulenhdangchos:
             return False
 
-        if time.time() - self._thoidiemthucthicaulenhgannhat < delay:
-            return False
+        self.caulenhdangchos.add(caulenh)
+
+        lenhthucthi = LenhThucThi(
+            douutien = douutien,
+            thoigiantao = time.time(),
+            caulenh = caulenh,
+        )
+
+        self.hangdoicaulenh.put(lenhthucthi)
 
         self._thoidiemthucthicaulenhgannhat = time.time()
-
-        diachidulieu = self.diachihamthucthicaulenh + 0x40
-        chuoi_bytes = caulenh.encode("utf-8")
-
-        write_int(self.tientrinh, diachidulieu, len(chuoi_bytes))
-        write_bytes(self.tientrinh, diachidulieu + 4, chuoi_bytes + b"\x00", len(chuoi_bytes) + 1)
-
-
-        if self.get_idnguoichoi() == 59844:
-            print("{} Câu lệnh: {}".format(self.get_idnguoichoi(), caulenh))
-
-        self.tientrinh.start_thread(self.diachihamthucthicaulenh)
         return True
 
     def action_thucthicaulenh2(self, caulenh, delay = 0.05):
@@ -247,14 +291,14 @@ class MoiTruong:
             return False
         self._thoidiemralenhbaothutancong = time.time()
         caulenh = f"pet {hex(iddoituongbaothu)}# 1 {hex(iddoituongnhanvatmuctieudangchon)}#".replace("0x", "")
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh)
 
     def action_ralenhbaothutheosau(self, iddoituongbaothu, delay = 0.4):
         if time.time() - self._thoidiemralenhbaothutheosau < delay:
             return False
         self._thoidiemralenhbaothutheosau = time.time()
         caulenh = f"pet {hex(iddoituongbaothu)}# 2".replace("0x", "")
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh)
 
     def action_batchucnangmorong(self, delay = 5.):
         if self.get_is_dangbatchucnangmorong():
@@ -274,7 +318,7 @@ class MoiTruong:
 
         caulenh = f"auto open {a:04d}{b:04d}{c:04d}"
 
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh)
 
     def action_tatchucnangmorong(self, delay = 1.):
         if not self.get_is_dangbatchucnangmorong():
@@ -285,28 +329,28 @@ class MoiTruong:
 
         caulenh = f"auto close"
 
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh)
 
     def action_nhatvatphamtoado(self, toadox, toadoy, delay = 0.05):
         if time.time() - self._thoidiemnhatvatphamtoadogannhat < delay:
             return False
         self._thoidiemnhatvatphamtoadogannhat = time.time()
         caulenh = "get {} {}".format(toadox, toadoy)
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_THAP)
 
     def action_khaikhoang(self, iddoituong, delay = 0.05):
         if time.time() - self._thoidiemkhaikhoanggannhat < delay:
             return False
         self._thoidiemkhaikhoanggannhat = time.time()
         caulenh = "look {}#".format(hex(iddoituong)).replace("0x", "")
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_THAP)
 
     def action_sudungkynang(self, idkynang, delay = 0.05):
         if time.time() - self._thoidiemsudungkynanggannhat < delay:
             return False
         self._thoidiemsudungkynanggannhat = time.time()
         caulenh = "pf {}".format(idkynang)
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO)
 
     def action_sudungtancongvatly(self, diachicosothongtinnhanvatmuctieu, delay = 0.):
         if time.time() - self._thoidiemsudungtancongvatlygannhat < delay:
@@ -323,56 +367,56 @@ class MoiTruong:
         else:
             caulenh = "kill {}#".format(hex(self.get_iddoituong(diachicosothongtinnhanvatmuctieudangchon)).replace("0x", ""))
 
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO)
 
     def action_sudungkynangmuctieunguoichoi(self, idkynang, idnguoichoi, delay = 0.05):
         if time.time() - self._thoidiemsudungkynangmuctieugannhat < delay:
             return False
         self._thoidiemsudungkynangmuctieugannhat = time.time()
         caulenh = "pf {} {}".format(idkynang, idnguoichoi)
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO)
 
     def action_sudungkynangmuctieukhacnguoichoi(self, idkynang, iddoituong, delay = 0.05):
         if time.time() - self._thoidiemsudungkynangmuctieugannhat < delay:
             return False
         self._thoidiemsudungkynangmuctieugannhat = time.time()
         caulenh = "pf {} {}#".format(idkynang, hex(iddoituong)).replace("0x", "")
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO)
 
     def action_sudungkynangtoado(self, idkynang, toadox, toadoy, delay = 0.05):
         if time.time() - self._thoidiemsudungkynangtoadogannhat < delay:
             return False
         self._thoidiemsudungkynangtoadogannhat = time.time()
         caulenh = "pf {} {},{}".format(idkynang, toadox, toadoy).replace("0x", "")
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO)
 
     def action_dichuyenvatphamhanhtrang(self, iddoituong, vitri, delay = 0.4):
         if time.time() - self._thoidiemdichuyenvatphamhanhtranggannhat < delay:
             return False
         self._thoidiemdichuyenvatphamhanhtranggannhat = time.time()
         caulenh = "move {}# {}".format(hex(iddoituong), vitri).replace("0x", "")
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh)
 
     def action_dichuyenvatphamsanghanhtrangkhac(self, iddoituong, vitri, delay = 0.4):
         if time.time() - self._thoidiemdichuyenvatphamsanghanhtrangkhacgannhat < delay:
             return False
         self._thoidiemdichuyenvatphamsanghanhtrangkhacgannhat = time.time()
         caulenh = "move {}# to {}".format(hex(iddoituong), vitri).replace("0x", "")
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh)
 
     def action_trochuyenvoinpc(self, iddoituong, noidungtrochuyen, delay = 0.2, caulenhtrochuyen = "talk"):
         if time.time() - self._thoidiemtrochuyenvoinpcgannhat < delay:
             return False
         self._thoidiemtrochuyenvoinpcgannhat = time.time()
         caulenh = "{} {}# {}".format(caulenhtrochuyen, hex(iddoituong), noidungtrochuyen).replace("0x", "")
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_THAP)
 
-    def action_sudungvatpham(self, iddoituong, is_boquaxacnhan = False, delay = 0.2):
+    def action_sudungvatpham(self, iddoituong, is_boquaxacnhan = False, delay = 0.2, douutien = DOUUTIEN_KHANCAP):
         if time.time() - self._thoidiemsudungvatphamgannhat < delay:
             return False
         self._thoidiemsudungvatphamgannhat = time.time()
         caulenh = "use ! {}#".format(hex(iddoituong)).replace("0x", "") if is_boquaxacnhan else "use {}#".format(hex(iddoituong)).replace("0x", "")
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh, douutien = douutien)
 
     def action_moihoacxinvaonhom(self, idnguoichoi, delay = 0.2):
         if time.time() - self._thoidiemthaotacnhomgannhat < delay:
@@ -381,7 +425,7 @@ class MoiTruong:
             return
         self._thoidiemthaotacnhomgannhat = time.time()
         caulenh = "team + {}".format(idnguoichoi)
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh)
 
     def action_nhuongquyentruongnhom(self, idnguoichoi, delay = 0.2):
         if time.time() - self._thoidiemthaotacnhomgannhat < delay:
@@ -390,14 +434,14 @@ class MoiTruong:
             return
         self._thoidiemthaotacnhomgannhat = time.time()
         caulenh = "team = {}".format(idnguoichoi)
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh)
 
     def action_thoatkhoinhom(self, delay = 0.2):
         if time.time() - self._thoidiemthaotacnhomgannhat < delay:
             return
         self._thoidiemthaotacnhomgannhat = time.time()
         caulenh = "team x {}".format(self.get_idnguoichoi())
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh)
 
     def action_kiemtravadongyloimoinhom(self, idtruongnhoms, delay = 0.2):
         if time.time() - self._thoidiemthaotacnhomgannhat < delay:
@@ -414,7 +458,7 @@ class MoiTruong:
                 idnguoichoitruongnhom = int(idnguoichoitruongnhoms[1])
                 if idnguoichoitruongnhom in idtruongnhoms:
                     caulenh = "team + {}".format(idnguoichoitruongnhom)
-                    self.action_thucthicaulenh(caulenh, delay = 0.)
+                    self.action_thucthicaulenh(caulenh)
                     self._thoidiemthaotacnhomgannhat = time.time()
 
                     if self.get_is_danghiencuasoyesno():
@@ -426,28 +470,28 @@ class MoiTruong:
             return False
         self._thoidiemsudungvatphambaothugannhat = time.time()
         caulenh = "use {}# pet {}#".format(hex(iddoituongvatpham), hex(iddoituongbaothu)).replace("0x", "")
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh)
 
     def action_trieuhoibaothu(self, iddoituong, delay = 0.2):
         if time.time() - self._thoidiemtrieuhoibaothugannhat < delay:
             return False
         self._thoidiemtrieuhoibaothugannhat = time.time()
         caulenh = "pet {}# show".format(hex(iddoituong)).replace("0x", "")
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh)
 
     def action_sudungthaotacbaothu(self, iddoituong, idkynang, delay = 0.2):
         if time.time() - self._thoidiemsudungthaotacbaothugannhat < delay:
             return False
         self._thoidiemsudungthaotacbaothugannhat = time.time()
         caulenh = "pet {}# {}".format(hex(iddoituong), idkynang).replace("0x", "")
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh)
 
     def action_thietlapchedobaothu(self, iddoituong, idkynang, delay = 0.2):
         if time.time() - self._thoidiemthietlapchedobaothugannhat < delay:
             return False
         self._thoidiemthietlapchedobaothugannhat = time.time()
         caulenh = "pet {}# mode {}".format(hex(iddoituong), idkynang).replace("0x", "")
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh)
 
     def action_sudungkynangbaothu(self, idkynang, diachimuctieu, delay = 0.5):
         if idkynang in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idkynang] < delay:
@@ -460,7 +504,7 @@ class MoiTruong:
             caulenh = "pf5 {} {}#".format(idkynang, hex(self.get_iddoituong(diachimuctieu))).replace("0x", "")
 
         self._thoidiemsudungkynangvitrigannhat_map[idkynang] = time.time()
-        return self.action_thucthicaulenh(caulenh, delay = 0.)
+        return self.action_thucthicaulenh(caulenh)
 
     def action_ralenhbaothumaosontancong(self, iddoituongbaothumaoson, iddoituongnhanvatmuctieudangchon, delay = 0.5):
         if time.time() - self._thoidiemralenhbaothumaosontancong < delay:
@@ -777,8 +821,6 @@ class MoiTruong:
 
         if not self.get_is_dangbatchucnangmorong():
             self._thoidiemcochucnangmoronggannhat = time.time()
-
-
 
     def get_is_nhanvatbichoang(self):
         return self._is_nhanvatbichoang
@@ -1689,7 +1731,7 @@ class MoiTruong:
         if time.time() - self._thoidiemsuavatphamgannhat < delay: return
         idthosuavatpham = self.get_iddoituong(diachicosonhanvatthosuavatpham)
         if not idthosuavatpham: return
-        is_ok = self.action_thucthicaulenh("repair ! {}# all".format(hex(idthosuavatpham).replace("0x", "")))
+        is_ok = self.action_thucthicaulenh("repair ! {}# all".format(hex(idthosuavatpham).replace("0x", "")), delay = delay, douutien = DOUUTIEN_THAP)
         if is_ok: self._thoidiemsuavatphamgannhat = time.time()
         return is_ok
 
@@ -1945,4 +1987,3 @@ class MoiTruong:
     def get_noidungtrochuyenmoinhat(self):
         if not hasattr(self, "_addr_buffer_noidungchat"): return ""
         return read_string(self.tientrinh, self._addr_buffer_noidungchat)
-
