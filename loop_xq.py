@@ -1,3 +1,4 @@
+import queue
 import re
 import threading
 import time
@@ -120,57 +121,50 @@ class LoopChinh:
         if not self.moitruong.get_is_nhanvattontai() or self.moitruong.get_is_dangmatketnoi():
             return
 
-        if self.moitruong.get_is_dangmocuasoxacnhan():
-            phatam("Mã xác nhận", is_block = False)
-            time.sleep(2.0)
-            noidungcuasoxacnhan = self.moitruong.get_noidungcuasomaxacnhan()
-            try:
-                maxacnhan = noidungcuasoxacnhan.split(":")[1].strip()
-                if maxacnhan.isnumeric():
-                    caulenh = f"captcha2 {maxacnhan}"
-                    self.moitruong.action_thucthicaulenh(caulenh)
-                    self.moitruong.set_is_dangmocuasoxacnhan(False)
-                    time.sleep(1.0)
-            except IndexError:
-                print("Không tìm thấy mã xác nhận đúng định dạng")
-            return
-
         self.tactu.action_theonhom()
         self.tactu.action_xulygomquai()
         self.tactu.action_sudungkynang()
         self.tactu.action_tudongsudungkynangbaothu()
         self.tactu.action_tudongdieukhienbaothumaoson()
 
-        # if self.moitruong.get_idnguoichoi() == 4599 and self.moitruong.get_idbandohientai() == BANDO_CHIENTRUONG:
-        #     if not self.moitruong.get_is_dangnamtrongnhom():
-        #         self.moitruong.action_thucthicaulenh("team + 4599")
-        #         time.sleep(0.5)
-
         # if self.moitruong.get_idnguoichoi() == 59845:
         #     self.moitruong.truyvan_motavatphamhanhtrang(0)
         #     motavatpham = self.moitruong.get_motavatphamhanhtrang(0)
         #     print("Mô tả vật phẩm: {}".format(motavatpham))
         #
-        #     match = re.search(r"Ngoại Công:\s*\+(\d+)", motavatpham)
+        #     match = re.search(r"Khí huyết:\s*\+(\d+)", motavatpham)
         #
         #     if match:
         #         khihuyethientai = int(match.group(1))
-        #         print(f"Đã tìm thấy Ngoại Công: {khihuyethientai}")
+        #         print(f"Đã tìm thấy Khí huyết: {khihuyethientai}")
         #
-        #         if khihuyethientai > 315:
-        #             print("Ngoại Công > 320. Dừng tiến trình!")
+        #         if khihuyethientai > 540:
+        #             print("Khí huyết > 540. Dừng tiến trình!")
         #             self.stop.set()
         #             return
         #         else:
-        #             if self.moitruong.action_timkiemvatphamhanhtrang("Thẻ Giảm Giá"):
-        #                 self.moitruong.action_thucthicaulenh("talk 15bc# accept.1773237# 1")
-        #                 time.sleep(0.05)
-        #             else:
-        #                 self.moitruong.action_thucthicaulenh("buyitem ! 5 3 1")
-        #                 time.sleep(0.05)
-        #
+        #             # if self.moitruong.action_timkiemvatphamhanhtrang("Thẻ Giảm Giá"):
+        #             #     self.moitruong.action_thucthicaulenh("talk 15d2# accept.37ec63# 0")
+        #             #     time.sleep(0.05)
+        #             # else:
+        #             #     self.moitruong.action_thucthicaulenh("buyitem ! 5 3 1")
+        #             #     time.sleep(0.05)
+        #             self.moitruong.action_thucthicaulenh2("talk 15bc# accept.1f78640# 0")
+        #             time.sleep(0.05)
         #     else:
-        #         print("Không tìm thấy dòng Ngoại Công trong mô tả vật phẩm này.")
+        #         print("Không tìm thấy dòng Khí huyết trong mô tả vật phẩm này.")
+        if 0 and self.moitruong.get_idnguoichoi() == 59996:
+            if not self.moitruong.action_timkiemvatphamhanhtrang("Rương dự trữ"):
+                self.moitruong.action_thucthicaulenh("buyitem ! 4 7 1")
+                time.sleep(0.25)
+            self.moitruong.action_thucthicaulenh("talk d951# info.10")
+            time.sleep(0.25)
+            self.moitruong.action_thucthicaulenh("talk d951# info.11")
+            time.sleep(0.25)
+            self.moitruong.action_thucthicaulenh("talk d951# info.20")
+            time.sleep(0.25)
+            self.moitruong.action_thucthicaulenh("talk d951# info.21")
+            time.sleep(0.25)
 
         # if self.moitruong.get_idnguoichoi() in (59844, 59845):
         #     diachithiensutraodoi = self.moitruong.action_timkiemnhanvat("Thiên Sứ Trao Đổi")
@@ -280,7 +274,7 @@ class LoopPhu:
         self.moitruong.action_vohieuhoahookchienquoc2()
         self.tactu.action_muauto()
 
-        if self.moitruong.get_idnguoichoi() in [59503, 59996] and self.moitruong.get_idbandohientai() in [BANDO_YENTRUONGTHANH1, BANDO_YENTRUONGTHANH2, BANDO_YENTRUONGTHANH3] and self.tactu._is_tudongvebanrac:
+        if 0 and self.moitruong.get_idnguoichoi() in [59503, 59996] and self.moitruong.get_idbandohientai() in [BANDO_YENTRUONGTHANH1, BANDO_YENTRUONGTHANH2, BANDO_YENTRUONGTHANH3] and self.tactu._is_tudongvebanrac:
             for i in range(6, SOLUONGVATPHAMHANHTRANGTOIDA):
                 tenvatphamhanhtrang = self.moitruong.get_tenvatphamhanhtrang(i)
                 if tenvatphamhanhtrang and tenvatphamhanhtrang not in VATPHAMKHONGBANs or tenvatphamhanhtrang in ("Phá Cựu Giáp", ):
@@ -288,3 +282,30 @@ class LoopPhu:
                     if "Phong Ấn" not in motavatpham:
                         self.moitruong.action_thucthicaulenh2("drop ! {}#30".format(hex(self.moitruong.get_iddoituongvatphamhanhtrang(i))).replace("0x", ""))
                         break
+
+class LoopXuLyLenh:
+    def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
+        self.moitruong = moitruong
+        self.tactu = tactu
+        self.stop = stop
+
+    def __del__(self):
+        if not self.stop.is_set():
+            self.stop.set()
+
+    def loop(self):
+        while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():
+            try:
+                lenhthucthi = self.moitruong.hangdoicaulenh.get(timeout = 0.05)
+                if lenhthucthi.caulenh in self.moitruong.caulenhdangchos:
+                    self.moitruong.caulenhdangchos.remove(lenhthucthi.caulenh)
+                self.moitruong._ghilenhvaobonho(lenhthucthi)
+                self.moitruong.hangdoicaulenh.task_done()
+            except queue.Empty:
+                continue
+            except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
+                print(f"[Loop XỬ LÝ LỆNH] Lỗi bộ nhớ: {err}")
+                time.sleep(0.1)
+            except Exception as e:
+                print(f"[Loop XỬ LÝ LỆNH] Lỗi không xác định: {e}")
+                time.sleep(0.1)

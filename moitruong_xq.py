@@ -27,7 +27,7 @@ class LenhThucThi:
     douutien: int
     thoigiantao: float
     caulenh: str = field(compare = False)
-
+    trihoansaulenh: float = field(compare=False)
 
 class MoiTruong:
     def __init__(self, idcuaso):
@@ -135,17 +135,8 @@ class MoiTruong:
 
         self.hangdoicaulenh = queue.PriorityQueue()
         self.caulenhdangchos = set()
-        self.is_hangdoidangchay = True
-
-        self.luongxulylenh = threading.Thread(target = self._xulyhangdoicaulenh, daemon = True)
-        self.luongxulylenh.start()
 
     def __del__(self):
-        self.is_hangdoidangchay = False
-
-        if hasattr(self, "luongxulylenh") and self.luongxulylenh.is_alive():
-            self.luongxulylenh.join(timeout = 1.0)
-
         def safe_free_old(flag_name, addr_name):
             try:
                 if getattr(self, flag_name, False):
@@ -178,28 +169,20 @@ class MoiTruong:
         if self.diachihamthucthicaulenh:
             safe_free(self.diachihamthucthicaulenh)
 
-    def _xulyhangdoicaulenh(self):
-        while self.is_hangdoidangchay:
-            try:
-                lenhthucthi = self.hangdoicaulenh.get(timeout = 0.05)
+    def _ghilenhvaobonho(self, lenh):
+        if not self.diachihamthucthicaulenh:
+            self.khoitaohamthucthicaulenh()
 
-                if lenhthucthi.caulenh in self.caulenhdangchos:
-                    self.caulenhdangchos.remove(lenhthucthi.caulenh)
+        if self.diachihamthucthicaulenh:
+            diachidulieu = self.diachihamthucthicaulenh + 0x40
+            chuoi_bytes = lenh.caulenh.encode("utf-8")
 
-                if not self.diachihamthucthicaulenh:
-                    self.khoitaohamthucthicaulenh()
+            write_int(self.tientrinh, diachidulieu, len(chuoi_bytes))
+            write_bytes(self.tientrinh, diachidulieu + 4, chuoi_bytes + b"\x00", len(chuoi_bytes) + 1)
 
-                if self.diachihamthucthicaulenh:
-                    diachidulieu = self.diachihamthucthicaulenh + 0x40
-                    chuoi_bytes = lenhthucthi.caulenh.encode("utf-8")
-                    write_int(self.tientrinh, diachidulieu, len(chuoi_bytes))
-                    write_bytes(self.tientrinh, diachidulieu + 4, chuoi_bytes + b"\x00", len(chuoi_bytes) + 1)
-                    self.tientrinh.start_thread(self.diachihamthucthicaulenh)
-                self.hangdoicaulenh.task_done()
-            except queue.Empty:
-                continue
-            except Exception as e:
-                print(f"[LỖI XỬ LÝ LỆNH]: {e}")
+            self.tientrinh.start_thread(self.diachihamthucthicaulenh)
+            if lenh.trihoansaulenh > 0.:
+                time.sleep(lenh.trihoansaulenh)
 
     def khoitaohamthucthicaulenh(self):
         if self.diachihamthucthicaulenh:
@@ -247,10 +230,9 @@ class MoiTruong:
             douutien = douutien,
             thoigiantao = time.time(),
             caulenh = caulenh,
+            trihoansaulenh = 0.00,
         )
-
         self.hangdoicaulenh.put(lenhthucthi)
-
         self._thoidiemthucthicaulenhgannhat = time.time()
         return True
 
@@ -1239,17 +1221,19 @@ class MoiTruong:
         if idloainhanvat == LOAIMUCTIEU_NGUOICHOICUNGNHOM: return False
         if self.get_idbandohientai() == BANDO_CHIENTRUONG and self.get_idphechientruong() == self.get_idphechientruong(diachicosothongtinnhanvat): return False
         if self.get_is_npc(diachicosothongtinnhanvat) or self.get_is_nhanvatchuasansang(diachicosothongtinnhanvat): return False
-
+        idmaupk = self.get_idmaupk()
         tenmuctieu = self.get_tendoituong(diachicosothongtinnhanvat)
         if tenmuctieu:
             if self.get_is_baothukynangtrieuhoi(diachicosothongtinnhanvat) or self.get_is_baothugiangho(diachicosothongtinnhanvat):
+                if idmaupk == MAUPK_HOABINH:
+                    return False
                 tenchunhan = self.get_tenchunhan(diachicosothongtinnhanvat)
                 if tenchunhan:
                     if tenchunhan == self.get_tendoituong() or tenchunhan in TENNGUOICHOICUNGBANGs: return False
                     diachicosothongtinnhanvatchunhan = self.action_timkiemnhanvat(tennhanvat = tenchunhan)
                     if diachicosothongtinnhanvatchunhan: return self.get_is_cothetancong(diachicosothongtinnhanvatchunhan)
 
-        idmaupk = self.get_idmaupk()
+
         if idmaupk == MAUPK_HOABINH and idloainhanvat in (LOAIMUCTIEU_NGUOICHOIKHACNHOM, LOAIMUCTIEU_NGUOICHOICUNGNHOM):
             return False
         elif idmaupk == MAUPK_NHOM and idloainhanvat == LOAIMUCTIEU_NGUOICHOICUNGNHOM:
