@@ -56,12 +56,14 @@ class GiaoDienHienThi:
             "chantangcap": tk.BooleanVar(),
             "khoangcachtheosau": tk.DoubleVar(value = 9.0),
             "diemdanhxungquanh": tk.BooleanVar(),
-            "trieuhoibaothu": tk.BooleanVar()
+            "trieuhoibaothu": tk.BooleanVar(),
+            "tudongbattatchucnangmorong": tk.BooleanVar(),
         }
 
         self._create_check(frame_bottom, "Tự động sử dụng kỹ năng  [Ctrl + F]", self.vars["sudungkynang"], "battat_tudongsudungkynang")
         self._create_check(frame_bottom, "Tự động gom quái  [Ctrl+Alt+Shift+G]", self.vars["gomquai"], "battat_tudonggomquai")
         self._create_check(frame_bottom, "Tự động Farm & Bán rác  [Ctrl+Alt+Shift+H]", self.vars["vebanrac"], "battat_tudongvebanrac")
+        self._create_check(frame_bottom, "Tự động bật/tắt CN mở rộng  [Ctrl+Alt+Shift+F]", self.vars["tudongbattatchucnangmorong"], "battat_tudongbattatchucnangmorong")
 
         frame_theosau = tk.Frame(frame_bottom)
         frame_theosau.pack(anchor = tk.W)
@@ -211,6 +213,7 @@ class GiaoDienHienThi:
             self.vars["sudungkynang"].set(info.get("_is_tudongsudungkynang", False))
             self.vars["gomquai"].set(info.get("_is_tudonggomquai", False))
             self.vars["vebanrac"].set(info.get("_is_tudongvebanrac", False))
+            self.vars["tudongbattatchucnangmorong"].set(info.get("_is_tudongbattatchucnangmorong", False))
             self.vars["theotruongnhom"].set(info.get("_is_tudongtheosautruongnhom", False))
             if self.root.focus_get() != getattr(self, 'spin_khoangcach', None):
                 try:

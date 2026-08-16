@@ -167,6 +167,7 @@ class CuaSo:
                     "_is_tudongdichuyendiemdanhxungquanh": self.tactu._is_tudongdichuyendiemdanhxungquanh,
                     "_diemdanhxungquanhs": self.tactu._diemdanhxungquanhs,
                     "_is_tudongtrieuhoibaothudautien": self.tactu._is_tudongtrieuhoibaothudautien,
+                    "_is_tudongbattatchucnangmorong": self.tactu._is_tudongbattatchucnangmorong,
                 }
                 self.shared_data[self.idcuaso] = info
 
@@ -207,7 +208,8 @@ class CuaSo:
 
                     except Exception as e:
                         print(f"Lỗi khi phân tích cú pháp toạ độ: {e}")
-
+                elif cmd == "battat_tudongbattatchucnangmorong":
+                    self.tactu.battat_tudongbattatchucnangmorong()
                 elif cmd == "battat_chantangcapdo":
                     self.tactu.battat_is_chantangcapdo()
                 elif cmd == "battat_tudongkhaikhoang":

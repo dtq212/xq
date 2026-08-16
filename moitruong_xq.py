@@ -259,12 +259,15 @@ class MoiTruong:
             write_string(self.tientrinh, self.diachihamthucthicaulenh2 + 19, caulenh)
 
             self._is_dasetupautoassemblethucthicaulenh2 = True
+
+            print(hex(self.diachihamthucthicaulenh2))
+
         else:
             if read_int(self.tientrinh, self.diachihamthucthicaulenh2 + 1) != len(caulenh.encode("utf-8")):
                 write_int(self.tientrinh, self.diachihamthucthicaulenh2 + 1, len(caulenh.encode("utf-8")))
             if read_string(self.tientrinh, self.diachihamthucthicaulenh2 + 19) != caulenh:
                 write_string(self.tientrinh, self.diachihamthucthicaulenh2 + 19, caulenh)
-
+        
         self.tientrinh.start_thread(self.diachihamthucthicaulenh2)
         return True
 
@@ -850,6 +853,10 @@ class MoiTruong:
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
         return self.get_iddoituong(diachicosothongtinnhanvat) > 0 and self.get_idloaidoituong(diachicosothongtinnhanvat) in (LOAIDOITUONG_NHANVAT1, LOAIDOITUONG_NHANVATKHAC1)
 
+    def get_is_nhanvatanthan(self, diachicosothongtinnhanvat = None):
+        diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
+        return read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0x162D) > 0
+
     def get_is_vatphamtontai(self, diachicosothongtinnhanvat = None):
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
         return self.get_iddoituong(diachicosothongtinnhanvat) != -1 and self.get_idloaidoituong(diachicosothongtinnhanvat) == LOAIDOITUONG_VATPHAMDUOIDAT
@@ -1066,23 +1073,28 @@ class MoiTruong:
 
     def get_is_cohieuungs(self, idhieuungs, macdinh, diachicosothongtinnhanvat = None, is_hieuungcoloi: int = None, is_travethoigianhieuluctoida = False):
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
-        if not self.get_is_nhanvattontai(diachicosothongtinnhanvat): return macdinh
+        if not self.get_is_nhanvattontai(diachicosothongtinnhanvat): 
+            return macdinh
         diachicosohieuungnhanvat = diachicosothongtinnhanvat + OFFSET_DIACHICOSOHIEUUNGNHANVAT
         soluonghieuungnhanvat = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
         soluonghieuungdemduoc = 0
         i = -1
-        if time.time() - self._thoidiemsoluonghieuungbangkhonggannhat_map.get(diachicosothongtinnhanvat, time.time() - 2.) < 1: return macdinh
-        if soluonghieuungdemduoc >= soluonghieuungnhanvat: return False
-
+        if time.time() - self._thoidiemsoluonghieuungbangkhonggannhat_map.get(diachicosothongtinnhanvat, time.time() - 2.) < 1: 
+            return macdinh
+        if soluonghieuungdemduoc >= soluonghieuungnhanvat: 
+            return False
         while True:
-            if not self.get_is_nhanvattontai(diachicosothongtinnhanvat): return macdinh
-            if time.time() - self._thoidiemsoluonghieuungbangkhonggannhat_map.get(diachicosothongtinnhanvat, time.time() - 2.) < 1: return macdinh
+            if not self.get_is_nhanvattontai(diachicosothongtinnhanvat):
+                return macdinh
+            if time.time() - self._thoidiemsoluonghieuungbangkhonggannhat_map.get(diachicosothongtinnhanvat, time.time() - 2.) < 1: 
+                return macdinh
             soluonghieuungnhanvatmoinhat = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
             if soluonghieuungnhanvat != soluonghieuungnhanvatmoinhat:
                 soluonghieuungnhanvat = soluonghieuungnhanvatmoinhat
                 soluonghieuungdemduoc = 0
                 i = -1
-            if time.time() - self._thoidiemsoluonghieuungbangkhonggannhat_map.get(diachicosothongtinnhanvat, time.time() - 2.) < 1: return macdinh
+            if time.time() - self._thoidiemsoluonghieuungbangkhonggannhat_map.get(diachicosothongtinnhanvat, time.time() - 2.) < 1: 
+                return macdinh
             if soluonghieuungdemduoc >= soluonghieuungnhanvat: return False
             i += 1
             if i >= SOLUONGHIEUUNGNHANVATTOIDA: return macdinh

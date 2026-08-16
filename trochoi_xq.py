@@ -100,6 +100,22 @@ class TroChoiManager:
                     cmd = "battat_tudongkhaikhoang"
                 elif keyboard.is_pressed("ctrl+alt+shift+b"):
                     cmd = "thuchien_tudongbanrac"
+                elif keyboard.is_pressed("ctrl+alt+shift+f"):
+                    cmd = "battat_tudongbattatchucnangmorong"
+                elif keyboard.is_pressed("ctrl+alt+shift+g"):
+                    cmd = "battat_tudonggomquai"
+                elif keyboard.is_pressed("ctrl+alt+shift+h"):
+                    cmd = "battat_tudongvebanrac"
+                elif keyboard.is_pressed("ctrl+alt+shift+z"):
+                    cmd = "battat_tudongdichientruong"
+                elif keyboard.is_pressed("ctrl+alt+shift+r"):
+                    cmd = "action_suavatpham"
+                elif keyboard.is_pressed("ctrl+alt+shift+n"):
+                    cmd = "battat_chedobufftoanbang"
+                elif keyboard.is_pressed("ctrl+alt+shift+i"):
+                    cmd = "battat_tudongdaotangbaodo"
+                elif keyboard.is_pressed("ctrl+alt+shift+y"):
+                    cmd = "action_muauto"
                 elif keyboard.is_pressed("ctrl+alt+c"):
                     cmd = "botoanbo_tenmuctieutancong"
                 elif keyboard.is_pressed("ctrl+alt+x"):
@@ -130,22 +146,8 @@ class TroChoiManager:
                     cmd = "them_diemdanhxungquanh"
                 elif keyboard.is_pressed("ctrl+b"):
                     cmd = "them_diemdanhxungquanh"
-                elif keyboard.is_pressed("ctrl+alt+shift+g"):
-                    cmd = "battat_tudonggomquai"
-                elif keyboard.is_pressed("ctrl+alt+shift+h"):
-                    cmd = "battat_tudongvebanrac"
-                elif keyboard.is_pressed("ctrl+alt+shift+z"):
-                    cmd = "battat_tudongdichientruong"
                 elif keyboard.is_pressed("ctrl+alt+s"):
                     cmd = "battat_uutienbaothumaoson"
-                elif keyboard.is_pressed("ctrl+alt+shift+r"):
-                    cmd = "action_suavatpham"
-                elif keyboard.is_pressed("ctrl+alt+shift+n"):
-                    cmd = "battat_chedobufftoanbang"
-                elif keyboard.is_pressed("ctrl+alt+shift+i"):
-                    cmd = "battat_tudongdaotangbaodo"
-                elif keyboard.is_pressed("ctrl+alt+shift+y"):
-                    cmd = "action_muauto"
                 if cmd:
                     self.command_dict[hwnd] = cmd
                     time.sleep(0.3)
