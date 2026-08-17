@@ -272,7 +272,7 @@ class LoopPhu:
         self.tactu.action_tudongbatautoingame()
 
         self.moitruong.action_vohieuhoahookchienquoc2()
-        self.tactu.action_muauto()
+        self.tactu.action_muaauto()
 
         if 0 and self.moitruong.get_idnguoichoi() in [59503, 59996] and self.moitruong.get_idbandohientai() in [BANDO_YENTRUONGTHANH1, BANDO_YENTRUONGTHANH2, BANDO_YENTRUONGTHANH3] and self.tactu._is_tudongvebanrac:
             for i in range(6, SOLUONGVATPHAMHANHTRANGTOIDA):

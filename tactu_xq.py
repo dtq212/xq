@@ -1988,13 +1988,13 @@ class TacTu:
         self._tenmuctieukhongtancongs = set(TENMUCTIEUKHONGTANCONGs)
         phatam("Bỏ thiết lập tên mục tiêu không tấn công".format(len(self._tenmuctieukhongtancongs)))
 
-    def action_muauto(self):
+    def action_muaauto(self):
         if not self._is_tudongbattatchucnangmorong:
             return
         if time.time() - self._thoidiemmuaautogannhat < 5.:
             return
         self._thoidiemmuaautogannhat = time.time()
-        self.moitruong.action_thucthicaulenh2("auto buy 5 10")
+        self.moitruong.action_thucthicaulenh("auto buy 5 10")
 
     def action_tudongvutdo(self):
         if time.time() - self._thoidiemvutdogannhat < 1.:
@@ -3543,24 +3543,18 @@ class TacTu:
         self.moitruong.action_tudongtimduong(0, 0, 0)
 
         quocgiacanden = None
-        quocgiacanden_raw = b""
-
         for i in range(SOLUONGVATPHAMHANHTRANGTOIDA):
             tenvatpham = self.moitruong.get_tenvatphamhanhtrang(i)
             if tenvatpham == TANGBAODO:
-                mota_raw = self.moitruong.get_motavatphamhanhtrang_raw(i)
-                timthay_raw = re.search(rb"V\xe1\xbb\x8b tr\xc3\xad:\s*(.*?)\s*\(", mota_raw)
-                
-                if timthay_raw:
-                    tenbandotrongmota_raw = timthay_raw.group(1).strip()
-                    quocgiacanden_raw = tenbandotrongmota_raw + b" Qu\xe1\xbb\x91c"
-                    quocgiacanden = quocgiacanden_raw.decode('utf-8', errors='ignore')
+                mota = self.moitruong.get_motavatphamhanhtrang(i)
+                if mota:
+                    timthay = re.search(r"Vị trí: \s*(.*?)\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)", mota)
+                    if timthay:
+                        tenbandotrongmota = timthay.group(1).strip()
+                        quocgiacanden = f"{tenbandotrongmota} Quốc"
+                        break
 
-                    print("quocgiacanden_raw: {}, quocgiacanden: {}".format(quocgiacanden_raw, quocgiacanden))
-
-                    break
-        
-        if not quocgiacanden_raw:
+        if not quocgiacanden:
             if self.moitruong.get_idbandohientai() != BANDO_TANTHUTHON:
                 phatam("{} hết tàng bảo đồ".format(self.moitruong.get_tendoituong()))
                 time.sleep(5)
@@ -3592,13 +3586,8 @@ class TacTu:
             self.moitruong.action_ngatdichuyen()
             timestamp = int(time.time())
             hex_id = hex(idnpc).replace("0x", "")
-            
-            # Ghép nối các đoạn raw bytes lại với nhau để hình thành câu lệnh hoàn chỉnh
-            caulenh_bytes = b"talk " + hex_id.encode('ascii') + b"# goto.! " + quocgiacanden_raw + b" t" + str(timestamp).encode('ascii')
-            
-            # Gửi trực tiếp mảng bytes vào hàm thực thi
-            self.moitruong.action_thucthicaulenh2_raw(caulenh_bytes)
-            
+            caulenh = f"talk {hex_id}# goto.! {quocgiacanden} t{timestamp}"
+            self.moitruong.action_thucthicaulenh2(caulenh, delay = 0.0)
             self.moitruong.action_ngatdichuyen()
             time.sleep(5.0)
 
