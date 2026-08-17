@@ -1412,7 +1412,7 @@ class TacTu:
         idnguoichoi = self.moitruong.get_idnguoichoi()
         diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
         is_muctieulanguoichoi = diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu)
-        is_bandochientruong = self.moitruong.get_idbandohientai() in (BANDO_CHIENTRUONG, BANDO_COMO)
+        is_bandochientruong = self.moitruong.get_idbandohientai() in (BANDO_CHIENTRUONG, BANDO_COMO, 886)
         diachidoituongcanhoisinh = None
         diachidoituongcanbufftaytranquyet = None
         diachidoituongcanbommau = None
@@ -3559,6 +3559,26 @@ class TacTu:
             if self.moitruong.get_idbandohientai() != BANDO_TANTHUTHON:
                 phatam("{} hết tàng bảo đồ".format(self.moitruong.get_tendoituong()))
                 time.sleep(5)
+            else:
+                if not self.moitruong.action_timkiemvatphamhanhtrang(LAMCAU):
+                    phatam("Hết Lam Câu")
+                    print("[DAOTAOBAODO] Không đủ điều kiện đổi Tàng Bảo Đồ (hết LAMCAU)")
+                    time.sleep(5)
+                    return
+
+                khoangcachdennpc = math.dist((x_hientai, y_hientai), (150, 132))
+
+                if khoangcachdennpc > 3.0:
+                    self.moitruong.action_tudongtimduong(150, 132, idbandohientai)
+                else:
+                    diachi = self.moitruong.action_timkiemnhanvat("Thiên Sứ Trao Đổi")
+                    if diachi and self.moitruong.get_khoangcach(diachi) <= 3.:
+                        for _ in range(30):
+                            if self._is_tudongdaotangbaodo:
+                                self.moitruong.action_thucthicaulenh("talk {}# bonus.23".format(hex(self.moitruong.get_iddoituong(diachi))).replace("0x", ""))
+                                time.sleep(0.25)
+                            else:
+                                break
             return
 
         print(f"[DAOTAOBAODO] Hết map hiện tại. Chuẩn bị sang: {quocgiacanden}")
