@@ -268,7 +268,7 @@ class MoiTruong:
 
             self._is_dasetupautoassemblethucthicaulenh2 = True
 
-            print(hex(self.diachihamthucthicaulenh2))
+            print("{}: {}".format(self.get_idnguoichoi(), hex(self.diachihamthucthicaulenh2)))
 
         else:
             if read_int(self.tientrinh, self.diachihamthucthicaulenh2 + 1) != chieudai_bytes:
