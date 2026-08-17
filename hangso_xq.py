@@ -626,7 +626,7 @@ VATPHAMTUDONGNHATFARMs = (
     " Nguyệt"
 )
 
-VATPHAMXEPCHONGs = tuple(["Toái Lăng", "Lá", "Hoạt Lạc Hoàn", "Lam Cầu", "Hắc Cầu", "Mồi Câu", KHIMACHDON, "Chu Thiên Đơn", TAITAOHOAN])
+VATPHAMXEPCHONGs = tuple(["Toái Lăng", "Lá", "Hoạt Lạc Hoàn", "Lam Cầu", "Hắc Cầu", "Mồi Câu", KHIMACHDON, "Chu Thiên Đơn", TAITAOHOAN, TIEUDAOTAN, QUYNGUYENDON, KIMTANGTAN, KHIMACHDON, TUTAMDON])
 SOLUONGXEPCHONGTOIDA_MAP = {
     "Hoạt Lạc Hoàn": 50
 }

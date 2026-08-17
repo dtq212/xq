@@ -996,10 +996,11 @@ class TacTu:
                     self.action_sudungvatphamhanhtrang(ANXAPHU)
             
             if self.moitruong.get_phantramsinhlucconlai() <= 25 and not self.moitruong.get_idbandohientai() != BANDO_CHIENTRUONG:
-                if not self.moitruong.action_timkiemvatphamhanhtrang("Huyền thiết chuy"):
-                    pass
-                else:
-                    self.action_sudungvatphamhanhtrang("Huyền thiết chuy")
+                for phapbaokhonghuhong in ["Thượng Phương Bảo Kiếm", "Huyền thiết chuy", ]:
+                    if not self.moitruong.action_timkiemvatphamhanhtrang(phapbaokhonghuhong):
+                        pass
+                    else:
+                        self.action_sudungvatphamhanhtrang(phapbaokhonghuhong)
 
             if self.moitruong.get_idnguoichoi() in (59844, 59845):
                 if time.time() - self._thoidiemdocsachgannhat > 30.:
@@ -2746,7 +2747,7 @@ class TacTu:
             iddoituongvatphamhanhtrang = self.moitruong.get_iddoituongvatphamhanhtrang(i)
 
             tenvatphamhanhtrang = self.moitruong.get_tenvatphamhanhtrang(i)
-            if iddoituongvatphamhanhtrang and iddoituongvatphamhanhtrang > 0 and tenvatphamhanhtrang not in VATPHAMKHONGBANs and "Nhập môn" not in tenvatphamhanhtrang:
+            if iddoituongvatphamhanhtrang and iddoituongvatphamhanhtrang > 0 and tenvatphamhanhtrang not in VATPHAMKHONGBANs and "Nhập môn" not in tenvatphamhanhtrang and "cấp" not in tenvatphamhanhtrang and "Kim Cương" not in tenvatphamhanhtrang:
                 caulenh = "sell ! {}# {}# 30".format(hex(idnpc).replace("0x", ""), hex(iddoituongvatphamhanhtrang).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_THAP)
                 sovatphamdaban += 1
