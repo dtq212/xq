@@ -244,11 +244,15 @@ class MoiTruong:
             return False
         self._thoidiemthucthicaulenh2gannhat = time.time()
 
+        caulenh_bytes = caulenh.encode("cp1258", errors = "replace")
+        chieudai_bytes = len(caulenh_bytes)
+
         if not self._is_dasetupautoassemblethucthicaulenh2:
             self.diachihamthucthicaulenh2 = self.tientrinh.allocate(128)
 
             write_bytes(self.tientrinh, self.diachihamthucthicaulenh2, bytes.fromhex("68"), 1)
-            write_int(self.tientrinh, self.diachihamthucthicaulenh2 + 1, len(caulenh.encode("utf-8")))
+            # Ghi chiều dài thực tế của mảng byte mới
+            write_int(self.tientrinh, self.diachihamthucthicaulenh2 + 1, chieudai_bytes)
 
             write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 5, bytes.fromhex("68"), 1)
             write_int(self.tientrinh, self.diachihamthucthicaulenh2 + 6, self.diachihamthucthicaulenh2 + 19)
@@ -259,18 +263,18 @@ class MoiTruong:
             write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 15, bytes.fromhex("83 C4 08"), 3)
             write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 18, bytes.fromhex("C3"), 1)
 
-            write_string(self.tientrinh, self.diachihamthucthicaulenh2 + 19, caulenh)
+            write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 19, caulenh_bytes + b"\x00", chieudai_bytes + 1)
 
             self._is_dasetupautoassemblethucthicaulenh2 = True
 
             print(hex(self.diachihamthucthicaulenh2))
 
         else:
-            if read_int(self.tientrinh, self.diachihamthucthicaulenh2 + 1) != len(caulenh.encode("utf-8")):
-                write_int(self.tientrinh, self.diachihamthucthicaulenh2 + 1, len(caulenh.encode("utf-8")))
-            if read_string(self.tientrinh, self.diachihamthucthicaulenh2 + 19) != caulenh:
-                write_string(self.tientrinh, self.diachihamthucthicaulenh2 + 19, caulenh)
-        
+            if read_int(self.tientrinh, self.diachihamthucthicaulenh2 + 1) != chieudai_bytes:
+                write_int(self.tientrinh, self.diachihamthucthicaulenh2 + 1, chieudai_bytes)
+
+            write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 19, caulenh_bytes + b"\x00", chieudai_bytes + 1)
+
         self.tientrinh.start_thread(self.diachihamthucthicaulenh2)
         return True
 
