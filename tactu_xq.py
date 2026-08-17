@@ -1011,6 +1011,7 @@ class TacTu:
                         "Nhập môn Quyền Cước Chi",
                         "Nhập môn Kim Cương Bất H",
                         "Nhập môn Chu Thiên Vận Ch",
+                        "Nhập môn Thái Cổ Thần Q"
                     ]
                     for sachcanhoc in sachcanhocs:
                         if self.action_sudungvatphamhanhtrang(sachcanhoc):
