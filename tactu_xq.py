@@ -15,6 +15,7 @@ from tienich_xq import taithietlap as util_taithietlap, phatam
 
 class TacTu:
     def __init__(self, moitruong: MoiTruong):
+        self._thoidiemhettangbaodogannhat = 0.
         self._is_tudongdieukhienbaothumaoson = True
         self._thoidiemmuaautogannhat = 0.
         self._thoidiemsudungditinhdaiphapgannhat = 0.
@@ -3564,6 +3565,7 @@ class TacTu:
                         break
 
         if not quocgiacanden:
+            self._thoidiemhettangbaodogannhat = time.time()
             if self.moitruong.get_idbandohientai() != BANDO_TANTHUTHON:
                 print(f"[DAOTAOBAODO] Dùng Hồi Thành Phù về Tân Thủ Thôn")
                 self.moitruong.action_ngatdichuyen()
@@ -3585,6 +3587,8 @@ class TacTu:
                 khoangcachdennpc = math.dist((x_hientai, y_hientai), (150, 128))
                 if khoangcachdennpc > 3.:
                     self.moitruong.action_tudongtimduong(150, 128, idbandohientai)
+            return
+        elif time.time() - self._thoidiemhettangbaodogannhat < 60 * 3:
             return
 
         print(f"[DAOTAOBAODO] Hết map hiện tại. Chuẩn bị sang: {quocgiacanden}")
