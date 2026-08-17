@@ -288,6 +288,9 @@ class LoopPhu:
         #         self.moitruong.action_thucthicaulenh("talk {}# bonus.23".format(hex(self.moitruong.get_iddoituong(diachi))).replace("0x", ""))
         #         time.sleep(0.25)
 
+        if self.moitruong.get_idnguoichoi() == 60055:
+            print("get_danhsachhieuungnhanvats: {}".format(self.moitruong.get_danhsachhieuungnhanvats(self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon())))
+
 class LoopXuLyLenh:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
         self.moitruong = moitruong

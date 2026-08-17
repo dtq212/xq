@@ -1953,6 +1953,11 @@ class MoiTruong:
         diachi = self.get_diachicosobaothudautien()
         return read_int(self.tientrinh, diachi + 0x498) if diachi else False
 
+    def get_phantramnoilucconlaibaothudautien(self):
+        diachi = self.get_diachicosobaothudautien()
+        if not diachi: return 100
+        return self.get_noilucconlaibaothudautien() * 100 / max(1, self.get_noiluctoidabaothudautien())
+
     def action_battheosaunhom(self, delay = 1.):
         if time.time() - self._thoidiembattattheosaunhomgannhat < delay: return
         idnguoichoitruongnhom = self.get_idnguoichoitruongnhom()
