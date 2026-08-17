@@ -3562,20 +3562,24 @@ class TacTu:
             if self.moitruong.get_idbandohientai() != BANDO_TANTHUTHON:
                 phatam("{} hết tàng bảo đồ".format(self.moitruong.get_tendoituong()))
                 time.sleep(5)
-            else:
+                else:
                 if not self.moitruong.action_timkiemvatphamhanhtrang(LAMCAU):
                     phatam("Hết Lam Câu")
                     print("[DAOTAOBAODO] Không đủ điều kiện đổi Tàng Bảo Đồ (hết LAMCAU)")
                     time.sleep(5)
                     return
+                if self.moitruong.get_is_dayhanhtrang():
+                    print("[DAOTAOBAODO] Túi đầy, tiến hành bán rác & sửa đồ...")
+                    self.action_tudongvebanrac()
+                    self.action_suavatpham()
+                    return
 
                 khoangcachdennpc = math.dist((x_hientai, y_hientai), (150, 132))
-
-                if khoangcachdennpc > 3.0:
+                if khoangcachdennpc > 1.5:
                     self.moitruong.action_tudongtimduong(150, 132, idbandohientai)
                 else:
                     diachi = self.moitruong.action_timkiemnhanvat("Thiên Sứ Trao Đổi")
-                    if diachi and self.moitruong.get_khoangcach(diachi) <= 3.:
+                    if diachi and self.moitruong.get_khoangcach(diachi) <= 1.5:
                         for _ in range(30):
                             if self._is_tudongdaotangbaodo:
                                 self.moitruong.action_thucthicaulenh("talk {}# bonus.23".format(hex(self.moitruong.get_iddoituong(diachi))).replace("0x", ""))
