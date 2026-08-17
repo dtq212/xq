@@ -244,14 +244,13 @@ class MoiTruong:
             return False
         self._thoidiemthucthicaulenh2gannhat = time.time()
 
-        caulenh_bytes = caulenh.encode("cp1258", errors = "replace")
+        caulenh_bytes = caulenh.encode("utf-8")
         chieudai_bytes = len(caulenh_bytes)
 
         if not self._is_dasetupautoassemblethucthicaulenh2:
             self.diachihamthucthicaulenh2 = self.tientrinh.allocate(128)
 
             write_bytes(self.tientrinh, self.diachihamthucthicaulenh2, bytes.fromhex("68"), 1)
-            # Ghi chiều dài thực tế của mảng byte mới
             write_int(self.tientrinh, self.diachihamthucthicaulenh2 + 1, chieudai_bytes)
 
             write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 5, bytes.fromhex("68"), 1)
