@@ -277,11 +277,17 @@ class LoopPhu:
         if 0 and self.moitruong.get_idnguoichoi() in [59503, 59996] and self.moitruong.get_idbandohientai() in [BANDO_YENTRUONGTHANH1, BANDO_YENTRUONGTHANH2, BANDO_YENTRUONGTHANH3] and self.tactu._is_tudongvebanrac:
             for i in range(6, SOLUONGVATPHAMHANHTRANGTOIDA):
                 tenvatphamhanhtrang = self.moitruong.get_tenvatphamhanhtrang(i)
-                if tenvatphamhanhtrang and tenvatphamhanhtrang not in VATPHAMKHONGBANs or tenvatphamhanhtrang in ("Phá Cựu Giáp", ):
+                if tenvatphamhanhtrang and tenvatphamhanhtrang not in VATPHAMKHONGBANs or tenvatphamhanhtrang in ("Phá Cựu Giáp",):
                     motavatpham = self.moitruong.get_motavatphamhanhtrang(i)
                     if "Phong Ấn" not in motavatpham:
                         self.moitruong.action_thucthicaulenh2("drop ! {}#30".format(hex(self.moitruong.get_iddoituongvatphamhanhtrang(i))).replace("0x", ""))
                         break
+
+        if self.moitruong.get_idnguoichoi() in (59996,) and self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
+            diachi = self.moitruong.action_timkiemnhanvat("Thiên Sứ Trao Đổi")
+            if diachi and self.moitruong.get_khoangcach(diachi) <= 3.:
+                self.moitruong.action_thucthicaulenh("talk {}# bonus.23".format(hex(self.moitruong.get_iddoituong(diachi))).replace("0x", ""))
+                time.sleep(0.25)
 
 class LoopXuLyLenh:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
