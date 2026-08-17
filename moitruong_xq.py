@@ -136,6 +136,9 @@ class MoiTruong:
         self.hangdoicaulenh = queue.PriorityQueue()
         self.caulenhdangchos = set()
 
+        self._thoidiemmuctieuanthangannhat_map = {}
+        self._thoidiemmuctieuxuathiengannhat_map = {}
+
     def __del__(self):
         def safe_free_old(flag_name, addr_name):
             try:
@@ -757,12 +760,20 @@ class MoiTruong:
         diachicosothongtinnhanvatmuctieuhientai = self.get_diachicosothongtinnhanvatmuctieudangchon()
         now = time.time()
         idnguoichoixungquanh_map = self.get_idnguoichoixungquanh_map()
+        id_xungquanh_list = list(idnguoichoixungquanh_map.values())
         for diachinguoichoixungquanh, idnguoichoi in idnguoichoixungquanh_map.items():
             if self.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), macdinh = False, diachicosothongtinnhanvat = diachinguoichoixungquanh, is_hieuungcoloi = 0):
                 self._thoidiemmuctieubichoanggannhat_map[idnguoichoi] = now
+            if idnguoichoi not in self._thoidiemmuctieuxuathiengannhat_map:
+                self._thoidiemmuctieuxuathiengannhat_map[idnguoichoi] = now
+            if self.get_is_nhanvatanthan(diachinguoichoixungquanh):
+                self._thoidiemmuctieuanthangannhat_map[idnguoichoi] = now
 
         if len(self._thoidiemmuctieubichoanggannhat_map) > 128:
             self._thoidiemmuctieubichoanggannhat_map = {uid: ts for uid, ts in self._thoidiemmuctieubichoanggannhat_map.items() if now - ts < 15}
+
+        self._thoidiemmuctieuxuathiengannhat_map = {uid: ts for uid, ts in self._thoidiemmuctieuxuathiengannhat_map.items() if uid in id_xungquanh_list}
+        self._thoidiemmuctieuanthangannhat_map = {uid: ts for uid, ts in self._thoidiemmuctieuanthangannhat_map.items() if uid in id_xungquanh_list}
 
         idbandohientai = self._get_idbandohientai()
         if idbandohientai != self._idbandohientai:

@@ -738,6 +738,13 @@ class TacTu:
                 is_boquamuctieuhientai = True
             elif self.moitruong.get_is_nhanvatanthan(diachicosothongtinnhanvatmuctieudangchon):
                 is_boquamuctieuhientai = True
+            elif is_muctieudangchonlanguoichoi:
+                idnguoichoihientai = self.moitruong.get_idnguoichoi(diachicosothongtinnhanvatmuctieudangchon)
+                if idnguoichoihientai:
+                    if time.time() - self.moitruong._thoidiemmuctieuanthangannhat_map.get(idnguoichoihientai, 0) < 1.5:
+                        is_boquamuctieuhientai = True
+                    elif time.time() - self.moitruong._thoidiemmuctieuxuathiengannhat_map.get(idnguoichoihientai, 0) < 1.5:
+                        is_boquamuctieuhientai = True
                 
             if not is_boquamuctieuhientai and self._diemdanhxungquanhs and self._is_tudongdichuyendiemdanhxungquanh:
                 danhsachbandohople = [diem[2] for diem in self._diemdanhxungquanhs if len(diem) >= 3]
@@ -841,7 +848,12 @@ class TacTu:
 
             if self.moitruong.get_is_nhanvatanthan(diachicosothongtinnhanvatmuctieuxemxet):
                 continue
-
+            if is_muctieuxemxetlanguoichoi:
+                idnguoichoixemxet = self.moitruong.get_idnguoichoi(diachicosothongtinnhanvatmuctieuxemxet)
+                if time.time() - self.moitruong._thoidiemmuctieuanthangannhat_map.get(idnguoichoixemxet, 0) < 1.5:
+                    continue
+                if time.time() - self.moitruong._thoidiemmuctieuxuathiengannhat_map.get(idnguoichoixemxet, 0) < 1.5:
+                    continue
             def _thaydoimuctieutrongvonglap():
                 if diachicosothongtinnhanvatmuctieudangchon:
                     self._diachicosomuctieuduphong = diachicosothongtinnhanvatmuctieudangchon
