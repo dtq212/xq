@@ -1877,9 +1877,13 @@ class MoiTruong:
         if self._is_vohieuhoadichuyen != is_vohieuhoadichuyen: self._is_vohieuhoadichuyen = is_vohieuhoadichuyen
 
     def get_is_dayhanhtrang(self):
+        if self.get_idnguoichoi() == 59996:
+            soluongvatphamhanhtrangtoida = 24 * 4 - 1
+        else:
+            soluongvatphamhanhtrangtoida = SOLUONGVATPHAMHANHTRANGTOIDA
         i = -1
         while True:
-            if i >= SOLUONGVATPHAMHANHTRANGTOIDA:
+            if i >= soluongvatphamhanhtrangtoida:
                 break
             i += 1
             if i % 10 == 0:
