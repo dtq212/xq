@@ -1721,11 +1721,18 @@ class MoiTruong:
             self._thoidiemmaupkgannhat = time.time()
         return is_ok
 
+    def get_soluongvatphamhanhtrangtoida(self):
+        if self.get_idnguoichoi() == 59996:
+            return 24 * 4 - 1
+        else:
+            return SOLUONGVATPHAMHANHTRANGTOIDA
+
     def action_timkiemvatphamhanhtrang(self, tenvatpham = None):
         if not tenvatpham: return False
         i = -1
+        soluongvatphamhanhtrangtoida = self.get_soluongvatphamhanhtrangtoida()
         while True:
-            if i >= SOLUONGVATPHAMHANHTRANGTOIDA: break
+            if i >= soluongvatphamhanhtrangtoida: break
             i += 1
             if tenvatpham and self.get_tenvatphamhanhtrang(i) != tenvatpham:
                 # if "Nhập môn" in self.get_tenvatphamhanhtrang(i):
@@ -1738,8 +1745,9 @@ class MoiTruong:
         if not tenvatpham:
             return False
         i = -1
+        soluongvatphamhanhtrangtoida = self.get_soluongvatphamhanhtrangtoida()
         while True:
-            if i >= SOLUONGVATPHAMHANHTRANGTOIDA: break
+            if i >= soluongvatphamhanhtrangtoida: break
             i += 1
             if tenvatpham and self.get_tenvatphamhanhtrang(i) != tenvatpham:
                 continue
@@ -1749,8 +1757,9 @@ class MoiTruong:
     def get_danhsachvatphamhanhtrang_map(self):
         i = -1
         vatphamhanhtrang_map = {}
+        soluongvatphamhanhtrangtoida = self.get_soluongvatphamhanhtrangtoida()
         while True:
-            if i >= SOLUONGVATPHAMHANHTRANGTOIDA: break
+            if i >= soluongvatphamhanhtrangtoida: break
             i += 1
             tenvatphamxemxet = self.get_tenvatphamhanhtrang(i)
             if tenvatphamxemxet not in vatphamhanhtrang_map: vatphamhanhtrang_map[tenvatphamxemxet] = []
@@ -1877,10 +1886,7 @@ class MoiTruong:
         if self._is_vohieuhoadichuyen != is_vohieuhoadichuyen: self._is_vohieuhoadichuyen = is_vohieuhoadichuyen
 
     def get_is_dayhanhtrang(self):
-        if self.get_idnguoichoi() == 59996:
-            soluongvatphamhanhtrangtoida = 24 * 4 - 1
-        else:
-            soluongvatphamhanhtrangtoida = SOLUONGVATPHAMHANHTRANGTOIDA
+        soluongvatphamhanhtrangtoida = self.get_soluongvatphamhanhtrangtoida()
         i = -1
         while True:
             if i >= soluongvatphamhanhtrangtoida:

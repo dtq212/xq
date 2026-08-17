@@ -2744,7 +2744,8 @@ class TacTu:
             return
 
         sovatphamdaban = 0
-        for i in range(6, SOLUONGVATPHAMHANHTRANGTOIDA):
+        soluongvatphamhanhtrangtoida = self.moitruong.get_soluongvatphamhanhtrangtoida()
+        for i in range(6, soluongvatphamhanhtrangtoida):
             iddoituongvatphamhanhtrang = self.moitruong.get_iddoituongvatphamhanhtrang(i)
 
             tenvatphamhanhtrang = self.moitruong.get_tenvatphamhanhtrang(i)
@@ -3513,8 +3514,8 @@ class TacTu:
         idbandohientai = self.moitruong.get_idbandohientai()
         x_hientai = self.moitruong.get_toadox(is_vitrihientai = True)
         y_hientai = self.moitruong.get_toadoy(is_vitrihientai = True)
-
-        for i in range(SOLUONGVATPHAMHANHTRANGTOIDA):
+        soluongvatphamhanhtrangtoida = self.moitruong.get_soluongvatphamhanhtrangtoida()
+        for i in range(soluongvatphamhanhtrangtoida):
             tenvatpham = self.moitruong.get_tenvatphamhanhtrang(i)
             if not tenvatpham or tenvatpham != TANGBAODO:
                 continue
@@ -3545,7 +3546,8 @@ class TacTu:
         self.moitruong.action_tudongtimduong(0, 0, 0)
 
         quocgiacanden = None
-        for i in range(SOLUONGVATPHAMHANHTRANGTOIDA):
+        soluongvatphamhanhtrangtoida = self.moitruong.get_soluongvatphamhanhtrangtoida()
+        for i in range(soluongvatphamhanhtrangtoida):
             tenvatpham = self.moitruong.get_tenvatphamhanhtrang(i)
             if tenvatpham == TANGBAODO:
                 mota = self.moitruong.get_motavatphamhanhtrang(i)
