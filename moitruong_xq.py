@@ -8,6 +8,7 @@ import queue
 import threading
 import time
 from dataclasses import dataclass, field
+import re 
 
 OFFSET_DIACHICOSOTHONGTINGAME = 0x380B44
 OFFSET_DIACHICOSOTHONGTINNHANVAT1 = 0x380AF8
@@ -270,6 +271,41 @@ class MoiTruong:
                 write_int(self.tientrinh, self.diachihamthucthicaulenh2 + 1, len(caulenh.encode("utf-8")))
             if read_string(self.tientrinh, self.diachihamthucthicaulenh2 + 19) != caulenh:
                 write_string(self.tientrinh, self.diachihamthucthicaulenh2 + 19, caulenh)
+        
+        self.tientrinh.start_thread(self.diachihamthucthicaulenh2)
+        return True
+
+    def action_thucthicaulenh2_raw(self, caulenh_bytes, delay = 0.05):
+        if time.time() - self._thoidiemthucthicaulenh2gannhat < delay:
+            return False
+        self._thoidiemthucthicaulenh2gannhat = time.time()
+
+        chieudai_bytes = len(caulenh_bytes)
+
+        if not self._is_dasetupautoassemblethucthicaulenh2:
+            self.diachihamthucthicaulenh2 = self.tientrinh.allocate(128)
+
+            write_bytes(self.tientrinh, self.diachihamthucthicaulenh2, bytes.fromhex("68"), 1)
+            write_int(self.tientrinh, self.diachihamthucthicaulenh2 + 1, chieudai_bytes)
+
+            write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 5, bytes.fromhex("68"), 1)
+            write_int(self.tientrinh, self.diachihamthucthicaulenh2 + 6, self.diachihamthucthicaulenh2 + 19)
+
+            write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 10, bytes.fromhex("E8"), 1)
+            write_int(self.tientrinh, self.diachihamthucthicaulenh2 + 11, self.diachixq + 0x95450 - (self.diachihamthucthicaulenh2 + 10) - 5)
+
+            write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 15, bytes.fromhex("83 C4 08"), 3)
+            write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 18, bytes.fromhex("C3"), 1)
+
+            write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 19, caulenh_bytes + b"\x00", chieudai_bytes + 1)
+
+            self._is_dasetupautoassemblethucthicaulenh2 = True
+
+        else:
+            if read_int(self.tientrinh, self.diachihamthucthicaulenh2 + 1) != chieudai_bytes:
+                write_int(self.tientrinh, self.diachihamthucthicaulenh2 + 1, chieudai_bytes)
+            
+            write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 19, caulenh_bytes + b"\x00", chieudai_bytes + 1)
         
         self.tientrinh.start_thread(self.diachihamthucthicaulenh2)
         return True
@@ -688,6 +724,27 @@ class MoiTruong:
             self.truyvan_motavatphamhanhtrang(idvitri)
             mota = read_string(self.tientrinh, x + idvitri * 0x44C + 0xF52, 1024)
         return mota
+    def get_motavatphamhanhtrang_raw(self, idvitri):
+        x = self.get_diachicosothongtinvatphamhanhtrang()
+        if not x:
+            return b""
+        
+        mota_raw = read_bytes(self.tientrinh, x + idvitri * 0x44C + 0xF52, 1024)
+        
+        null_index = mota_raw.find(b"\x00")
+        if null_index != -1:
+            mota_raw = mota_raw[:null_index]
+            
+        if not mota_raw and self.get_iddoituongvatphamhanhtrang(idvitri):
+            self.truyvan_motavatphamhanhtrang(idvitri)
+            mota_raw = read_bytes(self.tientrinh, x + idvitri * 0x44C + 0xF52, 1024)
+            null_index = mota_raw.find(b"\x00")
+            if null_index != -1:
+                mota_raw = mota_raw[:null_index]
+                
+        mota_raw = re.sub(rb'\x1b[a-zA-Z0-9]', b'', mota_raw).strip()
+        
+        return mota_raw
 
     def get_diachicosothongtinkynang(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)

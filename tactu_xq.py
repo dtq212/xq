@@ -3544,6 +3544,8 @@ class TacTu:
         self.moitruong.action_tudongtimduong(0, 0, 0)
 
         quocgiacanden = None
+        quocgiacanden_raw = b""
+
         for i in range(SOLUONGVATPHAMHANHTRANGTOIDA):
             tenvatpham = self.moitruong.get_tenvatphamhanhtrang(i)
             if tenvatpham == TANGBAODO:
@@ -3553,9 +3555,20 @@ class TacTu:
                     if timthay:
                         tenbandotrongmota = timthay.group(1).strip()
                         quocgiacanden = f"{tenbandotrongmota} Quốc"
+                        
+                        # --- XỬ LÝ RAW BYTES DÀNH RIÊNG CHO LỆNH GỌI DỊCH TRẠM ---
+                        mota_raw = self.moitruong.get_motavatphamhanhtrang_raw(i)
+                        
+                        # Regex trên byte, "Vị trí: " trong TCVN3 tương ứng với rb"V\xde tr\xdd:\s*"
+                        timthay_raw = re.search(rb"V\xde tr\xdd:\s*(.*?)\s*\(", mota_raw)
+                        if timthay_raw:
+                            tenbandotrongmota_raw = timthay_raw.group(1).strip()
+                            
+                            # Chữ " Quốc" trong TCVN3 tương ứng với byte b" Qu\xe8c"
+                            quocgiacanden_raw = tenbandotrongmota_raw + b" Qu\xe8c"
                         break
 
-        if not quocgiacanden:
+        if not quocgiacanden or not quocgiacanden_raw:
             if self.moitruong.get_idbandohientai() != BANDO_TANTHUTHON:
                 phatam("{} hết tàng bảo đồ".format(self.moitruong.get_tendoituong()))
                 time.sleep(5)
@@ -3587,8 +3600,13 @@ class TacTu:
             self.moitruong.action_ngatdichuyen()
             timestamp = int(time.time())
             hex_id = hex(idnpc).replace("0x", "")
-            caulenh = f"talk {hex_id}# goto.! {quocgiacanden} t{timestamp}"
-            self.moitruong.action_thucthicaulenh2(caulenh)
+            
+            # Khâu trực tiếp các mảnh byte lại với nhau
+            caulenh_bytes = b"talk " + hex_id.encode('ascii') + b"# goto.! " + quocgiacanden_raw + b" t" + str(timestamp).encode('ascii')
+            
+            # Gọi hàm bắn lệnh trực tiếp trên nền bytes
+            self.moitruong.action_thucthicaulenh2_raw(caulenh_bytes)
+            
             self.moitruong.action_ngatdichuyen()
             time.sleep(5.0)
 
