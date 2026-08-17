@@ -1727,10 +1727,12 @@ class MoiTruong:
         else:
             return SOLUONGVATPHAMHANHTRANGTOIDA
 
-    def action_timkiemvatphamhanhtrang(self, tenvatpham = None):
+    def action_timkiemvatphamhanhtrang(self, tenvatpham = None, is_ruongdautien = False):
         if not tenvatpham: return False
         i = -1
         soluongvatphamhanhtrangtoida = self.get_soluongvatphamhanhtrangtoida()
+        if is_ruongdautien:
+            soluongvatphamhanhtrangtoida = 24 - 1
         while True:
             if i >= soluongvatphamhanhtrangtoida: break
             i += 1

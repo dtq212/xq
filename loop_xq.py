@@ -1,11 +1,12 @@
 import queue
+import random
 import threading
 import time
 import traceback
 
 import pymem.exception
 
-from hangso_xq import BANDO_CHIENTRUONG, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, VATPHAMKHONGBANs, BANDO_YENTRUONGTHANH3, BANDO_YENTRUONGTHANH2, BANDO_YENTRUONGTHANH1
+from hangso_xq import BANDO_CHIENTRUONG, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, VATPHAMKHONGBANs, BANDO_YENTRUONGTHANH3, BANDO_YENTRUONGTHANH2, BANDO_YENTRUONGTHANH1, TANGBAODO, LAMCAU
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
 from tienich_xq import phatam
@@ -282,11 +283,17 @@ class LoopPhu:
                         self.moitruong.action_thucthicaulenh2("drop ! {}#30".format(hex(self.moitruong.get_iddoituongvatphamhanhtrang(i))).replace("0x", ""))
                         break
 
-        # if self.moitruong.get_idnguoichoi() in (59996,) and self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
-        #     diachi = self.moitruong.action_timkiemnhanvat("Thiên Sứ Trao Đổi")
-        #     if diachi and self.moitruong.get_khoangcach(diachi) <= 3.:
-        #         self.moitruong.action_thucthicaulenh("talk {}# bonus.23".format(hex(self.moitruong.get_iddoituong(diachi))).replace("0x", ""))
-        #         time.sleep(0.25)
+        if self.moitruong.get_idnguoichoi() in (59996, ) and self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
+            diachi = self.moitruong.action_timkiemnhanvat("Thiên Sứ Trao Đổi")
+            if diachi and self.moitruong.get_khoangcach(diachi) <= 3. and self.moitruong.action_timkiemvatphamhanhtrang(LAMCAU):
+                self.moitruong.action_thucthicaulenh("talk {}# bonus.23".format(hex(self.moitruong.get_iddoituong(diachi))).replace("0x", ""))
+                time.sleep(0.25)
+
+                for _ in range(2):
+                    iddoituongtangbaodo = self.moitruong.action_timkiemvatphamhanhtrang(TANGBAODO, is_ruongdautien = True)
+                    if iddoituongtangbaodo:
+                        self.moitruong.action_thucthicaulenh("move {}# to {}".format(hex(iddoituongtangbaodo), random.randint(2, 4)).replace("0x", ""))
+
 
 class LoopXuLyLenh:
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
