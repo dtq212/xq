@@ -996,13 +996,12 @@ class TacTu:
                     pass
                 else:
                     self.action_sudungvatphamhanhtrang(ANXAPHU)
-            
             if self.moitruong.get_phantramsinhlucconlai() <= 25 and not self.moitruong.get_idbandohientai() != BANDO_CHIENTRUONG:
                 for phapbaokhonghuhong in ["Thượng Phương Bảo Kiếm", "Huyền thiết chuy", ]:
                     if not self.moitruong.action_timkiemvatphamhanhtrang(phapbaokhonghuhong):
-                        pass
-                    else:
-                        self.action_sudungvatphamhanhtrang(phapbaokhonghuhong)
+                        continue
+                    self.action_sudungvatphamhanhtrang(phapbaokhonghuhong, delay = 0.)
+                    break
 
             if self.moitruong.get_idnguoichoi() in (59844, 59845):
                 if time.time() - self._thoidiemdocsachgannhat > 30.:
@@ -3586,7 +3585,6 @@ class TacTu:
 
                 # print("[DAOTAOBAODO] Tiến hành bán rác & sửa đồ...")
                 # self.action_tudongbanrac()
-                # self.action_suavatpham()
                 #
                 # khoangcachdennpc = math.dist((x_hientai, y_hientai), (150, 128))
                 # if khoangcachdennpc > 3.:
