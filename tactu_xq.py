@@ -3522,8 +3522,8 @@ class TacTu:
         x_hientai = self.moitruong.get_toadox(is_vitrihientai = True)
         y_hientai = self.moitruong.get_toadoy(is_vitrihientai = True)
 
-        if time.time() - self._thoidiemhettangbaodogannhat < 60 * 3 and math.dist((x_hientai, y_hientai), (150, 128)) < 3.:
-            return
+        # if time.time() - self._thoidiemhettangbaodogannhat < 60 * 3 and math.dist((x_hientai, y_hientai), (150, 128)) < 3.:
+        #     return
 
         soluongvatphamhanhtrangtoida = self.moitruong.get_soluongvatphamhanhtrangtoida()
         for i in range(soluongvatphamhanhtrangtoida):
@@ -3584,13 +3584,13 @@ class TacTu:
                     time.sleep(5)
                     return
 
-                print("[DAOTAOBAODO] Tiến hành bán rác & sửa đồ...")
-                self.action_tudongbanrac()
-                self.action_suavatpham()
-
-                khoangcachdennpc = math.dist((x_hientai, y_hientai), (150, 128))
-                if khoangcachdennpc > 3.:
-                    self.moitruong.action_tudongtimduong(150, 128, idbandohientai)
+                # print("[DAOTAOBAODO] Tiến hành bán rác & sửa đồ...")
+                # self.action_tudongbanrac()
+                # self.action_suavatpham()
+                #
+                # khoangcachdennpc = math.dist((x_hientai, y_hientai), (150, 128))
+                # if khoangcachdennpc > 3.:
+                #     self.moitruong.action_tudongtimduong(150, 128, idbandohientai)
             return
 
         print(f"[DAOTAOBAODO] Hết map hiện tại. Chuẩn bị sang: {quocgiacanden}")
