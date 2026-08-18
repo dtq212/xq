@@ -3512,9 +3512,13 @@ class TacTu:
         self._yeucaudaotangbaodo = None
 
         if not self._is_tudongdaotangbaodo:
+            self._thoidiemhettangbaodogannhat = 0.
             return
 
         if self.moitruong.get_is_nhanvatdachet() or self.moitruong.get_is_dangvankhi():
+            return
+
+        if time.time() - self._thoidiemhettangbaodogannhat < 60 * 3:
             return
 
         idbandohientai = self.moitruong.get_idbandohientai()
@@ -3575,8 +3579,7 @@ class TacTu:
                 time.sleep(5)
             else:
                 if not self.moitruong.action_timkiemvatphamhanhtrang(LAMCAU):
-                    phatam("Hết Lam Câu")
-                    print("[DAOTAOBAODO] Không đủ điều kiện đổi Tàng Bảo Đồ (hết LAMCAU)")
+                    phatam("{} hết tàng bảo đồ".format(self.moitruong.get_tendoituong()))
                     time.sleep(5)
                     return
 
@@ -3587,8 +3590,6 @@ class TacTu:
                 khoangcachdennpc = math.dist((x_hientai, y_hientai), (150, 128))
                 if khoangcachdennpc > 3.:
                     self.moitruong.action_tudongtimduong(150, 128, idbandohientai)
-            return
-        elif time.time() - self._thoidiemhettangbaodogannhat < 60 * 3:
             return
 
         print(f"[DAOTAOBAODO] Hết map hiện tại. Chuẩn bị sang: {quocgiacanden}")
