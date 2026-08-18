@@ -3518,12 +3518,13 @@ class TacTu:
         if self.moitruong.get_is_nhanvatdachet() or self.moitruong.get_is_dangvankhi():
             return
 
-        if time.time() - self._thoidiemhettangbaodogannhat < 60 * 3 and math.dist((x_hientai, y_hientai), (150, 128)) < 3.:
-            return
-
         idbandohientai = self.moitruong.get_idbandohientai()
         x_hientai = self.moitruong.get_toadox(is_vitrihientai = True)
         y_hientai = self.moitruong.get_toadoy(is_vitrihientai = True)
+
+        if time.time() - self._thoidiemhettangbaodogannhat < 60 * 3 and math.dist((x_hientai, y_hientai), (150, 128)) < 3.:
+            return
+
         soluongvatphamhanhtrangtoida = self.moitruong.get_soluongvatphamhanhtrangtoida()
         for i in range(soluongvatphamhanhtrangtoida):
             tenvatpham = self.moitruong.get_tenvatphamhanhtrang(i)
