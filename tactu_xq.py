@@ -980,22 +980,16 @@ class TacTu:
                 self._thoidiemkiemtrahieuunggannhat = time.time()
 
                 if ((is_bandokhongpk and self.moitruong.get_phantramnoilucconlai() < 25.) or (not is_bandokhongpk and self.moitruong.get_phantramnoilucconlai() < 75.)) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_PHAPLUCTHACH,), True, is_hieuungcoloi = 1):
-                    if not self.moitruong.action_timkiemvatphamhanhtrang(TIEUPHAPLUCTHACH):
-                        pass
-                    else:
+                    if self.moitruong.action_timkiemvatphamhanhtrang(TIEUPHAPLUCTHACH):
                         self.action_sudungvatphamhanhtrang(TIEUPHAPLUCTHACH)
 
                 if self.moitruong.get_tenmonphai() in ("camvequan", "daohoanguyen", "duongmon") and is_bandokhongpk and self.moitruong.get_phantramsinhlucconlai() < 75. and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_HUYETTHACH,), True, is_hieuungcoloi = 1):
-                    if not self.moitruong.action_timkiemvatphamhanhtrang(TIEUHUYETTHACH):
-                        pass
-                    else:
+                    if self.moitruong.action_timkiemvatphamhanhtrang(TIEUHUYETTHACH):
                         self.action_sudungvatphamhanhtrang(TIEUHUYETTHACH)
 
             if self.moitruong.get_diempk() > 0:
-                if not self.moitruong.action_timkiemvatphamhanhtrang(ANXAPHU):
-                    pass
-                else:
-                    self.action_sudungvatphamhanhtrang(ANXAPHU)
+                if self.moitruong.action_timkiemvatphamhanhtrang(ANXAPHU):
+                    self.action_sudungvatphamhanhtrang(ANXAPHU, is_boquaxacnhan = True)
             if self.moitruong.get_phantramsinhlucconlai() <= 25 and not self.moitruong.get_idbandohientai() != BANDO_CHIENTRUONG:
                 for phapbaokhonghuhong in ["Thượng Phương Bảo Kiếm", "Huyền thiết chuy", ]:
                     if not self.moitruong.action_timkiemvatphamhanhtrang(phapbaokhonghuhong):
