@@ -3518,7 +3518,7 @@ class TacTu:
         if self.moitruong.get_is_nhanvatdachet() or self.moitruong.get_is_dangvankhi():
             return
 
-        if time.time() - self._thoidiemhettangbaodogannhat < 60 * 3:
+        if time.time() - self._thoidiemhettangbaodogannhat < 60 * 3 and math.dist((x_hientai, y_hientai), (150, 128)) < 3.:
             return
 
         idbandohientai = self.moitruong.get_idbandohientai()
