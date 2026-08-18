@@ -227,6 +227,7 @@ class LoopPhu:
                 print(f"[Loop PHỤ] Lỗi bộ nhớ: {err}")
                 time.sleep(1)
             except Exception as e:
+                traceback.print_exc()
                 print(f"[Loop PHỤ] Lỗi không xác định: {e}")
             time.sleep(0.5)
 
