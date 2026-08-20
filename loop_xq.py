@@ -6,7 +6,7 @@ import traceback
 
 import pymem.exception
 
-from hangso_xq import BANDO_CHIENTRUONG, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, VATPHAMKHONGBANs, BANDO_YENTRUONGTHANH3, BANDO_YENTRUONGTHANH2, BANDO_YENTRUONGTHANH1, TANGBAODO, LAMCAU
+from hangso_xq import BANDO_CHIENTRUONG, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, VATPHAMKHONGBANs, BANDO_YENTRUONGTHANH3, BANDO_YENTRUONGTHANH2, BANDO_YENTRUONGTHANH1, TANGBAODO, LAMCAU, HACCAU
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
 from tienich_xq import phatam
@@ -286,9 +286,14 @@ class LoopPhu:
 
         if self.moitruong.get_idnguoichoi() in (59996, ) and self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
             diachi = self.moitruong.action_timkiemnhanvat("Thiên Sứ Trao Đổi")
-            if diachi and self.moitruong.get_khoangcach(diachi) <= 3. and self.moitruong.action_timkiemvatphamhanhtrang(LAMCAU):
-                self.moitruong.action_thucthicaulenh("talk {}# bonus.23".format(hex(self.moitruong.get_iddoituong(diachi))).replace("0x", ""))
-                time.sleep(0.25)
+            if diachi and self.moitruong.get_khoangcach(diachi) <= 3.:
+                lamcau = self.moitruong.action_timkiemvatphamhanhtrang(LAMCAU)
+                haccau = self.moitruong.action_timkiemvatphamhanhtrang(HACCAU)
+                if lamcau and haccau:
+                    self.moitruong.action_thucthicaulenh("talk {}# bonus.23".format(hex(self.moitruong.get_iddoituong(diachi))).replace("0x", ""))
+                    time.sleep(0.25)
+                elif lamcau:
+                    self.moitruong.action_thucthicaulenh("talk {}# bonus.9".format(hex(self.moitruong.get_iddoituong(diachi))).replace("0x", ""))
 
                 for _ in range(2):
                     iddoituongtangbaodo = self.moitruong.action_timkiemvatphamhanhtrang(TANGBAODO, is_ruongdautien = True)
