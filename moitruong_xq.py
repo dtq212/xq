@@ -1737,8 +1737,8 @@ class MoiTruong:
             if i >= soluongvatphamhanhtrangtoida: break
             i += 1
             if tenvatpham and self.get_tenvatphamhanhtrang(i) != tenvatpham:
-                # if "Nhập môn" in self.get_tenvatphamhanhtrang(i):
-                #     print(self.get_tenvatphamhanhtrang(i))
+                #if "Thượng" in self.get_tenvatphamhanhtrang(i):
+                #    print(self.get_tenvatphamhanhtrang(i))
                 continue
             return self.get_iddoituongvatphamhanhtrang(i)
         return False
