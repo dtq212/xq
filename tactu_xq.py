@@ -3337,7 +3337,7 @@ class TacTu:
                 if not diachidoituong: break
 
                 tendoituong = self.moitruong.get_tendoituong(diachidoituong)
-                if tendoituong and ("Khoáng" in tendoituong):
+                if tendoituong and tendoituong in ("Hoàng Kỳ", "Cúc Dại", "Quả Anh Túc"):
                     iddoituong = self.moitruong.get_iddoituong(diachidoituong)
                     if iddoituong <= 0: continue
                     if iddoituong in self._idkhoangbiloi_map: continue
@@ -3348,7 +3348,6 @@ class TacTu:
                     if khoangcach < khoangcachgannhat:
                         khoangcachgannhat = khoangcach
                         diachidoituonggannhat = diachidoituong
-
             if diachidoituonggannhat:
                 self._xuly_daokhoang(diachidoituonggannhat, khoangcachgannhat)
             else:
