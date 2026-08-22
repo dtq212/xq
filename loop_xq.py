@@ -139,21 +139,23 @@ class LoopChinh:
         #         chisohientai = int(match.group(1))
         #         print(f"Đã tìm thấy Khí huyết: {chisohientai}")
         #
-        #         if chisohientai > 350:
-        #             print("Khí huyết > 350. Dừng tiến trình!")
+        #         if chisohientai > 360:
+        #             print("Khí huyết > 360. Dừng tiến trình!")
         #             self.stop.set()
         #             return
         #         else:
-        #             if self.moitruong.action_timkiemvatphamhanhtrang("Thẻ Giảm Giá"):
-        #                 self.moitruong.action_thucthicaulenh("talk 15bc# accept.2d6ae73# 1")
-        #                 time.sleep(0.05)
-        #             else:
-        #                 self.moitruong.action_thucthicaulenh("buyitem ! 5 3 1")
-        #                 time.sleep(0.05)
-        #             # self.moitruong.action_thucthicaulenh2("talk 15bc# accept.2d4fc0b# 0")
-        #             # time.sleep(0.05)
+        #             # if self.moitruong.action_timkiemvatphamhanhtrang("Thẻ Giảm Giá"):
+        #             #     self.moitruong.action_thucthicaulenh("talk 15d5# accept.3a3753# 1")
+        #             #     time.sleep(0.05)
+        #             # else:
+        #             #     self.moitruong.action_thucthicaulenh("buyitem ! 5 3 1")
+        #             #     time.sleep(0.05)
+        #             self.moitruong.action_thucthicaulenh2("talk 15bc# accept.2dade13# 0")
+        #             time.sleep(0.05)
         #     else:
         #         print("Không tìm thấy dòng Khí huyết trong mô tả vật phẩm này.")
+        #         self.moitruong.action_thucthicaulenh2("talk 15bc# accept.2daa96a# 0")
+        #         time.sleep(0.05)
 
         if 0 and self.moitruong.get_idnguoichoi() == 59996:
             if not self.moitruong.action_timkiemvatphamhanhtrang("Rương dự trữ"):
