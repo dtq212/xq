@@ -1723,10 +1723,7 @@ class MoiTruong:
         return is_ok
 
     def get_soluongvatphamhanhtrangtoida(self):
-        if self.get_idnguoichoi() == 59996:
-            return 24 * 4 - 1
-        else:
-            return SOLUONGVATPHAMHANHTRANGTOIDA
+        return SOLUONGVATPHAMHANHTRANGTOIDA_MAP.get(self.get_idnguoichoi(), 36 - 1)
 
     def action_timkiemvatphamhanhtrang(self, tenvatpham = None, is_ruongdautien = False):
         if not tenvatpham: return False
