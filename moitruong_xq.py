@@ -484,7 +484,7 @@ class MoiTruong:
         caulenh = "pet {}# mode {}".format(hex(iddoituong), idkynang).replace("0x", "")
         return self.action_thucthicaulenh2(caulenh)
 
-    def action_sudungkynangbaothu(self, idkynang, diachimuctieu, delay = 0.5):
+    def action_sudungkynangbaothu(self, idkynang, diachimuctieu, delay = 1.):
         if idkynang in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idkynang] < delay:
             return False
         if not diachimuctieu:
@@ -495,7 +495,8 @@ class MoiTruong:
             caulenh = "pf5 {} {}#".format(idkynang, hex(self.get_iddoituong(diachimuctieu))).replace("0x", "")
 
         self._thoidiemsudungkynangvitrigannhat_map[idkynang] = time.time()
-        return self.action_thucthicaulenh2(caulenh)
+
+        return self.action_thucthicaulenh2(caulenh, delay = 0.)
 
     def action_ralenhbaothumaosontancong(self, iddoituongbaothumaoson, iddoituongnhanvatmuctieudangchon, delay = 0.5):
         if time.time() - self._thoidiemralenhbaothumaosontancong < delay:
