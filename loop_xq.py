@@ -139,8 +139,8 @@ class LoopChinh:
         #         chisohientai = int(match.group(1))
         #         print(f"Đã tìm thấy Khí huyết: {chisohientai}")
         #
-        #         if chisohientai > 360:
-        #             print("Khí huyết > 360. Dừng tiến trình!")
+        #         if chisohientai > 350:
+        #             print("Khí huyết > 350. Dừng tiến trình!")
         #             self.stop.set()
         #             return
         #         else:
@@ -150,14 +150,14 @@ class LoopChinh:
         #             # else:
         #             #     self.moitruong.action_thucthicaulenh("buyitem ! 5 3 1")
         #             #     time.sleep(0.05)
-        #             self.moitruong.action_thucthicaulenh2("talk 15bc# accept.2dade13# 0")
+        #             self.moitruong.action_thucthicaulenh2("talk 15bc# accept.2e15f08# 0")
         #             time.sleep(0.05)
         #     else:
         #         print("Không tìm thấy dòng Khí huyết trong mô tả vật phẩm này.")
-        #         self.moitruong.action_thucthicaulenh2("talk 15bc# accept.2daa96a# 0")
+        #         self.moitruong.action_thucthicaulenh2("talk 15bc# accept.2e15f08# 0")
         #         time.sleep(0.05)
 
-        if 0 and self.moitruong.get_idnguoichoi() == 59996:
+        if 0 and self.moitruong.get_idnguoichoi() == 60055:
             if not self.moitruong.action_timkiemvatphamhanhtrang("Rương dự trữ"):
                 self.moitruong.action_thucthicaulenh("buyitem ! 4 7 1")
                 time.sleep(0.25)
