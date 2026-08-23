@@ -181,7 +181,9 @@ class CuaSo:
             cmd = self.command_dict.get(self.idcuaso)
 
             if cmd:
-                if cmd == "battat_tudongdichuyendiemdanhxungquanh":
+                if cmd == "action_lammoitrangthai":
+                    self.tactu.action_lammoitrangthai()
+                elif cmd == "battat_tudongdichuyendiemdanhxungquanh":
                     self.tactu.battat_is_tudongdichuyendiemdanhxungquanh()
                 elif isinstance(cmd, str) and cmd.startswith("set_khoangcachtheosau:"):
                     try:
