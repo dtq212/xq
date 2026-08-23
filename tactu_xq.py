@@ -1043,6 +1043,17 @@ class TacTu:
                         if self.action_sudungvatphamhanhtrang(sachcanhoc):
                             self._thoidiemdocsachgannhat = time.time()
                             break
+            if self.moitruong.get_idnguoichoi() == 59996:
+                if time.time() - self._thoidiemdocsachgannhat > 30.:
+                    sachcanhocs = [
+                        "Nhập môn Trung Y Dược Lý",
+                        "Nhập môn Y Thuật",
+                        "Nhập môn Tu Tâm",
+                    ]
+                    for sachcanhoc in sachcanhocs:
+                        if self.action_sudungvatphamhanhtrang(sachcanhoc):
+                            self._thoidiemdocsachgannhat = time.time()
+                            break
             if self.moitruong.get_idnguoichoi() == 59844:
                 if time.time() - self._thoidiemdocsachgannhat > 30.:
                     sachcanhocs = [
@@ -1311,7 +1322,7 @@ class TacTu:
             (VITRIKYNANG_LACKICH, "sudungkynangmuctieu", lambda: diachimuctieu and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_LACKICH] and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and (is_muctieupk or not self._is_nhieumuctieuganbanthan3) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_LACKICH,), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True),
             (VITRIKYNANG_DAIHAIVOLUONG, "sudungkynangkhongmuctieu", lambda: diachimuctieu and self._is_nhieumuctieuganbanthan3 and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_DAIHAIVOLUONG] and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
             (None, "sudungcaoboctacdan", lambda: self.moitruong.get_idbandohientai() != 885 and diachimuctieu and is_muctieulanguoichoi and time.time() - self._thoidiemsudungcaoboctacdangannhat > 5. and self.moitruong.action_timkiemvatphamhanhtrang(CAOBOCTACDAN), KHOANGCACHSUDUNGKYNANGTAMXA, None, False, False),
-            (None, "tancongvatly", lambda: diachimuctieu and not self._is_battudongtancongvatly and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True),
+            # (None, "tancongvatly", lambda: diachimuctieu and not self._is_battudongtancongvatly and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True),
             # (VITRIKYNANG_PHANTOA, "sudungkynangkhongmuctieu", lambda: diachimuctieu and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_PHANTOA] and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and self._is_battudongtancongvatly, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True),
             (VITRIKYNANG_KHITRANGSONHA, "sudungkynangmuctieu", lambda: diachimuctieu and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and nguyenkhiconlai <= 2, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True),
             (VITRIKYNANG_HACHODAOTAM, "sudungkynangmuctieu", lambda: diachimuctieu and nguyenkhiconlai >= NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP[VITRIKYNANG_HACHODAOTAM] and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True),
@@ -1414,7 +1425,7 @@ class TacTu:
             (VITRIKYNANG_HUYETMACHU, "sudungkynangkhongmuctieu", lambda: phantramsinhlucconlai > 25 and phantramnoilucconlai <= 50, 0, None, True, False),
             (VITRIKYNANG_THANTUEPHAPCHU, "sudungkynangkhongmuctieu", lambda: noilucconlai > 150 and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THANTUEPHAPCHU,), macdinh = True, is_hieuungcoloi = 1), 0, None, True, False),
             # (VITRIKYNANG_LUUHUYETTHUAT, "sudungkynangkhongmuctieu", lambda: noilucconlai > 150 and time.time() - self._thoidiemsudungluuhuyetthuatgannhat > 30, 0, None, True, False),
-            # (VITRIKYNANG_DITINHDAIPHAP, "sudungkynangkhongmuctieu", lambda: noilucconlai > 150 and time.time() - self._thoidiemsudungditinhdaiphapgannhat > 30, 0, None, True, False),
+            (VITRIKYNANG_DITINHDAIPHAP, "sudungkynangkhongmuctieu", lambda: noilucconlai > 150 and time.time() - self._thoidiemsudungditinhdaiphapgannhat > 30, 0, None, True, False),
             (VITRIKYNANG_THUCCOT, "sudungkynangmuctieu", lambda: diachimuctieu and noilucconlai > 50 and is_muctieupk and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCCOT,), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu), KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
             (VITRIKYNANG_LOIDONGCUUTHIEN, "sudungkynangkhongmuctieu", lambda: diachimuctieu and noilucconlai > 50 and self._is_nhieumuctieuganbanthan3 and khoangcach <= KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN, KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN, None, True, True),
             (VITRIKYNANG_PHUCMAQUYET, "sudungkynangmuctieu", lambda: diachimuctieu and noilucconlai > 50 and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA, KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
@@ -1453,7 +1464,8 @@ class TacTu:
         idnguoichoi = self.moitruong.get_idnguoichoi()
         diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
         is_muctieulanguoichoi = diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu)
-        is_bandochientruong = self.moitruong.get_idbandohientai() in (BANDO_CHIENTRUONG, BANDO_COMO, 886, 894)
+        idbandohientai = self.moitruong.get_idbandohientai()
+
         diachidoituongcanhoisinh = None
         diachidoituongcanbufftaytranquyet = None
         diachidoituongcanbommau = None
@@ -1485,7 +1497,7 @@ class TacTu:
                 continue
             if self.moitruong.get_khoangcach(diachidoituongdangxemxet) >= KHOANGCACHTOANMANHINH:
                 continue
-            if self.moitruong.get_idbandohientai() == BANDO_CHIENTRUONG and self.moitruong.get_idphechientruong() != self.moitruong.get_idphechientruong(diachidoituongdangxemxet):
+            if idbandohientai == BANDO_CHIENTRUONG and self.moitruong.get_idphechientruong() != self.moitruong.get_idphechientruong(diachidoituongdangxemxet):
                 continue
             priority = -1
             if self.moitruong.get_is_nguoichoi(diachidoituongdangxemxet):
@@ -1507,7 +1519,7 @@ class TacTu:
             is_uutiennhom = priority <= 1
             is_uutienbang = priority == 2
 
-            if self.moitruong.get_is_nhanvatdachet(diachidoituongdangxemxet) and self.moitruong.get_idbandohientai() != BANDO_CHIENTRUONG:
+            if self.moitruong.get_is_nhanvatdachet(diachidoituongdangxemxet) and idbandohientai != BANDO_CHIENTRUONG:
                 idnguoichoidangxemxet = self.moitruong.get_idnguoichoi(diachidoituongdangxemxet)
                 if time.time() - self._thoidiemcaituhoansinh_map.get(idnguoichoidangxemxet, 0) > 5.0:
                     if is_uutiennhom and not diachidoituongcanhoisinh:
@@ -1528,7 +1540,7 @@ class TacTu:
             is_khongbithieudot = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THIEUDOT,), macdinh = False, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 0)
             is_datinhcuongluc = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_DATINCUONGLUC,), macdinh = False, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 1)
 
-            if is_khongbithieudot and (phantramsinhlucconlai <= 25 or (not self._is_tudongdichientruong and not is_bandochientruong and phantramsinhlucconlai <= 75)):
+            if is_khongbithieudot and (phantramsinhlucconlai <= 25 or (not self._is_tudongdichientruong and idbandohientai not in (BANDO_CHIENTRUONG, BANDO_COMO, ) and phantramsinhlucconlai <= 75)):
                 if is_uutiennhom:
                     if phantramsinhlucconlai < phantramsinhlucthapnhat:
                         phantramsinhlucthapnhat = phantramsinhlucconlai
@@ -1541,24 +1553,24 @@ class TacTu:
             if is_uutienbang:
                 continue
 
-            if phantramsinhlucconlai >= 25. or self.moitruong.get_idbandohientai() in BANDOKHONGPKs:
+            if phantramsinhlucconlai >= 25. or idbandohientai in BANDOKHONGPKs:
                 idnguoichoidangxemxet = self.moitruong.get_idnguoichoi(diachidoituongdangxemxet)
 
                 if not diachidoituongcanbuffngancham:
                     is_thieuhieuung = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NGANCHAMDOACH,), macdinh = True, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 1)
-                    is_quathoigian = self.moitruong.get_diachicosothongtinnhanvat1() != diachidoituongdangxemxet and self.moitruong.get_is_nguoichoi(diachidoituongdangxemxet) and time.time() - self._thoidiembuffnganchamgannhat_map.get(idnguoichoidangxemxet, 0) > (60 if self.moitruong.get_idbandohientai() in BANDOKHONGPKs else 300)
+                    is_quathoigian = self.moitruong.get_diachicosothongtinnhanvat1() != diachidoituongdangxemxet and self.moitruong.get_is_nguoichoi(diachidoituongdangxemxet) and time.time() - self._thoidiembuffnganchamgannhat_map.get(idnguoichoidangxemxet, 0) > (60 if idbandohientai in BANDOKHONGPKs else 300)
                     if is_thieuhieuung or is_quathoigian:
                         diachidoituongcanbuffngancham = diachidoituongdangxemxet
 
                 if not diachidoituongcanbuffkimcham:
                     is_thieuhieuung = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KIMCHAMDOACH,), macdinh = True, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 1)
-                    is_quathoigian = self.moitruong.get_diachicosothongtinnhanvat1() != diachidoituongdangxemxet and self.moitruong.get_is_nguoichoi(diachidoituongdangxemxet) and time.time() - self._thoidiembuffkimchamgannhat_map.get(idnguoichoidangxemxet, 0) > (60 if self.moitruong.get_idbandohientai() in BANDOKHONGPKs else 300)
+                    is_quathoigian = self.moitruong.get_diachicosothongtinnhanvat1() != diachidoituongdangxemxet and self.moitruong.get_is_nguoichoi(diachidoituongdangxemxet) and time.time() - self._thoidiembuffkimchamgannhat_map.get(idnguoichoidangxemxet, 0) > (60 if idbandohientai in BANDOKHONGPKs else 300)
                     if is_thieuhieuung or is_quathoigian:
                         diachidoituongcanbuffkimcham = diachidoituongdangxemxet
 
                 if not diachidoituongcanbuffcuongthethuat:
                     is_thieuhieuung = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CUONGTHETHUAT,), macdinh = True, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 1)
-                    is_quathoigian = self.moitruong.get_diachicosothongtinnhanvat1() != diachidoituongdangxemxet and self.moitruong.get_is_nguoichoi(diachidoituongdangxemxet) and time.time() - self._thoidiembuffcuongthethuatgannhat_map.get(idnguoichoidangxemxet, 0) > (60 if self.moitruong.get_idbandohientai() in BANDOKHONGPKs else 300)
+                    is_quathoigian = self.moitruong.get_diachicosothongtinnhanvat1() != diachidoituongdangxemxet and self.moitruong.get_is_nguoichoi(diachidoituongdangxemxet) and time.time() - self._thoidiembuffcuongthethuatgannhat_map.get(idnguoichoidangxemxet, 0) > (60 if idbandohientai in BANDOKHONGPKs else 300)
                     if is_thieuhieuung or is_quathoigian:
                         diachidoituongcanbuffcuongthethuat = diachidoituongdangxemxet
 
@@ -1618,10 +1630,10 @@ class TacTu:
             # (VITRIKYNANG_DAUCHUYENTINHDI, "sudungkynangkhongmuctieu", lambda: diachidoituongcanbommau and is_cohieuungdauchuyentinhdi, KHOANGCACHSUDUNGKYNANGTAMXA, None, False),
             (VITRIKYNANG_CAITUHOANSINH, "sudungkynanglendongdoi", lambda: noilucconlai > 200 and diachidoituongcanhoisinh and self.moitruong.get_khoangcach(diachidoituongcanhoisinh) <= KHOANGCACHSUDUNGKYNANGTAMXA - 3, KHOANGCACHSUDUNGKYNANGTAMXA, diachidoituongcanhoisinh, True),
             (VITRIKYNANG_TAYTRANQUYET, "sudungkynanglendongdoi", lambda: noilucconlai > 200 and diachidoituongcanbufftaytranquyet and self.moitruong.get_khoangcach(diachidoituongcanbufftaytranquyet) <= KHOANGCACHSUDUNGKYNANGTAMXA - 3, KHOANGCACHSUDUNGKYNANGTAMXA, diachidoituongcanbufftaytranquyet, True),
-            (VITRIKYNANG_CAMLOTRI, "sudungkynanglendongdoi", lambda: noilucconlai > 200 and not is_cohieuungdauchuyentinhdi and diachidoituongcanbommau and self.moitruong.get_khoangcach(diachidoituongcanbommau) <= KHOANGCACHSUDUNGKYNANGTAMXA - 3 and (not is_bandochientruong and phantramsinhlucthapnhat <= 75 or phantramsinhlucthapnhat < 25), KHOANGCACHSUDUNGKYNANGTAMXA, diachidoituongcanbommau, True),
-            (VITRIKYNANG_KHIETVANQUYET, "sudungkynanglendongdoi", lambda: noilucconlai > 200 and not is_cohieuungdauchuyentinhdi and diachidoituongcanbommau and self.moitruong.get_khoangcach(diachidoituongcanbommau) <= KHOANGCACHSUDUNGKYNANGTAMXA - 3 and (not is_bandochientruong and phantramsinhlucthapnhat <= 75 or phantramsinhlucthapnhat < 25), KHOANGCACHSUDUNGKYNANGTAMXA, diachidoituongcanbommau, True),
-            (VITRIKYNANG_SOTRI, "sudungkynanglendongdoi", lambda: noilucconlai > 200 and not is_cohieuungdauchuyentinhdi and diachidoituongcanbommau and self.moitruong.get_khoangcach(diachidoituongcanbommau) <= KHOANGCACHSUDUNGKYNANGTAMXA - 3 and (not is_bandochientruong and phantramsinhlucthapnhat <= 75 or phantramsinhlucthapnhat < 25), KHOANGCACHSUDUNGKYNANGTAMXA, diachidoituongcanbommau, True),
-            (VITRIKYNANG_VODINHLUUTHUY, "sudungkynanglendongdoi", lambda: noilucconlai > 200 and not is_cohieuungdauchuyentinhdi and diachidoituongcanbommau and self.moitruong.get_khoangcach(diachidoituongcanbommau) <= KHOANGCACHSUDUNGKYNANGTAMXA - 3 and (not is_bandochientruong and phantramsinhlucthapnhat <= 75 or phantramsinhlucthapnhat < 25), KHOANGCACHSUDUNGKYNANGTAMXA, diachidoituongcanbommau, True),
+            (VITRIKYNANG_CAMLOTRI, "sudungkynanglendongdoi", lambda: noilucconlai > 200 and not is_cohieuungdauchuyentinhdi and diachidoituongcanbommau and self.moitruong.get_khoangcach(diachidoituongcanbommau) <= KHOANGCACHSUDUNGKYNANGTAMXA - 3 and (not idbandohientai in (BANDO_CHIENTRUONG, BANDO_COMO, ) and phantramsinhlucthapnhat <= 75 or phantramsinhlucthapnhat < 25), KHOANGCACHSUDUNGKYNANGTAMXA, diachidoituongcanbommau, True),
+            (VITRIKYNANG_KHIETVANQUYET, "sudungkynanglendongdoi", lambda: noilucconlai > 200 and not is_cohieuungdauchuyentinhdi and diachidoituongcanbommau and self.moitruong.get_khoangcach(diachidoituongcanbommau) <= KHOANGCACHSUDUNGKYNANGTAMXA - 3 and (not idbandohientai in (BANDO_CHIENTRUONG, BANDO_COMO, ) and phantramsinhlucthapnhat <= 75 or phantramsinhlucthapnhat < 25), KHOANGCACHSUDUNGKYNANGTAMXA, diachidoituongcanbommau, True),
+            (VITRIKYNANG_SOTRI, "sudungkynanglendongdoi", lambda: noilucconlai > 200 and not is_cohieuungdauchuyentinhdi and diachidoituongcanbommau and self.moitruong.get_khoangcach(diachidoituongcanbommau) <= KHOANGCACHSUDUNGKYNANGTAMXA - 3 and (not idbandohientai in (BANDO_CHIENTRUONG, BANDO_COMO, ) and phantramsinhlucthapnhat <= 75 or phantramsinhlucthapnhat < 25), KHOANGCACHSUDUNGKYNANGTAMXA, diachidoituongcanbommau, True),
+            (VITRIKYNANG_VODINHLUUTHUY, "sudungkynanglendongdoi", lambda: noilucconlai > 200 and not is_cohieuungdauchuyentinhdi and diachidoituongcanbommau and self.moitruong.get_khoangcach(diachidoituongcanbommau) <= KHOANGCACHSUDUNGKYNANGTAMXA - 3 and (not idbandohientai in (BANDO_CHIENTRUONG, BANDO_COMO, ) and phantramsinhlucthapnhat <= 75 or phantramsinhlucthapnhat < 25), KHOANGCACHSUDUNGKYNANGTAMXA, diachidoituongcanbommau, True),
             (VITRIKYNANG_NGANCHAMDOACH, "sudungkynanglendongdoi", lambda: noilucconlai > 200 and diachidoituongcanbuffngancham and self.moitruong.get_khoangcach(diachidoituongcanbuffngancham) <= KHOANGCACHSUDUNGKYNANGTAMXA - 3, KHOANGCACHSUDUNGKYNANGTAMXA, diachidoituongcanbuffngancham, True),
             (VITRIKYNANG_KIMCHAMDOACH, "sudungkynanglendongdoi", lambda: noilucconlai > 200 and diachidoituongcanbuffkimcham and self.moitruong.get_khoangcach(diachidoituongcanbuffkimcham) <= KHOANGCACHSUDUNGKYNANGTAMXA - 3, KHOANGCACHSUDUNGKYNANGTAMXA, diachidoituongcanbuffkimcham, True),
             (VITRIKYNANG_CUONGTHETHUAT, "sudungkynanglendongdoi", lambda: noilucconlai > 200 and diachidoituongcanbuffcuongthethuat and self.moitruong.get_khoangcach(diachidoituongcanbuffcuongthethuat) <= KHOANGCACHSUDUNGKYNANGTAMXA - 3, KHOANGCACHSUDUNGKYNANGTAMXA, diachidoituongcanbuffcuongthethuat, True),
@@ -1631,10 +1643,10 @@ class TacTu:
             (VITRIKYNANG_TOANPHONGQUYET, "sudungkynangmuctieu", lambda: noilucconlai > 200 and diachimuctieu and is_muctieulanguoichoi and khoangcachmuctieutancong <= KHOANGCACHSUDUNGKYNANGTAMXA and self.moitruong.get_phantramsinhlucconlai(diachimuctieu) <= 5 and self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TIENTHANVODICH, HIEUUNGKYNANG_KIMCUONGBATHOAIDON), macdinh = False, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 1), KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
             (VITRIKYNANG_PHONGANTHUAT, "sudungkynangmuctieu", lambda: noilucconlai > 200 and diachimuctieu and is_muctieulanguoichoi and khoangcachmuctieutancong <= KHOANGCACHSUDUNGKYNANGTAMXA and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRAMMAC, HIEUUNGKYNANG_CHOANG), False, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0), KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
             (VITRIKYNANG_HUYENQUANGTHIEMANH, "sudungkynangmuctieu", lambda: noilucconlai > 200 and diachimuctieu and is_muctieulanguoichoi and khoangcachmuctieutancong <= KHOANGCACHSUDUNGKYNANGTAMXA and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_MULOA, HIEUUNGKYNANG_CHOANG), False, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0), KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
-            (VITRIKYNANG_DONGIAPTRAN, "sudungkynangphudau", lambda: noilucconlai > 800 and (is_cohieuungdauchuyentinhdi or self._is_tudongvebanrac or is_bandochientruong) and diachimuctieu and is_contranky and (self._is_nhieumuctieugan3 or is_bandochientruong) and phantramnoiluc > 25 and khoangcachmuctieutancong <= KHOANGCACHSUDUNGKYNANGTAMXA - 1.5, khoangcachmuctieutancong + random.randint(0, 1), None, True),
-            (VITRIKYNANG_KYMONTRAN, "sudungkynangphudau", lambda: noilucconlai > 800 and (is_cohieuungdauchuyentinhdi or self._is_tudongvebanrac or is_bandochientruong) and diachimuctieu and is_contranky and (self._is_nhieumuctieugan3 or is_bandochientruong) and phantramnoiluc > 25 and khoangcachmuctieutancong <= KHOANGCACHSUDUNGKYNANGTAMXA - 1.5, khoangcachmuctieutancong + random.randint(-1, 0), None, True),
-            (VITRIKYNANG_LIETPHONGQUYET, "sudungkynangmuctieu", lambda: noilucconlai > 800 and (is_cohieuungdauchuyentinhdi or self._is_tudongvebanrac or is_bandochientruong) and diachimuctieu and khoangcachmuctieutancong <= KHOANGCACHSUDUNGKYNANGTAMXA, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
-            (VITRIKYNANG_PHONGVUKINHTHIEN, "sudungkynangmuctieu", lambda: noilucconlai > 800 and (is_cohieuungdauchuyentinhdi or self._is_tudongvebanrac or is_bandochientruong) and diachimuctieu and khoangcachmuctieutancong <= KHOANGCACHSUDUNGKYNANGTAMXA, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
+            (VITRIKYNANG_DONGIAPTRAN, "sudungkynangphudau", lambda: noilucconlai > 800 and (is_cohieuungdauchuyentinhdi or self._is_tudongvebanrac or idbandohientai in (BANDO_CHIENTRUONG, BANDO_COMO, 886, 894)) and diachimuctieu and is_contranky and (self._is_nhieumuctieugan3 or idbandohientai in (BANDO_CHIENTRUONG, BANDO_COMO, 886, 894)) and phantramnoiluc > 25 and khoangcachmuctieutancong <= KHOANGCACHSUDUNGKYNANGTAMXA - 1.5, khoangcachmuctieutancong + random.randint(0, 1), None, True),
+            (VITRIKYNANG_KYMONTRAN, "sudungkynangphudau", lambda: noilucconlai > 800 and (is_cohieuungdauchuyentinhdi or self._is_tudongvebanrac or idbandohientai in (BANDO_CHIENTRUONG, BANDO_COMO, 886, 894)) and diachimuctieu and is_contranky and (self._is_nhieumuctieugan3 or idbandohientai in (BANDO_CHIENTRUONG, BANDO_COMO, 886, 894)) and phantramnoiluc > 25 and khoangcachmuctieutancong <= KHOANGCACHSUDUNGKYNANGTAMXA - 1.5, khoangcachmuctieutancong + random.randint(-1, 0), None, True),
+            (VITRIKYNANG_LIETPHONGQUYET, "sudungkynangmuctieu", lambda: noilucconlai > 800 and (is_cohieuungdauchuyentinhdi or self._is_tudongvebanrac or idbandohientai in (BANDO_CHIENTRUONG, BANDO_COMO, 886, 894)) and diachimuctieu and khoangcachmuctieutancong <= KHOANGCACHSUDUNGKYNANGTAMXA, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
+            (VITRIKYNANG_PHONGVUKINHTHIEN, "sudungkynangmuctieu", lambda: noilucconlai > 800 and (is_cohieuungdauchuyentinhdi or self._is_tudongvebanrac or idbandohientai in (BANDO_CHIENTRUONG, BANDO_COMO, 886, 894)) and diachimuctieu and khoangcachmuctieutancong <= KHOANGCACHSUDUNGKYNANGTAMXA, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
 
             (None, "dichuyentiepcantamxa", lambda: diachicantiepcan and self.moitruong.get_khoangcach(diachicantiepcan) > KHOANGCACHSUDUNGKYNANGTAMXA, KHOANGCACHSUDUNGKYNANGTAMXA, diachicantiepcan, False),
         ]
