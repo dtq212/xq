@@ -65,6 +65,7 @@ class LoopTimKiemMucTieu:
         if not self.moitruong.get_is_nhanvattontai() or self.moitruong.get_is_dangmatketnoi():
             return
         self.tactu.action_tudongtimkiemmuctieu()
+        self.tactu.action_tudongtimkiemmuctieumonphai()
         self.moitruong.action_phananhdiachicosothongtinnhanvatmuctieudangchoningame()
 
 

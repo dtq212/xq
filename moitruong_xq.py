@@ -929,7 +929,29 @@ class MoiTruong:
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1410) * 2
 
-    def get_toadox(self, diachicosothongtinnhanvat = None, is_vitrihientai = False, thoigiandukien = 1.0, tocdo = None):
+    def get_toadox(self, diachicosothongtinnhanvat = None, is_vitrihientai = False):
+        diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
+        toadox = read_int(self.tientrinh, diachicosothongtinnhanvat)
+        if is_vitrihientai:
+            return toadox
+        # if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
+        #     deltax = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18) - toadox
+        #     if deltax != 0:
+        #         toadox += deltax / abs(deltax)
+        return round(toadox)
+
+    def get_toadoy(self, diachicosothongtinnhanvat = None, is_vitrihientai = False):
+        diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
+        toadoy = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
+        if is_vitrihientai:
+            return toadoy
+        # if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
+        #     deltay = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C) - toadoy
+        #     if deltay != 0:
+        #         toadoy += deltay / abs(deltay)
+        return round(toadoy)
+
+    def get_toadoxdukien(self, diachicosothongtinnhanvat = None, is_vitrihientai = False, thoigiandukien = 1., tocdo = None):
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
         if not diachicosothongtinnhanvat:
             return 0
@@ -956,7 +978,7 @@ class MoiTruong:
 
         return round(toadox)
 
-    def get_toadoy(self, diachicosothongtinnhanvat = None, is_vitrihientai = False, thoigiandukien = 1.0, tocdo = None):
+    def get_toadoydukien(self, diachicosothongtinnhanvat = None, is_vitrihientai = False, thoigiandukien = 1., tocdo = None):
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
         if not diachicosothongtinnhanvat:
             return 0
@@ -1220,7 +1242,7 @@ class MoiTruong:
         idthanhviens = []
         diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
         if not diachicosothanhviennhom: return idthanhviens
-        for i in range(SOLUONGTHANHVIENNHOMTOIDA):
+        for i in range(SOLUONGTHANHVIENNHOMTOIDATHUCTE):
             idthanhvien = read_int(self.tientrinh, diachicosothanhviennhom + i * 0x4)
             if idthanhvien: idthanhviens.append(idthanhvien)
         return idthanhviens
@@ -1318,7 +1340,6 @@ class MoiTruong:
                     diachicosothongtinnhanvatchunhan = self.action_timkiemnhanvat(tennhanvat = tenchunhan)
                     if diachicosothongtinnhanvatchunhan: return self.get_is_cothetancong(diachicosothongtinnhanvatchunhan)
 
-
         if idmaupk == MAUPK_HOABINH and idloainhanvat in (LOAIMUCTIEU_NGUOICHOIKHACNHOM, LOAIMUCTIEU_NGUOICHOICUNGNHOM):
             return False
         elif idmaupk == MAUPK_NHOM and idloainhanvat == LOAIMUCTIEU_NGUOICHOICUNGNHOM:
@@ -1392,8 +1413,9 @@ class MoiTruong:
     def set_diachicosothongtinnhanvatmuctieudangchon(self, diachi):
         if self._diachicosothongtinnhanvatmuctieudangchon != diachi: self._diachicosothongtinnhanvatmuctieudangchon = diachi
 
-    def action_phananhdiachicosothongtinnhanvatmuctieudangchoningame(self, delay = 0.4):
-        if time.time() - self._thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat < delay: return
+    def action_phananhdiachicosothongtinnhanvatmuctieudangchoningame(self, delay = 0.25):
+        if time.time() - self._thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat < delay:
+            return
         self._thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat = time.time()
         diachi = self._diachicosothongtinnhanvatmuctieudangchon
         if diachi and self.get_iddoituong(diachi) > 0:
