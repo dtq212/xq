@@ -2795,11 +2795,12 @@ class TacTu:
                     diachicosonhanvatbaothudautien = self.moitruong.get_diachicosonhanvatbaothudautien()
 
                     if diachicosonhanvatbaothudautien and not self.moitruong.get_is_baothukynangtrieuhoi(diachicosonhanvatbaothudautien):
-                        if self.moitruong.get_idbandohientai() in BANDOKHONGPKs:
-                            self.moitruong.action_sudungthaotacbaothu(iddoituongbaothudautien, 3, delay = 0.25)
-                        elif self.moitruong.get_khoangcach(diachicosonhanvatbaothudautien) < KHOANGCACHTOANMANHINH and idtuthenhanvat == TUTHENHANVAT_DICHUYEN:
-                            self.moitruong.action_sudungthaotacbaothu(iddoituongbaothudautien, 2, delay = 0.25)
-                            self.moitruong.action_thietlapchedobaothu(iddoituongbaothudautien, "0", delay = 5.)
+                        self.moitruong.action_sudungthaotacbaothu(iddoituongbaothudautien, 3, delay = 0.25)
+                        # if self.moitruong.get_idbandohientai() in BANDOKHONGPKs:
+                        #     self.moitruong.action_sudungthaotacbaothu(iddoituongbaothudautien, 3, delay = 0.25)
+                        # elif self.moitruong.get_khoangcach(diachicosonhanvatbaothudautien) < KHOANGCACHTOANMANHINH and idtuthenhanvat == TUTHENHANVAT_DICHUYEN:
+                        #     self.moitruong.action_sudungthaotacbaothu(iddoituongbaothudautien, 2, delay = 0.25)
+                        #     self.moitruong.action_thietlapchedobaothu(iddoituongbaothudautien, "0", delay = 5.)
                     break
 
                 if self.moitruong.get_idbandohientai() in BANDOKHONGPKs and time.time() - self._thoidiemtudongtrieuhoibaothudautien > 1. and idtuthenhanvat == TUTHENHANVAT_DUNGIM and time.time() - self._thoidiemtamngungdichuyensudungkynang > 0.:
