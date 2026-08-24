@@ -131,8 +131,7 @@ class CuaSo:
                 elif self.moitruong.get_is_nhanvatdachet():
                     tentrangthai = "Đã chết"
 
-                x = self.moitruong.get_toadox(is_vitrihientai = True)
-                y = self.moitruong.get_toadoy(is_vitrihientai = True)
+                x, y = self.moitruong.get_toado()
 
                 info = {
                     "tennhanvat": tennhanvat,
@@ -251,9 +250,9 @@ class CuaSo:
                     self.tactu.battat_tudongtrieuhoibaothudautien()
                 elif cmd == "them_diemdanhxungquanh":
                     if self.moitruong.get_is_dangmobando():
-                        self.tactu.them_diemdanhxungquanh((self.moitruong.get_toadoxbandochichuot(), self.moitruong.get_toadoybandochichuot(), self.moitruong.get_idbandochichuot()))
+                        self.tactu.them_diemdanhxungquanh((*self.moitruong.get_toadobandochichuot(), self.moitruong.get_idbandochichuot()))
                     else:
-                        self.tactu.them_diemdanhxungquanh((self.moitruong.get_toadox(is_vitrihientai = True), self.moitruong.get_toadoy(is_vitrihientai = True), self.moitruong.get_idbandohientai()))
+                        self.tactu.them_diemdanhxungquanh((*self.moitruong.get_toado(), self.moitruong.get_idbandohientai()))
                 elif cmd == "battat_tudonggomquai":
                     self.tactu.battat_tudonggomquai()
                 elif cmd == "battat_tudongvebanrac":

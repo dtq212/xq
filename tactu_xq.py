@@ -470,8 +470,7 @@ class TacTu:
             print(f"[DEBUG-MOVE] Quyết định: {lydochon} | Đích: {msg_dich} | Mục tiêu: {msg_diachimuctieudanggom}")
 
         if yeucauduocchon and yeucauduocchon.get("yeucau") == YEUCAUDICHUYENTANCONG and is_anhhuongboitruongnhom:
-            x_truongnhom = self.moitruong.get_toadoxtruongnhom()
-            y_truongnhom = self.moitruong.get_toadoytruongnhom()
+            x_truongnhom, y_truongnhom = self.moitruong.get_toadotruongnhom()
 
             if x_truongnhom and y_truongnhom:
                 x_muctieu, y_muctieu = None, None
@@ -481,8 +480,7 @@ class TacTu:
                 if toadodich_:
                     x_muctieu, y_muctieu = toadodich_
                 elif diachimuctieu_:
-                    x_muctieu = self.moitruong.get_toadox(diachimuctieu_, is_vitrihientai = True)
-                    y_muctieu = self.moitruong.get_toadoy(diachimuctieu_, is_vitrihientai = True)
+                    x_muctieu, y_muctieu = self.moitruong.get_toadodukien(diachimuctieu_, )
 
                 if x_muctieu and y_muctieu:
                     khoangcachmuctieuvatruongnhom = math.dist((x_muctieu, y_muctieu), (x_truongnhom, y_truongnhom))
@@ -513,11 +511,10 @@ class TacTu:
             if iddoituongmuctieudanggom != self._idmuctieudangtheokiemtraket or self.moitruong.get_is_dangvankhi():
                 self._idmuctieudangtheokiemtraket = iddoituongmuctieudanggom
                 self._thoidiemdungimkiemtraket = time.time()
-                self._toadokiemtraket = (self.moitruong.get_toadox(is_vitrihientai = True), self.moitruong.get_toadoy(is_vitrihientai = True))
+                self._toadokiemtraket = self.moitruong.get_toado()
                 self._thoidiembatdaukiemtraket = time.time()
             else:
-                curr_x = self.moitruong.get_toadox(is_vitrihientai = True)
-                curr_y = self.moitruong.get_toadoy(is_vitrihientai = True)
+                curr_x, curr_y = self.moitruong.get_toadodukien()
 
                 khoangcachdadichuyen = math.dist((curr_x, curr_y), self._toadokiemtraket)
 
@@ -561,12 +558,11 @@ class TacTu:
                 if toadodich:
                     x_dich, y_dich = toadodich[0], toadodich[1]
                 elif diachimuctieu:
-                    x_dich = self.moitruong.get_toadox(diachimuctieu, is_vitrihientai = True)
-                    y_dich = self.moitruong.get_toadoy(diachimuctieu, is_vitrihientai = True)
+                    x_dich, y_dich = self.moitruong.get_toadodukien(diachimuctieu, )
 
                 if x_dich and y_dich:
-                    x_banthan = self.moitruong.get_toadox(is_vitrihientai = True)
-                    y_banthan = self.moitruong.get_toadoy(is_vitrihientai = True)
+                    x_banthan, y_banthan = self.moitruong.get_toadodukien()
+
                     if math.dist((x_banthan, y_banthan), (x_dich, y_dich)) > 3.:
                         is_khaithiensansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA)
                         if self._is_khaithientichdiasansang and not is_khaithiensansang:
@@ -2343,8 +2339,7 @@ class TacTu:
                 yeucaunhatvatphammoi = {
                     "yeucau": YEUCAUDICHUYENNHATDO,
                     "toadodich": (
-                        self.moitruong.get_toadox(self._diachicosovatphamdangnhat, is_vitrihientai = True),
-                        self.moitruong.get_toadoy(self._diachicosovatphamdangnhat, is_vitrihientai = True)
+                        *self.moitruong.get_toado(self._diachicosovatphamdangnhat, ),
                     ),
                     "khoangcachtoida": 0
                 }
@@ -2473,8 +2468,7 @@ class TacTu:
                 else:
                     khoangcach = self.moitruong.get_khoangcach(diachinpc)
                     if khoangcach > 6.0:
-                        x_npc = self.moitruong.get_toadox(diachinpc, is_vitrihientai = True)
-                        y_npc = self.moitruong.get_toadoy(diachinpc, is_vitrihientai = True)
+                        x_npc, y_npc = self.moitruong.get_toado(diachinpc, )
                         yeucautudomoi = {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x_npc, y_npc, idbandohientai), "khoangcachtoida": 0}
                     else:
                         steps = DICHUYENTANTHUTIENCO_MAP.get(target_map)
@@ -3085,15 +3079,13 @@ class TacTu:
             if self._tenmuctieutancongs and tendoituongxemxet not in self._tenmuctieutancongs:
                 continue
 
-            mx = self.moitruong.get_toadox(diachidoituongxemxet)
-            my = self.moitruong.get_toadoy(diachidoituongxemxet)
+            mx, my = self.moitruong.get_toado(diachidoituongxemxet)
 
             iddoituongquai = self.moitruong.get_iddoituong(diachidoituongxemxet)
             if iddoituongquai in self._idmuctieubiloi_map:
                 continue
 
-            qx = self.moitruong.get_toadox(diachidoituongxemxet)
-            qy = self.moitruong.get_toadoy(diachidoituongxemxet)
+            qx, qy = self.moitruong.get_toado(diachidoituongxemxet)
 
             is_cobotkhacdangtranh = False
 
@@ -3185,8 +3177,7 @@ class TacTu:
             if is_canluive:
                 if is_canghilog: print(f"[GOM] {lydolui}: Quay lại Neo ({round(khoangcachneohientai, 1)}m)")
 
-                x_neo = self.moitruong.get_toadox(diachiquaidautien, is_vitrihientai = True)
-                y_neo = self.moitruong.get_toadoy(diachiquaidautien, is_vitrihientai = True)
+                x_neo, y_neo = self.moitruong.get_toado(diachiquaidautien, )
 
                 yeucaugomquaimoi = {
                     "yeucau": YEUCAUDICHUYENGOMQUAI,
@@ -3232,8 +3223,7 @@ class TacTu:
                 self._idquaidangkeo = 0
                 if is_canghilog: print(f"[GOM] Đã tiếp cận {hex(idquaicankeogannhat)}")
             else:
-                x_quai = self.moitruong.get_toadox(diachicosoquaicankeo, is_vitrihientai = True)
-                y_quai = self.moitruong.get_toadoy(diachicosoquaicankeo, is_vitrihientai = True)
+                x_quai, y_quai = self.moitruong.get_toado(diachicosoquaicankeo, )
 
                 if x_quai > 0 and y_quai > 0:
                     if is_canghilog: print(f"[GOM] SET MOVE -> {hex(idquaicankeogannhat)}")
@@ -3556,7 +3546,7 @@ class TacTu:
             if tendoituong and ("Khoáng" in tendoituong or "KhoÃ¡ng" in tendoituong):
                 iddoituong = self.moitruong.get_iddoituong(diachidoituong)
                 if iddoituong <= 0 or iddoituong in self._idkhoangbiloi_map: continue
-                mx, my = self.moitruong.get_toadox(diachidoituong), self.moitruong.get_toadoy(diachidoituong)
+                mx, my = self.moitruong.get_toado(diachidoituong)
 
                 if math.dist((mx, my), (target_x, target_y)) <= 12.0:
                     char_dist = self.moitruong.get_khoangcach(diachidoituong)
@@ -3584,8 +3574,7 @@ class TacTu:
                 return
 
         if khoangcach >= 6.0:
-            mx_move = self.moitruong.get_toadox(diachikhoang, is_vitrihientai = True)
-            my_move = self.moitruong.get_toadoy(diachikhoang, is_vitrihientai = True)
+            mx_move, my_move = self.moitruong.get_toado(diachikhoang, )
 
             self._yeucaukhaikhoang = {
                 "yeucau": YEUCAUDICHUYENKHAIKHOANG,
@@ -3610,8 +3599,7 @@ class TacTu:
         self._diachicosokhaikhoang = 0
         self._idkhoangdangtheo = 0
 
-        char_x = self.moitruong.get_toadox(is_vitrihientai = True)
-        char_y = self.moitruong.get_toadoy(is_vitrihientai = True)
+        char_x, char_y = self.moitruong.get_toado()
         dist_to_target = math.dist((char_x, char_y), (tx, ty))
 
         if dist_to_target <= 3.0:
@@ -3704,8 +3692,7 @@ class TacTu:
             return
 
         idbandohientai = self.moitruong.get_idbandohientai()
-        x_hientai = self.moitruong.get_toadox(is_vitrihientai = True)
-        y_hientai = self.moitruong.get_toadoy(is_vitrihientai = True)
+        x_hientai, y_hientai = self.moitruong.get_toado()
 
         # if time.time() - self._thoidiemhettangbaodogannhat < 60 * 3 and math.dist((x_hientai, y_hientai), (150, 128)) < 3.:
         #     return
