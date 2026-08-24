@@ -958,18 +958,23 @@ class MoiTruong:
         toadoy = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
 
         if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
-            x1 = toadox
-            x2 = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18)
-            y1 = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
-            y2 = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C)
-
-            khoangcachdich = math.dist((x1, y1), (x2, y2))
-            if khoangcachdich > 0:
-                tocdo = 4. if self.get_is_nguoichoi(diachicosothongtinnhanvat) and self.get_is_cohieuungs((HIEUUNGKYNANG_LAMCHAM, ), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvat, is_hieuungcoloi = 0) else 2.
-                quangduongdukien = min(tocdo * thoigiandukien, khoangcachdich)
-                tile = quangduongdukien / khoangcachdich
-                return round(x1 + (x2 - x1) * tile), round(y1 + (y2 - y1) * tile)
-
+            # x1 = toadox
+            # x2 = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18)
+            # y1 = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
+            # y2 = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C)
+            #
+            # khoangcachdich = math.dist((x1, y1), (x2, y2))
+            # if khoangcachdich > 0:
+            #     tocdo = 4. if self.get_is_nguoichoi(diachicosothongtinnhanvat) and self.get_is_cohieuungs((HIEUUNGKYNANG_LAMCHAM, ), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvat, is_hieuungcoloi = 0) else 2.
+            #     quangduongdukien = min(tocdo * thoigiandukien, khoangcachdich)
+            #     tile = quangduongdukien / khoangcachdich
+            #     return round(x1 + (x2 - x1) * tile), round(y1 + (y2 - y1) * tile)
+            deltax = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18) - toadox
+            if deltax != 0:
+                toadox += deltax / abs(deltax)
+            deltay = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C) - toadoy
+            if deltay != 0:
+                toadoy += deltay / abs(deltay)
         return round(toadox), round(toadoy)
 
     def get_huongdichuyenx(self, diachicosothongtinnhanvat = None):

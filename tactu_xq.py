@@ -1151,7 +1151,7 @@ class TacTu:
                 is_datinhcuongluc = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_DATINCUONGLUC,), macdinh = False, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 1)
                 is_dangbatpk = self.moitruong.get_idmaupk() != MAUPK_HOABINH
 
-                if is_khongbithieudot and (phantramsinhlucconlai <= 25 or (not is_datinhcuongluc and phantramsinhlucconlai <= 75)):
+                if is_khongbithieudot and (phantramsinhlucconlai <= 25 or ((not is_datinhcuongluc or is_dangbatpk) and phantramsinhlucconlai <= 75)):
                     if is_uutiennhom:
                         if phantramsinhlucconlai < phantramsinhlucthapnhat:
                             phantramsinhlucthapnhat = phantramsinhlucconlai
@@ -1249,7 +1249,7 @@ class TacTu:
             is_bandokhongpk = self.moitruong.get_idbandohientai() in BANDOKHONGPKs
             is_bandopk = not is_bandokhongpk
 
-            if time.time() - self._thoidiemkiemtrahieuunggannhat > 10.:
+            if time.time() - self._thoidiemkiemtrahieuunggannhat > 2.:
                 self._thoidiemkiemtrahieuunggannhat = time.time()
 
                 if ((is_bandokhongpk and self.moitruong.get_phantramnoilucconlai() < 25.) or (is_bandopk and self.moitruong.get_phantramnoilucconlai() < 50.)) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_PHAPLUCTHACH,), True, is_hieuungcoloi = 1):
@@ -1262,17 +1262,17 @@ class TacTu:
                         self.action_sudungvatphamhanhtrang(TIEUHUYETTHACH)
 
                 if self.moitruong.get_idmaupk() != MAUPK_HOABINH:
-                    if self.moitruong.action_timkiemvatphamhanhtrang(NGANHANHTU):
-                        self.action_sudungvatphamhanhtrang(NGANHANHTU)
-                    if self.moitruong.action_timkiemvatphamhanhtrang(XALOITU):
-                        self.action_sudungvatphamhanhtrang(XALOITU)
                     if tenmonphai == "daohoanguyen" and is_bandopk and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THIENNGUYENDON,), macdinh = True, is_hieuungcoloi = 1):
                         if self.moitruong.action_timkiemvatphamhanhtrang(THIENNGUYENDON):
-                            self.action_sudungvatphamhanhtrang(THIENNGUYENDON)
+                            self.action_sudungvatphamhanhtrang(THIENNGUYENDON, delay = 0.)
+                    if self.moitruong.action_timkiemvatphamhanhtrang(NGANHANHTU) and is_bandopk and not self.moitruong.get_is_cohieuungs((1808,), macdinh = True, is_hieuungcoloi = 1):
+                        self.action_sudungvatphamhanhtrang(NGANHANHTU, delay = 0.)
+                    if self.moitruong.action_timkiemvatphamhanhtrang(XALOITU) and is_bandopk and not self.moitruong.get_is_cohieuungs((1811,), macdinh = True, is_hieuungcoloi = 1):
+                        self.action_sudungvatphamhanhtrang(XALOITU, delay = 0.)
 
             if self.moitruong.get_diempk() > 0:
                 if self.moitruong.action_timkiemvatphamhanhtrang(ANXAPHU):
-                    self.action_sudungvatphamhanhtrang(ANXAPHU, is_boquaxacnhan = True)
+                    self.action_sudungvatphamhanhtrang(ANXAPHU, is_boquaxacnhan = True, delay = 0.)
 
             if self.moitruong.get_phantramsinhlucconlai() <= 25 and self.moitruong.get_idbandohientai() not in (BANDO_CHIENTRUONG, BANDO_COMO, 885, 886, 894, *BANDOKHONGPKs) and not self._is_tudongdichientruong:
                 for phapbaokhonghuhong in ["Thượng Phương Bảo Kiếm", "Huyền thiết chuy", ]:
@@ -1284,7 +1284,7 @@ class TacTu:
             if self._is_tudongsudungkynang and time.time() - self._thoidiemsudungvatphamhoinoilucgannhat > 2. and self.moitruong.get_phantramnoilucconlai() <= 50:
                 if self.moitruong.action_timkiemvatphamhanhtrang(ANTHANHOAN):
                     self._thoidiemsudungvatphamhoinoilucgannhat = time.time()
-                    self.action_sudungvatphamhanhtrang(ANTHANHOAN)
+                    self.action_sudungvatphamhanhtrang(ANTHANHOAN, delay = 0.)
 
             if self.moitruong.get_idnguoichoi() in (59844, 59845):
                 if time.time() - self._thoidiemdocsachgannhat > 30.:
