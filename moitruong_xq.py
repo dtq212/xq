@@ -958,23 +958,13 @@ class MoiTruong:
         toadoy = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
 
         if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
-            # x1 = toadox
-            # x2 = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18)
-            # y1 = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
-            # y2 = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C)
-            #
-            # khoangcachdich = math.dist((x1, y1), (x2, y2))
-            # if khoangcachdich > 0:
-            #     tocdo = 4. if self.get_is_nguoichoi(diachicosothongtinnhanvat) and self.get_is_cohieuungs((HIEUUNGKYNANG_LAMCHAM, ), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvat, is_hieuungcoloi = 0) else 2.
-            #     quangduongdukien = min(tocdo * thoigiandukien, khoangcachdich)
-            #     tile = quangduongdukien / khoangcachdich
-            #     return round(x1 + (x2 - x1) * tile), round(y1 + (y2 - y1) * tile)
             deltax = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18) - toadox
             if deltax != 0:
                 toadox += deltax / abs(deltax)
             deltay = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C) - toadoy
             if deltay != 0:
                 toadoy += deltay / abs(deltay)
+
         return round(toadox), round(toadoy)
 
     def get_huongdichuyenx(self, diachicosothongtinnhanvat = None):
@@ -1283,11 +1273,21 @@ class MoiTruong:
         return False
 
     def get_is_cothetancong(self, diachicosothongtinnhanvat):
-        if not diachicosothongtinnhanvat or not self.get_is_nhanvattontai(diachicosothongtinnhanvat) or self.get_is_nhanvatdachet(diachicosothongtinnhanvat): return False
+        if not diachicosothongtinnhanvat or not self.get_is_nhanvattontai(diachicosothongtinnhanvat) or self.get_is_nhanvatdachet(diachicosothongtinnhanvat) or self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_NAMDUOIDAT:
+            return False
+
         idloainhanvat = self.get_idloainhanvat(diachicosothongtinnhanvat)
-        if idloainhanvat == LOAIMUCTIEU_NGUOICHOICUNGNHOM: return False
-        if self.get_idbandohientai() == BANDO_CHIENTRUONG and self.get_idphechientruong() == self.get_idphechientruong(diachicosothongtinnhanvat): return False
-        if self.get_is_npc(diachicosothongtinnhanvat) or self.get_is_nhanvatchuasansang(diachicosothongtinnhanvat): return False
+
+        if self.get_idbandohientai() in (885, 886) and self.get_is_nguoichoi(diachicosothongtinnhanvat):
+            return True
+
+        if idloainhanvat == LOAIMUCTIEU_NGUOICHOICUNGNHOM:
+            return False
+        if self.get_idbandohientai() == BANDO_CHIENTRUONG and self.get_idphechientruong() == self.get_idphechientruong(diachicosothongtinnhanvat):
+            return False
+        if self.get_is_npc(diachicosothongtinnhanvat) or self.get_is_nhanvatchuasansang(diachicosothongtinnhanvat):
+            return False
+
         idmaupk = self.get_idmaupk()
         tenmuctieu = self.get_tendoituong(diachicosothongtinnhanvat)
         if tenmuctieu:
@@ -1296,17 +1296,21 @@ class MoiTruong:
                     return False
                 tenchunhan = self.get_tenchunhan(diachicosothongtinnhanvat)
                 if tenchunhan:
-                    if tenchunhan == self.get_tendoituong() or tenchunhan in TENNGUOICHOICUNGBANGs: return False
+                    if tenchunhan == self.get_tendoituong() or tenchunhan in TENNGUOICHOICUNGBANGs:
+                        return False
                     diachicosothongtinnhanvatchunhan = self.action_timkiemnhanvat(tennhanvat = tenchunhan)
-                    if diachicosothongtinnhanvatchunhan: return self.get_is_cothetancong(diachicosothongtinnhanvatchunhan)
+                    if diachicosothongtinnhanvatchunhan:
+                        return self.get_is_cothetancong(diachicosothongtinnhanvatchunhan)
 
-        if idmaupk == MAUPK_HOABINH and idloainhanvat in (LOAIMUCTIEU_NGUOICHOIKHACNHOM, LOAIMUCTIEU_NGUOICHOICUNGNHOM):
+        if idmaupk == MAUPK_TUDO:
+            return True
+        elif idmaupk == MAUPK_HOABINH and idloainhanvat in (LOAIMUCTIEU_NGUOICHOIKHACNHOM, LOAIMUCTIEU_NGUOICHOICUNGNHOM):
             return False
         elif idmaupk == MAUPK_NHOM and idloainhanvat == LOAIMUCTIEU_NGUOICHOICUNGNHOM:
             return False
-        elif idmaupk in (MAUPK_BANG, MAUPK_TUDO) and idloainhanvat == LOAIMUCTIEU_NGUOICHOIKHACNHOM and self.get_is_cungbang(diachicosothongtinnhanvat):
+        elif idmaupk == MAUPK_BANG and idloainhanvat == LOAIMUCTIEU_NGUOICHOIKHACNHOM and self.get_is_cungbang(diachicosothongtinnhanvat):
             return False
-        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_NAMDUOIDAT: return False
+
         return True
 
     def get_is_batalt(self):
@@ -1604,21 +1608,47 @@ class MoiTruong:
         return self.action_dichuyen(xclick, yclick, delay = delay)
 
     def action_dichuyengiukhoangcachtoidadiem(self, x2, y2, khoangcachtoida, khoangcachdichuyentoida = 0, delay = 0., is_rangbuoctrongmanhinh = False):
-        if x2 <= 0 or y2 <= 0: return
+        if x2 <= 0 or y2 <= 0:
+            return
+
         diachi1 = self.get_diachicosothongtinnhanvat1()
         x1, y1 = self.get_toadodukien(diachi1, )
-        khoangcach = round(math.dist((x1, y1), (x2, y2)), 2)
-        khoangcachtoida = max(0., khoangcachtoida - 1.5)
-        if khoangcach <= khoangcachtoida: return
-        deltax, deltay = x2 - x1, y1 - y2
+
+        khoangcach = math.dist((x1, y1), (x2, y2))
+        khoangcachtoida = max(0.0, khoangcachtoida - 0.5)
+
+        if khoangcach <= khoangcachtoida:
+            return
+
         khoangcachdichuyen = khoangcach - khoangcachtoida
-        if not round(khoangcachdichuyen): return
-        if khoangcachdichuyentoida: khoangcachdichuyen = min(khoangcachdichuyentoida * 1., khoangcachdichuyen)
-        if khoangcach > 0.:
-            deltax, deltay = int(khoangcachdichuyen * deltax / khoangcach), int(khoangcachdichuyen * deltay / khoangcach)
-        if not deltax and not deltay: return
-        xclick = int(self._centerx + deltax * (self._xmax / KHOANGCACHTOANMANHINH))
-        yclick = int(self._centery + deltay * (self._ymax / KHOANGCACHTOANMANHINH))
+        if not int(khoangcachdichuyen):
+            return
+
+        if khoangcachdichuyentoida:
+            khoangcachdichuyen = min(float(khoangcachdichuyentoida), khoangcachdichuyen)
+
+        deltax_game = x2 - x1
+        deltay_game = y1 - y2
+
+        if khoangcach > 0.0:
+            deltax_game = (khoangcachdichuyen * deltax_game) / khoangcach
+            deltay_game = (khoangcachdichuyen * deltay_game) / khoangcach
+
+        if not deltax_game and not deltay_game:
+            return
+
+        ideal_x = x1 + deltax_game
+        ideal_y = y1 - deltay_game
+
+        final_game_x = math.ceil(ideal_x) if x2 > x1 else math.floor(ideal_x) if x2 < x1 else round(ideal_x)
+        final_game_y = math.ceil(ideal_y) if y2 > y1 else math.floor(ideal_y) if y2 < y1 else round(ideal_y)
+
+        dx_chuanchi = final_game_x - x1
+        dy_chuanchi = y1 - final_game_y
+
+        xclick = int(self._centerx + dx_chuanchi * (self._xmax / KHOANGCACHTOANMANHINH))
+        yclick = int(self._centery + dy_chuanchi * (self._ymax / KHOANGCACHTOANMANHINH))
+
         return self.action_dichuyen(xclick, yclick, delay = delay, is_rangbuoctrongmanhinh = is_rangbuoctrongmanhinh)
 
     def action_dichuyengiukhoangcachtoithieudiem(self, x2, y2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 0.):
