@@ -934,10 +934,10 @@ class MoiTruong:
         toadox = read_int(self.tientrinh, diachicosothongtinnhanvat)
         if is_vitrihientai:
             return toadox
-        # if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
-        #     deltax = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18) - toadox
-        #     if deltax != 0:
-        #         toadox += deltax / abs(deltax)
+        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
+            deltax = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18) - toadox
+            if deltax != 0:
+                toadox += deltax / abs(deltax)
         return round(toadox)
 
     def get_toadoy(self, diachicosothongtinnhanvat = None, is_vitrihientai = False):
@@ -945,10 +945,10 @@ class MoiTruong:
         toadoy = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
         if is_vitrihientai:
             return toadoy
-        # if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
-        #     deltay = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C) - toadoy
-        #     if deltay != 0:
-        #         toadoy += deltay / abs(deltay)
+        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
+            deltay = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C) - toadoy
+            if deltay != 0:
+                toadoy += deltay / abs(deltay)
         return round(toadoy)
 
     def get_toadoxdukien(self, diachicosothongtinnhanvat = None, is_vitrihientai = False, thoigiandukien = 1., tocdo = None):
