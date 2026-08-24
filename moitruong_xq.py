@@ -965,8 +965,7 @@ class MoiTruong:
 
             khoangcachdich = math.dist((x1, y1), (x2, y2))
             if khoangcachdich > 0:
-                is_nguoichoihoacbaothu = self.get_is_nguoichoi(diachicosothongtinnhanvat) or self.get_is_baothugiangho(diachicosothongtinnhanvat)
-                tocdo = 4. if is_nguoichoihoacbaothu else 2.
+                tocdo = 4. if self.get_is_nguoichoi(diachicosothongtinnhanvat) and self.get_is_cohieuungs((HIEUUNGKYNANG_LAMCHAM, ), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvat, is_hieuungcoloi = 0) else 2.
                 quangduongdukien = min(tocdo * thoigiandukien, khoangcachdich)
                 tile = quangduongdukien / khoangcachdich
                 return round(x1 + (x2 - x1) * tile), round(y1 + (y2 - y1) * tile)
