@@ -1294,11 +1294,11 @@ class TacTu:
                     sachcanhocs = [
                         "Nhập môn Cơ Quan",
                         "Nhập môn Thái Cổ Thần Quy",
-                        "Nhập môn Hộ Thể Kim Cang",
                         "Nhập môn Quyền Cước Chi",
                         "Nhập môn Kim Cương Bất H",
                         "Nhập môn Chu Thiên Vận Ch",
-                        "Nhập môn Thái Cổ Thần Q"
+                        "Nhập môn Thái Cổ Thần Q",
+                        "Nhập môn Hộ Thể Kim Cang",
                     ]
                     for sachcanhoc in sachcanhocs:
                         if self.action_sudungvatphamhanhtrang(sachcanhoc):
@@ -2937,7 +2937,7 @@ class TacTu:
             iddoituongvatphamhanhtrang = self.moitruong.get_iddoituongvatphamhanhtrang(i)
 
             tenvatphamhanhtrang = self.moitruong.get_tenvatphamhanhtrang(i)
-            if iddoituongvatphamhanhtrang and iddoituongvatphamhanhtrang > 0 and tenvatphamhanhtrang not in VATPHAMKHONGBANs and "Nhập môn" not in tenvatphamhanhtrang and "cấp" not in tenvatphamhanhtrang and "Kim Cương" not in tenvatphamhanhtrang and "Tàng Đồ" not in tenvatphamhanhtrang:
+            if iddoituongvatphamhanhtrang and iddoituongvatphamhanhtrang > 0 and tenvatphamhanhtrang not in VATPHAMKHONGBANs and "Nhập môn" not in tenvatphamhanhtrang and "cấp" not in tenvatphamhanhtrang and "Tàng Đồ" not in tenvatphamhanhtrang:
                 caulenh = "sell ! {}# {}# 30".format(hex(idnpc).replace("0x", ""), hex(iddoituongvatphamhanhtrang).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_THAP)
                 sovatphamdaban += 1

@@ -957,13 +957,13 @@ class MoiTruong:
         toadox = read_int(self.tientrinh, diachicosothongtinnhanvat)
         toadoy = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
 
-        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
+        if diachicosothongtinnhanvat == self.get_diachicosothongtinnhanvat1() and self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
             deltax = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18) - toadox
             if deltax != 0:
-                toadox += deltax / abs(deltax)
+                toadox += (deltax / abs(deltax))
             deltay = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C) - toadoy
             if deltay != 0:
-                toadoy += deltay / abs(deltay)
+                toadoy += (deltay / abs(deltay))
 
         return round(toadox), round(toadoy)
 
@@ -1615,39 +1615,34 @@ class MoiTruong:
         x1, y1 = self.get_toadodukien(diachi1, )
 
         khoangcach = math.dist((x1, y1), (x2, y2))
-        khoangcachtoida = max(0.0, khoangcachtoida - 0.5)
 
         if khoangcach <= khoangcachtoida:
             return
 
+        deltax, deltay = x2 - x1, y1 - y2
         khoangcachdichuyen = khoangcach - khoangcachtoida
+
         if not int(khoangcachdichuyen):
             return
 
         if khoangcachdichuyentoida:
             khoangcachdichuyen = min(float(khoangcachdichuyentoida), khoangcachdichuyen)
 
-        deltax_game = x2 - x1
-        deltay_game = y1 - y2
-
         if khoangcach > 0.0:
-            deltax_game = (khoangcachdichuyen * deltax_game) / khoangcach
-            deltay_game = (khoangcachdichuyen * deltay_game) / khoangcach
+            deltax = (khoangcachdichuyen * deltax) / khoangcach
+            deltay = (khoangcachdichuyen * deltay) / khoangcach
 
-        if not deltax_game and not deltay_game:
+        if not deltax and not deltay:
             return
 
-        ideal_x = x1 + deltax_game
-        ideal_y = y1 - deltay_game
+        offset_x = deltax * (self._xmax / KHOANGCACHTOANMANHINH)
+        offset_y = deltay * (self._ymax / KHOANGCACHTOANMANHINH)
 
-        final_game_x = math.ceil(ideal_x) if x2 > x1 else math.floor(ideal_x) if x2 < x1 else round(ideal_x)
-        final_game_y = math.ceil(ideal_y) if y2 > y1 else math.floor(ideal_y) if y2 < y1 else round(ideal_y)
+        dx_pixel = math.ceil(offset_x) if offset_x > 0 else math.floor(offset_x)
+        dy_pixel = math.ceil(offset_y) if offset_y > 0 else math.floor(offset_y)
 
-        dx_chuanchi = final_game_x - x1
-        dy_chuanchi = y1 - final_game_y
-
-        xclick = int(self._centerx + dx_chuanchi * (self._xmax / KHOANGCACHTOANMANHINH))
-        yclick = int(self._centery + dy_chuanchi * (self._ymax / KHOANGCACHTOANMANHINH))
+        xclick = self._centerx + dx_pixel
+        yclick = self._centery + dy_pixel
 
         return self.action_dichuyen(xclick, yclick, delay = delay, is_rangbuoctrongmanhinh = is_rangbuoctrongmanhinh)
 

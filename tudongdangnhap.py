@@ -1,6 +1,6 @@
 DUONGDAN_GAME = r"C:\Users\Admin\Desktop\ChienQuoc2\ChienQuoc2 - Live\xq.exe"
-LAUNCHER_TITLE = "client 1.01.82"
-GAME_TITLE_LOGIN_SCREEN = "Chien Quoc 2 - That Hung Tranh Ba.1.01.82"
+LAUNCHER_TITLE = "client 1.01.83"
+GAME_TITLE_LOGIN_SCREEN = "Chien Quoc 2 - That Hung Tranh Ba.1.01.83"
 GAME_TITLE_PREFIX = "Chien Quoc 2 ("
 
 DANH_SACH_CUA_SO_LOI = ["warning", "play"]
