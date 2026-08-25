@@ -949,21 +949,32 @@ class MoiTruong:
 
         return round(toadox), round(toadoy)
 
-    def get_toadodukien(self, diachicosothongtinnhanvat = None, thoigiandukien = 1.):
+    def get_toadodukien(self, diachicosothongtinnhanvat = None, thoigiandukien = 0.5):
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
         if not diachicosothongtinnhanvat:
-            return 0
+            return 0, 0
 
         toadox = read_int(self.tientrinh, diachicosothongtinnhanvat)
         toadoy = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
 
-        if diachicosothongtinnhanvat == self.get_diachicosothongtinnhanvat1() and self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
-            deltax = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18) - toadox
-            if deltax != 0:
-                toadox += (deltax / abs(deltax))
-            deltay = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C) - toadoy
-            if deltay != 0:
-                toadoy += (deltay / abs(deltay))
+        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
+            dichx = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18)
+            dichy = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C)
+
+            deltax = dichx - toadox
+            deltay = dichy - toadoy
+            khoangcachthucte = math.dist((toadox, toadoy), (dichx, dichy))
+
+            if khoangcachthucte > 0:
+                tocdo = 4.0 if self.get_is_nguoichoi(diachicosothongtinnhanvat) else 2.0
+
+                khoangcachdukien = tocdo * thoigiandukien
+
+                if khoangcachdukien > khoangcachthucte:
+                    khoangcachdukien = khoangcachthucte
+
+                toadox += (deltax / khoangcachthucte) * khoangcachdukien
+                toadoy += (deltay / khoangcachthucte) * khoangcachdukien
 
         return round(toadox), round(toadoy)
 
@@ -1037,13 +1048,13 @@ class MoiTruong:
 
     def get_khoangcach(self, diachicosothongtinnhanvat2, diachicosothongtinnhanvat1 = False):
         diachicosothongtinnhanvat1 = diachicosothongtinnhanvat1 or self.get_diachicosothongtinnhanvat1()
-        x1, y1 = self.get_toadodukien(diachicosothongtinnhanvat1, )
-        x2, y2 = self.get_toadodukien(diachicosothongtinnhanvat2, )
+        x1, y1 = self.get_toado(diachicosothongtinnhanvat1)
+        x2, y2 = self.get_toado(diachicosothongtinnhanvat2)
         return round(math.dist((x1, y1), (x2, y2)), 2)
 
     def get_khoangcachdiem(self, x2, y2, diachicosothongtinnhanvat1 = False):
         diachicosothongtinnhanvat1 = diachicosothongtinnhanvat1 or self.get_diachicosothongtinnhanvat1()
-        x1, y1 = self.get_toadodukien(diachicosothongtinnhanvat1, )
+        x1, y1 = self.get_toado(diachicosothongtinnhanvat1, )
         return round(math.dist((x1, y1), (x2, y2)), 2)
 
     def get_idthucuoi(self):
@@ -1063,10 +1074,16 @@ class MoiTruong:
             write_int(self.tientrinh, diachicosothongtinnhanvat + 0x1178, idtuthenhanvat)
 
     def get_is_muctieuchaytron(self, diachicosothongtinnhanvat):
-        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) != TUTHENHANVAT_DICHUYEN: return False
-        x1, y1 = self.get_toadodukien(diachicosothongtinnhanvat, )
-        x2, y2 = self.get_toadodukien(diachicosothongtinnhanvat)
-        return self.get_khoangcachdiem(x2, y2) > self.get_khoangcachdiem(x1, y1)
+        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) != TUTHENHANVAT_DICHUYEN:
+            return False
+
+        x_thucte, y_thucte = self.get_toado(diachicosothongtinnhanvat)
+        kc_thucte = self.get_khoangcachdiem(x_thucte, y_thucte)
+
+        x_dukien, y_dukien = self.get_toadodukien(diachicosothongtinnhanvat)
+        kc_dukien = self.get_khoangcachdiem(x_dukien, y_dukien)
+
+        return kc_dukien > kc_thucte
 
     def get_is_dangdelaysautancong(self, diachicosothongtinnhanvat = None):
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
@@ -1597,7 +1614,7 @@ class MoiTruong:
         if not diachicosothongtinnhanvat2 or not self.get_iddoituong(diachicosothongtinnhanvat2): return
         diachi1 = self.get_diachicosothongtinnhanvat1()
         x2, y2 = self.get_toadodukien(diachicosothongtinnhanvat2)
-        x1, y1 = self.get_toadodukien(diachi1)
+        x1, y1 = self.get_toado(diachi1)
         deltax, deltay = x2 - x1, y1 - y2
         khoangcach = round(math.dist((x1, y1), (x2, y2)), 2)
         khoangcachdichuyen = khoangcach + khoangcachphudau
@@ -1616,11 +1633,9 @@ class MoiTruong:
             return
 
         diachi1 = self.get_diachicosothongtinnhanvat1()
-        x1, y1 = self.get_toadodukien(diachi1, )
+        x1, y1 = self.get_toado(diachi1, )
 
         khoangcach = math.dist((x1, y1), (x2, y2))
-
-        khoangcachtoida = max(khoangcachtoida - 0.5, 0)
 
         if khoangcach <= khoangcachtoida:
             return
@@ -1653,14 +1668,17 @@ class MoiTruong:
         return self.action_dichuyen(xclick, yclick, delay = delay, is_rangbuoctrongmanhinh = is_rangbuoctrongmanhinh)
 
     def action_dichuyengiukhoangcachtoithieudiem(self, x2, y2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 0.):
-        if x2 <= 0 or y2 <= 0: return
+        if x2 <= 0 or y2 <= 0:
+            return
         diachi1 = self.get_diachicosothongtinnhanvat1()
-        x1, y1 = self.get_toadodukien(diachi1, )
+        x1, y1 = self.get_toado(diachi1, )
         khoangcach = round(math.dist((x1, y1), (x2, y2)), 2)
-        if khoangcach >= khoangcachtoithieu: return
+        if khoangcach >= khoangcachtoithieu:
+            return
         deltax, deltay = x2 - x1, y1 - y2
         khoangcachdichuyen = khoangcachtoithieu
-        if not round(khoangcachdichuyen): return
+        if not round(khoangcachdichuyen):
+            return
         if khoangcachdichuyentoida: khoangcachdichuyen = min(khoangcachdichuyentoida * 1.5, khoangcachdichuyen)
         if khoangcach > 0.:
             deltax, deltay = int(-1 * khoangcachdichuyen * deltax / khoangcach), int(-1 * khoangcachdichuyen * deltay / khoangcach)
@@ -1687,7 +1705,7 @@ class MoiTruong:
         idkynang = self.get_idkynang(idvitri_x, idvitri_y)
         if not idkynang: return False
         diachi1 = self.get_diachicosothongtinnhanvat1()
-        x1, y1 = self.get_toadodukien(diachi1)
+        x1, y1 = self.get_toado(diachi1)
         deltax, deltay = x2 - x1, y2 - y1
         khoangcach = round(math.sqrt(deltax ** 2 + deltay ** 2), 2)
         if khoangcach:

@@ -561,7 +561,7 @@ class TacTu:
                     x_dich, y_dich = self.moitruong.get_toadodukien(diachimuctieu, )
 
                 if x_dich and y_dich:
-                    x_banthan, y_banthan = self.moitruong.get_toadodukien()
+                    x_banthan, y_banthan = self.moitruong.get_toado()
 
                     if math.dist((x_banthan, y_banthan), (x_dich, y_dich)) > 3.:
                         is_khaithiensansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA)
@@ -1307,10 +1307,10 @@ class TacTu:
             if self.moitruong.get_idnguoichoi() == 59996:
                 if time.time() - self._thoidiemdocsachgannhat > 30.:
                     sachcanhocs = [
+                        "Nhập môn Cơ Quan",
                         "Nhập môn Trung Y Dược Lý",
                         "Nhập môn Y Thuật",
                         "Nhập môn Tu Tâm",
-                        "Nhập môn Cơ Quan",
                     ]
                     for sachcanhoc in sachcanhocs:
                         if self.action_sudungvatphamhanhtrang(sachcanhoc):
