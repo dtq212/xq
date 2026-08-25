@@ -1587,6 +1587,10 @@ class MoiTruong:
 
     def action_dichuyengiukhoangcachtoida(self, diachicosothongtinnhanvat2, khoangcachtoida, khoangcachdichuyentoida = 0, delay = 0.):
         if not diachicosothongtinnhanvat2 or not self.get_iddoituong(diachicosothongtinnhanvat2): return
+
+        # if self.get_idtuthenhanvat(diachicosothongtinnhanvat2) == TUTHENHANVAT_DICHUYEN:
+        #     khoangcachtoida = max(khoangcachtoida - 1., 0)
+
         return self.action_dichuyengiukhoangcachtoidadiem(*self.get_toadodukien(diachicosothongtinnhanvat2, ), khoangcachtoida = khoangcachtoida, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
 
     def action_dichuyenphudau(self, diachicosothongtinnhanvat2, khoangcachphudau = 1, delay = 0.):
@@ -1615,6 +1619,8 @@ class MoiTruong:
         x1, y1 = self.get_toadodukien(diachi1, )
 
         khoangcach = math.dist((x1, y1), (x2, y2))
+
+        khoangcachtoida = max(khoangcachtoida - 0.5, 0)
 
         if khoangcach <= khoangcachtoida:
             return
