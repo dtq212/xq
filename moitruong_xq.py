@@ -935,19 +935,6 @@ class MoiTruong:
         toadoy = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
         
         return toadox, toadoy
-        
-        # if is_vitrihientai:
-        #     return toadox, toadoy
-
-        if diachicosothongtinnhanvat != self.get_diachicosothongtinnhanvat1() and self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
-            deltax = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18) - toadox
-            if deltax != 0:
-                toadox += deltax / abs(deltax)
-            deltay = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C) - toadoy
-            if deltay != 0:
-                toadoy += deltay / abs(deltay)
-
-        return round(toadox), round(toadoy)
 
     def get_toadodukien(self, diachicosothongtinnhanvat = None, thoigiandukien = 0.5):
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
@@ -1048,13 +1035,13 @@ class MoiTruong:
 
     def get_khoangcach(self, diachicosothongtinnhanvat2, diachicosothongtinnhanvat1 = False):
         diachicosothongtinnhanvat1 = diachicosothongtinnhanvat1 or self.get_diachicosothongtinnhanvat1()
-        x1, y1 = self.get_toado(diachicosothongtinnhanvat1)
+        x1, y1 = self.get_toadodukien(diachicosothongtinnhanvat1)
         x2, y2 = self.get_toado(diachicosothongtinnhanvat2)
         return round(math.dist((x1, y1), (x2, y2)), 2)
 
     def get_khoangcachdiem(self, x2, y2, diachicosothongtinnhanvat1 = False):
         diachicosothongtinnhanvat1 = diachicosothongtinnhanvat1 or self.get_diachicosothongtinnhanvat1()
-        x1, y1 = self.get_toado(diachicosothongtinnhanvat1, )
+        x1, y1 = self.get_toadodukien(diachicosothongtinnhanvat1, )
         return round(math.dist((x1, y1), (x2, y2)), 2)
 
     def get_idthucuoi(self):
@@ -1600,15 +1587,12 @@ class MoiTruong:
 
     def action_dichuyengiukhoangcachtoithieu(self, diachicosothongtinnhanvat2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 0.):
         if not diachicosothongtinnhanvat2 or not self.get_iddoituong(diachicosothongtinnhanvat2): return
-        return self.action_dichuyengiukhoangcachtoithieudiem(*self.get_toadodukien(diachicosothongtinnhanvat2, ), khoangcachtoithieu = khoangcachtoithieu, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
+        return self.action_dichuyengiukhoangcachtoithieudiem(*self.get_toado(diachicosothongtinnhanvat2, ), khoangcachtoithieu = khoangcachtoithieu, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
 
     def action_dichuyengiukhoangcachtoida(self, diachicosothongtinnhanvat2, khoangcachtoida, khoangcachdichuyentoida = 0, delay = 0.):
         if not diachicosothongtinnhanvat2 or not self.get_iddoituong(diachicosothongtinnhanvat2): return
 
-        # if self.get_idtuthenhanvat(diachicosothongtinnhanvat2) == TUTHENHANVAT_DICHUYEN:
-        #     khoangcachtoida = max(khoangcachtoida - 1., 0)
-
-        return self.action_dichuyengiukhoangcachtoidadiem(*self.get_toadodukien(diachicosothongtinnhanvat2, ), khoangcachtoida = khoangcachtoida, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
+        return self.action_dichuyengiukhoangcachtoidadiem(*self.get_toado(diachicosothongtinnhanvat2, ), khoangcachtoida = khoangcachtoida, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
 
     def action_dichuyenphudau(self, diachicosothongtinnhanvat2, khoangcachphudau = 1, delay = 0.):
         if not diachicosothongtinnhanvat2 or not self.get_iddoituong(diachicosothongtinnhanvat2): return
@@ -1641,7 +1625,7 @@ class MoiTruong:
             return
 
         deltax, deltay = x2 - x1, y1 - y2
-        khoangcachdichuyen = khoangcach - khoangcachtoida
+        khoangcachdichuyen = khoangcach - khoangcachtoida + 0.5
 
         if not int(khoangcachdichuyen):
             return
@@ -1697,7 +1681,7 @@ class MoiTruong:
 
     def action_sudungkynangvitriphudau(self, idvitri_x, idvitri_y, diachi2, khoangcachphudau, delay = 1):
         if not diachi2 or not self.get_is_nhanvattontai(diachi2): return False
-        return self.action_sudungkynangvitriphudaudiem(idvitri_x, idvitri_y, *self.get_toadodukien(diachi2), khoangcachphudau = khoangcachphudau, delay = delay)
+        return self.action_sudungkynangvitriphudaudiem(idvitri_x, idvitri_y, *self.get_toado(diachi2), khoangcachphudau = khoangcachphudau, delay = delay)
 
     def action_sudungkynangvitriphudaudiem(self, idvitri_x, idvitri_y, x2, y2, khoangcachphudau, delay = 1):
         idvitri = (idvitri_x, idvitri_y)
