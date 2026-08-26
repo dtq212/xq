@@ -1600,7 +1600,7 @@ class MoiTruong:
             return
 
         deltax, deltay = x2 - x1, y1 - y2
-        khoangcachdichuyen = khoangcach - khoangcachtoida + 0.5
+        khoangcachdichuyen = khoangcach - khoangcachtoida + 1.
 
         if khoangcachdichuyen <= 0.:
             return
