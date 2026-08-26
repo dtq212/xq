@@ -480,7 +480,7 @@ class TacTu:
                 if toadodich_:
                     x_muctieu, y_muctieu = toadodich_
                 elif diachimuctieu_:
-                    x_muctieu, y_muctieu = self.moitruong.get_toadodukien(diachimuctieu_, )
+                    x_muctieu, y_muctieu = self.moitruong.get_toado(diachimuctieu_, )
 
                 if x_muctieu and y_muctieu:
                     khoangcachmuctieuvatruongnhom = math.dist((x_muctieu, y_muctieu), (x_truongnhom, y_truongnhom))
@@ -514,7 +514,7 @@ class TacTu:
                 self._toadokiemtraket = self.moitruong.get_toado()
                 self._thoidiembatdaukiemtraket = time.time()
             else:
-                curr_x, curr_y = self.moitruong.get_toadodukien()
+                curr_x, curr_y = self.moitruong.get_toado()
 
                 khoangcachdadichuyen = math.dist((curr_x, curr_y), self._toadokiemtraket)
 
@@ -561,7 +561,7 @@ class TacTu:
                     x_dich, y_dich = self.moitruong.get_toado(diachimuctieu, )
 
                 if x_dich and y_dich:
-                    x_banthan, y_banthan = self.moitruong.get_toadodukien()
+                    x_banthan, y_banthan = self.moitruong.get_toado()
 
                     if math.dist((x_banthan, y_banthan), (x_dich, y_dich)) > 3.:
                         is_khaithiensansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA)
