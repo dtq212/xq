@@ -1237,24 +1237,17 @@ class TacTu:
             noidungtrochuyen = self.moitruong.get_noidungtrochuyenmoinhat()
             if noidungtrochuyen and ("Hành động" in noidungtrochuyen or "Đợi lệnh" in noidungtrochuyen):
                 self._is_dasudungbaothuvatpham = True
-            if not self._is_dasudungbaothuvatpham and time.time() - self._thoidiemsudungbaothuvatphamgannhat < 1.5 and time.time() - self._thoidiemyeucaubaothuvatphamdoilenhgannhat > 0.25:
-                self._thoidiemtamngungsudungkynang = max(self._thoidiemtamngungsudungkynang, time.time() + 0.5)
+            if not self._is_dasudungbaothuvatpham and time.time() - self._thoidiemsudungbaothuvatphamgannhat < 1.5 and time.time() - self._thoidiemyeucaubaothuvatphamdoilenhgannhat > 0.5:
                 self._thoidiemyeucaubaothuvatphamdoilenhgannhat = time.time()
                 self.moitruong.action_thucthicaulenh("pf 4131.@", douutien = DOUUTIEN_KHANCAP)
-                self.moitruong.action_thucthicaulenh("title show P005", douutien = DOUUTIEN_KHANCAP)
-                self.moitruong.action_thucthicaulenh("title show P006", douutien = DOUUTIEN_KHANCAP)
-                self.moitruong.action_thucthicaulenh("title show P007", douutien = DOUUTIEN_KHANCAP)
-                self.moitruong.action_thucthicaulenh("title show P008", douutien = DOUUTIEN_KHANCAP)
-                self.moitruong.action_thucthicaulenh("title show P009", douutien = DOUUTIEN_KHANCAP)
-                self.moitruong.action_thucthicaulenh("title show P0010", douutien = DOUUTIEN_KHANCAP)
+                self.moitruong.action_thucthicaulenh("title show {}".format(DANHHIEU_MAP[self.moitruong.get_idnguoichoi()]), douutien = DOUUTIEN_KHANCAP)
 
             if not self._is_dasudungbaothuvatpham and time.time() - self._thoidiemsudungbaothuvatphamgannhat > 1.5:
                 for baothuvatpham in BAOTHUVATPHAMs:
                     if self.action_sudungvatphamhanhtrang(baothuvatpham, delay = 0.):
+                        self._thoidiemtamngungsudungkynang = max(self._thoidiemtamngungsudungkynang, time.time() + 1.5)
                         self._thoidiemsudungbaothuvatphamgannhat = time.time()
                         break
-
-            diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
 
             is_bandokhongpk = self.moitruong.get_idbandohientai() in BANDOKHONGPKs
             is_bandopk = not is_bandokhongpk
