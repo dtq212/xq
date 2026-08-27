@@ -636,7 +636,7 @@ VATPHAMTUDONGNHATFARMs = (
     "Côn", "Kích", " Bào", " Lý", " Mạo", "Phi Phong", " Nguyệt",
     "Quan", " Bào", " Liên", " Quần", " Hài", " Nhẫn", " Tiêu",
     "Đầu Cân", "Xú Diêm", " Đầu Cân", "Nghênh Phong Trảm", " Mão", " Tố Quần", "Nhập môn", " Quần",
-    " Nguyệt", "Trứng gà",
+    " Nguyệt", "Trứng gà", " cấp ", "Kim Cương"
 )
 
 VATPHAMXEPCHONGs = tuple(["Toái Lăng", "Lá", "Hoạt Lạc Hoàn", "Lam Cầu", "Hắc Cầu", "Mồi Câu", KHIMACHDON, CHUTHIENDON, TAITAOHOAN, TIEUDAOTAN, QUYNGUYENDON, KIMTANGTAN, KHIMACHDON, TUTAMDON, CHUTHIENDON])

@@ -508,7 +508,7 @@ class TacTu:
                     iddoituongmuctieudanggom = yeucauduocchon.get("idmuctieu", 0)
 
         if iddoituongmuctieudanggom > 0:
-            if iddoituongmuctieudanggom != self._idmuctieudangtheokiemtraket or self.moitruong.get_is_dangvankhi():
+            if iddoituongmuctieudanggom != self._idmuctieudangtheokiemtraket or self.moitruong.get_is_dangvankhi() or self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
                 self._idmuctieudangtheokiemtraket = iddoituongmuctieudanggom
                 self._thoidiemdungimkiemtraket = time.time()
                 self._toadokiemtraket = self.moitruong.get_toado()
@@ -845,9 +845,11 @@ class TacTu:
                     continue
             if is_anhhuongboitruongnhom:
                 khoangcachmuctieuxemxettoitruongnhom = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieuxemxet, diachicosothongtinnhanvattruongnhom)
-                if khoangcachmuctieuxemxettoitruongnhom >= khoangcachtimkiem: continue
+                if khoangcachmuctieuxemxettoitruongnhom >= khoangcachtimkiem:
+                    continue
             else:
-                if khoangcachmuctieuxemxettoibanthan >= khoangcachtimkiem: continue
+                if khoangcachmuctieuxemxettoibanthan >= khoangcachtimkiem:
+                    continue
 
             khoangcachmuctieuxemxettoimuctieudemquaixungquanh = khoangcachmuctieuxemxettoibanthan
             if diachinhanvatmuctieudemquaixungquanh:
@@ -967,7 +969,7 @@ class TacTu:
                 khoangcachxemxetmuctieuxemxet = khoangcachmuctieuxemxettoibanthan
                 khoangcachxemxetmuctieuhientai = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon)
 
-            if khoangcachxemxetmuctieuxemxet < khoangcachxemxetmuctieuhientai:
+            if khoangcachxemxetmuctieuxemxet + 0.25 < khoangcachxemxetmuctieuhientai:
                 _thaydoimuctieutrongvonglap()
 
                 diachicosothongtinnhanvatmuctieudangchon = diachicosothongtinnhanvatmuctieuxemxet
@@ -1292,7 +1294,6 @@ class TacTu:
             if self.moitruong.get_idnguoichoi() in (59844, 59845):
                 if time.time() - self._thoidiemdocsachgannhat > 30.:
                     sachcanhocs = [
-                        # "Nhập môn Cơ Quan",
                         "Nhập môn Thái Cổ Thần Quy",
                         "Nhập môn Quyền Cước Chi",
                         "Nhập môn Kim Cương Bất H",
@@ -1308,7 +1309,6 @@ class TacTu:
             if self.moitruong.get_idnguoichoi() == 59996:
                 if time.time() - self._thoidiemdocsachgannhat > 30.:
                     sachcanhocs = [
-                        # "Nhập môn Cơ Quan",
                         "Nhập môn Y Thuật",
                         "Nhập môn Trung Y Dược Lý",
                         "Nhập môn Tu Tâm",
@@ -1321,6 +1321,16 @@ class TacTu:
                 if time.time() - self._thoidiemdocsachgannhat > 30.:
                     sachcanhocs = [
                         "Nhập môn Luyện Đơn",
+                    ]
+                    for sachcanhoc in sachcanhocs:
+                        if self.action_sudungvatphamhanhtrang(sachcanhoc):
+                            self._thoidiemdocsachgannhat = time.time()
+                            break
+
+            if self.moitruong.get_idnguoichoi() == 60055:
+                if time.time() - self._thoidiemdocsachgannhat > 30.:
+                    sachcanhocs = [
+                        "Nhập môn Tụng Kinh",
                     ]
                     for sachcanhoc in sachcanhocs:
                         if self.action_sudungvatphamhanhtrang(sachcanhoc):
@@ -1865,7 +1875,7 @@ class TacTu:
                     if self._is_tudongvebanrac and time.time() - self._thoidiemvohieuquadichuyennhatvatpham > 0.:
                         khoangcachmuctieu = self.moitruong.get_khoangcach(diachimuctieu)
                         khoangcachnhatmuctieu = self.moitruong.get_khoangcach(diachimuctieu, self._diachicosovatphamdangnhat) if self._diachicosovatphamdangnhat else KHOANGCACHTOIDAHOPLE
-                        if khoangcachnhatmuctieu < khoangcachmuctieu:
+                        if khoangcachnhatmuctieu + 0.5 < khoangcachmuctieu:
                             return
 
         if self.moitruong.get_is_nhanvatchuasansang(self.moitruong.get_diachicosothongtinnhanvat1()):
