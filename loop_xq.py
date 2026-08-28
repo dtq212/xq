@@ -129,19 +129,19 @@ class LoopChinh:
         self.tactu.action_tudongsudungkynangbaothu()
         self.tactu.action_tudongdieukhienbaothumaoson()
 
-        # if self.moitruong.get_idnguoichoi() == 59996:
+        # if self.moitruong.get_idnguoichoi() == 60055:
         #     self.moitruong.truyvan_motavatphamhanhtrang(0)
         #     motavatpham = self.moitruong.get_motavatphamhanhtrang(0)
         #     print("Mô tả vật phẩm: {}".format(motavatpham))
         #
-        #     match = re.search(r"Khí huyết:\s*\+(\d+)", motavatpham)
+        #     match = re.search(r"Ngoại Kháng:\s*\+(\d+)", motavatpham)
         #
         #     if match:
         #         chisohientai = int(match.group(1))
-        #         print(f"Đã tìm thấy Khí huyết: {chisohientai}")
+        #         print(f"Đã tìm thấy Ngoại Kháng: {chisohientai}")
         #
-        #         if chisohientai > 350:
-        #             print("Khí huyết > 350. Dừng tiến trình!")
+        #         if chisohientai > 125:
+        #             print("Ngoại Kháng > 125. Dừng tiến trình!")
         #             self.stop.set()
         #             return
         #         else:
@@ -151,11 +151,11 @@ class LoopChinh:
         #             # else:
         #             #     self.moitruong.action_thucthicaulenh("buyitem ! 5 3 1")
         #             #     time.sleep(0.05)
-        #             self.moitruong.action_thucthicaulenh2("talk 15bc# accept.2e15f08# 0")
+        #             self.moitruong.action_thucthicaulenh2("talk 15d1# accept.77409# 0")
         #             time.sleep(0.05)
         #     else:
-        #         print("Không tìm thấy dòng Khí huyết trong mô tả vật phẩm này.")
-        #         self.moitruong.action_thucthicaulenh2("talk 15bc# accept.2e15f08# 0")
+        #         print("Không tìm thấy dòng Ngoại Kháng trong mô tả vật phẩm này.")
+        #         self.moitruong.action_thucthicaulenh2("talk 15d1# accept.77409# 0")
         #         time.sleep(0.05)
 
         if 0 and self.moitruong.get_idnguoichoi() == 60055:
