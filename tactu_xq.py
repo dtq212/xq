@@ -2680,6 +2680,13 @@ class TacTu:
                         caulenh = "buy {}# 6 {} 60".format(hex(idnpc).replace("0x", ""), 999 - soluongtranky)
                         self.moitruong.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_THAP)
 
+                    vitridaunanh = self.moitruong.action_timkiemvitrivatphamhanhtrang(DAUNANH)
+                    soluongdaunanh = self.moitruong.get_soluongvatphamhanhtrang(vitridaunanh) if vitridaunanh >= 0 else 0
+
+                    if soluongdaunanh < 30:
+                        caulenh = "buy {}# 7 {} 400".format(hex(idnpc).replace("0x", ""), 30 - soluongdaunanh)
+                        self.moitruong.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_THAP)
+
                 if self.moitruong.get_tenmonphai() == "maoson":
                     vitribuagiay = self.moitruong.action_timkiemvitrivatphamhanhtrang(BUAGIAY)
                     soluongbuagiay = self.moitruong.get_soluongvatphamhanhtrang(vitribuagiay) if vitribuagiay >= 0 else 0
