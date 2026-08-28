@@ -171,6 +171,18 @@ class LoopChinh:
             self.moitruong.action_thucthicaulenh("talk d951# info.21")
             time.sleep(0.25)
 
+        # if self.moitruong.get_idnguoichoi() == 60055:
+        #     if not self.moitruong.action_timkiemvatphamhanhtrang("Túi Quà Vô Song"):
+        #         self.moitruong.action_thucthicaulenh("buyitem ! 5 5 1")
+        #         time.sleep(0.25)
+        #     else:
+        #         self.tactu.action_sudungvatphamhanhtrang("Túi Quà Vô Song")
+        #     for tenvatphamvutdi in ["Cổ Phương Côn", "Thạch Điêu Quyền Nhẫn", "Ngọc Kiếm", "Xích Anh Thương", "Kim Đao", "Xích Y (Nữ)", "Đấu Chiến Gấm Y (Nam)", "Nguyệt Hoàn"]:
+        #         iddoituongvatphamvutdi = self.moitruong.action_timkiemvatphamhanhtrang(tenvatphamvutdi)
+        #
+        #         if iddoituongvatphamvutdi:
+        #             self.moitruong.action_thucthicaulenh("drop ! {}#1".format(hex(iddoituongvatphamvutdi)).replace("0x", ""))
+        #             time.sleep(0.25)
         # if self.moitruong.get_idnguoichoi() in (59844, 59845):
         #     diachithiensutraodoi = self.moitruong.action_timkiemnhanvat("Thiên Sứ Trao Đổi")
         #     if not diachithiensutraodoi:
