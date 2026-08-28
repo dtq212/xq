@@ -149,7 +149,7 @@ class TroChoiManager:
                 elif keyboard.is_pressed("ctrl+b"):
                     cmd = "them_diemdanhxungquanh"
                 elif keyboard.is_pressed("ctrl+alt+s"):
-                    cmd = "battat_uutienbaothumaoson"
+                    cmd = "battat_uutienbaothukynangtrieuhoi"
                 if cmd:
                     self.command_dict[hwnd] = cmd
                     time.sleep(0.3)

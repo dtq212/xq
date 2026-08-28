@@ -33,8 +33,8 @@ class LenhThucThi:
 
 class MoiTruong:
     def __init__(self, idcuaso):
-        self._thoidiemralenhbaothumaosontheosau = 0.
-        self._thoidiemralenhbaothumaosontancong = 0.
+        self._thoidiemralenhbaothukynangtrieuhoitheosau = 0.
+        self._thoidiemralenhbaothukynangtrieuhoitancong = 0.
         self._is_dasetupautoassemblethucthicaulenh2 = False
         self._thoidiemthucthicaulenh2gannhat = 0.
         self.diachihamthucthicaulenh2 = 0
@@ -115,7 +115,7 @@ class MoiTruong:
         self._ydichuyengannhat = -1
         self._thoidiemboquadichuyencungtoadogannhat = 0.
         self._thoidiemnhanvatkhongsansanggannhat = 0.
-        self._diachicosonhanvatbaothudautien = False
+        self._diachicosonhanvatbaothugiangho = False
 
         self._thoidiemsudungkynangmuctieugannhat = 0.
         self._thoidiemthietlapchedobaothugannhat = 0.
@@ -498,23 +498,23 @@ class MoiTruong:
 
         return self.action_thucthicaulenh2(caulenh, delay = 0.)
 
-    def action_ralenhbaothumaosontancong(self, iddoituongbaothumaoson, iddoituongnhanvatmuctieudangchon, delay = 0.5):
-        if time.time() - self._thoidiemralenhbaothumaosontancong < delay:
+    def action_ralenhbaothukynangtrieuhoitancong(self, iddoituongbaothukynangtrieuhoi, iddoituongnhanvatmuctieudangchon, delay = 0.5):
+        if time.time() - self._thoidiemralenhbaothukynangtrieuhoitancong < delay:
             return False
 
-        self._thoidiemralenhbaothumaosontancong = time.time()
+        self._thoidiemralenhbaothukynangtrieuhoitancong = time.time()
 
-        self.action_thucthicaulenh2(f"pet {hex(iddoituongbaothumaoson)}# 1 {hex(iddoituongnhanvatmuctieudangchon)}#".replace("0x", ""), delay = 0.)
+        self.action_thucthicaulenh2(f"pet {hex(iddoituongbaothukynangtrieuhoi)}# 1 {hex(iddoituongnhanvatmuctieudangchon)}#".replace("0x", ""), delay = 0.)
 
         return True
 
-    def action_ralenhbaothumaosontheosau(self, iddoituongbaothumaoson, delay = 0.5):
-        if time.time() - self._thoidiemralenhbaothumaosontheosau < delay:
+    def action_ralenhbaothukynangtrieuhoitheosau(self, iddoituongbaothukynangtrieuhoi, delay = 0.5):
+        if time.time() - self._thoidiemralenhbaothukynangtrieuhoitheosau < delay:
             return False
 
-        self._thoidiemralenhbaothumaosontheosau = time.time()
+        self._thoidiemralenhbaothukynangtrieuhoitheosau = time.time()
 
-        self.action_thucthicaulenh2(f"pet {hex(iddoituongbaothumaoson)}# 2".replace("0x", ""), delay = 0.)
+        self.action_thucthicaulenh2(f"pet {hex(iddoituongbaothukynangtrieuhoi)}# 2".replace("0x", ""), delay = 0.)
 
         return True
 
@@ -639,13 +639,13 @@ class MoiTruong:
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
         return read_int(self.tientrinh, x + 0x1568) if x else False
 
-    def get_iddoituongbaothumaoson(self):
+    def get_iddoituongbaothukynangtrieuhoi(self):
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
         if not x:
             return False
         return read_int(self.tientrinh, x + 0x184)
 
-    def get_tendoituongbaothumaoson(self):
+    def get_tendoituongbaothukynangtrieuhoi(self):
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
         if not x:
             return False
@@ -839,7 +839,7 @@ class MoiTruong:
         if self.get_is_nhanvatchuasansang(self.get_diachicosothongtinnhanvat1()):
             self._thoidiemnhanvatkhongsansanggannhat = time.time()
 
-        self._diachicosonhanvatbaothudautien = self.action_timkiemnhanvat(tenchunhan = self.get_tendoituong()) if self.get_is_datrieuhoibaothudautien() else False
+        self._diachicosonhanvatbaothugiangho = self.action_timkiemnhanvat(tenchunhan = self.get_tendoituong()) if self.get_is_datrieuhoibaothugiangho() else False
         self._is_nhanvatbichoang = self.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), macdinh = False, is_hieuungcoloi = 0)
 
         if not self.get_is_dangbatchucnangmorong():
@@ -1931,62 +1931,62 @@ class MoiTruong:
     def get_tenmonphai(self):
         return MONPHAI_MAP.get(self.get_idkynang(0, 0))
 
-    def get_diachicosonhanvatbaothudautien(self):
-        return self._diachicosonhanvatbaothudautien
+    def get_diachicosonhanvatbaothugiangho(self):
+        return self._diachicosonhanvatbaothugiangho
 
-    def get_diachicosobaothudautien(self):
+    def get_diachicosobaothugiangho(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         return read_int(self.tientrinh, x + 0xADFDDC) if x else False
 
-    def get_is_datrieuhoibaothudautien(self):
-        diachi = self.get_diachicosobaothudautien()
+    def get_is_datrieuhoibaothugiangho(self):
+        diachi = self.get_diachicosobaothugiangho()
         return read_boolean(self.tientrinh, diachi + 0x1AE8) if diachi else False
 
-    def get_idkynangbaothudautien(self, idvitri):
-        diachi = self.get_diachicosobaothudautien()
+    def get_idkynangbaothugiangho(self, idvitri):
+        diachi = self.get_diachicosobaothugiangho()
         return read_int(self.tientrinh, diachi + idvitri * 0x228 + 0x2E8) if diachi else False
 
-    def get_tenkynangbaothudautien(self, idvitri):
-        diachi = self.get_diachicosobaothudautien()
+    def get_tenkynangbaothugiangho(self, idvitri):
+        diachi = self.get_diachicosobaothugiangho()
         return read_string(self.tientrinh, diachi + idvitri * 0x228 + 0x2EC) if diachi else False
 
-    def get_is_kynangbaothudautiensansang(self, idvitri):
-        diachi = self.get_diachicosobaothudautien()
+    def get_is_kynangbaothugianghosansang(self, idvitri):
+        diachi = self.get_diachicosobaothugiangho()
         return read_int(self.tientrinh, diachi + idvitri * 0x228 + 0x504) == 0 if diachi else False
 
-    def get_iddoituongbaothudautien(self):
-        diachi = self.get_diachicosobaothudautien()
+    def get_iddoituongbaothugiangho(self):
+        diachi = self.get_diachicosobaothugiangho()
         return read_int(self.tientrinh, diachi + 0x47C) if diachi else False
 
-    def get_dotrungthanhbaothudautien(self):
-        diachi = self.get_diachicosobaothudautien()
+    def get_dotrungthanhbaothugiangho(self):
+        diachi = self.get_diachicosobaothugiangho()
         return read_int(self.tientrinh, diachi + 0x4DC) if diachi else False
 
-    def get_sinhlucconlaibaothudautien(self):
-        diachi = self.get_diachicosobaothudautien()
+    def get_sinhlucconlaibaothugiangho(self):
+        diachi = self.get_diachicosobaothugiangho()
         return read_int(self.tientrinh, diachi + 0x48C) if diachi else False
 
-    def get_sinhluctoidabaothudautien(self):
-        diachi = self.get_diachicosobaothudautien()
+    def get_sinhluctoidabaothugiangho(self):
+        diachi = self.get_diachicosobaothugiangho()
         return read_int(self.tientrinh, diachi + 0x490) if diachi else False
 
-    def get_phantramsinhlucconlaibaothudautien(self):
-        diachi = self.get_diachicosobaothudautien()
+    def get_phantramsinhlucconlaibaothugiangho(self):
+        diachi = self.get_diachicosobaothugiangho()
         if not diachi: return 100
-        return self.get_sinhlucconlaibaothudautien() * 100 / max(1, self.get_sinhluctoidabaothudautien())
+        return self.get_sinhlucconlaibaothugiangho() * 100 / max(1, self.get_sinhluctoidabaothugiangho())
 
-    def get_noilucconlaibaothudautien(self):
-        diachi = self.get_diachicosobaothudautien()
+    def get_noilucconlaibaothugiangho(self):
+        diachi = self.get_diachicosobaothugiangho()
         return read_int(self.tientrinh, diachi + 0x494) if diachi else False
 
-    def get_noiluctoidabaothudautien(self):
-        diachi = self.get_diachicosobaothudautien()
+    def get_noiluctoidabaothugiangho(self):
+        diachi = self.get_diachicosobaothugiangho()
         return read_int(self.tientrinh, diachi + 0x498) if diachi else False
 
-    def get_phantramnoilucconlaibaothudautien(self):
-        diachi = self.get_diachicosobaothudautien()
+    def get_phantramnoilucconlaibaothugiangho(self):
+        diachi = self.get_diachicosobaothugiangho()
         if not diachi: return 100
-        return self.get_noilucconlaibaothudautien() * 100 / max(1, self.get_noiluctoidabaothudautien())
+        return self.get_noilucconlaibaothugiangho() * 100 / max(1, self.get_noiluctoidabaothugiangho())
 
     def action_battheosaunhom(self, delay = 1.):
         if time.time() - self._thoidiembattattheosaunhomgannhat < delay: return

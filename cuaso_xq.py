@@ -155,7 +155,7 @@ class CuaSo:
                     "_is_tudongdaotangbaodo": self.tactu._is_tudongdaotangbaodo,
 
                     "_is_chidanhnguoichoi": self.tactu._is_chidanhnguoichoi,
-                    "_is_uutienbaothumaoson": self.tactu._is_uutienbaothumaoson,
+                    "_is_uutienbaothukynangtrieuhoi": self.tactu._is_uutienbaothukynangtrieuhoi,
                     "_is_chedobufftoanbang": self.tactu._is_chedobufftoanbang,
                     "_is_chantangcapdo": self.tactu._is_chantangcapdo,
 
@@ -165,7 +165,7 @@ class CuaSo:
 
                     "_is_tudongdichuyendiemdanhxungquanh": self.tactu._is_tudongdichuyendiemdanhxungquanh,
                     "_diemdanhxungquanhs": self.tactu._diemdanhxungquanhs,
-                    "_is_tudongtrieuhoibaothudautien": self.tactu._is_tudongtrieuhoibaothudautien,
+                    "_is_tudongtrieuhoibaothugiangho": self.tactu._is_tudongtrieuhoibaothugiangho,
                     "_is_tudongbattatchucnangmorong": self.tactu._is_tudongbattatchucnangmorong,
                 }
                 self.shared_data[self.idcuaso] = info
@@ -246,8 +246,8 @@ class CuaSo:
                     self.tactu.action_batpk()
                 elif cmd == "tat_pk":
                     self.tactu.action_tatpk()
-                elif cmd == "battat_tudongtrieuhoibaothudautien":
-                    self.tactu.battat_tudongtrieuhoibaothudautien()
+                elif cmd == "battat_tudongtrieuhoibaothugiangho":
+                    self.tactu.battat_tudongtrieuhoibaothugiangho()
                 elif cmd == "them_diemdanhxungquanh":
                     if self.moitruong.get_is_dangmobando():
                         self.tactu.them_diemdanhxungquanh((*self.moitruong.get_toadobandochichuot(), self.moitruong.get_idbandochichuot()))
@@ -259,8 +259,8 @@ class CuaSo:
                     self.tactu.battat_tudongvebanrac()
                 elif cmd == "battat_tudongdichientruong":
                     self.tactu.battat_is_tudongdichientruong()
-                elif cmd == "battat_uutienbaothumaoson":
-                    self.tactu.battat_is_uutienbaothumaoson()
+                elif cmd == "battat_uutienbaothukynangtrieuhoi":
+                    self.tactu.battat_is_uutienbaothukynangtrieuhoi()
                 elif cmd == "action_suavatpham":
                     self.tactu.action_suavatpham()
                 elif cmd == "battat_chedobufftoanbang":

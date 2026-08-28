@@ -100,9 +100,9 @@ class GiaoDienHienThi:
         ttk.Separator(frame_bottom, orient = 'horizontal').pack(fill = 'x', pady = 5)
 
         self._create_check(frame_bottom, "Tự tìm mục tiêu (Mặc định)", self.vars["timmuctieu"], "battat_tudongtimkiemmuctieu")
-        self._create_check(frame_bottom, "Tự động gọi Bảo thú", self.vars["trieuhoibaothu"], "battat_tudongtrieuhoibaothudautien")
+        self._create_check(frame_bottom, "Tự động gọi Bảo thú", self.vars["trieuhoibaothu"], "battat_tudongtrieuhoibaothugiangho")
         self._create_check(frame_bottom, "Chỉ đánh Người chơi  [Ctrl+D/Ctrl+A]", self.vars["chidanhnguoichoi"], "toggle_chidanhnguoichoi")
-        self._create_check(frame_bottom, "Ưu tiên Bảo thú Mao Sơn  [Ctrl+Alt+S]", self.vars["uutienmaoson"], "battat_uutienbaothumaoson")
+        self._create_check(frame_bottom, "Ưu tiên Bảo thú Mao Sơn  [Ctrl+Alt+S]", self.vars["uutienmaoson"], "battat_uutienbaothukynangtrieuhoi")
         self._create_check(frame_bottom, "Chế độ Buff toàn bang  [Ctrl+Alt+Shift+N]", self.vars["bufftoanbang"], "battat_chedobufftoanbang")
 
         ttk.Separator(frame_bottom, orient = 'horizontal').pack(fill = 'x', pady = 5)
@@ -224,13 +224,13 @@ class GiaoDienHienThi:
                     pass
             self.vars["battheosaunhom"].set(info.get("_is_tudongbattheosaunhom", False))
             self.vars["timmuctieu"].set(info.get("_is_tudongtimkiemmuctieu", False))
-            self.vars["trieuhoibaothu"].set(info.get("_is_tudongtrieuhoibaothudautien", False))
+            self.vars["trieuhoibaothu"].set(info.get("_is_tudongtrieuhoibaothugiangho", False))
             self.vars["khaikhoang"].set(info.get("_is_tudongkhaikhoang", False))
             self.vars["chientruong"].set(info.get("_is_tudongdichientruong", False))
             self.vars["daobaodo"].set(info.get("_is_tudongdaotangbaodo", False))
 
             self.vars["chidanhnguoichoi"].set(info.get("_is_chidanhnguoichoi", False))
-            self.vars["uutienmaoson"].set(info.get("_is_uutienbaothumaoson", False))
+            self.vars["uutienmaoson"].set(info.get("_is_uutienbaothukynangtrieuhoi", False))
             self.vars["bufftoanbang"].set(info.get("_is_chedobufftoanbang", False))
             self.vars["chantangcap"].set(info.get("_is_chantangcapdo", False))
 

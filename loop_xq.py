@@ -127,7 +127,7 @@ class LoopChinh:
         self.tactu.action_xulygomquai()
         self.tactu.action_sudungkynang()
         self.tactu.action_tudongsudungkynangbaothu()
-        self.tactu.action_tudongdieukhienbaothumaoson()
+        self.tactu.action_tudongdieukhienbaothukynangtrieuhoi()
 
         # if self.moitruong.get_idnguoichoi() == 60055:
         #     self.moitruong.truyvan_motavatphamhanhtrang(0)
@@ -194,12 +194,12 @@ class LoopChinh:
 
         # if self.moitruong.get_idnguoichoi() == 59996:
         #     idtinhnguyendon = self.moitruong.action_timkiemvatphamhanhtrang("Tinh Nguyên Đơn")
-        #     iddoituongbaothudautien = self.moitruong.get_iddoituongbaothudautien()
-        #     if idtinhnguyendon and iddoituongbaothudautien:
+        #     iddoituongbaothugiangho = self.moitruong.get_iddoituongbaothugiangho()
+        #     if idtinhnguyendon and iddoituongbaothugiangho:
         #         idtinhnguyendon = hex(idtinhnguyendon).replace("0x", "")
-        #         iddoituongbaothudautien = hex(iddoituongbaothudautien).replace("0x", "")
+        #         iddoituongbaothugiangho = hex(iddoituongbaothugiangho).replace("0x", "")
         #
-        #         caulenh = "pet {}# fuse_yy {}#".format(iddoituongbaothudautien, idtinhnguyendon)
+        #         caulenh = "pet {}# fuse_yy {}#".format(iddoituongbaothugiangho, idtinhnguyendon)
         #         print()
         #         self.moitruong.action_thucthicaulenh(caulenh)
         #         time.sleep(0.25)
@@ -262,7 +262,7 @@ class LoopPhu:
         self.tactu.action_tudongkhaikhoang()
         self.tactu.action_tudongdaotangbaodo()
 
-        self.tactu.action_tudongtrieuhoibaothudautien()
+        self.tactu.action_tudongtrieuhoibaothugiangho()
 
         self.tactu.action_tudongdichientruong()
         self.tactu.action_dichuyentudo()
