@@ -1276,17 +1276,18 @@ class TacTu:
             if noidungtrochuyen and ("Hành động" in noidungtrochuyen or "Đợi lệnh" in noidungtrochuyen):
                 self._is_dasudungbaothuvatpham = True
 
-            if not self._is_dasudungbaothuvatpham and time.time() - self._thoidiemsudungbaothuvatphamgannhat < 3. and time.time() - self._thoidiemyeucaubaothuvatphamdoilenhgannhat > 1.5:
-                self._thoidiemyeucaubaothuvatphamdoilenhgannhat = time.time()
-                self.moitruong.action_thucthicaulenh("pf 4131.@", douutien = DOUUTIEN_KHANCAP)
-                self.moitruong.action_thucthicaulenh("title show {}".format(DANHHIEU_MAP[self.moitruong.get_idnguoichoi()]), douutien = DOUUTIEN_KHANCAP)
-
-            if not self._is_dasudungbaothuvatpham and time.time() - self._thoidiemsudungbaothuvatphamgannhat > 1.5:
+            if not self._is_dasudungbaothuvatpham and time.time() - self._thoidiemsudungbaothuvatphamgannhat > 6.:
                 for baothuvatpham in BAOTHUVATPHAMs:
                     if self.action_sudungvatphamhanhtrang(baothuvatpham, delay = 0.):
                         self._thoidiemtamngungsudungkynang = max(self._thoidiemtamngungsudungkynang, time.time() + 1.5)
                         self._thoidiemsudungbaothuvatphamgannhat = time.time()
                         break
+                self.moitruong.action_thucthicaulenh("title show {}".format(DANHHIEU_MAP[self.moitruong.get_idnguoichoi()]), douutien = DOUUTIEN_KHANCAP)
+
+            if not self._is_dasudungbaothuvatpham and time.time() - self._thoidiemyeucaubaothuvatphamdoilenhgannhat > 0.5 and time.time() - self._thoidiemsudungbaothuvatphamgannhat > 1.5:
+                self._thoidiemyeucaubaothuvatphamdoilenhgannhat = time.time()
+                self._thoidiemtamngungsudungkynang = max(self._thoidiemtamngungsudungkynang, time.time() + 1.5)
+                self.moitruong.action_thucthicaulenh("pf 4131.@", douutien = DOUUTIEN_KHANCAP)
 
             is_bandokhongpk = self.moitruong.get_idbandohientai() in BANDOKHONGPKs
             is_bandopk = not is_bandokhongpk
