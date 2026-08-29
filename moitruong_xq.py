@@ -475,9 +475,6 @@ class MoiTruong:
             return False
         self._thoidiemsudungthaotacbaothugannhat = time.time()
         caulenh = "pet {}# {}".format(hex(iddoituong), idkynang).replace("0x", "")
-
-        print("action_sudungthaotacbaothu: {}".format(caulenh))
-
         return self.action_thucthicaulenh2(caulenh)
 
     def action_thietlapchedobaothu(self, iddoituong, idkynang, delay = 0.2):

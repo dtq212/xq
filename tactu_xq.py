@@ -2871,8 +2871,9 @@ class TacTu:
                 if not self.moitruong.get_is_datrieuhoibaothugiangho() and self.moitruong.get_idbandohientai() in BANDOKHONGPKs and time.time() - self._thoidiemtudongtrieuhoibaothugiangho > 1. and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM and time.time() - self._thoidiemtamngungdichuyensudungkynang > 0.:
                     if self.moitruong.action_trieuhoibaothu(iddoituongbaothugiangho, delay = 0.0):
                         self._thoidiemtudongtrieuhoibaothugiangho = time.time()
-                    break
 
+                if self.moitruong.get_is_datrieuhoibaothugiangho() and self.moitruong.get_idbandohientai() in BANDOKHONGPKs and self.moitruong.get_diachicosonhanvatbaothugiangho():
+                    self.moitruong.action_sudungthaotacbaothu(iddoituongbaothugiangho, 3):
                 break
 
     def action_tudongdieukhienbaothukynangtrieuhoi(self):
@@ -2935,25 +2936,25 @@ class TacTu:
                                 phatam("Hết lão tửu")
                                 self._thoidiemhoiphucbaothugannhat = time.time()
 
-                        # if self.moitruong.get_sinhluctoidabaothugiangho() - self.moitruong.get_sinhlucconlaibaothugiangho() >= 1200:
-                        #     iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang("Trái Đào")
-                        #     if not iddoituongvatpham:
-                        #         iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang("Chuối")
-                        #
-                        #     if iddoituongvatpham:
-                        #         if self.moitruong.action_sudungvatphambaothu(iddoituongvatpham, iddoituongbaothu):
-                        #             self._thoidiemhoiphucbaothugannhat = time.time()
-                        #     else:
-                        #         phatam("Hết trái đào")
-                        #         self._thoidiemhoiphucbaothugannhat = time.time()
+                        if self.moitruong.get_sinhluctoidabaothugiangho() - self.moitruong.get_sinhlucconlaibaothugiangho() >= 1200:
+                            iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang("Trái Đào")
+                            if not iddoituongvatpham:
+                                iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang("Chuối")
+
+                            if iddoituongvatpham:
+                                if self.moitruong.action_sudungvatphambaothu(iddoituongvatpham, iddoituongbaothu):
+                                    self._thoidiemhoiphucbaothugannhat = time.time()
+                            # else:
+                            #     phatam("Hết trái đào")
+                            #     self._thoidiemhoiphucbaothugannhat = time.time()
 
                     diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
 
                     if diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu) and self.moitruong.get_noilucconlaibaothugiangho() >= 60:
                         if KYNANGBAOTHU_CAOCAPTHIENCAN in idkynangbaothu_map and self.moitruong.get_is_kynangbaothugianghosansang(idkynangbaothu_map[KYNANGBAOTHU_CAOCAPTHIENCAN]) and self.moitruong.get_is_cothegaychoang(diachimuctieu):
-                            # if not diachicosonhanvatbaothu or time.time() - self._thoidiemsudungthaotacbaothugannhat > 0.25:
-                            #     self._thoidiemsudungthaotacbaothugannhat = time.time()
-                            #     self.moitruong.action_sudungthaotacbaothu(iddoituongbaothu, 2, delay = 0.)
+                            if not diachicosonhanvatbaothu or time.time() - self._thoidiemsudungthaotacbaothugannhat > 0.25:
+                                self._thoidiemsudungthaotacbaothugannhat = time.time()
+                                self.moitruong.action_sudungthaotacbaothu(iddoituongbaothu, 2, delay = 0.)
                             if diachicosonhanvatbaothu:
                                 self.moitruong.action_sudungkynangbaothu(KYNANGBAOTHU_CAOCAPTHIENCAN, diachimuctieu)
                             break
