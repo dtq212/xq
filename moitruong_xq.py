@@ -475,6 +475,9 @@ class MoiTruong:
             return False
         self._thoidiemsudungthaotacbaothugannhat = time.time()
         caulenh = "pet {}# {}".format(hex(iddoituong), idkynang).replace("0x", "")
+
+        print("action_sudungthaotacbaothu: {}".format(caulenh))
+
         return self.action_thucthicaulenh2(caulenh)
 
     def action_thietlapchedobaothu(self, iddoituong, idkynang, delay = 0.2):
@@ -504,7 +507,9 @@ class MoiTruong:
 
         self._thoidiemralenhbaothukynangtrieuhoitancong = time.time()
 
-        self.action_thucthicaulenh2(f"pet {hex(iddoituongbaothukynangtrieuhoi)}# 1 {hex(iddoituongnhanvatmuctieudangchon)}#".replace("0x", ""), delay = 0.)
+        caulenh = f"pet {hex(iddoituongbaothukynangtrieuhoi)}# 1 {hex(iddoituongnhanvatmuctieudangchon)}#".replace("0x", "")
+
+        self.action_thucthicaulenh2(caulenh, delay = 0.)
 
         return True
 
@@ -514,7 +519,8 @@ class MoiTruong:
 
         self._thoidiemralenhbaothukynangtrieuhoitheosau = time.time()
 
-        self.action_thucthicaulenh2(f"pet {hex(iddoituongbaothukynangtrieuhoi)}# 2".replace("0x", ""), delay = 0.)
+        caulenh = f"pet {hex(iddoituongbaothukynangtrieuhoi)}# 2".replace("0x", "")
+        self.action_thucthicaulenh2(caulenh, delay = 0.)
 
         return True
 
