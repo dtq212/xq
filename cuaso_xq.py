@@ -29,6 +29,7 @@ def khoidong_looptonghop(moitruong, tactu, stop):
             l_chinh.step()
         except Exception as e:
             print(f"Lỗi luồng tổng hợp: {e}")
+            traceback.print_exc()
             time.sleep(1)
         time.sleep(0.1)
 

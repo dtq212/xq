@@ -645,17 +645,35 @@ class MoiTruong:
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
         return read_int(self.tientrinh, x + 0x1568) if x else False
 
-    def get_iddoituongbaothukynangtrieuhoi(self):
+    def get_iddoituongbaothu(self, sothutu = 1):
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
         if not x:
             return False
-        return read_int(self.tientrinh, x + 0x184)
+        return read_int(self.tientrinh, x + 0x184 + 0x6C * (sothutu - 1))
 
-    def get_tendoituongbaothukynangtrieuhoi(self):
+    def get_tendoituongbaothu(self, sothutu = 1):
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
         if not x:
             return False
-        return read_string(self.tientrinh, x + 0x188)
+        return read_string(self.tientrinh, x + 0x188 + 0x6C * (sothutu - 1))
+
+    def get_trangthaihanhvidoituongbaothu(self, sothutu = 1):
+        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0x1E0 + 0x6C * (sothutu - 1))
+
+    def get_phantramsinhlucconlaidoituongbaothukynangtrieuhoi(self, sothutu = 1):
+        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0x1D4 + 0x6C * (sothutu - 1)) * 2
+
+    def get_phantramnoilucconlaidoituongbaothukynangtrieuhoi(self, sothutu = 1):
+        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0x1D8 + 0x6C * (sothutu - 1)) * 2
 
     def get_diachicosothongtinnhanvat1(self):
         return read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVAT1)
@@ -955,13 +973,13 @@ class MoiTruong:
         toadox = read_int(self.tientrinh, diachicosothongtinnhanvat)
         toadoy = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
 
-        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
+        if diachicosothongtinnhanvat == self.get_diachicosothongtinnhanvat1() and self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
             deltax = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18) - toadox
             if deltax != 0:
-                toadox += (deltax / abs(deltax))
+                toadox += int(deltax / abs(deltax))
             deltay = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C) - toadoy
             if deltay != 0:
-                toadoy += (deltay / abs(deltay))
+                toadoy += int(deltay / abs(deltay))
 
         return toadox, toadoy
 
@@ -1986,6 +2004,10 @@ class MoiTruong:
         diachi = self.get_diachicosobaothugiangho()
         return read_int(self.tientrinh, diachi + 0x47C) if diachi else False
 
+    def get_tendoituongbaothugiangho(self):
+        diachi = self.get_diachicosobaothugiangho()
+        return read_string(self.tientrinh, diachi + 0x4F5) if diachi else False
+
     def get_dotrungthanhbaothugiangho(self):
         diachi = self.get_diachicosobaothugiangho()
         return read_int(self.tientrinh, diachi + 0x4DC) if diachi else False
@@ -2000,7 +2022,8 @@ class MoiTruong:
 
     def get_phantramsinhlucconlaibaothugiangho(self):
         diachi = self.get_diachicosobaothugiangho()
-        if not diachi: return 100
+        if not diachi:
+            return 100
         return self.get_sinhlucconlaibaothugiangho() * 100 / max(1, self.get_sinhluctoidabaothugiangho())
 
     def get_noilucconlaibaothugiangho(self):
@@ -2013,7 +2036,8 @@ class MoiTruong:
 
     def get_phantramnoilucconlaibaothugiangho(self):
         diachi = self.get_diachicosobaothugiangho()
-        if not diachi: return 100
+        if not diachi:
+            return 100
         return self.get_noilucconlaibaothugiangho() * 100 / max(1, self.get_noiluctoidabaothugiangho())
 
     def action_battheosaunhom(self, delay = 1.):

@@ -127,7 +127,6 @@ class LoopChinh:
         self.tactu.action_xulygomquai()
         self.tactu.action_sudungkynang()
         self.tactu.action_tudongsudungkynangbaothu()
-        self.tactu.action_tudongdieukhienbaothukynangtrieuhoi()
 
         # if self.moitruong.get_idnguoichoi() == 60055:
         #     self.moitruong.truyvan_motavatphamhanhtrang(0)
