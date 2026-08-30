@@ -115,7 +115,6 @@ class MoiTruong:
         self._ydichuyengannhat = -1
         self._thoidiemboquadichuyencungtoadogannhat = 0.
         self._thoidiemnhanvatkhongsansanggannhat = 0.
-        self._diachicosonhanvatbaothugiangho = False
 
         self._thoidiemsudungkynangmuctieugannhat = 0.
         self._thoidiemthietlapchedobaothugannhat = 0.
@@ -280,19 +279,19 @@ class MoiTruong:
         self.tientrinh.start_thread(self.diachihamthucthicaulenh2)
         return True
 
-    def action_ralenhbaothutancong(self, iddoituongbaothu, iddoituongnhanvatmuctieudangchon, delay = 0.4):
+    def action_ralenhbaothutancong(self, iddoituongbaothu, iddoituongnhanvatmuctieudangchon, delay = 0.25):
         if time.time() - self._thoidiemralenhbaothutancong < delay:
             return False
         self._thoidiemralenhbaothutancong = time.time()
         caulenh = f"pet {hex(iddoituongbaothu)}# 1 {hex(iddoituongnhanvatmuctieudangchon)}#".replace("0x", "")
-        return self.action_thucthicaulenh(caulenh)
+        return self.action_thucthicaulenh2(caulenh)
 
-    def action_ralenhbaothutheosau(self, iddoituongbaothu, delay = 0.4):
+    def action_ralenhbaothutheosau(self, iddoituongbaothu, delay = 0.25):
         if time.time() - self._thoidiemralenhbaothutheosau < delay:
             return False
         self._thoidiemralenhbaothutheosau = time.time()
         caulenh = f"pet {hex(iddoituongbaothu)}# 2".replace("0x", "")
-        return self.action_thucthicaulenh(caulenh)
+        return self.action_thucthicaulenh2(caulenh)
 
     def action_batchucnangmorong(self, delay = 5.):
         if self.get_is_dangbatchucnangmorong():
@@ -501,29 +500,6 @@ class MoiTruong:
 
         return self.action_thucthicaulenh2(caulenh, delay = 0.)
 
-    def action_ralenhbaothukynangtrieuhoitancong(self, iddoituongbaothukynangtrieuhoi, iddoituongnhanvatmuctieudangchon, delay = 0.5):
-        if time.time() - self._thoidiemralenhbaothukynangtrieuhoitancong < delay:
-            return False
-
-        self._thoidiemralenhbaothukynangtrieuhoitancong = time.time()
-
-        caulenh = f"pet {hex(iddoituongbaothukynangtrieuhoi)}# 1 {hex(iddoituongnhanvatmuctieudangchon)}#".replace("0x", "")
-
-        self.action_thucthicaulenh2(caulenh, delay = 0.)
-
-        return True
-
-    def action_ralenhbaothukynangtrieuhoitheosau(self, iddoituongbaothukynangtrieuhoi, delay = 0.5):
-        if time.time() - self._thoidiemralenhbaothukynangtrieuhoitheosau < delay:
-            return False
-
-        self._thoidiemralenhbaothukynangtrieuhoitheosau = time.time()
-
-        caulenh = f"pet {hex(iddoituongbaothukynangtrieuhoi)}# 2".replace("0x", "")
-        self.action_thucthicaulenh2(caulenh, delay = 0.)
-
-        return True
-
     def auto_assemble_nhatvatpham(self):
         if not self._is_dasetupautoassemblenhatvatpham:
             self._diachiautoassemblenhatvatpham = self.tientrinh.allocate(64)
@@ -662,6 +638,18 @@ class MoiTruong:
         if not x:
             return False
         return read_int(self.tientrinh, x + 0x1E0 + 0x6C * (sothutu - 1))
+
+    def get_toadodoituongbaothu(self, sothutu = 1):
+        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0x1B4 + 0x6C * (sothutu - 1)), read_int(self.tientrinh, x + 0x1B8 + 0x6C * (sothutu - 1))
+
+    def get_idbandohientaidoituongbaothu(self, sothutu = 1):
+        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        if not x:
+            return False
+        return read_int(self.tientrinh, x + 0x1E4 + 0x6C * (sothutu - 1))
 
     def get_phantramsinhlucconlaidoituongbaothukynangtrieuhoi(self, sothutu = 1):
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
@@ -863,7 +851,6 @@ class MoiTruong:
         if self.get_is_nhanvatchuasansang(self.get_diachicosothongtinnhanvat1()):
             self._thoidiemnhanvatkhongsansanggannhat = time.time()
 
-        self._diachicosonhanvatbaothugiangho = self.action_timkiemnhanvat(tenchunhan = self.get_tendoituong()) if self.get_is_datrieuhoibaothugiangho() else False
         self._is_nhanvatbichoang = self.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), macdinh = False, is_hieuungcoloi = 0)
 
         if not self.get_is_dangbatchucnangmorong():
@@ -1976,9 +1963,6 @@ class MoiTruong:
 
     def get_tenmonphai(self):
         return MONPHAI_MAP.get(self.get_idkynang(0, 0))
-
-    def get_diachicosonhanvatbaothugiangho(self):
-        return self._diachicosonhanvatbaothugiangho
 
     def get_diachicosobaothugiangho(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
