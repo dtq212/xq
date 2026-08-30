@@ -134,14 +134,14 @@ class LoopChinh:
         #     motavatpham = self.moitruong.get_motavatphamhanhtrang(0)
         #     print("Mô tả vật phẩm: {}".format(motavatpham))
         #
-        #     match = re.search(r"Ngoại Kháng:\s*\+(\d+)", motavatpham)
+        #     match = re.search(r"Nội Công:\s*\+(\d+)", motavatpham)
         #
         #     if match:
         #         chisohientai = int(match.group(1))
-        #         print(f"Đã tìm thấy Ngoại Kháng: {chisohientai}")
+        #         print(f"Đã tìm thấy Nội Công: {chisohientai}")
         #
-        #         if chisohientai > 125:
-        #             print("Ngoại Kháng > 125. Dừng tiến trình!")
+        #         if chisohientai > 60:
+        #             print("Nội Công > 60. Dừng tiến trình!")
         #             self.stop.set()
         #             return
         #         else:
@@ -151,11 +151,11 @@ class LoopChinh:
         #             # else:
         #             #     self.moitruong.action_thucthicaulenh("buyitem ! 5 3 1")
         #             #     time.sleep(0.05)
-        #             self.moitruong.action_thucthicaulenh2("talk 15d1# accept.77409# 0")
+        #             self.moitruong.action_thucthicaulenh2("talk 15d1# accept.4e6979# 0")
         #             time.sleep(0.05)
         #     else:
-        #         print("Không tìm thấy dòng Ngoại Kháng trong mô tả vật phẩm này.")
-        #         self.moitruong.action_thucthicaulenh2("talk 15d1# accept.77409# 0")
+        #         print("Không tìm thấy dòng Nội Công trong mô tả vật phẩm này.")
+        #         self.moitruong.action_thucthicaulenh2("talk 15d1# accept.4e6979# 0")
         #         time.sleep(0.05)
 
         if 0 and self.moitruong.get_idnguoichoi() == 60055:
@@ -183,6 +183,12 @@ class LoopChinh:
         #         if iddoituongvatphamvutdi:
         #             self.moitruong.action_thucthicaulenh("drop ! {}#1".format(hex(iddoituongvatphamvutdi)).replace("0x", ""))
         #             time.sleep(0.25)
+
+        # if self.moitruong.get_idnguoichoi() == 60055:
+        #     if not self.moitruong.action_timkiemvatphamhanhtrang("Túi Pháp Bảo"):
+        #         self.moitruong.action_thucthicaulenh("buyitem ! 5 4 1")
+        #         time.sleep(0.25)
+
         # if self.moitruong.get_idnguoichoi() in (59844, 59845):
         #     diachithiensutraodoi = self.moitruong.action_timkiemnhanvat("Thiên Sứ Trao Đổi")
         #     if not diachithiensutraodoi:
