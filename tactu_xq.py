@@ -2985,9 +2985,6 @@ class TacTu:
 
                                     if self.moitruong.get_sinhluctoidabaothugiangho() - self.moitruong.get_sinhlucconlaibaothugiangho() >= 1200:
                                         iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang("Trái Đào")
-                                        if not iddoituongvatpham:
-                                            iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang("Chuối")
-
                                         if iddoituongvatpham:
                                             if self.moitruong.action_sudungvatphambaothu(iddoituongvatpham, iddoituongbaothu):
                                                 self._thoidiemhoiphucbaothugannhat = time.time()
