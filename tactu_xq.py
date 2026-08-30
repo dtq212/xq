@@ -1273,19 +1273,30 @@ class TacTu:
             if self.moitruong.get_is_nhanvatdachet():
                 return
 
-            noidungtrochuyen = self.moitruong.get_noidungtrochuyenmoinhat()
-            if noidungtrochuyen and ("Hành động" in noidungtrochuyen or "Đợi lệnh" in noidungtrochuyen):
-                self._is_dasudungbaothuvatpham = True
+            lichsutrochuyen5s = self.moitruong.get_lichsutrochuyen5s()
 
-            if not self._is_dasudungbaothuvatpham and time.time() - self._thoidiemsudungbaothuvatphamgannhat > 6.:
-                for baothuvatpham in BAOTHUVATPHAMs:
-                    if self.action_sudungvatphamhanhtrang(baothuvatpham, delay = 0.):
-                        self._thoidiemtamngungsudungkynang = max(self._thoidiemtamngungsudungkynang, time.time() + 1.5)
-                        self._thoidiemsudungbaothuvatphamgannhat = time.time()
+            if not self._is_dasudungbaothuvatpham:
+                for _, noidungtrochuyen in lichsutrochuyen5s:
+                    if "Đợi lệnh" in noidungtrochuyen:
+                        self._is_dasudungbaothuvatpham = True
                         break
-                self.moitruong.action_thucthicaulenh("title show {}".format(DANHHIEU_MAP[self.moitruong.get_idnguoichoi()]), douutien = DOUUTIEN_KHANCAP)
 
-            if not self._is_dasudungbaothuvatpham and time.time() - self._thoidiemyeucaubaothuvatphamdoilenhgannhat > 0.5 and time.time() - self._thoidiemsudungbaothuvatphamgannhat > 1.5:
+            if not self._is_dasudungbaothuvatpham:
+                thoigiantulangoicu = time.time() - self._thoidiemsudungbaothuvatphamgannhat
+                if thoigiantulangoicu > 0.5 and time.time() - self._thoidiemyeucaubaothuvatphamdoilenhgannhat > 0.5:
+                    self._thoidiemyeucaubaothuvatphamdoilenhgannhat = time.time()
+                    self.moitruong.action_thucthicaulenh("pf 4131.@", douutien = DOUUTIEN_KHANCAP)
+                if thoigiantulangoicu > 1.5:
+                    for baothuvatpham in BAOTHUVATPHAMs:
+                        if self.action_sudungvatphamhanhtrang(baothuvatpham, delay = 0.):
+                            self._thoidiemtamngungsudungkynang = max(self._thoidiemtamngungsudungkynang, time.time() + 0.5)
+                            self._thoidiemsudungbaothuvatphamgannhat = time.time()
+                            self.moitruong.xoalichsutrochuyen()
+                            break
+                    if self.moitruong.get_idnguoichoi() in DANHHIEU_MAP:
+                        self.moitruong.action_thucthicaulenh("title show {}".format(DANHHIEU_MAP[self.moitruong.get_idnguoichoi()]), douutien = DOUUTIEN_KHANCAP)
+
+            if not self._is_dasudungbaothuvatpham and time.time() - self._thoidiemyeucaubaothuvatphamdoilenhgannhat > 1.0 and time.time() - self._thoidiemsudungbaothuvatphamgannhat > 1.5:
                 self._thoidiemyeucaubaothuvatphamdoilenhgannhat = time.time()
                 self._thoidiemtamngungsudungkynang = max(self._thoidiemtamngungsudungkynang, time.time() + 1.5)
                 self.moitruong.action_thucthicaulenh("pf 4131.@", douutien = DOUUTIEN_KHANCAP)

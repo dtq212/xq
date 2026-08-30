@@ -141,6 +141,9 @@ class MoiTruong:
         self._thoidiemmuctieuanthangannhat_map = {}
         self._thoidiemmuctieuxuathiengannhat_map = {}
 
+        self._lichsutrochuyen5s = []
+        self._noidungtrochuyencu = ""
+
     def __del__(self):
         def safe_free_old(flag_name, addr_name):
             try:
@@ -848,6 +851,20 @@ class MoiTruong:
         if not self.get_is_dangbatchucnangmorong():
             self._thoidiemcochucnangmoronggannhat = time.time()
 
+        noidungtrochuyen = self.get_noidungtrochuyenmoinhat()
+
+        if noidungtrochuyen and noidungtrochuyen != self._noidungtrochuyencu:
+            self._lichsutrochuyen5s.append((now, noidungtrochuyen))
+            self._noidungtrochuyencu = noidungtrochuyen
+
+        self._lichsutrochuyen5s = [msg for msg in self._lichsutrochuyen5s if now - msg[0] <= 5.0]
+
+    def get_lichsutrochuyen5s(self):
+        return self._lichsutrochuyen5s
+
+    def xoalichsutrochuyen(self):
+        self._lichsutrochuyen5s.clear()
+
     def get_is_nhanvatbichoang(self):
         return self._is_nhanvatbichoang
 
@@ -937,6 +954,14 @@ class MoiTruong:
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
         toadox = read_int(self.tientrinh, diachicosothongtinnhanvat)
         toadoy = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
+
+        if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
+            deltax = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18) - toadox
+            if deltax != 0:
+                toadox += (deltax / abs(deltax))
+            deltay = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C) - toadoy
+            if deltay != 0:
+                toadoy += (deltay / abs(deltay))
 
         return toadox, toadoy
 
