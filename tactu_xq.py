@@ -710,7 +710,6 @@ class TacTu:
             self.moitruong._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
             self._is_battudongtancongvatly = False
 
-        idbandohientai = idbandohientai
         if idbandohientai != self._idbandomuctieudangchon:
             self._idbandomuctieudangchon = idbandohientai
             self._diachicosomuctieuduphong = 0
@@ -725,6 +724,12 @@ class TacTu:
         is_bandokhongpk = idbandohientai in BANDOKHONGPKs
 
         diachinhanvatmuctieudemquaixungquanh = diachicosothongtinnhanvatmuctieudangchon
+
+        diachicosothongtinnhanvattruongnhom = self.moitruong.get_diachicosothongtinnhanvattruongnhom()
+        is_anhhuongboitruongnhom = self._is_tudongtheosautruongnhom and self.moitruong.get_is_dangnamtrongnhom() and not self.moitruong.get_is_truongnhom() and diachicosothongtinnhanvattruongnhom
+        khoangcachtoidatruongnhom = self._tinhtoankhoangcachtoidatruongnhomphuhop()
+
+        khoangcachchophepmuctieutruongnhom = KHOANGCACHSUDUNGKYNANGTAMXA + khoangcachtoidatruongnhom
 
         thongtinmuctieuhientai = {
             "diachi": diachicosothongtinnhanvatmuctieudangchon,
@@ -750,9 +755,6 @@ class TacTu:
             thongtinmuctieuhientai["is_cuongthi"] = is_muctieudangchonlacuongthi
             thongtinmuctieuhientai["is_baothugiangho"] = is_muctieudangchonlabaothugiangho
 
-            diachicosothongtinnhanvattruongnhom = self.moitruong.get_diachicosothongtinnhanvattruongnhom()
-            is_anhhuongboitruongnhom = self._is_tudongtheosautruongnhom and self.moitruong.get_is_dangnamtrongnhom() and not self.moitruong.get_is_truongnhom() and diachicosothongtinnhanvattruongnhom
-
             is_boquamuctieuhientai = False
 
             if self.moitruong.get_is_nhanvatdachet(diachicosothongtinnhanvatmuctieudangchon):
@@ -762,7 +764,7 @@ class TacTu:
                 is_boquamuctieuhientai = True
             elif not self.moitruong.get_is_cothetancong(diachicosothongtinnhanvatmuctieudangchon):
                 is_boquamuctieuhientai = True
-            elif is_anhhuongboitruongnhom and self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon, diachicosothongtinnhanvattruongnhom) >= self._khoangcachtimkiemmuctieu:
+            elif is_anhhuongboitruongnhom and self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon, diachicosothongtinnhanvattruongnhom) > khoangcachchophepmuctieutruongnhom:
                 is_boquamuctieuhientai = True
             elif tendoituongmuctieudangchon in TENMUCTIEUKHONGTANCONGs:
                 is_boquamuctieuhientai = True
@@ -797,17 +799,27 @@ class TacTu:
                 diachicosothongtinnhanvatmuctieudangchon = 0
                 diachinhanvatmuctieudemquaixungquanh = 0
                 thongtinmuctieuhientai["diachi"] = 0
+                self._diachicosomuctieuduphong = 0
             else:
                 thongtinmuctieuhientai["is_hople"] = True
 
         if not diachicosothongtinnhanvatmuctieudangchon and self._diachicosomuctieuduphong:
-            if self.moitruong.get_is_nhanvattontai(self._diachicosomuctieuduphong) and self.moitruong.get_is_cothetancong(self._diachicosomuctieuduphong) and self.moitruong.get_khoangcach(self._diachicosomuctieuduphong) < KHOANGCACHTOANMANHINH:
+            is_duphonghople = True
+            if is_anhhuongboitruongnhom and self.moitruong.get_khoangcach(self._diachicosomuctieuduphong, diachicosothongtinnhanvattruongnhom) > khoangcachchophepmuctieutruongnhom:
+                is_duphonghople = False
+
+            if is_duphonghople and self.moitruong.get_is_nhanvattontai(self._diachicosomuctieuduphong) and self.moitruong.get_is_cothetancong(self._diachicosomuctieuduphong) and self.moitruong.get_khoangcach(self._diachicosomuctieuduphong) < KHOANGCACHTOANMANHINH:
                 _thaydoimuctieu(self._diachicosomuctieuduphong)
                 diachicosothongtinnhanvatmuctieudangchon = self._diachicosomuctieuduphong
                 diachinhanvatmuctieudemquaixungquanh = self._diachicosomuctieuduphong
                 self._diachicosomuctieuduphong = 0
             else:
                 self._diachicosomuctieuduphong = 0
+
+        if is_anhhuongboitruongnhom:
+            khoangcachtoibanthanvatruongnhom = self.moitruong.get_khoangcach(diachicosothongtinnhanvattruongnhom)
+            if khoangcachtoibanthanvatruongnhom > khoangcachtoidatruongnhom:
+                return
 
         iii = 0
         demmuctieugan3 = 0
@@ -820,9 +832,6 @@ class TacTu:
         demmuctieuganbanthan7 = 0
         demmuctieuganbanthan9 = 0
 
-        diachicosothongtinnhanvattruongnhom = self.moitruong.get_diachicosothongtinnhanvattruongnhom()
-        is_anhhuongboitruongnhom = self._is_tudongtheosautruongnhom and self.moitruong.get_is_dangnamtrongnhom() and not self.moitruong.get_is_truongnhom() and diachicosothongtinnhanvattruongnhom
-
         khoangcachtimkiem = self._khoangcachtimkiemmuctieu
 
         while True:
@@ -830,8 +839,6 @@ class TacTu:
             if not diachicosothongtinnhanvatmuctieuxemxet:
                 break
             iii += 1
-
-            khoangcachmuctieuxemxettoitruongnhom = 0
 
             khoangcachmuctieuxemxettoibanthan = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieuxemxet)
             if khoangcachmuctieuxemxettoibanthan > khoangcachtimkiem:
@@ -867,9 +874,10 @@ class TacTu:
                 danhsachbandohople = [diem[2] for diem in self._diemdanhxungquanhs if len(diem) >= 3]
                 if danhsachbandohople and idbandohientai not in danhsachbandohople:
                     continue
+
             if is_anhhuongboitruongnhom:
                 khoangcachmuctieuxemxettoitruongnhom = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieuxemxet, diachicosothongtinnhanvattruongnhom)
-                if khoangcachmuctieuxemxettoitruongnhom >= khoangcachtimkiem:
+                if khoangcachmuctieuxemxettoitruongnhom > khoangcachchophepmuctieutruongnhom:
                     continue
             else:
                 if khoangcachmuctieuxemxettoibanthan >= khoangcachtimkiem:
@@ -951,7 +959,7 @@ class TacTu:
                 if (is_muctieuxemxetlanguoichoi or is_muctieuxemxetlacuongthi) and is_muctieuhientailabaothugiangho:
                     _thaydoimuctieutrongvonglap()
                     continue
-                elif (is_muctieuhientailanguoichoi or is_muctieuhientailacuongthi) and is_muctieuxemxetlabaothugiangho:
+                elif (is_muctieuhientailanguoichoi or is_muctieuxemxetlacuongthi) and is_muctieuxemxetlabaothugiangho:
                     continue
 
             if self._is_uutienmuctieupk:
