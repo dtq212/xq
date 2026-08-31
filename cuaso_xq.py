@@ -168,6 +168,8 @@ class CuaSo:
                     "_diemdanhxungquanhs": self.tactu._diemdanhxungquanhs,
                     "_is_tudongtrieuhoibaothugiangho": self.tactu._is_tudongtrieuhoibaothugiangho,
                     "_is_tudongbattatchucnangmorong": self.tactu._is_tudongbattatchucnangmorong,
+
+                    "_is_tudongsudungkynangbaothu": self.tactu._is_tudongsudungkynangbaothu,
                 }
                 self.shared_data[self.idcuaso] = info
 
@@ -270,6 +272,8 @@ class CuaSo:
                     self.tactu.battat_tudongdaotangbaodo()
                 elif cmd == "action_muaauto":
                     self.tactu.action_muaauto()
+                elif cmd == "battat_tudongsudungkynangbaothu":
+                    self.tactu.battat_tudongsudungkynangbaothu()
                 self.command_dict[self.idcuaso] = None
 
             time.sleep(0.15)

@@ -33,8 +33,6 @@ class LenhThucThi:
 
 class MoiTruong:
     def __init__(self, idcuaso):
-        self._thoidiemralenhbaothukynangtrieuhoitheosau = 0.
-        self._thoidiemralenhbaothukynangtrieuhoitancong = 0.
         self._is_dasetupautoassemblethucthicaulenh2 = False
         self._thoidiemthucthicaulenh2gannhat = 0.
         self.diachihamthucthicaulenh2 = 0
@@ -90,6 +88,7 @@ class MoiTruong:
         self._thoidiemngungdichuyengannhat = 0.
         self._thoidiemralenhbaothutancong = 0.
         self._thoidiemralenhbaothutheosau = 0.
+        self._thoidiemralenhbaothudungim = 0.
 
         self._idthucuoi = False
         self._thoidiemkhongcuoithugannhat = 0.
@@ -291,6 +290,13 @@ class MoiTruong:
             return False
         self._thoidiemralenhbaothutheosau = time.time()
         caulenh = f"pet {hex(iddoituongbaothu)}# 2".replace("0x", "")
+        return self.action_thucthicaulenh2(caulenh)
+
+    def action_ralenhbaothudungim(self, iddoituongbaothu, delay = 0.25):
+        if time.time() - self._thoidiemralenhbaothudungim < delay:
+            return False
+        self._thoidiemralenhbaothudungim = time.time()
+        caulenh = f"pet {hex(iddoituongbaothu)}# 3".replace("0x", "")
         return self.action_thucthicaulenh2(caulenh)
 
     def action_batchucnangmorong(self, delay = 5.):
@@ -1171,9 +1177,6 @@ class MoiTruong:
                 return True
             soluonghieuungdemduoc += 1
         return macdinh
-
-    def get_is_dangtheosaunhom(self):
-        return self.get_is_cohieuungs(HIEUUNGKYNANG_THEOSAUNHOM, False)
 
     def get_diachicosoidthanhviennhom(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
