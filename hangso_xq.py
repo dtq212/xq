@@ -6,6 +6,7 @@ STRING_ENCODING = "mbcs"
 
 CHUTIEMSUACHUA = "Chủ Tiệm Sửa Chữa"
 CHUTIEMTAPHOA = "Chủ Tiệm Tạp Hóa"
+CHUTUULAU = "Chủ Tửu Lâu"
 TANTHUTIENCO = "Tân Thủ Tiên Cô"
 SUGIAMONPHAI = "Sứ Giả Môn Phái"
 XAPHU = "Xa Phu"
