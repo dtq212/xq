@@ -131,6 +131,8 @@ class MoiTruong:
         self.thoidiemmuctieuanthangannhat_map = {}
         self.thoidiemmuctieuxuathiengannhat_map = {}
 
+        self.thoidiembaothuxuathiengannhat_map = {}
+
         self._lichsutrochuyen5s = []
         self._noidungtrochuyencu = ""
 
@@ -784,6 +786,35 @@ class MoiTruong:
             idnguoichoixungquanh_map[diachicosothongtinnhanvatxemxet] = self.get_idnguoichoi(diachicosothongtinnhanvatxemxet)
         return idnguoichoixungquanh_map
 
+    def get_tenchunhanbaothuxungquanh_map(self):
+        i = -1
+        tenchunhanbaothu_map = {}
+        while i < 512:
+            i += 1
+            diachicosothongtinnhanvatxemxet = self.get_diachicosothongtindoituongx(i)
+            if not diachicosothongtinnhanvatxemxet: break
+            if not self.get_is_nhanvattontai(diachicosothongtinnhanvatxemxet): continue
+            if not self.get_is_baothukynangtrieuhoi(diachicosothongtinnhanvatxemxet): continue
+            if self.get_khoangcach(diachicosothongtinnhanvatxemxet) > KHOANGCACHTOANMANHINH: continue
+
+            tenchunhan = self.get_tenchunhan(diachicosothongtinnhanvatxemxet)
+            if tenchunhan:
+                tenchunhanbaothu_map[diachicosothongtinnhanvatxemxet] = tenchunhan
+        return tenchunhanbaothu_map
+
+    def get_idbaothuxungquanh_map(self):
+        i = -1
+        idbaothuxungquanh_map = {}
+        while i < 512:
+            i += 1
+            diachicosothongtinnhanvatxemxet = self.get_diachicosothongtindoituongx(i)
+            if not diachicosothongtinnhanvatxemxet: break
+            if not self.get_is_nhanvattontai(diachicosothongtinnhanvatxemxet): continue
+            if not self.get_is_baothukynangtrieuhoi(diachicosothongtinnhanvatxemxet): continue
+            if self.get_khoangcach(diachicosothongtinnhanvatxemxet) > KHOANGCACHTOANMANHINH: continue
+            idbaothuxungquanh_map[diachicosothongtinnhanvatxemxet] = self.get_iddoituong(diachicosothongtinnhanvatxemxet)
+        return idbaothuxungquanh_map
+
     def get_thoidiemtuthenhanvatdungimgannhat(self):
         return self._thoidiemtuthenhanvatdungimgannhat
 
@@ -802,7 +833,7 @@ class MoiTruong:
         now = time.time()
 
         idnguoichoixungquanh_map = self.get_idnguoichoixungquanh_map()
-        id_xungquanh_list = list(idnguoichoixungquanh_map.values())
+        idnguoichoixungquanh_list = list(idnguoichoixungquanh_map.values())
         for diachinguoichoixungquanh, idnguoichoi in idnguoichoixungquanh_map.items():
             if self.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), macdinh = False, diachicosothongtinnhanvat = diachinguoichoixungquanh, is_hieuungcoloi = 0):
                 self._thoidiemmuctieubichoanggannhat_map[idnguoichoi] = now
@@ -814,8 +845,17 @@ class MoiTruong:
         if len(self._thoidiemmuctieubichoanggannhat_map) > 128:
             self._thoidiemmuctieubichoanggannhat_map = {uid: ts for uid, ts in self._thoidiemmuctieubichoanggannhat_map.items() if now - ts < 15}
 
-        self.thoidiemmuctieuxuathiengannhat_map = {uid: ts for uid, ts in self.thoidiemmuctieuxuathiengannhat_map.items() if uid in id_xungquanh_list}
-        self.thoidiemmuctieuanthangannhat_map = {uid: ts for uid, ts in self.thoidiemmuctieuanthangannhat_map.items() if uid in id_xungquanh_list}
+        self.thoidiemmuctieuxuathiengannhat_map = {uid: ts for uid, ts in self.thoidiemmuctieuxuathiengannhat_map.items() if uid in idnguoichoixungquanh_list}
+        self.thoidiemmuctieuanthangannhat_map = {uid: ts for uid, ts in self.thoidiemmuctieuanthangannhat_map.items() if uid in idnguoichoixungquanh_list}
+
+        tenchunhanbaothuxungquanh_map = self.get_tenchunhanbaothuxungquanh_map()
+        tenchunhanbaothuxungquanh_list = list(tenchunhanbaothuxungquanh_map.values())
+
+        for diachibaothuxungquanh, tenchunhan in tenchunhanbaothuxungquanh_map.items():
+            if tenchunhan not in self.thoidiembaothuxuathiengannhat_map:
+                self.thoidiembaothuxuathiengannhat_map[tenchunhan] = now
+
+        self.thoidiembaothuxuathiengannhat_map = {name: ts for name, ts in self.thoidiembaothuxuathiengannhat_map.items() if name in tenchunhanbaothuxungquanh_list}
 
         idbandohientai = self._get_idbandohientai()
         if idbandohientai != self._idbandohientai:
@@ -846,10 +886,6 @@ class MoiTruong:
 
         if self.get_tenmonphai() == "duongmon" and not self.get_is_cohieuungs((HIEUUNGKYNANG_LACTUYETVONGAN,), macdinh = True, is_hieuungcoloi = 1):
             self._thoidiemcohieuunglactuyetvongan = time.time()
-
-        idnguoichoitruongnhom = self.get_idnguoichoitruongnhom()
-        if idnguoichoitruongnhom and not self.get_diachicosothongtinnhanvattruongnhom():
-            self._diachicosothongtinnhanvattruongnhom = self.action_timkiemnhanvat(idnguoichoi = idnguoichoitruongnhom)
 
         if self.get_is_nhanvatchuasansang(self.get_diachicosothongtinnhanvat1()):
             self._thoidiemnhanvatkhongsansanggannhat = time.time()
@@ -1188,13 +1224,6 @@ class MoiTruong:
     def get_idnguoichoitruongnhom(self):
         diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
         return read_int(self.tientrinh, diachicosothanhviennhom) if diachicosothanhviennhom else False
-
-    def get_diachicosothongtinnhanvattruongnhom(self):
-        idnguoichoitruongnhom = self.get_idnguoichoitruongnhom()
-        if not idnguoichoitruongnhom: return False
-        if not self._diachicosothongtinnhanvattruongnhom or not self.get_is_nhanvattontai(self._diachicosothongtinnhanvattruongnhom) or self.get_idnguoichoi(self._diachicosothongtinnhanvattruongnhom) != idnguoichoitruongnhom:
-            return False
-        return self._diachicosothongtinnhanvattruongnhom
 
     def get_is_truongnhom(self):
         return self.get_idnguoichoi(self.get_diachicosothongtinnhanvat1()) == self.get_idnguoichoitruongnhom()
