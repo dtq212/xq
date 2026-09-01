@@ -123,9 +123,9 @@ class LoopChinh:
         if not self.moitruong.get_is_nhanvattontai() or self.moitruong.get_is_dangmatketnoi():
             return
 
-        self.tactu.action_theonhom()
-        self.tactu.action_xulygomquai()
-        self.tactu.action_sudungkynang()
+        self.tactu.action_tudongtheosautruongnhom()
+        self.tactu.action_tudongxulygomquai()
+        self.tactu.action_tudongsudungkynang()
         self.tactu.action_tudongdieukhienbaothu()
 
         # if self.moitruong.get_idnguoichoi() == 60055:
@@ -275,14 +275,14 @@ class LoopPhu:
         self.tactu.action_tudongmuavatpham()
         self.tactu.action_tudongsuavatpham()
 
-        self.tactu.action_xulyvebanrac()
+        self.tactu.action_tudongxulyvebanrac()
         self.tactu.action_tudongkhaikhoang()
         self.tactu.action_tudongdaotangbaodo()
 
         self.tactu.action_tudongtrieuhoibaothugiangho()
 
         self.tactu.action_tudongdichientruong()
-        self.tactu.action_dichuyentudo()
+        self.tactu.action_tudongdichuyentudo()
         self.tactu.action_tudongnhatvatpham()
         self.tactu.action_tudongvutvatpham()
 
@@ -297,16 +297,7 @@ class LoopPhu:
         self.tactu.action_tudongbatautoingame()
 
         self.moitruong.action_vohieuhoahookchienquoc2()
-        self.tactu.action_muaauto()
-
-        if 0 and self.moitruong.get_idnguoichoi() in [59503, 59996] and self.moitruong.get_idbandohientai() in [BANDO_YENTRUONGTHANH1, BANDO_YENTRUONGTHANH2, BANDO_YENTRUONGTHANH3] and self.tactu._is_tudongvebanrac:
-            for i in range(6, self.moitruong.get_soluongvatphamhanhtrangtoida()):
-                tenvatphamhanhtrang = self.moitruong.get_tenvatphamhanhtrang(i)
-                if tenvatphamhanhtrang and tenvatphamhanhtrang not in VATPHAMKHONGBANs or tenvatphamhanhtrang in ("Phá Cựu Giáp",):
-                    motavatpham = self.moitruong.get_motavatphamhanhtrang(i)
-                    if "Phong Ấn" not in motavatpham:
-                        self.moitruong.action_thucthicaulenh2("drop ! {}#30".format(hex(self.moitruong.get_iddoituongvatphamhanhtrang(i))).replace("0x", ""))
-                        break
+        self.tactu.action_tudongmuaauto()
 
         if self.moitruong.get_idnguoichoi() in (59996, ) and self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
             diachi = self.moitruong.action_timkiemnhanvat("Thiên Sứ Trao Đổi")

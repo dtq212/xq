@@ -271,7 +271,7 @@ class CuaSo:
                 elif cmd == "battat_tudongdaotangbaodo":
                     self.tactu.battat_tudongdaotangbaodo()
                 elif cmd == "action_muaauto":
-                    self.tactu.action_muaauto()
+                    self.tactu.action_tudongmuaauto()
                 elif cmd == "battat_tudongsudungkynangbaothu":
                     self.tactu.battat_tudongsudungkynangbaothu()
                 self.command_dict[self.idcuaso] = None
