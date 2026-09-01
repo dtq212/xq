@@ -360,9 +360,10 @@ class TacTu:
         self._kiemtrathuchienvohieuhoadichuyen()
 
         is_log = False
-        if time.time() - self._thoidiemlogdebug > 2.0:
-            is_log = True
-            self._thoidiemlogdebug = time.time()
+
+        # if time.time() - self._thoidiemlogdebug > 2.0:
+        #     is_log = True
+        #     self._thoidiemlogdebug = time.time()
 
         if self.moitruong.get_is_nhanvatdachet():
             if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Nhân vật đang CHẾT")
