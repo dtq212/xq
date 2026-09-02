@@ -1558,12 +1558,10 @@ class TacTu:
                 khoangcachthucteyeucau = khoangcachyeucau
                 if thoigiandungim > 0.5 or (idtuthenhanvat == TUTHENHANVAT_DICHUYEN and self._is_dangchaybukhoangcach):
                     thoigianbu = max(thoigiandungim, 0.5)
-
                     if khoangcachyeucau >= KHOANGCACHSUDUNGKYNANGTAMXA:
                         khoangcachthucteyeucau = khoangcachthucteyeucau - 1.5 - thoigianbu
-
-                    if khoangcachyeucau >= KHOANGCACHSUDUNGKYNANGCANCHIEN:
-                        khoangcachthucteyeucau = max(0, khoangcachthucteyeucau - thoigianbu)
+                    elif khoangcachyeucau >= KHOANGCACHSUDUNGKYNANGCANCHIEN:
+                        khoangcachthucteyeucau = max(0, khoangcachthucteyeucau - 0.5 - thoigianbu)
 
                 if khoangcach > khoangcachthucteyeucau:
                     self._is_dangchaybukhoangcach = True
