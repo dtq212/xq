@@ -605,6 +605,10 @@ class MoiTruong:
         x = read_int(self.tientrinh, self.diachixq + 0x372864)
         return read_int(self.tientrinh, x + 0x1538) if x else False
 
+    def get_thelucconlai(self):
+        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        return read_int(self.tientrinh, x + 0x15A8) if x else False
+
     def get_phantramnoilucconlai(self):
         noiluctoida = self.get_noiluctoida()
         return (self.get_noilucconlai() * 100. / noiluctoida) if noiluctoida else 0
@@ -999,13 +1003,13 @@ class MoiTruong:
         toadox = read_int(self.tientrinh, diachicosothongtinnhanvat)
         toadoy = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
 
-        # if is_toadosaptoi and self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
-        #     deltax = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18) - toadox
-        #     if deltax != 0:
-        #         toadox += int(deltax / abs(deltax))
-        #     deltay = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C) - toadoy
-        #     if deltay != 0:
-        #         toadoy += int(deltay / abs(deltay))
+        if is_toadosaptoi and self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
+            deltax = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18) - toadox
+            if deltax != 0:
+                toadox += int(deltax / abs(deltax))
+            deltay = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C) - toadoy
+            if deltay != 0:
+                toadoy += int(deltay / abs(deltay))
 
         return toadox, toadoy
 
@@ -1079,15 +1083,15 @@ class MoiTruong:
                 x = read_int(self.tientrinh, x + 0xADFDA8)
                 if x: write_int(self.tientrinh, x + 0x1A4, idtrangthaichuot)
 
-    def get_khoangcach(self, diachicosothongtinnhanvat2, diachicosothongtinnhanvat1 = False):
+    def get_khoangcach(self, diachicosothongtinnhanvat2, diachicosothongtinnhanvat1 = False, is_toadosaptoi = False):
         diachicosothongtinnhanvat1 = diachicosothongtinnhanvat1 or self.get_diachicosothongtinnhanvat1()
-        x1, y1 = self.get_toado(diachicosothongtinnhanvat1, is_toadosaptoi = True)
-        x2, y2 = self.get_toado(diachicosothongtinnhanvat2, is_toadosaptoi = True)
+        x1, y1 = self.get_toado(diachicosothongtinnhanvat1, is_toadosaptoi = is_toadosaptoi)
+        x2, y2 = self.get_toado(diachicosothongtinnhanvat2, is_toadosaptoi = is_toadosaptoi)
         return math.dist((x1, y1), (x2, y2))
 
-    def get_khoangcachdiem(self, x2, y2, diachicosothongtinnhanvat1 = False):
+    def get_khoangcachdiem(self, x2, y2, diachicosothongtinnhanvat1 = False, is_toadosaptoi = False):
         diachicosothongtinnhanvat1 = diachicosothongtinnhanvat1 or self.get_diachicosothongtinnhanvat1()
-        x1, y1 = self.get_toado(diachicosothongtinnhanvat1, is_toadosaptoi = True)
+        x1, y1 = self.get_toado(diachicosothongtinnhanvat1, is_toadosaptoi = is_toadosaptoi)
         return math.dist((x1, y1), (x2, y2))
 
     def get_idthucuoi(self):
