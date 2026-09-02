@@ -128,8 +128,8 @@ class LoopChinh:
         self.tactu.action_tudongsudungkynang()
         self.tactu.action_tudongdieukhienbaothu()
 
-        # if self.moitruong.get_idnguoichoi() == 59845:
-        #     print("{}".format(self.moitruong.get_tendoituong()))
+        # if self.moitruong.get_idnguoichoi() == 59844:
+        #     print("{}".format(self.moitruong.get_danhsachhieuungnhanvats()))
         # if self.moitruong.get_idnguoichoi() == 60055:
         #     self.moitruong.truyvan_motavatphamhanhtrang(0)
         #     motavatpham = self.moitruong.get_motavatphamhanhtrang(0)
