@@ -1351,6 +1351,7 @@ class TacTu:
 
             phantramsinhlucconlai = self.moitruong.get_phantramsinhlucconlai()
             phantramnoilucconlai = self.moitruong.get_phantramnoilucconlai()
+            noilucmatdi = self.moitruong.get_noiluctoida() - self.moitruong.get_noilucconlai()
             if time.time() - self._thoidiemkiemtrahieuunggannhat > 2.5:
                 self._thoidiemkiemtrahieuunggannhat = time.time()
 
@@ -1428,7 +1429,7 @@ class TacTu:
                         self._thoidiemsudungvatphamhoisinhlucgannhat = time.time()
                         self.action_sudungvatphamhanhtrang(CAPCUUDON, delay = 0.)
 
-                if is_dangbatpk and is_bandopk and self._is_tudongsudungkynang and phantramnoilucconlai <= 75 and time.time() - self._thoidiemsudungvatphamhoinoilucgannhat > 5.:
+                if is_dangbatpk and is_bandopk and self._is_tudongsudungkynang and noilucmatdi > 2000 and time.time() - self._thoidiemsudungvatphamhoinoilucgannhat > 5.:
                     if self.moitruong.action_timkiemvatphamhanhtrang(HOATTAMDON):
                         self._thoidiemsudungvatphamhoinoilucgannhat = time.time()
                         self.action_sudungvatphamhanhtrang(HOATTAMDON, delay = 0.)

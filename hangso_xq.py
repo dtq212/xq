@@ -632,6 +632,7 @@ VATPHAMKHONGBANs = (
     "Khoan Kim Cương",
     "Cờ Đỏ",
     "Sao Vàng",
+    "Cường Hóa Ngân Châm Độ Ách",
 )
 
 VATPHAMTUDONGNHATFARMs = (
