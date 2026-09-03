@@ -159,17 +159,17 @@ class LoopChinh:
         #         self.moitruong.action_thucthicaulenh2("talk 15d1# accept.4e6979# 0")
         #         time.sleep(0.05)
 
-        if 0 and self.moitruong.get_idnguoichoi() == 60055:
+        if 0 and self.moitruong.get_idnguoichoi() in (59844, 59845):
             if not self.moitruong.action_timkiemvatphamhanhtrang("Rương dự trữ"):
                 self.moitruong.action_thucthicaulenh("buyitem ! 4 7 1")
                 time.sleep(0.25)
-            self.moitruong.action_thucthicaulenh("talk d951# info.10")
+            self.moitruong.action_thucthicaulenh("talk bcaa# info.10")
             time.sleep(0.25)
-            self.moitruong.action_thucthicaulenh("talk d951# info.11")
+            self.moitruong.action_thucthicaulenh("talk bcaa# info.11")
             time.sleep(0.25)
-            self.moitruong.action_thucthicaulenh("talk d951# info.20")
+            self.moitruong.action_thucthicaulenh("talk bcaa# info.20")
             time.sleep(0.25)
-            self.moitruong.action_thucthicaulenh("talk d951# info.21")
+            self.moitruong.action_thucthicaulenh("talk bcaa# info.21")
             time.sleep(0.25)
 
         # if self.moitruong.get_idnguoichoi() == 60055:
