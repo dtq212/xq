@@ -1251,7 +1251,7 @@ class TacTu:
                                 diachidoituongcanhoisinhduphong = diachidoituongdangxemxet
                     continue
 
-                is_cantaytran = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCCOT, HIEUUNGKYNANG_THIEUDOT, HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN), macdinh = False, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 0)
+                is_cantaytran = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCCOT, HIEUUNGKYNANG_THUCGIAP, HIEUUNGKYNANG_THIEUDOT, HIEUUNGKYNANG_THAUCOTDINH, HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN), macdinh = False, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 0)
 
                 if is_cantaytran:
                     if is_uutiennhom and not diachidoituongcanbufftaytranquyet:
@@ -1259,7 +1259,7 @@ class TacTu:
                     elif is_uutienbang and not diachidoituongcanbufftaytranquyetduphong:
                         diachidoituongcanbufftaytranquyetduphong = diachidoituongdangxemxet
 
-                is_cantaytran2 = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCGIAP, HIEUUNGKYNANG_THUCTAM, HIEUUNGKYNANG_THAUCOTDINH, HIEUUNGKYNANG_LACKICH, HIEUUNGKYNANG_DONGBANG), macdinh = False, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 0)
+                is_cantaytran2 = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCTAM, HIEUUNGKYNANG_LACKICH, HIEUUNGKYNANG_DONGBANG), macdinh = False, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 0)
 
                 if is_cantaytran2:
                     if is_uutiennhom and not diachidoituongcanbufftaytranquyet2:
@@ -2452,15 +2452,15 @@ class TacTu:
         if not self._is_tudongkhaikhoang:
             return
 
-        tenvatphamvutdis = ["Hoàng Kỳ", "Xuyên Tâm Liên", "Hoàng Liên", "Ngân Khoáng", "Thiết Khoáng", "Hà Thủ Ô", "La Hán Quả", "Cam Thảo", "Kết Ngạnh", "Vỏ Quýt"]
+        tenvatphamvutdis = ["Hoàng Kỳ", "Xuyên Tâm Liên", "Hoàng Liên", "Ngân Khoáng", "Thiết Khoáng", "Hà Thủ Ô", "La Hán Quả", "Cam Thảo", "Vỏ Quýt"]
         for i in range(6, self.moitruong.get_soluongvatphamhanhtrangtoida()):
             tenvatphamhanhtrang = self.moitruong.get_tenvatphamhanhtrang(i)
-            if tenvatphamhanhtrang == NHANSAM:
-                motavatpham = self.moitruong.get_motavatphamhanhtrang(i)
-                if "Nguyên liệu cần thiết" in motavatpham:
-                    self.moitruong.action_thucthicaulenh2("drop ! {}#30".format(hex(self.moitruong.get_iddoituongvatphamhanhtrang(i))).replace("0x", ""))
-                    break
-            elif tenvatphamhanhtrang and tenvatphamhanhtrang not in VATPHAMKHONGBANs and tenvatphamhanhtrang in tenvatphamvutdis:
+            # if tenvatphamhanhtrang == NHANSAM:
+            #     motavatpham = self.moitruong.get_motavatphamhanhtrang(i)
+            #     if "Nguyên liệu cần thiết" in motavatpham:
+            #         self.moitruong.action_thucthicaulenh2("drop ! {}#30".format(hex(self.moitruong.get_iddoituongvatphamhanhtrang(i))).replace("0x", ""))
+            #         break
+            if tenvatphamhanhtrang and tenvatphamhanhtrang not in VATPHAMKHONGBANs and tenvatphamhanhtrang in tenvatphamvutdis:
                 motavatpham = self.moitruong.get_motavatphamhanhtrang(i)
                 if "Phong Ấn" not in motavatpham:
                     self.moitruong.action_thucthicaulenh2("drop ! {}#30".format(hex(self.moitruong.get_iddoituongvatphamhanhtrang(i))).replace("0x", ""))
