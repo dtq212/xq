@@ -1006,11 +1006,10 @@ class MoiTruong:
         if is_toadosaptoi and self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
             deltax = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18) - toadox
             deltay = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C) - toadoy
-            deltax /= 2.
-            deltay /= 2.
-            if abs(deltax) >= 1:
+
+            if deltax != 0:
                 toadox += int(deltax / abs(deltax))
-            if abs(deltay) >= 1:
+            if deltay != 0:
                 toadoy += int(deltay / abs(deltay))
 
         return toadox, toadoy
@@ -1085,17 +1084,17 @@ class MoiTruong:
                 x = read_int(self.tientrinh, x + 0xADFDA8)
                 if x: write_int(self.tientrinh, x + 0x1A4, idtrangthaichuot)
 
-    def get_khoangcach(self, diachicosothongtinnhanvat2, diachicosothongtinnhanvat1 = False, is_toadosaptoi = False):
+    def get_khoangcach(self, diachicosothongtinnhanvat2, diachicosothongtinnhanvat1 = False):
         diachicosothongtinnhanvat1 = diachicosothongtinnhanvat1 or self.get_diachicosothongtinnhanvat1()
 
-        x1, y1 = self.get_toado(diachicosothongtinnhanvat1, is_toadosaptoi = False)
-        x2, y2 = self.get_toado(diachicosothongtinnhanvat2, is_toadosaptoi = is_toadosaptoi)
+        x1, y1 = self.get_toado(diachicosothongtinnhanvat1)
+        x2, y2 = self.get_toado(diachicosothongtinnhanvat2)
 
         return math.dist((x1, y1), (x2, y2))
 
-    def get_khoangcachdiem(self, x2, y2, diachicosothongtinnhanvat1 = False, is_toadosaptoi = False):
+    def get_khoangcachdiem(self, x2, y2, diachicosothongtinnhanvat1 = False):
         diachicosothongtinnhanvat1 = diachicosothongtinnhanvat1 or self.get_diachicosothongtinnhanvat1()
-        x1, y1 = self.get_toado(diachicosothongtinnhanvat1, is_toadosaptoi = False)
+        x1, y1 = self.get_toado(diachicosothongtinnhanvat1)
         return math.dist((x1, y1), (x2, y2))
 
     def get_idthucuoi(self):
@@ -1609,7 +1608,7 @@ class MoiTruong:
         self.tientrinh.start_thread(self._diachiautoassembledichuyen)
         time.sleep(0.05)
 
-    def action_dichuyen(self, x, y, delay = 0.5, is_rangbuoctrongmanhinh = False):
+    def action_dichuyen(self, x, y, delay = 0.05, is_rangbuoctrongmanhinh = False):
         if self._is_vohieuhoadichuyen:
             return False
 
@@ -1629,22 +1628,22 @@ class MoiTruong:
 
         return True
 
-    def action_dichuyengiukhoangcachtoithieu(self, diachicosothongtinnhanvat2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 0.5):
+    def action_dichuyengiukhoangcachtoithieu(self, diachicosothongtinnhanvat2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 0.05):
         if not diachicosothongtinnhanvat2 or not self.get_iddoituong(diachicosothongtinnhanvat2):
             return False
-        return self.action_dichuyengiukhoangcachtoithieudiem(*self.get_toado(diachicosothongtinnhanvat2, is_toadosaptoi = True), khoangcachtoithieu = khoangcachtoithieu, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
+        return self.action_dichuyengiukhoangcachtoithieudiem(*self.get_toado(diachicosothongtinnhanvat2), khoangcachtoithieu = khoangcachtoithieu, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
 
-    def action_dichuyengiukhoangcachtoida(self, diachicosothongtinnhanvat2, khoangcachtoida, khoangcachdichuyentoida = 0, delay = 0.5):
+    def action_dichuyengiukhoangcachtoida(self, diachicosothongtinnhanvat2, khoangcachtoida, khoangcachdichuyentoida = 0, delay = 0.05):
         if not diachicosothongtinnhanvat2 or not self.get_iddoituong(diachicosothongtinnhanvat2):
             return False
 
-        return self.action_dichuyengiukhoangcachtoidadiem(*self.get_toado(diachicosothongtinnhanvat2, is_toadosaptoi = True), khoangcachtoida = khoangcachtoida, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
+        return self.action_dichuyengiukhoangcachtoidadiem(*self.get_toado(diachicosothongtinnhanvat2, is_toadosaptoi = False), khoangcachtoida = khoangcachtoida, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
 
-    def action_dichuyenphudau(self, diachicosothongtinnhanvat2, khoangcachphudau = 1, delay = 0.5):
+    def action_dichuyenphudau(self, diachicosothongtinnhanvat2, khoangcachphudau = 1, delay = 0.05):
         if not diachicosothongtinnhanvat2 or not self.get_iddoituong(diachicosothongtinnhanvat2):
             return False
         diachi1 = self.get_diachicosothongtinnhanvat1()
-        x2, y2 = self.get_toado(diachicosothongtinnhanvat2, is_toadosaptoi = True)
+        x2, y2 = self.get_toado(diachicosothongtinnhanvat2)
         x1, y1 = self.get_toado(diachi1)
         deltax, deltay = x2 - x1, y1 - y2
         khoangcach = math.dist((x1, y1), (x2, y2))
@@ -1661,23 +1660,26 @@ class MoiTruong:
         yclick = round(self._centery + deltay * (self._ymax / KHOANGCACHTOANMANHINH))
         return self.action_dichuyen(xclick, yclick, delay = delay)
 
-    def action_dichuyengiukhoangcachtoidadiem(self, x2, y2, khoangcachtoida, khoangcachdichuyentoida = 0, delay = 0.5, is_rangbuoctrongmanhinh = False):
+    def action_dichuyengiukhoangcachtoidadiem(self, x2, y2, khoangcachtoida, khoangcachdichuyentoida = 0, delay = 0.05, is_rangbuoctrongmanhinh = False):
         if x2 <= 0 or y2 <= 0:
             return False
 
         diachi1 = self.get_diachicosothongtinnhanvat1()
-        x1, y1 = self.get_toado(diachi1, is_toadosaptoi = True)
 
+        x1, y1 = self.get_toado(diachi1)
         khoangcach = math.dist((x1, y1), (x2, y2))
-
         if khoangcach <= khoangcachtoida:
             return False
 
-        deltax, deltay = x2 - x1, y1 - y2
-        khoangcachdichuyen = khoangcach - khoangcachtoida + 1.
+        khoangcachdichuyen = khoangcach - khoangcachtoida
 
         if khoangcachdichuyen <= 0.:
             return False
+
+        x1, y1 = self.get_toado(diachi1)
+        khoangcach = math.dist((x1, y1), (x2, y2))
+
+        deltax, deltay = x2 - x1, y1 - y2
 
         if khoangcachdichuyentoida:
             khoangcachdichuyen = min(float(khoangcachdichuyentoida), khoangcachdichuyen)
@@ -1692,15 +1694,15 @@ class MoiTruong:
         offset_x = deltax * (self._xmax / KHOANGCACHTOANMANHINH)
         offset_y = deltay * (self._ymax / KHOANGCACHTOANMANHINH)
 
-        dx_pixel = math.ceil(offset_x) if offset_x > 0 else math.floor(offset_x)
-        dy_pixel = math.ceil(offset_y) if offset_y > 0 else math.floor(offset_y)
+        dx_pixel = int(offset_x)
+        dy_pixel = int(offset_y)
 
         xclick = self._centerx + dx_pixel
         yclick = self._centery + dy_pixel
 
         return self.action_dichuyen(xclick, yclick, delay = delay, is_rangbuoctrongmanhinh = is_rangbuoctrongmanhinh)
 
-    def action_dichuyengiukhoangcachtoithieudiem(self, x2, y2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 0.5):
+    def action_dichuyengiukhoangcachtoithieudiem(self, x2, y2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 0.05):
         if x2 <= 0 or y2 <= 0:
             return False
         diachi1 = self.get_diachicosothongtinnhanvat1()
@@ -1722,10 +1724,10 @@ class MoiTruong:
         yclick = int(self._centery + deltay * (self._ymax / KHOANGCACHTOANMANHINH))
         return self.action_dichuyen(xclick, yclick, delay = delay)
 
-    def action_dichuyentiepcan(self, diachi2, khoangcachdichuyentoida = 0, delay = 0.5):
+    def action_dichuyentiepcan(self, diachi2, khoangcachdichuyentoida = 0, delay = 0.05):
         return self.action_dichuyengiukhoangcachtoida(diachi2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
 
-    def action_dichuyentiepcandiem(self, x2, y2, khoangcachdichuyentoida = 0, delay = 0.5, is_rangbuoctrongmanhinh = False):
+    def action_dichuyentiepcandiem(self, x2, y2, khoangcachdichuyentoida = 0, delay = 0.05, is_rangbuoctrongmanhinh = False):
         if x2 <= 0 or y2 <= 0:
             return False
         return self.action_dichuyengiukhoangcachtoidadiem(x2, y2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay, is_rangbuoctrongmanhinh = is_rangbuoctrongmanhinh)

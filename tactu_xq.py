@@ -406,7 +406,7 @@ class TacTu:
 
         is_yeucaunhatvatphamganhon = False
         if is_yeucaunhatvatpham and not is_muctieupk and self._is_tudongvebanrac:
-            khoangcachnhatvatpham = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat, is_toadosaptoi = True) if self._diachicosovatphamdangnhat else KHOANGCACHTOIDAHOPLE
+            khoangcachnhatvatpham = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat) if self._diachicosovatphamdangnhat else KHOANGCACHTOIDAHOPLE
             khoangcachtancong = KHOANGCACHTOIDAHOPLE
             if self._yeucautancong and self._yeucautancong.get("diachimuctieu"):
                 khoangcachtancong = self.moitruong.get_khoangcach(self._yeucautancong.get("diachimuctieu"))
@@ -544,7 +544,7 @@ class TacTu:
                 if toadodich:
                     x_dich, y_dich = toadodich[0], toadodich[1]
                 elif diachimuctieu:
-                    x_dich, y_dich = self.moitruong.get_toado(diachimuctieu, is_toadosaptoi = True)
+                    x_dich, y_dich = self.moitruong.get_toado(diachimuctieu)
 
                 if x_dich and y_dich:
                     x_banthan, y_banthan = self.moitruong.get_toado()
@@ -975,10 +975,10 @@ class TacTu:
 
             if is_anhhuongboitruongnhom:
                 khoangcachxemxetmuctieuxemxet = khoangcachmuctieuxemxettoitruongnhom
-                khoangcachxemxetmuctieuhientai = self.moitruong.get_khoangcachdiem(*toadotruongnhom, diachicosothongtinnhanvatmuctieudangchon, is_toadosaptoi = True)
+                khoangcachxemxetmuctieuhientai = self.moitruong.get_khoangcachdiem(*toadotruongnhom, diachicosothongtinnhanvatmuctieudangchon)
             else:
                 khoangcachxemxetmuctieuxemxet = khoangcachmuctieuxemxettoibanthan
-                khoangcachxemxetmuctieuhientai = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon, is_toadosaptoi = True)
+                khoangcachxemxetmuctieuhientai = self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon)
 
             if khoangcachxemxetmuctieuxemxet + 0.5 < khoangcachxemxetmuctieuhientai:
                 _thaydoimuctieutrongvonglap()
