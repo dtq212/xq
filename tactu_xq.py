@@ -494,7 +494,7 @@ class TacTu:
                     iddoituongmuctieudanggom = yeucauduocchon.get("idmuctieu", 0)
 
         if iddoituongmuctieudanggom > 0:
-            if iddoituongmuctieudanggom != self._idmuctieudangtheokiemtraket or self.moitruong.get_is_dangvankhi() or self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
+            if iddoituongmuctieudanggom != self._idmuctieudangtheokiemtraket or self.moitruong.get_is_dangvankhi() or self.moitruong.get_idtuthenhanvat() != TUTHENHANVAT_DUNGIM:
                 self._idmuctieudangtheokiemtraket = iddoituongmuctieudanggom
                 self._thoidiemdungimkiemtraket = time.time()
                 self._toadokiemtraket = self.moitruong.get_toado()

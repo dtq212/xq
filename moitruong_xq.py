@@ -1005,9 +1005,11 @@ class MoiTruong:
 
         if is_toadosaptoi and self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
             deltax = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18) - toadox
+            deltay = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C) - toadoy
+            deltax /= 2.
+            deltay /= 2.
             if abs(deltax) >= 1:
                 toadox += int(deltax / abs(deltax))
-            deltay = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C) - toadoy
             if abs(deltay) >= 1:
                 toadoy += int(deltay / abs(deltay))
 
