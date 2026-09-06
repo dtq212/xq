@@ -279,7 +279,7 @@ class MoiTruong:
         self.tientrinh.start_thread(self.diachihamthucthicaulenh2)
         return True
 
-    def action_ralenhbaothutancong(self, iddoituongbaothu, iddoituongnhanvatmuctieudangchon, delay = 0.25):
+    def action_ralenhbaothutancong(self, iddoituongbaothu, iddoituongnhanvatmuctieudangchon, delay = 1.):
         if time.time() - self._thoidiemralenhbaothutancong < delay:
             return False
         self._thoidiemralenhbaothutancong = time.time()
@@ -1637,7 +1637,7 @@ class MoiTruong:
         if not diachicosothongtinnhanvat2 or not self.get_iddoituong(diachicosothongtinnhanvat2):
             return False
 
-        return self.action_dichuyengiukhoangcachtoidadiem(*self.get_toado(diachicosothongtinnhanvat2, is_toadosaptoi = False), khoangcachtoida = khoangcachtoida, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
+        return self.action_dichuyengiukhoangcachtoidadiem(*self.get_toado(diachicosothongtinnhanvat2), khoangcachtoida = khoangcachtoida, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
 
     def action_dichuyenphudau(self, diachicosothongtinnhanvat2, khoangcachphudau = 1, delay = 0.05):
         if not diachicosothongtinnhanvat2 or not self.get_iddoituong(diachicosothongtinnhanvat2):
@@ -1833,7 +1833,7 @@ class MoiTruong:
     def get_soluongvatphamhanhtrangtoida(self):
         return SOLUONGVATPHAMHANHTRANGTOIDA_MAP[self.get_idnguoichoi()]
 
-    def action_timkiemvatphamhanhtrang(self, tenvatpham = None, is_ruongdautien = False):
+    def action_timkiemvatphamhanhtrang(self, tenvatpham = None, is_ruongdautien = False, is_kiemtrahansudung = False):
         if not tenvatpham: return False
         i = -1
         soluongvatphamhanhtrangtoida = self.get_soluongvatphamhanhtrangtoida()
@@ -1846,6 +1846,10 @@ class MoiTruong:
                 # if "Nhập môn" in self.get_tenvatphamhanhtrang(i):
                 #    print(self.get_tenvatphamhanhtrang(i))
                 continue
+            if is_kiemtrahansudung:
+                motavatpham = self.get_motavatphamhanhtrang(i)
+                if "Hết hạn sử dụng" in motavatpham:
+                    continue
             return self.get_iddoituongvatphamhanhtrang(i)
         return False
 

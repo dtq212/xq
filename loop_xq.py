@@ -130,19 +130,19 @@ class LoopChinh:
 
         # if self.moitruong.get_idnguoichoi() == 59844:
         #     print("{}".format(self.moitruong.get_danhsachhieuungnhanvats()))
-        # if self.moitruong.get_idnguoichoi() == 60055:
+        # if self.moitruong.get_idnguoichoi() == 59996:
         #     self.moitruong.truyvan_motavatphamhanhtrang(0)
         #     motavatpham = self.moitruong.get_motavatphamhanhtrang(0)
         #     print("Mô tả vật phẩm: {}".format(motavatpham))
         #
-        #     match = re.search(r"Nội Công:\s*\+(\d+)", motavatpham)
+        #     match = re.search(r"Ngoại Kháng:\s*\+(\d+)", motavatpham)
         #
         #     if match:
         #         chisohientai = int(match.group(1))
-        #         print(f"Đã tìm thấy Nội Công: {chisohientai}")
+        #         print(f"Đã tìm thấy Ngoại Kháng: {chisohientai}")
         #
         #         if chisohientai > 60:
-        #             print("Nội Công > 60. Dừng tiến trình!")
+        #             print("Ngoại Kháng > 60. Dừng tiến trình!")
         #             self.stop.set()
         #             return
         #         else:
@@ -152,14 +152,14 @@ class LoopChinh:
         #             # else:
         #             #     self.moitruong.action_thucthicaulenh("buyitem ! 5 3 1")
         #             #     time.sleep(0.05)
-        #             self.moitruong.action_thucthicaulenh2("talk 15d1# accept.4e6979# 0")
+        #             self.moitruong.action_thucthicaulenh2("talk 15cc# accept.4e6979# 0")
         #             time.sleep(0.05)
         #     else:
-        #         print("Không tìm thấy dòng Nội Công trong mô tả vật phẩm này.")
-        #         self.moitruong.action_thucthicaulenh2("talk 15d1# accept.4e6979# 0")
+        #         print("Không tìm thấy dòng Ngoại Kháng trong mô tả vật phẩm này.")
+        #         self.moitruong.action_thucthicaulenh2("talk 15cc# accept.4e6979# 0")
         #         time.sleep(0.05)
 
-        if 0 and self.moitruong.get_idnguoichoi() in (59844, 59845):
+        if 0 and self.moitruong.get_idnguoichoi() in (59996, 60055):
             if not self.moitruong.action_timkiemvatphamhanhtrang("Rương dự trữ"):
                 self.moitruong.action_thucthicaulenh("buyitem ! 4 7 1")
                 time.sleep(0.25)
