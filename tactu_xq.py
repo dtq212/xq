@@ -1553,9 +1553,9 @@ class TacTu:
                         self.action_sudungvatphamhanhtrang(HOATTAMDON, delay = 0.)
 
                 if is_dangbatpk and is_bandopk and self._is_tudongsudungkynang and self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCCOT, HIEUUNGKYNANG_THUCGIAP, HIEUUNGKYNANG_THIEUDOT, HIEUUNGKYNANG_THAUCOTDINH, HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN), macdinh = False, is_hieuungcoloi = 0) and time.time() - self._thoidiemsudungvatphamhoinoilucgannhat > 5.:
-                    if self.moitruong.action_timkiemvatphamhanhtrang(THANHTAMDAN):
+                    if self.moitruong.action_timkiemvatphamhanhtrang(KHUMATAN):
                         self._thoidiemsudungthanhtamdangannhat = time.time()
-                        self.action_sudungvatphamhanhtrang(THANHTAMDAN, delay = 0.)
+                        self.action_sudungvatphamhanhtrang(KHUMATAN, delay = 0.)
 
                 elif self._is_tudongsudungkynang and phantramnoilucconlai <= 75 and time.time() - self._thoidiemsudungvatphamhoinoilucgannhat > 5.:
                     if self.moitruong.action_timkiemvatphamhanhtrang(ANTHANHOAN):

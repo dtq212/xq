@@ -130,52 +130,57 @@ class LoopChinh:
 
         # if self.moitruong.get_idnguoichoi() == 59844:
         #     print("{}".format(self.moitruong.get_danhsachhieuungnhanvats()))
-        # if self.moitruong.get_idnguoichoi() == 59996:
-        #     self.moitruong.truyvan_motavatphamhanhtrang(0)
-        #     motavatpham = self.moitruong.get_motavatphamhanhtrang(0)
-        #     print("Mô tả vật phẩm: {}".format(motavatpham))
-        #
-        #     match = re.search(r"Ngoại Kháng:\s*\+(\d+)", motavatpham)
-        #
-        #     if match:
-        #         chisohientai = int(match.group(1))
-        #         print(f"Đã tìm thấy Ngoại Kháng: {chisohientai}")
-        #
-        #         if chisohientai > 60:
-        #             print("Ngoại Kháng > 60. Dừng tiến trình!")
-        #             self.stop.set()
-        #             return
-        #         else:
-        #             # if self.moitruong.action_timkiemvatphamhanhtrang("Thẻ Giảm Giá"):
-        #             #     self.moitruong.action_thucthicaulenh("talk 15d5# accept.3a3753# 1")
-        #             #     time.sleep(0.05)
-        #             # else:
-        #             #     self.moitruong.action_thucthicaulenh("buyitem ! 5 3 1")
-        #             #     time.sleep(0.05)
-        #             self.moitruong.action_thucthicaulenh2("talk 15cc# accept.4e6979# 0")
-        #             time.sleep(0.05)
-        #     else:
-        #         print("Không tìm thấy dòng Ngoại Kháng trong mô tả vật phẩm này.")
-        #         self.moitruong.action_thucthicaulenh2("talk 15cc# accept.4e6979# 0")
-        #         time.sleep(0.05)
 
-        if 0 and self.moitruong.get_idnguoichoi() in (59996, 60055):
-            if not self.moitruong.action_timkiemvatphamhanhtrang("Rương dự trữ"):
-                self.moitruong.action_thucthicaulenh("buyitem ! 4 7 1")
-                time.sleep(0.25)
-            self.moitruong.action_thucthicaulenh("talk bcaa# info.10")
-            time.sleep(0.25)
-            self.moitruong.action_thucthicaulenh("talk bcaa# info.11")
-            time.sleep(0.25)
-            self.moitruong.action_thucthicaulenh("talk bcaa# info.20")
-            time.sleep(0.25)
-            self.moitruong.action_thucthicaulenh("talk bcaa# info.21")
-            time.sleep(0.25)
+        # vitrivatphams = [0, 1, 2, 3, ]
+        #
+        # if self.moitruong.get_idnguoichoi() == 85:
+        #     for vitrivatpham in vitrivatphams:
+        #         while True:
+        #             self.moitruong.truyvan_motavatphamhanhtrang(vitrivatpham)
+        #             motavatpham = self.moitruong.get_motavatphamhanhtrang(vitrivatpham)
+        #             iddoituong = self.moitruong.get_iddoituongvatphamhanhtrang(vitrivatpham)
+        #             print("Mô tả vật phẩm: {}".format(motavatpham))
+        #
+        #             match = re.search(r"Khí Huyết:\s*\+(\d+)", motavatpham)
+        #
+        #             if match:
+        #                 chisohientai = int(match.group(1))
+        #                 print(f"Đã tìm thấy Khí Huyết: {chisohientai}")
+        #
+        #                 if chisohientai >= 865:
+        #                     print("Khí Huyết >= 865. Dừng tiến trình!")
+        #                     break
+        #                 else:
+        #                     self.moitruong.action_thucthicaulenh2("talk 1629# giaotrangbi.{}# 0".format(hex(iddoituong)).replace("0x", ""))
+        #                     time.sleep(0.2)
+        #             else:
+        #                 print("Không tìm thấy dòng Khí Huyết trong mô tả vật phẩm này.")
+        #                 self.moitruong.action_thucthicaulenh2("talk 1629# giaotrangbi.{}# 0".format(hex(iddoituong)).replace("0x", ""))
+        #                 time.sleep(0.05)
 
-        # if self.moitruong.get_idnguoichoi() == 60055:
-        #     if not self.moitruong.action_timkiemvatphamhanhtrang("Túi Quà Vô Song"):
-        #         self.moitruong.action_thucthicaulenh("buyitem ! 5 5 1")
+        # if 0 and self.moitruong.get_idnguoichoi() in (59996, 60055):
+        #     if not self.moitruong.action_timkiemvatphamhanhtrang("Rương dự trữ"):
+        #         self.moitruong.action_thucthicaulenh("buyitem ! 4 7 1")
         #         time.sleep(0.25)
+        #     self.moitruong.action_thucthicaulenh("talk bcaa# info.10")
+        #     time.sleep(0.25)
+        #     self.moitruong.action_thucthicaulenh("talk bcaa# info.11")
+        #     time.sleep(0.25)
+        #     self.moitruong.action_thucthicaulenh("talk bcaa# info.20")
+        #     time.sleep(0.25)
+        #     self.moitruong.action_thucthicaulenh("talk bcaa# info.21")
+        #     time.sleep(0.25)
+
+        if self.moitruong.get_idnguoichoi() in (12, 85):
+            if self.moitruong.action_timkiemvatphamhanhtrang("Túi Ngân Lượng"):
+                self.tactu.action_sudungvatphamhanhtrang("Túi Ngân Lượng")
+                time.sleep(0.25)
+            if self.moitruong.action_timkiemvatphamhanhtrang("Chén Bạc"):
+                self.tactu.action_sudungvatphamhanhtrang("Chén Bạc")
+                time.sleep(0.25)
+            if self.moitruong.action_timkiemvatphamhanhtrang("Túi Quà Vô Song"):
+                self.tactu.action_sudungvatphamhanhtrang("Túi Quà Vô Song")
+                time.sleep(0.25)
         #     else:
         #         self.tactu.action_sudungvatphamhanhtrang("Túi Quà Vô Song")
         #     for tenvatphamvutdi in ["Cổ Phương Côn", "Thạch Điêu Quyền Nhẫn", "Ngọc Kiếm", "Xích Anh Thương", "Kim Đao", "Xích Y (Nữ)", "Đấu Chiến Gấm Y (Nam)", "Nguyệt Hoàn"]:

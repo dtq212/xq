@@ -976,10 +976,10 @@ class MoiTruong:
         tendoituong = read_string(self.tientrinh, diachicosothongtinnhanvat + 0x10AC)
 
         if tendoituong:
-            if "( Cấp" in tendoituong:
-                tendoituong = tendoituong.split("( Cấp")[0].strip()
-            elif "(Cấp" in tendoituong:
-                tendoituong = tendoituong.split("(Cấp")[0].strip()
+            for nhancap in ("( Cấp", "( Cấp", "( cấp", "(cấp"):
+                if nhancap in tendoituong:
+                    tendoituong = tendoituong.split(nhancap)[0].strip()
+                    break
 
         return tendoituong
 
@@ -1290,7 +1290,7 @@ class MoiTruong:
         tendoituong = read_string(self.tientrinh, diachicosodoituong + 0x10AC)
         if not tendoituong:
             return False
-        return "(" in tendoituong and "( " not in tendoituong
+        return "(" in tendoituong and "cấp" not in tendoituong.lower()
 
     def get_is_baothukynangtrieuhoi(self, diachicosodoituong):
         if not diachicosodoituong:
@@ -1337,6 +1337,7 @@ class MoiTruong:
 
         idmaupk = self.get_idmaupk()
         tenmuctieu = self.get_tendoituong(diachicosothongtinnhanvat)
+
         if tenmuctieu:
             if self.get_is_baothukynangtrieuhoi(diachicosothongtinnhanvat) or self.get_is_baothugiangho(diachicosothongtinnhanvat):
                 if idmaupk == MAUPK_HOABINH:
