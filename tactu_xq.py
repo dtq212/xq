@@ -1050,6 +1050,26 @@ class TacTu:
 
         return True
 
+    def action_test(self):
+        vitrivatpham = 0
+        iddoituong = self.moitruong.get_iddoituongvatphamhanhtrang(vitrivatpham)
+        if iddoituong:
+            while True:
+                self.moitruong.truyvan_motavatphamhanhtrang(vitrivatpham)
+                motavatpham = self.moitruong.get_motavatphamhanhtrang(vitrivatpham)
+                if "★★★★★★" in motavatpham:
+                    break
+                if "★★★★★" in motavatpham or "★★★★" in motavatpham:
+                    iddoituongdoanthach = self.moitruong.action_timkiemvatphamhanhtrang(CAOCAPDOANTHACH)
+                elif "★★★" in motavatpham or "★★" in motavatpham:
+                    iddoituongdoanthach = self.moitruong.action_timkiemvatphamhanhtrang(TRUNGCAPDOANTHACH)
+                else:
+                    iddoituongdoanthach = self.moitruong.action_timkiemvatphamhanhtrang(SOCAPDOANTHACH)
+                if iddoituongdoanthach:
+                    self.moitruong.action_thucthicaulenh("mix3 0# {}# {}#".format(hex(iddoituong), hex(iddoituongdoanthach)).replace("0x", ""))
+                    time.sleep(0.25)
+                else:
+                    break
     def action_tudongtimkiemmuctieumonphai(self):
         tenmonphai = self.moitruong.get_tenmonphai()
 

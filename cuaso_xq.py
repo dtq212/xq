@@ -274,6 +274,8 @@ class CuaSo:
                     self.tactu.action_tudongmuaauto()
                 elif cmd == "battat_tudongsudungkynangbaothu":
                     self.tactu.battat_tudongsudungkynangbaothu()
+                elif cmd == "action_test":
+                    self.tactu.action_test()
                 self.command_dict[self.idcuaso] = None
 
             time.sleep(0.15)

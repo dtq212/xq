@@ -131,33 +131,6 @@ class LoopChinh:
         # if self.moitruong.get_idnguoichoi() == 59844:
         #     print("{}".format(self.moitruong.get_danhsachhieuungnhanvats()))
 
-        # vitrivatphams = [0, 1, 2, 3, ]
-        #
-        # if self.moitruong.get_idnguoichoi() == 85:
-        #     for vitrivatpham in vitrivatphams:
-        #         while True:
-        #             self.moitruong.truyvan_motavatphamhanhtrang(vitrivatpham)
-        #             motavatpham = self.moitruong.get_motavatphamhanhtrang(vitrivatpham)
-        #             iddoituong = self.moitruong.get_iddoituongvatphamhanhtrang(vitrivatpham)
-        #             print("Mô tả vật phẩm: {}".format(motavatpham))
-        #
-        #             match = re.search(r"Khí Huyết:\s*\+(\d+)", motavatpham)
-        #
-        #             if match:
-        #                 chisohientai = int(match.group(1))
-        #                 print(f"Đã tìm thấy Khí Huyết: {chisohientai}")
-        #
-        #                 if chisohientai >= 865:
-        #                     print("Khí Huyết >= 865. Dừng tiến trình!")
-        #                     break
-        #                 else:
-        #                     self.moitruong.action_thucthicaulenh2("talk 1629# giaotrangbi.{}# 0".format(hex(iddoituong)).replace("0x", ""))
-        #                     time.sleep(0.2)
-        #             else:
-        #                 print("Không tìm thấy dòng Khí Huyết trong mô tả vật phẩm này.")
-        #                 self.moitruong.action_thucthicaulenh2("talk 1629# giaotrangbi.{}# 0".format(hex(iddoituong)).replace("0x", ""))
-        #                 time.sleep(0.05)
-
         # if 0 and self.moitruong.get_idnguoichoi() in (59996, 60055):
         #     if not self.moitruong.action_timkiemvatphamhanhtrang("Rương dự trữ"):
         #         self.moitruong.action_thucthicaulenh("buyitem ! 4 7 1")
@@ -171,16 +144,49 @@ class LoopChinh:
         #     self.moitruong.action_thucthicaulenh("talk bcaa# info.21")
         #     time.sleep(0.25)
 
-        if self.moitruong.get_idnguoichoi() in (12, 85):
+        if self.moitruong.get_idnguoichoi() in (12, 85, 94, 102):
             if self.moitruong.action_timkiemvatphamhanhtrang("Túi Ngân Lượng"):
                 self.tactu.action_sudungvatphamhanhtrang("Túi Ngân Lượng")
                 time.sleep(0.25)
             if self.moitruong.action_timkiemvatphamhanhtrang("Chén Bạc"):
                 self.tactu.action_sudungvatphamhanhtrang("Chén Bạc")
                 time.sleep(0.25)
+            if self.moitruong.action_timkiemvatphamhanhtrang("Túi Kim Bảo"):
+                self.tactu.action_sudungvatphamhanhtrang("Túi Kim Bảo")
+                time.sleep(0.25)
             if self.moitruong.action_timkiemvatphamhanhtrang("Túi Quà Vô Song"):
                 self.tactu.action_sudungvatphamhanhtrang("Túi Quà Vô Song")
                 time.sleep(0.25)
+            for tentuilinhthach in ("Túi Linh Thạch cấp 1", "Túi Linh Thạch cấp 3", "Túi Linh Thạch cấp 5"):
+                if self.moitruong.action_timkiemvatphamhanhtrang(tentuilinhthach):
+                    self.tactu.action_sudungvatphamhanhtrang(tentuilinhthach)
+                    time.sleep(0.25)
+
+            # Hợp thành Tinh Thạch (Mộc / Nhật / Ám) khi có >= 5 viên cùng tên
+            for tenvatphamhanhtrang, vatphams in self.moitruong.get_danhsachvatphamhanhtrang_map().items():
+                if not tenvatphamhanhtrang or "Tinh Thạch" not in tenvatphamhanhtrang:
+                    continue
+                if not any(x in tenvatphamhanhtrang for x in ("Mộc", "Nhật", "Ám")):
+                    continue
+                iddoituongs = [iddoituong for vitri, iddoituong in vatphams if vitri >= 6 and iddoituong]
+                if len(iddoituongs) >= 5:
+                    self.moitruong.action_thucthicaulenh2("mix5 {} 0".format(" ".join("{}#".format(hex(x).replace("0x", "")) for x in iddoituongs[:5])))
+                    time.sleep(0.25)
+                    break
+
+            # Vứt Tinh Thạch, giữ lại loại Mộc / Nhật / Ám
+            for i in range(6, self.moitruong.get_soluongvatphamhanhtrangtoida()):
+                tenvatphamhanhtrang = self.moitruong.get_tenvatphamhanhtrang(i)
+                if not tenvatphamhanhtrang or "Tinh Thạch" not in tenvatphamhanhtrang:
+                    continue
+                if any(x in tenvatphamhanhtrang for x in ("Mộc", "Nhật", "Ám")):
+                    continue
+                iddoituongvatphamvutdi = self.moitruong.get_iddoituongvatphamhanhtrang(i)
+                if iddoituongvatphamvutdi:
+                    soluong = self.moitruong.get_soluongvatphamhanhtrang(i) or 1
+                    self.moitruong.action_thucthicaulenh2("drop ! {}#{}".format(hex(iddoituongvatphamvutdi).replace("0x", ""), soluong))
+                    time.sleep(0.25)
+                    break
         #     else:
         #         self.tactu.action_sudungvatphamhanhtrang("Túi Quà Vô Song")
         #     for tenvatphamvutdi in ["Cổ Phương Côn", "Thạch Điêu Quyền Nhẫn", "Ngọc Kiếm", "Xích Anh Thương", "Kim Đao", "Xích Y (Nữ)", "Đấu Chiến Gấm Y (Nam)", "Nguyệt Hoàn"]:
@@ -189,6 +195,34 @@ class LoopChinh:
         #         if iddoituongvatphamvutdi:
         #             self.moitruong.action_thucthicaulenh("drop ! {}#1".format(hex(iddoituongvatphamvutdi)).replace("0x", ""))
         #             time.sleep(0.25)
+
+        # vitrivatphams = [0, ]
+        # if self.moitruong.get_idnguoichoi() == 102:
+        #     for vitrivatpham in vitrivatphams:
+        #         while True:
+        #             iddoituong = self.moitruong.get_iddoituongvatphamhanhtrang(vitrivatpham)
+        #             if not iddoituong:
+        #                 break
+        #             self.moitruong.truyvan_motavatphamhanhtrang(vitrivatpham)
+        #             motavatpham = self.moitruong.get_motavatphamhanhtrang(vitrivatpham)
+        #             #print("Mô tả vật phẩm: {}".format(motavatpham))
+        #
+        #             match = re.search(r"Nội Kháng:\s*\+(\d+)", motavatpham)
+        #
+        #             if match:
+        #                 chisohientai = int(match.group(1))
+        #                 print(f"Đã tìm thấy Nội Kháng: {chisohientai}")
+        #
+        #                 if chisohientai >= 85:
+        #                     print("Nội Kháng >= 85. Dừng tiến trình!")
+        #                     break
+        #                 else:
+        #                     self.moitruong.action_thucthicaulenh2("talk 165a# giaotrangbi.{}# 0".format(hex(iddoituong)).replace("0x", ""))
+        #                     time.sleep(0.2)
+        #             else:
+        #                 print("Không tìm thấy dòng Nội Kháng trong mô tả vật phẩm này.")
+        #                 self.moitruong.action_thucthicaulenh2("talk 165a# giaotrangbi.{}# 0".format(hex(iddoituong)).replace("0x", ""))
+        #                 time.sleep(0.2)
 
         # if self.moitruong.get_idnguoichoi() == 60055:
         #     if not self.moitruong.action_timkiemvatphamhanhtrang("Túi Pháp Bảo"):

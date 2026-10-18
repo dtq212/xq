@@ -148,6 +148,8 @@ class TroChoiManager:
                     cmd = "them_diemdanhxungquanh"
                 elif keyboard.is_pressed("ctrl+b"):
                     cmd = "them_diemdanhxungquanh"
+                elif keyboard.is_pressed("ctrl+y"):
+                    cmd = "action_test"
                 elif keyboard.is_pressed("ctrl+alt+s"):
                     cmd = "battat_uutienbaothukynangtrieuhoi"
                 if cmd:
