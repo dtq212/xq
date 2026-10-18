@@ -1325,9 +1325,6 @@ class MoiTruong:
 
         idloainhanvat = self.get_idloainhanvat(diachicosothongtinnhanvat)
 
-        if self.get_idbandohientai() == BANDO_TIVO and self.get_is_nguoichoi(diachicosothongtinnhanvat):
-            return True
-
         if idloainhanvat == LOAIMUCTIEU_NGUOICHOICUNGNHOM:
             return False
         if self.get_idbandohientai() == BANDO_CHIENTRUONG and self.get_idphechientruong() == self.get_idphechientruong(diachicosothongtinnhanvat):

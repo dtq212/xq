@@ -4,6 +4,7 @@ import re
 import threading
 import time
 import traceback
+import unicodedata
 
 import pymem.exception
 
@@ -101,6 +102,8 @@ class LoopChinh:
         self.moitruong = moitruong
         self.tactu = tactu
         self.stop = stop
+        self.thoidiemhopthanhtinhthach_map = {}
+        self.thoidiemlogtinhthachgannhat = 0.
 
     def __del__(self):
         if not self.stop.is_set():
@@ -162,24 +165,50 @@ class LoopChinh:
                     self.tactu.action_sudungvatphamhanhtrang(tentuilinhthach)
                     time.sleep(0.25)
 
-            # Hợp thành Tinh Thạch (Mộc / Nhật / Ám) khi có >= 5 viên cùng tên
+            # Hệ Tinh Thạch được giữ lại theo từng nhân vật (tên đã bỏ dấu), mặc định là Thổ
+            hetinhthachgiulai = {94: "am", 102: "hoa"}.get(self.moitruong.get_idnguoichoi(), "tho")
+
+            # Hợp thành Tinh Thạch được giữ khi có >= 5 viên cùng tên, bỏ qua cấp 2 và cấp 4 (đã có Túi Linh Thạch cấp 3, cấp 5)
+            is_logtinhthach = time.time() - self.thoidiemlogtinhthachgannhat > 30.
+            if is_logtinhthach:
+                self.thoidiemlogtinhthachgannhat = time.time()
+            def chuanhoaten(ten):
+                # Bỏ dấu, gộp khoảng trắng thừa và bỏ phân biệt hoa thường để "Thủy"/"Thuỷ", "Tinh  Thạch" đều khớp
+                if not ten:
+                    return ""
+                ten = "".join(c for c in unicodedata.normalize("NFD", ten) if not unicodedata.combining(c))
+                return " ".join(ten.replace("đ", "d").replace("Đ", "D").split()).lower()
+
             for tenvatphamhanhtrang, vatphams in self.moitruong.get_danhsachvatphamhanhtrang_map().items():
-                if not tenvatphamhanhtrang or "Tinh Thạch" not in tenvatphamhanhtrang:
+                tenchuanhoa = chuanhoaten(tenvatphamhanhtrang)
+                if "thach" not in tenchuanhoa:
                     continue
-                if not any(x in tenvatphamhanhtrang for x in ("Mộc", "Nhật", "Ám")):
+                iddoituongs = [iddoituong for vitri, iddoituong in vatphams if iddoituong]
+                if is_logtinhthach:
+                    print("[TINH THẠCH] {!r}: {} ô, số lượng mỗi ô {}".format(tenvatphamhanhtrang, len(iddoituongs), [self.moitruong.get_soluongvatphamhanhtrang(vitri) for vitri, iddoituong in vatphams if iddoituong]))
+                if "tinh thach" not in tenchuanhoa:
                     continue
-                iddoituongs = [iddoituong for vitri, iddoituong in vatphams if vitri >= 6 and iddoituong]
+                if hetinhthachgiulai not in tenchuanhoa.split():
+                    continue
+                capdo = re.search(r"cap\s*(\d+)", tenchuanhoa)
+                # Bỏ qua cấp 2, cấp 4 (đã có Túi Linh Thạch cấp 3, cấp 5) và từ cấp 6 trở lên (cấp tối đa, không hợp được nữa)
+                if capdo and (int(capdo.group(1)) in (2, 4) or int(capdo.group(1)) >= 6):
+                    continue
+                # Nhóm vừa gửi lệnh hợp thành thì nhường lượt cho nhóm khác, tránh một nhóm lỗi chặn cả các cấp sau
+                if time.time() - self.thoidiemhopthanhtinhthach_map.get(tenvatphamhanhtrang, 0) < 2.:
+                    continue
                 if len(iddoituongs) >= 5:
                     self.moitruong.action_thucthicaulenh2("mix5 {} 0".format(" ".join("{}#".format(hex(x).replace("0x", "")) for x in iddoituongs[:5])))
+                    self.thoidiemhopthanhtinhthach_map[tenvatphamhanhtrang] = time.time()
                     time.sleep(0.25)
                     break
 
-            # Vứt Tinh Thạch, giữ lại loại Mộc / Nhật / Ám
+            # Vứt Tinh Thạch, chỉ giữ lại hệ của nhân vật
             for i in range(6, self.moitruong.get_soluongvatphamhanhtrangtoida()):
-                tenvatphamhanhtrang = self.moitruong.get_tenvatphamhanhtrang(i)
-                if not tenvatphamhanhtrang or "Tinh Thạch" not in tenvatphamhanhtrang:
+                tenchuanhoa = chuanhoaten(self.moitruong.get_tenvatphamhanhtrang(i))
+                if "tinh thach" not in tenchuanhoa:
                     continue
-                if any(x in tenvatphamhanhtrang for x in ("Mộc", "Nhật", "Ám")):
+                if hetinhthachgiulai in tenchuanhoa.split():
                     continue
                 iddoituongvatphamvutdi = self.moitruong.get_iddoituongvatphamhanhtrang(i)
                 if iddoituongvatphamvutdi:
