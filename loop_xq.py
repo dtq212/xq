@@ -138,13 +138,13 @@ class LoopChinh:
         #     if not self.moitruong.action_timkiemvatphamhanhtrang("Rương dự trữ"):
         #         self.moitruong.action_thucthicaulenh("buyitem ! 4 7 1")
         #         time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("talk bcaa# info.10")
+        #     self.moitruong.action_thucthicaulenh("tallk bcaa# info.10")
         #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("talk bcaa# info.11")
+        #     self.moitruong.action_thucthicaulenh("tallk bcaa# info.11")
         #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("talk bcaa# info.20")
+        #     self.moitruong.action_thucthicaulenh("tallk bcaa# info.20")
         #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("talk bcaa# info.21")
+        #     self.moitruong.action_thucthicaulenh("tallk bcaa# info.21")
         #     time.sleep(0.25)
 
         if self.moitruong.get_idnguoichoi() in (29, 30, 31, 32, 132):
@@ -184,11 +184,11 @@ class LoopChinh:
         #                     print("Nội Kháng >= 85. Dừng tiến trình!")
         #                     break
         #                 else:
-        #                     self.moitruong.action_thucthicaulenh2("talk 165a# giaotrangbi.{}# 0".format(hex(iddoituong)).replace("0x", ""))
+        #                     self.moitruong.action_thucthicaulenh2("tallk 165a# giaotrangbi.{}# 0".format(hex(iddoituong)).replace("0x", ""))
         #                     time.sleep(0.2)
         #             else:
         #                 print("Không tìm thấy dòng Nội Kháng trong mô tả vật phẩm này.")
-        #                 self.moitruong.action_thucthicaulenh2("talk 165a# giaotrangbi.{}# 0".format(hex(iddoituong)).replace("0x", ""))
+        #                 self.moitruong.action_thucthicaulenh2("tallk 165a# giaotrangbi.{}# 0".format(hex(iddoituong)).replace("0x", ""))
         #                 time.sleep(0.2)
 
         # if self.moitruong.get_idnguoichoi() == 60055:
@@ -207,7 +207,7 @@ class LoopChinh:
         #         return
         #     if not self.moitruong.action_timkiemvatphamhanhtrang(LAMCAU) or not self.moitruong.action_timkiemvatphamhanhtrang(HACCAU):
         #         return
-        #     self.moitruong.action_thucthicaulenh("talk {}# bonus.29".format(hex(idthiensutraodoi).replace("0x", "")))
+        #     self.moitruong.action_thucthicaulenh("tallk {}# bonus.29".format(hex(idthiensutraodoi).replace("0x", "")))
         #     time.sleep(0.25)
         #
         #     iddoituongtuivaibaobo = self.moitruong.action_timkiemvatphamhanhtrang("Bao Vải Ma Bố")
@@ -313,10 +313,10 @@ class LoopPhu:
                 lamcau = self.moitruong.action_timkiemvatphamhanhtrang(LAMCAU)
                 haccau = self.moitruong.action_timkiemvatphamhanhtrang(HACCAU)
                 if lamcau and haccau:
-                    self.moitruong.action_thucthicaulenh("talk {}# bonus.23".format(hex(self.moitruong.get_iddoituong(diachi))).replace("0x", ""))
+                    self.moitruong.action_thucthicaulenh("tallk {}# bonus.23".format(hex(self.moitruong.get_iddoituong(diachi))).replace("0x", ""))
                     time.sleep(0.25)
                 elif lamcau:
-                    self.moitruong.action_thucthicaulenh("talk {}# bonus.9".format(hex(self.moitruong.get_iddoituong(diachi))).replace("0x", ""))
+                    self.moitruong.action_thucthicaulenh("tallk {}# bonus.9".format(hex(self.moitruong.get_iddoituong(diachi))).replace("0x", ""))
 
                 for _ in range(2):
                     iddoituongtangbaodo = self.moitruong.action_timkiemvatphamhanhtrang(TANGBAODO, is_ruongdautien = True)

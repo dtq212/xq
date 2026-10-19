@@ -2871,7 +2871,7 @@ class TacTu:
                             hex_id = hex(idnpc).replace("0x", "")
                             print(f"[Move] Đang sử dụng {TANTHUTIENCO} để phù lên map {target_map}...")
                             for step in steps:
-                                caulenh = f"talk {hex_id}# {step}"
+                                caulenh = f"tallk {hex_id}# {step}"
                                 self.moitruong.action_thucthicaulenh(caulenh)
                                 time.sleep(1.0)
                             if self.moitruong.get_is_danghiencuasotuychon():
@@ -4072,21 +4072,21 @@ class TacTu:
             self._thoidiemdichientruonggannhat = time.time()
 
             if is_truongnhom:
-                caulenh = "talk {}# welcome.2".format(hex(idnpc).replace("0x", ""))
+                caulenh = "tallk {}# welcome.2".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh)
                 time.sleep(0.25)
-                caulenh = "talk {}# welcome.3".format(hex(idnpc).replace("0x", ""))
+                caulenh = "tallk {}# welcome.3".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh)
                 time.sleep(0.25)
             elif is_dangnamtrongnhom:
-                caulenh = "talk {}# welcome.3".format(hex(idnpc).replace("0x", ""))
+                caulenh = "tallk {}# welcome.3".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh)
                 time.sleep(0.25)
             else:
-                caulenh = "talk {}# welcome.1".format(hex(idnpc).replace("0x", ""))
+                caulenh = "tallk {}# welcome.1".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh)
                 time.sleep(0.25)
-                caulenh = "talk {}# welcome.3".format(hex(idnpc).replace("0x", ""))
+                caulenh = "tallk {}# welcome.3".format(hex(idnpc).replace("0x", ""))
                 self.moitruong.action_thucthicaulenh(caulenh)
                 time.sleep(0.25)
 
@@ -4200,7 +4200,7 @@ class TacTu:
             self.moitruong.action_ngatdichuyen()
             timestamp = int(time.time())
             hex_id = hex(idnpc).replace("0x", "")
-            caulenh = f"talk {hex_id}# goto.! {quocgiacanden} t{timestamp}"
+            caulenh = f"tallk {hex_id}# goto.! {quocgiacanden} t{timestamp}"
             self.moitruong.action_thucthicaulenh2(caulenh, delay = 0.0)
             self.moitruong.action_ngatdichuyen()
             time.sleep(5.0)

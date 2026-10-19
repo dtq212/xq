@@ -405,7 +405,7 @@ class MoiTruong:
         caulenh = "move {}# to {}".format(hex(iddoituong), vitri).replace("0x", "")
         return self.action_thucthicaulenh(caulenh)
 
-    def action_trochuyenvoinpc(self, iddoituong, noidungtrochuyen, delay = 0.2, caulenhtrochuyen = "talk"):
+    def action_trochuyenvoinpc(self, iddoituong, noidungtrochuyen, delay = 0.2, caulenhtrochuyen = "tallk"):
         if time.time() - self._thoidiemtrochuyenvoinpcgannhat < delay:
             return False
         self._thoidiemtrochuyenvoinpcgannhat = time.time()
