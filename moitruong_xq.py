@@ -1626,6 +1626,41 @@ class MoiTruong:
 
         return True
 
+    def _action_dichuyentheovector(self, x1, y1, deltax, deltay, delay = 0.05, is_rangbuoctrongmanhinh = False):
+        # deltax, deltay: độ lệch theo đơn vị toạ độ game tính từ bản thân (deltay = y1 - y2, dương = click xuống dưới màn hình)
+        if not deltax and not deltay:
+            return False
+
+        tylex = self._xmax / KHOANGCACHTOANMANHINH
+        tyley = self._ymax / KHOANGCACHTOANMANHINH
+
+        if is_rangbuoctrongmanhinh:
+            # Thu nhỏ cả vector theo cùng tỉ lệ để giữ đúng hướng (kẹp riêng từng trục làm lệch hướng đi)
+            gioihanx = (self._xmax - 25 - self._centerx) if deltax > 0 else (self._centerx - 25)
+            gioihany = (self._ymax - 25 - self._centery) if deltay > 0 else (self._centery - 25)
+            tyle = 1.
+            if deltax:
+                tyle = min(tyle, gioihanx / (abs(deltax) * tylex))
+            if deltay:
+                tyle = min(tyle, gioihany / (abs(deltay) * tyley))
+            deltax, deltay = deltax * tyle, deltay * tyle
+
+        # Bỏ qua nếu vẫn đang chạy tới đúng điểm đích vừa click (tránh click dồn làm nhân vật khựng lại)
+        xdich, ydich = x1 + deltax, y1 - deltay
+        if time.time() - self._thoidiemboquadichuyencungtoadogannhat < 0.3 and math.dist((xdich, ydich), (self._xdichuyengannhat, self._ydichuyengannhat)) < 0.5 and self.get_idtuthenhanvat() == TUTHENHANVAT_DICHUYEN:
+            return True
+
+        xclick = round(self._centerx + deltax * tylex)
+        yclick = round(self._centery + deltay * tyley)
+        if xclick == self._centerx and yclick == self._centery:
+            return False
+
+        is_ok = self.action_dichuyen(xclick, yclick, delay = delay)
+        if is_ok:
+            self._xdichuyengannhat, self._ydichuyengannhat = xdich, ydich
+            self._thoidiemboquadichuyencungtoadogannhat = time.time()
+        return is_ok
+
     def action_dichuyengiukhoangcachtoithieu(self, diachicosothongtinnhanvat2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 0.05):
         if not diachicosothongtinnhanvat2 or not self.get_iddoituong(diachicosothongtinnhanvat2):
             return False
@@ -1640,87 +1675,61 @@ class MoiTruong:
     def action_dichuyenphudau(self, diachicosothongtinnhanvat2, khoangcachphudau = 1, delay = 0.05):
         if not diachicosothongtinnhanvat2 or not self.get_iddoituong(diachicosothongtinnhanvat2):
             return False
-        diachi1 = self.get_diachicosothongtinnhanvat1()
         x2, y2 = self.get_toado(diachicosothongtinnhanvat2)
-        x1, y1 = self.get_toado(diachi1)
+        x1, y1 = self.get_toado()
         deltax, deltay = x2 - x1, y1 - y2
         khoangcach = math.dist((x1, y1), (x2, y2))
         khoangcachdichuyen = khoangcach + khoangcachphudau
-        if not khoangcachdichuyen:
+        if khoangcachdichuyen <= 0.:
             return False
         if khoangcach > 0.:
             deltax, deltay = khoangcachdichuyen * deltax / khoangcach, khoangcachdichuyen * deltay / khoangcach
         else:
             deltax, deltay = khoangcachdichuyen, khoangcachdichuyen
-        if not deltax and not deltay:
-            return False
-        xclick = round(self._centerx + deltax * (self._xmax / KHOANGCACHTOANMANHINH))
-        yclick = round(self._centery + deltay * (self._ymax / KHOANGCACHTOANMANHINH))
-        return self.action_dichuyen(xclick, yclick, delay = delay)
+        return self._action_dichuyentheovector(x1, y1, deltax, deltay, delay = delay)
 
     def action_dichuyengiukhoangcachtoidadiem(self, x2, y2, khoangcachtoida, khoangcachdichuyentoida = 0, delay = 0.05, is_rangbuoctrongmanhinh = False):
         if x2 <= 0 or y2 <= 0:
             return False
 
-        diachi1 = self.get_diachicosothongtinnhanvat1()
-
-        x1, y1 = self.get_toado(diachi1)
+        x1, y1 = self.get_toado()
         khoangcach = math.dist((x1, y1), (x2, y2))
-        if khoangcach <= khoangcachtoida:
-            return False
 
         khoangcachdichuyen = khoangcach - khoangcachtoida
-
         if khoangcachdichuyen <= 0.:
             return False
-
-        x1, y1 = self.get_toado(diachi1)
-        khoangcach = math.dist((x1, y1), (x2, y2))
-
-        deltax, deltay = x2 - x1, y1 - y2
 
         if khoangcachdichuyentoida:
             khoangcachdichuyen = min(float(khoangcachdichuyentoida), khoangcachdichuyen)
 
-        if khoangcach > 0.0:
-            deltax = (khoangcachdichuyen * deltax) / khoangcach
-            deltay = (khoangcachdichuyen * deltay) / khoangcach
+        deltax = khoangcachdichuyen * (x2 - x1) / khoangcach
+        deltay = khoangcachdichuyen * (y1 - y2) / khoangcach
 
-        if not deltax and not deltay:
-            return False
-
-        offset_x = deltax * (self._xmax / KHOANGCACHTOANMANHINH)
-        offset_y = deltay * (self._ymax / KHOANGCACHTOANMANHINH)
-
-        dx_pixel = int(offset_x)
-        dy_pixel = int(offset_y)
-
-        xclick = self._centerx + dx_pixel
-        yclick = self._centery + dy_pixel
-
-        return self.action_dichuyen(xclick, yclick, delay = delay, is_rangbuoctrongmanhinh = is_rangbuoctrongmanhinh)
+        return self._action_dichuyentheovector(x1, y1, deltax, deltay, delay = delay, is_rangbuoctrongmanhinh = is_rangbuoctrongmanhinh)
 
     def action_dichuyengiukhoangcachtoithieudiem(self, x2, y2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 0.05):
         if x2 <= 0 or y2 <= 0:
             return False
-        diachi1 = self.get_diachicosothongtinnhanvat1()
-        x1, y1 = self.get_toado(diachi1, )
+
+        x1, y1 = self.get_toado()
         khoangcach = math.dist((x1, y1), (x2, y2))
         if khoangcach >= khoangcachtoithieu:
             return False
-        deltax, deltay = x2 - x1, y1 - y2
-        khoangcachdichuyen = khoangcachtoithieu
-        if khoangcachdichuyen <= 0.:
-            return False
+
+        # Chỉ lùi phần còn thiếu (+0.5 dư) thay vì lùi nguyên khoảng cách tối thiểu
+        khoangcachdichuyen = khoangcachtoithieu - khoangcach + 0.5
         if khoangcachdichuyentoida:
-            khoangcachdichuyen = min(khoangcachdichuyentoida * 1.5, khoangcachdichuyen)
+            khoangcachdichuyen = min(float(khoangcachdichuyentoida), khoangcachdichuyen)
+
         if khoangcach > 0.:
-            deltax, deltay = int(-1 * khoangcachdichuyen * deltax / khoangcach), int(-1 * khoangcachdichuyen * deltay / khoangcach)
-        if not deltax and not deltay:
-            deltax, deltay = random.randint(-1, 1) * khoangcachdichuyentoida, random.randint(-1, 1) * khoangcachdichuyentoida
-        xclick = int(self._centerx + deltax * (self._xmax / KHOANGCACHTOANMANHINH))
-        yclick = int(self._centery + deltay * (self._ymax / KHOANGCACHTOANMANHINH))
-        return self.action_dichuyen(xclick, yclick, delay = delay)
+            deltax = -khoangcachdichuyen * (x2 - x1) / khoangcach
+            deltay = -khoangcachdichuyen * (y1 - y2) / khoangcach
+        else:
+            # Đứng trùng vị trí mục tiêu: chọn hướng ngẫu nhiên để thoát ra
+            goc = random.uniform(0, 2 * math.pi)
+            deltax, deltay = khoangcachdichuyen * math.cos(goc), khoangcachdichuyen * math.sin(goc)
+
+        return self._action_dichuyentheovector(x1, y1, deltax, deltay, delay = delay)
 
     def action_dichuyentiepcan(self, diachi2, khoangcachdichuyentoida = 0, delay = 0.05):
         return self.action_dichuyengiukhoangcachtoida(diachi2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)

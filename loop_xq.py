@@ -147,7 +147,7 @@ class LoopChinh:
         #     self.moitruong.action_thucthicaulenh("talk bcaa# info.21")
         #     time.sleep(0.25)
 
-        if self.moitruong.get_idnguoichoi() in (12, 85, 94, 102):
+        if self.moitruong.get_idnguoichoi() in (29, 30, 31, 32):
             if self.moitruong.action_timkiemvatphamhanhtrang("Túi Ngân Lượng"):
                 self.tactu.action_sudungvatphamhanhtrang("Túi Ngân Lượng")
                 time.sleep(0.25)
@@ -160,71 +160,9 @@ class LoopChinh:
             if self.moitruong.action_timkiemvatphamhanhtrang("Túi Quà Vô Song"):
                 self.tactu.action_sudungvatphamhanhtrang("Túi Quà Vô Song")
                 time.sleep(0.25)
-            for tentuilinhthach in ("Túi Linh Thạch cấp 1", "Túi Linh Thạch cấp 3", "Túi Linh Thạch cấp 5"):
-                if self.moitruong.action_timkiemvatphamhanhtrang(tentuilinhthach):
-                    self.tactu.action_sudungvatphamhanhtrang(tentuilinhthach)
-                    time.sleep(0.25)
-
-            # Hệ Tinh Thạch được giữ lại theo từng nhân vật (tên đã bỏ dấu), mặc định là Thổ
-            hetinhthachgiulai = {94: "am", 102: "hoa"}.get(self.moitruong.get_idnguoichoi(), "tho")
-
-            # Hợp thành Tinh Thạch được giữ khi có >= 5 viên cùng tên, bỏ qua cấp 2 và cấp 4 (đã có Túi Linh Thạch cấp 3, cấp 5)
-            is_logtinhthach = time.time() - self.thoidiemlogtinhthachgannhat > 30.
-            if is_logtinhthach:
-                self.thoidiemlogtinhthachgannhat = time.time()
-            def chuanhoaten(ten):
-                # Bỏ dấu, gộp khoảng trắng thừa và bỏ phân biệt hoa thường để "Thủy"/"Thuỷ", "Tinh  Thạch" đều khớp
-                if not ten:
-                    return ""
-                ten = "".join(c for c in unicodedata.normalize("NFD", ten) if not unicodedata.combining(c))
-                return " ".join(ten.replace("đ", "d").replace("Đ", "D").split()).lower()
-
-            for tenvatphamhanhtrang, vatphams in self.moitruong.get_danhsachvatphamhanhtrang_map().items():
-                tenchuanhoa = chuanhoaten(tenvatphamhanhtrang)
-                if "thach" not in tenchuanhoa:
-                    continue
-                iddoituongs = [iddoituong for vitri, iddoituong in vatphams if iddoituong]
-                if is_logtinhthach:
-                    print("[TINH THẠCH] {!r}: {} ô, số lượng mỗi ô {}".format(tenvatphamhanhtrang, len(iddoituongs), [self.moitruong.get_soluongvatphamhanhtrang(vitri) for vitri, iddoituong in vatphams if iddoituong]))
-                if "tinh thach" not in tenchuanhoa:
-                    continue
-                if hetinhthachgiulai not in tenchuanhoa.split():
-                    continue
-                capdo = re.search(r"cap\s*(\d+)", tenchuanhoa)
-                # Bỏ qua cấp 2, cấp 4 (đã có Túi Linh Thạch cấp 3, cấp 5) và từ cấp 6 trở lên (cấp tối đa, không hợp được nữa)
-                if capdo and (int(capdo.group(1)) in (2, 4) or int(capdo.group(1)) >= 6):
-                    continue
-                # Nhóm vừa gửi lệnh hợp thành thì nhường lượt cho nhóm khác, tránh một nhóm lỗi chặn cả các cấp sau
-                if time.time() - self.thoidiemhopthanhtinhthach_map.get(tenvatphamhanhtrang, 0) < 2.:
-                    continue
-                if len(iddoituongs) >= 5:
-                    self.moitruong.action_thucthicaulenh2("mix5 {} 0".format(" ".join("{}#".format(hex(x).replace("0x", "")) for x in iddoituongs[:5])))
-                    self.thoidiemhopthanhtinhthach_map[tenvatphamhanhtrang] = time.time()
-                    time.sleep(0.25)
-                    break
-
-            # Vứt Tinh Thạch, chỉ giữ lại hệ của nhân vật
-            for i in range(6, self.moitruong.get_soluongvatphamhanhtrangtoida()):
-                tenchuanhoa = chuanhoaten(self.moitruong.get_tenvatphamhanhtrang(i))
-                if "tinh thach" not in tenchuanhoa:
-                    continue
-                if hetinhthachgiulai in tenchuanhoa.split():
-                    continue
-                iddoituongvatphamvutdi = self.moitruong.get_iddoituongvatphamhanhtrang(i)
-                if iddoituongvatphamvutdi:
-                    soluong = self.moitruong.get_soluongvatphamhanhtrang(i) or 1
-                    self.moitruong.action_thucthicaulenh2("drop ! {}#{}".format(hex(iddoituongvatphamvutdi).replace("0x", ""), soluong))
-                    time.sleep(0.25)
-                    break
-        #     else:
-        #         self.tactu.action_sudungvatphamhanhtrang("Túi Quà Vô Song")
-        #     for tenvatphamvutdi in ["Cổ Phương Côn", "Thạch Điêu Quyền Nhẫn", "Ngọc Kiếm", "Xích Anh Thương", "Kim Đao", "Xích Y (Nữ)", "Đấu Chiến Gấm Y (Nam)", "Nguyệt Hoàn"]:
-        #         iddoituongvatphamvutdi = self.moitruong.action_timkiemvatphamhanhtrang(tenvatphamvutdi)
-        #
-        #         if iddoituongvatphamvutdi:
-        #             self.moitruong.action_thucthicaulenh("drop ! {}#1".format(hex(iddoituongvatphamvutdi)).replace("0x", ""))
-        #             time.sleep(0.25)
-
+            if self.moitruong.action_timkiemvatphamhanhtrang("Túi Pháp Bảo"):
+                self.tactu.action_sudungvatphamhanhtrang("Túi Pháp Bảo")
+                time.sleep(0.25)
         # vitrivatphams = [0, ]
         # if self.moitruong.get_idnguoichoi() == 102:
         #     for vitrivatpham in vitrivatphams:
