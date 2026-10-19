@@ -65,6 +65,7 @@ class MoiTruong:
 
         self._thoidiembattattheosaunhomgannhat = 0.
         self._thoidiemdichuyengannhat = 0.
+        self._thoidiemhetchovankhi = 0.
         self._thoidiemsudungkynangvitrigannhat_map = {}
         self._thoidiemsudungkynanggannhat = 0.
         self._thoidiemnhatvatphamgannhat = 0.
@@ -1694,8 +1695,10 @@ class MoiTruong:
 
         x1, y1 = self.get_toado()
         khoangcach = math.dist((x1, y1), (x2, y2))
+        if khoangcach <= 0.:
+            return False
 
-        khoangcachdichuyen = khoangcach - khoangcachtoida
+        khoangcachdichuyen = khoangcach - max(0., khoangcachtoida)
         if khoangcachdichuyen <= 0.:
             return False
 
@@ -1773,7 +1776,13 @@ class MoiTruong:
         x = read_int(self.tientrinh, x + 0x2C)
         return False if x <= 10 else True
 
+    def action_chovankhi(self, thoigian):
+        # Kỹ năng vận khí cần một lúc mới bật trạng thái "Đang vận khí"; coi như đang vận khí trong khoảng chờ đó để không thao tác gì làm ngắt chiêu
+        self._thoidiemhetchovankhi = max(self._thoidiemhetchovankhi, time.time() + thoigian)
+
     def get_is_dangvankhi(self):
+        if time.time() < self._thoidiemhetchovankhi:
+            return True
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False

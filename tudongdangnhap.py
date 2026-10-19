@@ -1,7 +1,7 @@
-DUONGDAN_GAME = r"C:\Users\Admin\Desktop\ChienQuoc2\ChienQuoc2 - Live\xq.exe"
-LAUNCHER_TITLE = "client 1.01.84"
-GAME_TITLE_LOGIN_SCREEN = "Chien Quoc 2 - That Hung Tranh Ba.1.01.84"
-GAME_TITLE_PREFIX = "Chien Quoc 2 ("
+DUONGDAN_GAME = r"E:\Games\ChienQuoc2D_Aegis\xq.exe"
+LAUNCHER_TITLE = "client 2.01.04"
+GAME_TITLE_LOGIN_SCREEN = "Chien Quoc 2D --ooo2026ooo-- v.2.01.04"
+GAME_TITLE_PREFIX = "Chien Quoc 2D"
 
 DANH_SACH_CUA_SO_LOI = ["warning", "play"]
 
@@ -34,36 +34,36 @@ TOADO_CHONNHANVAT = {
 }
 
 THONGTINDANGNHAP_MAP = {
-    "59844": {
+    "29": {
         "user": "tholuumanh",
         "pass": "hateva",
         "group": 1,
         "server": 1,
-        "char_index": 5,
+        "char_index": 1,
         "vitricuaso": 1,
     },
-    "59845": {
+    "30": {
         "user": "ngoclasat",
         "pass": "hateva",
         "group": 1,
         "server": 1,
-        "char_index": 5,
+        "char_index": 1,
         "vitricuaso": 2,
     },
-    "59996": {
-       "user": "hsthanglong",
+    "31": {
+       "user": "thichvacham",
        "pass": "hateva",
        "group": 1,
        "server": 1,
-       "char_index": 5,
+       "char_index": 1,
        "vitricuaso": 3,
     },
-    "60055": {
-        "user": "dtq21295",
+    "32": {
+        "user": "kngaivacham",
         "pass": "hateva",
         "group": 1,
         "server": 1,
-        "char_index": 5,
+        "char_index": 1,
         "vitricuaso": 4,
     },
 }
@@ -95,7 +95,22 @@ def _safe_post_message(hwnd, msg, wparam, lparam):
         raise e
 
 
+PHIMDIEUKHIENs = (win32con.VK_SHIFT, win32con.VK_CONTROL, win32con.VK_MENU, win32con.VK_LWIN, win32con.VK_RWIN)
+
+
+def chonhaphimdieukhien(thoigiantoida = 5.):
+    # Chỉ đọc trạng thái phím thật (không gửi gì ra bàn phím): nếu người dùng đang giữ Ctrl/Shift/Alt/Win
+    # thì chờ nhả ra rồi mới gửi click/phím, tránh game hiểu thành tổ hợp phím (vd Shift+Tab, Alt+Enter)
+    hethan = time.time() + thoigiantoida
+    while time.time() < hethan:
+        if not any(win32api.GetAsyncKeyState(phim) & 0x8000 for phim in PHIMDIEUKHIENs):
+            return True
+        time.sleep(0.05)
+    return False
+
+
 def click(hwnd, x, y, delay = 0.1):
+    chonhaphimdieukhien()
     lparam = make_lparam(x, y)
     _safe_post_message(hwnd, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lparam)
     time.sleep(0.05)
@@ -104,6 +119,7 @@ def click(hwnd, x, y, delay = 0.1):
 
 
 def right_click(hwnd, x, y, delay = 0.1):
+    chonhaphimdieukhien()
     lparam = make_lparam(x, y)
     _safe_post_message(hwnd, win32con.WM_RBUTTONDOWN, win32con.MK_RBUTTON, lparam)
     time.sleep(0.05)
@@ -112,6 +128,7 @@ def right_click(hwnd, x, y, delay = 0.1):
 
 
 def press_key(hwnd, key_code, delay = 0.1):
+    chonhaphimdieukhien()
     _safe_post_message(hwnd, win32con.WM_KEYDOWN, key_code, 0)
     time.sleep(0.05)
     _safe_post_message(hwnd, win32con.WM_KEYUP, key_code, 0)
@@ -125,6 +142,7 @@ def type_text(hwnd, text, delay = 0.05):
 
 
 def press_combo(hwnd, modifier, key, delay = 0.1):
+    chonhaphimdieukhien()
     _safe_post_message(hwnd, win32con.WM_KEYDOWN, modifier, 0)
     time.sleep(0.05)
     _safe_post_message(hwnd, win32con.WM_KEYDOWN, key, 0)
@@ -133,6 +151,35 @@ def press_combo(hwnd, modifier, key, delay = 0.1):
     time.sleep(0.05)
     _safe_post_message(hwnd, win32con.WM_KEYUP, modifier, 0)
     time.sleep(delay)
+
+def daycuasoxuongduoi(hwnd):
+    # Đưa cửa sổ xuống dưới cùng, không giành focus của cửa sổ người dùng đang làm việc.
+    # Click/phím đều gửi bằng PostMessage nên cửa sổ không cần nằm trên cùng hay được kích hoạt.
+    if not hwnd:
+        return
+    try:
+        if win32gui.GetForegroundWindow() == hwnd:
+            # Thu nhỏ để Windows trả focus về cửa sổ kế tiếp (cửa sổ của người dùng), sau đó hiện lại mà không kích hoạt
+            win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
+        if win32gui.IsIconic(hwnd):
+            win32gui.ShowWindow(hwnd, win32con.SW_SHOWNOACTIVATE)
+        win32gui.SetWindowPos(hwnd, win32con.HWND_BOTTOM, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE)
+    except pywintypes.error:
+        pass
+
+
+def chokhonggianhfocus(giay, *hwnds):
+    # Thay cho time.sleep trong lúc chờ: cửa sổ game/launcher hay tự nhảy lên trên khi vừa tạo hoặc khi chuyển màn hình
+    hethan = time.time() + giay
+    while True:
+        for hwnd in hwnds:
+            if hwnd and win32gui.GetForegroundWindow() == hwnd:
+                daycuasoxuongduoi(hwnd)
+        conlai = hethan - time.time()
+        if conlai <= 0:
+            break
+        time.sleep(min(0.2, conlai))
+
 
 def kiemtravadongcuasotreo(hwnd):
     try:
@@ -215,6 +262,15 @@ def timcuanhbaoloi():
     return hwnd_found
 
 
+def _is_cuasodadangnhap(hwnd):
+    # Bản 2.01.04 tiêu đề màn hình đăng nhập và trong game có thể trùng tiền tố, kiểm tra bộ nhớ để không đóng nhầm cửa sổ đang chơi
+    try:
+        mt = MoiTruong(hwnd)
+        return bool(mt.get_is_nhanvattontai() and mt.get_idnguoichoi())
+    except:
+        return False
+
+
 def timcuasogamedangbiket():
     hwnd_found = 0
 
@@ -225,7 +281,7 @@ def timcuasogamedangbiket():
             if GAME_TITLE_LOGIN_SCREEN in title:
                 r = win32gui.GetWindowRect(hwnd)
                 w, h = r[2] - r[0], r[3] - r[1]
-                if 790 < w < 830 and 590 < h < 660:
+                if 790 < w < 830 and 590 < h < 660 and not _is_cuasodadangnhap(hwnd):
                     hwnd_found = hwnd
 
     win32gui.EnumWindows(callback, None)
@@ -247,12 +303,7 @@ def mogamevadangnhap(char_name, config):
         hwnd_launcher = timlauncherdangmo()
         if hwnd_launcher:
             print(f"   -> Tìm thấy Launcher (HWND: {hwnd_launcher}).")
-            if win32gui.IsIconic(hwnd_launcher):
-                win32gui.ShowWindow(hwnd_launcher, win32con.SW_RESTORE)
-            try:
-                win32gui.SetForegroundWindow(hwnd_launcher)
-            except:
-                pass
+            daycuasoxuongduoi(hwnd_launcher)
         else:
             print("   -> Mở file exe mới...")
             game_dir = os.path.dirname(DUONGDAN_GAME)
@@ -299,15 +350,16 @@ def mogamevadangnhap(char_name, config):
             print("❌ Lỗi: Không bật được Launcher sau nhiều lần thử!")
             return
 
-        time.sleep(2)
+        daycuasoxuongduoi(hwnd_launcher)
+        chokhonggianhfocus(2, hwnd_launcher)
         lx, ly = TOADO_LAUNCHER["BTN_VAO_GAME"]
         click(hwnd_launcher, lx, ly)
-        time.sleep(1)
+        chokhonggianhfocus(1, hwnd_launcher)
         click(hwnd_launcher, lx, ly)
 
         hwnd_game = 0
         for i in range(60):
-            time.sleep(1)
+            chokhonggianhfocus(1, hwnd_launcher)
             hwnd_game = timcuasogamedangbiket()
             if hwnd_game: break
 
@@ -319,8 +371,9 @@ def mogamevadangnhap(char_name, config):
 
         vitri = config.get("vitricuaso", 1)
         dichuyencuasotheovitri(hwnd_game, vitri)
+        daycuasoxuongduoi(hwnd_game)
 
-        time.sleep(2)
+        chokhonggianhfocus(2, hwnd_game)
 
         group_name = config.get("group")
         server_index = config.get("server", 1)
@@ -340,7 +393,7 @@ def mogamevadangnhap(char_name, config):
                 time.sleep(0.5)
                 bx, by = TOADO_GAME["BTN_XACNHAN_SERVER"]
                 click(hwnd_game, bx, by)
-                time.sleep(2)
+                chokhonggianhfocus(2, hwnd_game)
             else:
                 print(f"⚠️ Không có tọa độ cho server index {idx}")
         except ValueError:
@@ -363,68 +416,28 @@ def mogamevadangnhap(char_name, config):
         press_key(hwnd_game, win32con.VK_RETURN)
 
         print("   -> Chờ load nhân vật (5s)...")
-        time.sleep(5)
+        chokhonggianhfocus(5, hwnd_game)
 
         char_idx = config.get("char_index", 1)
 
         if char_idx >= 2:
             cx, cy = TOADO_CHONNHANVAT.get(char_idx)
             click(hwnd_game, cx, cy)
-            time.sleep(1)
+            chokhonggianhfocus(1, hwnd_game)
         else:
             print("   -> Chọn nhân vật số 1 (Mặc định)")
 
         press_key(hwnd_game, win32con.VK_RETURN)
-        time.sleep(1)
+        chokhonggianhfocus(1, hwnd_game)
         press_key(hwnd_game, win32con.VK_RETURN)
 
-        print(f"✅ Hoàn tất cho {char_name}. Nghỉ 5s...")
+        print(f"✅ Hoàn tất cho {char_name}. Nghỉ 15s...")
 
-        time.sleep(15)
+        chokhonggianhfocus(15, hwnd_game)
 
     except Exception as e:
         print(f"❌ Exception: {e}")
 
-
-def dondeptientrinhaovuabithoatgame():
-    valid_pids = set()
-
-    def callback(hwnd, _):
-        if win32gui.IsWindowVisible(hwnd):
-            title = win32gui.GetWindowText(hwnd)
-            if GAME_TITLE_PREFIX in title:
-                _, pid = win32process.GetWindowThreadProcessId(hwnd)
-                valid_pids.add(pid)
-
-    win32gui.EnumWindows(callback, None)
-
-    xq_pids = set()
-    try:
-        output = subprocess.check_output(
-            ['tasklist', '/FI', 'IMAGENAME eq xq.exe', '/FO', 'CSV', '/NH']
-        ).decode('utf-8', errors='ignore')
-
-        reader = csv.reader(output.splitlines())
-        for row in reader:
-            if len(row) > 1 and 'xq.exe' in row[0].lower():
-                xq_pids.add(int(row[1]))
-    except subprocess.CalledProcessError:
-        pass
-    except Exception as e:
-        print(f"❌ Lỗi khi lấy danh sách tiến trình: {e}")
-
-    ghost_pids = xq_pids - valid_pids
-
-    if ghost_pids:
-        print(f"[CLEANUP] Đang kiểm tra các tiến trình xq.exe bị treo ngầm...")
-
-    for pid in ghost_pids:
-        print(f"   ⚠️ Phát hiện xq.exe ảo (PID: {pid}). Đang tiến hành kill...")
-        try:
-            subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output=True)
-            print(f"   ✅ Đã dọn dẹp thành công xq.exe ảo (PID: {pid}).")
-        except Exception as e:
-            print(f"   ❌ Lỗi khi kill PID {pid}: {e}")
 
 def dondeptientrinhaovuabithoatgame():
     valid_pids = set()
@@ -493,7 +506,7 @@ def dichuyencuasotheovitri(hwnd, vitricuaso):
             toado_y,
             0,
             0,
-            win32con.SWP_NOSIZE | win32con.SWP_NOZORDER
+            win32con.SWP_NOSIZE | win32con.SWP_NOZORDER | win32con.SWP_NOACTIVATE
         )
         print(f"   -> [GIAO DIỆN] Đã ghim cửa sổ vào vị trí số {vitricuaso}.")
     except Exception as e:

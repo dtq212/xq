@@ -29,6 +29,7 @@ HACCAU = "Hắc Cầu"
 SOTRIDUOC = "Sơ Trị Dược"
 GATAYNOEL = "Gà Tây Noel"
 LIXI = "Phong Bao Lì Xì"
+LEBAOKHAIQUOC = "Lễ Bao Khai Quốc"
 HACLANTHACH = "Hắc Lân Thạch"
 
 SONGTUDUNGCAM = "Song Tử Dũng Cảm"
@@ -38,7 +39,7 @@ THANTHUDAN = "Thần Thú - Dần (Giới hạn)"
 THANTHUDAN2 = "Thần Thú - Dần (Giới h"
 THANTHUSUU = "Thần Thú - Sửu (Giới hạn)"
 THANTHUSUU2 = "Thần Thú - Sửu (Giới h"
-THANTHUCHUOT = "12 con Giáp - Chuột"
+THANTHUCHUOT = "Thần Thú - Chuột"
 THANTHUTHO = "Thần Thú - Thỏ"
 THANTHUTHIN = "Thần Thú - Thìn"
 THANTHUTINHLINHNOEL = "Thần Thú - Tinh Linh Noel"
@@ -84,7 +85,7 @@ THIENLYHUUTINH = "Thiên Lý Hữu Tình"
 DAIHUYETTHACH = "Đại Huyết Thạch"
 DAIPHAPLUCTHACH = "Đại Pháp Lực Thạch"
 THOHANHCHAU = "Thổ Hành Châu"
-TRANKY = "Trận Kỳ"
+TRANKY = "Trận Kì"
 DAUNANH = "Đậu Nành"
 TUSAMDON = "Tử Sâm Đơn"
 TAYGAU = "Tay Gấu"
@@ -100,7 +101,7 @@ LYHON = "Ly Hồn"
 LYPHACH = "Ly Phách"
 DONGVATBIMAO = "Động Vật Bi Mao"
 TANGBAODO = "Tàng Bảo Đồ"
-BUAGIAY = "bùa giấy"
+BUAGIAY = "Bùa Giấy"
 DAUBINH = "Đậu Binh"
 CUONGTHI = "Cương Thi"
 QUYTOT = "Quỷ Tốt"
@@ -224,6 +225,7 @@ VITRIKYNANG_CAITUHOANSINH = (3, SOKYNANGCUONGHOAVMC + 2)
 VITRIKYNANG_KHIETVANQUYET = (4, SOKYNANGCUONGHOAVMC + 2)
 VITRIKYNANG_CAMLOTRI = (5, SOKYNANGCUONGHOAVMC + 2)
 
+VITRIKYNANG_RAIDAUTHANHBINH = (2, SOKYNANGCUONGHOAVMC + 3)
 VITRIKYNANG_THOIMIENTHUAT = (3, SOKYNANGCUONGHOAVMC + 3)
 VITRIKYNANG_HUYENQUANGTHIEMANH = (4, SOKYNANGCUONGHOAVMC + 3)
 VITRIKYNANG_PHONGANTHUAT = (5, SOKYNANGCUONGHOAVMC + 3)
@@ -622,7 +624,9 @@ IDBANDO_MAP = {
 
 BAOTHUVATPHAMs = (SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN, THANTHUMAYET, THANTHUDAN, THANTHUSUU, THANTHUDAN2, THANTHUSUU2, THANTHUCHUOT)
 VATPHAMKHONGNHATs = tuple()
-VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUSAMDON, CAPCUUDON, HOATTAMDON, TIEUDAOTAN, KIMTANGTAN, QUYNGUYENDON, KHIMACHDON, TUTAMDON,  HOANGKIMTHANHY, "Thanh Đồng Bảo Hộp", TUKIMBAOHOP, "Mồi Câu", "Đá Tương Uyên", TIENTE, "Vô Song Điểm Phiếu", "Cờ Đỏ", "Sao Vàng", "Lễ Bao Khai Quốc")
+# Vật phẩm ưu tiên nhặt trên mọi hành động khác (tấn công, theo nhóm, gom quái, ...)
+VATPHAMUUTIENNHATs = (LEBAOKHAIQUOC,)
+VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUSAMDON, CAPCUUDON, HOATTAMDON, TIEUDAOTAN, KIMTANGTAN, QUYNGUYENDON, KHIMACHDON, TUTAMDON,  HOANGKIMTHANHY, "Thanh Đồng Bảo Hộp", TUKIMBAOHOP, "Mồi Câu", "Đá Tương Uyên", TIENTE, "Vô Song Điểm Phiếu", "Cờ Đỏ", "Sao Vàng", LEBAOKHAIQUOC)
 
 DUAHAU = "Dưa hấu"
 LAOTUU = "Lão Tửu"
@@ -656,8 +660,9 @@ VATPHAMTUDONGNHATFARMs = (
     " Nguyệt", "Trứng gà", " cấp ", "Kim Cương"
 )
 
-VATPHAMXEPCHONGs = tuple(["Toái Lăng", "Lá", "Hoạt Lạc Hoàn", "Lam Cầu", "Hắc Cầu", "Mồi Câu", KHIMACHDON, TAITAOHOAN, TIEUDAOTAN, QUYNGUYENDON, KIMTANGTAN, KHIMACHDON, TUTAMDON, "Lễ Bao Khai Quốc",
-                          "Tơ Nhện", "Thạch Tín", "Đuôi Bọ Cạp", "Kịch Độc Châm", "Cánh Ong", "Phi Hành Phiến", "Núm Vú", "Huỳnh Quang Thạch",
+VATPHAMXEPCHONGs = tuple(["Toái Lăng", "Lá", "Hoạt Lạc Hoàn", "Lam Cầu", "Hắc Cầu", "Mồi Câu", KHIMACHDON, TAITAOHOAN, TIEUDAOTAN, QUYNGUYENDON, KIMTANGTAN, KHIMACHDON, TUTAMDON, TOAIMABO,
+                          "Lễ Bao Khai Quốc",
+                          "Tơ Nhện", "Thạch Tín", "Đuôi Bọ Cạp", "Kịch Độc Châm", "Cánh Ong", "Phi Hành Phiến", "Núm Vú", "Huỳnh Quang Thạch", "Hành Quân Tán"
                           ])
 SOLUONGXEPCHONGTOIDA_MAP = {
     "Hoạt Lạc Hoàn": 30
@@ -862,7 +867,7 @@ NHANVATTODOITUDONGs = []
 for members in NHANVATTODOITUDONGs_LIST:
     NHANVATTODOITUDONGs.extend(members)
 
-TENMUCTIEUKHONGTANCONGs = (*BAOTHUVATPHAMs, "Tần QuốcBinh Sĩ", "Triệu QuốcBinh Sĩ", QUYTOT, THIENBINH, DAUBINH, "CAVE1", "CAVE.2")
+TENMUCTIEUKHONGTANCONGs = (*BAOTHUVATPHAMs, "Tần QuốcBinh Sĩ", "Triệu QuốcBinh Sĩ", QUYTOT, THIENBINH, DAUBINH, "CAVE1", "CAVE.2", 'Đỗ Độc', 'Ôn Thần',)
 TENNGUOICHOICUNGBANGs = ("Ti?u?ao", "jDTQ", "HSThangLong", "NhãPhi", "v113331", "Exodi")
 
 NHANVATTODOITUDONGs = tuple(NHANVATTODOITUDONGs)
