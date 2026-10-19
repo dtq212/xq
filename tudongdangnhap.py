@@ -301,7 +301,8 @@ def mogamevadangnhap(char_name, config):
                 print(f"      [Lần thử {attempt + 1}/{max_retries}] Đang chạy lệnh mở game...")
                 subprocess.Popen(DUONGDAN_GAME, cwd = game_dir)
 
-                for i in range(15):
+                # Chờ launcher tối đa 10s, kiểm tra mỗi 0.5s (trước đây 15 x 2s = 30s)
+                for i in range(20):
                     hwnd_launcher = timlauncherdangmo()
                     if hwnd_launcher:
                         success_open = True
@@ -322,8 +323,8 @@ def mogamevadangnhap(char_name, config):
 
                         break
 
-                    time.sleep(2)
-                    print(f"\r      Chờ Launcher... {i + 1}", end = "")
+                    time.sleep(0.5)
+                    print(f"\r      Chờ Launcher... {(i + 1) * 0.5:.1f}s", end = "")
 
                 print("")
 
@@ -371,7 +372,7 @@ def mogamevadangnhap(char_name, config):
             print(f"   -> Chọn cụm {group_name}")
             gx, gy = TOADO_CUMMAYCHU[group_name]
             click(hwnd_game, gx, gy)
-            time.sleep(0.5)
+            time.sleep(0.2)
 
         try:
             idx = int(server_index)
@@ -379,10 +380,11 @@ def mogamevadangnhap(char_name, config):
                 print(f"   -> Chọn server thứ {idx}")
                 sx, sy = TOADO_MAYCHU[idx]
                 click(hwnd_game, sx, sy)
-                time.sleep(0.5)
+                time.sleep(0.2)
                 bx, by = TOADO_GAME["BTN_XACNHAN_SERVER"]
                 click(hwnd_game, bx, by)
-                time.sleep(2)
+                # Chuyển sang màn nhập tài khoản gần như tức thì, chỉ chờ ngắn để ô nhập kịp hiện
+                time.sleep(0.5)
             else:
                 print(f"⚠️ Không có tọa độ cho server index {idx}")
         except ValueError:
@@ -404,8 +406,8 @@ def mogamevadangnhap(char_name, config):
         time.sleep(0.5)
         press_key(hwnd_game, win32con.VK_RETURN)
 
-        print("   -> Chờ load nhân vật (5s)...")
-        time.sleep(5)
+        print("   -> Chờ load nhân vật (2.5s)...")
+        time.sleep(2.5)
 
         char_idx = config.get("char_index", 1)
 
