@@ -57,6 +57,7 @@ THONGTINDANGNHAPs = [
     },
     {
         "tennhanvat": "Suong Chieu",
+        "idnguoichoi": 134,
         "user": "suongchieu",
         "pass": "hateva",
         "group": 1,
@@ -66,6 +67,7 @@ THONGTINDANGNHAPs = [
     },
     {
         "tennhanvat": "BốBánhBao",
+        "idnguoichoi": 135,
         "user": "bobanhbao",
         "pass": "hateva",
         "group": 1,
