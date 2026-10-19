@@ -54,7 +54,7 @@ THONGTINDANGNHAPs = [
         "vitricuaso": 2,
     },
     {
-        "tennhanvat": "Sương Chiều",
+        "tennhanvat": "Suong Chieu",
         "user": "suongchieu",
         "pass": "hateva",
         "group": 1,
@@ -234,8 +234,10 @@ def timcuanhbaoloi():
         nonlocal hwnd_found
         if win32gui.IsWindowVisible(hwnd):
             title = win32gui.GetWindowText(hwnd)
+            title_thuong = title.lower()
             for loi_title in DANH_SACH_CUA_SO_LOI:
-                if loi_title.lower() == title.lower():
+                # Bản 2.01.04 tiêu đề có hậu tố, vd "warning -- Ping: N/A"
+                if title_thuong == loi_title or title_thuong.startswith(loi_title + " "):
                     hwnd_found = hwnd
                     break
 
@@ -290,6 +292,8 @@ def mogamevadangnhap(char_name, config):
             print("   -> Mở file exe mới...")
             game_dir = os.path.dirname(DUONGDAN_GAME)
 
+            dondepclientkhongdangnhap()
+
             max_retries = 3
             success_open = False
 
@@ -314,6 +318,7 @@ def mogamevadangnhap(char_name, config):
                             print(f"      -> Lỗi khi đóng: {e}")
 
                         dondeptientrinhaovuabithoatgame()
+                        dondepclientkhongdangnhap(tuoitoithieu = 0.)
 
                         break
 
@@ -457,6 +462,68 @@ def dondeptientrinhaovuabithoatgame():
                 print(f"   ✅ Đã đóng thành công xq.exe ảo (PID: {pid}).")
             except Exception as e:
                 print(f"   ❌ Lỗi khi kill PID {pid}: {e}")
+
+        chotientrinhthoat(ghost_pids)
+
+
+def _laypidxq():
+    xq_pids = set()
+    try:
+        output = subprocess.check_output(
+            ['tasklist', '/FI', 'IMAGENAME eq xq.exe', '/FO', 'CSV', '/NH']
+        ).decode('utf-8', errors = 'ignore')
+        for row in csv.reader(output.splitlines()):
+            if len(row) > 1 and 'xq.exe' in row[0].lower():
+                xq_pids.add(int(row[1]))
+    except Exception as e:
+        print(f"❌ Lỗi khi lấy danh sách tiến trình: {e}")
+    return xq_pids
+
+
+def _laytuoitientrinh(pid):
+    try:
+        handle = win32api.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+        try:
+            return time.time() - win32process.GetProcessTimes(handle)["CreationTime"].timestamp()
+        finally:
+            win32api.CloseHandle(handle)
+    except Exception:
+        return 0.
+
+
+def dondepclientkhongdangnhap(tuoitoithieu = 120.):
+    # Client vừa bị dis vẫn còn cửa sổ "Chien Quoc 2D..." nên không bị coi là tiến trình ảo, nhưng vẫn chiếm suất
+    # => game báo "You can not run more client program!". Kill các client không có nhân vật đang đăng nhập.
+    # Bỏ qua client mới mở (< tuoitoithieu giây) vì có thể đang đăng nhập dở (vd tudongdangnhap2.py chạy song song).
+    pid_dangnhaps = set()
+    pid_cuasogames = set()
+
+    def callback(hwnd, _):
+        if win32gui.IsWindowVisible(hwnd) and GAME_TITLE_PREFIX in win32gui.GetWindowText(hwnd):
+            _, pid = win32process.GetWindowThreadProcessId(hwnd)
+            pid_cuasogames.add(pid)
+            if _is_cuasodadangnhap(hwnd):
+                pid_dangnhaps.add(pid)
+
+    win32gui.EnumWindows(callback, None)
+
+    pid_cankills = [pid for pid in pid_cuasogames - pid_dangnhaps if _laytuoitientrinh(pid) >= tuoitoithieu]
+    for pid in pid_cankills:
+        print(f"   ⚠️ Client không còn nhân vật đăng nhập (bị dis?) (PID: {pid}). Đang kill...")
+        subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output = True)
+    if pid_cankills:
+        chotientrinhthoat(pid_cankills)
+
+
+def chotientrinhthoat(pids, thoigiantoida = 15.):
+    # taskkill trả về ngay nhưng tiến trình cần một lúc mới thoát hẳn; mở xq.exe mới quá sớm vẫn bị tính quá số client
+    pids = set(pids)
+    hethan = time.time() + thoigiantoida
+    while pids and time.time() < hethan:
+        pids &= _laypidxq()
+        if pids:
+            time.sleep(0.5)
+    time.sleep(1.)
 
 
 def dichuyencuasotheovitri(hwnd, vitricuaso):

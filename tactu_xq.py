@@ -716,6 +716,20 @@ class TacTu:
                     return True
         return False
 
+    def _kiemtra_divaovungcam(self, x, y):
+        # Nhân vật chạy thẳng tới điểm đích: chặn cả khi điểm đích nằm ngoài vùng cấm nhưng đường chạy cắt qua vùng cấm
+        if not VUNGCAM_MAP.get(self.moitruong.get_idbandohientai()):
+            return False
+        if self._kiemtra_vungcam(x, y):
+            return True
+        x1, y1 = self.moitruong.get_toado()
+        sobuoc = int(math.dist((x1, y1), (x, y)))
+        for i in range(1, sobuoc):
+            t = i / sobuoc
+            if self._kiemtra_vungcam(x1 + (x - x1) * t, y1 + (y - y1) * t):
+                return True
+        return False
+
     def _kiemtramuctieuhople(self, diachidoituong, is_dongdoi = False):
         # Trả về False nếu không hợp lệ, ngược lại trả về dict thông tin mục tiêu để tái sử dụng
         if is_dongdoi:
@@ -752,7 +766,8 @@ class TacTu:
         if self.moitruong.get_is_nhanvatanthan(diachidoituong):
             return False
 
-        if self._is_tudongvebanrac and self._kiemtra_vungcam(*self.moitruong.get_toado(diachidoituong)):
+        # Mọi chế độ đều tránh vùng cấm (trước đây chỉ khi bật tự về bán rác nên vẫn đuổi quái vào cổng chuyển bản đồ)
+        if self._kiemtra_divaovungcam(*self.moitruong.get_toado(diachidoituong)):
             return False
 
         if is_nguoichoi:
@@ -2679,7 +2694,7 @@ class TacTu:
                 is_vatphamdangnhathople = False
             elif not kiemtradieukiennhat(tenvatphamhientai):
                 is_vatphamdangnhathople = False
-            elif self._kiemtra_vungcam(*self.moitruong.get_toado(self._diachicosovatphamdangnhat)):
+            elif self._kiemtra_divaovungcam(*self.moitruong.get_toado(self._diachicosovatphamdangnhat)):
                 is_vatphamdangnhathople = False
             elif time.time() - self._thoidiemthaydoivatphamdangnhatgannhat > 10:
                 self._diachicosovatphamkhongnhat_map[self._diachicosovatphamdangnhat] = time.time()
@@ -2694,14 +2709,15 @@ class TacTu:
             if diachiduphong:
                 if self.moitruong.get_is_vatphamtontai(diachiduphong):
                     tenvatphamduphong = self.moitruong.get_tendoituong(diachiduphong)
-                    if self.moitruong.get_khoangcach(diachiduphong) < KHOANGCACHNHATDO and kiemtradieukiennhat(tenvatphamduphong) and not self._kiemtra_vungcam(*self.moitruong.get_toado(diachiduphong)):
+                    if self.moitruong.get_khoangcach(diachiduphong) < KHOANGCACHNHATDO and kiemtradieukiennhat(tenvatphamduphong) and not self._kiemtra_divaovungcam(*self.moitruong.get_toado(diachiduphong)):
                         self._diachicosovatphamdangnhat = diachiduphong
                         self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
                 self._diachicosovatphamnhatduphong = False
 
         danhsachvatpham = []
         # Lệnh nhặt xung quanh của game tự đi tới vật phẩm gần đó (không chọn được món nào), nên có món nằm trong vùng cấm ở gần thì không dùng lệnh này
-        is_covatphamvungcamgan = False
+        # Bản đồ có vùng cấm thì không dùng lệnh nhặt xung quanh, chỉ nhặt đích danh từng món
+        is_covatphamvungcamgan = bool(VUNGCAM_MAP.get(self.moitruong.get_idbandohientai()))
         i = -1
         while True:
             i += 1
@@ -2719,7 +2735,7 @@ class TacTu:
             khoangcach = self.moitruong.get_khoangcach(diachivatpham)
 
             # Vật phẩm nằm trong vùng cấm (đi vào sẽ bị dịch chuyển sang bản đồ khác) thì bỏ qua, kể cả vật phẩm ưu tiên
-            if self._kiemtra_vungcam(*self.moitruong.get_toado(diachivatpham)):
+            if self._kiemtra_divaovungcam(*self.moitruong.get_toado(diachivatpham)):
                 if khoangcach <= 6.:
                     is_covatphamvungcamgan = True
                 continue
@@ -2779,6 +2795,12 @@ class TacTu:
             return
 
         if self._diachicosokhaikhoang:
+            self._yeucautudo = None
+            return
+
+        # Đang trong quy trình về bán rác: không tự đi/phù lên bãi farm (trước đây vừa Hồi Thành Phù về tới thành,
+        # đứng gần Tân Thủ Tiền Cơ là bị nói chuyện NPC phù thẳng lên map farm trước khi kịp bán)
+        if self._trangthaiveban != 0:
             self._yeucautudo = None
             return
 
@@ -3516,7 +3538,7 @@ class TacTu:
             if self._tenmuctieutancongs and tendoituongxemxet not in self._tenmuctieutancongs:
                 continue
 
-            if self._kiemtra_vungcam(*self.moitruong.get_toado(diachidoituongxemxet)):
+            if self._kiemtra_divaovungcam(*self.moitruong.get_toado(diachidoituongxemxet)):
                 continue
 
             iddoituongquai = self.moitruong.get_iddoituong(diachidoituongxemxet)

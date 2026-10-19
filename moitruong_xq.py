@@ -1627,6 +1627,32 @@ class MoiTruong:
 
         return True
 
+    def get_is_duongdicatvungcam(self, x1, y1, x2, y2):
+        # Đường chạy thẳng (x1, y1) -> (x2, y2) có chạm vùng cấm của bản đồ hiện tại không (VUNGCAM_MAP: đi vào sẽ bị chuyển bản đồ)
+        danhsachvungcam = VUNGCAM_MAP.get(self.get_idbandohientai())
+        if not danhsachvungcam:
+            return False
+        dx, dy = x2 - x1, y2 - y1
+        dodai2 = dx * dx + dy * dy
+        for vung in danhsachvungcam:
+            if vung["type"] == "circle":
+                px, py = vung["x"], vung["y"]
+                t = max(0., min(1., ((px - x1) * dx + (py - y1) * dy) / dodai2)) if dodai2 else 0.
+                if math.dist((px, py), (x1 + t * dx, y1 + t * dy)) <= vung["r"]:
+                    return True
+            elif vung["type"] == "line":
+                sobuoc = max(1, int(math.sqrt(dodai2)))
+                for i in range(sobuoc + 1):
+                    t = i / sobuoc
+                    px, py = x1 + t * dx, y1 + t * dy
+                    ax, ay, bx, by = vung["x1"], vung["y1"], vung["x2"], vung["y2"]
+                    vx, vy = bx - ax, by - ay
+                    v2 = vx * vx + vy * vy
+                    u = max(0., min(1., ((px - ax) * vx + (py - ay) * vy) / v2)) if v2 else 0.
+                    if math.dist((px, py), (ax + u * vx, ay + u * vy)) <= vung["r"]:
+                        return True
+        return False
+
     def _action_dichuyentheovector(self, x1, y1, deltax, deltay, delay = 0.05, is_rangbuoctrongmanhinh = False):
         # deltax, deltay: độ lệch theo đơn vị toạ độ game tính từ bản thân (deltay = y1 - y2, dương = click xuống dưới màn hình)
         if not deltax and not deltay:
@@ -1646,8 +1672,13 @@ class MoiTruong:
                 tyle = min(tyle, gioihany / (abs(deltay) * tyley))
             deltax, deltay = deltax * tyle, deltay * tyle
 
-        # Bỏ qua nếu vẫn đang chạy tới đúng điểm đích vừa click (tránh click dồn làm nhân vật khựng lại)
         xdich, ydich = x1 + deltax, y1 - deltay
+
+        # Lớp chặn cuối: mọi kiểu di chuyển (tiếp cận, lùi giữ khoảng cách, phủ đầu...) đều không được cắt qua vùng cấm
+        if self.get_is_duongdicatvungcam(x1, y1, xdich, ydich):
+            return False
+
+        # Bỏ qua nếu vẫn đang chạy tới đúng điểm đích vừa click (tránh click dồn làm nhân vật khựng lại)
         if time.time() - self._thoidiemboquadichuyencungtoadogannhat < 0.3 and math.dist((xdich, ydich), (self._xdichuyengannhat, self._ydichuyengannhat)) < 0.5 and self.get_idtuthenhanvat() == TUTHENHANVAT_DICHUYEN:
             return True
 
