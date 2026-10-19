@@ -702,6 +702,20 @@ class TacTu:
             khoangcachtoidatruongnhom -= 1.5
         return khoangcachtoidatruongnhom
 
+    def _kiemtra_vungcam(self, x, y):
+        # Vùng cấm trên bản đồ (VUNGCAM_MAP): đi vào sẽ bị dịch chuyển sang bản đồ khác
+        danhsachvungcam = VUNGCAM_MAP.get(self.moitruong.get_idbandohientai())
+        if not danhsachvungcam:
+            return False
+        for vung in danhsachvungcam:
+            if vung["type"] == "circle":
+                if math.dist((x, y), (vung["x"], vung["y"])) <= vung["r"]:
+                    return True
+            elif vung["type"] == "line":
+                if self._tinhkhoangcachdendoanthang(x, y, vung["x1"], vung["y1"], vung["x2"], vung["y2"]) <= vung["r"]:
+                    return True
+        return False
+
     def _kiemtramuctieuhople(self, diachidoituong, is_dongdoi = False):
         # Trả về False nếu không hợp lệ, ngược lại trả về dict thông tin mục tiêu để tái sử dụng
         if is_dongdoi:
@@ -736,6 +750,9 @@ class TacTu:
                 return False
 
         if self.moitruong.get_is_nhanvatanthan(diachidoituong):
+            return False
+
+        if self._is_tudongvebanrac and self._kiemtra_vungcam(*self.moitruong.get_toado(diachidoituong)):
             return False
 
         if is_nguoichoi:
@@ -3487,6 +3504,9 @@ class TacTu:
             if tendoituongxemxet in self._tenmuctieukhongtancongs:
                 continue
             if self._tenmuctieutancongs and tendoituongxemxet not in self._tenmuctieutancongs:
+                continue
+
+            if self._kiemtra_vungcam(*self.moitruong.get_toado(diachidoituongxemxet)):
                 continue
 
             iddoituongquai = self.moitruong.get_iddoituong(diachidoituongxemxet)
