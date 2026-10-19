@@ -37,8 +37,8 @@ TOADO_CHONNHANVAT = {
 THONGTINDANGNHAPs = [
     {
         "tennhanvat": "Mộc Lan",
-        "user": "",  # TODO: điền tài khoản
-        "pass": "",  # TODO: điền mật khẩu
+        "user": "moclan",  # TODO: điền tài khoản
+        "pass": "hateva",  # TODO: điền mật khẩu
         "group": 1,
         "server": 1,
         "char_index": 1,
@@ -46,31 +46,31 @@ THONGTINDANGNHAPs = [
     },
     {
         "tennhanvat": "tieuhac",
-        "user": "",  # TODO: điền tài khoản
-        "pass": "",  # TODO: điền mật khẩu
+        "user": "tieuhac",  # TODO: điền tài khoản
+        "pass": "hateva",  # TODO: điền mật khẩu
         "group": 1,
         "server": 1,
         "char_index": 1,
         "vitricuaso": 2,
     },
-    {
-        "tennhanvat": "Sương Chiều",
-        "user": "",  # TODO: điền tài khoản
-        "pass": "",  # TODO: điền mật khẩu
-        "group": 1,
-        "server": 1,
-        "char_index": 1,
-        "vitricuaso": 3,
-    },
-    {
-        "tennhanvat": "BốBánhBao",
-        "user": "",  # TODO: điền tài khoản
-        "pass": "",  # TODO: điền mật khẩu
-        "group": 1,
-        "server": 1,
-        "char_index": 1,
-        "vitricuaso": 4,
-    },
+    # {
+    #     "tennhanvat": "Sương Chiều",
+    #     "user": "suongchieu",  # TODO: điền tài khoản
+    #     "pass": "hateva",  # TODO: điền mật khẩu
+    #     "group": 1,
+    #     "server": 1,
+    #     "char_index": 1,
+    #     "vitricuaso": 3,
+    # },
+    # {
+    #     "tennhanvat": "BốBánhBao",
+    #     "user": "bobanhbao",  # TODO: điền tài khoản
+    #     "pass": "hateva",  # TODO: điền mật khẩu
+    #     "group": 1,
+    #     "server": 1,
+    #     "char_index": 1,
+    #     "vitricuaso": 4,
+    # },
 ]
 
 import csv
