@@ -53,24 +53,24 @@ THONGTINDANGNHAPs = [
         "char_index": 1,
         "vitricuaso": 2,
     },
-    {
-        "tennhanvat": "Sương Chiều",
-        "user": "",  # TODO: điền tài khoản
-        "pass": "",  # TODO: điền mật khẩu
-        "group": 1,
-        "server": 1,
-        "char_index": 1,
-        "vitricuaso": 3,
-    },
-    {
-        "tennhanvat": "BốBánhBao",
-        "user": "",  # TODO: điền tài khoản
-        "pass": "",  # TODO: điền mật khẩu
-        "group": 1,
-        "server": 1,
-        "char_index": 1,
-        "vitricuaso": 4,
-    },
+    # {
+    #     "tennhanvat": "Sương Chiều",
+    #     "user": "",  # TODO: điền tài khoản
+    #     "pass": "",  # TODO: điền mật khẩu
+    #     "group": 1,
+    #     "server": 1,
+    #     "char_index": 1,
+    #     "vitricuaso": 3,
+    # },
+    # {
+    #     "tennhanvat": "BốBánhBao",
+    #     "user": "",  # TODO: điền tài khoản
+    #     "pass": "",  # TODO: điền mật khẩu
+    #     "group": 1,
+    #     "server": 1,
+    #     "char_index": 1,
+    #     "vitricuaso": 4,
+    # },
 ]
 
 import csv

@@ -1947,6 +1947,12 @@ class TacTu:
             if is_break:
                 return
 
+    def _get_kynangchophep(self):
+        # None = không giới hạn; ngược lại là tập vị trí kỹ năng được phép dùng (xem KYNANGCHOPHEPTHEONHANVAT_MAP)
+        tennhanvat = " ".join((self.moitruong.get_tendoituong() or "").split()).lower()
+        kynangchopheps = KYNANGCHOPHEPTHEONHANVAT_MAP.get(tennhanvat)
+        return set(kynangchopheps) if kynangchopheps is not None else None
+
     def _get_is_cobaothukynangtrieuhoi(self):
         # Bảo thú kỹ năng triệu hồi có tên dạng "Thiên binh (...)", bảo thú giang hồ thì không có ngoặc
         for sothutu in range(1, 4):
@@ -1978,6 +1984,7 @@ class TacTu:
         idbandohientai = self.moitruong.get_idbandohientai()
 
         is_cobaothukynangtrieuhoi = self._get_is_cobaothukynangtrieuhoi()
+        kynangchopheps = self._get_kynangchophep()
 
         danhsachuutien = [
             # Huyết Tế: hy sinh 50% khí huyết của bảo thú triệu hồi để hồi cho bản thân (tốn 100 pháp lực)
@@ -2003,6 +2010,8 @@ class TacTu:
 
         for i, item in enumerate(danhsachuutien):
             vitrikynang, loaikynang, dieukien, khoangcachyeucau, target, is_yeucaukhongdichuyen, is_ngatdichuyen = item
+            if vitrikynang and kynangchopheps is not None and vitrikynang not in kynangchopheps:
+                continue
             if callable(dieukien) and not dieukien():
                 continue
             if vitrikynang and not self.moitruong.get_is_kynangsansang(*vitrikynang):
