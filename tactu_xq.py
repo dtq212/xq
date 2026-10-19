@@ -2679,6 +2679,8 @@ class TacTu:
                 is_vatphamdangnhathople = False
             elif not kiemtradieukiennhat(tenvatphamhientai):
                 is_vatphamdangnhathople = False
+            elif self._kiemtra_vungcam(*self.moitruong.get_toado(self._diachicosovatphamdangnhat)):
+                is_vatphamdangnhathople = False
             elif time.time() - self._thoidiemthaydoivatphamdangnhatgannhat > 10:
                 self._diachicosovatphamkhongnhat_map[self._diachicosovatphamdangnhat] = time.time()
                 is_vatphamdangnhathople = False
@@ -2692,12 +2694,14 @@ class TacTu:
             if diachiduphong:
                 if self.moitruong.get_is_vatphamtontai(diachiduphong):
                     tenvatphamduphong = self.moitruong.get_tendoituong(diachiduphong)
-                    if self.moitruong.get_khoangcach(diachiduphong) < KHOANGCACHNHATDO and kiemtradieukiennhat(tenvatphamduphong):
+                    if self.moitruong.get_khoangcach(diachiduphong) < KHOANGCACHNHATDO and kiemtradieukiennhat(tenvatphamduphong) and not self._kiemtra_vungcam(*self.moitruong.get_toado(diachiduphong)):
                         self._diachicosovatphamdangnhat = diachiduphong
                         self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
                 self._diachicosovatphamnhatduphong = False
 
         danhsachvatpham = []
+        # Lệnh nhặt xung quanh của game tự đi tới vật phẩm gần đó (không chọn được món nào), nên có món nằm trong vùng cấm ở gần thì không dùng lệnh này
+        is_covatphamvungcamgan = False
         i = -1
         while True:
             i += 1
@@ -2713,6 +2717,12 @@ class TacTu:
 
             tenvatpham = self.moitruong.get_tendoituong(diachivatpham)
             khoangcach = self.moitruong.get_khoangcach(diachivatpham)
+
+            # Vật phẩm nằm trong vùng cấm (đi vào sẽ bị dịch chuyển sang bản đồ khác) thì bỏ qua, kể cả vật phẩm ưu tiên
+            if self._kiemtra_vungcam(*self.moitruong.get_toado(diachivatpham)):
+                if khoangcach <= 6.:
+                    is_covatphamvungcamgan = True
+                continue
 
             if kiemtradieukiennhat(tenvatpham) and khoangcach < KHOANGCACHNHATDO:
                 danhsachvatpham.append((tenvatpham not in VATPHAMUUTIENNHATs, khoangcach, diachivatpham))
@@ -2750,13 +2760,13 @@ class TacTu:
                     "is_uutien": is_vatphamuutien,
                 }
             if khoangcach <= 3. and not is_dangvankhi:
-                if self._is_tudongvebanrac and not is_vatphamuutien:
+                if self._is_tudongvebanrac and not is_vatphamuutien and not is_covatphamvungcamgan:
                     self.moitruong.action_nhatvatphamxungquanh(delay = 0.2)
                 elif time.time() - self._thoidiemnhatvatphamgannhat_map.get(self._diachicosovatphamdangnhat, 0) > 0.2:
                     self.moitruong.action_nhatvatpham(self._diachicosovatphamdangnhat)
                     self._thoidiemnhatvatphamgannhat_map[self._diachicosovatphamdangnhat] = time.time()
 
-        elif self._is_tudongvebanrac and not is_chinhatvatphamuutien and not is_dangvankhi:
+        elif self._is_tudongvebanrac and not is_chinhatvatphamuutien and not is_dangvankhi and not is_covatphamvungcamgan:
             self.moitruong.action_nhatvatphamxungquanh(delay = 0.5)
 
         self._yeucaunhatvatpham = yeucaunhatvatphammoi
