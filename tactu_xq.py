@@ -3066,6 +3066,7 @@ class TacTu:
                 self.action_batpk()
 
     def action_batpk(self):
+        return
         self.moitruong.action_doimaupk(MAUPK_BANG)
 
     def action_tatpk(self):

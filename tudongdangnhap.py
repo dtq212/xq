@@ -347,9 +347,14 @@ def mogamevadangnhap(char_name, config):
             time.sleep(1)
             hwnd_game = timcuasogamedangbiket()
             if hwnd_game: break
+            # Click có thể bị launcher nuốt mất: bấm lại "Vào game" mỗi 15s
+            if (i + 1) % 15 == 0 and win32gui.IsWindow(hwnd_launcher):
+                print(f"   -> Chưa thấy cửa sổ game sau {i + 1}s, bấm lại Vào game...")
+                click(hwnd_launcher, lx, ly)
 
         if not hwnd_game:
-            print("❌ Lỗi: Cửa sổ Game không hiện lên!")
+            print("❌ Lỗi: Cửa sổ Game không hiện lên! Launcher có thể bị đơ -> Đóng launcher để lần sau mở lại từ đầu.")
+            donglauncher(hwnd_launcher)
             return
 
         print(f"[5] Game đã lên (HWND: {hwnd_game}). Đợi load Login (2s)...")
@@ -464,6 +469,29 @@ def dondeptientrinhaovuabithoatgame():
                 print(f"   ❌ Lỗi khi kill PID {pid}: {e}")
 
         chotientrinhthoat(ghost_pids)
+
+
+def donglauncher(hwnd_launcher):
+    # Launcher bị đơ không vào được game: đóng nhẹ trước, không được thì kill tiến trình rồi chờ thoát hẳn
+    if not hwnd_launcher or not win32gui.IsWindow(hwnd_launcher):
+        return
+    try:
+        _, pid = win32process.GetWindowThreadProcessId(hwnd_launcher)
+    except pywintypes.error:
+        return
+    try:
+        win32gui.PostMessage(hwnd_launcher, win32con.WM_CLOSE, 0, 0)
+    except pywintypes.error:
+        pass
+    for _ in range(10):
+        time.sleep(0.5)
+        if not win32gui.IsWindow(hwnd_launcher):
+            break
+    else:
+        print(f"   ⚠️ Launcher không tự đóng (PID: {pid}). Đang kill...")
+        subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output = True)
+    chotientrinhthoat([pid])
+    print(f"   ✅ Đã đóng launcher (PID: {pid}).")
 
 
 def _laypidxq():

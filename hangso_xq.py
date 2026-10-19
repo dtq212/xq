@@ -306,8 +306,8 @@ VITRIKYNANG_DITINHDAIPHAP = (1, 3)
 # Nhân vật mới chưa học đủ kỹ năng: chỉ được dùng các kỹ năng liệt kê ở đây.
 # Khoá là tên nhân vật viết thường (khoảng trắng Alt+255 coi như dấu cách); không dùng ID vì ID đổi mỗi lần đăng nhập.
 KYNANGCHOPHEPTHEONHANVAT_MAP = {
-    "tieuhac": (VITRIKYNANG_PHUCMAQUYET,),
-    "mộc lan": (VITRIKYNANG_PHUCMAQUYET,),
+    "suong chieu": (VITRIKYNANG_PHUCMAQUYET,),
+    "bốbánhbao": (VITRIKYNANG_PHUCMAQUYET,),
 }
 VITRIKYNANG_THANTUEPHAPCHU = (2, 3)
 
