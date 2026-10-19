@@ -37,8 +37,8 @@ TOADO_CHONNHANVAT = {
 THONGTINDANGNHAPs = [
     {
         "tennhanvat": "Mộc Lan",
-        "user": "moclan",  # TODO: điền tài khoản
-        "pass": "hateva",  # TODO: điền mật khẩu
+        "user": "moclan",
+        "pass": "hateva",
         "group": 1,
         "server": 1,
         "char_index": 1,
@@ -46,8 +46,8 @@ THONGTINDANGNHAPs = [
     },
     {
         "tennhanvat": "tieuhac",
-        "user": "tieuhac",  # TODO: điền tài khoản
-        "pass": "hateva",  # TODO: điền mật khẩu
+        "user": "tieuhac",
+        "pass": "hateva",
         "group": 1,
         "server": 1,
         "char_index": 1,
@@ -55,8 +55,8 @@ THONGTINDANGNHAPs = [
     },
     {
         "tennhanvat": "Sương Chiều",
-        "user": "suongchieu",  # TODO: điền tài khoản
-        "pass": "hateva",  # TODO: điền mật khẩu
+        "user": "suongchieu",
+        "pass": "hateva",
         "group": 1,
         "server": 1,
         "char_index": 1,
@@ -64,8 +64,8 @@ THONGTINDANGNHAPs = [
     },
     {
         "tennhanvat": "BốBánhBao",
-        "user": "bobanhbao",  # TODO: điền tài khoản
-        "pass": "hateva",  # TODO: điền mật khẩu
+        "user": "bobanhbao",
+        "pass": "hateva",
         "group": 1,
         "server": 1,
         "char_index": 1,
