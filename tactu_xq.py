@@ -268,9 +268,9 @@ class TacTu:
         except (pymem.exception.PymemError, pymem.exception.WinAPIError):
             pass
 
-    def luuthietlap(self, tennhanvat):
-        # Lưu theo tên nhân vật: từ bản 2.01.04 ID người chơi đổi sau mỗi lần đăng nhập nên không dùng làm khoá được
-        if not tennhanvat:
+    def luuthietlap(self, idnguoichoi):
+        # Lưu theo ID người chơi (cố định, còn tên nhân vật thì có thể đổi)
+        if not idnguoichoi or idnguoichoi <= 0:
             return
 
         thietlap = {
@@ -303,19 +303,19 @@ class TacTu:
             "_is_tudongbattatchucnangmorong": self._is_tudongbattatchucnangmorong,
             "_is_tudongsudungkynangbaothu": self._is_tudongsudungkynangbaothu,
         }
-        util_luuthietlap(str(tennhanvat), thietlap)
+        util_luuthietlap(str(idnguoichoi), thietlap)
 
-    def taithietlap(self, tennhanvat, idnguoichoi = 0):
-        if not tennhanvat:
+    def taithietlap(self, idnguoichoi, tennhanvat = None):
+        if not idnguoichoi or idnguoichoi <= 0:
             return
 
-        # Chuyển đổi từ cách lưu cũ theo ID: dùng file nào mới sửa gần nhất (tên nhân vật hoặc ID)
-        khoathietlap = str(tennhanvat)
-        if idnguoichoi and idnguoichoi > 0:
-            duongdanten = util_duongdanthietlap(tennhanvat)
+        # Có một giai đoạn thiết lập bị lưu theo tên nhân vật: nếu file theo tên mới hơn file theo ID thì lấy file theo tên
+        khoathietlap = str(idnguoichoi)
+        if tennhanvat:
             duongdanid = util_duongdanthietlap(str(idnguoichoi))
-            if os.path.exists(duongdanid) and (not os.path.exists(duongdanten) or os.path.getmtime(duongdanid) > os.path.getmtime(duongdanten)):
-                khoathietlap = str(idnguoichoi)
+            duongdanten = util_duongdanthietlap(tennhanvat)
+            if os.path.exists(duongdanten) and (not os.path.exists(duongdanid) or os.path.getmtime(duongdanten) > os.path.getmtime(duongdanid)):
+                khoathietlap = str(tennhanvat)
 
         thietlap = util_taithietlap(khoathietlap)
         if thietlap:
@@ -1981,8 +1981,10 @@ class TacTu:
 
     def _get_kynangchophep(self):
         # None = không giới hạn; ngược lại là tập vị trí kỹ năng được phép dùng (xem KYNANGCHOPHEPTHEONHANVAT_MAP)
-        tennhanvat = " ".join((self.moitruong.get_tendoituong() or "").split()).lower()
-        kynangchopheps = KYNANGCHOPHEPTHEONHANVAT_MAP.get(tennhanvat)
+        kynangchopheps = KYNANGCHOPHEPTHEONHANVAT_MAP.get(self.moitruong.get_idnguoichoi())
+        if kynangchopheps is None:
+            tennhanvat = " ".join((self.moitruong.get_tendoituong() or "").split()).lower()
+            kynangchopheps = KYNANGCHOPHEPTHEONHANVAT_MAP.get(tennhanvat)
         return set(kynangchopheps) if kynangchopheps is not None else None
 
     def _get_is_cobaothukynangtrieuhoi(self):
@@ -3419,6 +3421,24 @@ class TacTu:
         if diachimuctieudangchon and self.moitruong.get_iddoituong(diachimuctieudangchon) == idquai:
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
 
+    def _laytoadodongdoikhacnhom(self):
+        # Nhân vật của mình (NHANVATTODOITUDONGs) đang ở gần nhưng không cùng nhóm => đang farm riêng, tránh giành quái của nhau
+        idnhanvathientai = self.moitruong.get_idnguoichoi()
+        idthanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms() if self.moitruong.get_is_dangnamtrongnhom() else []
+        toadodongdois = []
+        i = -1
+        while True:
+            i += 1
+            diachidoituong = self.moitruong.get_diachicosothongtindoituongx(i)
+            if not diachidoituong:
+                break
+            if not self.moitruong.get_is_nguoichoi(diachidoituong):
+                continue
+            idnguoichoi = self.moitruong.get_idnguoichoi(diachidoituong)
+            if idnguoichoi in NHANVATTODOITUDONGs and idnguoichoi != idnhanvathientai and idnguoichoi not in idthanhviennhoms:
+                toadodongdois.append(self.moitruong.get_toado(diachidoituong))
+        return toadodongdois
+
     def action_tudongxulygomquai(self):
         yeucaugomquaimoi = None
 
@@ -3525,6 +3545,10 @@ class TacTu:
 
         is_neobirotlai = (diachiquaidautien and khoangcachneohientai > 12.0)
 
+        # Vị trí các nhân vật khác trong danh sách tổ đội tự động (không cùng nhóm với mình): quái gần họ hơn thì nhường
+        toadobanthan = self.moitruong.get_toado()
+        toadodongdois = self._laytoadodongdoikhacnhom()
+
         while True:
             i += 1
             diachidoituongxemxet = self.moitruong.get_diachicosothongtindoituongx(i)
@@ -3539,10 +3563,21 @@ class TacTu:
             if self._tenmuctieutancongs and tendoituongxemxet not in self._tenmuctieutancongs:
                 continue
 
-            if self._kiemtra_divaovungcam(*self.moitruong.get_toado(diachidoituongxemxet)):
+            toadoquai = self.moitruong.get_toado(diachidoituongxemxet)
+            if self._kiemtra_divaovungcam(*toadoquai):
                 continue
 
             iddoituongquai = self.moitruong.get_iddoituong(diachidoituongxemxet)
+
+            if toadodongdois:
+                khoangcachtoiquai = math.dist(toadoquai, toadobanthan)
+                if any(math.dist(toadoquai, toadodongdoi) <= 9.0 and math.dist(toadoquai, toadodongdoi) < khoangcachtoiquai for toadodongdoi in toadodongdois):
+                    self._danhsachidquaidagom.discard(iddoituongquai)
+                    if self._idquaidautien == iddoituongquai:
+                        self._idquaidautien = 0
+                        diachiquaidautien = 0
+                    continue
+
             if iddoituongquai in self._idmuctieubiloi_map:
                 continue
 
@@ -3591,7 +3626,9 @@ class TacTu:
                 if self.moitruong.get_idloainhanvat(diachinhanvatmuctieudangchon) == LOAIMUCTIEU_QUAIVATHOACNPC:
                     id_target = self.moitruong.get_iddoituong(diachinhanvatmuctieudangchon)
                     kc_target = self.moitruong.get_khoangcach(diachinhanvatmuctieudangchon)
-                    if id_target not in self._danhsachidquaidagom and id_target not in self._idmuctieubiloi_map and 12.0 < kc_target < KHOANGCACHTOANMANHINH:
+                    toadotarget = self.moitruong.get_toado(diachinhanvatmuctieudangchon)
+                    is_dongdoigannhuong = any(math.dist(toadotarget, t) <= 9.0 and math.dist(toadotarget, t) < kc_target for t in toadodongdois)
+                    if id_target not in self._danhsachidquaidagom and id_target not in self._idmuctieubiloi_map and 12.0 < kc_target < KHOANGCACHTOANMANHINH and not is_dongdoigannhuong:
                         idquaicankeogannhat = id_target
                         diachicosoquaicankeo = diachinhanvatmuctieudangchon
                         khoangcachquaicankeo = kc_target

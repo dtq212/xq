@@ -33,10 +33,11 @@ TOADO_CHONNHANVAT = {
     6: (560, 352),
 }
 
-# Mỗi phần tử là 1 tài khoản; nhận diện online theo "tennhanvat" (từ bản 2.01.04 ID người chơi đổi sau mỗi lần đăng nhập nên không dùng được)
+# Mỗi phần tử là 1 tài khoản; nhận diện online theo "idnguoichoi" (cố định). Chưa điền ID thì tạm so theo "tennhanvat"
 THONGTINDANGNHAPs = [
     {
         "tennhanvat": "Mộc Lan",
+        "idnguoichoi": 132,
         "user": "moclan",
         "pass": "hateva",
         "group": 1,
@@ -46,6 +47,7 @@ THONGTINDANGNHAPs = [
     },
     {
         "tennhanvat": "tieuhac",
+        "idnguoichoi": 133,
         "user": "tieuhac",
         "pass": "hateva",
         "group": 1,
@@ -190,7 +192,7 @@ def chuanhoatennhanvat(tennhanvat):
 
 
 def laydanhsachnhanvatonlines():
-    online_chars = {"ten": set()}
+    online_chars = {"ten": set(), "id": set()}
 
     def callback(hwnd, _):
         if win32gui.IsWindowVisible(hwnd):
@@ -203,6 +205,9 @@ def laydanhsachnhanvatonlines():
                 try:
                     mt = MoiTruong(hwnd)
                     if mt.get_is_nhanvattontai():
+                        idnguoichoi = mt.get_idnguoichoi()
+                        if idnguoichoi:
+                            online_chars["id"].add(int(idnguoichoi))
                         tennhanvat = chuanhoatennhanvat(mt.get_tendoituong())
                         if tennhanvat:
                             online_chars["ten"].add(tennhanvat)
@@ -597,10 +602,17 @@ def main():
             print(f"\n[SCAN] Đang online: {sorted(online['ten'])}")
             for cauhinh in THONGTINDANGNHAPs:
                 tennhanvat = cauhinh.get("tennhanvat")
-                if not tennhanvat:
-                    print(f"⚠️ Tài khoản {cauhinh.get('user')} chưa điền 'tennhanvat' -> Bỏ qua.")
+                idnguoichoi = cauhinh.get("idnguoichoi")
+                # Ưu tiên ID (cố định); chưa điền ID thì tạm so theo tên (tên có thể đổi)
+                if idnguoichoi:
+                    is_online = int(idnguoichoi) in online["id"]
+                elif tennhanvat:
+                    is_online = chuanhoatennhanvat(tennhanvat) in online["ten"]
+                else:
+                    print(f"⚠️ Tài khoản {cauhinh.get('user')} chưa điền 'idnguoichoi' hay 'tennhanvat' -> Bỏ qua.")
                     continue
-                if chuanhoatennhanvat(tennhanvat) not in online["ten"]:
+                tennhanvat = tennhanvat or str(idnguoichoi)
+                if not is_online:
                     print(f"⚠️ {tennhanvat} vắng mặt -> Kích hoạt đăng nhập.")
                     mogamevadangnhap(tennhanvat, cauhinh)
                     break
