@@ -147,7 +147,7 @@ class LoopChinh:
         #     self.moitruong.action_thucthicaulenh("talk bcaa# info.21")
         #     time.sleep(0.25)
 
-        if self.moitruong.get_idnguoichoi() in (29, 30, 31, 32):
+        if self.moitruong.get_idnguoichoi() in (29, 30, 31, 32, 132):
             if self.moitruong.action_timkiemvatphamhanhtrang("Túi Ngân Lượng"):
                 self.tactu.action_sudungvatphamhanhtrang("Túi Ngân Lượng")
                 time.sleep(0.25)

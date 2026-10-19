@@ -33,8 +33,10 @@ TOADO_CHONNHANVAT = {
     6: (560, 352),
 }
 
-THONGTINDANGNHAP_MAP = {
-    "29": {
+# Mỗi phần tử là 1 tài khoản; nhận diện online theo "tennhanvat" (từ bản 2.01.04 ID người chơi đổi sau mỗi lần đăng nhập nên không dùng được)
+THONGTINDANGNHAPs = [
+    {
+        "tennhanvat": "Thọ",
         "user": "tholuumanh",
         "pass": "hateva",
         "group": 1,
@@ -42,7 +44,8 @@ THONGTINDANGNHAP_MAP = {
         "char_index": 1,
         "vitricuaso": 1,
     },
-    "30": {
+    {
+        "tennhanvat": "Ngọc",
         "user": "ngoclasat",
         "pass": "hateva",
         "group": 1,
@@ -50,7 +53,8 @@ THONGTINDANGNHAP_MAP = {
         "char_index": 1,
         "vitricuaso": 2,
     },
-    "31": {
+    {
+       "tennhanvat": "ThichVaCham",
        "user": "thichvacham",
        "pass": "hateva",
        "group": 1,
@@ -58,7 +62,8 @@ THONGTINDANGNHAP_MAP = {
        "char_index": 1,
        "vitricuaso": 3,
     },
-    "32": {
+    {
+        "tennhanvat": "KNgaiVaCham",
         "user": "kngaivacham",
         "pass": "hateva",
         "group": 1,
@@ -66,7 +71,7 @@ THONGTINDANGNHAP_MAP = {
         "char_index": 1,
         "vitricuaso": 4,
     },
-}
+]
 
 import csv
 import os
@@ -152,35 +157,6 @@ def press_combo(hwnd, modifier, key, delay = 0.1):
     _safe_post_message(hwnd, win32con.WM_KEYUP, modifier, 0)
     time.sleep(delay)
 
-def daycuasoxuongduoi(hwnd):
-    # Đưa cửa sổ xuống dưới cùng, không giành focus của cửa sổ người dùng đang làm việc.
-    # Click/phím đều gửi bằng PostMessage nên cửa sổ không cần nằm trên cùng hay được kích hoạt.
-    if not hwnd:
-        return
-    try:
-        if win32gui.GetForegroundWindow() == hwnd:
-            # Thu nhỏ để Windows trả focus về cửa sổ kế tiếp (cửa sổ của người dùng), sau đó hiện lại mà không kích hoạt
-            win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
-        if win32gui.IsIconic(hwnd):
-            win32gui.ShowWindow(hwnd, win32con.SW_SHOWNOACTIVATE)
-        win32gui.SetWindowPos(hwnd, win32con.HWND_BOTTOM, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE)
-    except pywintypes.error:
-        pass
-
-
-def chokhonggianhfocus(giay, *hwnds):
-    # Thay cho time.sleep trong lúc chờ: cửa sổ game/launcher hay tự nhảy lên trên khi vừa tạo hoặc khi chuyển màn hình
-    hethan = time.time() + giay
-    while True:
-        for hwnd in hwnds:
-            if hwnd and win32gui.GetForegroundWindow() == hwnd:
-                daycuasoxuongduoi(hwnd)
-        conlai = hethan - time.time()
-        if conlai <= 0:
-            break
-        time.sleep(min(0.2, conlai))
-
-
 def kiemtravadongcuasotreo(hwnd):
     try:
         win32gui.PostMessage(hwnd, win32con.WM_NCMOUSEMOVE, 0, 0)
@@ -208,8 +184,13 @@ def kiemtravadongcuasotreo(hwnd):
             return False
 
 
+def chuanhoatennhanvat(tennhanvat):
+    # Gộp mọi loại khoảng trắng (kể cả Alt+255 / U+00A0 trong tên nhân vật) thành dấu cách thường trước khi so
+    return " ".join((tennhanvat or "").split()).lower()
+
+
 def laydanhsachnhanvatonlines():
-    online_chars = []
+    online_chars = {"ten": set()}
 
     def callback(hwnd, _):
         if win32gui.IsWindowVisible(hwnd):
@@ -222,9 +203,9 @@ def laydanhsachnhanvatonlines():
                 try:
                     mt = MoiTruong(hwnd)
                     if mt.get_is_nhanvattontai():
-                        idnguoichoi = mt.get_idnguoichoi()
-                        if idnguoichoi:
-                            online_chars.append(str(idnguoichoi))
+                        tennhanvat = chuanhoatennhanvat(mt.get_tendoituong())
+                        if tennhanvat:
+                            online_chars["ten"].add(tennhanvat)
                 except:
                     pass
 
@@ -303,7 +284,8 @@ def mogamevadangnhap(char_name, config):
         hwnd_launcher = timlauncherdangmo()
         if hwnd_launcher:
             print(f"   -> Tìm thấy Launcher (HWND: {hwnd_launcher}).")
-            daycuasoxuongduoi(hwnd_launcher)
+            if win32gui.IsIconic(hwnd_launcher):
+                win32gui.ShowWindow(hwnd_launcher, win32con.SW_SHOWNOACTIVATE)
         else:
             print("   -> Mở file exe mới...")
             game_dir = os.path.dirname(DUONGDAN_GAME)
@@ -349,17 +331,15 @@ def mogamevadangnhap(char_name, config):
         if not hwnd_launcher:
             print("❌ Lỗi: Không bật được Launcher sau nhiều lần thử!")
             return
-
-        daycuasoxuongduoi(hwnd_launcher)
-        chokhonggianhfocus(2, hwnd_launcher)
+        time.sleep(2)
         lx, ly = TOADO_LAUNCHER["BTN_VAO_GAME"]
         click(hwnd_launcher, lx, ly)
-        chokhonggianhfocus(1, hwnd_launcher)
+        time.sleep(1)
         click(hwnd_launcher, lx, ly)
 
         hwnd_game = 0
         for i in range(60):
-            chokhonggianhfocus(1, hwnd_launcher)
+            time.sleep(1)
             hwnd_game = timcuasogamedangbiket()
             if hwnd_game: break
 
@@ -371,9 +351,8 @@ def mogamevadangnhap(char_name, config):
 
         vitri = config.get("vitricuaso", 1)
         dichuyencuasotheovitri(hwnd_game, vitri)
-        daycuasoxuongduoi(hwnd_game)
 
-        chokhonggianhfocus(2, hwnd_game)
+        time.sleep(2)
 
         group_name = config.get("group")
         server_index = config.get("server", 1)
@@ -393,7 +372,7 @@ def mogamevadangnhap(char_name, config):
                 time.sleep(0.5)
                 bx, by = TOADO_GAME["BTN_XACNHAN_SERVER"]
                 click(hwnd_game, bx, by)
-                chokhonggianhfocus(2, hwnd_game)
+                time.sleep(2)
             else:
                 print(f"⚠️ Không có tọa độ cho server index {idx}")
         except ValueError:
@@ -416,24 +395,24 @@ def mogamevadangnhap(char_name, config):
         press_key(hwnd_game, win32con.VK_RETURN)
 
         print("   -> Chờ load nhân vật (5s)...")
-        chokhonggianhfocus(5, hwnd_game)
+        time.sleep(5)
 
         char_idx = config.get("char_index", 1)
 
         if char_idx >= 2:
             cx, cy = TOADO_CHONNHANVAT.get(char_idx)
             click(hwnd_game, cx, cy)
-            chokhonggianhfocus(1, hwnd_game)
+            time.sleep(1)
         else:
             print("   -> Chọn nhân vật số 1 (Mặc định)")
 
         press_key(hwnd_game, win32con.VK_RETURN)
-        chokhonggianhfocus(1, hwnd_game)
+        time.sleep(1)
         press_key(hwnd_game, win32con.VK_RETURN)
 
         print(f"✅ Hoàn tất cho {char_name}. Nghỉ 15s...")
 
-        chokhonggianhfocus(15, hwnd_game)
+        time.sleep(15)
 
     except Exception as e:
         print(f"❌ Exception: {e}")
@@ -518,9 +497,13 @@ def main():
         try:
             dondeptientrinhaovuabithoatgame()
             online = laydanhsachnhanvatonlines()
-            print(f"\n[SCAN] Đang online: {online}")
-            for tennhanvat, cauhinh in THONGTINDANGNHAP_MAP.items():
-                if tennhanvat not in online:
+            print(f"\n[SCAN] Đang online: {sorted(online['ten'])}")
+            for cauhinh in THONGTINDANGNHAPs:
+                tennhanvat = cauhinh.get("tennhanvat")
+                if not tennhanvat:
+                    print(f"⚠️ Tài khoản {cauhinh.get('user')} chưa điền 'tennhanvat' -> Bỏ qua.")
+                    continue
+                if chuanhoatennhanvat(tennhanvat) not in online["ten"]:
                     print(f"⚠️ {tennhanvat} vắng mặt -> Kích hoạt đăng nhập.")
                     mogamevadangnhap(tennhanvat, cauhinh)
                     break

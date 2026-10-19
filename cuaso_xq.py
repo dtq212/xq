@@ -76,8 +76,8 @@ class CuaSo:
                 luong.join(timeout = 0.2)
 
     def tatauto(self, *args, **kwargs):
-        if self.idnguoichoi:
-            self.tactu.luuthietlap(self.idnguoichoi)
+        if self.tennhanvat:
+            self.tactu.luuthietlap(self.tennhanvat)
 
         self.main_stop.set()
         self._chotoanbocacluongdunghan()
@@ -97,18 +97,18 @@ class CuaSo:
                 tennhanvat = self.moitruong.get_tendoituong()
                 idnguoichoi = self.moitruong.get_idnguoichoi()
 
-                if idnguoichoi and idnguoichoi != self.idnguoichoi:
-                    if self.idnguoichoi:
-                        self.tactu.luuthietlap(self.idnguoichoi)
+                if idnguoichoi and tennhanvat and (idnguoichoi != self.idnguoichoi or tennhanvat != self.tennhanvat):
+                    if self.tennhanvat:
+                        self.tactu.luuthietlap(self.tennhanvat)
 
-                    self.tactu.taithietlap(idnguoichoi)
+                    self.tactu.taithietlap(tennhanvat, idnguoichoi)
                     print(f"-> Đã tải cấu hình cho: {tennhanvat} (ID: {idnguoichoi})")
 
                     self.idnguoichoi = idnguoichoi
                     self.tennhanvat = tennhanvat
                     self.thoidiemluuthietlap = time.time()
-                elif idnguoichoi and (time.time() - self.thoidiemluuthietlap > 1.0):
-                    self.tactu.luuthietlap(idnguoichoi)
+                elif idnguoichoi and tennhanvat and (time.time() - self.thoidiemluuthietlap > 1.0):
+                    self.tactu.luuthietlap(tennhanvat)
                     self.thoidiemluuthietlap = time.time()
 
                 if not idnguoichoi:

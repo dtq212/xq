@@ -1,4 +1,5 @@
 import math
+import os
 import random
 import re
 import time
@@ -10,7 +11,7 @@ import win32con
 from hangso_xq import *
 from moitruong_xq import MoiTruong, DOUUTIEN_THAP, DOUUTIEN_KHANCAP, DOUUTIEN_CAO
 from tienich_xq import luuthietlap as util_luuthietlap
-from tienich_xq import taithietlap as util_taithietlap, phatam
+from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam
 
 
 class TacTu:
@@ -267,8 +268,9 @@ class TacTu:
         except (pymem.exception.PymemError, pymem.exception.WinAPIError):
             pass
 
-    def luuthietlap(self, idnguoichoi):
-        if not idnguoichoi or idnguoichoi <= 0:
+    def luuthietlap(self, tennhanvat):
+        # Lưu theo tên nhân vật: từ bản 2.01.04 ID người chơi đổi sau mỗi lần đăng nhập nên không dùng làm khoá được
+        if not tennhanvat:
             return
 
         thietlap = {
@@ -301,13 +303,21 @@ class TacTu:
             "_is_tudongbattatchucnangmorong": self._is_tudongbattatchucnangmorong,
             "_is_tudongsudungkynangbaothu": self._is_tudongsudungkynangbaothu,
         }
-        util_luuthietlap(str(idnguoichoi), thietlap)
+        util_luuthietlap(str(tennhanvat), thietlap)
 
-    def taithietlap(self, idnguoichoi):
-        if not idnguoichoi or idnguoichoi <= 0:
+    def taithietlap(self, tennhanvat, idnguoichoi = 0):
+        if not tennhanvat:
             return
 
-        thietlap = util_taithietlap(str(idnguoichoi))
+        # Chuyển đổi từ cách lưu cũ theo ID: dùng file nào mới sửa gần nhất (tên nhân vật hoặc ID)
+        khoathietlap = str(tennhanvat)
+        if idnguoichoi and idnguoichoi > 0:
+            duongdanten = util_duongdanthietlap(tennhanvat)
+            duongdanid = util_duongdanthietlap(str(idnguoichoi))
+            if os.path.exists(duongdanid) and (not os.path.exists(duongdanten) or os.path.getmtime(duongdanid) > os.path.getmtime(duongdanten)):
+                khoathietlap = str(idnguoichoi)
+
+        thietlap = util_taithietlap(khoathietlap)
         if thietlap:
             if "_is_tudongbattheosaunhom" in thietlap: self._is_tudongbattheosaunhom = thietlap["_is_tudongbattheosaunhom"]
             if "_is_tudongtheosautruongnhom" in thietlap: self._is_tudongtheosautruongnhom = thietlap["_is_tudongtheosautruongnhom"]

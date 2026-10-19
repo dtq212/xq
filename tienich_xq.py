@@ -145,23 +145,36 @@ def phatam(noidung, is_block = True):
     t.start()
 
 
+def _thumucthietlap():
+    # Không dùng "." vì nó phụ thuộc thư mục đang đứng khi chạy lệnh (PyCharm và PowerShell khác nhau)
+    if getattr(sys, "frozen", False):
+        thumucgoc = os.path.dirname(sys.executable)
+    else:
+        thumucgoc = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(thumucgoc, "_internal", "thietlap")
+
+
+def duongdanthietlap(tennhanvat):
+    return os.path.join(_thumucthietlap(), str(slugify(tennhanvat)))
+
+
 def luuthietlap(tennhanvat, thietlap):
-    tenfile = slugify(tennhanvat)
+    filepath = duongdanthietlap(tennhanvat)
 
     try:
-        thumuc = os.path.join(".", "_internal", "thietlap")
-        if not os.path.exists(thumuc):
-            os.makedirs(thumuc)
-        with open(os.path.join(thumuc, str(tenfile)), "wb") as file:
+        os.makedirs(os.path.dirname(filepath), exist_ok = True)
+        # Ghi ra file tạm rồi thay thế để không bị hỏng file nếu tắt tool giữa chừng (lưu mỗi giây)
+        filetam = filepath + ".tmp"
+        with open(filetam, "wb") as file:
             pickle.dump(thietlap, file)
+        os.replace(filetam, filepath)
 
     except Exception as err:
         print(err)
 
 
 def taithietlap(tennhanvat):
-    tenfile = slugify(tennhanvat)
-    filepath = os.path.join(".", "_internal", "thietlap", str(tenfile))
+    filepath = duongdanthietlap(tennhanvat)
 
     try:
         if os.path.exists(filepath):
