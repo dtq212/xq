@@ -306,8 +306,7 @@ VITRIKYNANG_DITINHDAIPHAP = (1, 3)
 # Nhân vật mới chưa học đủ kỹ năng: chỉ được dùng các kỹ năng liệt kê ở đây.
 # Khoá là ID người chơi (ưu tiên, cố định) hoặc tên nhân vật viết thường (khoảng trắng Alt+255 coi như dấu cách).
 KYNANGCHOPHEPTHEONHANVAT_MAP = {
-    134: (VITRIKYNANG_PHUCMAQUYET,),
-    135: (VITRIKYNANG_PHUCMAQUYET,),
+
 }
 VITRIKYNANG_THANTUEPHAPCHU = (2, 3)
 
