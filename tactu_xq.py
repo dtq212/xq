@@ -3803,9 +3803,10 @@ class TacTu:
 
         is_neobirotlai = (diachiquaidautien and khoangcachneohientai > 12.0)
 
-        # Vị trí các nhân vật khác trong danh sách tổ đội tự động (không cùng nhóm với mình): quái gần họ hơn thì nhường
+        # Chỉ khi bật farm & bán rác: quái gần nhân vật khác trong danh sách tổ đội tự động (không cùng nhóm) hơn mình thì nhường.
+        # Không bật farm & bán rác thì không nhường gì cả.
         toadobanthan = self.moitruong.get_toado()
-        toadodongdois = self._laytoadodongdoikhacnhom()
+        toadodongdois = self._laytoadodongdoikhacnhom() if self._is_tudongvebanrac else []
 
         while True:
             i += 1
