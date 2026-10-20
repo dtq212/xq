@@ -118,6 +118,7 @@ class TacTu:
         # Lần gần nhất TỰ phát hiện ẩn thân (chia sẻ cho nhân vật khác cùng bản đồ)
         self._thoidiemphathienanthan = 0.
         self._tenanthanphathien = ""
+        self._thoigiantamngungphathien = 0.
         # Gán từ CuaSo để biết các cửa sổ khác đang dùng lộ trình mẫu nào
         self.shared_data = None
         self.idcuaso = None
@@ -747,6 +748,17 @@ class TacTu:
                 return True
         return False
 
+    def _kiemtra_tamdiemdanh(self, x, y):
+        # Đang chạy theo lộ trình điểm đánh: mục tiêu phải nằm trong bán kính tìm mục tiêu quanh ít nhất 1 điểm đánh của bản đồ hiện tại.
+        # Không có điểm đánh nào trên bản đồ này (hoặc không bật lộ trình) thì không giới hạn.
+        if not self._is_tudongdichuyendiemdanhxungquanh or not self._diemdanhxungquanhs:
+            return True
+        idbandohientai = self.moitruong.get_idbandohientai()
+        diemcungbandos = [d for d in self._diemdanhxungquanhs if len(d) >= 3 and d[2] == idbandohientai]
+        if not diemcungbandos:
+            return True
+        return any(math.dist((x, y), (d[0], d[1])) <= self._khoangcachtimkiemmuctieu for d in diemcungbandos)
+
     def _kiemtramuctieuhople(self, diachidoituong, is_dongdoi = False):
         # Trả về False nếu không hợp lệ, ngược lại trả về dict thông tin mục tiêu để tái sử dụng
         if is_dongdoi:
@@ -783,8 +795,14 @@ class TacTu:
         if self.moitruong.get_is_nhanvatanthan(diachidoituong):
             return False
 
+        toadodoituong = self.moitruong.get_toado(diachidoituong)
+
         # Mọi chế độ đều tránh vùng cấm (trước đây chỉ khi bật tự về bán rác nên vẫn đuổi quái vào cổng chuyển bản đồ)
-        if self._kiemtra_divaovungcam(*self.moitruong.get_toado(diachidoituong)):
+        if self._kiemtra_divaovungcam(*toadodoituong):
+            return False
+
+        # Quái phải nằm trong tầm của một điểm đánh (người chơi/bảo thú PK thì không giới hạn để còn phản công)
+        if not is_muctieupk and not self._kiemtra_tamdiemdanh(*toadodoituong):
             return False
 
         if is_nguoichoi:
@@ -2968,49 +2986,62 @@ class TacTu:
         return time.time() < self._thoidiemhettamngung
 
     def action_kiemtraanthan(self):
-        # 1) Tự quét: thấy người chơi lạ ẩn thân quanh mình thì ghi nhận và công bố cho các cửa sổ khác (qua shared_data)
+        # 1) Tự quét: thấy người chơi lạ ẩn thân, hoặc (ở map train) thấy người ngoài danh sách tổ đội, thì ghi nhận
+        #    và công bố cho các cửa sổ khác (qua shared_data)
         # 2) Đang farm & bán rác mà mình thấy, hoặc nhân vật khác CÙNG BẢN ĐỒ vừa thấy => ngưng hết mọi hoạt động
+        #    (ẩn thân: THOIGIANTAMNGUNGANTHAN, người lạ: THOIGIANTAMNGUNGNGUOILA)
         thoidiemhientai = time.time()
         if thoidiemhientai - self._thoidiemkiemtraanthangannhat < 0.5:
             return
         self._thoidiemkiemtraanthangannhat = thoidiemhientai
 
-        tenanthan = self._quetanthanxungquanh()
-        if tenanthan:
+        phathien = self._quetnguoichoibatthuong()
+        if phathien:
             # Chỉ công bố phát hiện trực tiếp (không công bố trạng thái tạm ngưng) để các nhân vật không gia hạn lẫn nhau mãi
             self._thoidiemphathienanthan = thoidiemhientai
-            self._tenanthanphathien = tenanthan
+            self._tenanthanphathien, self._thoigiantamngungphathien = phathien
 
         if not self._is_tudongvebanrac:
             return
-        if tenanthan:
-            self._batdautamngung(f"phát hiện {tenanthan} ẩn thân")
+        if phathien:
+            self._batdautamngung(f"phát hiện {phathien[0]}", phathien[1])
             return
-        lydo = self._layanthantucuasokhac()
-        if lydo:
-            self._batdautamngung(lydo)
+        phathienkhac = self._layanthantucuasokhac()
+        if phathienkhac:
+            self._batdautamngung(*phathienkhac)
 
-    def _quetanthanxungquanh(self):
+    def _is_nguoichoinoibo(self, idnguoichoi, idnhanvathientai):
+        # Nội bộ = chính mình + nhân vật trong danh sách tổ đội tự động; ai khác (kể cả cùng nhóm/cùng bang) đều là người lạ
+        return idnguoichoi == idnhanvathientai or idnguoichoi in NHANVATTODOITUDONGs
+
+    def _quetnguoichoibatthuong(self):
+        # Trả về (mô tả, số giây tạm ngưng): ("X ẩn thân", THOIGIANTAMNGUNGANTHAN) / ("người lạ X", THOIGIANTAMNGUNGNGUOILA) hoặc None
         idnhanvathientai = self.moitruong.get_idnguoichoi()
-        idthanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms() if self.moitruong.get_is_dangnamtrongnhom() else []
+        is_maptrain = self.moitruong.get_idbandohientai() not in BANDOKHONGPKs
+        nguoila = None
         i = -1
         while True:
             i += 1
             diachidoituong = self.moitruong.get_diachicosothongtindoituongx(i)
             if not diachidoituong:
-                return None
-            if not self.moitruong.get_is_nguoichoi(diachidoituong) or not self.moitruong.get_is_nhanvatanthan(diachidoituong):
+                return nguoila
+            if not self.moitruong.get_is_nguoichoi(diachidoituong):
                 continue
             idnguoichoi = self.moitruong.get_idnguoichoi(diachidoituong)
-            # Bỏ qua chính mình, nhân vật của mình và người cùng nhóm
-            if idnguoichoi == idnhanvathientai or idnguoichoi in NHANVATTODOITUDONGs or idnguoichoi in idthanhviennhoms:
+            if self._is_nguoichoinoibo(idnguoichoi, idnhanvathientai):
                 continue
             if self.moitruong.get_khoangcach(diachidoituong) > KHOANGCACHTOANMANHINH:
                 continue
-            return self.moitruong.get_tendoituong(diachidoituong) or str(idnguoichoi)
+            tendoituong = self.moitruong.get_tendoituong(diachidoituong) or str(idnguoichoi)
+            if self.moitruong.get_is_nhanvatanthan(diachidoituong):
+                # Ẩn thân luôn ưu tiên báo trước (thời gian tạm ngưng dài hơn)
+                return f"{tendoituong} ẩn thân", THOIGIANTAMNGUNGANTHAN
+            if is_maptrain and nguoila is None:
+                nguoila = f"người lạ {tendoituong}", THOIGIANTAMNGUNGNGUOILA
 
     def _layanthantucuasokhac(self):
-        # Nhân vật khác cùng bản đồ vừa tự phát hiện ẩn thân (trong vài giây gần đây) => trả về lý do để tạm ngưng theo
+        # Nhân vật khác cùng bản đồ vừa tự phát hiện (trong vài giây gần đây) => (lý do, số giây) để tạm ngưng theo.
+        # Có nhiều nguồn thì lấy nguồn có thời gian tạm ngưng dài nhất (ẩn thân trước người lạ)
         if self.shared_data is None:
             return None
         try:
@@ -3018,22 +3049,31 @@ class TacTu:
         except Exception:
             return None
         idbandohientai = self.moitruong.get_idbandohientai()
+        ketqua = None
         for idcuaso, info in danhsach:
             if idcuaso == self.idcuaso or not isinstance(info, dict):
                 continue
             if info.get("tenbando") != idbandohientai:
                 continue
-            if time.time() - info.get("_thoidiemphathienanthan", 0.) <= THOIGIANCHIASEANTHAN:
-                return f"{info.get('tennhanvat') or idcuaso} phát hiện {info.get('_tenanthanphathien') or 'người'} ẩn thân"
-        return None
+            if time.time() - info.get("_thoidiemphathienanthan", 0.) > THOIGIANCHIASEANTHAN:
+                continue
+            thoigian = info.get("_thoigiantamngungphathien") or THOIGIANTAMNGUNGANTHAN
+            if ketqua is None or thoigian > ketqua[1]:
+                ketqua = (f"{info.get('tennhanvat') or idcuaso} phát hiện {info.get('_tenanthanphathien') or 'người lạ'}", thoigian)
+        return ketqua
 
-    def _batdautamngung(self, lydo):
+    def _batdautamngung(self, lydo, thoigian = None):
+        thoigian = thoigian or THOIGIANTAMNGUNGANTHAN
         is_moibatdau = not self.get_is_dangtamngung()
-        self._thoidiemhettamngung = time.time() + THOIGIANTAMNGUNGANTHAN
-        self._lydotamngung = lydo
+        # Chỉ kéo dài, không rút ngắn (đang ngưng 10 phút vì ẩn thân mà gặp người lạ thì vẫn giữ 10 phút)
+        thoidiemhetmoi = time.time() + thoigian
+        if is_moibatdau or thoidiemhetmoi >= self._thoidiemhettamngung:
+            self._thoidiemhettamngung = thoidiemhetmoi
+            self._lydotamngung = lydo
         if is_moibatdau:
-            print(f"[TẠM NGƯNG] {lydo} -> Ngưng mọi hoạt động {int(THOIGIANTAMNGUNGANTHAN // 60)} phút")
-            phatam("Phát hiện ẩn thân, tạm ngưng")
+            thoigianhienthi = f"{int(thoigian // 60)} phút" if thoigian >= 60 else f"{int(thoigian)} giây"
+            print(f"[TẠM NGƯNG] {lydo} -> Ngưng mọi hoạt động {thoigianhienthi}")
+            phatam("Phát hiện ẩn thân, tạm ngưng" if "ẩn thân" in lydo else "Phát hiện người lạ, tạm ngưng")
             self.moitruong.action_ngatdichuyen()
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             self._yeucautancong = None
@@ -3762,6 +3802,8 @@ class TacTu:
 
             toadoquai = self.moitruong.get_toado(diachidoituongxemxet)
             if self._kiemtra_divaovungcam(*toadoquai):
+                continue
+            if not self._kiemtra_tamdiemdanh(*toadoquai):
                 continue
 
             iddoituongquai = self.moitruong.get_iddoituong(diachidoituongxemxet)

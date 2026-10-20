@@ -173,6 +173,7 @@ class CuaSo:
                     "_lydotamngung": self.tactu._lydotamngung,
                     "_thoidiemphathienanthan": self.tactu._thoidiemphathienanthan,
                     "_tenanthanphathien": self.tactu._tenanthanphathien,
+                    "_thoigiantamngungphathien": self.tactu._thoigiantamngungphathien,
                     "_is_tudongtrieuhoibaothugiangho": self.tactu._is_tudongtrieuhoibaothugiangho,
                     "_is_tudongbattatchucnangmorong": self.tactu._is_tudongbattatchucnangmorong,
 

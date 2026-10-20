@@ -66,6 +66,8 @@ class MoiTruong:
         self._thoidiembattattheosaunhomgannhat = 0.
         self._thoidiemdichuyengannhat = 0.
         self._thoidiemhetchovankhi = 0.
+        # Lịch sử vị trí mục tiêu đang đuổi theo (để tính hướng/tốc độ chạy mà click đón đầu)
+        self._lichsutoadomuctieu_map = {}
         self._thoidiemsudungkynangvitrigannhat_map = {}
         self._thoidiemsudungkynanggannhat = 0.
         self._thoidiemnhatvatphamgannhat = 0.
@@ -1026,7 +1028,7 @@ class MoiTruong:
     def get_huongdichuyeny(self, diachicosothongtinnhanvat = None):
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
         if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
-            deltay = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18) - read_int(self.tientrinh, diachicosothongtinnhanvat)
+            deltay = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C) - read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
             if deltay != 0:
                 return deltay / abs(deltay)
         return 0
@@ -1035,7 +1037,7 @@ class MoiTruong:
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
         return (
             read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18) if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN else read_int(self.tientrinh, diachicosothongtinnhanvat),
-            read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C) if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN else read_int(self.tientrinh, diachicosothongtinnhanvat),
+            read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C) if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN else read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4),
         )
 
     def get_toadobandochichuot(self):
@@ -1702,7 +1704,36 @@ class MoiTruong:
         if not diachicosothongtinnhanvat2 or not self.get_iddoituong(diachicosothongtinnhanvat2):
             return False
 
-        return self.action_dichuyengiukhoangcachtoidadiem(*self.get_toado(diachicosothongtinnhanvat2), khoangcachtoida = khoangcachtoida, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
+        return self.action_dichuyengiukhoangcachtoidadiem(*self._laytoadodondau(diachicosothongtinnhanvat2), khoangcachtoida = khoangcachtoida, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
+
+    def _laytoadodondau(self, diachimuctieu):
+        # Mục tiêu đang chạy ra xa: click vào vị trí hiện tại thì tới nơi nó đã chạy tiếp (đuổi theo cái bóng, không bao giờ kịp).
+        # Ước lượng vận tốc từ vị trí trong ~1s gần nhất rồi nhắm điểm phía trước mục tiêu.
+        x, y = self.get_toado(diachimuctieu)
+        thoidiemhientai = time.time()
+        lichsu = self._lichsutoadomuctieu_map.setdefault(diachimuctieu, [])
+        lichsu.append((thoidiemhientai, x, y))
+        while lichsu and thoidiemhientai - lichsu[0][0] > 1.0:
+            lichsu.pop(0)
+        if len(self._lichsutoadomuctieu_map) > 30:
+            for diachi in [k for k, v in self._lichsutoadomuctieu_map.items() if not v or thoidiemhientai - v[-1][0] > 5.]:
+                del self._lichsutoadomuctieu_map[diachi]
+
+        thoigiando = thoidiemhientai - lichsu[0][0]
+        if thoigiando < 0.3:
+            return x, y
+        vx, vy = (x - lichsu[0][1]) / thoigiando, (y - lichsu[0][2]) / thoigiando
+        tocdo = math.hypot(vx, vy)
+        if tocdo < 1.0:
+            return x, y
+
+        x1, y1 = self.get_toado()
+        # Chỉ đón đầu khi mục tiêu đang chạy ra xa mình; chạy về phía mình thì cứ nhắm vị trí hiện tại
+        if (x - x1) * vx + (y - y1) * vy <= 0:
+            return x, y
+        khoangcach = math.dist((x1, y1), (x, y))
+        quangdondau = min(tocdo * min(1.5, khoangcach / tocdo), 6.0)
+        return x + vx / tocdo * quangdondau, y + vy / tocdo * quangdondau
 
     def action_dichuyenphudau(self, diachicosothongtinnhanvat2, khoangcachphudau = 1, delay = 0.05):
         if not diachicosothongtinnhanvat2 or not self.get_iddoituong(diachicosothongtinnhanvat2):
