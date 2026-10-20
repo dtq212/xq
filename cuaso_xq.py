@@ -49,6 +49,8 @@ class CuaSo:
         self.moitruong = MoiTruong(idcuaso)
         self.moitruong.action_thietlaphooknoidungtrochuyen()
         self.tactu = TacTu(self.moitruong)
+        self.tactu.shared_data = shared_data
+        self.tactu.idcuaso = idcuaso
         self.main_stop = threading.Event()
 
         self.tennhanvat = None
@@ -166,6 +168,7 @@ class CuaSo:
 
                     "_is_tudongdichuyendiemdanhxungquanh": self.tactu._is_tudongdichuyendiemdanhxungquanh,
                     "_diemdanhxungquanhs": self.tactu._diemdanhxungquanhs,
+                    "_lotrinhmaudangdung": self.tactu._lotrinhmaudangdung,
                     "_is_tudongtrieuhoibaothugiangho": self.tactu._is_tudongtrieuhoibaothugiangho,
                     "_is_tudongbattatchucnangmorong": self.tactu._is_tudongbattatchucnangmorong,
 
@@ -187,6 +190,15 @@ class CuaSo:
                     self.tactu.action_lammoitrangthai()
                 elif cmd == "battat_tudongdichuyendiemdanhxungquanh":
                     self.tactu.battat_is_tudongdichuyendiemdanhxungquanh()
+                elif isinstance(cmd, str) and cmd.startswith("nap_lotrinhmau:"):
+                    # nap_lotrinhmau:<id bản đồ>|<tên mẫu>|<1 nếu ngược chiều>
+                    phan = cmd.split(":", 1)[1].split("|")
+                    if len(phan) == 3:
+                        self.tactu.nap_lotrinhmau(int(phan[0]), phan[1], phan[2] == "1")
+                elif cmd == "tuchon_lotrinhmau":
+                    self.tactu.tuchon_lotrinhmau()
+                elif isinstance(cmd, str) and cmd.startswith("luu_lotrinhmau:"):
+                    self.tactu.luu_lotrinhmau(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_khoangcachtheosau:"):
                     try:
                         khoangcach = float(cmd.split(":")[1])

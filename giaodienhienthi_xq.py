@@ -1,5 +1,12 @@
+import os
 import tkinter as tk
 from tkinter import ttk
+
+from tienich_xq import tailotrinhmau, duongdanlotrinhmau
+
+# Tạm ẩn các tùy chọn chưa dùng/không còn khả dụng (CN mở rộng, Khai khoáng, Đào tàng bảo đồ, Chiến trường).
+# Đổi thành True để hiện lại. Phím tắt của chúng vẫn hoạt động.
+HIEN_TUYCHON_CHUADUNG = False
 
 
 class GiaoDienHienThi:
@@ -64,7 +71,8 @@ class GiaoDienHienThi:
         self._create_check(frame_bottom, "Tự động sử dụng kỹ năng  [Ctrl + F]", self.vars["sudungkynang"], "battat_tudongsudungkynang")
         self._create_check(frame_bottom, "Tự động gom quái  [Ctrl+Alt+Shift+G]", self.vars["gomquai"], "battat_tudonggomquai")
         self._create_check(frame_bottom, "Tự động Farm & Bán rác  [Ctrl+Alt+Shift+H]", self.vars["vebanrac"], "battat_tudongvebanrac")
-        self._create_check(frame_bottom, "Tự động bật/tắt CN mở rộng  [Ctrl+Alt+Shift+F]", self.vars["tudongbattatchucnangmorong"], "battat_tudongbattatchucnangmorong")
+        if HIEN_TUYCHON_CHUADUNG:
+            self._create_check(frame_bottom, "Tự động bật/tắt CN mở rộng  [Ctrl+Alt+Shift+F]", self.vars["tudongbattatchucnangmorong"], "battat_tudongbattatchucnangmorong")
 
         frame_theosau = tk.Frame(frame_bottom)
         frame_theosau.pack(anchor = tk.W)
@@ -107,11 +115,12 @@ class GiaoDienHienThi:
         self._create_check(frame_bottom, "Ưu tiên Bảo thú Mao Sơn  [Ctrl+Alt+S]", self.vars["uutienmaoson"], "battat_uutienbaothukynangtrieuhoi")
         self._create_check(frame_bottom, "Chế độ Buff toàn bang  [Ctrl+Alt+Shift+N]", self.vars["bufftoanbang"], "battat_chedobufftoanbang")
 
-        ttk.Separator(frame_bottom, orient = 'horizontal').pack(fill = 'x', pady = 5)
+        if HIEN_TUYCHON_CHUADUNG:
+            ttk.Separator(frame_bottom, orient = 'horizontal').pack(fill = 'x', pady = 5)
 
-        self._create_check(frame_bottom, "Tự động Khai khoáng  [Ctrl+Alt+Shift+K]", self.vars["khaikhoang"], "battat_tudongkhaikhoang")
-        self._create_check(frame_bottom, "Đào Tàng bảo đồ  [Ctrl+Alt+Shift+I]", self.vars["daobaodo"], "battat_tudongdaotangbaodo")
-        self._create_check(frame_bottom, "Đi Chiến trường  [Ctrl+Alt+Shift+Z]", self.vars["chientruong"], "battat_tudongdichientruong")
+            self._create_check(frame_bottom, "Tự động Khai khoáng  [Ctrl+Alt+Shift+K]", self.vars["khaikhoang"], "battat_tudongkhaikhoang")
+            self._create_check(frame_bottom, "Đào Tàng bảo đồ  [Ctrl+Alt+Shift+I]", self.vars["daobaodo"], "battat_tudongdaotangbaodo")
+            self._create_check(frame_bottom, "Đi Chiến trường  [Ctrl+Alt+Shift+Z]", self.vars["chientruong"], "battat_tudongdichientruong")
 
         ttk.Separator(frame_bottom, orient = 'horizontal').pack(fill = 'x', pady = 5)
 
@@ -146,6 +155,50 @@ class GiaoDienHienThi:
         self.lbl_danhsachdiem = tk.Label(frame_bottom, text = "→ Trống", fg = "red", justify = tk.LEFT, wraplength = 350)
         self.lbl_danhsachdiem.pack(anchor = tk.W, pady = (0, 5))
 
+        # Lộ trình mẫu: chọn mẫu theo bản đồ nhân vật đang đứng rồi Nạp, hoặc để bot Tự chọn mẫu chưa nhân vật nào dùng
+        frame_mau = tk.Frame(frame_bottom)
+        frame_mau.pack(anchor = tk.W, pady = 2)
+        tk.Label(frame_mau, text = "Mẫu:").pack(side = tk.LEFT)
+        self.str_lotrinhmau = tk.StringVar()
+        self.cbo_lotrinhmau = ttk.Combobox(frame_mau, textvariable = self.str_lotrinhmau, width = 12, state = "readonly")
+        self.cbo_lotrinhmau.pack(side = tk.LEFT, padx = 3)
+        self.var_nguocchieu = tk.BooleanVar()
+        tk.Checkbutton(frame_mau, text = "Ngược", variable = self.var_nguocchieu).pack(side = tk.LEFT)
+
+        def on_nap_lotrinhmau():
+            hwnd = self.get_selected_hwnd()
+            tenmau = self.str_lotrinhmau.get()
+            if hwnd and tenmau and hwnd in self.shared_data:
+                idbando = self.shared_data[hwnd].get("tenbando")
+                self.command_dict[hwnd] = f"nap_lotrinhmau:{idbando}|{tenmau}|{1 if self.var_nguocchieu.get() else 0}"
+
+        def on_tuchon_lotrinhmau():
+            hwnd = self.get_selected_hwnd()
+            if hwnd:
+                self.command_dict[hwnd] = "tuchon_lotrinhmau"
+
+        ttk.Button(frame_mau, text = "Nạp", command = on_nap_lotrinhmau, width = 5).pack(side = tk.LEFT, padx = 2)
+        ttk.Button(frame_mau, text = "Tự chọn", command = on_tuchon_lotrinhmau, width = 8).pack(side = tk.LEFT)
+
+        frame_luumau = tk.Frame(frame_bottom)
+        frame_luumau.pack(anchor = tk.W, pady = 2)
+        tk.Label(frame_luumau, text = "Tên mẫu:").pack(side = tk.LEFT)
+        self.str_tenmaumoi = tk.StringVar()
+        ttk.Entry(frame_luumau, textvariable = self.str_tenmaumoi, width = 18).pack(side = tk.LEFT, padx = 3)
+
+        def on_luu_lotrinhmau():
+            hwnd = self.get_selected_hwnd()
+            tenmau = self.str_tenmaumoi.get().strip()
+            if hwnd and tenmau:
+                self.command_dict[hwnd] = f"luu_lotrinhmau:{tenmau}"
+                self.str_tenmaumoi.set("")
+
+        ttk.Button(frame_luumau, text = "Lưu thành mẫu", command = on_luu_lotrinhmau).pack(side = tk.LEFT)
+
+        self.lbl_lotrinhmau = tk.Label(frame_bottom, text = "→ Đang dùng mẫu: (tự đặt điểm)", fg = "gray", justify = tk.LEFT)
+        self.lbl_lotrinhmau.pack(anchor = tk.W, pady = (0, 5))
+        self._lotrinhmau_cache = ({}, None)
+
         ttk.Separator(frame_bottom, orient = 'horizontal').pack(fill = 'x', pady = 5)
 
         tk.Label(frame_bottom, text = "[Ctrl+C] Thêm | [Ctrl+Alt+C] Xóa danh sách Tấn công", font = ("Arial", 9, "bold")).pack(anchor = tk.W)
@@ -157,6 +210,18 @@ class GiaoDienHienThi:
         self.lbl_boqua.pack(anchor = tk.W)
 
         self.update_ui()
+
+    def _laylotrinhmau(self):
+        # Đọc lại file lộ trình mẫu chỉ khi file thay đổi
+        try:
+            thoidiemsua = os.path.getmtime(duongdanlotrinhmau())
+        except OSError:
+            thoidiemsua = None
+        dulieu, thoidiemcu = self._lotrinhmau_cache
+        if thoidiemsua != thoidiemcu:
+            dulieu = tailotrinhmau() if thoidiemsua else {}
+            self._lotrinhmau_cache = (dulieu, thoidiemsua)
+        return dulieu
 
     def _create_check(self, parent, text, variable, cmd_name = None):
         def on_click():
@@ -250,6 +315,19 @@ class GiaoDienHienThi:
                 text = f"→ {boqua}" if boqua else "→ Trống",
                 fg = "green" if boqua else "red"
             )
+            idbando = info.get("tenbando")
+            dsmau = [m.get("ten") for m in self._laylotrinhmau().get(str(idbando), [])]
+            if list(self.cbo_lotrinhmau.cget("values") or ()) != dsmau:
+                self.cbo_lotrinhmau.config(values = dsmau)
+            if self.str_lotrinhmau.get() not in dsmau:
+                self.str_lotrinhmau.set(dsmau[0] if dsmau else "")
+
+            phan = (info.get("_lotrinhmaudangdung") or "").split("|")
+            if len(phan) == 3:
+                self.lbl_lotrinhmau.config(text = f"→ Đang dùng mẫu: {phan[1]}{' (ngược chiều)' if phan[2] == '1' else ''} – bản đồ {phan[0]}", fg = "blue")
+            else:
+                self.lbl_lotrinhmau.config(text = "→ Đang dùng mẫu: (tự đặt điểm)", fg = "gray")
+
             diemdanhs = info.get("_diemdanhxungquanhs", [])
             if diemdanhs:
                 text_hienthi = f"→ Đang có {len(diemdanhs)} điểm: {diemdanhs}"

@@ -12,6 +12,7 @@ from hangso_xq import *
 from moitruong_xq import MoiTruong, DOUUTIEN_THAP, DOUUTIEN_KHANCAP, DOUUTIEN_CAO
 from tienich_xq import luuthietlap as util_luuthietlap
 from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam
+from tienich_xq import tailotrinhmau as util_tailotrinhmau, luulotrinhmau as util_luulotrinhmau
 
 
 class TacTu:
@@ -106,6 +107,13 @@ class TacTu:
         self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
         self._diemdanhxungquanhs = []
         self._iddiemdanhxungquanhhientai = -1
+        # Lộ trình mẫu đang dùng dạng "<id bản đồ>|<tên mẫu>|<1 nếu đi ngược chiều>", rỗng nếu tự đặt điểm
+        self._lotrinhmaudangdung = ""
+        self._is_lotrinhtuchon = False
+        self._thoidiemkiemtralotrinhgannhat = 0.
+        # Gán từ CuaSo để biết các cửa sổ khác đang dùng lộ trình mẫu nào
+        self.shared_data = None
+        self.idcuaso = None
         self._diemdanhxungquanhhientai = None
         self._thoidiemloggomquai = 0.
 
@@ -287,6 +295,7 @@ class TacTu:
             "_is_chantangcapdo": self._is_chantangcapdo,
             "_is_tudongdichuyendiemdanhxungquanh": self._is_tudongdichuyendiemdanhxungquanh,
             "_diemdanhxungquanhs": self._diemdanhxungquanhs,
+            "_lotrinhmaudangdung": self._lotrinhmaudangdung,
             "_is_tudonggomquai": self._is_tudonggomquai,
             "_is_tudongvebanrac": self._is_tudongvebanrac,
             "_is_chedobufftoanbang": self._is_chedobufftoanbang,
@@ -332,6 +341,7 @@ class TacTu:
             if "_is_chantangcapdo" in thietlap: self._is_chantangcapdo = thietlap["_is_chantangcapdo"]
             if "_is_tudongdichuyendiemdanhxungquanh" in thietlap: self._is_tudongdichuyendiemdanhxungquanh = thietlap["_is_tudongdichuyendiemdanhxungquanh"]
             if "_diemdanhxungquanhs" in thietlap: self._diemdanhxungquanhs = thietlap["_diemdanhxungquanhs"]
+            if "_lotrinhmaudangdung" in thietlap: self._lotrinhmaudangdung = thietlap["_lotrinhmaudangdung"]
             if "_is_tudonggomquai" in thietlap: self._is_tudonggomquai = thietlap["_is_tudonggomquai"]
             if "_is_tudongvebanrac" in thietlap: self._is_tudongvebanrac = thietlap["_is_tudongvebanrac"]
             if "_is_chedobufftoanbang" in thietlap: self._is_chedobufftoanbang = thietlap["_is_chedobufftoanbang"]
@@ -2824,6 +2834,13 @@ class TacTu:
 
             idbandohientai = self.moitruong.get_idbandohientai()
 
+            # Chưa đặt điểm đánh mà bản đồ có lộ trình mẫu thì tự chọn mẫu chưa ai dùng
+            if not self._diemdanhxungquanhs and idbandohientai != BANDO_CHIENTRUONG and time.time() - self._thoidiemkiemtralotrinhgannhat > 5.:
+                self._thoidiemkiemtralotrinhgannhat = time.time()
+                self.tuchon_lotrinhmau(idbandohientai)
+            else:
+                self._kiemtratrunglotrinh()
+
             diemdanhxungquanhs = self._diemdanhxungquanhs
 
             if not diemdanhxungquanhs:
@@ -2940,14 +2957,102 @@ class TacTu:
 
         self._yeucautudo = yeucautudomoi
 
+    def nap_lotrinhmau(self, idbando, tenmau, is_nguocchieu = False, is_tuchon = False):
+        mau = next((m for m in util_tailotrinhmau().get(str(idbando), []) if m.get("ten") == tenmau), None)
+        if not mau or not mau.get("diem"):
+            print(f"[LỘ TRÌNH] Không tìm thấy mẫu '{tenmau}' của bản đồ {idbando}")
+            return False
+        # Mỗi điểm là [x, y] (cùng bản đồ của mẫu) hoặc [x, y, id bản đồ] khi lộ trình đi qua bản đồ khác
+        diemdanhs = [(int(d[0]), int(d[1]), int(d[2]) if len(d) >= 3 else int(idbando)) for d in mau["diem"]]
+        if is_nguocchieu:
+            diemdanhs.reverse()
+        self._diemdanhxungquanhs = diemdanhs
+        self._iddiemdanhxungquanhhientai = -1
+        self._diemdanhxungquanhhientai = None
+        self._lotrinhmaudangdung = f"{idbando}|{tenmau}|{1 if is_nguocchieu else 0}"
+        self._is_lotrinhtuchon = is_tuchon
+        print(f"[LỘ TRÌNH] Nạp mẫu '{tenmau}' bản đồ {idbando}{' (ngược chiều)' if is_nguocchieu else ''}: {len(diemdanhs)} điểm")
+        phatam("Nạp lộ trình mẫu")
+        return True
+
+    def luu_lotrinhmau(self, tenmau):
+        tenmau = (tenmau or "").replace("|", " ").strip()
+        if not tenmau or not self._diemdanhxungquanhs:
+            return False
+        # Lộ trình gắn với bản đồ chiếm đa số điểm trong danh sách
+        demtheobando = {}
+        for diem in self._diemdanhxungquanhs:
+            demtheobando[diem[2]] = demtheobando.get(diem[2], 0) + 1
+        idbando = max(demtheobando, key = demtheobando.get)
+        lotrinhmau = util_tailotrinhmau()
+        dsmau = [m for m in lotrinhmau.get(str(idbando), []) if m.get("ten") != tenmau]
+        dsmau.append({"ten": tenmau, "diem": [[d[0], d[1]] if d[2] == idbando else [d[0], d[1], d[2]] for d in self._diemdanhxungquanhs]})
+        lotrinhmau[str(idbando)] = dsmau
+        util_luulotrinhmau(lotrinhmau)
+        self._lotrinhmaudangdung = f"{idbando}|{tenmau}|0"
+        self._is_lotrinhtuchon = False
+        print(f"[LỘ TRÌNH] Đã lưu mẫu '{tenmau}' cho bản đồ {idbando}")
+        phatam("Lưu lộ trình mẫu")
+        return True
+
+    def _laylotrinhcuasokhac(self, idbando):
+        # {(tên mẫu, ngược chiều): [id cửa sổ, ...]} của các cửa sổ khác đang dùng mẫu trên cùng bản đồ
+        dangdung = {}
+        if self.shared_data is None:
+            return dangdung
+        try:
+            danhsach = list(self.shared_data.items())
+        except Exception:
+            return dangdung
+        for idcuaso, info in danhsach:
+            if idcuaso == self.idcuaso or not isinstance(info, dict):
+                continue
+            phan = (info.get("_lotrinhmaudangdung") or "").split("|")
+            if len(phan) == 3 and phan[0] == str(idbando):
+                dangdung.setdefault((phan[1], phan[2] == "1"), []).append(idcuaso)
+        return dangdung
+
+    def tuchon_lotrinhmau(self, idbando = None):
+        # Chọn mẫu ít nhân vật khác dùng nhất trên cùng bản đồ; mẫu nào cũng có người dùng thì đi ngược chiều để không bám đuôi nhau
+        idbando = idbando or self.moitruong.get_idbandohientai()
+        dsmau = [m["ten"] for m in util_tailotrinhmau().get(str(idbando), []) if m.get("diem")]
+        if not dsmau:
+            return False
+        dangdung = self._laylotrinhcuasokhac(idbando)
+        def doban(luachon):
+            tenmau, is_nguocchieu = luachon
+            tong = len(dangdung.get((tenmau, False), [])) + len(dangdung.get((tenmau, True), []))
+            return tong, len(dangdung.get(luachon, [])), is_nguocchieu
+        luachon = min(((tenmau, is_nguocchieu) for tenmau in dsmau for is_nguocchieu in (False, True)), key = doban)
+        return self.nap_lotrinhmau(idbando, *luachon, is_tuchon = True)
+
+    def _kiemtratrunglotrinh(self):
+        # Hai nhân vật tự chọn cùng lúc có thể trùng mẫu: cửa sổ có id lớn hơn tự chọn lại
+        if not self._is_lotrinhtuchon or time.time() - self._thoidiemkiemtralotrinhgannhat < 10.:
+            return
+        self._thoidiemkiemtralotrinhgannhat = time.time()
+        phan = self._lotrinhmaudangdung.split("|")
+        if len(phan) != 3:
+            return
+        cuasotrung = self._laylotrinhcuasokhac(phan[0]).get((phan[1], phan[2] == "1"), [])
+        if any(idcuaso < self.idcuaso for idcuaso in cuasotrung):
+            print(f"[LỘ TRÌNH] Trùng mẫu '{phan[1]}' với nhân vật khác -> Chọn lại")
+            self.tuchon_lotrinhmau(int(phan[0]))
+
     def them_diemdanhxungquanh(self, diemdanhxungquanh):
         if diemdanhxungquanh and diemdanhxungquanh not in self._diemdanhxungquanhs:
             self._diemdanhxungquanhs.append(diemdanhxungquanh)
+            self._lotrinhmaudangdung = ""
+            self._is_lotrinhtuchon = False
             print(self._diemdanhxungquanhs)
             phatam("Thêm điểm đánh xung quanh. Tổng cộng {}".format(len(self._diemdanhxungquanhs)))
 
     def botoanbo_diemdanhxungquanh(self):
         self._diemdanhxungquanhs.clear()
+        self._iddiemdanhxungquanhhientai = -1
+        self._diemdanhxungquanhhientai = None
+        self._lotrinhmaudangdung = ""
+        self._is_lotrinhtuchon = False
         phatam("Bỏ toàn bộ điểm đánh xung quanh")
 
     def thietlap_chidanhnguoichoi(self, is_chidanhnguoichoi):

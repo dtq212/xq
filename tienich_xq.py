@@ -1,3 +1,4 @@
+import json
 import math
 import os
 import pickle
@@ -152,6 +153,34 @@ def _thumucthietlap():
     else:
         thumucgoc = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(thumucgoc, "_internal", "thietlap")
+
+
+def duongdanlotrinhmau():
+    return os.path.join(os.path.dirname(_thumucthietlap()), "lotrinh.json")
+
+
+def tailotrinhmau():
+    # Thư viện lộ trình mẫu: {"<id bản đồ>": [{"ten": "Vòng A", "diem": [[x, y], ...]}, ...]}
+    try:
+        with open(duongdanlotrinhmau(), "r", encoding = "utf-8") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return {}
+    except Exception as err:
+        print(err)
+        return {}
+
+
+def luulotrinhmau(lotrinhmau):
+    filepath = duongdanlotrinhmau()
+    try:
+        os.makedirs(os.path.dirname(filepath), exist_ok = True)
+        filetam = filepath + ".tmp"
+        with open(filetam, "w", encoding = "utf-8") as file:
+            json.dump(lotrinhmau, file, ensure_ascii = False, indent = 2)
+        os.replace(filetam, filepath)
+    except Exception as err:
+        print(err)
 
 
 def duongdanthietlap(tennhanvat):
