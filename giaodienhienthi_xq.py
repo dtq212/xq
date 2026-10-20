@@ -127,6 +127,19 @@ class GiaoDienHienThi:
         self.lbl_vitri = ttk.Label(frame, text = "", style = "Phu.TLabel")
         self.lbl_vitri.pack(anchor = tk.W)
 
+        # Dòng cảnh báo tạm ngưng (chỉ hiện khi phát hiện người chơi ẩn thân) + nút bật lại
+        self.frame_tamngung = tk.Frame(frame, bg = "#fde8e8", highlightbackground = MAUCHU_DO, highlightthickness = 1)
+        self.lbl_tamngung = tk.Label(self.frame_tamngung, text = "", fg = MAUCHU_DO, bg = "#fde8e8", justify = tk.LEFT,
+                                     anchor = tk.W, wraplength = self._px(300), font = (FONTCHU, COCHU, "bold"))
+        self.lbl_tamngung.pack(side = tk.LEFT, fill = tk.X, expand = True, padx = 6, pady = 4)
+
+        def on_tieptuchoatdong():
+            hwnd = self.get_selected_hwnd()
+            if hwnd:
+                self.command_dict[hwnd] = "tieptuchoatdong"
+
+        ttk.Button(self.frame_tamngung, text = "Bật lại", command = on_tieptuchoatdong).pack(side = tk.RIGHT, padx = 6, pady = 4)
+
     def _px(self, sopixel):
         return int(sopixel * self._heso)
 
@@ -360,7 +373,7 @@ class GiaoDienHienThi:
                 f"{info.get('phantramsinhluc', 0)}%",
                 f"{info.get('phantramnoiluc', 0)}%",
                 laytenbando(info.get("tenbando")) if info.get("tenbando") is not None else "-",
-                info.get("status", "-"),
+                "⏸ Tạm ngưng" if info.get("_thoigiantamngungconlai", 0) > 0 else info.get("status", "-"),
             )
             if iid in hienco:
                 if tuple(str(v) for v in self.tree.item(iid, "values")) != tuple(str(v) for v in values):
@@ -388,6 +401,14 @@ class GiaoDienHienThi:
         tenbando = laytenbando(idbando) if idbando is not None else "-"
         self.lbl_dangdieukhien.config(text = f"Đang điều khiển: {info.get('tennhanvat') or 'Đang tải...'}")
         self.lbl_vitri.config(text = f"{tenbando} ({info.get('x', 0)}, {info.get('y', 0)})  ·  {info.get('status', '-')}")
+
+        conlai = info.get("_thoigiantamngungconlai", 0)
+        if conlai > 0:
+            self.lbl_tamngung.config(text = f"⏸ TẠM NGƯNG – {info.get('_lydotamngung', '')}\nTự chạy lại sau {int(conlai) // 60}:{int(conlai) % 60:02d}")
+            if not self.frame_tamngung.winfo_ismapped():
+                self.frame_tamngung.pack(fill = tk.X, pady = (6, 0))
+        elif self.frame_tamngung.winfo_ismapped():
+            self.frame_tamngung.pack_forget()
 
         for ten, khoa in (
                 ("sudungkynang", "_is_tudongsudungkynang"),

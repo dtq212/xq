@@ -169,6 +169,8 @@ class CuaSo:
                     "_is_tudongdichuyendiemdanhxungquanh": self.tactu._is_tudongdichuyendiemdanhxungquanh,
                     "_diemdanhxungquanhs": self.tactu._diemdanhxungquanhs,
                     "_lotrinhmaudangdung": self.tactu._lotrinhmaudangdung,
+                    "_thoigiantamngungconlai": max(0., self.tactu._thoidiemhettamngung - time.time()),
+                    "_lydotamngung": self.tactu._lydotamngung,
                     "_is_tudongtrieuhoibaothugiangho": self.tactu._is_tudongtrieuhoibaothugiangho,
                     "_is_tudongbattatchucnangmorong": self.tactu._is_tudongbattatchucnangmorong,
 
@@ -197,6 +199,8 @@ class CuaSo:
                         self.tactu.nap_lotrinhmau(int(phan[0]), phan[1], phan[2] == "1")
                 elif cmd == "tuchon_lotrinhmau":
                     self.tactu.tuchon_lotrinhmau()
+                elif cmd == "tieptuchoatdong":
+                    self.tactu.tieptuchoatdong()
                 elif isinstance(cmd, str) and cmd.startswith("luu_lotrinhmau:"):
                     self.tactu.luu_lotrinhmau(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_khoangcachtheosau:"):

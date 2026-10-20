@@ -65,6 +65,8 @@ class LoopTimKiemMucTieu:
     def step(self):
         if not self.moitruong.get_is_nhanvattontai() or self.moitruong.get_is_dangmatketnoi():
             return
+        if self.tactu.get_is_dangtamngung():
+            return
         self.tactu.action_tudongtimkiemmuctieu()
         self.tactu.action_tudongtimkiemmuctieumonphai()
         self.moitruong.action_phananhdiachicosothongtinnhanvatmuctieudangchoningame()
@@ -93,6 +95,8 @@ class LoopDieuPhoiDiChuyen:
 
     def step(self):
         if not self.moitruong.get_is_nhanvattontai() or self.moitruong.get_is_dangmatketnoi():
+            return
+        if self.tactu.get_is_dangtamngung():
             return
         self.tactu.action_xulyuutiendichuyen()
 
@@ -124,6 +128,9 @@ class LoopChinh:
 
     def step(self):
         if not self.moitruong.get_is_nhanvattontai() or self.moitruong.get_is_dangmatketnoi():
+            return
+
+        if self.tactu.get_is_dangtamngung():
             return
 
         self.tactu.action_tudongtheosautruongnhom()
@@ -273,6 +280,11 @@ class LoopPhu:
         self.moitruong.action_vohieuhoakhoanhvungkynang()
         self.moitruong.action_vohieuhoaphimspace()
         self.moitruong.action_vohieuhieuungmuloa()
+
+        # Thấy người chơi ẩn thân xung quanh khi đang farm & bán rác: ngưng mọi hoạt động (có nút Bật lại trên bảng điều khiển)
+        self.tactu.action_kiemtraanthan()
+        if self.tactu.get_is_dangtamngung():
+            return
 
         self.tactu.action_tudongsudungvatpham()
         self.tactu.action_chantangcapdo()

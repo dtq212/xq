@@ -111,6 +111,11 @@ class TacTu:
         self._lotrinhmaudangdung = ""
         self._is_lotrinhtuchon = False
         self._thoidiemkiemtralotrinhgannhat = 0.
+        # Tạm ngưng toàn bộ hoạt động khi phát hiện người chơi ẩn thân xung quanh (đang farm & bán rác)
+        self._thoidiemhettamngung = 0.
+        self._lydotamngung = ""
+        self._thoidiemboquaanthan = 0.
+        self._thoidiemkiemtraanthangannhat = 0.
         # Gán từ CuaSo để biết các cửa sổ khác đang dùng lộ trình mẫu nào
         self.shared_data = None
         self.idcuaso = None
@@ -2956,6 +2961,60 @@ class TacTu:
             break
 
         self._yeucautudo = yeucautudomoi
+
+    def get_is_dangtamngung(self):
+        return time.time() < self._thoidiemhettamngung
+
+    def action_kiemtraanthan(self):
+        # Đang farm & bán rác mà thấy người chơi khác ẩn thân quanh mình => ngưng hết mọi hoạt động THOIGIANTAMNGUNGANTHAN giây
+        if not self._is_tudongvebanrac:
+            return
+        thoidiemhientai = time.time()
+        if thoidiemhientai - self._thoidiemkiemtraanthangannhat < 0.5 or thoidiemhientai < self._thoidiemboquaanthan:
+            return
+        self._thoidiemkiemtraanthangannhat = thoidiemhientai
+
+        idnhanvathientai = self.moitruong.get_idnguoichoi()
+        idthanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms() if self.moitruong.get_is_dangnamtrongnhom() else []
+        i = -1
+        while True:
+            i += 1
+            diachidoituong = self.moitruong.get_diachicosothongtindoituongx(i)
+            if not diachidoituong:
+                break
+            if not self.moitruong.get_is_nguoichoi(diachidoituong) or not self.moitruong.get_is_nhanvatanthan(diachidoituong):
+                continue
+            idnguoichoi = self.moitruong.get_idnguoichoi(diachidoituong)
+            # Bỏ qua chính mình, nhân vật của mình và người cùng nhóm
+            if idnguoichoi == idnhanvathientai or idnguoichoi in NHANVATTODOITUDONGs or idnguoichoi in idthanhviennhoms:
+                continue
+            if self.moitruong.get_khoangcach(diachidoituong) > KHOANGCACHTOANMANHINH:
+                continue
+            self._batdautamngung(f"phát hiện {self.moitruong.get_tendoituong(diachidoituong) or idnguoichoi} ẩn thân")
+            return
+
+    def _batdautamngung(self, lydo):
+        is_moibatdau = not self.get_is_dangtamngung()
+        self._thoidiemhettamngung = time.time() + THOIGIANTAMNGUNGANTHAN
+        self._lydotamngung = lydo
+        if is_moibatdau:
+            print(f"[TẠM NGƯNG] {lydo} -> Ngưng mọi hoạt động {int(THOIGIANTAMNGUNGANTHAN // 60)} phút")
+            phatam("Phát hiện ẩn thân, tạm ngưng")
+            self.moitruong.action_ngatdichuyen()
+            self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
+            self._yeucautancong = None
+            self._yeucaunhatvatpham = None
+            self._yeucaugomquai = None
+            self._yeucautudo = None
+            self._is_battudongtancongvatly = False
+
+    def tieptuchoatdong(self):
+        # Bật lại thủ công: không xét ẩn thân thêm THOIGIANTAMNGUNGANTHAN giây để không bị ngưng lại ngay
+        self._thoidiemhettamngung = 0.
+        self._lydotamngung = ""
+        self._thoidiemboquaanthan = time.time() + THOIGIANTAMNGUNGANTHAN
+        print("[TẠM NGƯNG] Bật lại hoạt động thủ công")
+        phatam("Bật lại hoạt động")
 
     def nap_lotrinhmau(self, idbando, tenmau, is_nguocchieu = False, is_tuchon = False):
         mau = next((m for m in util_tailotrinhmau().get(str(idbando), []) if m.get("ten") == tenmau), None)
