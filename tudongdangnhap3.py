@@ -1,6 +1,6 @@
 DUONGDAN_GAME = r"D:\Games\ChienQuoc2D_Aegis\xq.exe"
-LAUNCHER_TITLE = "client 2.01.04"
-GAME_TITLE_LOGIN_SCREEN = "Chien Quoc 2D --ooo2026ooo-- v.2.01.04"
+LAUNCHER_TITLE = "client 2.01.05"
+GAME_TITLE_LOGIN_SCREEN = "Chien Quoc 2D --ooo2026ooo-- v.2.01.05"
 GAME_TITLE_PREFIX = "Chien Quoc 2D"
 
 DANH_SACH_CUA_SO_LOI = ["warning", "play"]
@@ -243,7 +243,7 @@ def timcuanhbaoloi():
             title = win32gui.GetWindowText(hwnd)
             title_thuong = title.lower()
             for loi_title in DANH_SACH_CUA_SO_LOI:
-                # Bản 2.01.04 tiêu đề có hậu tố, vd "warning -- Ping: N/A"
+                # Bản 2.01.05 tiêu đề có hậu tố, vd "warning -- Ping: N/A"
                 if title_thuong == loi_title or title_thuong.startswith(loi_title + " "):
                     hwnd_found = hwnd
                     break
@@ -253,7 +253,7 @@ def timcuanhbaoloi():
 
 
 def _is_cuasodadangnhap(hwnd):
-    # Bản 2.01.04 tiêu đề màn hình đăng nhập và trong game có thể trùng tiền tố, kiểm tra bộ nhớ để không đóng nhầm cửa sổ đang chơi
+    # Bản 2.01.05 tiêu đề màn hình đăng nhập và trong game có thể trùng tiền tố, kiểm tra bộ nhớ để không đóng nhầm cửa sổ đang chơi
     try:
         mt = MoiTruong(hwnd)
         return bool(mt.get_is_nhanvattontai() and mt.get_idnguoichoi())
