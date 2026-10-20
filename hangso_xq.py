@@ -138,7 +138,7 @@ THOIGIANTAMNGUNGANTHAN = 600.
 # Tín hiệu "vừa thấy ẩn thân" của nhân vật khác cùng bản đồ còn hiệu lực trong bấy nhiêu giây (nhân vật thấy sẽ làm mới liên tục mỗi 0.5s)
 THOIGIANCHIASEANTHAN = 3.
 
-SOLUONGTHANHVIENNHOMTOIDA = 3
+SOLUONGTHANHVIENNHOMTOIDA = 5
 SOLUONGTHANHVIENNHOMTOIDATHUCTE = 5
 SOLUONGHIEUUNGNHANVATTOIDA = 20
 
