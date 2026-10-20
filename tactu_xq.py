@@ -2037,7 +2037,7 @@ class TacTu:
 
         danhsachuutien = [
             # Huyết Tế: hy sinh 50% khí huyết của bảo thú triệu hồi để hồi cho bản thân (tốn 100 pháp lực)
-            (VITRIKYNANG_HUYETTE, "sudungkynangkhongmuctieu", lambda: phantramsinhlucconlai < 50 and is_cobaothukynangtrieuhoi and noilucconlai >= 100, 0, None, True, False),
+            (VITRIKYNANG_HUYETTE, "sudungkynangkhongmuctieu", lambda: phantramsinhlucconlai < 50 and is_cobaothukynangtrieuhoi and noilucconlai >= 100, 0, None, True, True),
             # Chưa có bảo thú triệu hồi thì gọi Thiên Binh (tốn 105 pháp lực + 3 Bùa Giấy); chờ 3s sau mỗi lần gọi để bảo thú kịp xuất hiện
             (VITRIKYNANG_TRIEUHOITHIENBINH, "sudungkynangkhongmuctieu", lambda: not is_cobaothukynangtrieuhoi and noilucconlai >= 105 and time.time() - self._thoidiemtrieuhoithienbinhgannhat > 3. and self.moitruong.action_timkiemvatphamhanhtrang(BUAGIAY), 0, None, True, True),
             (VITRIKYNANG_HUYETMACHU, "sudungkynangkhongmuctieu", lambda: phantramsinhlucconlai > 25 and phantramnoilucconlai <= 50, 0, None, True, False),
@@ -2048,8 +2048,8 @@ class TacTu:
             (VITRIKYNANG_THUCGIAP, "sudungkynangmuctieu", lambda: diachithucgiap and idbandohientai != BANDO_BATQUAITRAN and noilucconlai > 50, KHOANGCACHSUDUNGKYNANGTAMXA, diachithucgiap, True, True),
             (VITRIKYNANG_THUCTAM, "sudungkynangmuctieu", lambda: diachithuctam and noilucconlai > 50, KHOANGCACHSUDUNGKYNANGTAMXA, diachithuctam, True, True),
 
-            (VITRIKYNANG_DITINHDAIPHAP, "sudungkynangkhongmuctieu", lambda: noilucconlai > 150 and time.time() - self._thoidiemsudungditinhdaiphapgannhat > 30 and self._is_baothukynangtrieuhoihetnoiluc, 0, None, True, False),
-            (VITRIKYNANG_LUUHUYETTHUAT, "sudungkynangkhongmuctieu", lambda: noilucconlai > 150 and time.time() - self._thoidiemsudungluuhuyetthuatgannhat > 30 and self._is_baothukynangtrieuhoihetsinhluc, 0, None, True, False),
+            (VITRIKYNANG_DITINHDAIPHAP, "sudungkynangkhongmuctieu", lambda: noilucconlai > 150 and time.time() - self._thoidiemsudungditinhdaiphapgannhat > 30 and self._is_baothukynangtrieuhoihetnoiluc, 0, None, True, True),
+            (VITRIKYNANG_LUUHUYETTHUAT, "sudungkynangkhongmuctieu", lambda: noilucconlai > 150 and time.time() - self._thoidiemsudungluuhuyetthuatgannhat > 30 and self._is_baothukynangtrieuhoihetsinhluc, 0, None, True, True),
 
             (VITRIKYNANG_LOIDONGCUUTHIEN, "sudungkynangkhongmuctieu", lambda: diachimuctieu and noilucconlai > 50 and self._is_nhieumuctieuganbanthan3 and khoangcach <= KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN, KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN, None, True, True),
             (VITRIKYNANG_PHUCMAQUYET, "sudungkynangmuctieu", lambda: diachimuctieu and noilucconlai > 50 and khoangcach <= KHOANGCACHSUDUNGKYNANGTAMXA, KHOANGCACHSUDUNGKYNANGTAMXA, None, True, True),
