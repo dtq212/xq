@@ -134,7 +134,7 @@ KHOANGCACHHIEUQUAKYNANGKHAITHIENTICHDIA = 6.0
 KHOANGCACHNHATDO = KHOANGCACHTOANMANHINH
 
 # Thấy người chơi ẩn thân quanh mình khi đang farm & bán rác thì ngưng mọi hoạt động trong khoảng thời gian này (giây)
-THOIGIANTAMNGUNGANTHAN = 300.
+THOIGIANTAMNGUNGANTHAN = 600.
 
 SOLUONGTHANHVIENNHOMTOIDA = 3
 SOLUONGTHANHVIENNHOMTOIDATHUCTE = 5
@@ -671,7 +671,8 @@ VATPHAMTUDONGNHATFARMs = (
 
 VATPHAMXEPCHONGs = tuple(["Toái Lăng", "Lá", "Hoạt Lạc Hoàn", "Lam Cầu", "Hắc Cầu", "Mồi Câu", KHIMACHDON, TAITAOHOAN, TIEUDAOTAN, QUYNGUYENDON, KIMTANGTAN, KHIMACHDON, TUTAMDON, TOAIMABO,
                           "Lễ Bao Khai Quốc",
-                          "Tơ Nhện", "Thạch Tín", "Đuôi Bọ Cạp", "Kịch Độc Châm", "Cánh Ong", "Phi Hành Phiến", "Núm Vú", "Huỳnh Quang Thạch", "Hành Quân Tán"
+                          "Tơ Nhện", "Thạch Tín", "Đuôi Bọ Cạp", "Kịch Độc Châm", "Cánh Ong", "Phi Hành Phiến", "Núm Vú", "Huỳnh Quang Thạch", "Hành Quân Tán", "Bắp", "Mật Ong",
+                          "Ly Hồn", "Ma Tinh Thạch", "Cánh Ong", "Ly Phách", "Chính Khí Tán", "Cẩu Bì Dược Cao", "Búi Tóc"
                           ])
 SOLUONGXEPCHONGTOIDA_MAP = {
     "Hoạt Lạc Hoàn": 30

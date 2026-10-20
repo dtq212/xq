@@ -114,7 +114,6 @@ class TacTu:
         # Tạm ngưng toàn bộ hoạt động khi phát hiện người chơi ẩn thân xung quanh (đang farm & bán rác)
         self._thoidiemhettamngung = 0.
         self._lydotamngung = ""
-        self._thoidiemboquaanthan = 0.
         self._thoidiemkiemtraanthangannhat = 0.
         # Gán từ CuaSo để biết các cửa sổ khác đang dùng lộ trình mẫu nào
         self.shared_data = None
@@ -2970,7 +2969,7 @@ class TacTu:
         if not self._is_tudongvebanrac:
             return
         thoidiemhientai = time.time()
-        if thoidiemhientai - self._thoidiemkiemtraanthangannhat < 0.5 or thoidiemhientai < self._thoidiemboquaanthan:
+        if thoidiemhientai - self._thoidiemkiemtraanthangannhat < 0.5:
             return
         self._thoidiemkiemtraanthangannhat = thoidiemhientai
 
@@ -3009,10 +3008,9 @@ class TacTu:
             self._is_battudongtancongvatly = False
 
     def tieptuchoatdong(self):
-        # Bật lại thủ công: không xét ẩn thân thêm THOIGIANTAMNGUNGANTHAN giây để không bị ngưng lại ngay
+        # Bật lại thủ công: vẫn tiếp tục kiểm tra ẩn thân, gặp người ẩn thân là tạm ngưng tiếp
         self._thoidiemhettamngung = 0.
         self._lydotamngung = ""
-        self._thoidiemboquaanthan = time.time() + THOIGIANTAMNGUNGANTHAN
         print("[TẠM NGƯNG] Bật lại hoạt động thủ công")
         phatam("Bật lại hoạt động")
 
