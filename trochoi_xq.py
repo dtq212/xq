@@ -50,6 +50,13 @@ class TroChoiManager:
         return ds_hwnd
 
     def run(self):
+        # Khai báo hỗ trợ DPI cao trước khi tạo cửa sổ để Windows không phóng to kiểu ảnh làm nhòe chữ.
+        # Chỉ đặt ở tiến trình giao diện chính, không ảnh hưởng các tiến trình bot.
+        try:
+            import ctypes
+            ctypes.windll.shcore.SetProcessDpiAwareness(1)
+        except Exception:
+            pass
         root = tk.Tk()
         gui = GiaoDienHienThi(root, self.shared_data, self.command_dict)
 

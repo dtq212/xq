@@ -1,5 +1,6 @@
 import os
 import tkinter as tk
+from tkinter import font as tkfont
 from tkinter import ttk
 
 from hangso_xq import laytenbando
@@ -8,6 +9,9 @@ from tienich_xq import tailotrinhmau, duongdanlotrinhmau
 # Tạm ẩn các tùy chọn chưa dùng/không còn khả dụng (CN mở rộng, Khai khoáng, Đào tàng bảo đồ, Chiến trường).
 # Đổi thành True để hiện lại (tab "Khác"). Phím tắt của chúng vẫn hoạt động.
 HIEN_TUYCHON_CHUADUNG = False
+
+FONTCHU = "Calibri"
+COCHU = 11
 
 MAUCHU_PHU = "#7a7a7a"
 MAUCHU_XANH = "#1a5fb4"
@@ -29,8 +33,12 @@ class GiaoDienHienThi:
         self._diemdanhdanghienthi = None
 
         self.root.title("Bảng Điều Khiển VIP")
-        self.root.geometry("430x850")
-        self.root.minsize(400, 600)
+        # Hệ số thu phóng màn hình (100% = 1.0, 125% = 1.25...) để kích thước tính bằng pixel không bị nhỏ đi
+        self._heso = max(1.0, self.root.winfo_fpixels("1i") / 96.0)
+        # Không cao quá màn hình (chừa chỗ cho thanh taskbar)
+        chieucao = min(self._px(900), self.root.winfo_screenheight() - self._px(80))
+        self.root.geometry(f"{self._px(450)}x{chieucao}")
+        self.root.minsize(self._px(420), self._px(600))
         self.root.attributes('-topmost', True)
 
         self._thietlapstyle()
@@ -73,13 +81,20 @@ class GiaoDienHienThi:
 
     def _thietlapstyle(self):
         style = ttk.Style(self.root)
-        self.root.option_add("*Font", ("Segoe UI", 9))
-        style.configure("Treeview", rowheight = 22)
-        style.configure("Treeview.Heading", font = ("Segoe UI", 9, "bold"))
-        style.configure("TNotebook.Tab", padding = (10, 4))
-        style.configure("TLabelframe.Label", font = ("Segoe UI", 9, "bold"))
+        # Đổi font mặc định của cả tk lẫn ttk (ttk dùng các named font, option_add không đổi được)
+        for tenfont in ("TkDefaultFont", "TkTextFont", "TkHeadingFont", "TkMenuFont", "TkFixedFont"):
+            try:
+                tkfont.nametofont(tenfont).configure(family = FONTCHU, size = COCHU)
+            except tk.TclError:
+                pass
+        self.root.option_add("*Font", (FONTCHU, COCHU))
+        fontthuong = tkfont.Font(family = FONTCHU, size = COCHU)
+        style.configure("Treeview", rowheight = fontthuong.metrics("linespace") + 8)
+        style.configure("Treeview.Heading", font = (FONTCHU, COCHU, "bold"))
+        style.configure("TNotebook.Tab", padding = (12, 4))
+        style.configure("TLabelframe.Label", font = (FONTCHU, COCHU, "bold"))
         style.configure("Phu.TLabel", foreground = MAUCHU_PHU)
-        style.configure("Tieude.TLabel", font = ("Segoe UI", 10, "bold"))
+        style.configure("Tieude.TLabel", font = (FONTCHU, COCHU + 1, "bold"))
 
     def _taodanhsachnhanvat(self):
         frame = ttk.Frame(self.root)
@@ -96,7 +111,7 @@ class GiaoDienHienThi:
                 ("map", "Bản đồ", 115, tk.W),
                 ("status", "Trạng thái", 75, tk.CENTER)):
             self.tree.heading(col, text = text)
-            self.tree.column(col, width = width, anchor = anchor, stretch = col in ("name", "map"))
+            self.tree.column(col, width = self._px(width), anchor = anchor, stretch = col in ("name", "map"))
 
         scrollbar = ttk.Scrollbar(frame, orient = tk.VERTICAL, command = self.tree.yview)
         self.tree.configure(yscroll = scrollbar.set)
@@ -111,6 +126,9 @@ class GiaoDienHienThi:
         self.lbl_dangdieukhien.pack(anchor = tk.W)
         self.lbl_vitri = ttk.Label(frame, text = "", style = "Phu.TLabel")
         self.lbl_vitri.pack(anchor = tk.W)
+
+    def _px(self, sopixel):
+        return int(sopixel * self._heso)
 
     def _taotab(self, notebook, tieude):
         frame = ttk.Frame(notebook, padding = 8)
@@ -149,15 +167,14 @@ class GiaoDienHienThi:
         # Nhóm & Bảo thú nằm chung tab Chiến đấu
         self._taotabnhom(tab)
 
-        nhom = self._taonhom(tab, "Danh sách tấn công")
-        ttk.Label(nhom, text = "Ctrl+C: thêm mục tiêu đang chọn  ·  Ctrl+Alt+C: xoá hết", style = "Phu.TLabel").grid(row = 0, column = 0, sticky = tk.W)
-        self.lbl_tancong = tk.Label(nhom, text = "Trống", fg = MAUCHU_PHU, justify = tk.LEFT, wraplength = 370, anchor = tk.W)
-        self.lbl_tancong.grid(row = 1, column = 0, sticky = tk.W, pady = (2, 0))
-
-        nhom = self._taonhom(tab, "Danh sách bỏ qua")
-        ttk.Label(nhom, text = "Ctrl+X: thêm mục tiêu đang chọn  ·  Ctrl+Alt+X: xoá hết", style = "Phu.TLabel").grid(row = 0, column = 0, sticky = tk.W)
-        self.lbl_boqua = tk.Label(nhom, text = "Trống", fg = MAUCHU_PHU, justify = tk.LEFT, wraplength = 370, anchor = tk.W)
-        self.lbl_boqua.grid(row = 1, column = 0, sticky = tk.W, pady = (2, 0))
+        # Gộp 2 danh sách vào 1 khung cho gọn: dòng tiêu đề nhỏ (kèm phím tắt) + nội dung
+        nhom = self._taonhom(tab, "Danh sách mục tiêu")
+        ttk.Label(nhom, text = "Tấn công   Ctrl+C thêm · Ctrl+Alt+C xoá", style = "Phu.TLabel").grid(row = 0, column = 0, sticky = tk.W)
+        self.lbl_tancong = tk.Label(nhom, text = "Trống", fg = MAUCHU_PHU, justify = tk.LEFT, wraplength = self._px(390), anchor = tk.W)
+        self.lbl_tancong.grid(row = 1, column = 0, sticky = tk.W, pady = (0, 4))
+        ttk.Label(nhom, text = "Bỏ qua   Ctrl+X thêm · Ctrl+Alt+X xoá", style = "Phu.TLabel").grid(row = 2, column = 0, sticky = tk.W)
+        self.lbl_boqua = tk.Label(nhom, text = "Trống", fg = MAUCHU_PHU, justify = tk.LEFT, wraplength = self._px(390), anchor = tk.W)
+        self.lbl_boqua.grid(row = 3, column = 0, sticky = tk.W)
 
     def _taotabfarm(self, tab):
         nhom = self._taonhom(tab, "Chế độ")
@@ -248,7 +265,7 @@ class GiaoDienHienThi:
 
         ttk.Label(nhom, text = "Nhập (x, y, bản đồ) hoặc dán cả danh sách. Ctrl+P / Ctrl+B: thêm vị trí "
                                "đang đứng (hoặc điểm trỏ chuột khi mở bản đồ lớn).",
-                  style = "Phu.TLabel", justify = tk.LEFT, wraplength = 370).grid(row = 3, column = 0, columnspan = 2, sticky = tk.W, pady = (4, 0))
+                  style = "Phu.TLabel", justify = tk.LEFT, wraplength = self._px(390)).grid(row = 3, column = 0, columnspan = 2, sticky = tk.W, pady = (4, 0))
 
     def _taotabnhom(self, tab):
         nhom = self._taonhom(tab, "Nhóm")
