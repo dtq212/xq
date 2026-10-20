@@ -84,6 +84,8 @@ class TacTu:
 
         self._is_uutienmuctieupk = True
         self._khoangcachtoidatruongnhom = 6.
+        # Khi chạy theo lộ trình: quái phải cách một điểm đánh không quá bấy nhiêu ô mới được nhận làm mục tiêu/gom
+        self._bankinhdiemdanh = 18.
 
         self._tenmuctieutancongs = set()
         self._tenmuctieukhongtancongs = set(TENMUCTIEUKHONGTANCONGs)
@@ -316,6 +318,7 @@ class TacTu:
             "_tenmuctieukhongtancongs": self._tenmuctieukhongtancongs,
             "_tenvatphamnhats": self._tenvatphamnhats,
             "_khoangcachtoidatruongnhom": self._khoangcachtoidatruongnhom,
+            "_bankinhdiemdanh": self._bankinhdiemdanh,
             "_is_tudongtrieuhoibaothugiangho": self._is_tudongtrieuhoibaothugiangho,
             "_is_tudongbattatchucnangmorong": self._is_tudongbattatchucnangmorong,
             "_is_tudongsudungkynangbaothu": self._is_tudongsudungkynangbaothu,
@@ -362,6 +365,7 @@ class TacTu:
             if "_tenmuctieukhongtancongs" in thietlap: self._tenmuctieukhongtancongs = thietlap["_tenmuctieukhongtancongs"]
             if "_tenvatphamnhats" in thietlap: self._tenvatphamnhats = thietlap["_tenvatphamnhats"]
             if "_khoangcachtoidatruongnhom" in thietlap: self._khoangcachtoidatruongnhom = float(thietlap["_khoangcachtoidatruongnhom"])
+            if "_bankinhdiemdanh" in thietlap: self._bankinhdiemdanh = float(thietlap["_bankinhdiemdanh"])
             if "_is_tudongtrieuhoibaothugiangho" in thietlap: self._is_tudongtrieuhoibaothugiangho = thietlap["_is_tudongtrieuhoibaothugiangho"]
             if "_is_tudongbattatchucnangmorong" in thietlap: self._is_tudongbattatchucnangmorong = thietlap["_is_tudongbattatchucnangmorong"]
             if "_is_tudongsudungkynangbaothu" in thietlap: self._is_tudongsudungkynangbaothu = thietlap["_is_tudongsudungkynangbaothu"]
@@ -389,6 +393,9 @@ class TacTu:
 
     def thietlap_khoangcachtheosau(self, khoangcach):
         self._khoangcachtoidatruongnhom = float(khoangcach)
+
+    def thietlap_bankinhdiemdanh(self, bankinh):
+        self._bankinhdiemdanh = max(1., float(bankinh))
 
     def _kiemtrathuchienvohieuhoadichuyen(self):
         if self._is_yeucauvohieuhoadichuyen:
@@ -749,7 +756,7 @@ class TacTu:
         return False
 
     def _kiemtra_tamdiemdanh(self, x, y):
-        # Đang chạy theo lộ trình điểm đánh: mục tiêu phải nằm trong bán kính tìm mục tiêu quanh ít nhất 1 điểm đánh của bản đồ hiện tại.
+        # Đang chạy theo lộ trình điểm đánh: mục tiêu phải nằm trong bán kính _bankinhdiemdanh quanh ít nhất 1 điểm đánh của bản đồ hiện tại.
         # Không có điểm đánh nào trên bản đồ này (hoặc không bật lộ trình) thì không giới hạn.
         if not self._is_tudongdichuyendiemdanhxungquanh or not self._diemdanhxungquanhs:
             return True
@@ -757,7 +764,7 @@ class TacTu:
         diemcungbandos = [d for d in self._diemdanhxungquanhs if len(d) >= 3 and d[2] == idbandohientai]
         if not diemcungbandos:
             return True
-        return any(math.dist((x, y), (d[0], d[1])) <= self._khoangcachtimkiemmuctieu for d in diemcungbandos)
+        return any(math.dist((x, y), (d[0], d[1])) <= self._bankinhdiemdanh for d in diemcungbandos)
 
     def _kiemtramuctieuhople(self, diachidoituong, is_dongdoi = False):
         # Trả về False nếu không hợp lệ, ngược lại trả về dict thông tin mục tiêu để tái sử dụng
@@ -869,6 +876,16 @@ class TacTu:
             thongtin["khoangcachtruongnhom"] = math.dist(toado, toadotruongnhom) if is_anhhuongboitruongnhom else 0.
             return thongtin
 
+        # Đang farm & bán rác: nhường quái đang ở gần nhân vật khác của mình (không cùng nhóm) cho nhân vật đó,
+        # tránh các nhân vật đánh chung một chỗ, đi sát rạt vào nhau (giống logic nhường quái khi gom)
+        toadodongdois = self._laytoadodongdoikhacnhom() if self._is_tudongvebanrac else []
+
+        def _is_nhuongdongdoi(thongtin):
+            if thongtin["is_muctieupk"] or not toadodongdois:
+                return False
+            return any(math.dist(thongtin["toado"], toadodongdoi) <= 9.0 and math.dist(thongtin["toado"], toadodongdoi) < thongtin["khoangcach"]
+                       for toadodongdoi in toadodongdois)
+
         muctieuhientai = None
 
         if diachicosothongtinnhanvatmuctieudangchon:
@@ -881,6 +898,8 @@ class TacTu:
                 if is_anhhuongboitruongnhom and thongtin["khoangcachtruongnhom"] > khoangcachchophepmuctieutruongnhom:
                     thongtin = False
                 elif self.moitruong.get_idmaupk() == MAUPK_HOABINH and thongtin["is_muctieupk"]:
+                    thongtin = False
+                elif _is_nhuongdongdoi(thongtin):
                     thongtin = False
 
             if self.moitruong.get_tenmonphai() == "daohoanguyen" and self.moitruong.get_khoangcach(diachicosothongtinnhanvatmuctieudangchon) > KHOANGCACHSUDUNGKYNANGCANCHIEN:
@@ -900,7 +919,7 @@ class TacTu:
             thongtin = self.moitruong.get_is_nhanvattontai(diachiduphong) and self._kiemtramuctieuhople(diachiduphong, is_dongdoi = False)
             if thongtin:
                 _bosungvitri(thongtin)
-                is_duphonghople = thongtin["khoangcach"] < KHOANGCACHTOANMANHINH
+                is_duphonghople = thongtin["khoangcach"] < KHOANGCACHTOANMANHINH and not _is_nhuongdongdoi(thongtin)
                 if is_anhhuongboitruongnhom and thongtin["khoangcachtruongnhom"] > khoangcachchophepmuctieutruongnhom:
                     is_duphonghople = False
 
@@ -988,6 +1007,8 @@ class TacTu:
 
             _bosungvitri(thongtinmuctieuxemxet, toadomuctieuxemxet)
             if is_anhhuongboitruongnhom and thongtinmuctieuxemxet["khoangcachtruongnhom"] > khoangcachchophepmuctieutruongnhom:
+                continue
+            if _is_nhuongdongdoi(thongtinmuctieuxemxet):
                 continue
 
             toadomuctieuhoples.append(toadomuctieuxemxet)

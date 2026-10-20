@@ -58,6 +58,7 @@ class GiaoDienHienThi:
             "chientruong": tk.BooleanVar(),
             "chantangcap": tk.BooleanVar(),
             "khoangcachtheosau": tk.DoubleVar(value = 9.0),
+            "bankinhdiemdanh": tk.DoubleVar(value = 18.0),
             "diemdanhxungquanh": tk.BooleanVar(),
             "trieuhoibaothu": tk.BooleanVar(),
             "tudongbattatchucnangmorong": tk.BooleanVar(),
@@ -193,6 +194,26 @@ class GiaoDienHienThi:
         nhom = self._taonhom(tab, "Chế độ")
         self._create_check(nhom, "Tự động farm & về bán rác", self.vars["vebanrac"], "battat_tudongvebanrac", "Ctrl+Alt+Shift+H")
         self._create_check(nhom, "Di chuyển theo lộ trình điểm đánh", self.vars["diemdanhxungquanh"], "battat_tudongdichuyendiemdanhxungquanh", "Ctrl+Alt+Shift+P")
+
+        # Bán kính quanh mỗi điểm đánh: quái xa hơn mọi điểm đánh thì không đánh/gom
+        hangbankinh = ttk.Frame(nhom)
+        hangbankinh.grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W, padx = (22, 0), pady = (0, 2))
+        ttk.Label(hangbankinh, text = "Chỉ đánh quái cách điểm đánh tối đa:").pack(side = tk.LEFT)
+
+        def on_bankinh_change(*args):
+            hwnd = self.get_selected_hwnd()
+            if hwnd:
+                try:
+                    self.command_dict[hwnd] = f"set_bankinhdiemdanh:{self.vars['bankinhdiemdanh'].get()}"
+                except tk.TclError:
+                    pass
+
+        self.spin_bankinhdiemdanh = ttk.Spinbox(hangbankinh, from_ = 3.0, to = 40.0, increment = 1.0, width = 5,
+                                                textvariable = self.vars["bankinhdiemdanh"], command = on_bankinh_change)
+        self.spin_bankinhdiemdanh.pack(side = tk.LEFT, padx = 4)
+        self.spin_bankinhdiemdanh.bind("<Return>", on_bankinh_change)
+        self.spin_bankinhdiemdanh.bind("<FocusOut>", on_bankinh_change)
+        ttk.Label(hangbankinh, text = "ô", style = "Phu.TLabel").pack(side = tk.LEFT)
 
         # Lộ trình mẫu: chọn mẫu (của bất kỳ bản đồ nào) rồi Nạp, hoặc để bot Tự chọn mẫu chưa nhân vật nào dùng
         nhom = self._taonhom(tab, "Lộ trình mẫu")
@@ -429,6 +450,14 @@ class GiaoDienHienThi:
                 ("chantangcap", "_is_chantangcapdo"),
                 ("diemdanhxungquanh", "_is_tudongdichuyendiemdanhxungquanh")):
             self.vars[ten].set(info.get(khoa, False))
+
+        if self.root.focus_get() != getattr(self, 'spin_bankinhdiemdanh', None):
+            try:
+                bankinh_moi = info.get("_bankinhdiemdanh", 18.0)
+                if abs(self.vars["bankinhdiemdanh"].get() - bankinh_moi) > 0.01:
+                    self.vars["bankinhdiemdanh"].set(bankinh_moi)
+            except tk.TclError:
+                pass
 
         if self.root.focus_get() != getattr(self, 'spin_khoangcach', None):
             try:
