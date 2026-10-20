@@ -115,6 +115,9 @@ class TacTu:
         self._thoidiemhettamngung = 0.
         self._lydotamngung = ""
         self._thoidiemkiemtraanthangannhat = 0.
+        # Lần gần nhất TỰ phát hiện ẩn thân (chia sẻ cho nhân vật khác cùng bản đồ)
+        self._thoidiemphathienanthan = 0.
+        self._tenanthanphathien = ""
         # Gán từ CuaSo để biết các cửa sổ khác đang dùng lộ trình mẫu nào
         self.shared_data = None
         self.idcuaso = None
@@ -2965,14 +2968,29 @@ class TacTu:
         return time.time() < self._thoidiemhettamngung
 
     def action_kiemtraanthan(self):
-        # Đang farm & bán rác mà thấy người chơi khác ẩn thân quanh mình => ngưng hết mọi hoạt động THOIGIANTAMNGUNGANTHAN giây
-        if not self._is_tudongvebanrac:
-            return
+        # 1) Tự quét: thấy người chơi lạ ẩn thân quanh mình thì ghi nhận và công bố cho các cửa sổ khác (qua shared_data)
+        # 2) Đang farm & bán rác mà mình thấy, hoặc nhân vật khác CÙNG BẢN ĐỒ vừa thấy => ngưng hết mọi hoạt động
         thoidiemhientai = time.time()
         if thoidiemhientai - self._thoidiemkiemtraanthangannhat < 0.5:
             return
         self._thoidiemkiemtraanthangannhat = thoidiemhientai
 
+        tenanthan = self._quetanthanxungquanh()
+        if tenanthan:
+            # Chỉ công bố phát hiện trực tiếp (không công bố trạng thái tạm ngưng) để các nhân vật không gia hạn lẫn nhau mãi
+            self._thoidiemphathienanthan = thoidiemhientai
+            self._tenanthanphathien = tenanthan
+
+        if not self._is_tudongvebanrac:
+            return
+        if tenanthan:
+            self._batdautamngung(f"phát hiện {tenanthan} ẩn thân")
+            return
+        lydo = self._layanthantucuasokhac()
+        if lydo:
+            self._batdautamngung(lydo)
+
+    def _quetanthanxungquanh(self):
         idnhanvathientai = self.moitruong.get_idnguoichoi()
         idthanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms() if self.moitruong.get_is_dangnamtrongnhom() else []
         i = -1
@@ -2980,7 +2998,7 @@ class TacTu:
             i += 1
             diachidoituong = self.moitruong.get_diachicosothongtindoituongx(i)
             if not diachidoituong:
-                break
+                return None
             if not self.moitruong.get_is_nguoichoi(diachidoituong) or not self.moitruong.get_is_nhanvatanthan(diachidoituong):
                 continue
             idnguoichoi = self.moitruong.get_idnguoichoi(diachidoituong)
@@ -2989,8 +3007,25 @@ class TacTu:
                 continue
             if self.moitruong.get_khoangcach(diachidoituong) > KHOANGCACHTOANMANHINH:
                 continue
-            self._batdautamngung(f"phát hiện {self.moitruong.get_tendoituong(diachidoituong) or idnguoichoi} ẩn thân")
-            return
+            return self.moitruong.get_tendoituong(diachidoituong) or str(idnguoichoi)
+
+    def _layanthantucuasokhac(self):
+        # Nhân vật khác cùng bản đồ vừa tự phát hiện ẩn thân (trong vài giây gần đây) => trả về lý do để tạm ngưng theo
+        if self.shared_data is None:
+            return None
+        try:
+            danhsach = list(self.shared_data.items())
+        except Exception:
+            return None
+        idbandohientai = self.moitruong.get_idbandohientai()
+        for idcuaso, info in danhsach:
+            if idcuaso == self.idcuaso or not isinstance(info, dict):
+                continue
+            if info.get("tenbando") != idbandohientai:
+                continue
+            if time.time() - info.get("_thoidiemphathienanthan", 0.) <= THOIGIANCHIASEANTHAN:
+                return f"{info.get('tennhanvat') or idcuaso} phát hiện {info.get('_tenanthanphathien') or 'người'} ẩn thân"
+        return None
 
     def _batdautamngung(self, lydo):
         is_moibatdau = not self.get_is_dangtamngung()

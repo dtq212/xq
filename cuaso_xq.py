@@ -171,6 +171,8 @@ class CuaSo:
                     "_lotrinhmaudangdung": self.tactu._lotrinhmaudangdung,
                     "_thoigiantamngungconlai": max(0., self.tactu._thoidiemhettamngung - time.time()),
                     "_lydotamngung": self.tactu._lydotamngung,
+                    "_thoidiemphathienanthan": self.tactu._thoidiemphathienanthan,
+                    "_tenanthanphathien": self.tactu._tenanthanphathien,
                     "_is_tudongtrieuhoibaothugiangho": self.tactu._is_tudongtrieuhoibaothugiangho,
                     "_is_tudongbattatchucnangmorong": self.tactu._is_tudongbattatchucnangmorong,
 

@@ -135,6 +135,8 @@ KHOANGCACHNHATDO = KHOANGCACHTOANMANHINH
 
 # Thấy người chơi ẩn thân quanh mình khi đang farm & bán rác thì ngưng mọi hoạt động trong khoảng thời gian này (giây)
 THOIGIANTAMNGUNGANTHAN = 600.
+# Tín hiệu "vừa thấy ẩn thân" của nhân vật khác cùng bản đồ còn hiệu lực trong bấy nhiêu giây (nhân vật thấy sẽ làm mới liên tục mỗi 0.5s)
+THOIGIANCHIASEANTHAN = 3.
 
 SOLUONGTHANHVIENNHOMTOIDA = 3
 SOLUONGTHANHVIENNHOMTOIDATHUCTE = 5
