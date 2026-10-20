@@ -724,6 +724,41 @@ YENTRUONGTHANH1 = [(220, 123, 71), (200, 136, 71), (182, 148, 71), (161, 142, 71
 
 THAONGUYEN = [(79, 125, 510), (142, 64, 510), (179, 58, 510), (227, 86, 510), (246, 118, 510), (198, 173, 510), (142, 175, 510), (133, 109, 510), (194, 98, 510), (177, 149, 510), (145, 122, 510), (168, 125, 510)]
 
+# Tên hiển thị của bản đồ theo ID (dùng cho lộ trình mẫu trên bảng điều khiển). Tên nào sai dấu thì sửa trực tiếp ở đây.
+TENBANDO_MAP = {
+    BANDO_TANTHUTHON: "Tân Thủ Thôn",
+    BANDO_CHU: "Chu",
+    BANDO_TUONGLANG: "Tương Lăng",
+    BANDO_BACHMATRANG: "Bạch Mã Trang",
+    BANDO_MALANGDAO: "Mã Lăng Đạo",
+    BANDO_MUCDA: "Mục Dã",
+    BANDO_QUELANG: "Quế Lăng",
+    BANDO_RANHGIOIDAMLAY: "Ranh Giới Đầm Lầy",
+    BANDO_DIAGIOIDAMLAY: "Địa Giới Đầm Lầy",
+    BANDO_KENHTRINHQUOC1: "Kênh Trịnh Quốc 1",
+    BANDO_KENHTRINHQUOC2: "Kênh Trịnh Quốc 2",
+    BANDO_KENHTRINHQUOC3: "Kênh Trịnh Quốc 3",
+    BANDO_CULOC: "Cự Lộc",
+    BANDO_MADAPHO: "Mã Đạp Phố",
+    BANDO_YENTRUONGTHANH1: "Yên Trường Thành 1",
+    BANDO_YENTRUONGTHANH2: "Yên Trường Thành 2",
+    BANDO_TRIEUTRUONGTHANH2: "Triệu Trường Thành 2",
+    BANDO_TANTRUONGTHANH2: "Tần Trường Thành 2",
+    BANDO_LINHCOCDONG1: "Linh Cốc Động 1",
+    BANDO_LINHCOCDONG2: "Linh Cốc Động 2",
+    BANDO_LOANDAO1: "Loạn Đảo 1",
+    BANDO_LOANDAO2: "Loạn Đảo 2",
+    510: "Thảo Nguyên",
+}
+
+
+def laytenbando(idbando):
+    try:
+        return TENBANDO_MAP.get(int(idbando)) or f"Bản đồ {idbando}"
+    except (TypeError, ValueError):
+        return f"Bản đồ {idbando}"
+
+
 DIEMDANHXUNGQUANH_MAP = {
     BANDO_TRIEUTRUONGTHANH2: TRIEUTRUONGTHANH2,
     BANDO_TANTRUONGTHANH2: TANTRUONGTHANH2,
