@@ -91,13 +91,15 @@ class LoopDieuPhoiDiChuyen:
                 time.sleep(1)
             except Exception as e:
                 print(f"[Loop DI CHUYỂN] Lỗi không xác định: {e}")
-            time.sleep(0.1)
+            time.sleep(0.05)
 
     def step(self):
         if not self.moitruong.get_is_nhanvattontai() or self.moitruong.get_is_dangmatketnoi():
             return
         if self.tactu.get_is_dangtamngung():
             return
+        # Tính đích theo nhóm ngay trước khi di chuyển (để ở loop chính thì phải chờ cả lượt dùng kỹ năng, đích bị cũ nên chạy theo vị trí trưởng nhóm từ lâu)
+        self.tactu.action_tudongtheosautruongnhom()
         self.tactu.action_xulyuutiendichuyen()
 
 
@@ -133,7 +135,6 @@ class LoopChinh:
         if self.tactu.get_is_dangtamngung():
             return
 
-        self.tactu.action_tudongtheosautruongnhom()
         self.tactu.action_tudongxulygomquai()
         self.tactu.action_tudongsudungkynang()
         self.tactu.action_tudongdieukhienbaothu()
@@ -141,18 +142,27 @@ class LoopChinh:
         # if self.moitruong.get_idnguoichoi() == 59844:
         #     print("{}".format(self.moitruong.get_danhsachhieuungnhanvats()))
 
-        # if 0 and self.moitruong.get_idnguoichoi() in (59996, 60055):
-        #     if not self.moitruong.action_timkiemvatphamhanhtrang("Rương dự trữ"):
-        #         self.moitruong.action_thucthicaulenh("buyitem ! 4 7 1")
+        # if self.moitruong.get_idnguoichoi() in (29, 30, 31, 32):
+        #     if not self.moitruong.action_timkiemvatphamhanhtrang("Rương Dự Trữ"):
         #         time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("tallk bcaa# info.10")
+        #     self.moitruong.action_thucthicaulenh("tallk 4cdfa# info.10")
         #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("tallk bcaa# info.11")
+        #     self.moitruong.action_thucthicaulenh("tallk 4cdfa# info.11")
         #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("tallk bcaa# info.20")
+        #     self.moitruong.action_thucthicaulenh("tallk 4cdfa# info.20")
         #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("tallk bcaa# info.21")
+        #     self.moitruong.action_thucthicaulenh("tallk 4cdfa# info.21")
         #     time.sleep(0.25)
+
+        # Nộp Rương dự trữ (khôi phục từ main2/loop.py, commit cae781b) — id NPC (810a) đổi mỗi lần, cần sửa trước khi bật
+        # self.moitruong.action_thucthicaulenh("tallk 810a# info.58", delay = 0.)
+        # time.sleep(0.25)
+        # self.moitruong.action_thucthicaulenh("tallk 810a# info.18", delay = 0.)
+        # time.sleep(0.25)
+        # self.moitruong.action_thucthicaulenh("tallk 810a# info.20", delay = 0.)
+        # time.sleep(0.25)
+        # self.moitruong.action_thucthicaulenh("tallk 810a# info.21", delay = 0.)
+        # time.sleep(0.25)
 
         if self.moitruong.get_idnguoichoi() in (29, 30, 31, 32, 132):
             if self.moitruong.action_timkiemvatphamhanhtrang("Túi Ngân Lượng"):

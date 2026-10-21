@@ -63,6 +63,7 @@ class GiaoDienHienThi:
             "trieuhoibaothu": tk.BooleanVar(),
             "tudongbattatchucnangmorong": tk.BooleanVar(),
             "sudungkynangbaothu": tk.BooleanVar(),
+            "tranhvungcam": tk.BooleanVar(value = True),
         }
 
         self._taodanhsachnhanvat()
@@ -193,6 +194,7 @@ class GiaoDienHienThi:
     def _taotabfarm(self, tab):
         nhom = self._taonhom(tab, "Chế độ")
         self._create_check(nhom, "Tự động farm & về bán rác", self.vars["vebanrac"], "battat_tudongvebanrac", "Ctrl+Alt+Shift+H")
+        self._create_check(nhom, "Tránh vùng cấm", self.vars["tranhvungcam"], "battat_tranhvungcam")
         self._create_check(nhom, "Di chuyển theo lộ trình điểm đánh", self.vars["diemdanhxungquanh"], "battat_tudongdichuyendiemdanhxungquanh", "Ctrl+Alt+Shift+P")
 
         # Bán kính quanh mỗi điểm đánh: quái xa hơn mọi điểm đánh thì không đánh/gom
@@ -441,6 +443,7 @@ class GiaoDienHienThi:
                 ("timmuctieu", "_is_tudongtimkiemmuctieu"),
                 ("trieuhoibaothu", "_is_tudongtrieuhoibaothugiangho"),
                 ("sudungkynangbaothu", "_is_tudongsudungkynangbaothu"),
+                ("tranhvungcam", "_is_tranhvungcam"),
                 ("khaikhoang", "_is_tudongkhaikhoang"),
                 ("chientruong", "_is_tudongdichientruong"),
                 ("daobaodo", "_is_tudongdaotangbaodo"),

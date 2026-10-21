@@ -179,6 +179,7 @@ class CuaSo:
                     "_is_tudongbattatchucnangmorong": self.tactu._is_tudongbattatchucnangmorong,
 
                     "_is_tudongsudungkynangbaothu": self.tactu._is_tudongsudungkynangbaothu,
+                    "_is_tranhvungcam": self.tactu._is_tranhvungcam,
                 }
                 self.shared_data[self.idcuaso] = info
 
@@ -239,6 +240,8 @@ class CuaSo:
                         print(f"Lỗi khi phân tích cú pháp toạ độ: {e}")
                 elif cmd == "battat_tudongbattatchucnangmorong":
                     self.tactu.battat_tudongbattatchucnangmorong()
+                elif cmd == "battat_tranhvungcam":
+                    self.tactu.battat_tranhvungcam()
                 elif cmd == "battat_chantangcapdo":
                     self.tactu.battat_is_chantangcapdo()
                 elif cmd == "battat_tudongkhaikhoang":

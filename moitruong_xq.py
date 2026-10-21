@@ -109,6 +109,8 @@ class MoiTruong:
         self._xdichuyengannhat = -1
         self._ydichuyengannhat = -1
         self._thoidiemboquadichuyencungtoadogannhat = 0.
+        # Tác tử đồng bộ theo tùy chọn tránh vùng cấm: mọi di chuyển không được cắt qua vùng cấm
+        self.is_tranhvungcam = True
         self._thoidiemnhanvatkhongsansanggannhat = 0.
 
         self._thoidiemsudungkynangmuctieugannhat = 0.
@@ -1655,7 +1657,7 @@ class MoiTruong:
                         return True
         return False
 
-    def _action_dichuyentheovector(self, x1, y1, deltax, deltay, delay = 0.05, is_rangbuoctrongmanhinh = False):
+    def _action_dichuyentheovector(self, x1, y1, deltax, deltay, delay = 0.05, is_rangbuoctrongmanhinh = False, is_bokiemtravungcam = False):
         # deltax, deltay: độ lệch theo đơn vị toạ độ game tính từ bản thân (deltay = y1 - y2, dương = click xuống dưới màn hình)
         if not deltax and not deltay:
             return False
@@ -1677,7 +1679,8 @@ class MoiTruong:
         xdich, ydich = x1 + deltax, y1 - deltay
 
         # Lớp chặn cuối: mọi kiểu di chuyển (tiếp cận, lùi giữ khoảng cách, phủ đầu...) đều không được cắt qua vùng cấm
-        if self.get_is_duongdicatvungcam(x1, y1, xdich, ydich):
+        # (trừ khi chạy theo trưởng nhóm: lỡ đứng trong vùng cấm thì mọi đường đi đều "cắt vùng cấm" và nhân vật bị kẹt luôn)
+        if self.is_tranhvungcam and not is_bokiemtravungcam and self.get_is_duongdicatvungcam(x1, y1, xdich, ydich):
             return False
 
         # Bỏ qua nếu vẫn đang chạy tới đúng điểm đích vừa click (tránh click dồn làm nhân vật khựng lại)
@@ -1751,7 +1754,7 @@ class MoiTruong:
             deltax, deltay = khoangcachdichuyen, khoangcachdichuyen
         return self._action_dichuyentheovector(x1, y1, deltax, deltay, delay = delay)
 
-    def action_dichuyengiukhoangcachtoidadiem(self, x2, y2, khoangcachtoida, khoangcachdichuyentoida = 0, delay = 0.05, is_rangbuoctrongmanhinh = False):
+    def action_dichuyengiukhoangcachtoidadiem(self, x2, y2, khoangcachtoida, khoangcachdichuyentoida = 0, delay = 0.05, is_rangbuoctrongmanhinh = False, is_bokiemtravungcam = False):
         if x2 <= 0 or y2 <= 0:
             return False
 
@@ -1770,7 +1773,7 @@ class MoiTruong:
         deltax = khoangcachdichuyen * (x2 - x1) / khoangcach
         deltay = khoangcachdichuyen * (y1 - y2) / khoangcach
 
-        return self._action_dichuyentheovector(x1, y1, deltax, deltay, delay = delay, is_rangbuoctrongmanhinh = is_rangbuoctrongmanhinh)
+        return self._action_dichuyentheovector(x1, y1, deltax, deltay, delay = delay, is_rangbuoctrongmanhinh = is_rangbuoctrongmanhinh, is_bokiemtravungcam = is_bokiemtravungcam)
 
     def action_dichuyengiukhoangcachtoithieudiem(self, x2, y2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 0.05):
         if x2 <= 0 or y2 <= 0:
