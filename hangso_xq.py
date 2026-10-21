@@ -417,7 +417,6 @@ MAUPK_BANG = 2
 MAUPK_TUDO = 3
 
 HIEUUNGKYNANG_THEOSAUNHOM = 11
-HIEUUNGKYNANG_BAOTHUVATPHAM = 4033
 HIEUUNGKYNANG_NGOAIKHANG = 3291
 HIEUUNGKYNANG_NOIKHANG = 3292
 HIEUUNGKYNANG_TIENTHANVODICH = 3254
@@ -662,6 +661,7 @@ VATPHAMKHONGBANs = (
     "Cường Hóa Ngân Châm Độ Ách",
     "Trang Sách Cũ",
     "Bột Tiêu Thạch",
+    "Huy Hiệu 2D",
     *NGUYENLIEULUYENDONs,
 )
 
@@ -676,7 +676,8 @@ VATPHAMTUDONGNHATFARMs = (
 VATPHAMXEPCHONGs = tuple(["Toái Lăng", "Lá", "Hoạt Lạc Hoàn", "Lam Cầu", "Hắc Cầu", "Mồi Câu", KHIMACHDON, TAITAOHOAN, TIEUDAOTAN, QUYNGUYENDON, KIMTANGTAN, KHIMACHDON, TUTAMDON, TOAIMABO,
                           "Lễ Bao Khai Quốc",
                           "Tơ Nhện", "Thạch Tín", "Đuôi Bọ Cạp", "Kịch Độc Châm", "Cánh Ong", "Phi Hành Phiến", "Núm Vú", "Huỳnh Quang Thạch", "Hành Quân Tán", "Bắp", "Mật Ong",
-                          "Ly Hồn", "Ma Tinh Thạch", "Cánh Ong", "Ly Phách", "Chính Khí Tán", "Cẩu Bì Dược Cao", "Búi Tóc"
+                          "Ly Hồn", "Ma Tinh Thạch", "Cánh Ong", "Ly Phách", "Chính Khí Tán", "Cẩu Bì Dược Cao", "Búi Tóc",
+                          "Phục Dược", "Trị Dược", "Chiến Quốc Lệnh", "Chiến Quốc Lệnh x3", DAIHUYETTHACH, DAIPHAPLUCTHACH
                           ])
 SOLUONGXEPCHONGTOIDA_MAP = {
     "Hoạt Lạc Hoàn": 30
@@ -917,8 +918,9 @@ NHANVATTODOITUDONGs = []
 for members in NHANVATTODOITUDONGs_LIST:
     NHANVATTODOITUDONGs.extend(members)
 
-TENMUCTIEUKHONGTANCONGs = (*BAOTHUVATPHAMs, "Tần QuốcBinh Sĩ", "Triệu QuốcBinh Sĩ", QUYTOT, THIENBINH, DAUBINH, "CAVE1", "CAVE.2", 'Đỗ Độc', 'Ôn Thần',)
-TENNGUOICHOICUNGBANGs = ("Ti?u?ao", "jDTQ", "HSThangLong", "NhãPhi", "v113331", "Exodi")
+TENMUCTIEUKHONGTANCONGs = (*BAOTHUVATPHAMs, "Tần QuốcBinh Sĩ", "Triệu QuốcBinh Sĩ", QUYTOT, THIENBINH, DAUBINH, "CAVE1", "CAVE.2", 'Đỗ Độc', 'Ôn Thần', "Liễu Vọng Tháp")
+TENNGUOICHOICUNGBANGs = tuple()
+TENBOSSBUFFMAOSONs = ("Mã Quỷ", "Lương Hưng", "Yến Thập Tam", "Tư Tà", "Thủ Lĩnh Thành Kiều")
 
 NHANVATTODOITUDONGs = tuple(NHANVATTODOITUDONGs)
 NHANVATTODOICHIENTRUONGS = tuple(NHANVATTODOITUDONGs)
