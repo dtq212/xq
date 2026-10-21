@@ -184,6 +184,9 @@ class TacTu:
         self._is_battudongtancongvatly = False
         self._thoidiemtodoigannhat_map = {}
         self._thoidiemxulytodoigannhat = 0.
+        # Đồng đội hạng cao hơn đang được mời vào nhóm (để biết đã mời bao lâu)
+        self._idmoihangcaohon = 0
+        self._thoidiembatdaumoihangcaohon = 0.
         self._thoidiemcaituhoansinh_map = {}
 
         self._thoidiemsudungamkichgannhat = 0.
@@ -3046,7 +3049,8 @@ class TacTu:
             diachidoituong = self.moitruong.get_diachicosothongtindoituongx(i)
             if not diachidoituong:
                 return nguoila
-            if not self.moitruong.get_is_nguoichoi(diachidoituong):
+            # Bỏ các ô đối tượng còn sót (nhân vật đã rời đi / chưa tải xong) để không báo nhầm người lạ
+            if not self.moitruong.get_is_nhanvattontai(diachidoituong) or not self.moitruong.get_is_nguoichoi(diachidoituong):
                 continue
             idnguoichoi = self.moitruong.get_idnguoichoi(diachidoituong)
             if self._is_nguoichoinoibo(idnguoichoi, idnhanvathientai):
@@ -3242,7 +3246,12 @@ class TacTu:
             if is_dangtrongnhom:
                 if self.moitruong.get_is_truongnhom() or (self._is_khongcongidebuff and time.time() - self._thoidiemkiemtrakhongcongidebuffgannhat > 10.):
                     self._thoidiemkiemtrakhongcongidebuffgannhat = time.time()
-                    self.moitruong.action_thoatkhoinhom()
+                    # Trưởng nhóm rời nhóm = giải tán (đá văng cả đội): nhường quyền cho thành viên khác trước, lần sau mới rời
+                    thanhvienkhacs = [id_ for id_ in self.moitruong.get_danhsachidnguoichoithanhviennhoms() if id_ != idnguoichoi]
+                    if self.moitruong.get_is_truongnhom() and thanhvienkhacs:
+                        self.moitruong.action_nhuongquyentruongnhom(thanhvienkhacs[0])
+                    else:
+                        self.moitruong.action_thoatkhoinhom()
             else:
                 self.moitruong.action_kiemtravadongyloimoinhom(NHANVATCUNGBANGs)
             return
@@ -3266,15 +3275,8 @@ class TacTu:
         if not dongdoicanxulys and not is_dangtrongnhom:
             return
 
-        if is_dangtrongnhom:
-            idtruongnhom = self.moitruong.get_idnguoichoitruongnhom()
-
-            # Trưởng nhóm là người ngoài danh sách tổ đội: rời nhóm nếu có đồng đội ở gần để ghép lại
-            # (trước đây so idtruongnhom với danh sách thành viên nên điều kiện không bao giờ đúng)
-            if idtruongnhom and idtruongnhom not in xephang_map and dongdoicanxulys:
-                if idbandohientai == BANDO_CHIENTRUONG or any(id_ not in danhsachthanhviens for id_ in dongdoicanxulys):
-                    self.moitruong.action_thoatkhoinhom()
-                    return
+        # Tuyệt đối hạn chế rời/giải tán nhóm (giải tán sẽ đá văng cả đội ra khỏi phó bản): ưu tiên mời rồi nhường quyền.
+        # Trưởng nhóm là người ngoài danh sách tổ đội thì cứ ở lại nhóm, không rời để ghép lại như trước.
 
         idnguoichoixephangcaonhat = min(dongdoicanxulys + [idnguoichoi], key = lambda id_: xephang_map[id_])
 
@@ -3284,10 +3286,18 @@ class TacTu:
                     self.moitruong.action_nhuongquyentruongnhom(thanhvien_id)
                     return
 
+            # Đồng đội hạng cao hơn ở gần nhưng chưa trong nhóm: MỜI vào (vào rồi sẽ được nhường quyền ở vòng sau).
+            # Chỉ khi nhóm chỉ có mình mình (rời không đá ai) và mời quá 15s không được (họ đang ở nhóm khác) mới rời để xin vào nhóm họ.
             if idnguoichoixephangcaonhat != idnguoichoi and idnguoichoixephangcaonhat not in danhsachthanhviens:
-                if len(danhsachthanhviens) <= 1 or idbandohientai == BANDO_CHIENTRUONG:
+                if self._idmoihangcaohon != idnguoichoixephangcaonhat:
+                    self._idmoihangcaohon = idnguoichoixephangcaonhat
+                    self._thoidiembatdaumoihangcaohon = time.time()
+                if len(danhsachthanhviens) <= 1 and time.time() - self._thoidiembatdaumoihangcaohon > 15.:
+                    self._idmoihangcaohon = 0
                     self.moitruong.action_thoatkhoinhom()
                     return
+            else:
+                self._idmoihangcaohon = 0
 
             if len(danhsachthanhviens) < SOLUONGTHANHVIENNHOMTOIDA:
                 for iddongdoi in dongdoicanxulys:
@@ -3690,7 +3700,7 @@ class TacTu:
             diachidoituong = self.moitruong.get_diachicosothongtindoituongx(i)
             if not diachidoituong:
                 break
-            if not self.moitruong.get_is_nguoichoi(diachidoituong):
+            if not self.moitruong.get_is_nhanvattontai(diachidoituong) or not self.moitruong.get_is_nguoichoi(diachidoituong):
                 continue
             idnguoichoi = self.moitruong.get_idnguoichoi(diachidoituong)
             if idnguoichoi in NHANVATTODOITUDONGs and idnguoichoi != idnhanvathientai and idnguoichoi not in idthanhviennhoms:
