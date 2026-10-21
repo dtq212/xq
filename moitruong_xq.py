@@ -1073,7 +1073,7 @@ class MoiTruong:
         return read_string(self.tientrinh, diachicosothongtinnhanvat + 0x1136)
 
     def get_is_cungbang(self, diachicosothongtinnhanvat):
-        return self.get_idnguoichoi(diachicosothongtinnhanvat) in NHANVATCUNGBANGs
+        return self.get_idnguoichoi(diachicosothongtinnhanvat) in laynhanvattodoitudongs()
 
     def get_idtrangthaichuot(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)

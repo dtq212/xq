@@ -183,6 +183,83 @@ def luulotrinhmau(lotrinhmau):
         print(err)
 
 
+def duongdantodoitudong():
+    return os.path.join(os.path.dirname(_thumucthietlap()), "todoi.json")
+
+
+# Danh sách tổ đội tự động dùng chung cho mọi cửa sổ: [[id ưu tiên làm trưởng nhóm nhất, ...], ...]
+# Mỗi cửa sổ là một tiến trình riêng nên đọc từ file, chỉ đọc lại khi file đổi (kiểm tra tối đa 1 lần/giây)
+_todoitudong_cache = {"nhoms": None, "nhanvats": (), "thoidiemsua": None, "thoidiemkiemtra": 0.}
+
+
+def _chuanhoanhomtodoitudongs(nhoms):
+    ketqua = []
+    for nhom in nhoms or []:
+        ids = []
+        for id_ in nhom or []:
+            try:
+                id_ = int(id_)
+            except (TypeError, ValueError):
+                continue
+            if id_ > 0 and id_ not in ids:
+                ids.append(id_)
+        if ids:
+            ketqua.append(ids)
+    return ketqua
+
+
+def tainhomtodoitudongs():
+    from hangso_xq import NHANVATTODOITUDONGs_LIST
+
+    filepath = duongdantodoitudong()
+    if not os.path.exists(filepath):
+        return _chuanhoanhomtodoitudongs(NHANVATTODOITUDONGs_LIST)
+    try:
+        with open(filepath, "r", encoding = "utf-8") as file:
+            return _chuanhoanhomtodoitudongs(json.load(file).get("nhoms"))
+    except Exception as err:
+        print(err)
+        return _chuanhoanhomtodoitudongs(NHANVATTODOITUDONGs_LIST)
+
+
+def luunhomtodoitudongs(nhoms):
+    filepath = duongdantodoitudong()
+    try:
+        os.makedirs(os.path.dirname(filepath), exist_ok = True)
+        filetam = filepath + ".tmp"
+        with open(filetam, "w", encoding = "utf-8") as file:
+            json.dump({"nhoms": _chuanhoanhomtodoitudongs(nhoms)}, file, ensure_ascii = False, indent = 2)
+        os.replace(filetam, filepath)
+    except Exception as err:
+        print(err)
+
+
+def _capnhattodoitudong_cache():
+    if _todoitudong_cache["nhoms"] is not None and time.time() - _todoitudong_cache["thoidiemkiemtra"] < 1.:
+        return
+    _todoitudong_cache["thoidiemkiemtra"] = time.time()
+    try:
+        thoidiemsua = os.path.getmtime(duongdantodoitudong())
+    except OSError:
+        thoidiemsua = None
+    if _todoitudong_cache["nhoms"] is None or thoidiemsua != _todoitudong_cache["thoidiemsua"]:
+        nhoms = tainhomtodoitudongs()
+        _todoitudong_cache["nhoms"] = nhoms
+        _todoitudong_cache["nhanvats"] = tuple(id_ for nhom in nhoms for id_ in nhom)
+        _todoitudong_cache["thoidiemsua"] = thoidiemsua
+
+
+def laynhomtodoitudongs():
+    _capnhattodoitudong_cache()
+    return _todoitudong_cache["nhoms"]
+
+
+def laynhanvattodoitudongs():
+    # Gộp mọi nhóm: nhân vật của mình (coi như đồng đội / cùng bang)
+    _capnhattodoitudong_cache()
+    return _todoitudong_cache["nhanvats"]
+
+
 def duongdanthietlap(tennhanvat):
     return os.path.join(_thumucthietlap(), str(slugify(tennhanvat)))
 

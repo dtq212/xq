@@ -4,7 +4,9 @@ from tkinter import font as tkfont
 from tkinter import ttk
 
 from hangso_xq import laytenbando
-from tienich_xq import tailotrinhmau, duongdanlotrinhmau
+import re
+
+from tienich_xq import tailotrinhmau, duongdanlotrinhmau, tainhomtodoitudongs, luunhomtodoitudongs, duongdantodoitudong, laynhomtodoitudongs
 
 # Tạm ẩn các tùy chọn chưa dùng/không còn khả dụng (CN mở rộng, Khai khoáng, Đào tàng bảo đồ, Chiến trường).
 # Đổi thành True để hiện lại (tab "Khác"). Phím tắt của chúng vẫn hoạt động.
@@ -13,10 +15,10 @@ HIEN_TUYCHON_CHUADUNG = False
 FONTCHU = "Calibri"
 COCHU = 11
 
-MAUCHU_PHU = "#7a7a7a"
-MAUCHU_XANH = "#1a5fb4"
-MAUCHU_DO = "#c01c28"
-MAUCHU_LUC = "#26a269"
+MAUCHU_PHU = "#4d4d4d"
+MAUCHU_XANH = "#1a4f9c"
+MAUCHU_DO = "#b01020"
+MAUCHU_LUC = "#17753f"
 
 
 class GiaoDienHienThi:
@@ -31,13 +33,18 @@ class GiaoDienHienThi:
         self._tenmautheohienthi = {}
         self._hwndchonmautruocdo = None
         self._diemdanhdanghienthi = None
+        self._thoidiemsuatodoi = None
 
         self.root.title("Bảng Điều Khiển VIP")
         # Hệ số thu phóng màn hình (100% = 1.0, 125% = 1.25...) để kích thước tính bằng pixel không bị nhỏ đi
         self._heso = max(1.0, self.root.winfo_fpixels("1i") / 96.0)
         # Không cao quá màn hình (chừa chỗ cho thanh taskbar)
         chieucao = min(self._px(900), self.root.winfo_screenheight() - self._px(80))
-        self.root.geometry(f"{self._px(450)}x{chieucao}")
+        # Mở ở giữa màn hình (chừa thanh taskbar ở dưới)
+        chieurong = self._px(450)
+        x = max(0, (self.root.winfo_screenwidth() - chieurong) // 2)
+        y = max(0, (self.root.winfo_screenheight() - self._px(40) - chieucao) // 2)
+        self.root.geometry(f"{chieurong}x{chieucao}+{x}+{y}")
         self.root.minsize(self._px(420), self._px(600))
         self.root.attributes('-topmost', True)
 
@@ -49,6 +56,7 @@ class GiaoDienHienThi:
             "vebanrac": tk.BooleanVar(),
             "theotruongnhom": tk.BooleanVar(),
             "battheosaunhom": tk.BooleanVar(),
+            "todoitudong": tk.BooleanVar(),
             "timmuctieu": tk.BooleanVar(),
             "chidanhnguoichoi": tk.BooleanVar(),
             "uutienmaoson": tk.BooleanVar(),
@@ -74,6 +82,7 @@ class GiaoDienHienThi:
 
         self._taotabchiendau(self._taotab(notebook, "Chiến đấu"))
         self._taotabfarm(self._taotab(notebook, "Farm & Lộ trình"))
+        self._taotabmuctieutodoi(self._taotab(notebook, "Mục tiêu & Tổ đội"))
         if HIEN_TUYCHON_CHUADUNG:
             self._taotabkhac(self._taotab(notebook, "Khác"))
 
@@ -182,6 +191,7 @@ class GiaoDienHienThi:
         # Nhóm & Bảo thú nằm chung tab Chiến đấu
         self._taotabnhom(tab)
 
+    def _taotabmuctieutodoi(self, tab):
         # Gộp 2 danh sách vào 1 khung cho gọn: dòng tiêu đề nhỏ (kèm phím tắt) + nội dung
         nhom = self._taonhom(tab, "Danh sách mục tiêu")
         ttk.Label(nhom, text = "Tấn công   Ctrl+C thêm · Ctrl+Alt+C xoá", style = "Phu.TLabel").grid(row = 0, column = 0, sticky = tk.W)
@@ -190,6 +200,8 @@ class GiaoDienHienThi:
         ttk.Label(nhom, text = "Bỏ qua   Ctrl+X thêm · Ctrl+Alt+X xoá", style = "Phu.TLabel").grid(row = 2, column = 0, sticky = tk.W)
         self.lbl_boqua = tk.Label(nhom, text = "Trống", fg = MAUCHU_PHU, justify = tk.LEFT, wraplength = self._px(390), anchor = tk.W)
         self.lbl_boqua.grid(row = 3, column = 0, sticky = tk.W)
+
+        self._taotabtodoi(tab)
 
     def _taotabfarm(self, tab):
         nhom = self._taonhom(tab, "Chế độ")
@@ -335,10 +347,96 @@ class GiaoDienHienThi:
         self.spin_khoangcach.bind("<FocusOut>", on_khoangcach_change)
 
         self._create_check(nhom, "Bật/Tắt theo sau nhóm", self.vars["battheosaunhom"], "battat_tudongbattheosaunhom", "Ctrl+Alt+T")
+        self._create_check(nhom, "Tổ đội tự động (danh sách ở tab Mục tiêu & Tổ đội)", self.vars["todoitudong"], "battat_tudongtodoi")
 
         nhom = self._taonhom(tab, "Bảo thú")
         self._create_check(nhom, "Tự động gọi bảo thú", self.vars["trieuhoibaothu"], "battat_tudongtrieuhoibaothugiangho")
         self._create_check(nhom, "Tự động dùng kỹ năng bảo thú", self.vars["sudungkynangbaothu"], "battat_tudongsudungkynangbaothu")
+
+    def _taotabtodoi(self, tab):
+        # Danh sách dùng chung cho mọi nhân vật (lưu file todoi.json), bật/tắt thì theo từng nhân vật ở tab Chiến đấu
+        nhom = self._taonhom(tab, "Danh sách tổ đội tự động")
+        nhom.pack_configure(fill = tk.BOTH, expand = True)
+        nhom.rowconfigure(1, weight = 1)
+
+        ttk.Label(nhom, text = "Mỗi dòng là một nhóm, các ID cách nhau bằng dấu phẩy. ID đứng trước được ưu tiên "
+                               "làm trưởng nhóm. Nhân vật trong danh sách cũng được coi là đồng đội (buff, không đánh).",
+                  style = "Phu.TLabel", justify = tk.LEFT, wraplength = self._px(390)).grid(row = 0, column = 0, columnspan = 2, sticky = tk.W, pady = (0, 4))
+
+        khung = ttk.Frame(nhom)
+        khung.grid(row = 1, column = 0, columnspan = 2, sticky = tk.NSEW)
+        self.txt_todoi = tk.Text(khung, height = 6, wrap = tk.NONE, undo = True, highlightthickness = 0, borderwidth = 1, relief = tk.SOLID)
+        thanhcuon = ttk.Scrollbar(khung, orient = tk.VERTICAL, command = self.txt_todoi.yview)
+        self.txt_todoi.configure(yscrollcommand = thanhcuon.set)
+        self.txt_todoi.pack(side = tk.LEFT, fill = tk.BOTH, expand = True)
+        thanhcuon.pack(side = tk.RIGHT, fill = tk.Y)
+
+        self.lbl_idnhanvatdangchon = ttk.Label(nhom, text = "", style = "Phu.TLabel", wraplength = self._px(390))
+        self.lbl_idnhanvatdangchon.grid(row = 2, column = 0, columnspan = 2, sticky = tk.W, pady = (4, 0))
+
+        hangnut = ttk.Frame(nhom)
+        hangnut.grid(row = 3, column = 0, columnspan = 2, sticky = tk.EW, pady = (4, 0))
+        self.lbl_trangthaitodoi = tk.Label(hangnut, text = "", fg = MAUCHU_PHU, anchor = tk.W)
+        self.lbl_trangthaitodoi.pack(side = tk.LEFT, fill = tk.X, expand = True)
+
+        def on_them_iddangchon():
+            # Thêm ID nhân vật đang chọn vào cuối dòng đang đặt con trỏ
+            hwnd = self.get_selected_hwnd()
+            idnguoichoi = self.shared_data.get(hwnd, {}).get("idnguoichoi") if hwnd else None
+            if not idnguoichoi:
+                return
+            dong = self.txt_todoi.index(tk.INSERT).split(".")[0]
+            noidungdong = self.txt_todoi.get(f"{dong}.0", f"{dong}.end").rstrip(" ,")
+            self.txt_todoi.delete(f"{dong}.0", f"{dong}.end")
+            self.txt_todoi.insert(f"{dong}.0", f"{noidungdong}, {idnguoichoi}" if noidungdong.strip() else str(idnguoichoi))
+
+        def on_luu_todoi():
+            nhoms, loi = self._doctodoitugiaodien()
+            if loi:
+                self.lbl_trangthaitodoi.config(text = f"Không phải ID: {', '.join(loi)}", fg = MAUCHU_DO)
+                return
+            trungs = sorted({id_ for nhom_ in nhoms for id_ in nhom_ if sum(n.count(id_) for n in nhoms) > 1})
+            luunhomtodoitudongs(nhoms)
+            self._taitodoilengiaodien(is_batbuoc = True)
+            if trungs:
+                self.lbl_trangthaitodoi.config(text = f"Đã lưu. Lưu ý ID nằm ở nhiều nhóm: {', '.join(map(str, trungs))}", fg = MAUCHU_DO)
+            else:
+                self.lbl_trangthaitodoi.config(text = f"Đã lưu {len(nhoms)} nhóm", fg = MAUCHU_LUC)
+
+        ttk.Button(hangnut, text = "Lưu", width = 6, command = on_luu_todoi).pack(side = tk.RIGHT)
+        ttk.Button(hangnut, text = "Thêm ID đang chọn", command = on_them_iddangchon).pack(side = tk.RIGHT, padx = 4)
+
+        self._taitodoilengiaodien(is_batbuoc = True)
+
+    def _doctodoitugiaodien(self):
+        nhoms, loi = [], []
+        for dong in self.txt_todoi.get("1.0", tk.END).splitlines():
+            ids = []
+            for phan in re.split(r"[,;\s]+", dong.strip()):
+                if not phan:
+                    continue
+                if phan.isdigit() and int(phan) > 0:
+                    if int(phan) not in ids:
+                        ids.append(int(phan))
+                else:
+                    loi.append(phan)
+            if ids:
+                nhoms.append(ids)
+        return nhoms, loi
+
+    def _taitodoilengiaodien(self, is_batbuoc = False):
+        # Đọc lại file khi nó đổi (vd. sửa tay), nhưng không đè lên chỗ đang gõ dở chưa lưu
+        try:
+            thoidiemsua = os.path.getmtime(duongdantodoitudong())
+        except OSError:
+            thoidiemsua = None
+        if not is_batbuoc and (thoidiemsua == self._thoidiemsuatodoi or self.txt_todoi.edit_modified()):
+            return
+        self._thoidiemsuatodoi = thoidiemsua
+        self.txt_todoi.delete("1.0", tk.END)
+        self.txt_todoi.insert("1.0", "\n".join(", ".join(map(str, nhom)) for nhom in tainhomtodoitudongs()))
+        self.txt_todoi.edit_modified(False)
+        self.txt_todoi.edit_reset()
 
     def _taotabkhac(self, tab):
         nhom = self._taonhom(tab, "Tạm ẩn (chưa dùng)")
@@ -440,6 +538,7 @@ class GiaoDienHienThi:
                 ("tudongbattatchucnangmorong", "_is_tudongbattatchucnangmorong"),
                 ("theotruongnhom", "_is_tudongtheosautruongnhom"),
                 ("battheosaunhom", "_is_tudongbattheosaunhom"),
+                ("todoitudong", "_is_tudongtodoi"),
                 ("timmuctieu", "_is_tudongtimkiemmuctieu"),
                 ("trieuhoibaothu", "_is_tudongtrieuhoibaothugiangho"),
                 ("sudungkynangbaothu", "_is_tudongsudungkynangbaothu"),
@@ -477,6 +576,18 @@ class GiaoDienHienThi:
 
         self._capnhatlotrinhmau(hwnd_to_show, info, idbando, tenbando)
         self._capnhatdiemdanh(info)
+        self._capnhattodoi(info)
+
+    def _capnhattodoi(self, info):
+        self._taitodoilengiaodien()
+        idnguoichoi = info.get("idnguoichoi")
+        nhomcuatoi = next((nhom for nhom in laynhomtodoitudongs() if idnguoichoi in nhom), None)
+        if nhomcuatoi:
+            vitri = nhomcuatoi.index(idnguoichoi) + 1
+            text = f"{info.get('tennhanvat') or ''} (ID {idnguoichoi}) – nhóm {', '.join(map(str, nhomcuatoi))}, thứ {vitri} ưu tiên làm trưởng nhóm"
+        else:
+            text = f"{info.get('tennhanvat') or ''} (ID {idnguoichoi}) – chưa có trong danh sách"
+        self.lbl_idnhanvatdangchon.config(text = text)
 
     def _capnhatlotrinhmau(self, hwnd_to_show, info, idbando, tenbando):
         tatcamau = self._laylotrinhmau()

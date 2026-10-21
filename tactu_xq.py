@@ -13,6 +13,7 @@ from moitruong_xq import MoiTruong, DOUUTIEN_THAP, DOUUTIEN_KHANCAP, DOUUTIEN_CA
 from tienich_xq import luuthietlap as util_luuthietlap
 from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam
 from tienich_xq import tailotrinhmau as util_tailotrinhmau, luulotrinhmau as util_luulotrinhmau
+from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs
 
 
 class TacTu:
@@ -88,6 +89,11 @@ class TacTu:
         self._khoangcachvoitoimuctieu = KHOANGCACHSUDUNGKYNANGTAMXA - 3.
         # Đang trên đường về chỗ đứng riêng quanh trưởng nhóm
         self._is_dangvevitritheosau = False
+        # Trưởng nhóm (cùng máy) ở bản đồ khác mà phù tới được => đang lo phù sang, lộ trình điểm đánh tạm nhường
+        self._is_dangphutheotruongnhom = False
+        self._idbandotruongnhomgannhat = None
+        self._thoidiemdoibandotruongnhom = 0.
+        self._thoidiemphutheotruongnhomgannhat = 0.
         # Khi chạy theo lộ trình: quái phải cách một điểm đánh không quá bấy nhiêu ô mới được nhận làm mục tiêu/gom
         self._bankinhdiemdanh = 18.
 
@@ -700,6 +706,7 @@ class TacTu:
 
     def action_tudongtheosautruongnhom(self):
         self._yeucautheosautruongnhom = None
+        self._is_dangphutheotruongnhom = False
 
         if not self._is_tudongtheosautruongnhom:
             return
@@ -718,6 +725,9 @@ class TacTu:
 
             # if self._is_tudongbattheosaunhom and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THEOSAUNHOM,), True, is_hieuungcoloi = 1):
             #     self.moitruong.action_battheosaunhom(3.)
+
+            if self._xulyphutheotruongnhom():
+                break
 
             xtruongnhom, ytruongnhom = self.moitruong.get_toadotruongnhom()
 
@@ -753,6 +763,104 @@ class TacTu:
         if not self._yeucautheosautruongnhom:
             self._is_dangvevitritheosau = False
         return
+
+    def _laythongtintruongnhomcuasokhac(self):
+        # Trưởng nhóm đang chạy trên cùng máy => thông tin (bản đồ, tọa độ) của cửa sổ đó trong shared_data, không thì None
+        if self.shared_data is None:
+            return None
+        idtruongnhom = self.moitruong.get_idnguoichoitruongnhom()
+        if not idtruongnhom:
+            return None
+        try:
+            danhsach = list(self.shared_data.items())
+        except Exception:
+            return None
+        for idcuaso, info in danhsach:
+            if idcuaso == self.idcuaso or not isinstance(info, dict):
+                continue
+            if info.get("idnguoichoi") != idtruongnhom:
+                continue
+            # Cửa sổ trưởng nhóm treo/không cập nhật nữa thì không tin bản đồ cũ
+            if time.time() - info.get("thoidiemcapnhat", 0.) > 5.:
+                return None
+            return info
+        return None
+
+    def _xulyphutheotruongnhom(self):
+        # Trưởng nhóm ở bản đồ khác (biết được vì cùng máy) => phù sang nếu bản đồ đó phù tới được:
+        #   map train: Tân Thủ Tiên Cô (Tân Thủ Thôn/Chu/Thục Sơn), thành chính/môn phái: Chủ Dịch Trạm, Tân Thủ Thôn: Hồi Thành Phù.
+        #   Không đứng ở bản đồ có NPC cần dùng thì Hồi Thành Phù về Tân Thủ Thôn trước.
+        # Trả về True khi đang lo việc phù (bỏ qua theo sau bình thường)
+        if self._trangthaiveban != 0 or self._is_tudongdichientruong or self._is_tudongdaotangbaodo:
+            return False
+
+        info = self._laythongtintruongnhomcuasokhac()
+        idbandotruongnhom = info.get("tenbando") if info else None
+        if idbandotruongnhom != self._idbandotruongnhomgannhat:
+            self._idbandotruongnhomgannhat = idbandotruongnhom
+            self._thoidiemdoibandotruongnhom = time.time()
+
+        idbandohientai = self.moitruong.get_idbandohientai()
+        if not idbandotruongnhom or idbandotruongnhom == idbandohientai:
+            return False
+
+        buocdichuyentanthutienco = DICHUYENTANTHUTIENCO_MAP.get(idbandotruongnhom)
+        diemdenchudichtram = DIEMDENCHUDICHTRAM_MAP.get(idbandotruongnhom)
+        if not buocdichuyentanthutienco and not diemdenchudichtram and idbandotruongnhom != BANDO_TANTHUTHON:
+            return False
+
+        self._is_dangphutheotruongnhom = True
+        self._thoidiemvohieuhoabatchucnangmoronggannhat = max(self._thoidiemvohieuhoabatchucnangmoronggannhat, time.time() + 1.)
+
+        # Trưởng nhóm có thể chỉ đi ngang qua bản đồ đó; mình vừa chuyển bản đồ thì chờ tải xong
+        if time.time() - self._thoidiemdoibandotruongnhom < THOIGIANCHOBANDOTRUONGNHOMONDINH:
+            return True
+        if time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() < 2.:
+            return True
+
+        if idbandotruongnhom == BANDO_TANTHUTHON:
+            tennpc, vitrinpc_map = None, {}
+        elif buocdichuyentanthutienco:
+            tennpc, vitrinpc_map = TANTHUTIENCO, VITRITANTHUTIENCO_MAP
+        else:
+            tennpc, vitrinpc_map = CHUDICHTRAM, VITRICHUDICHTRAM_MAP
+
+        diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = tennpc) if tennpc else 0
+        if diachinpc:
+            if self.moitruong.get_khoangcach(diachinpc) > 6.:
+                x_npc, y_npc = self.moitruong.get_toado(diachinpc)
+                self._yeucautheosautruongnhom = {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x_npc, y_npc, idbandohientai), "khoangcachtoida": 0}
+                return True
+            if time.time() - self._thoidiemphutheotruongnhomgannhat < 8.:
+                return True
+            self._thoidiemphutheotruongnhomgannhat = time.time()
+            idnpc = self.moitruong.get_iddoituong(diachinpc)
+            if not idnpc:
+                return True
+            hex_id = hex(idnpc).replace("0x", "")
+            self.moitruong.action_ngatdichuyen()
+            print(f"[THEO NHÓM] Trưởng nhóm ở {laytenbando(idbandotruongnhom)} => dùng {tennpc} phù sang")
+            if buocdichuyentanthutienco:
+                for buoc in buocdichuyentanthutienco:
+                    self.moitruong.action_thucthicaulenh(f"tallk {hex_id}# {buoc}")
+                    time.sleep(1.0)
+                if self.moitruong.get_is_danghiencuasotuychon():
+                    self.moitruong.set_is_danghiencuasotuychon(False)
+            else:
+                self.moitruong.action_thucthicaulenh2(f"tallk {hex_id}# goto.! {diemdenchudichtram} t{int(time.time())}", delay = 0.0)
+                self.moitruong.action_ngatdichuyen()
+            return True
+
+        vitrinpc = vitrinpc_map.get(idbandohientai)
+        if vitrinpc:
+            self._yeucautheosautruongnhom = {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (vitrinpc[0], vitrinpc[1], idbandohientai), "khoangcachtoida": 0}
+            return True
+
+        if idbandohientai != BANDO_TANTHUTHON and time.time() - self._thoidiemsudunghoithanhphugannhat > 6.:
+            print(f"[THEO NHÓM] Trưởng nhóm ở {laytenbando(idbandotruongnhom)} => Hồi Thành Phù về Tân Thủ Thôn để phù sang")
+            self.moitruong.action_ngatdichuyen()
+            self.action_sudunghoithanhphu()
+        return True
 
     def _tinhtoanvitritheosautruongnhom(self, xtruongnhom, ytruongnhom, khoangcachtoidatruongnhom):
         idnguoichoi = self.moitruong.get_idnguoichoi()
@@ -1345,7 +1453,7 @@ class TacTu:
                 is_dongdoi = False
                 if is_muctieudangxemxetlanguoichoi:
                     idnguoichoidangxemxet = self.moitruong.get_idnguoichoi(diachidoituongdangxemxet)
-                    is_dongdoi = (idnguoichoi == idnguoichoidangxemxet) or (idnguoichoithanhviennhoms and idnguoichoidangxemxet in idnguoichoithanhviennhoms) or (idnguoichoidangxemxet in NHANVATCUNGBANGs)
+                    is_dongdoi = (idnguoichoi == idnguoichoidangxemxet) or (idnguoichoithanhviennhoms and idnguoichoidangxemxet in idnguoichoithanhviennhoms) or (idnguoichoidangxemxet in laynhanvattodoitudongs())
 
                 if not self._kiemtramuctieuhoplemonphai(diachidoituongdangxemxet, is_dongdoi = is_dongdoi):
                     continue
@@ -1368,7 +1476,7 @@ class TacTu:
                     diachicosodoituongnguoichoi_map[tendoituong] = diachidoituongdangxemxet
 
                     idnguoichoidangxemxet = self.moitruong.get_idnguoichoi(diachidoituongdangxemxet)
-                    is_dongdoi = (idnguoichoi == idnguoichoidangxemxet) or (idnguoichoithanhviennhoms and idnguoichoidangxemxet in idnguoichoithanhviennhoms) or (idnguoichoidangxemxet in NHANVATCUNGBANGs)
+                    is_dongdoi = (idnguoichoi == idnguoichoidangxemxet) or (idnguoichoithanhviennhoms and idnguoichoidangxemxet in idnguoichoithanhviennhoms) or (idnguoichoidangxemxet in laynhanvattodoitudongs())
 
                     if not is_dongdoi and self.moitruong.get_is_cothetancong(diachidoituongdangxemxet):
                         idloaivukhi = self.moitruong.get_idloaivukhi(diachidoituongdangxemxet)
@@ -1400,7 +1508,7 @@ class TacTu:
                         continue
                     if idnguoichoithanhviennhoms and idnguoichoidangxemxet in idnguoichoithanhviennhoms:
                         priority = 1
-                    elif idnguoichoidangxemxet in NHANVATCUNGBANGs:
+                    elif idnguoichoidangxemxet in laynhanvattodoitudongs():
                         priority = 2
 
                 elif doituong["is_baothu"]:
@@ -1413,7 +1521,7 @@ class TacTu:
                             priority = 1
                         elif idnguoichoithanhviennhoms and idnguoichoichunhan in idnguoichoithanhviennhoms:
                             priority = 1
-                        elif idnguoichoichunhan in NHANVATCUNGBANGs:
+                        elif idnguoichoichunhan in laynhanvattodoitudongs():
                             priority = 2
 
                 if priority != -1:
@@ -2291,7 +2399,7 @@ class TacTu:
             (VITRIKYNANG_DONGIAPTRAN, "sudungkynangphudau", lambda: noilucconlai > 200 and not is_dangbatpk and diachimuctieu and is_contranky and phantramnoiluc > 25 and khoangcachmuctieutancong <= KHOANGCACHSUDUNGKYNANGTAMXA, khoangcachmuctieutancong + random.choice([-1, 1]), None, True),
             (VITRIKYNANG_KYMONTRAN, "sudungkynangphudau", lambda: noilucconlai > 200 and not is_dangbatpk and diachimuctieu and is_contranky and phantramnoiluc > 25 and khoangcachmuctieutancong <= KHOANGCACHSUDUNGKYNANGTAMXA, khoangcachmuctieutancong + random.randint(0, 0), None, True),
             (VITRIKYNANG_LIETPHONGQUYET, "sudungkynangmuctieu", lambda: noilucconlai > 200 and not is_dangbatpk and diachimuctieu and khoangcachmuctieutancong <= KHOANGCACHSUDUNGKYNANGTAMXA, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
-            (None, "tancongvatly", lambda: diachimuctieu and khoangcachmuctieutancong <= KHOANGCACHSUDUNGKYNANGTAMXA and (not self._is_battudongtancongvatly or time.time() - self.moitruong._thoidiemsudungtancongvatlygannhat > 5.), KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
+            # (None, "tancongvatly", lambda: diachimuctieu and khoangcachmuctieutancong <= KHOANGCACHSUDUNGKYNANGTAMXA and (not self._is_battudongtancongvatly or time.time() - self.moitruong._thoidiemsudungtancongvatlygannhat > 5.), KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
             # (VITRIKYNANG_PHONGVUKINHTHIEN, "sudungkynangmuctieu", lambda: noilucconlai > 200 and not is_dangbatpk and diachimuctieu and khoangcachmuctieutancong <= KHOANGCACHSUDUNGKYNANGTAMXA, KHOANGCACHSUDUNGKYNANGTAMXA, None, True),
 
             (VITRIKYNANG_LINHKHIHOTHE, "sudungkynanglendongdoi", lambda: noilucconlai > 200 and diachidoituongcanbufflinhkhihothe and self.moitruong.get_khoangcach(diachidoituongcanbufflinhkhihothe) <= KHOANGCACHSUDUNGKYNANGTAMXA, KHOANGCACHSUDUNGKYNANGTAMXA, diachidoituongcanbufflinhkhihothe, True),
@@ -2635,6 +2743,13 @@ class TacTu:
         self._iddiemdanhxungquanhhientai = False
         self._diemdanhxungquanhhientai = False
 
+    def battat_is_tudongtodoi(self):
+        self._is_tudongtodoi = not self._is_tudongtodoi
+        if self._is_tudongtodoi:
+            phatam("Bật tổ đội tự động")
+        else:
+            phatam("Tắt tổ đội tự động")
+
     def battat_is_tudongbattheosaunhom(self):
         self._is_tudongbattheosaunhom = not self._is_tudongbattheosaunhom
         if self._is_tudongbattheosaunhom:
@@ -2925,6 +3040,11 @@ class TacTu:
             self._yeucautudo = None
             return
 
+        # Đang phù sang bản đồ của trưởng nhóm: không tự phù/đi theo lộ trình riêng kẻo giằng co
+        if self._is_dangphutheotruongnhom:
+            self._yeucautudo = None
+            return
+
         while True:
             if self.moitruong.get_idtuthenhanvat() in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT, TUTHENHANVAT_DELAYSAUTANCONG):
                 break
@@ -3096,7 +3216,7 @@ class TacTu:
 
     def _is_nguoichoinoibo(self, idnguoichoi, idnhanvathientai):
         # Nội bộ = chính mình + nhân vật trong danh sách tổ đội tự động; ai khác (kể cả cùng nhóm/cùng bang) đều là người lạ
-        return idnguoichoi == idnhanvathientai or idnguoichoi in NHANVATTODOITUDONGs
+        return idnguoichoi == idnhanvathientai or idnguoichoi in laynhanvattodoitudongs()
 
     def _quetnguoichoibatthuong(self):
         # Trả về (mô tả, số giây tạm ngưng): ("X ẩn thân", THOIGIANTAMNGUNGANTHAN) / ("người lạ X", THOIGIANTAMNGUNGNGUOILA) hoặc None
@@ -3294,7 +3414,7 @@ class TacTu:
         idbandohientai = self.moitruong.get_idbandohientai()
 
         danhsachuutientodoi = None
-        for thanhvientodoitudongs in NHANVATTODOITUDONGs_LIST:
+        for thanhvientodoitudongs in laynhomtodoitudongs():
             if idnguoichoi in thanhvientodoitudongs:
                 danhsachuutientodoi = list(thanhvientodoitudongs)
                 break
@@ -3313,11 +3433,11 @@ class TacTu:
                     else:
                         self.moitruong.action_thoatkhoinhom()
             else:
-                self.moitruong.action_kiemtravadongyloimoinhom(NHANVATCUNGBANGs)
+                self.moitruong.action_kiemtravadongyloimoinhom(laynhanvattodoitudongs())
             return
 
         if idbandohientai == BANDO_CHIENTRUONG and not is_dangtrongnhom:
-            self.moitruong.action_kiemtravadongyloimoinhom(NHANVATCUNGBANGs)
+            self.moitruong.action_kiemtravadongyloimoinhom(laynhanvattodoitudongs())
 
         # Thứ hạng: số nhỏ = ưu tiên làm trưởng nhóm cao hơn
         xephang_map = {id_: i for i, id_ in enumerate(danhsachuutientodoi)}
@@ -3750,7 +3870,7 @@ class TacTu:
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
 
     def _laytoadodongdoikhacnhom(self):
-        # Nhân vật của mình (NHANVATTODOITUDONGs) đang ở gần nhưng không cùng nhóm => đang farm riêng, tránh giành quái của nhau
+        # Nhân vật của mình (danh sách tổ đội tự động) đang ở gần nhưng không cùng nhóm => đang farm riêng, tránh giành quái của nhau
         idnhanvathientai = self.moitruong.get_idnguoichoi()
         idthanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms() if self.moitruong.get_is_dangnamtrongnhom() else []
         toadodongdois = []
@@ -3763,7 +3883,7 @@ class TacTu:
             if not self.moitruong.get_is_nhanvattontai(diachidoituong) or not self.moitruong.get_is_nguoichoi(diachidoituong):
                 continue
             idnguoichoi = self.moitruong.get_idnguoichoi(diachidoituong)
-            if idnguoichoi in NHANVATTODOITUDONGs and idnguoichoi != idnhanvathientai and idnguoichoi not in idthanhviennhoms:
+            if idnguoichoi in laynhanvattodoitudongs() and idnguoichoi != idnhanvathientai and idnguoichoi not in idthanhviennhoms:
                 toadodongdois.append(self.moitruong.get_toado(diachidoituong))
         return toadodongdois
 

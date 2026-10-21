@@ -138,6 +138,9 @@ class CuaSo:
 
                 info = {
                     "tennhanvat": tennhanvat,
+                    # Thành viên cùng máy dùng để tìm cửa sổ trưởng nhóm (bản đồ/tọa độ) mà phù theo
+                    "idnguoichoi": self.moitruong.get_idnguoichoi(),
+                    "thoidiemcapnhat": time.time(),
                     "tenbando": self.moitruong.get_idbandohientai(),
                     "x": x,
                     "y": y,
@@ -148,6 +151,7 @@ class CuaSo:
 
                     "_is_tudongtheosautruongnhom": self.tactu._is_tudongtheosautruongnhom,
                     "_is_tudongbattheosaunhom": self.tactu._is_tudongbattheosaunhom,
+                    "_is_tudongtodoi": self.tactu._is_tudongtodoi,
                     "_is_tudongsudungkynang": self.tactu._is_tudongsudungkynang,
                     "_is_uutienmuctieupk": self.tactu._is_uutienmuctieupk,
                     "_is_tudongtimkiemmuctieu": self.tactu._is_tudongtimkiemmuctieu,
@@ -258,6 +262,8 @@ class CuaSo:
                     self.tactu.botoanbo_diemdanhxungquanh()
                 elif cmd == "battat_tudongbattheosaunhom":
                     self.tactu.battat_is_tudongbattheosaunhom()
+                elif cmd == "battat_tudongtodoi":
+                    self.tactu.battat_is_tudongtodoi()
                 elif cmd == "battat_thucsondao":
                     self.tactu.battat_is_thucsondao()
                 elif cmd == "battat_tudongsudungkynang":
