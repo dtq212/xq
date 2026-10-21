@@ -117,7 +117,7 @@ class TacTu:
         self._lotrinhmaudangdung = ""
         self._is_lotrinhtuchon = False
         self._thoidiemkiemtralotrinhgannhat = 0.
-        # Tạm ngưng toàn bộ hoạt động khi phát hiện người chơi ẩn thân xung quanh (đang farm & bán rác)
+        # Tạm ngưng toàn bộ hoạt động khi phát hiện người chơi ẩn thân xung quanh (đang di chuyển theo lộ trình điểm đánh)
         self._thoidiemhettamngung = 0.
         self._lydotamngung = ""
         self._thoidiemkiemtraanthangannhat = 0.
@@ -262,9 +262,6 @@ class TacTu:
         self._trangthaitrieuhoibaothuvatpham = 0
         self._thoidiemchuyentrangthaitrieuhoibaothuvatpham = 0.
         self._thoidiemyeucaubaothuvatphamdoilenh = 0.
-        self._iddoituongbaothuvatpham = None
-        self._iddoituongbaothuvatphamtruockhitrieuhois = set()
-        self._thoidiemmatbaothuvatphamgannhat = 0.
 
         self._is_danguutiennhatdo = False
 
@@ -1539,11 +1536,7 @@ class TacTu:
 
             lichsutrochuyen5s = self.moitruong.get_lichsutrochuyen5s()
 
-            # Trạng thái: 0 = chưa có bảo thú, 1 = vừa dùng vật phẩm, 2 = đang gửi lệnh pf, 3 = bảo thú đang hoạt động
-            thoigiansaukhidoibando = time.time() - self.moitruong.get_thoidiemthaydoibandogannhat()
-            baothuvatphamxungquanh_map = self._get_baothuvatphamxungquanh_map()
-
-            if self._trangthaitrieuhoibaothuvatpham == 2:
+            if self._trangthaitrieuhoibaothuvatpham != 3:
                 is_doilenh = False
                 is_hanhdong = False
                 for _, noidungtrochuyen in lichsutrochuyen5s:
@@ -1560,70 +1553,38 @@ class TacTu:
 
                         break
 
-            if self._trangthaitrieuhoibaothuvatpham in (2, 3) and self._iddoituongbaothuvatpham is not None:
-                if self._iddoituongbaothuvatpham in baothuvatphamxungquanh_map:
-                    self._thoidiemmatbaothuvatphamgannhat = 0.
-                else:
-                    # Đổi bản đồ thì ID đối tượng có thể đổi -> nhận lại con bảo thú vật phẩm gần mình nhất
-                    if thoigiansaukhidoibando < 5. and baothuvatphamxungquanh_map:
-                        self._iddoituongbaothuvatpham = min(baothuvatphamxungquanh_map, key = lambda iddoituong: self.moitruong.get_khoangcach(baothuvatphamxungquanh_map[iddoituong]))
-                        self._thoidiemmatbaothuvatphamgannhat = 0.
-                    elif not self._thoidiemmatbaothuvatphamgannhat:
-                        self._thoidiemmatbaothuvatphamgannhat = time.time()
-                    elif time.time() - self._thoidiemmatbaothuvatphamgannhat > 2. and thoigiansaukhidoibando > 5.:
-                        # Bảo thú chết / hết giờ -> triệu hồi lại
-                        self._trangthaitrieuhoibaothuvatpham = 0
-                        self._iddoituongbaothuvatpham = None
-                        self._thoidiemmatbaothuvatphamgannhat = 0.
-
             if self._trangthaitrieuhoibaothuvatpham == 0:
-                if time.time() - self._thoidiemsudungbaothuvatphamgannhat > 3.0 and thoigiansaukhidoibando > 2.:
+                if time.time() - self._thoidiemsudungbaothuvatphamgannhat > 3.0:
                     for baothuvatpham in BAOTHUVATPHAMs:
                         if not self.moitruong.action_timkiemvatphamhanhtrang(baothuvatpham, is_kiemtrahansudung = True):
                             continue
-                        iddoituongbaothuvatphamtruockhitrieuhois = set(baothuvatphamxungquanh_map)
                         if self.action_sudungvatphamhanhtrang(baothuvatpham, delay = 0.):
                             self._thoidiemtamngungsudungkynang = max(self._thoidiemtamngungsudungkynang, time.time() + 0.5)
                             self._thoidiemsudungbaothuvatphamgannhat = time.time()
 
-                            self._iddoituongbaothuvatphamtruockhitrieuhois = iddoituongbaothuvatphamtruockhitrieuhois
                             self._trangthaitrieuhoibaothuvatpham = 1
                             self._thoidiemchuyentrangthaitrieuhoibaothuvatpham = time.time()
                             self.moitruong.xoalichsutrochuyen()
                             break
 
             elif self._trangthaitrieuhoibaothuvatpham == 1:
-                thoigianchochuyentrangthaitrieuhoibaothuvatpham = time.time() - self._thoidiemchuyentrangthaitrieuhoibaothuvatpham
-
-                # Bảo thú của mình là con mới xuất hiện sau khi dùng vật phẩm, gần mình nhất
-                if self._iddoituongbaothuvatpham is None:
-                    iddoituongmois = [iddoituong for iddoituong in baothuvatphamxungquanh_map if iddoituong not in self._iddoituongbaothuvatphamtruockhitrieuhois]
-                    if iddoituongmois:
-                        self._iddoituongbaothuvatpham = min(iddoituongmois, key = lambda iddoituong: self.moitruong.get_khoangcach(baothuvatphamxungquanh_map[iddoituong]))
-
-                if self._iddoituongbaothuvatpham is not None and thoigianchochuyentrangthaitrieuhoibaothuvatpham > 1.0:
+                if time.time() - self._thoidiemchuyentrangthaitrieuhoibaothuvatpham > 1.0:
                     self.moitruong.action_thucthicaulenh("pf 4131.@", douutien = DOUUTIEN_KHANCAP)
 
                     self._trangthaitrieuhoibaothuvatpham = 2
                     self._thoidiemchuyentrangthaitrieuhoibaothuvatpham = time.time()
                     self._thoidiemyeucaubaothuvatphamdoilenh = time.time()
-                elif thoigianchochuyentrangthaitrieuhoibaothuvatpham > 3.:
-                    # Không thấy bảo thú xuất hiện -> thử lại sau
-                    self._trangthaitrieuhoibaothuvatpham = 0
-                    self._thoidiemsudungbaothuvatphamgannhat = time.time()
 
             elif self._trangthaitrieuhoibaothuvatpham == 2:
                 thoigianchochuyentrangthaitrieuhoibaothuvatpham = time.time() - self._thoidiemchuyentrangthaitrieuhoibaothuvatpham
 
-                if time.time() - self._thoidiemyeucaubaothuvatphamdoilenh > 0.5:
+                if time.time() - self._thoidiemyeucaubaothuvatphamdoilenh > 0.25:
                     self.moitruong.action_thucthicaulenh("pf 4131.@", douutien = DOUUTIEN_KHANCAP)
                     self._thoidiemyeucaubaothuvatphamdoilenh = time.time()
 
                 if thoigianchochuyentrangthaitrieuhoibaothuvatpham > 3.:
-                    # Bảo thú vẫn còn thì chỉ gửi lại lệnh pf, không dùng thêm vật phẩm
-                    self._trangthaitrieuhoibaothuvatpham = 1
-                    self._thoidiemchuyentrangthaitrieuhoibaothuvatpham = time.time()
-                    self.moitruong.xoalichsutrochuyen()
+                    self._trangthaitrieuhoibaothuvatpham = 0
+                    self._thoidiemsudungbaothuvatphamgannhat = time.time()
 
             idbandohientai = self.moitruong.get_idbandohientai()
             is_bandokhongpk = idbandohientai in BANDOKHONGPKs
@@ -2144,21 +2105,6 @@ class TacTu:
             tennhanvat = " ".join((self.moitruong.get_tendoituong() or "").split()).lower()
             kynangchopheps = KYNANGCHOPHEPTHEONHANVAT_MAP.get(tennhanvat)
         return set(kynangchopheps) if kynangchopheps is not None else None
-
-    def _get_baothuvatphamxungquanh_map(self):
-        # Bảo thú vật phẩm không nằm trong danh sách bảo thú, chỉ nhận ra qua tên đối tượng xung quanh
-        baothuvatphamxungquanh_map = {}
-        i = -1
-        while i < 512:
-            i += 1
-            diachicosothongtinnhanvatxemxet = self.moitruong.get_diachicosothongtindoituongx(i)
-            if not diachicosothongtinnhanvatxemxet: break
-            if not self.moitruong.get_is_nhanvattontai(diachicosothongtinnhanvatxemxet): continue
-            if self.moitruong.get_is_nhanvatdachet(diachicosothongtinnhanvatxemxet): continue
-            if self.moitruong.get_tendoituong(diachicosothongtinnhanvatxemxet) not in BAOTHUVATPHAMs: continue
-            if self.moitruong.get_khoangcach(diachicosothongtinnhanvatxemxet) > KHOANGCACHTOANMANHINH: continue
-            baothuvatphamxungquanh_map[self.moitruong.get_iddoituong(diachicosothongtinnhanvatxemxet)] = diachicosothongtinnhanvatxemxet
-        return baothuvatphamxungquanh_map
 
     def _get_is_cobaothukynangtrieuhoi(self):
         # Bảo thú kỹ năng triệu hồi có tên dạng "Thiên binh (...)", bảo thú giang hồ thì không có ngoặc
@@ -3126,7 +3072,7 @@ class TacTu:
     def action_kiemtraanthan(self):
         # 1) Tự quét: thấy người chơi lạ ẩn thân, hoặc (ở map train) thấy người ngoài danh sách tổ đội, thì ghi nhận
         #    và công bố cho các cửa sổ khác (qua shared_data)
-        # 2) Đang farm & bán rác mà mình thấy, hoặc nhân vật khác CÙNG BẢN ĐỒ vừa thấy => ngưng hết mọi hoạt động
+        # 2) Đang di chuyển theo lộ trình điểm đánh mà mình thấy, hoặc nhân vật khác CÙNG BẢN ĐỒ vừa thấy => ngưng hết mọi hoạt động
         #    (ẩn thân: THOIGIANTAMNGUNGANTHAN, người lạ: THOIGIANTAMNGUNGNGUOILA)
         thoidiemhientai = time.time()
         if thoidiemhientai - self._thoidiemkiemtraanthangannhat < 0.5:
@@ -3139,7 +3085,7 @@ class TacTu:
             self._thoidiemphathienanthan = thoidiemhientai
             self._tenanthanphathien, self._thoigiantamngungphathien = phathien
 
-        if not self._is_tudongvebanrac:
+        if not self._is_tudongdichuyendiemdanhxungquanh:
             return
         if phathien:
             self._batdautamngung(f"phát hiện {phathien[0]}", phathien[1])

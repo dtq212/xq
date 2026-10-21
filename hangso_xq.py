@@ -133,7 +133,7 @@ KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN = 9.
 KHOANGCACHHIEUQUAKYNANGKHAITHIENTICHDIA = 6.0
 KHOANGCACHNHATDO = KHOANGCACHTOANMANHINH
 
-# Thấy người chơi ẩn thân quanh mình khi đang farm & bán rác thì ngưng mọi hoạt động trong khoảng thời gian này (giây)
+# Thấy người chơi ẩn thân quanh mình khi đang di chuyển theo lộ trình điểm đánh thì ngưng mọi hoạt động trong khoảng thời gian này (giây)
 THOIGIANTAMNGUNGANTHAN = 600.
 # Thấy người lạ (ngoài danh sách tổ đội) ở map train thì ngưng ngắn hơn (giây)
 THOIGIANTAMNGUNGNGUOILA = 60.

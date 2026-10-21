@@ -291,7 +291,7 @@ class LoopPhu:
         self.moitruong.action_vohieuhoaphimspace()
         self.moitruong.action_vohieuhieuungmuloa()
 
-        # Thấy người chơi ẩn thân, hoặc người lạ ở map train, khi đang farm & bán rác: ngưng mọi hoạt động (có nút Bật lại trên bảng điều khiển)
+        # Thấy người chơi ẩn thân, hoặc người lạ ở map train, khi đang di chuyển theo lộ trình điểm đánh: ngưng mọi hoạt động (có nút Bật lại trên bảng điều khiển)
         self.tactu.action_kiemtraanthan()
         if self.tactu.get_is_dangtamngung():
             return
