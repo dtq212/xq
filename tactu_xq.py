@@ -1050,8 +1050,7 @@ class TacTu:
         def _is_nhuongdongdoi(thongtin):
             if thongtin["is_muctieupk"] or not toadodongdois:
                 return False
-            return any(math.dist(thongtin["toado"], toadodongdoi) <= 9.0 and math.dist(thongtin["toado"], toadodongdoi) < thongtin["khoangcach"]
-                       for toadodongdoi in toadodongdois)
+            return self._is_nhuongquaichodongdoi(thongtin["toado"], thongtin["khoangcach"], toadodongdois)
 
         muctieuhientai = None
 
@@ -3125,6 +3124,9 @@ class TacTu:
 
                 if dist_to_target <= 4.0:
                     canchuyendendiemtieptheo = True
+                elif self._is_tudongvebanrac and time.time() - self._thoidiembatdaudendiem > 1.0 and self._is_diemtrongvungdongdoiuutien(target_point[0], target_point[1], self._laytoadodongdoikhacnhom()):
+                    # Điểm đánh đang nằm trong vùng của nhân vật ưu tiên hơn => bỏ qua, đi điểm khác cho khỏi sát rạt nhau
+                    canchuyendendiemtieptheo = True
                 else:
                     if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
                         if time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimgannhat() > 3.0:
@@ -3869,8 +3871,27 @@ class TacTu:
         if diachimuctieudangchon and self.moitruong.get_iddoituong(diachimuctieudangchon) == idquai:
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
 
+    def _is_nhuongquaichodongdoi(self, toadoquai, khoangcachtoiquai, dongdois):
+        # dongdois: [(tọa độ, id người chơi)] từ _laytoadodongdoikhacnhom
+        # - Đồng đội ID nhỏ hơn được ưu tiên: mình tránh hẳn mọi quái trong vùng BANKINHVUNGNHUONGQUAIDONGDOI quanh nó
+        #   (chỉ một bên nhường nên không có chuyện cả hai cùng nhường rồi cùng đứng im)
+        # - Còn lại: quái ở sát đồng đội (<= 9) và gần nó hơn mình thì để cho nó
+        idbanthan = self.moitruong.get_idnguoichoi()
+        for toadodongdoi, iddongdoi in dongdois:
+            khoangcachdongdoi = math.dist(toadoquai, toadodongdoi)
+            if iddongdoi < idbanthan and khoangcachdongdoi <= BANKINHVUNGNHUONGQUAIDONGDOI:
+                return True
+            if khoangcachdongdoi <= 9.0 and khoangcachdongdoi < khoangcachtoiquai:
+                return True
+        return False
+
+    def _is_diemtrongvungdongdoiuutien(self, x, y, dongdois):
+        idbanthan = self.moitruong.get_idnguoichoi()
+        return any(iddongdoi < idbanthan and math.dist((x, y), toadodongdoi) <= BANKINHVUNGNHUONGQUAIDONGDOI for toadodongdoi, iddongdoi in dongdois)
+
     def _laytoadodongdoikhacnhom(self):
         # Nhân vật của mình (danh sách tổ đội tự động) đang ở gần nhưng không cùng nhóm => đang farm riêng, tránh giành quái của nhau
+        # Trả về [(tọa độ, id người chơi)]
         idnhanvathientai = self.moitruong.get_idnguoichoi()
         idthanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms() if self.moitruong.get_is_dangnamtrongnhom() else []
         toadodongdois = []
@@ -3884,13 +3905,14 @@ class TacTu:
                 continue
             idnguoichoi = self.moitruong.get_idnguoichoi(diachidoituong)
             if idnguoichoi in laynhanvattodoitudongs() and idnguoichoi != idnhanvathientai and idnguoichoi not in idthanhviennhoms:
-                toadodongdois.append(self.moitruong.get_toado(diachidoituong))
+                toadodongdois.append((self.moitruong.get_toado(diachidoituong), idnguoichoi))
         return toadodongdois
 
     def action_tudongxulygomquai(self):
         yeucaugomquaimoi = None
 
-        if not self._is_tudonggomquai or not self._is_tudongsudungkynang:
+        # Chỉ đánh người chơi thì quái không phải mục tiêu, gom về cũng không đánh
+        if not self._is_tudonggomquai or not self._is_tudongsudungkynang or self._is_chidanhnguoichoi:
             self._is_danggomquai = False
             self._yeucaugomquai = None
             self._idquaidangkeo = 0
@@ -4022,7 +4044,7 @@ class TacTu:
 
             if toadodongdois:
                 khoangcachtoiquai = math.dist(toadoquai, toadobanthan)
-                if any(math.dist(toadoquai, toadodongdoi) <= 9.0 and math.dist(toadoquai, toadodongdoi) < khoangcachtoiquai for toadodongdoi in toadodongdois):
+                if self._is_nhuongquaichodongdoi(toadoquai, khoangcachtoiquai, toadodongdois):
                     self._danhsachidquaidagom.discard(iddoituongquai)
                     if self._idquaidautien == iddoituongquai:
                         self._idquaidautien = 0
@@ -4078,7 +4100,7 @@ class TacTu:
                     id_target = self.moitruong.get_iddoituong(diachinhanvatmuctieudangchon)
                     kc_target = self.moitruong.get_khoangcach(diachinhanvatmuctieudangchon)
                     toadotarget = self.moitruong.get_toado(diachinhanvatmuctieudangchon)
-                    is_dongdoigannhuong = any(math.dist(toadotarget, t) <= 9.0 and math.dist(toadotarget, t) < kc_target for t in toadodongdois)
+                    is_dongdoigannhuong = self._is_nhuongquaichodongdoi(toadotarget, kc_target, toadodongdois)
                     if id_target not in self._danhsachidquaidagom and id_target not in self._idmuctieubiloi_map and 12.0 < kc_target < KHOANGCACHTOANMANHINH and not is_dongdoigannhuong:
                         idquaicankeogannhat = id_target
                         diachicosoquaicankeo = diachinhanvatmuctieudangchon

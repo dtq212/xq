@@ -894,6 +894,10 @@ DICHUYENTANTHUTIENCO_MAP = {
 
 CHUDICHTRAM = "Chủ Dịch Trạm"
 
+# Nhân vật trong tổ đội tự động (không cùng nhóm) có ID nhỏ hơn được giữ vùng: nhân vật ID lớn hơn tránh mọi quái
+# và điểm lộ trình trong bán kính này quanh nó
+BANKINHVUNGNHUONGQUAIDONGDOI = 15.
+
 # Chỗ đứng NPC trên từng bản đồ (khi chưa thấy NPC thì chạy tới đây)
 VITRITANTHUTIENCO_MAP = {
     BANDO_TANTHUTHON: (148, 145),
