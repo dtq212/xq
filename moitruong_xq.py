@@ -152,8 +152,9 @@ class MoiTruong:
 
         self.hangdoicaulenh = queue.PriorityQueue()
         self.caulenhdangchos = set()
-        # Bộ chia lượt gửi lệnh giữa các bot (CuaSo gán vào), None thì gửi ngay như cũ
+        # Bộ chia lượt gửi lệnh / bắt đầu di chuyển giữa các bot (CuaSo gán vào), None thì làm ngay như cũ
         self.dieuphoi = None
+        self.dieuphoidichuyen = None
 
         self.thoidiemmuctieuanthangannhat_map = {}
         self.thoidiemmuctieuxuathiengannhat_map = {}
@@ -1703,11 +1704,21 @@ class MoiTruong:
         self.tientrinh.start_thread(self._diachiautoassembledichuyen)
         time.sleep(0.05)
 
+    def _get_is_duocbatdaudichuyen(self):
+        # Đang đứng mà sắp chạy: phải tới lượt (các nhân vật lần lượt nhấc chân, không cùng lúc). Đang chạy rồi thì chỉnh hướng tự do.
+        # Không chờ: chưa tới lượt thì bỏ lần này, loop di chuyển tự gọi lại ngay sau
+        if not self.dieuphoidichuyen or self.get_idtuthenhanvat() == TUTHENHANVAT_DICHUYEN:
+            return True
+        return self.dieuphoidichuyen.thuxinluot()
+
     def action_dichuyen(self, x, y, delay = 0.05, is_rangbuoctrongmanhinh = False):
         if self._is_vohieuhoadichuyen:
             return False
 
         if time.time() - self._thoidiemdichuyengannhat < delay:
+            return False
+
+        if not self._get_is_duocbatdaudichuyen():
             return False
 
         if self.get_is_cohieuungs((HIEUUNGKYNANG_ROILOAN,), macdinh = False, is_hieuungcoloi = 0):
@@ -1959,6 +1970,10 @@ class MoiTruong:
         a = read_int(self.tientrinh, a + 0xADFDEC)
         if not a:
             self.auto_assemble_khoitaothongtinbando()
+            return False
+        # Đích tìm đường mới (không phải huỷ, không phải đích đang đi) cũng là bắt đầu di chuyển: phải tới lượt
+        is_dichmoi = (x or y) and (read_int(self.tientrinh, a + 0x37C534), read_int(self.tientrinh, a + 0x37C538), read_int(self.tientrinh, a + 0x37C85C)) != (x, y, idbando)
+        if is_dichmoi and not self._get_is_duocbatdaudichuyen():
             return False
         if read_int(self.tientrinh, a + 0x37C534) != x:
             write_int(self.tientrinh, a + 0x37C534, x)

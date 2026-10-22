@@ -12,6 +12,7 @@ import subprocess
 import win32process
 
 from cuaso_xq import CuaSo
+from dieuphoi_xq import taicauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
 from giaodienhienthi_xq import GiaoDienHienThi
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
@@ -39,6 +40,8 @@ class TroChoiManager:
         self.dieuphoi_khoa = self.manager.Lock()
         self.dieuphoi_trangthai = self.manager.dict()
         self.dieuphoi_dangchos = self.manager.dict()
+        # Cấu hình nhịp lệnh dùng chung mọi bot, giao diện sửa trực tiếp ở đây (bot đọc lại mỗi giây)
+        self.dieuphoi_trangthai["cauhinh"] = taicauhinhdieuphoi()
         self.bot_processes = {}
 
     def _timcuasogame(self):
@@ -62,7 +65,7 @@ class TroChoiManager:
         except Exception:
             pass
         root = tk.Tk()
-        gui = GiaoDienHienThi(root, self.shared_data, self.command_dict)
+        gui = GiaoDienHienThi(root, self.shared_data, self.command_dict, self.dieuphoi_trangthai)
 
         root.protocol("WM_DELETE_WINDOW", self.stop_all)
 
@@ -95,7 +98,8 @@ class TroChoiManager:
                 del self.bot_processes[h]
                 if h in self.shared_data: del self.shared_data[h]
                 if h in self.command_dict: del self.command_dict[h]
-                self.dieuphoi_dangchos.pop(h, None)
+                for kenh in (KENH_LENH, KENH_DICHUYEN):
+                    self.dieuphoi_dangchos.pop((kenh, h), None)
 
             time.sleep(2)
 

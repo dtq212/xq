@@ -901,9 +901,14 @@ CHUDICHTRAM = "Chủ Dịch Trạm"
 IS_LOGCAULENH = True
 
 # Xoay vòng lệnh giữa các bot: tại mỗi thời điểm chỉ 1 bot được gửi lệnh, lần lượt từng bot (bot nào cũng có lệnh thì chia đều lượt),
-# giữa 2 lệnh liên tiếp (của 2 bot bất kỳ) nghỉ ngẫu nhiên trong khoảng KHOANGNGHIGIUALENH giây, để các bot không bấm cùng lúc như máy
+# giữa 2 lệnh liên tiếp (của 2 bot bất kỳ) nghỉ ngẫu nhiên trong khoảng KHOANGNGHIGIUALENH giây, để các bot không bấm cùng lúc như máy.
+# Đây là giá trị mặc định: chỉnh trên giao diện (tab Chiến đấu > Nhịp lệnh) thì lưu vào _internal/dieuphoi.json và dùng giá trị trong đó
 IS_XOAYVONGLENHGIUACACBOT = True
 KHOANGNGHIGIUALENH = (0.06, 0.22)
+# Bắt đầu di chuyển (nhân vật đang đứng mà bắt đầu chạy) cũng chia lượt như vậy nhưng trên kênh riêng (không làm chậm lệnh),
+# để 3-4 nhân vật không cùng lúc nhấc chân. Đang chạy rồi thì các lần click chỉnh hướng đi ngay. Cũng chỉnh được trên giao diện
+IS_XOAYVONGBATDAUDICHUYEN = True
+KHOANGNGHIBATDAUDICHUYEN = (0.15, 0.5)
 # Lệnh khẩn cấp (bơm máu, cứu sinh...) không phải chờ lượt
 IS_LENHKHANCAPKHONGCHOLUOT = True
 # Chờ lượt quá lâu (bot khác treo/crash giữa chừng) thì cứ gửi, không kẹt mãi

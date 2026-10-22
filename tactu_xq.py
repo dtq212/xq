@@ -20,6 +20,8 @@ class TacTu:
     def __init__(self, moitruong: MoiTruong):
         self._thoidiemhettangbaodogannhat = 0.
         self._thoidiemmuaautogannhat = 0.
+        # Đào tàng bảo đồ tạm nghỉ tới thời điểm này (thay cho sleep 1s sau mỗi lần đào, 5s khi hết đồ/vừa phù sang nước khác)
+        self._thoidiemchodaotangbaodo = 0.
         self._thoidiemsudungditinhdaiphapgannhat = 0.
         self._thoidiemsudungluuhuyetthuatgannhat = 0.
         self._thoidiemkiemtranpcmuavatphamgannhat = 0.
@@ -37,6 +39,9 @@ class TacTu:
         self._thoidiemdocsachgannhat = 0.
         self._thoidiemsudungbattiendongannhat = 0.
         self._thoidiemdichientruonggannhat = 0.
+        # Các lệnh hội thoại Trương Quả Lão còn chờ gửi, cách nhau >= 0.25s (trước đây sleep 0.25s sau mỗi lệnh, chặn loop phụ)
+        self._hangdoilenhchientruong = []
+        self._thoidiemguilenhchientruongtieptheo = 0.
         self._thoidiembatdaudendiem = 0.
         self._thoidiemlogdebug = 0.
         self._solanthatbaikhaithien = 0
@@ -94,10 +99,11 @@ class TacTu:
         self._idbandotruongnhomgannhat = None
         self._thoidiemdoibandotruongnhom = 0.
         self._thoidiemphutheotruongnhomgannhat = 0.
-        # Các bước hội thoại NPC phù sang còn phải gửi, cách nhau 1s (trước đây gửi xong mỗi bước thì sleep 1s, đứng cả loop tổng hợp)
-        self._buocphutheonhomconlai = []
-        self._thoidiemguibuocphutheonhom = 0.
-        self._is_chodongcuasophutheonhom = False
+        # Hội thoại NPC nhiều bước (Tân Thủ Tiên Cô...): các câu lệnh còn chờ gửi, cách nhau 1s, gửi hết thì đóng cửa sổ tuỳ chọn.
+        # Trước đây gửi xong mỗi bước thì sleep 1s ngay trong loop. Chỉ loop phụ gửi (action_xulyhoithoainpc)
+        self._hangdoihoithoainpc = []
+        self._thoidiemguihoithoainpctieptheo = 0.
+        self._is_chodongcuasohoithoainpc = False
         # Thời điểm bắt đầu nằm chết (0 = đang sống); chờ đủ THOIGIANCHOTRUOCKHIPHUCSINH mới phục sinh
         self._thoidiembatdauchet = 0.
         # Khi chạy theo lộ trình: quái phải cách một điểm đánh không quá bấy nhiêu ô mới được nhận làm mục tiêu/gom
@@ -178,6 +184,15 @@ class TacTu:
         self._thoidiemchuyentrangthai = 0.
 
         self._thoidiemhoithanhphu = 0.  # Timer cho việc hồi thành phù
+        # Bán rác/sửa đồ chạy dần theo từng lượt của loop phụ (trước đây sleep 1s mỗi món, chặn cả loop phụ hàng chục giây)
+        self._hangdoibanrac = []  # câu lệnh bán còn chờ gửi, 1 lệnh/giây
+        self._thoidiemguibanractieptheo = 0.
+        self._thoidiemhetsuavatpham = 0.  # > 0: đang đi tìm Chủ Tiệm Sửa Chữa, bỏ cuộc lúc này
+        self._thoidiemkiemtrasuavatpham = 0.
+        self._buocbanrac = 0  # bước 3 (đang bán) của về bán rác: 0 chưa bán, 1 đang bán, 2 đang sửa đồ
+        self._thoidiemthulaibanrac = 0.
+        self._thoidiembatdautimnpcbanrac = 0.  # phái khác, bước 2: bắt đầu đi tìm NPC tạp hoá (bỏ cuộc sau 45s)
+        self._thoidiemkiemtranpcbanrac = 0.
 
         self._toadokiemtraket = (0, 0)
         self._thoidiembatdaukiemtraket = 0.
@@ -840,9 +855,8 @@ class TacTu:
         #   map train: Tân Thủ Tiên Cô, thành chính/môn phái: Chủ Dịch Trạm.
         #   Chỉ phù khi mình đang ở Chu/Tân Thủ Thôn (có sẵn NPC), không tự Hồi Thành Phù về thành.
         # Trả về True khi đang lo việc phù (bỏ qua theo sau bình thường)
-        if self._buocphutheonhomconlai or self._is_chodongcuasophutheonhom:
+        if self.get_is_danghoithoainpc():
             self._is_dangphutheotruongnhom = True
-            self._xulybuocphutheonhom()
             return True
 
         if self._trangthaiveban != 0 or self._is_tudongdichientruong or self._is_tudongdaotangbaodo:
@@ -895,9 +909,7 @@ class TacTu:
             self.moitruong.action_ngatdichuyen()
             print(f"[THEO NHÓM] Trưởng nhóm ở {laytenbando(idbandotruongnhom)} => dùng {tennpc} phù sang")
             if buocdichuyentanthutienco:
-                self._buocphutheonhomconlai = [f"tallk {hex_id}# {buoc}" for buoc in buocdichuyentanthutienco]
-                self._thoidiemguibuocphutheonhom = 0.
-                self._xulybuocphutheonhom()
+                self.action_batdauhoithoainpc([f"tallk {hex_id}# {buoc}" for buoc in buocdichuyentanthutienco])
             else:
                 self.moitruong.action_thucthicaulenh2(f"tallk {hex_id}# goto.! {diemdenchudichtram} t{int(time.time())}", delay = 0.0)
                 self.moitruong.action_ngatdichuyen()
@@ -907,18 +919,29 @@ class TacTu:
         self._yeucautheosautruongnhom = {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (vitrinpc[0], vitrinpc[1], idbandohientai), "khoangcachtoida": 0}
         return True
 
-    def _xulybuocphutheonhom(self):
-        # Mỗi lượt gửi tối đa 1 bước hội thoại, bước sau cách bước trước 1s; gửi hết thì 1s sau đóng cửa sổ tuỳ chọn
-        if time.time() < self._thoidiemguibuocphutheonhom:
+    def get_is_danghoithoainpc(self):
+        return bool(self._hangdoihoithoainpc) or self._is_chodongcuasohoithoainpc
+
+    def action_batdauhoithoainpc(self, caulenhs):
+        # Đang dở 1 cuộc hội thoại thì không bắt đầu cuộc mới (tránh gửi trùng các bước)
+        if self.get_is_danghoithoainpc() or not caulenhs:
+            return False
+        self._thoidiemguihoithoainpctieptheo = 0.
+        self._hangdoihoithoainpc = list(caulenhs)
+        return True
+
+    def action_xulyhoithoainpc(self):
+        # Gọi mỗi lượt loop phụ: gửi tối đa 1 bước, bước sau cách bước trước 1s; gửi hết thì 1s sau đóng cửa sổ tuỳ chọn
+        if time.time() < self._thoidiemguihoithoainpctieptheo:
             return
-        if self._buocphutheonhomconlai:
-            self.moitruong.action_thucthicaulenh(self._buocphutheonhomconlai.pop(0))
-            self._thoidiemguibuocphutheonhom = time.time() + 1.
-            if not self._buocphutheonhomconlai:
-                self._is_chodongcuasophutheonhom = True
+        if self._hangdoihoithoainpc:
+            self.moitruong.action_thucthicaulenh(self._hangdoihoithoainpc.pop(0))
+            self._thoidiemguihoithoainpctieptheo = time.time() + 1.
+            if not self._hangdoihoithoainpc:
+                self._is_chodongcuasohoithoainpc = True
             return
-        if self._is_chodongcuasophutheonhom:
-            self._is_chodongcuasophutheonhom = False
+        if self._is_chodongcuasohoithoainpc:
+            self._is_chodongcuasohoithoainpc = False
             if self.moitruong.get_is_danghiencuasotuychon():
                 self.moitruong.set_is_danghiencuasotuychon(False)
 
@@ -3296,16 +3319,11 @@ class TacTu:
                         yeucautudomoi = {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x_npc, y_npc, idbandohientai), "khoangcachtoida": 0}
                     else:
                         steps = DICHUYENTANTHUTIENCO_MAP.get(target_map)
-                        if steps:
+                        if steps and not self.get_is_danghoithoainpc():
                             idnpc = self.moitruong.get_iddoituong(diachinpc)
                             hex_id = hex(idnpc).replace("0x", "")
                             print(f"[Move] Đang sử dụng {TANTHUTIENCO} để phù lên map {target_map}...")
-                            for step in steps:
-                                caulenh = f"tallk {hex_id}# {step}"
-                                self.moitruong.action_thucthicaulenh(caulenh)
-                                time.sleep(1.0)
-                            if self.moitruong.get_is_danghiencuasotuychon():
-                                self.moitruong.set_is_danghiencuasotuychon(False)
+                            self.action_batdauhoithoainpc([f"tallk {hex_id}# {step}" for step in steps])
                         yeucautudomoi = None
 
                 self._yeucautudo = yeucautudomoi
@@ -3697,8 +3715,8 @@ class TacTu:
                     vitritranky = self.moitruong.action_timkiemvitrivatphamhanhtrang(TRANKY)
                     soluongtranky = self.moitruong.get_soluongvatphamhanhtrang(vitritranky) if vitritranky is not False else 0
 
-                    if soluongtranky < 9999:
-                        caulenh = "buy {}# 6 {} 60".format(hex(idnpc).replace("0x", ""), 9999 - soluongtranky)
+                    if soluongtranky < 1999:
+                        caulenh = "buy {}# 6 {} 60".format(hex(idnpc).replace("0x", ""), 1999 - soluongtranky)
                         self.moitruong.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_THAP)
 
                     vitridaunanh = self.moitruong.action_timkiemvitrivatphamhanhtrang(DAUNANH)
@@ -3712,8 +3730,8 @@ class TacTu:
                     vitribuagiay = self.moitruong.action_timkiemvitrivatphamhanhtrang(BUAGIAY)
                     soluongbuagiay = self.moitruong.get_soluongvatphamhanhtrang(vitribuagiay) if vitribuagiay is not False else 0
 
-                    if soluongbuagiay < 9999:
-                        caulenh = "buy {}# 1 {} 10".format(hex(idnpc).replace("0x", ""), 9999 - soluongbuagiay)
+                    if soluongbuagiay < 999:
+                        caulenh = "buy {}# 1 {} 10".format(hex(idnpc).replace("0x", ""), 999 - soluongbuagiay)
                         self.moitruong.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_THAP)
 
                 if self._is_tudongtrieuhoibaothugiangho:
@@ -3756,35 +3774,11 @@ class TacTu:
                 self.moitruong.action_suavatpham(diachicosothongtinnhanvatchutiemsuachua)
 
     def action_suavatpham(self):
+        # Chỉ bắt đầu việc sửa đồ (tối đa 30s); action_xulybanracvasuado làm dần mỗi giây (trước đây vòng while chặn luồng tới 30s)
         if self.moitruong.get_is_nhanvatdachet() or self.moitruong.get_is_dangvankhi():
             return
-
-        thoidiembatdau = time.time()
-        thoigiantoida = 30.0
-
-        while True:
-            if time.time() - thoidiembatdau > thoigiantoida:
-                print(f"[Auto-SuaDo] Quá {thoigiantoida}s không tìm thấy Chủ Tiệm Sửa Chữa. Hủy bỏ.")
-                break
-
-            diachinpc = self.moitruong.action_timkiemnhanvat(CHUTIEMSUACHUA)
-
-            if diachinpc:
-                khoangcach = self.moitruong.get_khoangcach(diachinpc)
-                if khoangcach <= 9.0:
-                    print("[Auto-SuaDo] Đã tìm thấy NPC, đang sửa đồ...")
-                    self.moitruong.action_suavatpham(diachinpc)
-                    return
-
-            if self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON:
-                if not diachinpc:
-                    self.moitruong.action_dichuyengiukhoangcachtoidadiem(111, 157, khoangcachtoida = 3.)
-                else:
-                    self.moitruong.action_dichuyengiukhoangcachtoida(diachinpc, khoangcachtoida = 3.)
-
-            self._thoidiemsudunghoithanhphugannhat = time.time()
-
-            time.sleep(1.0)
+        self._thoidiemhetsuavatpham = time.time() + 30.
+        self._thoidiemkiemtrasuavatpham = 0.
 
     def action_sudungvatphamhanhtrang(self, tenvatpham, is_boquaxacnhan = False, delay = 0.25):
         if time.time() - self._thoidiemsudungvatphamgannhat < delay:
@@ -3990,17 +3984,77 @@ class TacTu:
         if not idnpc or idnpc <= 0:
             return
 
-        sovatphamdaban = 0
+        # Chỉ xếp lệnh bán vào hàng đợi; action_xulybanracvasuado gửi dần 1 lệnh/giây ở mỗi lượt loop phụ
+        hangdoi = []
         soluongvatphamhanhtrangtoida = self.moitruong.get_soluongvatphamhanhtrangtoida()
         for i in range(6, soluongvatphamhanhtrangtoida):
             iddoituongvatphamhanhtrang = self.moitruong.get_iddoituongvatphamhanhtrang(i)
 
             tenvatphamhanhtrang = self.moitruong.get_tenvatphamhanhtrang(i)
             if iddoituongvatphamhanhtrang and iddoituongvatphamhanhtrang > 0 and tenvatphamhanhtrang not in VATPHAMKHONGBANs and "Bí kíp" not in tenvatphamhanhtrang and "Nhập môn" not in tenvatphamhanhtrang and "Bảo Thạch" not in tenvatphamhanhtrang and "Ngọc Thạch" not in tenvatphamhanhtrang and "cấp" not in tenvatphamhanhtrang and "Tàng Đồ" not in tenvatphamhanhtrang and "Phục Dược" not in tenvatphamhanhtrang and "Trị Dược" not in tenvatphamhanhtrang:
-                caulenh = "sell ! {}# {}# 30".format(hex(idnpc).replace("0x", ""), hex(iddoituongvatphamhanhtrang).replace("0x", ""))
-                self.moitruong.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_THAP)
-                sovatphamdaban += 1
-                time.sleep(1.)
+                hangdoi.append("sell ! {}# {}# 30".format(hex(idnpc).replace("0x", ""), hex(iddoituongvatphamhanhtrang).replace("0x", "")))
+        self._hangdoibanrac = hangdoi
+        self._thoidiemguibanractieptheo = 0.
+
+    def get_is_dangbanrac(self):
+        return bool(self._hangdoibanrac)
+
+    def get_is_dangsuavatpham(self):
+        return bool(self._thoidiemhetsuavatpham)
+
+    def action_xulybanracvasuado(self):
+        # Gọi mỗi lượt loop phụ: gửi lệnh bán kế tiếp (cách nhau 1s), và đi tìm/sửa đồ nếu đang có việc sửa
+        thoidiemhientai = time.time()
+        if self._hangdoibanrac and thoidiemhientai >= self._thoidiemguibanractieptheo:
+            self.moitruong.action_thucthicaulenh(self._hangdoibanrac.pop(0), douutien = DOUUTIEN_THAP)
+            self._thoidiemguibanractieptheo = thoidiemhientai + 1.
+
+        if not self._thoidiemhetsuavatpham:
+            return
+        if thoidiemhientai > self._thoidiemhetsuavatpham:
+            print("[Auto-SuaDo] Quá 30s không tìm thấy Chủ Tiệm Sửa Chữa. Hủy bỏ.")
+            self._thoidiemhetsuavatpham = 0.
+            return
+        if thoidiemhientai - self._thoidiemkiemtrasuavatpham < 1.:
+            return
+        self._thoidiemkiemtrasuavatpham = thoidiemhientai
+
+        diachinpc = self.moitruong.action_timkiemnhanvat(CHUTIEMSUACHUA)
+        if diachinpc and self.moitruong.get_khoangcach(diachinpc) <= 9.0:
+            print("[Auto-SuaDo] Đã tìm thấy NPC, đang sửa đồ...")
+            self.moitruong.action_suavatpham(diachinpc)
+            self._thoidiemhetsuavatpham = 0.
+            return
+        if self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON:
+            if not diachinpc:
+                self.moitruong.action_dichuyengiukhoangcachtoidadiem(111, 157, khoangcachtoida = 3.)
+            else:
+                self.moitruong.action_dichuyengiukhoangcachtoida(diachinpc, khoangcachtoida = 3.)
+        self._thoidiemsudunghoithanhphugannhat = time.time()
+
+    def _xulydangbanrac(self):
+        # Bước 3 của về bán rác (dùng chung cho mọi phái): bán hết -> sửa đồ -> trả về True khi xong (túi hết đầy)
+        if time.time() < self._thoidiemthulaibanrac:
+            return False
+        if self._buocbanrac == 0:
+            self.action_tudongbanrac()
+            self._buocbanrac = 1
+            return False
+        if self._buocbanrac == 1:
+            # Bán xong vẫn chờ 1s sau lệnh cuối như trước rồi mới sửa đồ
+            if self.get_is_dangbanrac() or time.time() < self._thoidiemguibanractieptheo:
+                return False
+            self.action_suavatpham()
+            self._buocbanrac = 2
+            return False
+        if self.get_is_dangsuavatpham():
+            return False
+        self._buocbanrac = 0
+        if not self.moitruong.get_is_dayhanhtrang():
+            return True
+        # Vẫn đầy (còn đồ không bán được): nghỉ 1s rồi bán lại, tránh lặp liên tục
+        self._thoidiemthulaibanrac = time.time() + 1.
+        return False
 
     def _tinhkhoangcachdendoanthang(self, px, py, x1, y1, x2, y2):
         dx = x2 - x1
@@ -4474,7 +4528,6 @@ class TacTu:
                         self._trangthaiveban = 3
                     else:
                         self.moitruong.action_dichuyengiukhoangcachtoida(diachi_npc, 3.)
-                        time.sleep(0.5)
                 else:
                     print("[AUTO-SELL] Đang tìm NPC Tạp Hóa...")
                     if time.time() - self._thoidiemchuyentrangthai > 6.0:
@@ -4482,17 +4535,10 @@ class TacTu:
                         self._trangthaiveban = 0
 
         elif self._trangthaiveban == 3:
-            self.action_tudongbanrac()
-            time.sleep(1.)
-            self.action_suavatpham()
-            time.sleep(1.)
-
-            if not self.moitruong.get_is_dayhanhtrang():
+            if self._xulydangbanrac():
                 print("[AUTO-SELL] Đã bán xong, chuẩn bị quay lại")
                 self._trangthaiveban = 4
                 self._thoidiemchuyentrangthai = time.time()
-            else:
-                time.sleep(1.0)
 
         elif self._trangthaiveban == 4:
             if not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_XUYENKHONGHANH):
@@ -4542,40 +4588,39 @@ class TacTu:
                 self._thoidiemhoithanhphu = time.time()
 
         elif self._trangthaiveban == 2:
-            thoidiembatdau = time.time()
+            # Trước đây là vòng while chặn loop phụ tới 45s; giờ mỗi lượt (cách nhau >= 1s) làm 1 bước, quá 45s thì thử lại từ đầu
             thoigiantoida = 45.0
-            while True:
-                if self.moitruong.get_is_nhanvatdachet() or self.moitruong.get_is_dangvankhi():
-                    return
-                if time.time() - thoidiembatdau > thoigiantoida:
-                    print(f"[AUTO-SELL] Quá {thoigiantoida}s không tới được Tiệm Tạp Hóa. Thử lại.")
-                    self._trangthaiveban = 1
-                    return
-                diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = CHUTIEMTAPHOA)
-                if self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON:
-                    if not diachinpc:
-                        self.moitruong.action_dichuyengiukhoangcachtoidadiem(X_CHUTIEMTAPHOA_TANTHUTHON, Y_CHUTIEMTAPHOA_TANTHUTHON, khoangcachtoida = 0.)
-                    else:
-                        khoangcach = self.moitruong.get_khoangcach(diachinpc)
-                        if khoangcach <= 3.0:
-                            print("[AUTO-SELL] Đã tìm thấy NPC, chuẩn bị bán đồ...")
-                            self._trangthaiveban = 3
-                            return
-                        else:
-                            self.moitruong.action_dichuyengiukhoangcachtoida(diachinpc, khoangcachtoida = 0.)
+            if self.moitruong.get_is_nhanvatdachet() or self.moitruong.get_is_dangvankhi():
+                return
+            if not self._thoidiembatdautimnpcbanrac:
+                self._thoidiembatdautimnpcbanrac = time.time()
+            if time.time() - self._thoidiembatdautimnpcbanrac > thoigiantoida:
+                print(f"[AUTO-SELL] Quá {thoigiantoida}s không tới được Tiệm Tạp Hóa. Thử lại.")
+                self._thoidiembatdautimnpcbanrac = 0.
+                self._trangthaiveban = 1
+                return
+            if time.time() - self._thoidiemkiemtranpcbanrac < 1.:
+                return
+            self._thoidiemkiemtranpcbanrac = time.time()
+            diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = CHUTIEMTAPHOA)
+            if self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON:
+                if not diachinpc:
+                    self.moitruong.action_dichuyengiukhoangcachtoidadiem(X_CHUTIEMTAPHOA_TANTHUTHON, Y_CHUTIEMTAPHOA_TANTHUTHON, khoangcachtoida = 0.)
                 else:
-                    if not diachinpc:
-                        print("[AUTO-SELL] Đang chờ load map hoặc chưa về thành...")
-
-                time.sleep(1.0)
+                    khoangcach = self.moitruong.get_khoangcach(diachinpc)
+                    if khoangcach <= 3.0:
+                        print("[AUTO-SELL] Đã tìm thấy NPC, chuẩn bị bán đồ...")
+                        self._thoidiembatdautimnpcbanrac = 0.
+                        self._trangthaiveban = 3
+                        return
+                    else:
+                        self.moitruong.action_dichuyengiukhoangcachtoida(diachinpc, khoangcachtoida = 0.)
+            else:
+                if not diachinpc:
+                    print("[AUTO-SELL] Đang chờ load map hoặc chưa về thành...")
 
         elif self._trangthaiveban == 3:
-            self.action_tudongbanrac()
-            time.sleep(1.0)
-            self.action_suavatpham()
-            time.sleep(1.)
-
-            if not self.moitruong.get_is_dayhanhtrang():
+            if self._xulydangbanrac():
                 print("[AUTO-SELL] Đã bán xong.")
                 self._trangthaiveban = 4
 
@@ -4629,18 +4674,15 @@ class TacTu:
             print(f"[DI-CHUYEN] Chưa định nghĩa đường đi cho Map ID: {target_map}")
             return
 
+        if self.get_is_danghoithoainpc():
+            return
+
         idnpc = self.moitruong.get_iddoituong(diachinpc)
         hex_id = hex(idnpc).replace("0x", "")
 
         print(f"[DI-CHUYEN] Bắt đầu di chuyển lên map {target_map}...")
 
-        for step in steps:
-            caulenh = f"tallk {hex_id}# {step}"
-            self.moitruong.action_thucthicaulenh(caulenh)
-            time.sleep(1.0)
-
-        if self.moitruong.get_is_danghiencuasotuychon():
-            self.moitruong.set_is_danghiencuasotuychon(False)
+        self.action_batdauhoithoainpc([f"tallk {hex_id}# {step}" for step in steps])
 
     def action_tudongkhaikhoang(self):
         if not self._is_tudongkhaikhoang:
@@ -4781,6 +4823,13 @@ class TacTu:
 
     def action_tudongdichientruong(self):
         if not self._is_tudongdichientruong:
+            self._hangdoilenhchientruong = []
+            return
+
+        if self._hangdoilenhchientruong:
+            if time.time() >= self._thoidiemguilenhchientruongtieptheo:
+                self.moitruong.action_thucthicaulenh(self._hangdoilenhchientruong.pop(0))
+                self._thoidiemguilenhchientruongtieptheo = time.time() + 0.25
             return
 
         if time.time() - self._thoidiemdichientruonggannhat < 0.5:
@@ -4823,30 +4872,26 @@ class TacTu:
 
             self._thoidiemdichientruonggannhat = time.time()
 
+            hex_id = hex(idnpc).replace("0x", "")
             if is_truongnhom:
-                caulenh = "tallk {}# welcome.2".format(hex(idnpc).replace("0x", ""))
-                self.moitruong.action_thucthicaulenh(caulenh)
-                time.sleep(0.25)
-                caulenh = "tallk {}# welcome.3".format(hex(idnpc).replace("0x", ""))
-                self.moitruong.action_thucthicaulenh(caulenh)
-                time.sleep(0.25)
+                buocs = ("welcome.2", "welcome.3")
             elif is_dangnamtrongnhom:
-                caulenh = "tallk {}# welcome.3".format(hex(idnpc).replace("0x", ""))
-                self.moitruong.action_thucthicaulenh(caulenh)
-                time.sleep(0.25)
+                buocs = ("welcome.3",)
             else:
-                caulenh = "tallk {}# welcome.1".format(hex(idnpc).replace("0x", ""))
-                self.moitruong.action_thucthicaulenh(caulenh)
-                time.sleep(0.25)
-                caulenh = "tallk {}# welcome.3".format(hex(idnpc).replace("0x", ""))
-                self.moitruong.action_thucthicaulenh(caulenh)
-                time.sleep(0.25)
+                buocs = ("welcome.1", "welcome.3")
+            # Gửi bước đầu ngay, các bước sau gửi dần ở các lượt kế tiếp (đầu hàm)
+            self._hangdoilenhchientruong = ["tallk {}# {}".format(hex_id, buoc) for buoc in buocs[1:]]
+            self.moitruong.action_thucthicaulenh("tallk {}# {}".format(hex_id, buocs[0]))
+            self._thoidiemguilenhchientruongtieptheo = time.time() + 0.25
 
     def action_tudongdaotangbaodo(self):
         self._yeucaudaotangbaodo = None
 
         if not self._is_tudongdaotangbaodo:
             self._thoidiemhettangbaodogannhat = 0.
+            return
+
+        if time.time() < self._thoidiemchodaotangbaodo:
             return
 
         if self.moitruong.get_is_nhanvatdachet() or self.moitruong.get_is_dangvankhi():
@@ -4882,7 +4927,7 @@ class TacTu:
                         iddoituong = self.moitruong.get_iddoituongvatphamhanhtrang(i)
                         if iddoituong:
                             self.moitruong.action_sudungvatpham(iddoituong)
-                            time.sleep(1.0)
+                            self._thoidiemchodaotangbaodo = time.time() + 1.
                     else:
                         self.moitruong.action_tudongtimduong(x_dich, y_dich, idbandodich)
                     return
@@ -4910,11 +4955,11 @@ class TacTu:
                 self.action_sudunghoithanhphu()
                 self._thoidiemsudunghoithanhphugannhat = time.time()
                 phatam("{} hết tàng bảo đồ".format(self.moitruong.get_tendoituong()))
-                time.sleep(5)
+                self._thoidiemchodaotangbaodo = time.time() + 5.
             else:
                 if not self.moitruong.action_timkiemvatphamhanhtrang(LAMCAU):
                     phatam("{} hết tàng bảo đồ".format(self.moitruong.get_tendoituong()))
-                    time.sleep(5)
+                    self._thoidiemchodaotangbaodo = time.time() + 5.
                     return
 
                 # print("[DAOTAOBAODO] Tiến hành bán rác & sửa đồ...")
@@ -4955,7 +5000,8 @@ class TacTu:
             caulenh = f"tallk {hex_id}# goto.! {quocgiacanden} t{timestamp}"
             self.moitruong.action_thucthicaulenh2(caulenh, delay = 0.0)
             self.moitruong.action_ngatdichuyen()
-            time.sleep(5.0)
+            # Chờ chuyển bản đồ xong mới xét tiếp (trước đây sleep 5s chặn cả loop phụ)
+            self._thoidiemchodaotangbaodo = time.time() + 5.
 
     def action_tudongbatautoingame(self):
         self.moitruong.set_is_batautoingame(False)

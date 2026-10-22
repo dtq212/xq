@@ -7,6 +7,7 @@ from hangso_xq import laytenbando
 import re
 
 from tienich_xq import tailotrinhmau, duongdanlotrinhmau, tainhomtodoitudongs, luunhomtodoitudongs, duongdantodoitudong, laynhomtodoitudongs
+from dieuphoi_xq import taicauhinhdieuphoi, luucauhinhdieuphoi, chuanhoacauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
 
 # Tạm ẩn các tùy chọn chưa dùng/không còn khả dụng (CN mở rộng, Khai khoáng, Đào tàng bảo đồ, Chiến trường).
 # Đổi thành True để hiện lại (tab "Khác"). Phím tắt của chúng vẫn hoạt động.
@@ -22,10 +23,12 @@ MAUCHU_LUC = "#17753f"
 
 
 class GiaoDienHienThi:
-    def __init__(self, root, shared_data, command_dict):
+    def __init__(self, root, shared_data, command_dict, dieuphoi_trangthai = None):
         self.root = root
         self.shared_data = shared_data
         self.command_dict = command_dict
+        # Dữ liệu chung của bộ chia lượt lệnh (xem dieuphoi_xq.py): giao diện ghi "cauhinh" vào đây, mọi bot đọc
+        self.dieuphoi_trangthai = dieuphoi_trangthai
 
         self.last_active_hwnd = None
         self._lotrinhmau_cache = ({}, None)
@@ -72,6 +75,18 @@ class GiaoDienHienThi:
             "tudongbattatchucnangmorong": tk.BooleanVar(),
             "sudungkynangbaothu": tk.BooleanVar(),
             "tranhvungcam": tk.BooleanVar(value = True),
+        }
+
+        # Nhịp lệnh dùng chung mọi nhân vật (không theo nhân vật đang chọn nên không đồng bộ trong update_ui)
+        cauhinhdieuphoi = taicauhinhdieuphoi()
+        # {kênh: {is_xoayvong, nghitoithieu, nghitoida}}
+        self.vars_dieuphoi = {
+            kenh: {
+                "is_xoayvong": tk.BooleanVar(value = cauhinhdieuphoi[kenh]["is_xoayvong"]),
+                "nghitoithieu": tk.DoubleVar(value = cauhinhdieuphoi[kenh]["nghitoithieu"]),
+                "nghitoida": tk.DoubleVar(value = cauhinhdieuphoi[kenh]["nghitoida"]),
+            }
+            for kenh in (KENH_LENH, KENH_DICHUYEN)
         }
 
         self._taodanhsachnhanvat()
@@ -226,6 +241,40 @@ class GiaoDienHienThi:
 
         # Nhóm & Bảo thú nằm chung tab Chiến đấu
         self._taotabnhom(tab)
+
+        self._taonhomnhiplenh(tab)
+
+    def _taonhomnhiplenh(self, tab):
+        nhom = self._taonhom(tab, "Nhịp lệnh (chung mọi nhân vật)")
+
+        def on_apdung(*args):
+            try:
+                cauhinh = chuanhoacauhinhdieuphoi({kenh: {k: v.get() for k, v in vars_.items()} for kenh, vars_ in self.vars_dieuphoi.items()})
+            except tk.TclError:
+                # Ô số đang nhập dở/sai: lấy lại số đang dùng
+                cauhinh = taicauhinhdieuphoi()
+            # Hiện lại số đã chuẩn hoá (vd. tối thiểu > tối đa thì đổi chỗ)
+            for kenh, vars_ in self.vars_dieuphoi.items():
+                for k, v in vars_.items():
+                    v.set(cauhinh[kenh][k])
+            if self.dieuphoi_trangthai is not None:
+                self.dieuphoi_trangthai["cauhinh"] = cauhinh
+            luucauhinhdieuphoi(cauhinh)
+
+        for kenh, tieude in ((KENH_LENH, "Xoay vòng lệnh giữa các nhân vật"), (KENH_DICHUYEN, "Lần lượt bắt đầu di chuyển")):
+            vars_ = self.vars_dieuphoi[kenh]
+            ttk.Checkbutton(nhom, text = tieude, variable = vars_["is_xoayvong"],
+                            command = on_apdung).grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W, pady = 1)
+
+            hangnghi = ttk.Frame(nhom)
+            hangnghi.grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W, padx = (22, 0), pady = (0, 2))
+            ttk.Label(hangnghi, text = "Cách nhau từ").pack(side = tk.LEFT)
+            for khoa, chu in (("nghitoithieu", "đến"), ("nghitoida", "giây")):
+                spin = ttk.Spinbox(hangnghi, from_ = 0.0, to = 2.0, increment = 0.01, width = 5, format = "%.2f",
+                                   textvariable = vars_[khoa], command = on_apdung)
+                spin.pack(side = tk.LEFT, padx = 4)
+                self._ganspinboxapdung(spin, on_apdung)
+                ttk.Label(hangnghi, text = chu, style = "Phu.TLabel" if chu == "giây" else "TLabel").pack(side = tk.LEFT)
 
     def _taotabmuctieutodoi(self, tab):
         # Gộp 2 danh sách vào 1 khung cho gọn: dòng tiêu đề nhỏ (kèm phím tắt) + nội dung

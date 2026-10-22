@@ -165,21 +165,11 @@ class LoopChinh:
         # time.sleep(0.25)
 
         if self.moitruong.get_idnguoichoi() in (29, 30, 31, 32, ):
-            if self.moitruong.action_timkiemvatphamhanhtrang("Túi Ngân Lượng"):
-                self.tactu.action_sudungvatphamhanhtrang("Túi Ngân Lượng")
-                time.sleep(0.25)
-            if self.moitruong.action_timkiemvatphamhanhtrang("Chén Bạc"):
-                self.tactu.action_sudungvatphamhanhtrang("Chén Bạc")
-                time.sleep(0.25)
-            if self.moitruong.action_timkiemvatphamhanhtrang("Túi Kim Bảo"):
-                self.tactu.action_sudungvatphamhanhtrang("Túi Kim Bảo")
-                time.sleep(0.25)
-            if self.moitruong.action_timkiemvatphamhanhtrang("Túi Quà Vô Song"):
-                self.tactu.action_sudungvatphamhanhtrang("Túi Quà Vô Song")
-                time.sleep(0.25)
-            if self.moitruong.action_timkiemvatphamhanhtrang("Túi Pháp Bảo"):
-                self.tactu.action_sudungvatphamhanhtrang("Túi Pháp Bảo")
-                time.sleep(0.25)
+            # Mỗi lượt mở 1 túi; action_sudungvatphamhanhtrang tự giãn cách 0.25s giữa 2 lần dùng
+            # (trước đây sleep 0.25s sau mỗi túi ngay trong loop chính: tới 1.25s không ra kỹ năng, không chọn mục tiêu)
+            for tenvatpham in ("Túi Ngân Lượng", "Chén Bạc", "Túi Kim Bảo", "Túi Quà Vô Song", "Túi Pháp Bảo"):
+                if self.tactu.action_sudungvatphamhanhtrang(tenvatpham):
+                    break
         # vitrivatphams = [0, ]
         # if self.moitruong.get_idnguoichoi() == 102:
         #     for vitrivatpham in vitrivatphams:
@@ -316,6 +306,8 @@ class LoopPhu:
         self.tactu.action_tudongmuavatpham()
         self.tactu.action_tudongsuavatpham()
 
+        self.tactu.action_xulyhoithoainpc()
+        self.tactu.action_xulybanracvasuado()
         self.tactu.action_tudongxulyvebanrac()
         self.tactu.action_tudongkhaikhoang()
         self.tactu.action_tudongdaotangbaodo()

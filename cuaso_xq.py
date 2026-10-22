@@ -11,7 +11,7 @@ from loop_xq import (
     LoopDieuPhoiDiChuyen,
     LoopXuLyLenh
 )
-from dieuphoi_xq import DieuPhoiLuot
+from dieuphoi_xq import DieuPhoiLuot, KENH_LENH, KENH_DICHUYEN
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
 
@@ -49,7 +49,8 @@ class CuaSo:
 
         self.moitruong = MoiTruong(idcuaso)
         if dieuphoi_khoa is not None:
-            self.moitruong.dieuphoi = DieuPhoiLuot(idcuaso, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos)
+            self.moitruong.dieuphoi = DieuPhoiLuot(idcuaso, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos, KENH_LENH)
+            self.moitruong.dieuphoidichuyen = DieuPhoiLuot(idcuaso, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos, KENH_DICHUYEN)
         self.moitruong.action_thietlaphooknoidungtrochuyen()
         self.tactu = TacTu(self.moitruong)
         self.tactu.shared_data = shared_data
