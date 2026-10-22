@@ -86,6 +86,9 @@ class GiaoDienHienThi:
         if HIEN_TUYCHON_CHUADUNG:
             self._taotabkhac(self._taotab(notebook, "Khác"))
 
+        # Bấm ra chỗ khác (không phải ô nhập) thì bỏ focus ô đang sửa -> FocusOut áp dụng số vừa nhập
+        self.root.bind_all("<Button-1>", self._bofocusokhibamrangoai, add = "+")
+
         self.update_ui()
 
     # ------------------------------------------------------------------ Bố cục
@@ -165,6 +168,39 @@ class GiaoDienHienThi:
         nhom.columnconfigure(0, weight = 1)
         return nhom
 
+    def _bofocusokhibamrangoai(self, event):
+        if not isinstance(event.widget, (tk.Entry, ttk.Entry, tk.Text, tk.Spinbox)):
+            try:
+                self.root.focus_set()
+            except tk.TclError:
+                pass
+
+    def _ganspinboxapdung(self, spin, on_change):
+        # Enter: áp dụng rồi bỏ focus (ô hết bị khoá, update_ui đồng bộ lại số thật). Esc: bỏ sửa, lấy lại số cũ
+        boqua = {"focusout": False}
+
+        def on_enter(event):
+            on_change()
+            boqua["focusout"] = True
+            self.root.focus_set()
+            return "break"
+
+        def on_escape(event):
+            boqua["focusout"] = True
+            self.root.focus_set()
+            return "break"
+
+        def on_focusout(event):
+            if boqua["focusout"]:
+                boqua["focusout"] = False
+            else:
+                on_change()
+
+        spin.bind("<Return>", on_enter)
+        spin.bind("<KP_Enter>", on_enter)
+        spin.bind("<Escape>", on_escape)
+        spin.bind("<FocusOut>", on_focusout)
+
     def _create_check(self, parent, text, variable, cmd_name = None, phimtat = ""):
         def on_click():
             hwnd = self.get_selected_hwnd()
@@ -225,8 +261,7 @@ class GiaoDienHienThi:
         self.spin_bankinhdiemdanh = ttk.Spinbox(hangbankinh, from_ = 3.0, to = 40.0, increment = 1.0, width = 5,
                                                 textvariable = self.vars["bankinhdiemdanh"], command = on_bankinh_change)
         self.spin_bankinhdiemdanh.pack(side = tk.LEFT, padx = 4)
-        self.spin_bankinhdiemdanh.bind("<Return>", on_bankinh_change)
-        self.spin_bankinhdiemdanh.bind("<FocusOut>", on_bankinh_change)
+        self._ganspinboxapdung(self.spin_bankinhdiemdanh, on_bankinh_change)
         ttk.Label(hangbankinh, text = "ô", style = "Phu.TLabel").pack(side = tk.LEFT)
 
         # Lộ trình mẫu: chọn mẫu (của bất kỳ bản đồ nào) rồi Nạp, hoặc để bot Tự chọn mẫu chưa nhân vật nào dùng
@@ -343,8 +378,7 @@ class GiaoDienHienThi:
         self.spin_khoangcach = ttk.Spinbox(hangkhoangcach, from_ = 1.0, to = 50.0, increment = 1.0, width = 5,
                                            textvariable = self.vars["khoangcachtheosau"], command = on_khoangcach_change)
         self.spin_khoangcach.pack(side = tk.LEFT, padx = 4)
-        self.spin_khoangcach.bind("<Return>", on_khoangcach_change)
-        self.spin_khoangcach.bind("<FocusOut>", on_khoangcach_change)
+        self._ganspinboxapdung(self.spin_khoangcach, on_khoangcach_change)
 
         self._create_check(nhom, "Bật/Tắt theo sau nhóm", self.vars["battheosaunhom"], "battat_tudongbattheosaunhom", "Ctrl+Alt+T")
         self._create_check(nhom, "Tổ đội tự động (danh sách ở tab Mục tiêu & Tổ đội)", self.vars["todoitudong"], "battat_tudongtodoi")
