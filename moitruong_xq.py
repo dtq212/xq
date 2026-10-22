@@ -66,6 +66,8 @@ class MoiTruong:
         self._thoidiembattattheosaunhomgannhat = 0.
         self._thoidiemdichuyengannhat = 0.
         self._thoidiemhetchovankhi = 0.
+        # Đang spam lệnh triệu hồi bảo thú (pf 4131.@) => không cho dùng kỹ năng nào khác tới thời điểm này
+        self._thoidiemhetkhoakynang = 0.
         # Lịch sử vị trí mục tiêu đang đuổi theo (để tính hướng/tốc độ chạy mà click đón đầu)
         self._lichsutoadomuctieu_map = {}
         self._thoidiemsudungkynangvitrigannhat_map = {}
@@ -350,7 +352,18 @@ class MoiTruong:
         caulenh = "look {}#".format(hex(iddoituong)).replace("0x", "")
         return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_THAP)
 
+    def action_khoakynang(self, thoigian):
+        self._thoidiemhetkhoakynang = max(self._thoidiemhetkhoakynang, time.time() + thoigian)
+
+    def action_mokhoakynang(self):
+        self._thoidiemhetkhoakynang = 0.
+
+    def get_is_dangkhoakynang(self):
+        return time.time() < self._thoidiemhetkhoakynang
+
     def action_sudungkynang(self, idkynang, delay = 0.05):
+        if self.get_is_dangkhoakynang():
+            return False
         if time.time() - self._thoidiemsudungkynanggannhat < delay:
             return False
         self._thoidiemsudungkynanggannhat = time.time()
@@ -375,6 +388,8 @@ class MoiTruong:
         return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO)
 
     def action_sudungkynangmuctieunguoichoi(self, idkynang, idnguoichoi, delay = 0.05):
+        if self.get_is_dangkhoakynang():
+            return False
         if time.time() - self._thoidiemsudungkynangmuctieugannhat < delay:
             return False
         self._thoidiemsudungkynangmuctieugannhat = time.time()
@@ -382,6 +397,8 @@ class MoiTruong:
         return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO)
 
     def action_sudungkynangmuctieukhacnguoichoi(self, idkynang, iddoituong, delay = 0.05):
+        if self.get_is_dangkhoakynang():
+            return False
         if time.time() - self._thoidiemsudungkynangmuctieugannhat < delay:
             return False
         self._thoidiemsudungkynangmuctieugannhat = time.time()
@@ -389,6 +406,8 @@ class MoiTruong:
         return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO)
 
     def action_sudungkynangtoado(self, idkynang, toadox, toadoy, delay = 0.05):
+        if self.get_is_dangkhoakynang():
+            return False
         if time.time() - self._thoidiemsudungkynangtoadogannhat < delay:
             return False
         self._thoidiemsudungkynangtoadogannhat = time.time()

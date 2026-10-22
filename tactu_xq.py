@@ -1043,7 +1043,7 @@ class TacTu:
             thongtin["khoangcachtruongnhom"] = math.dist(toado, toadotruongnhom) if is_anhhuongboitruongnhom else 0.
             return thongtin
 
-        # Đang farm & bán rác: nhường quái đang ở gần nhân vật khác của mình (không cùng nhóm) cho nhân vật đó,
+        # Đang farm & bán rác: nhường quái đang ở gần nhân vật khác của mình cho nhân vật đó,
         # tránh các nhân vật đánh chung một chỗ, đi sát rạt vào nhau (giống logic nhường quái khi gom)
         toadodongdois = self._laytoadodongdoikhacnhom() if self._is_tudongvebanrac else []
 
@@ -1654,6 +1654,7 @@ class TacTu:
 
                     if is_doilenh and is_hanhdong:
                         self._trangthaitrieuhoibaothuvatpham = 3
+                        self.moitruong.action_mokhoakynang()
 
                         if self.moitruong.get_idnguoichoi() in DANHHIEU_MAP:
                             self.moitruong.action_thucthicaulenh("title show {}".format(DANHHIEU_MAP[self.moitruong.get_idnguoichoi()]), douutien = DOUUTIEN_KHANCAP)
@@ -1667,6 +1668,7 @@ class TacTu:
                             continue
                         if self.action_sudungvatphamhanhtrang(baothuvatpham, delay = 0.):
                             self._thoidiemtamngungsudungkynang = max(self._thoidiemtamngungsudungkynang, time.time() + 0.5)
+                            self.moitruong.action_khoakynang(1.5)
                             self._thoidiemsudungbaothuvatphamgannhat = time.time()
 
                             self._trangthaitrieuhoibaothuvatpham = 1
@@ -1675,6 +1677,8 @@ class TacTu:
                             break
 
             elif self._trangthaitrieuhoibaothuvatpham == 1:
+                # Lệnh triệu hồi cũng là spam kỹ năng: khoá mọi kỹ năng khác suốt lúc chờ và spam (mở lại khi xong hoặc hết 3s)
+                self.moitruong.action_khoakynang(1.5)
                 if time.time() - self._thoidiemchuyentrangthaitrieuhoibaothuvatpham > 1.0:
                     self.moitruong.action_thucthicaulenh("pf 4131.@", douutien = DOUUTIEN_KHANCAP)
 
@@ -1684,6 +1688,7 @@ class TacTu:
 
             elif self._trangthaitrieuhoibaothuvatpham == 2:
                 thoigianchochuyentrangthaitrieuhoibaothuvatpham = time.time() - self._thoidiemchuyentrangthaitrieuhoibaothuvatpham
+                self.moitruong.action_khoakynang(1.5)
 
                 if time.time() - self._thoidiemyeucaubaothuvatphamdoilenh > 0.25:
                     self.moitruong.action_thucthicaulenh("pf 4131.@", douutien = DOUUTIEN_KHANCAP)
@@ -1692,6 +1697,7 @@ class TacTu:
                 if thoigianchochuyentrangthaitrieuhoibaothuvatpham > 3.:
                     self._trangthaitrieuhoibaothuvatpham = 0
                     self._thoidiemsudungbaothuvatphamgannhat = time.time()
+                    self.moitruong.action_mokhoakynang()
 
             idbandohientai = self.moitruong.get_idbandohientai()
             is_bandokhongpk = idbandohientai in BANDOKHONGPKs
@@ -3889,11 +3895,29 @@ class TacTu:
         idbanthan = self.moitruong.get_idnguoichoi()
         return any(iddongdoi < idbanthan and math.dist((x, y), toadodongdoi) <= BANKINHVUNGNHUONGQUAIDONGDOI for toadodongdoi, iddongdoi in dongdois)
 
+    def _layidthanhviendangtheosaunhom(self, idthanhviennhoms):
+        # Thành viên cùng nhóm (trừ trưởng nhóm) chạy cùng máy và đang bật theo sau trưởng nhóm; máy khác thì không biết nên coi như không theo
+        idtruongnhom = self.moitruong.get_idnguoichoitruongnhom()
+        if self.shared_data is None:
+            return set()
+        try:
+            danhsach = list(self.shared_data.values())
+        except Exception:
+            return set()
+        return {info.get("idnguoichoi") for info in danhsach
+                if isinstance(info, dict) and info.get("_is_tudongtheosautruongnhom")
+                and info.get("idnguoichoi") in idthanhviennhoms and info.get("idnguoichoi") != idtruongnhom}
+
     def _laytoadodongdoikhacnhom(self):
-        # Nhân vật của mình (danh sách tổ đội tự động) đang ở gần nhưng không cùng nhóm => đang farm riêng, tránh giành quái của nhau
+        # Nhân vật của mình (danh sách tổ đội tự động) đang ở gần => tránh giành quái của nhau, cùng nhóm hay khác nhóm đều vậy.
+        # Riêng việc theo sau trưởng nhóm thì phải đứng gần nhau: mình đang theo sau thì không nhường ai, và không nhường cho thành viên đang theo sau
         # Trả về [(tọa độ, id người chơi)]
+        is_dangnamtrongnhom = self.moitruong.get_is_dangnamtrongnhom()
+        if self._is_tudongtheosautruongnhom and is_dangnamtrongnhom and not self.moitruong.get_is_truongnhom():
+            return []
         idnhanvathientai = self.moitruong.get_idnguoichoi()
-        idthanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms() if self.moitruong.get_is_dangnamtrongnhom() else []
+        idthanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms() if is_dangnamtrongnhom else []
+        idbotheosaus = self._layidthanhviendangtheosaunhom(idthanhviennhoms) if idthanhviennhoms else set()
         toadodongdois = []
         i = -1
         while True:
@@ -3904,7 +3928,7 @@ class TacTu:
             if not self.moitruong.get_is_nhanvattontai(diachidoituong) or not self.moitruong.get_is_nguoichoi(diachidoituong):
                 continue
             idnguoichoi = self.moitruong.get_idnguoichoi(diachidoituong)
-            if idnguoichoi in laynhanvattodoitudongs() and idnguoichoi != idnhanvathientai and idnguoichoi not in idthanhviennhoms:
+            if idnguoichoi in laynhanvattodoitudongs() and idnguoichoi != idnhanvathientai and idnguoichoi not in idbotheosaus:
                 toadodongdois.append((self.moitruong.get_toado(diachidoituong), idnguoichoi))
         return toadodongdois
 
@@ -4015,7 +4039,7 @@ class TacTu:
 
         is_neobirotlai = (diachiquaidautien and khoangcachneohientai > 12.0)
 
-        # Chỉ khi bật farm & bán rác: quái gần nhân vật khác trong danh sách tổ đội tự động (không cùng nhóm) hơn mình thì nhường.
+        # Chỉ khi bật farm & bán rác: quái gần nhân vật khác trong danh sách tổ đội tự động hơn mình thì nhường.
         # Không bật farm & bán rác thì không nhường gì cả.
         toadobanthan = self.moitruong.get_toado()
         toadodongdois = self._laytoadodongdoikhacnhom() if self._is_tudongvebanrac else []

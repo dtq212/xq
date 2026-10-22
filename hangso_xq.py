@@ -894,7 +894,7 @@ DICHUYENTANTHUTIENCO_MAP = {
 
 CHUDICHTRAM = "Chủ Dịch Trạm"
 
-# Nhân vật trong tổ đội tự động (không cùng nhóm) có ID nhỏ hơn được giữ vùng: nhân vật ID lớn hơn tránh mọi quái
+# Nhân vật trong tổ đội tự động (cùng hay khác nhóm, trừ khi đang theo sau trưởng nhóm) có ID nhỏ hơn được giữ vùng: nhân vật ID lớn hơn tránh mọi quái
 # và điểm lộ trình trong bán kính này quanh nó
 BANKINHVUNGNHUONGQUAIDONGDOI = 15.
 
