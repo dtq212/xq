@@ -135,6 +135,7 @@ class CuaSo:
                     tentrangthai = "Đã chết"
 
                 x, y = self.moitruong.get_toado()
+                is_dangtrongnhom = self.moitruong.get_is_dangnamtrongnhom()
 
                 info = {
                     "tennhanvat": tennhanvat,
@@ -142,6 +143,9 @@ class CuaSo:
                     "idnguoichoi": self.moitruong.get_idnguoichoi(),
                     "thoidiemcapnhat": time.time(),
                     "tenbando": self.moitruong.get_idbandohientai(),
+                    # Tổ đội tự động dùng để biết các nhóm khác đang cùng bản đồ
+                    "idtruongnhom": self.moitruong.get_idnguoichoitruongnhom() if is_dangtrongnhom else 0,
+                    "thanhviennhoms": self.moitruong.get_danhsachidnguoichoithanhviennhoms() if is_dangtrongnhom else [],
                     "x": x,
                     "y": y,
                     "status": tentrangthai,

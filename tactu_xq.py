@@ -197,6 +197,7 @@ class TacTu:
         # Đồng đội hạng cao hơn đang được mời vào nhóm (để biết đã mời bao lâu)
         self._idmoihangcaohon = 0
         self._thoidiembatdaumoihangcaohon = 0.
+        self._thoidiemroinhomtodoigannhat = 0.
         self._thoidiemcaituhoansinh_map = {}
 
         self._thoidiemsudungamkichgannhat = 0.
@@ -786,10 +787,39 @@ class TacTu:
             return info
         return None
 
+    def _laythongtintodoicungbando(self, idbandohientai, xephang_map):
+        # Từ shared_data (các cửa sổ cùng máy) trên cùng bản đồ:
+        #   cacnhoms: {idtruongnhom: (hạng tốt nhất trong nhóm, thành viên)}, chỉ tính nhóm có người trong danh sách tổ đội
+        #   nguoichoiles: người trong danh sách tổ đội đang không có nhóm
+        cacnhoms, nguoichoiles = {}, []
+        if self.shared_data is None:
+            return cacnhoms, nguoichoiles
+        try:
+            danhsach = list(self.shared_data.items())
+        except Exception:
+            return cacnhoms, nguoichoiles
+        for idcuaso, info in danhsach:
+            if idcuaso == self.idcuaso or not isinstance(info, dict):
+                continue
+            if info.get("tenbando") != idbandohientai or time.time() - info.get("thoidiemcapnhat", 0.) > 5.:
+                continue
+            idtruongnhom = info.get("idtruongnhom")
+            if not idtruongnhom:
+                if info.get("idnguoichoi") in xephang_map:
+                    nguoichoiles.append(info.get("idnguoichoi"))
+                continue
+            thanhviens = set(info.get("thanhviennhoms") or ()) | {info.get("idnguoichoi")}
+            if idtruongnhom in cacnhoms:
+                thanhviens |= cacnhoms[idtruongnhom][1]
+            hangs = [xephang_map[id_] for id_ in thanhviens if id_ in xephang_map]
+            if hangs:
+                cacnhoms[idtruongnhom] = (min(hangs), thanhviens)
+        return cacnhoms, nguoichoiles
+
     def _xulyphutheotruongnhom(self):
         # Trưởng nhóm ở bản đồ khác (biết được vì cùng máy) => phù sang nếu bản đồ đó phù tới được:
-        #   map train: Tân Thủ Tiên Cô (Tân Thủ Thôn/Chu/Thục Sơn), thành chính/môn phái: Chủ Dịch Trạm, Tân Thủ Thôn: Hồi Thành Phù.
-        #   Không đứng ở bản đồ có NPC cần dùng thì Hồi Thành Phù về Tân Thủ Thôn trước.
+        #   map train: Tân Thủ Tiên Cô, thành chính/môn phái: Chủ Dịch Trạm.
+        #   Chỉ phù khi mình đang ở Chu/Tân Thủ Thôn (có sẵn NPC), không tự Hồi Thành Phù về thành.
         # Trả về True khi đang lo việc phù (bỏ qua theo sau bình thường)
         if self._trangthaiveban != 0 or self._is_tudongdichientruong or self._is_tudongdaotangbaodo:
             return False
@@ -803,10 +833,12 @@ class TacTu:
         idbandohientai = self.moitruong.get_idbandohientai()
         if not idbandotruongnhom or idbandotruongnhom == idbandohientai:
             return False
+        if idbandohientai not in (BANDO_CHU, BANDO_TANTHUTHON):
+            return False
 
         buocdichuyentanthutienco = DICHUYENTANTHUTIENCO_MAP.get(idbandotruongnhom)
         diemdenchudichtram = DIEMDENCHUDICHTRAM_MAP.get(idbandotruongnhom)
-        if not buocdichuyentanthutienco and not diemdenchudichtram and idbandotruongnhom != BANDO_TANTHUTHON:
+        if not buocdichuyentanthutienco and not diemdenchudichtram:
             return False
 
         self._is_dangphutheotruongnhom = True
@@ -818,14 +850,12 @@ class TacTu:
         if time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() < 2.:
             return True
 
-        if idbandotruongnhom == BANDO_TANTHUTHON:
-            tennpc, vitrinpc_map = None, {}
-        elif buocdichuyentanthutienco:
+        if buocdichuyentanthutienco:
             tennpc, vitrinpc_map = TANTHUTIENCO, VITRITANTHUTIENCO_MAP
         else:
             tennpc, vitrinpc_map = CHUDICHTRAM, VITRICHUDICHTRAM_MAP
 
-        diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = tennpc) if tennpc else 0
+        diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = tennpc)
         if diachinpc:
             if self.moitruong.get_khoangcach(diachinpc) > 6.:
                 x_npc, y_npc = self.moitruong.get_toado(diachinpc)
@@ -851,15 +881,8 @@ class TacTu:
                 self.moitruong.action_ngatdichuyen()
             return True
 
-        vitrinpc = vitrinpc_map.get(idbandohientai)
-        if vitrinpc:
-            self._yeucautheosautruongnhom = {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (vitrinpc[0], vitrinpc[1], idbandohientai), "khoangcachtoida": 0}
-            return True
-
-        if idbandohientai != BANDO_TANTHUTHON and time.time() - self._thoidiemsudunghoithanhphugannhat > 6.:
-            print(f"[THEO NHÓM] Trưởng nhóm ở {laytenbando(idbandotruongnhom)} => Hồi Thành Phù về Tân Thủ Thôn để phù sang")
-            self.moitruong.action_ngatdichuyen()
-            self.action_sudunghoithanhphu()
+        vitrinpc = vitrinpc_map[idbandohientai]
+        self._yeucautheosautruongnhom = {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (vitrinpc[0], vitrinpc[1], idbandohientai), "khoangcachtoida": 0}
         return True
 
     def _tinhtoanvitritheosautruongnhom(self, xtruongnhom, ytruongnhom, khoangcachtoidatruongnhom):
@@ -2219,15 +2242,20 @@ class TacTu:
             kynangchopheps = KYNANGCHOPHEPTHEONHANVAT_MAP.get(tennhanvat)
         return set(kynangchopheps) if kynangchopheps is not None else None
 
-    def _get_is_cobaothukynangtrieuhoi(self):
-        # Bảo thú kỹ năng triệu hồi có tên dạng "Thiên binh (...)", bảo thú giang hồ thì không có ngoặc
+    def _get_tenbaothukynangtrieuhois(self):
+        # Bảo thú kỹ năng triệu hồi có tên dạng "Thiên Binh ( chủ nhân ) (cấp 65)", bảo thú giang hồ thì không có ngoặc
+        tenbaothus = []
         for sothutu in range(1, 4):
             if not self.moitruong.get_iddoituongbaothu(sothutu):
                 continue
             tendoituongbaothu = self.moitruong.get_tendoituongbaothu(sothutu) or ""
             if "(" in tendoituongbaothu and ")" in tendoituongbaothu:
-                return True
-        return False
+                tenbaothus.append(tendoituongbaothu.lower())
+        return tenbaothus
+
+    def _get_is_cobaothukynangtrieuhoi(self, tenbaothu = None):
+        # tenbaothu: chỉ tính bảo thú triệu hồi có tên này (vd: THIENBINH)
+        return any(tenbaothu is None or ten.startswith(tenbaothu.lower()) for ten in self._get_tenbaothukynangtrieuhois())
 
     def action_sudungkynangmonphaimaoson(self):
         if not self._is_tudongsudungkynang: return
@@ -2249,12 +2277,21 @@ class TacTu:
 
         idbandohientai = self.moitruong.get_idbandohientai()
 
-        is_cobaothukynangtrieuhoi = self._get_is_cobaothukynangtrieuhoi()
+        tenbaothukynangtrieuhois = self._get_tenbaothukynangtrieuhois()
+        is_cobaothukynangtrieuhoi = bool(tenbaothukynangtrieuhois)
+        is_cothienbinh = any(ten.startswith(THIENBINH.lower()) for ten in tenbaothukynangtrieuhois)
+        is_cothantuong = any(ten.startswith(THANTUONG.lower()) for ten in tenbaothukynangtrieuhois)
+        is_cobaothukhongphaicuongthi = any(not ten.startswith(CUONGTHI.lower()) for ten in tenbaothukynangtrieuhois)
         kynangchopheps = self._get_kynangchophep()
 
         danhsachuutien = [
-            # Huyết Tế: hy sinh 50% khí huyết của bảo thú triệu hồi để hồi cho bản thân (tốn 100 pháp lực)
-            (VITRIKYNANG_HUYETTE, "sudungkynangkhongmuctieu", lambda: phantramsinhlucconlai < 50 and is_cobaothukynangtrieuhoi and noilucconlai >= 100, 0, None, True, True),
+            # Máu thấp thì tế bảo thú triệu hồi (không bao giờ tế Cương Thi):
+            #   Tế Thần Tướng (120 pháp lực, hồi 180s) sẵn sàng thì dùng trước: hy sinh bảo thú để gọi Thần Tướng
+            #   đang hồi chiêu thì Mệnh Tế (Thần Tướng, 150 pháp lực: 25% khí huyết của nó hồi cho cả nhóm trong 21x21 ô)
+            #   hoặc Huyết Tế (Thiên Binh, 100 pháp lực: hy sinh 50% khí huyết của nó hồi cho bản thân)
+            (VITRIKYNANG_TETHANTUONG, "sudungkynangkhongmuctieu", lambda: phantramsinhlucconlai < 50 and is_cobaothukhongphaicuongthi and noilucconlai >= 120, 0, None, True, True),
+            (VITRIKYNANG_MENHTE, "sudungkynangkhongmuctieu", lambda: phantramsinhlucconlai < 50 and is_cothantuong and noilucconlai >= 150, 0, None, True, True),
+            (VITRIKYNANG_HUYETTE, "sudungkynangkhongmuctieu", lambda: phantramsinhlucconlai < 50 and is_cothienbinh and noilucconlai >= 100, 0, None, True, True),
             # Chưa có bảo thú triệu hồi thì gọi Thiên Binh (tốn 105 pháp lực + 3 Bùa Giấy); chờ 3s sau mỗi lần gọi để bảo thú kịp xuất hiện
             (VITRIKYNANG_TRIEUHOITHIENBINH, "sudungkynangkhongmuctieu", lambda: not is_cobaothukynangtrieuhoi and noilucconlai >= 105 and time.time() - self._thoidiemtrieuhoithienbinhgannhat > 3. and self.moitruong.action_timkiemvatphamhanhtrang(BUAGIAY), 0, None, True, True),
             (VITRIKYNANG_HUYETMACHU, "sudungkynangkhongmuctieu", lambda: phantramsinhlucconlai > 25 and phantramnoilucconlai <= 50, 0, None, True, False),
@@ -3452,6 +3489,28 @@ class TacTu:
         xephangcuatoi = xephang_map[idnguoichoi]
 
         danhsachthanhviens = self.moitruong.get_danhsachidnguoichoithanhviennhoms() if is_dangtrongnhom else []
+
+        # 2 nhóm cùng tồn tại trên 1 bản đồ: nhóm có hạng tốt nhất thấp hơn rời nhóm để vào nhóm hạng cao hơn
+        cacnhomcungbandos, nguoichoilecungbandos = self._laythongtintodoicungbando(idbandohientai, xephang_map)
+        idtruongnhomcuatoi = self.moitruong.get_idnguoichoitruongnhom() if is_dangtrongnhom else 0
+        cacnhomkhacs = {idtn: v for idtn, v in cacnhomcungbandos.items() if idtn != idtruongnhomcuatoi}
+        idtruongnhomtotnhat = min(cacnhomkhacs, key = lambda idtn: cacnhomkhacs[idtn][0]) if cacnhomkhacs else 0
+        if is_dangtrongnhom and idtruongnhomtotnhat:
+            hangnhomcuatoi = min(xephang_map.get(id_, len(xephang_map)) for id_ in danhsachthanhviens + [idnguoichoi])
+            if cacnhomkhacs[idtruongnhomtotnhat][0] < hangnhomcuatoi:
+                if time.time() - self._thoidiemroinhomtodoigannhat > 3.:
+                    self._thoidiemroinhomtodoigannhat = time.time()
+                    print(f"[TỔ ĐỘI] Nhóm khác cùng bản đồ ưu tiên cao hơn (trưởng nhóm {idtruongnhomtotnhat}) => rời nhóm để vào nhóm đó")
+                    self.moitruong.action_thoatkhoinhom()
+                return
+        if not is_dangtrongnhom and idtruongnhomtotnhat:
+            # Chỉ nhận lời mời / xin vào nhóm ưu tiên cao nhất, tránh bị nhóm cũ mời lại
+            self.moitruong.action_kiemtravadongyloimoinhom([idtruongnhomtotnhat])
+            if time.time() - self._thoidiemtodoigannhat_map.get(idtruongnhomtotnhat, 0) > 5.0:
+                self.moitruong.action_moihoacxinvaonhom(idtruongnhomtotnhat)
+                self._thoidiemtodoigannhat_map[idtruongnhomtotnhat] = time.time()
+            return
+
         danhsachxungquanhs = self.moitruong.get_danhsachidnguoichoixungquanhs()
 
         # Loại chính mình và trùng lặp
@@ -3463,7 +3522,7 @@ class TacTu:
         if not dongdoicanxulys and not is_dangtrongnhom:
             return
 
-        # Tuyệt đối hạn chế rời/giải tán nhóm (giải tán sẽ đá văng cả đội ra khỏi phó bản): ưu tiên mời rồi nhường quyền.
+        # Cùng 1 nhóm thì hạn chế rời/giải tán nhóm (giải tán sẽ đá văng cả đội ra khỏi phó bản): ưu tiên mời rồi nhường quyền.
         # Trưởng nhóm là người ngoài danh sách tổ đội thì cứ ở lại nhóm, không rời để ghép lại như trước.
 
         idnguoichoixephangcaonhat = min(dongdoicanxulys + [idnguoichoi], key = lambda id_: xephang_map[id_])
@@ -3488,7 +3547,8 @@ class TacTu:
                 self._idmoihangcaohon = 0
 
             if len(danhsachthanhviens) < SOLUONGTHANHVIENNHOMTOIDA:
-                for iddongdoi in dongdoicanxulys:
+                # Mời cả người đang lẻ cùng bản đồ (vd: vừa rời nhóm hạng thấp hơn) dù chưa đứng gần
+                for iddongdoi in dongdoicanxulys + [id_ for id_ in nguoichoilecungbandos if id_ not in dongdoicanxulys]:
                     if iddongdoi in danhsachthanhviens:
                         continue
                     if time.time() - self._thoidiemtodoigannhat_map.get(iddongdoi, 0) > 5.0:
