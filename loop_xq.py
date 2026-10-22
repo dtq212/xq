@@ -267,6 +267,12 @@ class LoopPhu:
         if not self.stop.is_set():
             self.stop.set()
 
+    def _thongbaochet(self):
+        if self.moitruong.get_is_nhanvatdachet() and self.moitruong.get_idbandohientai() != BANDO_CHIENTRUONG:
+            if time.time() - self.thoidiemthongbaochetgannhat > 5.0:
+                self.thoidiemthongbaochetgannhat = time.time()
+                phatam("Nhân vật đã chết", is_block = False)
+
     def loop(self):
         while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():
             try:
@@ -296,11 +302,16 @@ class LoopPhu:
         if self.tactu.get_is_dangtamngung():
             return
 
+        # Đang nằm chết chờ phục sinh: không làm gì khác (trước đây luồng này bị sleep chặn trong lúc chờ nên cũng không làm gì)
+        self.tactu.action_tudongphucsinh()
+        if self.tactu.get_is_dangchophucsinh():
+            self._thongbaochet()
+            return
+
         self.tactu.action_tudongsudungvatpham()
         self.tactu.action_chantangcapdo()
         self.tactu.action_tudongxepchongvatpham()
         self.tactu.action_tudongtodoi()
-        self.tactu.action_tudongphucsinh()
         self.tactu.action_tudongdoimaupk()
         self.tactu.action_tudongmuavatpham()
         self.tactu.action_tudongsuavatpham()
@@ -316,10 +327,7 @@ class LoopPhu:
         self.tactu.action_tudongnhatvatpham()
         self.tactu.action_tudongvutvatpham()
 
-        if self.moitruong.get_is_nhanvatdachet() and self.moitruong.get_idbandohientai() != BANDO_CHIENTRUONG:
-            if time.time() - self.thoidiemthongbaochetgannhat > 5.0:
-                self.thoidiemthongbaochetgannhat = time.time()
-                phatam("Nhân vật đã chết", is_block = False)
+        self._thongbaochet()
 
         if not self.moitruong.get_is_bathanhtrang():
             self.moitruong.set_is_batalt(True)

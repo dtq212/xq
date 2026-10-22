@@ -678,6 +678,7 @@ VATPHAMTUDONGNHATFARMs = (
 )
 
 VATPHAMXEPCHONGs = tuple(["Toái Lăng", "Lá", "Hoạt Lạc Hoàn", "Lam Cầu", "Hắc Cầu", "Mồi Câu", KHIMACHDON, TAITAOHOAN, TIEUDAOTAN, QUYNGUYENDON, KIMTANGTAN, KHIMACHDON, TUTAMDON, TOAIMABO,
+                          LAOTUU, "Trái Đào", "Chuối", "Khoai Lang Nướng", "Thiên Dao Tửu", DUAHAU,
                           "Lễ Bao Khai Quốc",
                           "Tơ Nhện", "Thạch Tín", "Đuôi Bọ Cạp", "Kịch Độc Châm", "Cánh Ong", "Phi Hành Phiến", "Núm Vú", "Huỳnh Quang Thạch", "Hành Quân Tán", "Bắp", "Mật Ong",
                           "Ly Hồn", "Ma Tinh Thạch", "Cánh Ong", "Ly Phách", "Chính Khí Tán", "Cẩu Bì Dược Cao", "Búi Tóc",
@@ -896,6 +897,39 @@ DICHUYENTANTHUTIENCO_MAP = {
 
 CHUDICHTRAM = "Chủ Dịch Trạm"
 
+# In ra console mọi câu lệnh gửi vào game và mỗi lần kỹ năng bị khoá chặn (để dò lỗi), tắt thì để False
+IS_LOGCAULENH = True
+
+# Xoay vòng lệnh giữa các bot: tại mỗi thời điểm chỉ 1 bot được gửi lệnh, lần lượt từng bot (bot nào cũng có lệnh thì chia đều lượt),
+# giữa 2 lệnh liên tiếp (của 2 bot bất kỳ) nghỉ ngẫu nhiên trong khoảng KHOANGNGHIGIUALENH giây, để các bot không bấm cùng lúc như máy
+IS_XOAYVONGLENHGIUACACBOT = True
+KHOANGNGHIGIUALENH = (0.06, 0.22)
+# Lệnh khẩn cấp (bơm máu, cứu sinh...) không phải chờ lượt
+IS_LENHKHANCAPKHONGCHOLUOT = True
+# Chờ lượt quá lâu (bot khác treo/crash giữa chừng) thì cứ gửi, không kẹt mãi
+THOIGIANCHOLUOTTOIDA = 2.0
+
+# Dữ liệu chung giữa các cửa sổ (shared_data) đọc lại sau mỗi khoảng này (các cửa sổ cập nhật 0.25s/lần)
+THOIGIANNHOSHAREDDATA = 0.25
+
+# Chết rồi chờ bấy nhiêu giây (có thể được người khác cứu) mới tự phục sinh
+THOIGIANCHOTRUOCKHIPHUCSINH = 30.
+
+# Kỹ năng không mục tiêu gửi >= SOLANGUITOIDASPAMKYNANG lần trong SOGIAYDEMSPAMKYNANG giây (tức là game báo sẵn sàng mà kỹ năng không ra)
+# thì tạm khoá riêng kỹ năng đó THOIGIANKHOASPAMKYNANG giây
+CAPDOTOITHIEUTETHANTUONG = 60
+
+# Bảo thú kỹ năng triệu hồi xa nhân vật quá KHOANGCACHGOIBAOTHUVE ô thì gọi theo sau, tới khi về trong KHOANGCACHBAOTHUDAVE ô mới cho đánh tiếp
+KHOANGCACHGOIBAOTHUVE = 12.
+KHOANGCACHBAOTHUDAVE = 6.
+# Gọi về dãn cách theo cấp số nhân (bảo thú có thể bị kẹt): 0.5s -> 1s -> 2s -> 4s rồi giữ 4s
+THOIGIANGOIBAOTHUVEBANDAU = 0.5
+THOIGIANGOIBAOTHUVETOIDA = 4.
+
+SOLANGUITOIDASPAMKYNANG = 3
+SOGIAYDEMSPAMKYNANG = 1.5
+THOIGIANKHOASPAMKYNANG = 3.
+
 # Nhân vật trong tổ đội tự động (cùng hay khác nhóm, trừ khi đang theo sau trưởng nhóm) có ID nhỏ hơn được giữ vùng: nhân vật ID lớn hơn tránh mọi quái
 # và điểm lộ trình trong bán kính này quanh nó
 BANKINHVUNGNHUONGQUAIDONGDOI = 15.
@@ -961,4 +995,4 @@ NHANVATTODOITUDONGs_LIST = [
 
 TENMUCTIEUKHONGTANCONGs = (*BAOTHUVATPHAMs, "Tần QuốcBinh Sĩ", "Triệu QuốcBinh Sĩ", QUYTOT, THIENBINH, DAUBINH, "CAVE1", "CAVE.2", 'Đỗ Độc', 'Ôn Thần', "Liễu Vọng Tháp")
 TENNGUOICHOICUNGBANGs = tuple()
-TENBOSSBUFFMAOSONs = ("Mã Quỷ", "Lương Hưng", "Yến Thập Tam", "Tư Tà", "Thủ Lĩnh Thành Kiều")
+TENBOSSBUFFMAOSONs = ("Mã Quỷ", "Lương Hưng", "Yến Thập Tam", "Tư Tà", "Thủ Lĩnh Thành Kiều", TROMBAOPHITAC)

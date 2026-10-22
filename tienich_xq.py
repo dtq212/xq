@@ -93,6 +93,14 @@ def read_string(process, address, max_length = 2048):
         return ""
 
 
+def donbangthoidiem(bang, giulai, kichthuoctoida = 256):
+    # Bảng {khoá: thời điểm}: quá kichthuoctoida dòng thì bỏ các dòng cũ hơn giulai giây (chỉ ghi thêm mà không xoá thì phình mãi)
+    if len(bang) <= kichthuoctoida:
+        return bang
+    thoidiemhientai = time.time()
+    return {k: v for k, v in list(bang.items()) if thoidiemhientai - v < giulai}
+
+
 def write_string(process, address, value):
     return process.write_string(address, value)
 

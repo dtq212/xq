@@ -16,9 +16,9 @@ from giaodienhienthi_xq import GiaoDienHienThi
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-def run_bot_process(hwnd, shared_data, command_dict):
+def run_bot_process(hwnd, shared_data, command_dict, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos):
     try:
-        bot = CuaSo(hwnd, shared_data, command_dict)
+        bot = CuaSo(hwnd, shared_data, command_dict, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos)
         while not bot.main_stop.is_set():
             if not win32gui.IsWindow(hwnd):
                 break
@@ -35,6 +35,10 @@ class TroChoiManager:
         self.manager = Manager()
         self.shared_data = self.manager.dict()
         self.command_dict = self.manager.dict()
+        # Chia lượt gửi lệnh giữa các bot (xem dieuphoi_xq.py)
+        self.dieuphoi_khoa = self.manager.Lock()
+        self.dieuphoi_trangthai = self.manager.dict()
+        self.dieuphoi_dangchos = self.manager.dict()
         self.bot_processes = {}
 
     def _timcuasogame(self):
@@ -81,7 +85,7 @@ class TroChoiManager:
             game_hwnds = self._timcuasogame()
             for hwnd in game_hwnds:
                 if hwnd not in self.bot_processes:
-                    p = Process(target = run_bot_process, args = (hwnd, self.shared_data, self.command_dict))
+                    p = Process(target = run_bot_process, args = (hwnd, self.shared_data, self.command_dict, self.dieuphoi_khoa, self.dieuphoi_trangthai, self.dieuphoi_dangchos))
                     p.daemon = True
                     p.start()
                     self.bot_processes[hwnd] = p
@@ -91,6 +95,7 @@ class TroChoiManager:
                 del self.bot_processes[h]
                 if h in self.shared_data: del self.shared_data[h]
                 if h in self.command_dict: del self.command_dict[h]
+                self.dieuphoi_dangchos.pop(h, None)
 
             time.sleep(2)
 

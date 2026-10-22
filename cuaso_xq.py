@@ -11,6 +11,7 @@ from loop_xq import (
     LoopDieuPhoiDiChuyen,
     LoopXuLyLenh
 )
+from dieuphoi_xq import DieuPhoiLuot
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
 
@@ -41,12 +42,14 @@ def khoidong_loopxulylenh(moitruong, tactu, stop):
     LoopXuLyLenh(moitruong, tactu, stop).loop()
 
 class CuaSo:
-    def __init__(self, idcuaso, shared_data, command_dict):
+    def __init__(self, idcuaso, shared_data, command_dict, dieuphoi_khoa = None, dieuphoi_trangthai = None, dieuphoi_dangchos = None):
         self.idcuaso = idcuaso
         self.shared_data = shared_data
         self.command_dict = command_dict
 
         self.moitruong = MoiTruong(idcuaso)
+        if dieuphoi_khoa is not None:
+            self.moitruong.dieuphoi = DieuPhoiLuot(idcuaso, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos)
         self.moitruong.action_thietlaphooknoidungtrochuyen()
         self.tactu = TacTu(self.moitruong)
         self.tactu.shared_data = shared_data

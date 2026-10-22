@@ -1,4 +1,5 @@
 import queue
+import struct
 from dataclasses import dataclass, field
 
 import pymem
@@ -13,6 +14,10 @@ OFFSET_DIACHICOSOHIEUUNGNHANVAT = 0x1638
 OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT = 0x13C
 OFFSET_DIACHICOSOMOIKYNANG = 0x224
 OFFSET_DIACHICOSOTHONGTINNHANVATX = 0x1BDA60
+# Bảng địa chỉ đối tượng xung quanh: các vòng quét đều chạy từ ô 0 tới ô 512 (hoặc gặp ô trống)
+SOLUONGDOITUONGXUNGQUANHTOIDA = 513
+# Tên đối tượng đọc lại trong khoảng này thì dùng bản vừa đọc (1 vòng chọn mục tiêu đọc tên cùng 1 đối tượng 5-6 lần)
+THOIGIANNHOTENDOITUONG = 0.1
 
 DOUUTIEN_KHANCAP = 1  # Dành cho bơm máu, giải hiệu ứng, cứu sinh
 DOUUTIEN_CAO = 3  # Dành cho kỹ năng tấn công, PK
@@ -68,6 +73,11 @@ class MoiTruong:
         self._thoidiemhetchovankhi = 0.
         # Đang spam lệnh triệu hồi bảo thú (pf 4131.@) => không cho dùng kỹ năng nào khác tới thời điểm này
         self._thoidiemhetkhoakynang = 0.
+        self._thoidiemlogkhoakynanggannhat = 0.
+        # Chống spam kỹ năng không mục tiêu: {id kỹ năng: [thời điểm gửi gần đây]} và {id kỹ năng: thời điểm hết tạm khoá}
+        self._thoidiemguikynangkhongmuctieu_map = {}
+        self._thoidiemhetkhoaspamkynang_map = {}
+        self._vitrikynangdalog = set()
         # Lịch sử vị trí mục tiêu đang đuổi theo (để tính hướng/tốc độ chạy mà click đón đầu)
         self._lichsutoadomuctieu_map = {}
         self._thoidiemsudungkynangvitrigannhat_map = {}
@@ -78,6 +88,7 @@ class MoiTruong:
         self._thoidiemsudungtancongvatlygannhat = 0.
         self._thoidiemthaotacnhomgannhat = 0.
         self._thoidiemphucsinhgannhat = 0.
+        self._thoidiemdongcuasosauphucsinh = 0.
         self._thoidiemmaupkgannhat = 0.
         self._thoidiemsuavatphamgannhat = 0.
         self._thoidiemsudungchucnangmorong5 = 0.
@@ -85,8 +96,9 @@ class MoiTruong:
         self._thoidiemtuthenhanvattanconggannhat = 0.
         self._thoidiemtuthenhanvatdungimcomuctieugannhat = 0.
         self._thoidiemtuthenhanvatkhongdichuyengannhat = 0.
-        self._thoidiemralenhbaothutancong = 0.
-        self._thoidiemralenhbaothutheosau = 0.
+        # Theo từng bảo thú (Mao Sơn có thể có nhiều bảo thú triệu hồi cùng lúc, dùng chung một mốc thì con sau bị chặn lệnh)
+        self._thoidiemralenhbaothutancong_map = {}
+        self._thoidiemralenhbaothutheosau_map = {}
         self._thoidiemralenhbaothudungim = 0.
 
         self._idthucuoi = False
@@ -97,6 +109,12 @@ class MoiTruong:
 
         self._soluonghieuungnhanvattruocdo_map = {}
         self._thoidiemsoluonghieuungbangkhonggannhat_map = {}
+        # {vị trí trong bảng hiệu ứng của game: id hiệu ứng} (bảng tĩnh trong xq.exe, đọc 1 lần là đủ)
+        self._idhieuungtheovitri_map = {}
+        # Ảnh chụp bảng địa chỉ đối tượng xung quanh, chụp lại mỗi khi một vòng quét bắt đầu từ ô 0
+        self._bangdiachidoituongs = ()
+        # {địa chỉ đối tượng: (thời điểm đọc, tên)}
+        self._tendoituong_map = {}
         self._thoidiemmuctieubichoanggannhat_map = {}
 
         self._diachicosothongtinnhanvatmuctieudangchon = False
@@ -134,6 +152,8 @@ class MoiTruong:
 
         self.hangdoicaulenh = queue.PriorityQueue()
         self.caulenhdangchos = set()
+        # Bộ chia lượt gửi lệnh giữa các bot (CuaSo gán vào), None thì gửi ngay như cũ
+        self.dieuphoi = None
 
         self.thoidiemmuctieuanthangannhat_map = {}
         self.thoidiemmuctieuxuathiengannhat_map = {}
@@ -188,6 +208,12 @@ class MoiTruong:
             self.khoitaohamthucthicaulenh()
 
         if self.diachihamthucthicaulenh:
+            if self.dieuphoi:
+                if lenh.douutien == DOUUTIEN_KHANCAP and IS_LENHKHANCAPKHONGCHOLUOT:
+                    self.dieuphoi.ghinhanguingay()
+                else:
+                    self.dieuphoi.xinluot()
+            self._loglenh(lenh.caulenh, f"hàng đợi, ưu tiên {lenh.douutien}")
             diachidulieu = self.diachihamthucthicaulenh + 0x40
             chuoi_bytes = lenh.caulenh.encode("utf-8")
 
@@ -254,6 +280,9 @@ class MoiTruong:
         if time.time() - self._thoidiemthucthicaulenh2gannhat < delay:
             return False
         self._thoidiemthucthicaulenh2gannhat = time.time()
+        if self.dieuphoi:
+            self.dieuphoi.xinluot()
+        self._loglenh(caulenh, "trực tiếp")
 
         diachihampheduyetcaulenh = self.diachixq + 0x95468
         if read_bytes(self.tientrinh, diachihampheduyetcaulenh, 1) == b"\x74":
@@ -287,16 +316,18 @@ class MoiTruong:
         return True
 
     def action_ralenhbaothutancong(self, iddoituongbaothu, iddoituongnhanvatmuctieudangchon, delay = 1.):
-        if time.time() - self._thoidiemralenhbaothutancong < delay:
+        if time.time() - self._thoidiemralenhbaothutancong_map.get(iddoituongbaothu, 0.) < delay:
             return False
-        self._thoidiemralenhbaothutancong = time.time()
+        self._thoidiemralenhbaothutancong_map[iddoituongbaothu] = time.time()
+        self._thoidiemralenhbaothutancong_map = donbangthoidiem(self._thoidiemralenhbaothutancong_map, 120.)
         caulenh = f"pet {hex(iddoituongbaothu)}# 1 {hex(iddoituongnhanvatmuctieudangchon)}#".replace("0x", "")
         return self.action_thucthicaulenh2(caulenh, delay = 0.)
 
     def action_ralenhbaothutheosau(self, iddoituongbaothu, delay = 0.25):
-        if time.time() - self._thoidiemralenhbaothutheosau < delay:
+        if time.time() - self._thoidiemralenhbaothutheosau_map.get(iddoituongbaothu, 0.) < delay:
             return False
-        self._thoidiemralenhbaothutheosau = time.time()
+        self._thoidiemralenhbaothutheosau_map[iddoituongbaothu] = time.time()
+        self._thoidiemralenhbaothutheosau_map = donbangthoidiem(self._thoidiemralenhbaothutheosau_map, 120.)
         caulenh = f"pet {hex(iddoituongbaothu)}# 2".replace("0x", "")
         return self.action_thucthicaulenh2(caulenh, delay = 0.)
 
@@ -359,12 +390,39 @@ class MoiTruong:
         self._thoidiemhetkhoakynang = 0.
 
     def get_is_dangkhoakynang(self):
-        return time.time() < self._thoidiemhetkhoakynang
+        is_dangkhoa = time.time() < self._thoidiemhetkhoakynang
+        # Log tối đa 1 lần/giây để biết kỹ năng đang bị khoá chặn (và còn khoá bao lâu)
+        if is_dangkhoa and IS_LOGCAULENH and time.time() - self._thoidiemlogkhoakynanggannhat > 1.:
+            self._thoidiemlogkhoakynanggannhat = time.time()
+            print(f"[{time.strftime('%H:%M:%S')} {self.idcuaso}] [KHOÁ KỸ NĂNG] chặn dùng kỹ năng, còn khoá {round(self._thoidiemhetkhoakynang - time.time(), 2)}s")
+        return is_dangkhoa
+
+    def _loglenh(self, caulenh, nguon):
+        if IS_LOGCAULENH:
+            print(f"[{time.strftime('%H:%M:%S')} {self.idcuaso}] [LỆNH {nguon}] {caulenh}")
+
+    def _is_kynangbispam(self, idkynang):
+        # Kỹ năng không mục tiêu (buff, tế, chuyển hoá...) không bao giờ cần gửi dồn dập: game báo "sẵn sàng" mà kỹ năng không ra
+        # thì trước đây cứ gửi lại mỗi lượt, ngập hàng đợi lệnh khiến các kỹ năng khác không chen vào được
+        thoidiemhientai = time.time()
+        if thoidiemhientai < self._thoidiemhetkhoaspamkynang_map.get(idkynang, 0.):
+            return True
+        thoidiemguis = [t for t in self._thoidiemguikynangkhongmuctieu_map.get(idkynang, []) if thoidiemhientai - t < SOGIAYDEMSPAMKYNANG]
+        if len(thoidiemguis) >= SOLANGUITOIDASPAMKYNANG:
+            self._thoidiemhetkhoaspamkynang_map[idkynang] = thoidiemhientai + THOIGIANKHOASPAMKYNANG
+            self._thoidiemguikynangkhongmuctieu_map[idkynang] = []
+            print(f"[{time.strftime('%H:%M:%S')} {self.idcuaso}] [CHẶN SPAM] kỹ năng {idkynang} gửi {len(thoidiemguis)} lần trong {SOGIAYDEMSPAMKYNANG}s mà vẫn sẵn sàng => tạm khoá {THOIGIANKHOASPAMKYNANG}s")
+            return True
+        thoidiemguis.append(thoidiemhientai)
+        self._thoidiemguikynangkhongmuctieu_map[idkynang] = thoidiemguis
+        return False
 
     def action_sudungkynang(self, idkynang, delay = 0.05):
         if self.get_is_dangkhoakynang():
             return False
         if time.time() - self._thoidiemsudungkynanggannhat < delay:
+            return False
+        if self._is_kynangbispam(idkynang):
             return False
         self._thoidiemsudungkynanggannhat = time.time()
         caulenh = "pf {}".format(idkynang)
@@ -702,7 +760,50 @@ class MoiTruong:
         return read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVAT1)
 
     def get_diachicosothongtindoituongx(self, x):
+        # Mọi vòng quét đối tượng đều đi từ ô 0 lên: tới ô 0 thì đọc cả bảng 1 lần, các ô sau lấy từ bản vừa đọc
+        # (trước đây mỗi ô 1 lần đọc bộ nhớ, mỗi vòng quét hàng trăm lần)
+        if x == 0:
+            try:
+                kichthuoc = SOLUONGDOITUONGXUNGQUANHTOIDA * 4
+                dulieu = read_bytes(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVATX, kichthuoc)
+                self._bangdiachidoituongs = struct.unpack("<%di" % SOLUONGDOITUONGXUNGQUANHTOIDA, dulieu)
+            except Exception:
+                self._bangdiachidoituongs = ()
+        bang = self._bangdiachidoituongs
+        if 0 <= x < len(bang):
+            return bang[x]
         return read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVATX + x * 0x4)
+
+    def _get_tenthucte(self, diachicosothongtinnhanvat):
+        # Tên gốc (còn phần "( Cấp ...)", tên chủ nhân bảo thú) tại +0x10AC, nhớ tạm THOIGIANNHOTENDOITUONG giây
+        thoidiemhientai = time.time()
+        daluu = self._tendoituong_map.get(diachicosothongtinnhanvat)
+        if daluu and thoidiemhientai - daluu[0] < THOIGIANNHOTENDOITUONG:
+            return daluu[1]
+        ten = read_string(self.tientrinh, diachicosothongtinnhanvat + 0x10AC)
+        if len(self._tendoituong_map) > 1024:
+            self._tendoituong_map = {k: v for k, v in list(self._tendoituong_map.items()) if thoidiemhientai - v[0] < THOIGIANNHOTENDOITUONG}
+        self._tendoituong_map[diachicosothongtinnhanvat] = (thoidiemhientai, ten)
+        return ten
+
+    def _get_diachidoituongxungquanhs(self, is_nguoichoi = False, is_baothukynangtrieuhoi = False):
+        # Các đối tượng còn tồn tại trong tầm màn hình; tọa độ bản thân đọc 1 lần cho cả vòng (get_khoangcach đọc lại mỗi đối tượng)
+        toadobanthan = self.get_toado()
+        i = 0
+        while i < SOLUONGDOITUONGXUNGQUANHTOIDA:
+            diachi = self.get_diachicosothongtindoituongx(i)
+            if not diachi:
+                break
+            i += 1
+            if not self.get_is_nhanvattontai(diachi):
+                continue
+            if is_nguoichoi and not self.get_is_nguoichoi(diachi):
+                continue
+            if is_baothukynangtrieuhoi and not self.get_is_baothukynangtrieuhoi(diachi):
+                continue
+            if math.dist(toadobanthan, self.get_toado(diachi)) > KHOANGCACHTOANMANHINH:
+                continue
+            yield diachi
 
     def get_diachicosothongtinvatphamhanhtrang(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
@@ -788,60 +889,26 @@ class MoiTruong:
         return read_string(self.tientrinh, x + 0xBC) if x else ""
 
     def get_danhsachidnguoichoixungquanhs(self):
-        i = -1
         danhsachidnguoichoixungquanhs = []
-        while i < 512:
-            i += 1
-            diachicosothongtinnhanvatxemxet = self.get_diachicosothongtindoituongx(i)
-            if not diachicosothongtinnhanvatxemxet: break
-            if not self.get_is_nhanvattontai(diachicosothongtinnhanvatxemxet): continue
-            idnguoichoi = self.get_idnguoichoi(diachicosothongtinnhanvatxemxet)
-            if not idnguoichoi: continue
-            if self.get_khoangcach(diachicosothongtinnhanvatxemxet) > KHOANGCACHTOANMANHINH: continue
-            danhsachidnguoichoixungquanhs.append(idnguoichoi)
+        for diachi in self._get_diachidoituongxungquanhs():
+            idnguoichoi = self.get_idnguoichoi(diachi)
+            if idnguoichoi:
+                danhsachidnguoichoixungquanhs.append(idnguoichoi)
         return danhsachidnguoichoixungquanhs
 
     def get_idnguoichoixungquanh_map(self):
-        i = -1
-        idnguoichoixungquanh_map = {}
-        while i < 512:
-            i += 1
-            diachicosothongtinnhanvatxemxet = self.get_diachicosothongtindoituongx(i)
-            if not diachicosothongtinnhanvatxemxet: break
-            if not self.get_is_nhanvattontai(diachicosothongtinnhanvatxemxet): continue
-            if not self.get_is_nguoichoi(diachicosothongtinnhanvatxemxet): continue
-            if self.get_khoangcach(diachicosothongtinnhanvatxemxet) > KHOANGCACHTOANMANHINH: continue
-            idnguoichoixungquanh_map[diachicosothongtinnhanvatxemxet] = self.get_idnguoichoi(diachicosothongtinnhanvatxemxet)
-        return idnguoichoixungquanh_map
+        return {diachi: self.get_idnguoichoi(diachi) for diachi in self._get_diachidoituongxungquanhs(is_nguoichoi = True)}
 
     def get_tenchunhanbaothuxungquanh_map(self):
-        i = -1
         tenchunhanbaothu_map = {}
-        while i < 512:
-            i += 1
-            diachicosothongtinnhanvatxemxet = self.get_diachicosothongtindoituongx(i)
-            if not diachicosothongtinnhanvatxemxet: break
-            if not self.get_is_nhanvattontai(diachicosothongtinnhanvatxemxet): continue
-            if not self.get_is_baothukynangtrieuhoi(diachicosothongtinnhanvatxemxet): continue
-            if self.get_khoangcach(diachicosothongtinnhanvatxemxet) > KHOANGCACHTOANMANHINH: continue
-
-            tenchunhan = self.get_tenchunhan(diachicosothongtinnhanvatxemxet)
+        for diachi in self._get_diachidoituongxungquanhs(is_baothukynangtrieuhoi = True):
+            tenchunhan = self.get_tenchunhan(diachi)
             if tenchunhan:
-                tenchunhanbaothu_map[diachicosothongtinnhanvatxemxet] = tenchunhan
+                tenchunhanbaothu_map[diachi] = tenchunhan
         return tenchunhanbaothu_map
 
     def get_idbaothuxungquanh_map(self):
-        i = -1
-        idbaothuxungquanh_map = {}
-        while i < 512:
-            i += 1
-            diachicosothongtinnhanvatxemxet = self.get_diachicosothongtindoituongx(i)
-            if not diachicosothongtinnhanvatxemxet: break
-            if not self.get_is_nhanvattontai(diachicosothongtinnhanvatxemxet): continue
-            if not self.get_is_baothukynangtrieuhoi(diachicosothongtinnhanvatxemxet): continue
-            if self.get_khoangcach(diachicosothongtinnhanvatxemxet) > KHOANGCACHTOANMANHINH: continue
-            idbaothuxungquanh_map[diachicosothongtinnhanvatxemxet] = self.get_iddoituong(diachicosothongtinnhanvatxemxet)
-        return idbaothuxungquanh_map
+        return {diachi: self.get_iddoituong(diachi) for diachi in self._get_diachidoituongxungquanhs(is_baothukynangtrieuhoi = True)}
 
     def get_thoidiemtuthenhanvatdungimgannhat(self):
         return self._thoidiemtuthenhanvatdungimgannhat
@@ -861,7 +928,7 @@ class MoiTruong:
         now = time.time()
 
         idnguoichoixungquanh_map = self.get_idnguoichoixungquanh_map()
-        idnguoichoixungquanh_list = list(idnguoichoixungquanh_map.values())
+        idnguoichoixungquanh_list = set(idnguoichoixungquanh_map.values())
         for diachinguoichoixungquanh, idnguoichoi in idnguoichoixungquanh_map.items():
             if self.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), macdinh = False, diachicosothongtinnhanvat = diachinguoichoixungquanh, is_hieuungcoloi = 0):
                 self._thoidiemmuctieubichoanggannhat_map[idnguoichoi] = now
@@ -877,7 +944,7 @@ class MoiTruong:
         self.thoidiemmuctieuanthangannhat_map = {uid: ts for uid, ts in self.thoidiemmuctieuanthangannhat_map.items() if uid in idnguoichoixungquanh_list}
 
         tenchunhanbaothuxungquanh_map = self.get_tenchunhanbaothuxungquanh_map()
-        tenchunhanbaothuxungquanh_list = list(tenchunhanbaothuxungquanh_map.values())
+        tenchunhanbaothuxungquanh_list = set(tenchunhanbaothuxungquanh_map.values())
 
         for diachibaothuxungquanh, tenchunhan in tenchunhanbaothuxungquanh_map.items():
             if tenchunhan not in self.thoidiembaothuxuathiengannhat_map:
@@ -997,7 +1064,7 @@ class MoiTruong:
 
     def get_tendoituong(self, diachicosothongtinnhanvat = None):
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
-        tendoituong = read_string(self.tientrinh, diachicosothongtinnhanvat + 0x10AC)
+        tendoituong = self._get_tenthucte(diachicosothongtinnhanvat)
 
         if tendoituong:
             for nhancap in ("( Cấp", "( Cấp", "( cấp", "(cấp"):
@@ -1024,8 +1091,8 @@ class MoiTruong:
 
     def get_toado(self, diachicosothongtinnhanvat = None, is_toadosaptoi = False):
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
-        toadox = read_int(self.tientrinh, diachicosothongtinnhanvat)
-        toadoy = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4)
+        # x, y nằm liền nhau: 1 lần đọc thay vì 2
+        toadox, toadoy = struct.unpack("<ii", read_bytes(self.tientrinh, diachicosothongtinnhanvat, 8))
 
         if is_toadosaptoi and self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN:
             deltax = read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18) - toadox
@@ -1056,10 +1123,8 @@ class MoiTruong:
 
     def get_toadosaptoi(self, diachicosothongtinnhanvat = None):
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
-        return (
-            read_int(self.tientrinh, diachicosothongtinnhanvat + 0x18) if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN else read_int(self.tientrinh, diachicosothongtinnhanvat),
-            read_int(self.tientrinh, diachicosothongtinnhanvat + 0x1C) if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN else read_int(self.tientrinh, diachicosothongtinnhanvat + 0x4),
-        )
+        offset = 0x18 if self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_DICHUYEN else 0x0
+        return struct.unpack("<ii", read_bytes(self.tientrinh, diachicosothongtinnhanvat + offset, 8))
 
     def get_toadobandochichuot(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
@@ -1144,7 +1209,8 @@ class MoiTruong:
         x_thucte, y_thucte = self.get_toado(diachicosothongtinnhanvat)
         kc_thucte = self.get_khoangcachdiem(x_thucte, y_thucte)
 
-        x_dukien, y_dukien = self.get_toado(diachicosothongtinnhanvat)
+        # Trước đây đọc lại đúng tọa độ hiện tại nên kc_dukien luôn bằng kc_thucte => hàm luôn trả về False
+        x_dukien, y_dukien = self.get_toado(diachicosothongtinnhanvat, is_toadosaptoi = True)
         kc_dukien = self.get_khoangcachdiem(x_dukien, y_dukien)
 
         return kc_dukien > kc_thucte
@@ -1160,34 +1226,52 @@ class MoiTruong:
         if soluongtruocdo > 0 and soluong == 0:
             self._thoidiemsoluonghieuungbangkhonggannhat_map[diachicosothongtinnhanvat] = time.time()
         self._soluonghieuungnhanvattruocdo_map[diachicosothongtinnhanvat] = soluong
+        self._donbanghieuung()
         return soluong
+
+    def _donbanghieuung(self):
+        # Hai bảng theo địa chỉ đối tượng trước đây không bao giờ xoá: bỏ đối tượng không còn quanh mình,
+        # và mốc "vừa về 0" đã quá 2s (chỉ dùng trong 1s)
+        if len(self._soluonghieuungnhanvattruocdo_map) > 1024:
+            congiu = set(self._bangdiachidoituongs)
+            congiu.add(self.get_diachicosothongtinnhanvat1())
+            self._soluonghieuungnhanvattruocdo_map = {k: v for k, v in list(self._soluonghieuungnhanvattruocdo_map.items()) if k in congiu}
+        if len(self._thoidiemsoluonghieuungbangkhonggannhat_map) > 256:
+            thoidiemhientai = time.time()
+            self._thoidiemsoluonghieuungbangkhonggannhat_map = {k: v for k, v in list(self._thoidiemsoluonghieuungbangkhonggannhat_map.items()) if thoidiemhientai - v < 2.}
+
+    def _get_idhieuungtheovitri(self, idvitrihieuung):
+        idhieuung = self._idhieuungtheovitri_map.get(idvitrihieuung)
+        if idhieuung is None:
+            idhieuung = read_int(self.tientrinh, self.diachixq + 0x1C05E0 + idvitrihieuung * 4)
+            # Game chưa nạp xong bảng thì ô còn 0: chưa nhớ, lần sau đọc lại
+            if idhieuung:
+                self._idhieuungtheovitri_map[idvitrihieuung] = idhieuung
+        return idhieuung
+
+    def _docbanghieuung(self, diachicosothongtinnhanvat):
+        # Đọc cả bảng hiệu ứng trong 1 lần (trước đây 3-4 lần đọc bộ nhớ cho mỗi ô, lại đọc lại số lượng/tồn tại ở mỗi ô).
+        # Số lượng đổi giữa lúc đọc thì đọc lại (giống bản cũ bắt đầu đếm lại). Trả về (số lượng, [(id hiệu ứng, có lợi, thời gian)])
+        kichthuoc = SOLUONGHIEUUNGNHANVATTOIDA * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT
+        for _ in range(3):
+            soluong = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
+            dulieu = read_bytes(self.tientrinh, diachicosothongtinnhanvat + OFFSET_DIACHICOSOHIEUUNGNHANVAT, kichthuoc)
+            if self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat) == soluong:
+                break
+        hieuungs = []
+        for i in range(SOLUONGHIEUUNGNHANVATTOIDA):
+            idvitri, is_hieuungcoloi, thoigianhieuluctoida = struct.unpack_from("<iii", dulieu, i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT)
+            if idvitri < 0 or is_hieuungcoloi < 0 or (not idvitri and not is_hieuungcoloi and not thoigianhieuluctoida):
+                continue
+            hieuungs.append((self._get_idhieuungtheovitri(idvitri), is_hieuungcoloi, thoigianhieuluctoida))
+        return soluong, hieuungs
 
     def get_danhsachhieuungnhanvats(self, diachicosothongtinnhanvat = None):
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
-        hieuungs = []
-        if not self.get_is_nhanvattontai(diachicosothongtinnhanvat): return hieuungs
-        diachicosohieuungnhanvat = diachicosothongtinnhanvat + OFFSET_DIACHICOSOHIEUUNGNHANVAT
-        soluonghieuungnhanvat = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
-        soluonghieuungdemduoc = 0
-        i = -1
-        while True:
-            if not self.get_is_nhanvattontai(diachicosothongtinnhanvat): return hieuungs
-            soluonghieuungnhanvatmoinhat = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
-            if soluonghieuungnhanvat != soluonghieuungnhanvatmoinhat:
-                soluonghieuungnhanvat = soluonghieuungnhanvatmoinhat
-                soluonghieuungdemduoc = 0
-                i = -1
-            i += 1
-            if i >= SOLUONGHIEUUNGNHANVATTOIDA: return hieuungs
-            idvitrihieuungxemxet = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT)
-            is_hieuungcoloi = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT + 0x4)
-            thoigianhieuluctoida = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT + 0x8)
-            if idvitrihieuungxemxet < 0 or is_hieuungcoloi < 0 or (not idvitrihieuungxemxet and not is_hieuungcoloi and not thoigianhieuluctoida): continue
-            idhieuungxemxet = read_int(self.tientrinh, self.diachixq + 0x1C05E0 + idvitrihieuungxemxet * 4)
-            hieuungs.append((idhieuungxemxet, is_hieuungcoloi, thoigianhieuluctoida))
-            soluonghieuungdemduoc += 1
-            if soluonghieuungdemduoc >= soluonghieuungnhanvatmoinhat: break
-        return hieuungs
+        if not self.get_is_nhanvattontai(diachicosothongtinnhanvat):
+            return []
+        soluong, hieuungs = self._docbanghieuung(diachicosothongtinnhanvat)
+        return hieuungs[:max(soluong, 0)]
 
     def get_thoigianconlaihieuungtienthanvodich(self, macdinh):
         x = self.get_is_cohieuungs((HIEUUNGKYNANG_TIENTHANVODICH,), macdinh = (True, macdinh), is_hieuungcoloi = 1, is_travethoigianhieuluctoida = True)
@@ -1205,34 +1289,21 @@ class MoiTruong:
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
         if not self.get_is_nhanvattontai(diachicosothongtinnhanvat):
             return macdinh
-        diachicosohieuungnhanvat = diachicosothongtinnhanvat + OFFSET_DIACHICOSOHIEUUNGNHANVAT
-        soluonghieuungnhanvat = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
-        soluonghieuungdemduoc = 0
-        i = -1
-        if time.time() - self._thoidiemsoluonghieuungbangkhonggannhat_map.get(diachicosothongtinnhanvat, time.time() - 2.) < 1:
+
+        def _is_vuabangkhong():
+            # Số hiệu ứng vừa tụt về 0 (đang tải lại) thì chưa tin được, trả về mặc định
+            return time.time() - self._thoidiemsoluonghieuungbangkhonggannhat_map.get(diachicosothongtinnhanvat, time.time() - 2.) < 1
+
+        if _is_vuabangkhong():
             return macdinh
-        if soluonghieuungdemduoc >= soluonghieuungnhanvat:
+        soluonghieuungnhanvat, hieuungs = self._docbanghieuung(diachicosothongtinnhanvat)
+        if _is_vuabangkhong():
+            return macdinh
+        if soluonghieuungnhanvat <= 0:
             return False
-        while True:
-            if not self.get_is_nhanvattontai(diachicosothongtinnhanvat):
-                return macdinh
-            if time.time() - self._thoidiemsoluonghieuungbangkhonggannhat_map.get(diachicosothongtinnhanvat, time.time() - 2.) < 1:
-                return macdinh
-            soluonghieuungnhanvatmoinhat = self.get_soluonghieuungnhanvat(diachicosothongtinnhanvat)
-            if soluonghieuungnhanvat != soluonghieuungnhanvatmoinhat:
-                soluonghieuungnhanvat = soluonghieuungnhanvatmoinhat
-                soluonghieuungdemduoc = 0
-                i = -1
-            if time.time() - self._thoidiemsoluonghieuungbangkhonggannhat_map.get(diachicosothongtinnhanvat, time.time() - 2.) < 1:
-                return macdinh
-            if soluonghieuungdemduoc >= soluonghieuungnhanvat: return False
-            i += 1
-            if i >= SOLUONGHIEUUNGNHANVATTOIDA: return macdinh
-            idvitrihieuungxemxet = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT)
-            is_hieuungcoloixemxet = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT + 0x4)
-            thoigianhieuluctoida = read_int(self.tientrinh, diachicosohieuungnhanvat + i * OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT + 0x8)
-            if idvitrihieuungxemxet < 0 or is_hieuungcoloixemxet < 0 or (not idvitrihieuungxemxet and not is_hieuungcoloixemxet and not thoigianhieuluctoida): continue
-            idhieuungxemxet = read_int(self.tientrinh, self.diachixq + 0x1C05E0 + idvitrihieuungxemxet * 4)
+
+        soluonghieuungdemduoc = 0
+        for idhieuungxemxet, is_hieuungcoloixemxet, thoigianhieuluctoida in hieuungs:
             if idhieuungxemxet in idhieuungs:
                 if is_hieuungcoloi is not None:
                     if is_travethoigianhieuluctoida: return is_hieuungcoloixemxet == is_hieuungcoloi, thoigianhieuluctoida
@@ -1240,6 +1311,8 @@ class MoiTruong:
                 if is_travethoigianhieuluctoida: return True, thoigianhieuluctoida
                 return True
             soluonghieuungdemduoc += 1
+            if soluonghieuungdemduoc >= soluonghieuungnhanvat:
+                return False
         return macdinh
 
     def get_diachicosoidthanhviennhom(self):
@@ -1311,7 +1384,7 @@ class MoiTruong:
     def get_is_baothugiangho(self, diachicosodoituong):
         if not diachicosodoituong:
             return False
-        tendoituong = read_string(self.tientrinh, diachicosodoituong + 0x10AC)
+        tendoituong = self._get_tenthucte(diachicosodoituong)
         if not tendoituong:
             return False
         return "(" in tendoituong and "cấp" not in tendoituong.lower()
@@ -1319,7 +1392,7 @@ class MoiTruong:
     def get_is_baothukynangtrieuhoi(self, diachicosodoituong):
         if not diachicosodoituong:
             return False
-        tendoituong = read_string(self.tientrinh, diachicosodoituong + 0x10AC)
+        tendoituong = self._get_tenthucte(diachicosodoituong)
         if not tendoituong:
             return False
         return tendoituong.count("(") == 2
@@ -1916,10 +1989,16 @@ class MoiTruong:
             return False
         self._thoidiemphucsinhgannhat = time.time()
         self.action_thucthicaulenh("desc revive")
-        time.sleep(1.)
+        # Đóng cửa sổ tuỳ chọn sau 1s ở lượt sau (action_dongcuasosauphucsinh), không sleep chặn luồng
+        self._thoidiemdongcuasosauphucsinh = time.time() + 1.
+        return True
+
+    def action_dongcuasosauphucsinh(self):
+        if not self._thoidiemdongcuasosauphucsinh or time.time() < self._thoidiemdongcuasosauphucsinh:
+            return
+        self._thoidiemdongcuasosauphucsinh = 0.
         if self.get_is_danghiencuasotuychon():
             self.set_is_danghiencuasotuychon(False)
-        return True
 
     def action_doimaupk(self, idmaupk, delay = 1.):
         if time.time() - self._thoidiemmaupkgannhat < delay or self.get_idmaupk() == idmaupk:
@@ -1933,18 +2012,37 @@ class MoiTruong:
     def get_soluongvatphamhanhtrangtoida(self):
         return SOLUONGVATPHAMHANHTRANGTOIDA_MAP[self.get_idnguoichoi()]
 
+    def _docdanhsachtenvatphamhanhtrang(self, soluongo):
+        # Tên của soluongo ô đầu hành trang trong 1 lần đọc (mỗi ô 0x20 byte), thay vì mỗi ô đọc lại địa chỉ gốc + đọc tên riêng.
+        # Ô có tên dài hết 0x20 byte (không có ký tự kết thúc) thì đọc riêng như cũ cho chắc
+        x = self.get_diachicosothongtinvatphamhanhtrang()
+        if not x:
+            return []
+        dulieu = read_bytes(self.tientrinh, x + 0x1A8, soluongo * 0x20)
+        tens = []
+        for i in range(soluongo):
+            o = dulieu[i * 0x20:(i + 1) * 0x20]
+            vitriketthuc = o.find(b"\x00")
+            if vitriketthuc == -1:
+                tens.append(read_string(self.tientrinh, x + i * 0x20 + 0x1A8))
+                continue
+            ten = o[:vitriketthuc].decode("utf-8", errors = "ignore")
+            tens.append(re.sub(r'\x1b[a-zA-Z0-9]', '', ten).strip())
+        return tens
+
+    def _docdanhsachidvatphamhanhtrang(self, soluongo):
+        x = self.get_diachicosothongtinvatphamhanhtrang()
+        if not x:
+            return [False] * soluongo
+        return list(struct.unpack("<%di" % soluongo, read_bytes(self.tientrinh, x, soluongo * 4)))
+
     def action_timkiemvatphamhanhtrang(self, tenvatpham = None, is_ruongdautien = False, is_kiemtrahansudung = False):
         if not tenvatpham: return False
-        i = -1
         soluongvatphamhanhtrangtoida = self.get_soluongvatphamhanhtrangtoida()
         if is_ruongdautien:
             soluongvatphamhanhtrangtoida = 24 - 1
-        while True:
-            if i >= soluongvatphamhanhtrangtoida: break
-            i += 1
-            if tenvatpham and self.get_tenvatphamhanhtrang(i) != tenvatpham:
-                # if "Nhập môn" in self.get_tenvatphamhanhtrang(i):
-                #    print(self.get_tenvatphamhanhtrang(i))
+        for i, tenvatphamxemxet in enumerate(self._docdanhsachtenvatphamhanhtrang(soluongvatphamhanhtrangtoida + 1)):
+            if tenvatphamxemxet != tenvatpham:
                 continue
             if is_kiemtrahansudung:
                 motavatpham = self.get_motavatphamhanhtrang(i)
@@ -1956,38 +2054,28 @@ class MoiTruong:
     def action_timkiemvitrivatphamhanhtrang(self, tenvatpham = None):
         if not tenvatpham:
             return False
-        i = -1
-        soluongvatphamhanhtrangtoida = self.get_soluongvatphamhanhtrangtoida()
-        while True:
-            if i >= soluongvatphamhanhtrangtoida: break
-            i += 1
-            if tenvatpham and self.get_tenvatphamhanhtrang(i) != tenvatpham:
-                # if "Nhập môn" in self.get_tenvatphamhanhtrang(i):
-                #    print(self.get_tenvatphamhanhtrang(i))
-                continue
-            return i
-        return False
+        tens = self._docdanhsachtenvatphamhanhtrang(self.get_soluongvatphamhanhtrangtoida() + 1)
+        return tens.index(tenvatpham) if tenvatpham in tens else False
 
     def get_danhsachvatphamhanhtrang_map(self):
-        i = -1
         vatphamhanhtrang_map = {}
-        soluongvatphamhanhtrangtoida = self.get_soluongvatphamhanhtrangtoida()
-        while True:
-            if i >= soluongvatphamhanhtrangtoida: break
-            i += 1
-            tenvatphamxemxet = self.get_tenvatphamhanhtrang(i)
-            if tenvatphamxemxet not in vatphamhanhtrang_map: vatphamhanhtrang_map[tenvatphamxemxet] = []
-            vatphamhanhtrang_map[tenvatphamxemxet].append((i, self.get_iddoituongvatphamhanhtrang(i)))
+        soluongo = self.get_soluongvatphamhanhtrangtoida() + 1
+        tens = self._docdanhsachtenvatphamhanhtrang(soluongo)
+        idvatphams = self._docdanhsachidvatphamhanhtrang(soluongo)
+        for i, tenvatphamxemxet in enumerate(tens):
+            vatphamhanhtrang_map.setdefault(tenvatphamxemxet, []).append((i, idvatphams[i]))
         return vatphamhanhtrang_map
 
     def action_timkiemnhanvat(self, tennhanvat = None, idnguoichoi = None, iddoituong = None, tennhanvatchua = None, tenchunhan = None):
         if not tennhanvat and not idnguoichoi and not iddoituong and not tennhanvatchua and not tenchunhan: return False
+        toadobanthan = self.get_toado()
         i = 0
         while True:
             diachi = self.get_diachicosothongtindoituongx(i)
             if not diachi: break
             i += 1
-            if not self.get_is_nhanvattontai(diachi) or self.get_khoangcach(diachi) > KHOANGCACHTOANMANHINH: continue
+            if not self.get_is_nhanvattontai(diachi): continue
+            # Lọc theo tên/id trước (rẻ, loại gần hết đối tượng), khoảng cách để sau cùng
             if tennhanvat and self.get_tendoituong(diachi) != tennhanvat: continue
             if idnguoichoi and self.get_idnguoichoi(diachi) != idnguoichoi: continue
             if iddoituong and self.get_iddoituong(diachi) != iddoituong: continue
@@ -1997,6 +2085,7 @@ class MoiTruong:
             if tennhanvatchua:
                 ten = self.get_tendoituong(diachi)
                 if not ten or tennhanvatchua not in ten: continue
+            if math.dist(toadobanthan, self.get_toado(diachi)) > KHOANGCACHTOANMANHINH: continue
             return diachi
         return False
 
@@ -2103,17 +2192,7 @@ class MoiTruong:
         if self._is_vohieuhoadichuyen != is_vohieuhoadichuyen: self._is_vohieuhoadichuyen = is_vohieuhoadichuyen
 
     def get_is_dayhanhtrang(self):
-        soluongvatphamhanhtrangtoida = self.get_soluongvatphamhanhtrangtoida()
-        i = -1
-        while True:
-            if i >= soluongvatphamhanhtrangtoida:
-                break
-            i += 1
-            if i % 10 == 0:
-                time.sleep(0.001)
-            if not self.get_iddoituongvatphamhanhtrang(i):
-                return False
-        return True
+        return all(self._docdanhsachidvatphamhanhtrang(self.get_soluongvatphamhanhtrangtoida() + 1))
 
     def get_tenmonphai(self):
         return MONPHAI_MAP.get(self.get_idkynang(0, 0))
@@ -2224,6 +2303,9 @@ class MoiTruong:
         idkynang = self.get_idkynang(idvitri_x, idvitri_y)
         if not idkynang:
             return False
+        if IS_LOGCAULENH and (idvitri, idkynang) not in self._vitrikynangdalog:
+            self._vitrikynangdalog.add((idvitri, idkynang))
+            print(f"[{time.strftime('%H:%M:%S')} {self.idcuaso}] [KỸ NĂNG] ô {idvitri} = kỹ năng {idkynang}")
         is_ok = self.action_sudungkynang(idkynang)
         if is_ok:
             self._thoidiemsudungkynanggannhat = time.time()
@@ -2270,6 +2352,7 @@ class MoiTruong:
             return False
         self._thoidiemnhatvatphamgannhat = time.time()
         self._thoidiemnhatvatphamgannhat_map[diachi] = time.time()
+        self._thoidiemnhatvatphamgannhat_map = donbangthoidiem(self._thoidiemnhatvatphamgannhat_map, 120.)
         self.action_nhatvatphamtoado(x, y, delay = delay)
         return True
 
