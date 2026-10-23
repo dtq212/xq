@@ -59,11 +59,12 @@ class GiaoDienHienThi:
         # Không cao quá màn hình (chừa chỗ cho thanh taskbar)
         chieucao = min(self._px(900), self.root.winfo_screenheight() - self._px(80))
         # Mở ở giữa màn hình (chừa thanh taskbar ở dưới)
-        chieurong = self._px(450)
+        # Đủ cho hàng 4 tab và nội dung tab kèm thanh cuộn (màn hình thấp) không bị cắt chữ
+        chieurong = self._px(500)
         x = max(0, (self.root.winfo_screenwidth() - chieurong) // 2)
         y = max(0, (self.root.winfo_screenheight() - self._px(40) - chieucao) // 2)
         self.root.geometry(f"{chieurong}x{chieucao}+{x}+{y}")
-        self.root.minsize(self._px(420), self._px(600))
+        self.root.minsize(self._px(480), self._px(600))
         self.root.attributes('-topmost', True)
 
         self._thietlapstyle()

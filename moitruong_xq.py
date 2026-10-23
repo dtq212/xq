@@ -31,6 +31,8 @@ class LenhThucThi:
     thoigiantao: float
     caulenh: str = field(compare = False)
     trihoansaulenh: float = field(compare = False)
+    # Lệnh dùng kỹ năng: ô kỹ năng, để lúc gửi vào game kiểm tra lại (đã vào hồi chiêu thì bỏ lệnh)
+    vitrikynang: tuple = field(default = None, compare = False)
 
 
 class MoiTruong:
@@ -208,11 +210,16 @@ class MoiTruong:
             self.khoitaohamthucthicaulenh()
 
         if self.diachihamthucthicaulenh:
+            if self._is_lenhkynangdavaohoichieu(lenh):
+                return
             if self.dieuphoi:
                 if lenh.douutien == DOUUTIEN_KHANCAP and IS_LENHKHANCAPKHONGCHOLUOT:
                     self.dieuphoi.ghinhanguingay()
                 else:
                     self.dieuphoi.xinluot()
+                # Chờ lượt (xoay vòng lệnh) có thể lâu: kiểm tra lại lần nữa
+                if self._is_lenhkynangdavaohoichieu(lenh):
+                    return
             self._loglenh(lenh.caulenh, f"hàng đợi, ưu tiên {lenh.douutien}")
             diachidulieu = self.diachihamthucthicaulenh + 0x40
             chuoi_bytes = lenh.caulenh.encode("utf-8")
@@ -223,6 +230,13 @@ class MoiTruong:
             self.tientrinh.start_thread(self.diachihamthucthicaulenh)
             if lenh.trihoansaulenh > 0.:
                 time.sleep(lenh.trihoansaulenh)
+
+    def _is_lenhkynangdavaohoichieu(self, lenh):
+        # Lệnh dùng kỹ năng nằm chờ mà kỹ năng đó đã vào hồi chiêu (lệnh trước đã ra chiêu) => gửi cũng vô ích, bỏ
+        if not lenh.vitrikynang or self.get_is_kynangsansang(*lenh.vitrikynang):
+            return False
+        self._loglenh(lenh.caulenh, "BỎ - kỹ năng đã vào hồi chiêu")
+        return True
 
     def khoitaohamthucthicaulenh(self):
         if self.diachihamthucthicaulenh:
@@ -260,7 +274,7 @@ class MoiTruong:
         encoding, _ = ks.asm(asm_code)
         write_bytes(self.tientrinh, self.diachihamthucthicaulenh, bytes(encoding), len(encoding))
 
-    def action_thucthicaulenh(self, caulenh, douutien = DOUUTIEN_TRUNGBINH):
+    def action_thucthicaulenh(self, caulenh, douutien = DOUUTIEN_TRUNGBINH, vitrikynang = None):
         if caulenh in self.caulenhdangchos:
             return False
 
@@ -271,6 +285,7 @@ class MoiTruong:
             thoigiantao = time.time(),
             caulenh = caulenh,
             trihoansaulenh = 0.00,
+            vitrikynang = vitrikynang,
         )
         self.hangdoicaulenh.put(lenhthucthi)
         self._thoidiemthucthicaulenhgannhat = time.time()
@@ -394,16 +409,37 @@ class MoiTruong:
         # Log tối đa 1 lần/giây để biết kỹ năng đang bị khoá chặn (và còn khoá bao lâu)
         if is_dangkhoa and IS_LOGCAULENH and time.time() - self._thoidiemlogkhoakynanggannhat > 1.:
             self._thoidiemlogkhoakynanggannhat = time.time()
-            print(f"[{time.strftime('%H:%M:%S')} {self.idcuaso}] [KHOÁ KỸ NĂNG] chặn dùng kỹ năng, còn khoá {round(self._thoidiemhetkhoakynang - time.time(), 2)}s")
+            self._inlog(f"[KHOÁ KỸ NĂNG] chặn dùng kỹ năng, còn khoá {round(self._thoidiemhetkhoakynang - time.time(), 2)}s")
         return is_dangkhoa
+
+    def _inlog(self, noidung):
+        # In ra console và ghi file _internal/log/<ID người chơi>.log; tiền tố là ID người chơi (cố định), chưa đọc được thì dùng mã cửa sổ
+        try:
+            idnguoichoi = self.get_idnguoichoi()
+        except Exception:
+            idnguoichoi = 0
+        dong = f"[{time.strftime('%H:%M:%S')}.{int(time.time() * 1000) % 1000:03d} {idnguoichoi or f'cửa sổ {self.idcuaso}'}] {noidung}"
+        print(dong)
+        ghilognhanvat(idnguoichoi or f"cuaso_{self.idcuaso}", dong)
 
     def _loglenh(self, caulenh, nguon):
         if IS_LOGCAULENH:
-            print(f"[{time.strftime('%H:%M:%S')} {self.idcuaso}] [LỆNH {nguon}] {caulenh}")
+            self._inlog(f"[LỆNH {nguon}] {caulenh}")
+
+    def get_thoidiemlenhdanhgannhat(self):
+        # Lần gửi lệnh đánh gần nhất (kỹ năng hoặc bật tự động đánh thường "kill")
+        return max(self._thoidiemsudungkynanggannhat, self._thoidiemsudungtancongvatlygannhat)
+
+    def get_is_kynangdangbikhoa(self, idkynang):
+        # Đang khoá mọi kỹ năng hoặc riêng kỹ năng này đang bị khoá chống spam: gửi lúc này chắc chắn không đi (không log)
+        thoidiemhientai = time.time()
+        return thoidiemhientai < self._thoidiemhetkhoakynang or thoidiemhientai < self._thoidiemhetkhoaspamkynang_map.get(idkynang, 0.)
 
     def _is_kynangbispam(self, idkynang):
         # Kỹ năng không mục tiêu (buff, tế, chuyển hoá...) không bao giờ cần gửi dồn dập: game báo "sẵn sàng" mà kỹ năng không ra
         # thì trước đây cứ gửi lại mỗi lượt, ngập hàng đợi lệnh khiến các kỹ năng khác không chen vào được
+        if idkynang in IDKYNANGKHONGCHANSPAMs:
+            return False
         thoidiemhientai = time.time()
         if thoidiemhientai < self._thoidiemhetkhoaspamkynang_map.get(idkynang, 0.):
             return True
@@ -411,13 +447,13 @@ class MoiTruong:
         if len(thoidiemguis) >= SOLANGUITOIDASPAMKYNANG:
             self._thoidiemhetkhoaspamkynang_map[idkynang] = thoidiemhientai + THOIGIANKHOASPAMKYNANG
             self._thoidiemguikynangkhongmuctieu_map[idkynang] = []
-            print(f"[{time.strftime('%H:%M:%S')} {self.idcuaso}] [CHẶN SPAM] kỹ năng {idkynang} gửi {len(thoidiemguis)} lần trong {SOGIAYDEMSPAMKYNANG}s mà vẫn sẵn sàng => tạm khoá {THOIGIANKHOASPAMKYNANG}s")
+            self._inlog(f"[CHẶN SPAM] kỹ năng {idkynang} gửi {len(thoidiemguis)} lần trong {SOGIAYDEMSPAMKYNANG}s mà vẫn sẵn sàng => tạm khoá {THOIGIANKHOASPAMKYNANG}s")
             return True
         thoidiemguis.append(thoidiemhientai)
         self._thoidiemguikynangkhongmuctieu_map[idkynang] = thoidiemguis
         return False
 
-    def action_sudungkynang(self, idkynang, delay = 0.05):
+    def action_sudungkynang(self, idkynang, delay = 0.05, vitrikynang = None):
         if self.get_is_dangkhoakynang():
             return False
         if time.time() - self._thoidiemsudungkynanggannhat < delay:
@@ -426,7 +462,7 @@ class MoiTruong:
             return False
         self._thoidiemsudungkynanggannhat = time.time()
         caulenh = "pf {}".format(idkynang)
-        return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO)
+        return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO, vitrikynang = vitrikynang)
 
     def action_sudungtancongvatly(self, diachicosothongtinnhanvatmuctieu, delay = 0.):
         if time.time() - self._thoidiemsudungtancongvatlygannhat < delay:
@@ -445,23 +481,23 @@ class MoiTruong:
 
         return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO)
 
-    def action_sudungkynangmuctieunguoichoi(self, idkynang, idnguoichoi, delay = 0.05):
+    def action_sudungkynangmuctieunguoichoi(self, idkynang, idnguoichoi, delay = 0.05, vitrikynang = None):
         if self.get_is_dangkhoakynang():
             return False
         if time.time() - self._thoidiemsudungkynangmuctieugannhat < delay:
             return False
         self._thoidiemsudungkynangmuctieugannhat = time.time()
         caulenh = "pf {} {}".format(idkynang, idnguoichoi)
-        return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO)
+        return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO, vitrikynang = vitrikynang)
 
-    def action_sudungkynangmuctieukhacnguoichoi(self, idkynang, iddoituong, delay = 0.05):
+    def action_sudungkynangmuctieukhacnguoichoi(self, idkynang, iddoituong, delay = 0.05, vitrikynang = None):
         if self.get_is_dangkhoakynang():
             return False
         if time.time() - self._thoidiemsudungkynangmuctieugannhat < delay:
             return False
         self._thoidiemsudungkynangmuctieugannhat = time.time()
         caulenh = "pf {} {}#".format(idkynang, hex(iddoituong)).replace("0x", "")
-        return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO)
+        return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO, vitrikynang = vitrikynang)
 
     def action_sudungkynangtoado(self, idkynang, toadox, toadoy, delay = 0.05):
         if self.get_is_dangkhoakynang():
@@ -1535,13 +1571,17 @@ class MoiTruong:
         write_int(self.tientrinh, self.diachixq + 0x1BD550, 0)
         write_int(self.tientrinh, self.diachixq + 0x1BD554, 0)
 
+    # Các lệnh "mov dword ptr [esi+0x11B8], 0x0B" của game đặt tư thế delay sau tấn công; vá giá trị 0x0B thành đứng im.
+    # Đã thử vá thêm 0x19EBE, 0x1A0CE (ghi thẳng 0x0B vào tư thế +0x1178) nhưng Đào Hoa Nguyên vẫn delay ~0.25s sau đòn như cũ => đã bỏ
+    DIACHIGHITUTHEDELAYSAUTANCONGs = (0x1AFE3, 0x1B377)
+
     def action_vohieuhoatuthedelaysautancong(self):
-        if read_int(self.tientrinh, self.diachixq + 0x1AFE3 + 0x6) != TUTHENHANVAT_DUNGIM: write_int(self.tientrinh, self.diachixq + 0x1AFE3 + 0x6, TUTHENHANVAT_DUNGIM)
-        if read_int(self.tientrinh, self.diachixq + 0x1B377 + 0x6) != TUTHENHANVAT_DUNGIM: write_int(self.tientrinh, self.diachixq + 0x1B377 + 0x6, TUTHENHANVAT_DUNGIM)
+        for diachi in self.DIACHIGHITUTHEDELAYSAUTANCONGs:
+            if read_int(self.tientrinh, self.diachixq + diachi + 0x6) != TUTHENHANVAT_DUNGIM: write_int(self.tientrinh, self.diachixq + diachi + 0x6, TUTHENHANVAT_DUNGIM)
 
     def action_tatvohieuhoatuthedelaysautancong(self):
-        if read_int(self.tientrinh, self.diachixq + 0x1AFE3 + 0x6) != TUTHENHANVAT_DELAYSAUTANCONG: write_int(self.tientrinh, self.diachixq + 0x1AFE3 + 0x6, TUTHENHANVAT_DELAYSAUTANCONG)
-        if read_int(self.tientrinh, self.diachixq + 0x1B377 + 0x6) != TUTHENHANVAT_DELAYSAUTANCONG: write_int(self.tientrinh, self.diachixq + 0x1B377 + 0x6, TUTHENHANVAT_DELAYSAUTANCONG)
+        for diachi in self.DIACHIGHITUTHEDELAYSAUTANCONGs:
+            if read_int(self.tientrinh, self.diachixq + diachi + 0x6) != TUTHENHANVAT_DELAYSAUTANCONG: write_int(self.tientrinh, self.diachixq + diachi + 0x6, TUTHENHANVAT_DELAYSAUTANCONG)
 
     def action_vohieuhoathietlapmuctieu(self):
         if read_bytes(self.tientrinh, self.diachixq + 0xA20F0, 1) != bytes.fromhex("90"):
@@ -2289,10 +2329,10 @@ class MoiTruong:
         is_ok = False
         if self.get_is_nguoichoi(diachi):
             idnguoichoi = self.get_idnguoichoi(diachi)
-            is_ok = self.action_sudungkynangmuctieunguoichoi(idkynang, idnguoichoi)
+            is_ok = self.action_sudungkynangmuctieunguoichoi(idkynang, idnguoichoi, vitrikynang = idvitri)
         else:
             iddoituong = self.get_iddoituong(diachi)
-            if iddoituong: is_ok = self.action_sudungkynangmuctieukhacnguoichoi(idkynang, iddoituong)
+            if iddoituong: is_ok = self.action_sudungkynangmuctieukhacnguoichoi(idkynang, iddoituong, vitrikynang = idvitri)
         if is_ok:
             self._thoidiemsudungkynanggannhat = time.time()
             self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
@@ -2309,8 +2349,8 @@ class MoiTruong:
             return False
         if IS_LOGCAULENH and (idvitri, idkynang) not in self._vitrikynangdalog:
             self._vitrikynangdalog.add((idvitri, idkynang))
-            print(f"[{time.strftime('%H:%M:%S')} {self.idcuaso}] [KỸ NĂNG] ô {idvitri} = kỹ năng {idkynang}")
-        is_ok = self.action_sudungkynang(idkynang)
+            self._inlog(f"[KỸ NĂNG] ô {idvitri} = kỹ năng {idkynang}")
+        is_ok = self.action_sudungkynang(idkynang, vitrikynang = idvitri)
         if is_ok:
             self._thoidiemsudungkynanggannhat = time.time()
             self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
@@ -2325,7 +2365,7 @@ class MoiTruong:
         idkynang = self.get_idkynang(idvitri_x, idvitri_y)
         if not idkynang:
             return False
-        is_ok = self.action_sudungkynangmuctieunguoichoi(idkynang, self.get_idnguoichoi())
+        is_ok = self.action_sudungkynangmuctieunguoichoi(idkynang, self.get_idnguoichoi(), vitrikynang = idvitri)
         if is_ok:
             self._thoidiemsudungkynanggannhat = time.time()
             self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()

@@ -298,6 +298,46 @@ def taithietlap(tennhanvat):
         print(err)
 
 
+KICHTHUOCLOGTOIDA = 5 * 1024 * 1024
+
+
+def ghilognhanvat(idnguoichoi, dong):
+    # Log lệnh của từng nhân vật ra _internal/log/<ID người chơi>.log để đọc lại sau (console PyCharm khó tìm, mất khi tắt).
+    # Quá KICHTHUOCLOGTOIDA thì đổi sang .log.cu (giữ 1 bản cũ) để file không phình mãi
+    try:
+        thumuc = os.path.join(os.path.dirname(_thumucthietlap()), "log")
+        os.makedirs(thumuc, exist_ok = True)
+        duongdan = os.path.join(thumuc, f"{idnguoichoi}.log")
+        if os.path.exists(duongdan) and os.path.getsize(duongdan) > KICHTHUOCLOGTOIDA:
+            os.replace(duongdan, duongdan + ".cu")
+        with open(duongdan, "a", encoding = "utf-8") as file:
+            file.write(dong + "\n")
+    except Exception:
+        pass
+
+
+_thunghiem_cache = {"dulieu": {}, "mtime": None, "kiemtra": 0.}
+
+
+def laythunghiem(khoa, macdinh = None):
+    # Cấu hình thử nghiệm đổi được khi tool đang chạy: _internal/thunghiem.json, đọc lại tối đa mỗi giây khi file thay đổi
+    if time.time() - _thunghiem_cache["kiemtra"] > 1.:
+        _thunghiem_cache["kiemtra"] = time.time()
+        duongdan = os.path.join(os.path.dirname(_thumucthietlap()), "thunghiem.json")
+        try:
+            mtime = os.path.getmtime(duongdan)
+        except OSError:
+            mtime = None
+        if mtime != _thunghiem_cache["mtime"]:
+            _thunghiem_cache["mtime"] = mtime
+            try:
+                with open(duongdan, encoding = "utf-8-sig") as file:
+                    _thunghiem_cache["dulieu"] = json.load(file) if mtime else {}
+            except Exception:
+                _thunghiem_cache["dulieu"] = {}
+    return _thunghiem_cache["dulieu"].get(khoa, macdinh)
+
+
 def duongdantaikhoan():
     # Tài khoản tự đăng nhập của riêng máy này (có mật khẩu, không đưa lên git)
     return os.path.join(os.path.dirname(_thumucthietlap()), "taikhoan.json")

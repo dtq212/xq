@@ -8,6 +8,7 @@ import unicodedata
 
 import pymem.exception
 
+from hangso_xq import IS_BOKHUNGSAUTANCONG, CHUKYBOKHUNGSAUTANCONG, TUTHENHANVAT_DELAYSAUTANCONG
 from hangso_xq import BANDO_CHIENTRUONG, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, VATPHAMKHONGBANs, BANDO_YENTRUONGTHANH3, BANDO_YENTRUONGTHANH2, BANDO_YENTRUONGTHANH1, TANGBAODO, LAMCAU, HACCAU, HIEUUNGKYNANG_TRONGTHUONG
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
@@ -344,6 +345,27 @@ class LoopPhu:
                     iddoituongtangbaodo = self.moitruong.action_timkiemvatphamhanhtrang(TANGBAODO, is_ruongdautien = True)
                     if iddoituongtangbaodo:
                         self.moitruong.action_thucthicaulenh("move {}# to {}".format(hex(iddoituongtangbaodo), random.randint(2, 4)).replace("0x", ""))
+
+
+class LoopBoKhungSauTanCong:
+    # Luồng riêng, chu kỳ ngắn (CHUKYBOKHUNGSAUTANCONG): tư thế khựng sau đòn chỉ còn ~1 khung hình thay vì 0.2-0.3s
+    # (các luồng khác chạy 0.1-0.5s/lượt nên không bắt kịp)
+    def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
+        self.moitruong = moitruong
+        self.tactu = tactu
+        self.stop = stop
+
+    def loop(self):
+        while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():
+            try:
+                if IS_BOKHUNGSAUTANCONG and self.moitruong.get_is_nhanvattontai() and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DELAYSAUTANCONG:
+                    self.moitruong.set_idtuthenhanvat(TUTHENHANVAT_DUNGIM)
+            except (pymem.exception.PymemError, pymem.exception.WinAPIError):
+                time.sleep(1)
+            except Exception as e:
+                print(f"[Loop BỎ KHỰNG] Lỗi không xác định: {e}")
+                time.sleep(1)
+            time.sleep(CHUKYBOKHUNGSAUTANCONG)
 
 
 class LoopXuLyLenh:

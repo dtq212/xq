@@ -647,7 +647,7 @@ BAOTHUVATPHAMs = (SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN, THANTHU
 VATPHAMKHONGNHATs = tuple()
 # Vật phẩm ưu tiên nhặt trên mọi hành động khác (tấn công, theo nhóm, gom quái, ...)
 VATPHAMUUTIENNHATs = (LEBAOKHAIQUOC,)
-VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUSAMDON, CAPCUUDON, HOATTAMDON, TIEUDAOTAN, KIMTANGTAN, QUYNGUYENDON, KHIMACHDON, TUTAMDON,  HOANGKIMTHANHY, "Thanh Đồng Bảo Hộp", TUKIMBAOHOP, "Mồi Câu", "Đá Tương Uyên", TIENTE, "Vô Song Điểm Phiếu", "Cờ Đỏ", "Sao Vàng", LEBAOKHAIQUOC, "Âu Dã Bảo Thạch", "Ngọc Kiếm")
+VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUSAMDON, CAPCUUDON, HOATTAMDON, TIEUDAOTAN, KIMTANGTAN, QUYNGUYENDON, KHIMACHDON, TUTAMDON,  HOANGKIMTHANHY, "Thanh Đồng Bảo Hộp", TUKIMBAOHOP, "Mồi Câu", "Đá Tương Uyên", TIENTE, "Vô Song Điểm Phiếu", "Cờ Đỏ", "Sao Vàng", LEBAOKHAIQUOC, "Âu Dã Bảo Thạch", "Ngọc Kiếm", "Nguyệt Hoàn", )
 
 DUAHAU = "Dưa hấu"
 LAOTUU = "Lão Tửu"
@@ -697,7 +697,7 @@ SOLUONGXEPCHONGTOIDA_MAP = {
     "Hoạt Lạc Hoàn": 30
 }
 
-DANHHIEU_MAP = defaultdict(lambda: "P008")
+DANHHIEU_MAP = defaultdict(lambda: False)
 
 BANDO_TIVO = 885
 BANDO_BANGPHAI = 886
@@ -940,9 +940,31 @@ KHOANGCACHBAOTHUDAVE = 9.
 THOIGIANGOIBAOTHUVEBANDAU = 0.5
 THOIGIANGOIBAOTHUVETOIDA = 4.
 
+# Gửi một lệnh đánh (kỹ năng / bật tự động đánh "kill") xong thì ngần này giây sau mới gửi lệnh đánh tiếp, chung mọi kỹ năng:
+# cờ sẵn sàng/hồi chiêu của game cập nhật chậm hơn lúc ra chiêu. Trước đây mỗi lượt (~0.1s) gửi lại lệnh vô ích (~70% lệnh của
+# Đào Hoa Nguyên); giãn theo từng ô thì lại nhảy sang chiêu khác mỗi lượt, cắt ngang chiêu đang chuẩn bị ra
+THOIGIANGUILAIKYNANG = 0.3
+# Chế độ chờ "tuthe": đang ra đòn / dùng phép thì không gửi lệnh đánh (game đang bận), còn lại (đứng im, di chuyển, khựng sau đòn) gửi ngay,
+# riêng vừa gửi xong thì chờ tối đa THOIGIANCHOPHANUNGLENH cho game kịp chuyển tư thế (nếu không sẽ gửi tiếp chiêu khác, cắt ngang chiêu vừa gửi).
+# "tuthe_chandelay": như "tuthe" nhưng chặn cả lúc khựng sau đòn. "thoigian": chờ cố định THOIGIANGUILAIKYNANG.
+# Chọn trong _internal/thunghiem.json {"chedochodanh": ...} (đổi được khi đang chạy)
+THOIGIANCHOPHANUNGLENH = 0.15
+# Khựng sau đòn (tư thế 11) chỉ là hiệu ứng che mắt ở client (máy chủ không tính): luồng nhanh thấy tư thế 11 là ghi về đứng im ngay
+IS_BOKHUNGSAUTANCONG = True
+CHUKYBOKHUNGSAUTANCONG = 0.02
+CHEDOCHODANHMACDINH = "tuthe"
+
 SOLANGUITOIDASPAMKYNANG = 3
 SOGIAYDEMSPAMKYNANG = 1.5
 THOIGIANKHOASPAMKYNANG = 3.
+# Trấn Cổ Thần Uy (Đào Hoa Nguyên) đứng im thì game hay báo sẵn sàng mà không ra chiêu, đang di chuyển thì ra ngay
+# => chỉ dùng khi đang di chuyển; đứng im mà cần dùng thì nhích trước
+# (đứng trùng ô quái: ra 1 ô bên cạnh, cạnh quái: xuyên qua sang ô đối diện), mỗi lần nhích cách nhau THOIGIANGIUAHAILANNHICH giây
+THOIGIANGIUAHAILANNHICH = 1.
+VITRIKYNANGCANNHICHDAOHOANGUYENs = (VITRIKYNANG_TRANCOTHANUY,)
+# Kỹ năng không áp chống spam (gửi dồn bao nhiêu cũng được): Đại Hải Vô Lượng bấm tay liên tục vẫn ra chiêu bình thường,
+# chặn spam chỉ làm nó nghỉ 3s vô ích
+IDKYNANGKHONGCHANSPAMs = (2118,)
 
 # Nhân vật trong tổ đội tự động (cùng hay khác nhóm, trừ khi đang theo sau trưởng nhóm) có ID nhỏ hơn được giữ vùng: nhân vật ID lớn hơn tránh mọi quái
 # và điểm lộ trình trong bán kính này quanh nó

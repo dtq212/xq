@@ -10,7 +10,8 @@ from loop_xq import (
     LoopChinh,
     LoopPhu,
     LoopDieuPhoiDiChuyen,
-    LoopXuLyLenh
+    LoopXuLyLenh,
+    LoopBoKhungSauTanCong
 )
 from dieuphoi_xq import DieuPhoiLuot, KENH_LENH, KENH_DICHUYEN
 from moitruong_xq import MoiTruong
@@ -42,6 +43,9 @@ def khoidong_loopphu(moitruong, tactu, stop):
 def khoidong_loopxulylenh(moitruong, tactu, stop):
     LoopXuLyLenh(moitruong, tactu, stop).loop()
 
+def khoidong_loopbokhung(moitruong, tactu, stop):
+    LoopBoKhungSauTanCong(moitruong, tactu, stop).loop()
+
 class CuaSo:
     def __init__(self, idcuaso, shared_data, command_dict, dieuphoi_khoa = None, dieuphoi_trangthai = None, dieuphoi_dangchos = None):
         self.idcuaso = idcuaso
@@ -66,6 +70,7 @@ class CuaSo:
             threading.Thread(target = khoidong_looptonghop, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopphu, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopxulylenh, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_loopbokhung, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
         )
 
         for luong in self.luongs:
