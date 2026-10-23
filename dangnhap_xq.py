@@ -71,15 +71,19 @@ CAUHINHMAU = {
 
 
 def taicauhinhdangnhap():
+    # Đọc lỗi (sai cú pháp JSON...) thì trả về cấu hình rỗng có khoá "loi" để báo lên giao diện, và không được lưu đè lên file
     duongdan = duongdantaikhoan()
     if not os.path.exists(duongdan):
         luucauhinhdangnhap(CAUHINHMAU)
     try:
-        with open(duongdan, encoding = "utf-8") as file:
+        # utf-8-sig: Notepad (nhất là Windows 7) lưu "UTF-8" kèm BOM ở đầu file
+        with open(duongdan, encoding = "utf-8-sig") as file:
             cauhinh = json.load(file)
+        if not isinstance(cauhinh, dict):
+            raise ValueError("nội dung phải là một đối tượng JSON { ... }")
     except Exception as err:
         print(f"[ĐĂNG NHẬP] Lỗi đọc {duongdan}: {err}")
-        return dict(CAUHINHMAU, is_tudongdangnhap = False, taikhoans = [])
+        return dict(CAUHINHMAU, is_tudongdangnhap = False, taikhoans = [], loi = f"File tài khoản bị lỗi: {err}")
     cauhinh.setdefault("is_tudongdangnhap", False)
     cauhinh.setdefault("duongdangame", CAUHINHMAU["duongdangame"])
     cauhinh.setdefault("taikhoans", [])
@@ -88,6 +92,10 @@ def taicauhinhdangnhap():
 
 def luucauhinhdangnhap(cauhinh):
     duongdan = duongdantaikhoan()
+    if cauhinh.get("loi"):
+        # Cấu hình rỗng do đọc lỗi: lưu vào sẽ xoá mất tài khoản người dùng vừa nhập
+        print(f"[ĐĂNG NHẬP] Không lưu vì file đang lỗi, sửa lại {duongdan} trước")
+        return False
     try:
         os.makedirs(os.path.dirname(duongdan), exist_ok = True)
         filetam = duongdan + ".tmp"
@@ -608,8 +616,16 @@ class TuDongDangNhap:
             time.sleep(5)
 
     def _mot_luot(self):
+        # Đọc file cả khi đang tắt để giao diện thấy danh sách tài khoản / lỗi file ngay sau khi sửa
+        cauhinh = taicauhinhdangnhap()
+        if cauhinh.get("loi"):
+            self.trangthai = cauhinh["loi"]
+            self.danhsach = []
+            return
         if not self.is_bat:
             self.trangthai = "Đang tắt"
+            self.danhsach = [(taikhoan.get("tennhanvat") or str(taikhoan.get("user")), taikhoan.get("idnguoichoi"), "chưa kiểm tra")
+                             for taikhoan in cauhinh["taikhoans"]]
             return
 
         # Nhân vật nào đang tạm ngưng (ẩn thân / người lạ) thì không đăng nhập ai cả cho tới khi hết hạn
@@ -620,7 +636,6 @@ class TuDongDangNhap:
             self.trangthai = f"Tạm ngưng (ID {idnguoichoi}: {lydo}) – còn {conlai // 60}:{conlai % 60:02d}"
             return
 
-        cauhinh = taicauhinhdangnhap()
         taikhoans = cauhinh["taikhoans"]
         if not taikhoans:
             self.trangthai = f"Chưa có tài khoản nào trong {os.path.basename(duongdantaikhoan())}"

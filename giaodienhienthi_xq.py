@@ -106,6 +106,8 @@ class GiaoDienHienThi:
         self._taodanhsachnhanvat()
         self._taothanhtrangthai()
 
+        # (canvas, thanh cuộn, khung nội dung, id khung trong canvas) của từng tab, xem _taotab
+        self._tabcuons = []
         notebook = ttk.Notebook(self.root)
         notebook.pack(fill = tk.BOTH, expand = True, padx = 8, pady = (0, 8))
 
@@ -119,6 +121,7 @@ class GiaoDienHienThi:
 
         # Bấm ra chỗ khác (không phải ô nhập) thì bỏ focus ô đang sửa -> FocusOut áp dụng số vừa nhập
         self.root.bind_all("<Button-1>", self._bofocusokhibamrangoai, add = "+")
+        self.root.bind_all("<MouseWheel>", self._cuonbangconlan, add = "+")
 
         self.update_ui()
 
@@ -189,9 +192,42 @@ class GiaoDienHienThi:
         return int(sopixel * self._heso)
 
     def _taotab(self, notebook, tieude):
-        frame = ttk.Frame(notebook, padding = 8)
-        notebook.add(frame, text = tieude)
+        # Nội dung tab nằm trong Canvas để cuộn được khi màn hình thấp (vd máy ảo 768px).
+        # Khung trong cao ít nhất bằng Canvas để các ô giãn (fill BOTH, expand) vẫn lấp đầy khi đủ chỗ
+        vo = ttk.Frame(notebook)
+        notebook.add(vo, text = tieude)
+        canvas = tk.Canvas(vo, highlightthickness = 0, borderwidth = 0, background = ttk.Style(self.root).lookup("TFrame", "background"))
+        thanhcuon = ttk.Scrollbar(vo, orient = tk.VERTICAL, command = canvas.yview)
+        canvas.configure(yscrollcommand = thanhcuon.set)
+        canvas.pack(side = tk.LEFT, fill = tk.BOTH, expand = True)
+        frame = ttk.Frame(canvas, padding = 8)
+        idkhung = canvas.create_window((0, 0), window = frame, anchor = tk.NW)
+        self._tabcuons.append((canvas, thanhcuon, frame, idkhung))
+        canvas.bind("<Configure>", lambda e: self._capnhatcuontab(canvas, thanhcuon, frame, idkhung))
         return frame
+
+    def _capnhatcuontab(self, canvas, thanhcuon, frame, idkhung):
+        chieurong, chieucao = canvas.winfo_width(), canvas.winfo_height()
+        if chieurong <= 1:
+            return
+        cancao = frame.winfo_reqheight()
+        is_cancuon = cancao > chieucao
+        canvas.itemconfigure(idkhung, width = chieurong, height = max(cancao, chieucao))
+        canvas.configure(scrollregion = (0, 0, chieurong, max(cancao, chieucao)))
+        if is_cancuon and not thanhcuon.winfo_ismapped():
+            thanhcuon.pack(side = tk.RIGHT, fill = tk.Y, before = canvas)
+        elif not is_cancuon and thanhcuon.winfo_ismapped():
+            thanhcuon.pack_forget()
+            canvas.yview_moveto(0)
+
+    def _cuonbangconlan(self, event):
+        # Con lăn chuột cuộn tab đang hiện; ô tự cuộn được (ô nhập nhiều dòng, danh sách) thì để nó tự xử lý
+        if isinstance(event.widget, str) or isinstance(event.widget, (tk.Text, tk.Listbox, ttk.Treeview)):
+            return
+        for canvas, thanhcuon, frame, idkhung in self._tabcuons:
+            if thanhcuon.winfo_ismapped() and canvas.winfo_ismapped() and str(event.widget).startswith(str(canvas)):
+                canvas.yview_scroll(int(-event.delta / 120) or (-1 if event.delta > 0 else 1), "units")
+                return
 
     def _taonhom(self, parent, tieude):
         nhom = ttk.LabelFrame(parent, text = tieude, padding = (8, 4))
@@ -675,10 +711,10 @@ class GiaoDienHienThi:
             return
         trangthai = self.dangnhap.trangthai
         if self.lbl_trangthaidangnhap.cget("text") != trangthai:
-            mau = MAUCHU_DO if trangthai.startswith(("Tạm ngưng", "Lỗi")) else (MAUCHU_XANH if trangthai.startswith("Đang đăng nhập") else MAUCHU_PHU)
+            mau = MAUCHU_DO if trangthai.startswith(("Tạm ngưng", "Lỗi", "File tài khoản bị lỗi")) else (MAUCHU_XANH if trangthai.startswith("Đang đăng nhập") else MAUCHU_PHU)
             self.lbl_trangthaidangnhap.config(text = trangthai, fg = mau)
         dong = [f"{ten}{f' (ID {idnc})' if idnc else ''} – {tinhtrang}" for ten, idnc, tinhtrang in self.dangnhap.danhsach]
-        text = "\n".join(dong) if dong else "(chưa quét – bật tự đăng nhập để xem tình trạng)"
+        text = "\n".join(dong) if dong else "(chưa có tài khoản nào)"
         if self.lbl_taikhoandangnhap.cget("text") != text:
             self.lbl_taikhoandangnhap.config(text = text)
 
@@ -716,6 +752,9 @@ class GiaoDienHienThi:
             self._capnhatdanhsachnhanvat()
             self._capnhatdangnhap()
             self._capnhatbangdieukhien()
+            # Nội dung có thể cao lên/thấp xuống (dòng tạm ngưng, danh sách tài khoản...) mà Canvas không tự biết
+            for tabcuon in self._tabcuons:
+                self._capnhatcuontab(*tabcuon)
         finally:
             self.root.after(500, self.update_ui)
 
