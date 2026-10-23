@@ -908,6 +908,8 @@ CHUDICHTRAM = "Chủ Dịch Trạm"
 
 # In ra console mọi câu lệnh gửi vào game và mỗi lần kỹ năng bị khoá chặn (để dò lỗi), tắt thì để False
 IS_LOGCAULENH = True
+# Ghi log mỗi lần lý do / điểm đích di chuyển thay đổi, và điểm click thật sự ([DI CHUYỂN], [CLICK])
+IS_LOGDICHUYEN = True
 
 # Xoay vòng lệnh giữa các bot: tại mỗi thời điểm chỉ 1 bot được gửi lệnh, lần lượt từng bot (bot nào cũng có lệnh thì chia đều lượt),
 # giữa 2 lệnh liên tiếp (của 2 bot bất kỳ) nghỉ ngẫu nhiên trong khoảng KHOANGNGHIGIUALENH giây, để các bot không bấm cùng lúc như máy.
@@ -940,19 +942,19 @@ KHOANGCACHBAOTHUDAVE = 9.
 THOIGIANGOIBAOTHUVEBANDAU = 0.5
 THOIGIANGOIBAOTHUVETOIDA = 4.
 
-# Gửi một lệnh đánh (kỹ năng / bật tự động đánh "kill") xong thì ngần này giây sau mới gửi lệnh đánh tiếp, chung mọi kỹ năng:
-# cờ sẵn sàng/hồi chiêu của game cập nhật chậm hơn lúc ra chiêu. Trước đây mỗi lượt (~0.1s) gửi lại lệnh vô ích (~70% lệnh của
-# Đào Hoa Nguyên); giãn theo từng ô thì lại nhảy sang chiêu khác mỗi lượt, cắt ngang chiêu đang chuẩn bị ra
-THOIGIANGUILAIKYNANG = 0.3
-# Chế độ chờ "tuthe": đang ra đòn / dùng phép thì không gửi lệnh đánh (game đang bận), còn lại (đứng im, di chuyển, khựng sau đòn) gửi ngay,
-# riêng vừa gửi xong thì chờ tối đa THOIGIANCHOPHANUNGLENH cho game kịp chuyển tư thế (nếu không sẽ gửi tiếp chiêu khác, cắt ngang chiêu vừa gửi).
-# "tuthe_chandelay": như "tuthe" nhưng chặn cả lúc khựng sau đòn. "thoigian": chờ cố định THOIGIANGUILAIKYNANG.
-# Chọn trong _internal/thunghiem.json {"chedochodanh": ...} (đổi được khi đang chạy)
+# Chờ lệnh đánh: đang ra đòn / dùng phép thì không gửi lệnh đánh nào (game đang bận; game cập nhật cờ sẵn sàng chậm, gửi chiêu khác là
+# cắt ngang chiêu đang ra), còn lại (đứng im, di chuyển, khựng sau đòn) gửi ngay, riêng vừa gửi xong thì chờ tối đa ngần này giây
+# cho game kịp chuyển tư thế (nếu không sẽ gửi tiếp chiêu khác, cắt ngang chiêu vừa gửi)
 THOIGIANCHOPHANUNGLENH = 0.15
+# Chọn mục tiêu khi đang chạy: con nằm sau lưng (ngược hướng đang chạy) bị tính xa thêm ngần này ô, để không quay đầu đổi qua lại
+PHATMUCTIEUSAULUNG = 3.
+# Mục tiêu đang đánh chỉ bị thay bằng con khác chỉ vì gần hơn khi con đó gần hơn ít nhất ngần này ô (giữa các ứng viên khác chỉ cần 0.5):
+# hai con hai bên gần ngang nhau thì cứ chạy về phía con này vài bước là con kia lại "gần hơn" => đổi qua lại liên tục, đứng một chỗ
+CHENHLECHKHOANGCACHDOIMUCTIEU = 1.5
+
 # Khựng sau đòn (tư thế 11) chỉ là hiệu ứng che mắt ở client (máy chủ không tính): luồng nhanh thấy tư thế 11 là ghi về đứng im ngay
 IS_BOKHUNGSAUTANCONG = True
 CHUKYBOKHUNGSAUTANCONG = 0.02
-CHEDOCHODANHMACDINH = "tuthe"
 
 SOLANGUITOIDASPAMKYNANG = 3
 SOGIAYDEMSPAMKYNANG = 1.5

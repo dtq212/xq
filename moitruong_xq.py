@@ -153,6 +153,8 @@ class MoiTruong:
 
         self.hangdoicaulenh = queue.PriorityQueue()
         self.caulenhdangchos = set()
+        # Ô đích click di chuyển đã log gần nhất (IS_LOGDICHUYEN: chỉ log khi đổi ô)
+        self._dichclicklogcuoi = None
         # Bộ chia lượt gửi lệnh / bắt đầu di chuyển giữa các bot (CuaSo gán vào), None thì làm ngay như cũ
         self.dieuphoi = None
         self.dieuphoidichuyen = None
@@ -1835,6 +1837,9 @@ class MoiTruong:
             return False
 
         is_ok = self.action_dichuyen(xclick, yclick, delay = delay)
+        if is_ok and IS_LOGDICHUYEN and (round(xdich), round(ydich)) != self._dichclicklogcuoi:
+            self._dichclicklogcuoi = (round(xdich), round(ydich))
+            self._inlog(f"[CLICK] từ {(x1, y1)} (đang ở {self.get_toado()}, tư thế {self.get_idtuthenhanvat()}) -> {(round(xdich, 1), round(ydich, 1))}")
         if is_ok:
             self._xdichuyengannhat, self._ydichuyengannhat = xdich, ydich
             self._thoidiemboquadichuyencungtoadogannhat = time.time()
@@ -1849,7 +1854,34 @@ class MoiTruong:
         if not diachicosothongtinnhanvat2 or not self.get_iddoituong(diachicosothongtinnhanvat2):
             return False
 
-        return self.action_dichuyengiukhoangcachtoidadiem(*self._laytoadodondau(diachicosothongtinnhanvat2), khoangcachtoida = khoangcachtoida, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
+        # Tiếp cận cận chiến: nhắm ô sắp tới của mục tiêu (1 ô theo đường nó đang đi), đón đầu xa dễ chạy xuyên qua khi nó dừng / quay đầu
+        if khoangcachtoida <= KHOANGCACHSUDUNGKYNANGCANCHIEN:
+            # Đi ít nhất: giữa vị trí hiện tại và ô sắp tới của mục tiêu, nhắm ô gần mình hơn (không đón đầu vòng ra sau lưng)
+            toadobanthan = self.get_toado()
+            toadohientai = self.get_toado(diachicosothongtinnhanvat2)
+            toadosaptoi = self.get_toado(diachicosothongtinnhanvat2, is_toadosaptoi = True)
+            toadomuctieu = min((toadohientai, toadosaptoi), key = lambda toado: math.dist(toadobanthan, toado))
+        else:
+            toadomuctieu = self._laytoadodondau(diachicosothongtinnhanvat2)
+        # Tiếp cận luôn bằng tìm đường của game (đo A/B: click lệch tâm màn hình quay đầu không lý do 5.3/ph, tìm đường 1.3/ph)
+        return self._tiepcanbangtimduong(*toadomuctieu, khoangcachtoida)
+
+    def _tiepcanbangtimduong(self, x2, y2, khoangcachtoida):
+        # Tiếp cận bằng tìm đường của game với tọa độ ô tuyệt đối (không quy đổi ô <-> pixel quanh tâm màn hình như click):
+        # đích là ô trên đường thẳng mình -> mục tiêu, cách mục tiêu khoangcachtoida
+        x1, y1 = self.get_toado()
+        khoangcach = math.dist((x1, y1), (x2, y2))
+        if khoangcach <= max(0., khoangcachtoida) or khoangcach <= 0.:
+            return False
+        tyle = max(0., khoangcachtoida) / khoangcach
+        xdich, ydich = round(x2 + (x1 - x2) * tyle), round(y2 + (y1 - y2) * tyle)
+        if (xdich, ydich) == (x1, y1):
+            return False
+        is_ok = self.action_tudongtimduong(xdich, ydich, self.get_idbandohientai(), is_lotrinh = False)
+        if is_ok and IS_LOGDICHUYEN and (xdich, ydich) != self._dichclicklogcuoi:
+            self._dichclicklogcuoi = (xdich, ydich)
+            self._inlog(f"[TIẾP CẬN TÌM ĐƯỜNG] (đang ở {(x1, y1)}, tư thế {self.get_idtuthenhanvat()}) -> {(xdich, ydich)}")
+        return is_ok
 
     def _laytoadodondau(self, diachimuctieu):
         # Mục tiêu đang chạy ra xa: click vào vị trí hiện tại thì tới nơi nó đã chạy tiếp (đuổi theo cái bóng, không bao giờ kịp).
@@ -1900,7 +1932,13 @@ class MoiTruong:
         if x2 <= 0 or y2 <= 0:
             return False
 
-        x1, y1 = self.get_toado()
+        # Đang chạy thì tính từ ô sắp tới (click lệch theo tâm màn hình, mà màn hình đã đi theo nhân vật về phía trước),
+        # nhưng chỉ khi ô sắp tới gần đích hơn ô hiện tại; không thì tính từ ô hiện tại (hướng click không chỉ ngược ra sau)
+        xhientai, yhientai = self.get_toado()
+        x1, y1 = xhientai, yhientai
+        xsap, ysap = self.get_toado(is_toadosaptoi = True)
+        if math.dist((xsap, ysap), (x2, y2)) < math.dist((xhientai, yhientai), (x2, y2)):
+            x1, y1 = xsap, ysap
         khoangcach = math.dist((x1, y1), (x2, y2))
         if khoangcach <= 0.:
             return False
@@ -1914,6 +1952,10 @@ class MoiTruong:
 
         deltax = khoangcachdichuyen * (x2 - x1) / khoangcach
         deltay = khoangcachdichuyen * (y1 - y2) / khoangcach
+
+        # Lớp chặn cuối: điểm sắp click phải gần đích hơn chỗ đang đứng (chỉ được rút ngắn khoảng cách, không đi vòng / quay đầu)
+        if math.dist((x1 + deltax, y1 - deltay), (x2, y2)) >= math.dist((xhientai, yhientai), (x2, y2)):
+            return False
 
         return self._action_dichuyentheovector(x1, y1, deltax, deltay, delay = delay, is_rangbuoctrongmanhinh = is_rangbuoctrongmanhinh, is_bokiemtravungcam = is_bokiemtravungcam)
 
@@ -2003,7 +2045,7 @@ class MoiTruong:
         x = read_int(self.tientrinh, x + 0xADFDEC)
         return x > 0
 
-    def action_tudongtimduong(self, x, y, idbando):
+    def action_tudongtimduong(self, x, y, idbando, is_lotrinh = True):
         a = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not a: return False
         a = read_int(self.tientrinh, a + 0xADFDEC)
@@ -2014,6 +2056,8 @@ class MoiTruong:
         is_dichmoi = (x or y) and (read_int(self.tientrinh, a + 0x37C534), read_int(self.tientrinh, a + 0x37C538), read_int(self.tientrinh, a + 0x37C85C)) != (x, y, idbando)
         if is_dichmoi and not self._get_is_duocbatdaudichuyen():
             return False
+        if is_dichmoi and IS_LOGDICHUYEN and is_lotrinh:
+            self._inlog(f"[TÌM ĐƯỜNG] (đang ở {self.get_toado()}) -> {(x, y)} bản đồ {idbando}")
         if read_int(self.tientrinh, a + 0x37C534) != x:
             write_int(self.tientrinh, a + 0x37C534, x)
         if read_int(self.tientrinh, a + 0x37C538) != y:
@@ -2030,13 +2074,18 @@ class MoiTruong:
         if not a:
             self.auto_assemble_khoitaothongtinbando()
             return False
+        is_dahuy = False
         if read_int(self.tientrinh, a + 0x37C534) != 0:
             write_int(self.tientrinh, a + 0x37C534, 0)
+            is_dahuy = True
         if read_int(self.tientrinh, a + 0x37C538) != 0:
             write_int(self.tientrinh, a + 0x37C538, 0)
+            is_dahuy = True
         if read_int(self.tientrinh, a + 0x37C85C) != 0:
             write_int(self.tientrinh, a + 0x37C85C, 0)
-        return True
+            is_dahuy = True
+        # True khi thật sự đang có đích tìm đường và vừa huỷ
+        return is_dahuy
 
     def action_phucsinh(self, delay = 2.5):
         if time.time() - self._thoidiemphucsinhgannhat < delay or not self.get_is_nhanvatdachet():
