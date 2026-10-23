@@ -298,6 +298,64 @@ def taithietlap(tennhanvat):
         print(err)
 
 
+def duongdantaikhoan():
+    # Tài khoản tự đăng nhập của riêng máy này (có mật khẩu, không đưa lên git)
+    return os.path.join(os.path.dirname(_thumucthietlap()), "taikhoan.json")
+
+
+# Trạng thái tạm ngưng (ẩn thân / người lạ) ghi ra file, mỗi nhân vật 1 file theo ID, để luồng tự đăng nhập
+# biết mà không đăng nhập lại; nhân vật bị out thì bot mất trạng thái trong bộ nhớ nhưng file vẫn còn
+def _thumuctamngung():
+    return os.path.join(os.path.dirname(_thumucthietlap()), "tamngung")
+
+
+def ghitamngung(idnguoichoi, thoidiemhet, lydo):
+    if not idnguoichoi:
+        return
+    try:
+        thumuc = _thumuctamngung()
+        os.makedirs(thumuc, exist_ok = True)
+        filepath = os.path.join(thumuc, f"{int(idnguoichoi)}.json")
+        filetam = filepath + ".tmp"
+        with open(filetam, "w", encoding = "utf-8") as file:
+            json.dump({"thoidiemhet": thoidiemhet, "lydo": lydo}, file, ensure_ascii = False)
+        os.replace(filetam, filepath)
+    except Exception as err:
+        print(f"Lỗi khi ghi trạng thái tạm ngưng: {err}")
+
+
+def xoatamngung(idnguoichoi):
+    if not idnguoichoi:
+        return
+    try:
+        os.remove(os.path.join(_thumuctamngung(), f"{int(idnguoichoi)}.json"))
+    except FileNotFoundError:
+        pass
+    except Exception as err:
+        print(f"Lỗi khi xoá trạng thái tạm ngưng: {err}")
+
+
+def laytamngungdanghieuluc():
+    # [(ID người chơi, thời điểm hết, lý do)] còn hiệu lực, hết lâu nhất trước
+    ketqua = []
+    thumuc = _thumuctamngung()
+    try:
+        tenfiles = os.listdir(thumuc)
+    except OSError:
+        return ketqua
+    for tenfile in tenfiles:
+        if not tenfile.endswith(".json"):
+            continue
+        try:
+            with open(os.path.join(thumuc, tenfile), encoding = "utf-8") as file:
+                dulieu = json.load(file)
+            if dulieu.get("thoidiemhet", 0.) > time.time():
+                ketqua.append((int(tenfile[:-5]), dulieu["thoidiemhet"], dulieu.get("lydo", "")))
+        except Exception:
+            continue
+    return sorted(ketqua, key = lambda x: x[1], reverse = True)
+
+
 def tinhkhoangcach(x1, y1, x2, y2):
     return round(math.dist((x1, y1), (x2, y2), ))
 

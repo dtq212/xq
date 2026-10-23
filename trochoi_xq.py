@@ -12,6 +12,7 @@ import subprocess
 import win32process
 
 from cuaso_xq import CuaSo
+from dangnhap_xq import TuDongDangNhap
 from dieuphoi_xq import taicauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
 from giaodienhienthi_xq import GiaoDienHienThi
 
@@ -64,8 +65,12 @@ class TroChoiManager:
             ctypes.windll.shcore.SetProcessDpiAwareness(1)
         except Exception:
             pass
+        # Tự động đăng nhập lại nhân vật vắng mặt (thay cho các kịch bản tudongdangnhap*.py chạy riêng)
+        self.dangnhap = TuDongDangNhap()
+        self.dangnhap.batdau()
+
         root = tk.Tk()
-        gui = GiaoDienHienThi(root, self.shared_data, self.command_dict, self.dieuphoi_trangthai)
+        gui = GiaoDienHienThi(root, self.shared_data, self.command_dict, self.dieuphoi_trangthai, self.dangnhap)
 
         root.protocol("WM_DELETE_WINDOW", self.stop_all)
 
@@ -139,11 +144,9 @@ class TroChoiManager:
                 elif keyboard.is_pressed("ctrl+alt+x"):
                     cmd = "botoanbo_tenmuctieukhongtancong"
                 elif keyboard.is_pressed("ctrl+alt+f"):
-                    cmd = "battat_tudongtheosautruongnhom"
+                    cmd = "battat_tudongtheosau"
                 elif keyboard.is_pressed("ctrl+alt+p"):
                     cmd = "botoanbo_diemdanhxungquanh"
-                elif keyboard.is_pressed("ctrl+alt+t"):
-                    cmd = "battat_tudongbattheosaunhom"
                 elif keyboard.is_pressed("ctrl+alt+d"):
                     cmd = "battat_thucsondao"
                 elif keyboard.is_pressed("ctrl+f"):

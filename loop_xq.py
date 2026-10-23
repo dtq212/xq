@@ -99,7 +99,7 @@ class LoopDieuPhoiDiChuyen:
         if self.tactu.get_is_dangtamngung():
             return
         # Tính đích theo nhóm ngay trước khi di chuyển (để ở loop chính thì phải chờ cả lượt dùng kỹ năng, đích bị cũ nên chạy theo vị trí trưởng nhóm từ lâu)
-        self.tactu.action_tudongtheosautruongnhom()
+        self.tactu.action_tudongtheosau()
         self.tactu.action_xulyuutiendichuyen()
 
 

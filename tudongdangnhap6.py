@@ -89,6 +89,7 @@ import win32gui
 import win32process
 
 from moitruong_xq import MoiTruong
+from tienich_xq import laytamngungdanghieuluc
 
 
 def make_lparam(x, y):
@@ -599,6 +600,14 @@ def main():
     print("=== TRÌNH QUẢN LÝ ĐĂNG NHẬP THÔNG MINH ===")
     while True:
         try:
+            # Nhân vật nào đang tạm ngưng (ẩn thân / người lạ) thì không đăng nhập ai cả cho tới khi hết hạn
+            tamngungs = laytamngungdanghieuluc()
+            if tamngungs:
+                idnguoichoi, thoidiemhet, lydo = tamngungs[0]
+                conlai = int(thoidiemhet - time.time())
+                print(f"[TẠM NGƯNG] ID {idnguoichoi}: {lydo} -> không đăng nhập, còn {conlai // 60}:{conlai % 60:02d}")
+                time.sleep(5)
+                continue
             dondeptientrinhaovuabithoatgame()
             online = laydanhsachnhanvatonlines()
             print(f"\n[SCAN] Đang online: {sorted(online['ten'])}")

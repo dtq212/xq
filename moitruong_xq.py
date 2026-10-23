@@ -68,7 +68,6 @@ class MoiTruong:
         self._is_dasetupautoassemblekhoitaothongtinbando = False
         self._is_dasetupactionthietlaphooknoidungtrochuyen = False
 
-        self._thoidiembattattheosaunhomgannhat = 0.
         self._thoidiemdichuyengannhat = 0.
         self._thoidiemhetchovankhi = 0.
         # Đang spam lệnh triệu hồi bảo thú (pf 4131.@) => không cho dùng kỹ năng nào khác tới thời điểm này
@@ -2271,16 +2270,6 @@ class MoiTruong:
         if not diachi:
             return 100
         return self.get_noilucconlaibaothugiangho() * 100 / max(1, self.get_noiluctoidabaothugiangho())
-
-    def action_battheosaunhom(self, delay = 1.):
-        if time.time() - self._thoidiembattattheosaunhomgannhat < delay:
-            return False
-        idnguoichoitruongnhom = self.get_idnguoichoitruongnhom()
-        if not idnguoichoitruongnhom:
-            return False
-        is_ok = self.action_thucthicaulenh("team follow {}".format(idnguoichoitruongnhom))
-        if is_ok: self._thoidiembattattheosaunhomgannhat = time.time()
-        return is_ok
 
     def get_thoidiemsudungkynangvitrigannhat(self, idvitri_x, idvitri_y, macdinh = None):
         return self._thoidiemsudungkynangvitrigannhat_map.get((idvitri_x, idvitri_y), macdinh)

@@ -151,3 +151,7 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+# Trạng thái tạm ngưng (ẩn thân / người lạ) của từng máy, kịch bản tự đăng nhập đọc
+_internal/tamngung/
+# Tài khoản tự đăng nhập của từng máy (có mật khẩu)
+_internal/taikhoan.json

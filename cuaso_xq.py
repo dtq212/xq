@@ -1,4 +1,5 @@
 import ast
+import json
 import threading
 import time
 import traceback
@@ -147,6 +148,8 @@ class CuaSo:
                     "idnguoichoi": self.moitruong.get_idnguoichoi(),
                     "thoidiemcapnhat": time.time(),
                     "tenbando": self.moitruong.get_idbandohientai(),
+                    # Vân Mộng Cốc cùng máy dùng để biết buff Ngân Châm hay Kim Châm cho nhân vật này
+                    "tenmonphai": self.moitruong.get_tenmonphai(),
                     # Tổ đội tự động dùng để biết các nhóm khác đang cùng bản đồ
                     "idtruongnhom": self.moitruong.get_idnguoichoitruongnhom() if is_dangtrongnhom else 0,
                     "thanhviennhoms": self.moitruong.get_danhsachidnguoichoithanhviennhoms() if is_dangtrongnhom else [],
@@ -157,8 +160,9 @@ class CuaSo:
                     "phantramnoiluc": phantramnoiluc,
                     "is_window_active": self.moitruong.get_is_cuasogamekichhoat(),
 
-                    "_is_tudongtheosautruongnhom": self.tactu._is_tudongtheosautruongnhom,
-                    "_is_tudongbattheosaunhom": self.tactu._is_tudongbattheosaunhom,
+                    "_is_tudongtheosau": self.tactu._is_tudongtheosau,
+                    "_idmuctieutheosau": self.tactu._idmuctieutheosau,
+                    "_tenmuctieutheosau": self.tactu._tenmuctieutheosau,
                     "_is_tudongtodoi": self.tactu._is_tudongtodoi,
                     "_is_tudongsudungkynang": self.tactu._is_tudongsudungkynang,
                     "_is_uutienmuctieupk": self.tactu._is_uutienmuctieupk,
@@ -174,9 +178,10 @@ class CuaSo:
                     "_is_chedobufftoanbang": self.tactu._is_chedobufftoanbang,
                     "_is_chantangcapdo": self.tactu._is_chantangcapdo,
 
-                    "_tenmuctieutancongs": ", ".join(self.tactu._tenmuctieutancongs),
-                    "_tenmuctieukhongtancongs": ", ".join(self.tactu._tenmuctieukhongtancongs),
-                    "_khoangcachtoidatruongnhom": self.tactu._khoangcachtoidatruongnhom,
+                    # Danh sách (không nối chuỗi) để giao diện sửa được từng tên
+                    "_tenmuctieutancongs": sorted(self.tactu._tenmuctieutancongs),
+                    "_tenmuctieukhongtancongs": sorted(self.tactu._tenmuctieukhongtancongs),
+                    "_khoangcachtoidatheosau": self.tactu._khoangcachtoidatheosau,
                     "_bankinhdiemdanh": self.tactu._bankinhdiemdanh,
 
                     "_is_tudongdichuyendiemdanhxungquanh": self.tactu._is_tudongdichuyendiemdanhxungquanh,
@@ -226,6 +231,13 @@ class CuaSo:
                         self.tactu.thietlap_khoangcachtheosau(khoangcach)
                     except Exception:
                         pass
+                elif isinstance(cmd, str) and cmd.startswith("set_muctieutheosau:"):
+                    # set_muctieutheosau:<ID người chơi, 0 = trưởng nhóm>|<tên>
+                    try:
+                        idmuctieu, _, tenmuctieu = cmd.split(":", 1)[1].partition("|")
+                        self.tactu.thietlap_muctieutheosau(int(idmuctieu), tenmuctieu)
+                    except Exception as e:
+                        print(f"Lỗi khi chọn người theo sau: {e}")
                 elif isinstance(cmd, str) and cmd.startswith("set_bankinhdiemdanh:"):
                     try:
                         self.tactu.thietlap_bankinhdiemdanh(float(cmd.split(":")[1]))
@@ -252,6 +264,13 @@ class CuaSo:
                         print(f"Lỗi khi phân tích cú pháp toạ độ: {e}")
                 elif cmd == "battat_tudongbattatchucnangmorong":
                     self.tactu.battat_tudongbattatchucnangmorong()
+                elif isinstance(cmd, str) and cmd.startswith("set_danhsachmuctieu:"):
+                    # set_danhsachmuctieu:{"tancong": [...], "boqua": [...]}
+                    try:
+                        danhsach = json.loads(cmd.split(":", 1)[1])
+                        self.tactu.thietlap_danhsachmuctieu(danhsach.get("tancong", []), danhsach.get("boqua", []))
+                    except Exception as e:
+                        print(f"Lỗi khi đọc danh sách mục tiêu: {e}")
                 elif cmd == "battat_tranhvungcam":
                     self.tactu.battat_tranhvungcam()
                 elif cmd == "battat_chantangcapdo":
@@ -264,12 +283,10 @@ class CuaSo:
                     self.tactu.botoanbo_tenmuctieutancong()
                 elif cmd == "botoanbo_tenmuctieukhongtancong":
                     self.tactu.botoanbo_tenmuctieukhongtancong()
-                elif cmd == "battat_tudongtheosautruongnhom":
-                    self.tactu.battat_is_tudongtheosautruongnhom()
+                elif cmd == "battat_tudongtheosau":
+                    self.tactu.battat_is_tudongtheosau()
                 elif cmd == "botoanbo_diemdanhxungquanh":
                     self.tactu.botoanbo_diemdanhxungquanh()
-                elif cmd == "battat_tudongbattheosaunhom":
-                    self.tactu.battat_is_tudongbattheosaunhom()
                 elif cmd == "battat_tudongtodoi":
                     self.tactu.battat_is_tudongtodoi()
                 elif cmd == "battat_thucsondao":
