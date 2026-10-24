@@ -1866,6 +1866,11 @@ class MoiTruong:
         # Tiếp cận luôn bằng tìm đường của game (đo A/B: click lệch tâm màn hình quay đầu không lý do 5.3/ph, tìm đường 1.3/ph)
         return self._tiepcanbangtimduong(*toadomuctieu, khoangcachtoida)
 
+    def action_dichuyengiukhoangcachtoidadiembangtimduong(self, x2, y2, khoangcachtoida):
+        if x2 <= 0 or y2 <= 0:
+            return False
+        return self._tiepcanbangtimduong(x2, y2, khoangcachtoida)
+
     def _tiepcanbangtimduong(self, x2, y2, khoangcachtoida):
         # Tiếp cận bằng tìm đường của game với tọa độ ô tuyệt đối (không quy đổi ô <-> pixel quanh tâm màn hình như click):
         # đích là ô trên đường thẳng mình -> mục tiêu, cách mục tiêu khoangcachtoida
@@ -1877,6 +1882,9 @@ class MoiTruong:
         xdich, ydich = round(x2 + (x1 - x2) * tyle), round(y2 + (y1 - y2) * tyle)
         if (xdich, ydich) == (x1, y1):
             return False
+        # Game không biết vùng cấm: đích tìm đường rơi vào vùng cấm thì chuyển sang click (có lớp chặn đường đi cắt vùng cấm)
+        if self.is_tranhvungcam and self.get_is_duongdicatvungcam(xdich, ydich, xdich, ydich):
+            return self.action_dichuyengiukhoangcachtoidadiem(x2, y2, khoangcachtoida)
         is_ok = self.action_tudongtimduong(xdich, ydich, self.get_idbandohientai(), is_lotrinh = False)
         if is_ok and IS_LOGDICHUYEN and (xdich, ydich) != self._dichclicklogcuoi:
             self._dichclicklogcuoi = (xdich, ydich)
@@ -2153,6 +2161,9 @@ class MoiTruong:
                     continue
             return self.get_iddoituongvatphamhanhtrang(i)
         return False
+
+    def get_danhsachtenvatphamhanhtrang(self):
+        return self._docdanhsachtenvatphamhanhtrang(self.get_soluongvatphamhanhtrangtoida() + 1)
 
     def action_timkiemvitrivatphamhanhtrang(self, tenvatpham = None):
         if not tenvatpham:

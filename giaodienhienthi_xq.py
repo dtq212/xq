@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import font as tkfont
 from tkinter import ttk
 
-from hangso_xq import laytenbando, KHOANGCACHSUDUNGKYNANGTAMXA
+from hangso_xq import laytenbando, KHOANGCACHSUDUNGKYNANGTAMXA, PHANTRAMNOILUCKHAITHIENTICHDIA
 import re
 
 from tienich_xq import tailotrinhmau, duongdanlotrinhmau, tainhomtodoitudongs, luunhomtodoitudongs, duongdantodoitudong, laynhomtodoitudongs
@@ -86,6 +86,7 @@ class GiaoDienHienThi:
             "khoangcachtheosau": tk.DoubleVar(value = 9.0),
             "bankinhdiemdanh": tk.DoubleVar(value = 18.0),
             "khoangcachtamxa": tk.DoubleVar(value = KHOANGCACHSUDUNGKYNANGTAMXA),
+            "phantramnoiluckhaithien": tk.DoubleVar(value = PHANTRAMNOILUCKHAITHIENTICHDIA),
             "diemdanhxungquanh": tk.BooleanVar(),
             "trieuhoibaothu": tk.BooleanVar(),
             "tudongbattatchucnangmorong": tk.BooleanVar(),
@@ -404,6 +405,24 @@ class GiaoDienHienThi:
         self.spin_khoangcachtamxa.pack(side = tk.LEFT, padx = 4)
         self._ganspinboxapdung(self.spin_khoangcachtamxa, on_tamxa_change)
         ttk.Label(hangtamxa, text = "ô", style = "Phu.TLabel").pack(side = tk.LEFT)
+
+        hangkhaithien = ttk.Frame(nhom)
+        hangkhaithien.grid(row = 1, column = 0, columnspan = 2, sticky = tk.W)
+        ttk.Label(hangkhaithien, text = "Thục Sơn lướt Khai Thiên Tịch Địa khi nội lực trên:").pack(side = tk.LEFT)
+
+        def on_khaithien_change(hwnd = None):
+            hwnd = hwnd or self.get_selected_hwnd()
+            if hwnd:
+                try:
+                    self.command_dict[hwnd] = f"set_phantramnoiluckhaithientichdia:{self.vars['phantramnoiluckhaithien'].get()}"
+                except tk.TclError:
+                    pass
+
+        self.spin_phantramnoiluckhaithien = ttk.Spinbox(hangkhaithien, from_ = 0.0, to = 100.0, increment = 5.0, width = 5,
+                                                        textvariable = self.vars["phantramnoiluckhaithien"], command = on_khaithien_change)
+        self.spin_phantramnoiluckhaithien.pack(side = tk.LEFT, padx = 4)
+        self._ganspinboxapdung(self.spin_phantramnoiluckhaithien, on_khaithien_change)
+        ttk.Label(hangkhaithien, text = "%", style = "Phu.TLabel").pack(side = tk.LEFT)
 
         self._taotabtodoi(tab)
 
@@ -885,6 +904,14 @@ class GiaoDienHienThi:
                 tamxa_moi = info.get("_khoangcachsudungkynangtamxa", KHOANGCACHSUDUNGKYNANGTAMXA)
                 if abs(self.vars["khoangcachtamxa"].get() - tamxa_moi) > 0.01:
                     self.vars["khoangcachtamxa"].set(tamxa_moi)
+            except tk.TclError:
+                pass
+
+        if widgetdangfocus != getattr(self, 'spin_phantramnoiluckhaithien', None):
+            try:
+                khaithien_moi = info.get("_phantramnoiluckhaithientichdia", PHANTRAMNOILUCKHAITHIENTICHDIA)
+                if abs(self.vars["phantramnoiluckhaithien"].get() - khaithien_moi) > 0.01:
+                    self.vars["phantramnoiluckhaithien"].set(khaithien_moi)
             except tk.TclError:
                 pass
 

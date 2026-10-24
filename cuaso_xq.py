@@ -189,6 +189,7 @@ class CuaSo:
                     "_khoangcachtoidatheosau": self.tactu._khoangcachtoidatheosau,
                     "_bankinhdiemdanh": self.tactu._bankinhdiemdanh,
                     "_khoangcachsudungkynangtamxa": self.tactu._khoangcachsudungkynangtamxa,
+                    "_phantramnoiluckhaithientichdia": self.tactu._phantramnoiluckhaithientichdia,
 
                     "_is_tudongdichuyendiemdanhxungquanh": self.tactu._is_tudongdichuyendiemdanhxungquanh,
                     "_diemdanhxungquanhs": self.tactu._diemdanhxungquanhs,
@@ -248,6 +249,11 @@ class CuaSo:
                 elif isinstance(cmd, str) and cmd.startswith("set_khoangcachsudungkynangtamxa:"):
                     try:
                         self.tactu.thietlap_khoangcachsudungkynangtamxa(float(cmd.split(":")[1]))
+                    except Exception:
+                        pass
+                elif isinstance(cmd, str) and cmd.startswith("set_phantramnoiluckhaithientichdia:"):
+                    try:
+                        self.tactu.thietlap_phantramnoiluckhaithientichdia(float(cmd.split(":")[1]))
                     except Exception:
                         pass
                 elif isinstance(cmd, str) and cmd.startswith("set_bankinhdiemdanh:"):

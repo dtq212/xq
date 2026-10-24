@@ -130,9 +130,15 @@ KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN = 3
 KHOANGCACHTOIDAHOPLE = 255.
 KHOANGCACHSUDUNGKYNANGCANCHIEN = 1.5
 KHOANGCACHSUDUNGKYNANGTAMXA = 9.  # 12.
+# Thục Sơn chỉ dùng Khai Thiên Tịch Địa để lướt khi nội lực trên mức này (%), chỉnh được ở giao diện
+PHANTRAMNOILUCKHAITHIENTICHDIA = 75.
 KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN = 9.
 KHOANGCACHHIEUQUAKYNANGKHAITHIENTICHDIA = 6.0
 KHOANGCACHNHATDO = KHOANGCACHTOANMANHINH
+
+# Mục tiêu mới nhìn thấy phải chờ ngần này giây mới được chọn tấn công; mất dấu quá THOIGIANMATDAUMUCTIEU thì thấy lại tính là mới
+THOIGIANCHOCHONMUCTIEUMOI = 1.
+THOIGIANMATDAUMUCTIEU = 3.
 
 # Thấy người chơi ẩn thân quanh mình khi đang di chuyển theo lộ trình điểm đánh thì ngưng mọi hoạt động trong khoảng thời gian này (giây)
 THOIGIANTAMNGUNGANTHAN = 600.
