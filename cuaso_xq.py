@@ -188,6 +188,7 @@ class CuaSo:
                     "_tenmuctieukhongtancongs": sorted(self.tactu._tenmuctieukhongtancongs),
                     "_khoangcachtoidatheosau": self.tactu._khoangcachtoidatheosau,
                     "_bankinhdiemdanh": self.tactu._bankinhdiemdanh,
+                    "_khoangcachsudungkynangtamxa": self.tactu._khoangcachsudungkynangtamxa,
 
                     "_is_tudongdichuyendiemdanhxungquanh": self.tactu._is_tudongdichuyendiemdanhxungquanh,
                     "_diemdanhxungquanhs": self.tactu._diemdanhxungquanhs,
@@ -202,6 +203,7 @@ class CuaSo:
 
                     "_is_tudongsudungkynangbaothu": self.tactu._is_tudongsudungkynangbaothu,
                     "_is_tranhvungcam": self.tactu._is_tranhvungcam,
+                    "_is_hoithanhphutheosau": self.tactu._is_hoithanhphutheosau,
                 }
                 self.shared_data[self.idcuaso] = info
 
@@ -243,6 +245,11 @@ class CuaSo:
                         self.tactu.thietlap_muctieutheosau(int(idmuctieu), tenmuctieu)
                     except Exception as e:
                         print(f"Lỗi khi chọn người theo sau: {e}")
+                elif isinstance(cmd, str) and cmd.startswith("set_khoangcachsudungkynangtamxa:"):
+                    try:
+                        self.tactu.thietlap_khoangcachsudungkynangtamxa(float(cmd.split(":")[1]))
+                    except Exception:
+                        pass
                 elif isinstance(cmd, str) and cmd.startswith("set_bankinhdiemdanh:"):
                     try:
                         self.tactu.thietlap_bankinhdiemdanh(float(cmd.split(":")[1]))
@@ -278,6 +285,8 @@ class CuaSo:
                         print(f"Lỗi khi đọc danh sách mục tiêu: {e}")
                 elif cmd == "battat_tranhvungcam":
                     self.tactu.battat_tranhvungcam()
+                elif cmd == "battat_hoithanhphutheosau":
+                    self.tactu.battat_hoithanhphutheosau()
                 elif cmd == "battat_chantangcapdo":
                     self.tactu.battat_is_chantangcapdo()
                 elif cmd == "battat_tudongkhaikhoang":

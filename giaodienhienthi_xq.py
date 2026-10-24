@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import font as tkfont
 from tkinter import ttk
 
-from hangso_xq import laytenbando
+from hangso_xq import laytenbando, KHOANGCACHSUDUNGKYNANGTAMXA
 import re
 
 from tienich_xq import tailotrinhmau, duongdanlotrinhmau, tainhomtodoitudongs, luunhomtodoitudongs, duongdantodoitudong, laynhomtodoitudongs
@@ -85,11 +85,13 @@ class GiaoDienHienThi:
             "chantangcap": tk.BooleanVar(),
             "khoangcachtheosau": tk.DoubleVar(value = 9.0),
             "bankinhdiemdanh": tk.DoubleVar(value = 18.0),
+            "khoangcachtamxa": tk.DoubleVar(value = KHOANGCACHSUDUNGKYNANGTAMXA),
             "diemdanhxungquanh": tk.BooleanVar(),
             "trieuhoibaothu": tk.BooleanVar(),
             "tudongbattatchucnangmorong": tk.BooleanVar(),
             "sudungkynangbaothu": tk.BooleanVar(),
             "tranhvungcam": tk.BooleanVar(value = True),
+            "hoithanhphutheosau": tk.BooleanVar(),
         }
 
         # Nhịp lệnh dùng chung mọi nhân vật (không theo nhân vật đang chọn nên không đồng bộ trong update_ui)
@@ -248,10 +250,15 @@ class GiaoDienHienThi:
 
     def _ganspinboxapdung(self, spin, on_change):
         # Enter: áp dụng rồi bỏ focus (ô hết bị khoá, update_ui đồng bộ lại số thật). Esc: bỏ sửa, lấy lại số cũ
-        boqua = {"focusout": False}
+        # Nhớ nhân vật lúc bắt đầu sửa: bấm chọn nhân vật khác làm ô mất focus sau khi đã đổi lựa chọn,
+        # nếu lấy nhân vật đang chọn lúc đó thì số vừa nhập bị áp sang nhân vật mới
+        boqua = {"focusout": False, "hwnd": None}
+
+        def on_focusin(event):
+            boqua["hwnd"] = self.get_selected_hwnd()
 
         def on_enter(event):
-            on_change()
+            on_change(boqua["hwnd"])
             boqua["focusout"] = True
             self.root.focus_set()
             return "break"
@@ -265,8 +272,9 @@ class GiaoDienHienThi:
             if boqua["focusout"]:
                 boqua["focusout"] = False
             else:
-                on_change()
+                on_change(boqua["hwnd"])
 
+        spin.bind("<FocusIn>", on_focusin)
         spin.bind("<Return>", on_enter)
         spin.bind("<KP_Enter>", on_enter)
         spin.bind("<Escape>", on_escape)
@@ -378,6 +386,25 @@ class GiaoDienHienThi:
         ttk.Button(hangnut, text = "Lưu cho tất cả", command = lambda: on_luu(True)).pack(side = tk.RIGHT, padx = 4)
         ttk.Button(hangnut, text = "Hoàn tác", command = on_hoantac).pack(side = tk.RIGHT)
 
+        nhom = self._taonhom(tab, "Tầm đánh")
+        hangtamxa = ttk.Frame(nhom)
+        hangtamxa.grid(row = 0, column = 0, columnspan = 2, sticky = tk.W)
+        ttk.Label(hangtamxa, text = "Khoảng cách dùng kỹ năng tầm xa:").pack(side = tk.LEFT)
+
+        def on_tamxa_change(hwnd = None):
+            hwnd = hwnd or self.get_selected_hwnd()
+            if hwnd:
+                try:
+                    self.command_dict[hwnd] = f"set_khoangcachsudungkynangtamxa:{self.vars['khoangcachtamxa'].get()}"
+                except tk.TclError:
+                    pass
+
+        self.spin_khoangcachtamxa = ttk.Spinbox(hangtamxa, from_ = 4.0, to = 30.0, increment = 1.0, width = 5,
+                                                textvariable = self.vars["khoangcachtamxa"], command = on_tamxa_change)
+        self.spin_khoangcachtamxa.pack(side = tk.LEFT, padx = 4)
+        self._ganspinboxapdung(self.spin_khoangcachtamxa, on_tamxa_change)
+        ttk.Label(hangtamxa, text = "ô", style = "Phu.TLabel").pack(side = tk.LEFT)
+
         self._taotabtodoi(tab)
 
     def _docdanhsachmuctieutugiaodien(self):
@@ -437,8 +464,8 @@ class GiaoDienHienThi:
         hangbankinh.grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W, padx = (22, 0), pady = (0, 2))
         ttk.Label(hangbankinh, text = "Chỉ đánh quái cách điểm đánh tối đa:").pack(side = tk.LEFT)
 
-        def on_bankinh_change(*args):
-            hwnd = self.get_selected_hwnd()
+        def on_bankinh_change(hwnd = None):
+            hwnd = hwnd or self.get_selected_hwnd()
             if hwnd:
                 try:
                     self.command_dict[hwnd] = f"set_bankinhdiemdanh:{self.vars['bankinhdiemdanh'].get()}"
@@ -573,8 +600,8 @@ class GiaoDienHienThi:
         hangkhoangcach.grid(row = 2, column = 0, columnspan = 2, sticky = tk.W, padx = (22, 0), pady = (0, 4))
         ttk.Label(hangkhoangcach, text = "Khoảng cách tối đa tới người theo sau:").pack(side = tk.LEFT)
 
-        def on_khoangcach_change(*args):
-            hwnd = self.get_selected_hwnd()
+        def on_khoangcach_change(hwnd = None):
+            hwnd = hwnd or self.get_selected_hwnd()
             if hwnd:
                 try:
                     val = self.vars["khoangcachtheosau"].get()
@@ -587,6 +614,7 @@ class GiaoDienHienThi:
         self.spin_khoangcach.pack(side = tk.LEFT, padx = 4)
         self._ganspinboxapdung(self.spin_khoangcach, on_khoangcach_change)
 
+        self._create_check(nhom, "Hồi Thành Phù về để phù sang chỗ người theo sau", self.vars["hoithanhphutheosau"], "battat_hoithanhphutheosau")
         self._create_check(nhom, "Tổ đội tự động (danh sách ở tab Mục tiêu & Tổ đội)", self.vars["todoitudong"], "battat_tudongtodoi")
 
         nhom = self._taonhom(tab, "Bảo thú")
@@ -827,6 +855,7 @@ class GiaoDienHienThi:
                 ("trieuhoibaothu", "_is_tudongtrieuhoibaothugiangho"),
                 ("sudungkynangbaothu", "_is_tudongsudungkynangbaothu"),
                 ("tranhvungcam", "_is_tranhvungcam"),
+                ("hoithanhphutheosau", "_is_hoithanhphutheosau"),
                 ("khaikhoang", "_is_tudongkhaikhoang"),
                 ("chientruong", "_is_tudongdichientruong"),
                 ("daobaodo", "_is_tudongdaotangbaodo"),
@@ -848,6 +877,14 @@ class GiaoDienHienThi:
                 bankinh_moi = info.get("_bankinhdiemdanh", 18.0)
                 if abs(self.vars["bankinhdiemdanh"].get() - bankinh_moi) > 0.01:
                     self.vars["bankinhdiemdanh"].set(bankinh_moi)
+            except tk.TclError:
+                pass
+
+        if widgetdangfocus != getattr(self, 'spin_khoangcachtamxa', None):
+            try:
+                tamxa_moi = info.get("_khoangcachsudungkynangtamxa", KHOANGCACHSUDUNGKYNANGTAMXA)
+                if abs(self.vars["khoangcachtamxa"].get() - tamxa_moi) > 0.01:
+                    self.vars["khoangcachtamxa"].set(tamxa_moi)
             except tk.TclError:
                 pass
 
