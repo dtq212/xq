@@ -165,7 +165,7 @@ class LoopChinh:
         # self.moitruong.action_thucthicaulenh("tallk 810a# info.21", delay = 0.)
         # time.sleep(0.25)
 
-        if self.moitruong.get_idnguoichoi() in (29, 30, 31, 32, ):
+        if self.moitruong.get_idnguoichoi() in (29, 30, 31, 32, 192):
             # Mỗi lượt mở 1 túi; action_sudungvatphamhanhtrang tự giãn cách 0.25s giữa 2 lần dùng
             # (trước đây sleep 0.25s sau mỗi túi ngay trong loop chính: tới 1.25s không ra kỹ năng, không chọn mục tiêu)
             for tenvatpham in ("Túi Ngân Lượng", "Chén Bạc", "Túi Kim Bảo", "Túi Quà Vô Song", "Túi Pháp Bảo"):

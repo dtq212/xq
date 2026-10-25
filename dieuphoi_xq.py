@@ -4,7 +4,7 @@ import random
 import threading
 import time
 
-from hangso_xq import IS_XOAYVONGLENHGIUACACBOT, KHOANGNGHIGIUALENH, IS_XOAYVONGBATDAUDICHUYEN, KHOANGNGHIBATDAUDICHUYEN, THOIGIANCHOLUOTTOIDA
+from hangso_xq import IS_XOAYVONGLENHGIUACACBOT, KHOANGNGHIGIUALENH, IS_XOAYVONGBATDAUDICHUYEN, KHOANGNGHIBATDAUDICHUYEN, THOIGIANCHOLUOTTOIDA, THOIGIANGIUKYNANGMUCTIEU
 from tienich_xq import _thumucthietlap
 
 # Bot đăng ký chờ lượt mà quá lâu không làm mới (process đã chết) thì bỏ qua
@@ -179,3 +179,42 @@ class DieuPhoiLuot:
             return
         with self.khoa:
             self._ghinhanluot(time.time())
+
+
+class GiuKyNangMucTieu:
+    """Giữ chỗ chiêu khống chế trên 1 mục tiêu giữa các process bot, để 2 nhân vật không cùng gửi 1 hiệu ứng lên 1 mục tiêu.
+
+    giukynangs (dict qua Manager): (hiệu ứng, ID mục tiêu) -> (hwnd bot giữ, thời điểm hết hạn).
+    ID mục tiêu là ID máy chủ (ID người chơi / ID đối tượng) nên mọi cửa sổ game thấy giống nhau.
+    """
+
+    # Dọn các chỗ đã hết hạn khi dict lớn quá mức này
+    SOLUONGTOIDA = 200
+
+    def __init__(self, idcuaso, khoa, giukynangs):
+        self.idcuaso = idcuaso
+        self.khoa = khoa
+        self.giukynangs = giukynangs
+
+    def thugiu(self, hieuung, idmuctieu, thoigian = THOIGIANGIUKYNANGMUCTIEU):
+        # True: được gửi (chưa ai giữ, chỗ cũ hết hạn, hoặc chính bot này giữ) và đã giữ chỗ. False: bot khác đang giữ
+        khoa = (hieuung, idmuctieu)
+        thoidiemhientai = time.time()
+        with self.khoa:
+            dangiu = self.giukynangs.get(khoa)
+            if dangiu and dangiu[0] != self.idcuaso and dangiu[1] > thoidiemhientai:
+                return False
+            if len(self.giukynangs) > self.SOLUONGTOIDA:
+                for k, (_, hethan) in list(self.giukynangs.items()):
+                    if hethan <= thoidiemhientai:
+                        self.giukynangs.pop(k, None)
+            self.giukynangs[khoa] = (self.idcuaso, thoidiemhientai + thoigian)
+        return True
+
+    def bogiu(self, hieuung, idmuctieu):
+        # Giữ chỗ mà rốt cuộc không gửi được chiêu (còn xa phải chạy lại, kỹ năng bị khoá...) thì trả lại cho bot khác
+        khoa = (hieuung, idmuctieu)
+        with self.khoa:
+            dangiu = self.giukynangs.get(khoa)
+            if dangiu and dangiu[0] == self.idcuaso:
+                self.giukynangs.pop(khoa, None)

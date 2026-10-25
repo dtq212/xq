@@ -13,7 +13,7 @@ from loop_xq import (
     LoopXuLyLenh,
     LoopBoKhungSauTanCong
 )
-from dieuphoi_xq import DieuPhoiLuot, KENH_LENH, KENH_DICHUYEN
+from dieuphoi_xq import DieuPhoiLuot, GiuKyNangMucTieu, KENH_LENH, KENH_DICHUYEN
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
 
@@ -47,7 +47,7 @@ def khoidong_loopbokhung(moitruong, tactu, stop):
     LoopBoKhungSauTanCong(moitruong, tactu, stop).loop()
 
 class CuaSo:
-    def __init__(self, idcuaso, shared_data, command_dict, dieuphoi_khoa = None, dieuphoi_trangthai = None, dieuphoi_dangchos = None):
+    def __init__(self, idcuaso, shared_data, command_dict, dieuphoi_khoa = None, dieuphoi_trangthai = None, dieuphoi_dangchos = None, dieuphoi_giukynangs = None):
         self.idcuaso = idcuaso
         self.shared_data = shared_data
         self.command_dict = command_dict
@@ -56,6 +56,8 @@ class CuaSo:
         if dieuphoi_khoa is not None:
             self.moitruong.dieuphoi = DieuPhoiLuot(idcuaso, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos, KENH_LENH)
             self.moitruong.dieuphoidichuyen = DieuPhoiLuot(idcuaso, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos, KENH_DICHUYEN)
+            if dieuphoi_giukynangs is not None:
+                self.moitruong.giukynang = GiuKyNangMucTieu(idcuaso, dieuphoi_khoa, dieuphoi_giukynangs)
         self.moitruong.action_thietlaphooknoidungtrochuyen()
         self.tactu = TacTu(self.moitruong)
         self.tactu.shared_data = shared_data
@@ -204,6 +206,9 @@ class CuaSo:
 
                     "_is_tudongsudungkynangbaothu": self.tactu._is_tudongsudungkynangbaothu,
                     "_is_tranhvungcam": self.tactu._is_tranhvungcam,
+                    "_is_giukhoangcachketancong": self.tactu._is_giukhoangcachketancong,
+                    "_khoangcachgiuketancong": self.tactu._khoangcachgiuketancong,
+                    "_is_giukhoangcachchimuctieupk": self.tactu._is_giukhoangcachchimuctieupk,
                     "_is_hoithanhphutheosau": self.tactu._is_hoithanhphutheosau,
                 }
                 self.shared_data[self.idcuaso] = info
@@ -291,6 +296,15 @@ class CuaSo:
                         print(f"Lỗi khi đọc danh sách mục tiêu: {e}")
                 elif cmd == "battat_tranhvungcam":
                     self.tactu.battat_tranhvungcam()
+                elif cmd == "battat_giukhoangcachketancong":
+                    self.tactu.battat_giukhoangcachketancong()
+                elif cmd == "battat_giukhoangcachchimuctieupk":
+                    self.tactu.battat_giukhoangcachchimuctieupk()
+                elif isinstance(cmd, str) and cmd.startswith("set_khoangcachgiuketancong:"):
+                    try:
+                        self.tactu.thietlap_khoangcachgiuketancong(float(cmd.split(":")[1]))
+                    except Exception:
+                        pass
                 elif cmd == "battat_hoithanhphutheosau":
                     self.tactu.battat_hoithanhphutheosau()
                 elif cmd == "battat_chantangcapdo":

@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import font as tkfont
 from tkinter import ttk
 
-from hangso_xq import laytenbando, KHOANGCACHSUDUNGKYNANGTAMXA, PHANTRAMNOILUCKHAITHIENTICHDIA
+from hangso_xq import laytenbando, KHOANGCACHSUDUNGKYNANGTAMXA, PHANTRAMNOILUCKHAITHIENTICHDIA, KHOANGCACHGIUKETANCONG
 import re
 
 from tienich_xq import tailotrinhmau, duongdanlotrinhmau, tainhomtodoitudongs, luunhomtodoitudongs, duongdantodoitudong, laynhomtodoitudongs
@@ -92,6 +92,9 @@ class GiaoDienHienThi:
             "tudongbattatchucnangmorong": tk.BooleanVar(),
             "sudungkynangbaothu": tk.BooleanVar(),
             "tranhvungcam": tk.BooleanVar(value = True),
+            "giukhoangcachketancong": tk.BooleanVar(),
+            "giukhoangcachchimuctieupk": tk.BooleanVar(value = True),
+            "khoangcachgiuketancong": tk.DoubleVar(value = KHOANGCACHGIUKETANCONG),
             "hoithanhphutheosau": tk.BooleanVar(),
         }
 
@@ -303,6 +306,28 @@ class GiaoDienHienThi:
         self._create_check(nhom, "Ưu tiên bảo thú Mao Sơn", self.vars["uutienmaoson"], "battat_uutienbaothukynangtrieuhoi", "Ctrl+Alt+S")
         self._create_check(nhom, "Chế độ buff toàn bang", self.vars["bufftoanbang"], "battat_chedobufftoanbang", "Ctrl+Alt+Shift+N")
         self._create_check(nhom, "Chặn tăng cấp độ", self.vars["chantangcap"], "battat_chantangcapdo", "Ctrl+Alt+Shift+C")
+
+        # Giữ khoảng cách với đối tượng đang đánh mình (ra đòn và quay mặt về mình): lùi ra, chỉ buff / hồi máu, bỏ chiêu đánh
+        nhom = self._taonhom(tab, "Giữ khoảng cách")
+        self._create_check(nhom, "Lùi ra khỏi kẻ đang tấn công mình (chỉ buff, không đánh)", self.vars["giukhoangcachketancong"], "battat_giukhoangcachketancong")
+        self._create_check(nhom, "Chỉ với mục tiêu PK (bỏ tick để thử với cả quái)", self.vars["giukhoangcachchimuctieupk"], "battat_giukhoangcachchimuctieupk")
+        hanggiukhoangcach = ttk.Frame(nhom)
+        hanggiukhoangcach.grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W)
+        ttk.Label(hanggiukhoangcach, text = "Giữ cách kẻ tấn công ít nhất:").pack(side = tk.LEFT)
+
+        def on_giukhoangcach_change(hwnd = None):
+            hwnd = hwnd or self.get_selected_hwnd()
+            if hwnd:
+                try:
+                    self.command_dict[hwnd] = f"set_khoangcachgiuketancong:{self.vars['khoangcachgiuketancong'].get()}"
+                except tk.TclError:
+                    pass
+
+        self.spin_khoangcachgiuketancong = ttk.Spinbox(hanggiukhoangcach, from_ = 2.0, to = 15.0, increment = 1.0, width = 5,
+                                                       textvariable = self.vars["khoangcachgiuketancong"], command = on_giukhoangcach_change)
+        self.spin_khoangcachgiuketancong.pack(side = tk.LEFT, padx = 4)
+        self._ganspinboxapdung(self.spin_khoangcachgiuketancong, on_giukhoangcach_change)
+        ttk.Label(hanggiukhoangcach, text = "ô", style = "Phu.TLabel").pack(side = tk.LEFT)
 
         # Nhóm & Bảo thú nằm chung tab Chiến đấu
         self._taotabnhom(tab)
@@ -874,6 +899,8 @@ class GiaoDienHienThi:
                 ("trieuhoibaothu", "_is_tudongtrieuhoibaothugiangho"),
                 ("sudungkynangbaothu", "_is_tudongsudungkynangbaothu"),
                 ("tranhvungcam", "_is_tranhvungcam"),
+                ("giukhoangcachketancong", "_is_giukhoangcachketancong"),
+                ("giukhoangcachchimuctieupk", "_is_giukhoangcachchimuctieupk"),
                 ("hoithanhphutheosau", "_is_hoithanhphutheosau"),
                 ("khaikhoang", "_is_tudongkhaikhoang"),
                 ("chientruong", "_is_tudongdichientruong"),
@@ -890,6 +917,14 @@ class GiaoDienHienThi:
         except KeyError:
             # Focus đang ở danh sách thả xuống của ttk.Combobox (widget nội bộ của Tk), tkinter không tra được tên
             widgetdangfocus = None
+
+        if widgetdangfocus != getattr(self, 'spin_khoangcachgiuketancong', None):
+            try:
+                giukhoangcach_moi = info.get("_khoangcachgiuketancong", KHOANGCACHGIUKETANCONG)
+                if abs(self.vars["khoangcachgiuketancong"].get() - giukhoangcach_moi) > 0.01:
+                    self.vars["khoangcachgiuketancong"].set(giukhoangcach_moi)
+            except tk.TclError:
+                pass
 
         if widgetdangfocus != getattr(self, 'spin_bankinhdiemdanh', None):
             try:

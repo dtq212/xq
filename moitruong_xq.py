@@ -72,6 +72,8 @@ class MoiTruong:
 
         self._thoidiemdichuyengannhat = 0.
         self._thoidiemhetchovankhi = 0.
+        # Khoá vận khí triệu hồi bảo thú (action_khoavankhitrieuhoi): None hoặc {"batdau", "toida", "caulenhduocpheps"}
+        self._khoavankhitrieuhoi = None
         # Đang spam lệnh triệu hồi bảo thú (pf 4131.@) => không cho dùng kỹ năng nào khác tới thời điểm này
         self._thoidiemhetkhoakynang = 0.
         self._thoidiemlogkhoakynanggannhat = 0.
@@ -158,6 +160,8 @@ class MoiTruong:
         # Bộ chia lượt gửi lệnh / bắt đầu di chuyển giữa các bot (CuaSo gán vào), None thì làm ngay như cũ
         self.dieuphoi = None
         self.dieuphoidichuyen = None
+        # Giữ chỗ chiêu khống chế trên mục tiêu giữa các bot (GiuKyNangMucTieu, CuaSo gán vào), None thì không giữ
+        self.giukynang = None
 
         self.thoidiemmuctieuanthangannhat_map = {}
         self.thoidiemmuctieuxuathiengannhat_map = {}
@@ -222,6 +226,10 @@ class MoiTruong:
                 # Chờ lượt (xoay vòng lệnh) có thể lâu: kiểm tra lại lần nữa
                 if self._is_lenhkynangdavaohoichieu(lenh):
                     return
+            # Lệnh vào hàng đợi trước khi khoá vận khí triệu hồi mà tới giờ mới gửi: bỏ (vòng lặp sau tự gửi lại nếu còn cần)
+            if self._is_lenhbichankhoavankhi(lenh.caulenh):
+                self._loglenh(lenh.caulenh, "bỏ: đang khoá vận khí triệu hồi")
+                return
             self._loglenh(lenh.caulenh, f"hàng đợi, ưu tiên {lenh.douutien}")
             diachidulieu = self.diachihamthucthicaulenh + 0x40
             chuoi_bytes = lenh.caulenh.encode("utf-8")
@@ -277,6 +285,8 @@ class MoiTruong:
         write_bytes(self.tientrinh, self.diachihamthucthicaulenh, bytes(encoding), len(encoding))
 
     def action_thucthicaulenh(self, caulenh, douutien = DOUUTIEN_TRUNGBINH, vitrikynang = None):
+        if self._is_lenhbichankhoavankhi(caulenh):
+            return False
         if caulenh in self.caulenhdangchos:
             return False
 
@@ -294,6 +304,8 @@ class MoiTruong:
         return True
 
     def action_thucthicaulenh2(self, caulenh, delay = 0.05):
+        if self._is_lenhbichankhoavankhi(caulenh):
+            return False
         if time.time() - self._thoidiemthucthicaulenh2gannhat < delay:
             return False
         self._thoidiemthucthicaulenh2gannhat = time.time()
@@ -628,6 +640,9 @@ class MoiTruong:
         return self.action_thucthicaulenh2(caulenh, delay = 0.)
 
     def auto_assemble_nhatvatpham(self):
+        # Nhặt đồ xung quanh làm nhân vật chạy tới vật phẩm => ngắt vận khí triệu hồi
+        if self.get_is_khoavankhitrieuhoi():
+            return
         if not self._is_dasetupautoassemblenhatvatpham:
             self._diachiautoassemblenhatvatpham = self.tientrinh.allocate(64)
             write_bytes(self.tientrinh, self._diachiautoassemblenhatvatpham, bytes.fromhex("8B 0D"), 2)
@@ -1004,7 +1019,8 @@ class MoiTruong:
 
         if idtuthenhanvat not in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT):
             self._thoidiemtuthenhanvattanconggannhat = time.time()
-        elif time.time() - self._thoidiemtuthenhanvattanconggannhat > 0.4:
+        elif time.time() - self._thoidiemtuthenhanvattanconggannhat > 0.4 and not self.get_is_khoavankhitrieuhoi():
+            # Đang vận khí triệu hồi thì không ghi đè tư thế (có thể làm game coi như dừng chiêu)
             self.set_idtuthenhanvat(TUTHENHANVAT_DELAYSAUTANCONG)
 
         if not diachicosothongtinnhanvatmuctieuhientai or self.get_is_dangvankhi():
@@ -1239,6 +1255,22 @@ class MoiTruong:
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
         if self.get_idtuthenhanvat(diachicosothongtinnhanvat) != idtuthenhanvat:
             write_int(self.tientrinh, diachicosothongtinnhanvat + 0x1178, idtuthenhanvat)
+
+    def get_huongmat(self, diachicosothongtinnhanvat = None):
+        # Hướng mặt 8 hướng (0..7). Game không lưu đối tượng đang nhắm vào ai, nhưng lúc ra đòn thì quay mặt về mục tiêu
+        diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
+        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x13F8)
+
+    def get_is_huongmatvediem(self, diachicosothongtinnhanvat, x2, y2, solechtoida = 1):
+        # Hướng mặt của đối tượng có trỏ về điểm (x2, y2) không (lệch tối đa solechtoida trong 8 hướng).
+        # Đo trên quái đang ra đòn: huong = round((225 - goc) / 45) mod 8, goc = atan2(y2 - y, x2 - x) theo tọa độ ô (y hướng xuống)
+        x1, y1 = self.get_toado(diachicosothongtinnhanvat)
+        if (x1, y1) == (x2, y2):
+            return True
+        goc = math.degrees(math.atan2(y2 - y1, x2 - x1)) % 360
+        huongdukien = round((225 - goc) / 45) % 8
+        lech = (self.get_huongmat(diachicosothongtinnhanvat) - huongdukien) % 8
+        return min(lech, 8 - lech) <= solechtoida
 
     def get_is_muctieuchaytron(self, diachicosothongtinnhanvat):
         if self.get_idtuthenhanvat(diachicosothongtinnhanvat) != TUTHENHANVAT_DICHUYEN:
@@ -1755,6 +1787,8 @@ class MoiTruong:
     def action_dichuyen(self, x, y, delay = 0.05, is_rangbuoctrongmanhinh = False):
         if self._is_vohieuhoadichuyen:
             return False
+        if self.get_is_khoavankhitrieuhoi():
+            return False
 
         if time.time() - self._thoidiemdichuyengannhat < delay:
             return False
@@ -2037,9 +2071,49 @@ class MoiTruong:
         # Kỹ năng vận khí cần một lúc mới bật trạng thái "Đang vận khí"; coi như đang vận khí trong khoảng chờ đó để không thao tác gì làm ngắt chiêu
         self._thoidiemhetchovankhi = max(self._thoidiemhetchovankhi, time.time() + thoigian)
 
+    def action_huychovankhi(self):
+        # Bỏ khoảng chờ vận khí giả (action_chovankhi) khi chủ động ngắt vận khí để di chuyển / dùng chiêu khác.
+        # Đang khoá vận khí triệu hồi bảo thú thì không bỏ
+        if not self.get_is_khoavankhitrieuhoi():
+            self._thoidiemhetchovankhi = 0.
+
+    def action_khoavankhitrieuhoi(self, caulenhduocpheps = ()):
+        # Triệu hồi bảo thú (tốn bùa, thất bại là mất bùa): khoá mọi thao tác có thể ngắt vận khí (di chuyển, kỹ năng, pf, dùng vật phẩm,
+        # nhặt đồ...) cho tới khi vận khí xong. caulenhduocpheps: chính lệnh triệu hồi (đã vào hàng đợi) vẫn được gửi
+        thoidiemhientai = time.time()
+        self._khoavankhitrieuhoi = {
+            "batdau": thoidiemhientai,
+            "toida": thoidiemhientai + THOIGIANKHOAVANKHITRIEUHOITOIDA,
+            "caulenhduocpheps": set(caulenhduocpheps),
+        }
+        self.action_chovankhi(THOIGIANCHOVAOVANKHI)
+        self._inlog(f"[KHOÁ VẬN KHÍ TRIỆU HỒI] bắt đầu, cho phép {sorted(caulenhduocpheps)}")
+
+    def get_is_khoavankhitrieuhoi(self):
+        # Khoá từ lúc gửi lệnh triệu hồi: chờ tối đa THOIGIANCHOVAOVANKHI để vào vận khí, sau đó giữ tới khi game hết vận khí (tối đa THOIGIANKHOAVANKHITRIEUHOITOIDA)
+        khoa = self._khoavankhitrieuhoi
+        if not khoa:
+            return False
+        thoidiemhientai = time.time()
+        if thoidiemhientai < khoa["toida"] and (thoidiemhientai - khoa["batdau"] < THOIGIANCHOVAOVANKHI or self._get_is_dangvankhitrongame()):
+            return True
+        self._khoavankhitrieuhoi = None
+        self._inlog(f"[KHOÁ VẬN KHÍ TRIỆU HỒI] kết thúc sau {round(thoidiemhientai - khoa['batdau'], 1)}s")
+        return False
+
+    def _is_lenhbichankhoavankhi(self, caulenh):
+        # Đọc khoá 1 lần: luồng khác có thể vừa mở khoá (gán None) ngay sau khi kiểm tra
+        khoa = self._khoavankhitrieuhoi
+        if not khoa or not self.get_is_khoavankhitrieuhoi():
+            return False
+        return caulenh not in khoa["caulenhduocpheps"]
+
     def get_is_dangvankhi(self):
         if time.time() < self._thoidiemhetchovankhi:
             return True
+        return self._get_is_dangvankhitrongame()
+
+    def _get_is_dangvankhitrongame(self):
         x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not x:
             return False
@@ -2054,6 +2128,9 @@ class MoiTruong:
         return x > 0
 
     def action_tudongtimduong(self, x, y, idbando, is_lotrinh = True):
+        # Đặt đích tìm đường mới là bắt đầu di chuyển => ngắt vận khí triệu hồi (huỷ tìm đường thì qua action_ngungtudongtimduong, không chặn)
+        if (x or y) and self.get_is_khoavankhitrieuhoi():
+            return False
         a = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not a: return False
         a = read_int(self.tientrinh, a + 0xADFDEC)

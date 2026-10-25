@@ -18,9 +18,9 @@ from giaodienhienthi_xq import GiaoDienHienThi
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-def run_bot_process(hwnd, shared_data, command_dict, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos):
+def run_bot_process(hwnd, shared_data, command_dict, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos, dieuphoi_giukynangs):
     try:
-        bot = CuaSo(hwnd, shared_data, command_dict, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos)
+        bot = CuaSo(hwnd, shared_data, command_dict, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos, dieuphoi_giukynangs)
         while not bot.main_stop.is_set():
             if not win32gui.IsWindow(hwnd):
                 break
@@ -41,6 +41,8 @@ class TroChoiManager:
         self.dieuphoi_khoa = self.manager.Lock()
         self.dieuphoi_trangthai = self.manager.dict()
         self.dieuphoi_dangchos = self.manager.dict()
+        # Giữ chỗ chiêu khống chế trên mục tiêu, để 2 bot không cùng gửi 1 hiệu ứng (xem GiuKyNangMucTieu)
+        self.dieuphoi_giukynangs = self.manager.dict()
         # Cấu hình nhịp lệnh dùng chung mọi bot, giao diện sửa trực tiếp ở đây (bot đọc lại mỗi giây)
         self.dieuphoi_trangthai["cauhinh"] = taicauhinhdieuphoi()
         self.bot_processes = {}
@@ -93,7 +95,7 @@ class TroChoiManager:
             game_hwnds = self._timcuasogame()
             for hwnd in game_hwnds:
                 if hwnd not in self.bot_processes:
-                    p = Process(target = run_bot_process, args = (hwnd, self.shared_data, self.command_dict, self.dieuphoi_khoa, self.dieuphoi_trangthai, self.dieuphoi_dangchos))
+                    p = Process(target = run_bot_process, args = (hwnd, self.shared_data, self.command_dict, self.dieuphoi_khoa, self.dieuphoi_trangthai, self.dieuphoi_dangchos, self.dieuphoi_giukynangs))
                     p.daemon = True
                     p.start()
                     self.bot_processes[hwnd] = p

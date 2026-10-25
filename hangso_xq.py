@@ -126,6 +126,14 @@ KHOANGCACHNUAMANHINH = 9.
 KHOANGCACHTOANMANHINH = 18.
 
 KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN = 3
+# Kỹ năng vận khí: từ lúc gửi lệnh tới lúc game vào trạng thái vận khí mất 0-1s (chờ dư)
+THOIGIANCHOVAOVANKHI = 1.5
+# Khoá vận khí triệu hồi bảo thú giữ tối đa chừng này (phòng đọc trạng thái vận khí sai mà khoá mãi)
+THOIGIANKHOAVANKHITRIEUHOITOIDA = 15.
+# Lôi Động Cửu Thiên vận khí 6s (phạm vi 7x7 ô quanh bản thân)
+THOIGIANVANKHILOIDONGCUUTHIEN = 6.
+# Mao Sơn: có cụm quái quanh mục tiêu mà mục tiêu xa hơn chừng này thì chạy vào (dừng cách ~1 ô) để ra Lôi Động Cửu Thiên trúng cả cụm
+KHOANGCACHTIEPCANLOIDONGCUUTHIEN = 2.
 
 KHOANGCACHTOIDAHOPLE = 255.
 KHOANGCACHSUDUNGKYNANGCANCHIEN = 1.5
@@ -133,6 +141,9 @@ KHOANGCACHSUDUNGKYNANGTAMXA = 9.  # 12.
 # Thục Sơn chỉ dùng Khai Thiên Tịch Địa để lướt khi nội lực trên mức này (%), chỉnh được ở giao diện
 PHANTRAMNOILUCKHAITHIENTICHDIA = 75.
 KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN = 9.
+# Di chuyển tự do: mục tiêu xa hơn chừng này thì Thục Sơn chạy vào (dừng cách mục tiêu ~1 ô ít hơn, tức ~3 ô)
+# rồi mới ra Ngự Kiếm Phi Tiên, để trúng cả cụm quái quanh mục tiêu (chiêu đánh quanh bản thân 9 ô)
+KHOANGCACHTIEPCANNGUKIEMPHITIEN = 4.
 KHOANGCACHHIEUQUAKYNANGKHAITHIENTICHDIA = 6.0
 KHOANGCACHNHATDO = KHOANGCACHTOANMANHINH
 
@@ -653,7 +664,9 @@ BAOTHUVATPHAMs = (SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN, THANTHU
 VATPHAMKHONGNHATs = tuple()
 # Vật phẩm ưu tiên nhặt trên mọi hành động khác (tấn công, theo nhóm, gom quái, ...)
 VATPHAMUUTIENNHATs = (LEBAOKHAIQUOC,)
-VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUSAMDON, CAPCUUDON, HOATTAMDON, TIEUDAOTAN, KIMTANGTAN, QUYNGUYENDON, KHIMACHDON, TUTAMDON,  HOANGKIMTHANHY, "Thanh Đồng Bảo Hộp", TUKIMBAOHOP, "Mồi Câu", "Đá Tương Uyên", TIENTE, "Vô Song Điểm Phiếu", "Cờ Đỏ", "Sao Vàng", LEBAOKHAIQUOC, "Âu Dã Bảo Thạch", "Ngọc Kiếm", "Nguyệt Hoàn", )
+VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUSAMDON, CAPCUUDON, HOATTAMDON, TIEUDAOTAN, KIMTANGTAN, QUYNGUYENDON, KHIMACHDON, TUTAMDON,  HOANGKIMTHANHY, "Thanh Đồng Bảo Hộp", TUKIMBAOHOP, "Mồi Câu", "Đá Tương Uyên", TIENTE, "Vô Song Điểm Phiếu", "Cờ Đỏ", "Sao Vàng", LEBAOKHAIQUOC, "Âu Dã Bảo Thạch",
+                      # Phôi vũ khí cấp 75: Kiếm, Đao, Thương, Côn, Ám Khí, Quyền
+                      "Ngọc Kiếm", "Kim Đao", "Xích Anh Thương", "Cổ Phương Côn", "Nguyệt Hoàn", "Thạch Điêu Quyền Nhẫn", )
 
 DUAHAU = "Dưa hấu"
 LAOTUU = "Lão Tửu"
@@ -930,6 +943,10 @@ KHOANGNGHIBATDAUDICHUYEN = (0.15, 0.5)
 IS_LENHKHANCAPKHONGCHOLUOT = True
 # Chờ lượt quá lâu (bot khác treo/crash giữa chừng) thì cứ gửi, không kẹt mãi
 THOIGIANCHOLUOTTOIDA = 2.0
+# Chiêu khống chế (Thôn Kình -> Trọng Thương, Phong Ma Quyết -> Trầm Mặc...) gửi lên 1 mục tiêu thì giữ chỗ trong khoảng này:
+# các bot khác thấy mục tiêu chưa dính hiệu ứng (chiêu đang bay / chưa cập nhật) cũng không gửi trùng, chuyển sang chiêu khác.
+# Hết khoảng mà mục tiêu vẫn chưa dính (né, kháng) thì bot nào cũng được gửi lại
+THOIGIANGIUKYNANGMUCTIEU = 2.0
 
 # Dữ liệu chung giữa các cửa sổ (shared_data) đọc lại sau mỗi khoảng này (các cửa sổ cập nhật 0.25s/lần)
 THOIGIANNHOSHAREDDATA = 0.25
@@ -1024,6 +1041,29 @@ YEUCAUDICHUYENTANCONG = 2
 YEUCAUDICHUYENDICHUYENTUDO = 3
 YEUCAUDICHUYENTHEOSAU = 4
 YEUCAUDICHUYENGOMQUAI = 5
+YEUCAUDICHUYENGIUKHOANGCACH = 6
+
+# Giữ khoảng cách với đối tượng đang tấn công mình (tùy chọn trên giao diện, hay bật cho Mao Sơn / Vân Mộng Cốc khi giao tranh)
+KHOANGCACHGIUKETANCONG = 6.
+# Đối tượng ra đòn quay mặt về mình thì coi là đang tấn công mình trong chừng này giây (tư thế ra đòn nhấp nháy giữa các đòn)
+THOIGIANNHOKETANCONG = 2.
+# Tính lại điểm lùi giữ khoảng cách mỗi chừng này giây (quét đối tượng xung quanh)
+THOIGIANTINHGIUKHOANGCACH = 0.15
+# Lùi theo một hướng mà chừng này giây chưa nhích được 0.5 ô thì coi là kẹt tường, chặn hướng đó THOIGIANCHANHUONGLUI giây
+THOIGIANKETLUIGIUKHOANGCACH = 0.7
+THOIGIANCHANHUONGLUI = 3.
+# Giữ khoảng cách chỉ lùi khi "rảnh": mọi kỹ năng quan trọng của phái đang hồi chiêu hoặc không có mục tiêu thích hợp.
+# Còn kỹ năng quan trọng dùng được thì đứng lại dùng. Phái không có trong danh sách: luôn lùi khi kẻ tấn công lại gần
+KYNANGQUANTRONGGIUKHOANGCACH_MAP = {
+    "maoson": (VITRIKYNANG_THUCCOT, VITRIKYNANG_THUCGIAP, VITRIKYNANG_THUCTAM),
+    "vanmongcoc": (VITRIKYNANG_PHONGANTHUAT, VITRIKYNANG_HUYENQUANGTHIEMANH, VITRIKYNANG_TOANPHONGQUYET, VITRIKYNANG_CAITUHOANSINH,
+                   VITRIKYNANG_TAYTRANQUYET, VITRIKYNANG_CAMLOTRI, VITRIKYNANG_KHIETVANQUYET),
+    # Thục Sơn Kiếm / Thục Sơn Đao cùng tên môn phái "thucson", tách khoá theo _is_thucsondao (xem _laykhoakynangquantrong)
+    "thucsonkiem": (VITRIKYNANG_TINHTAMQUYET, VITRIKYNANG_TIENKHI, VITRIKYNANG_TIENTHANVODICH, VITRIKYNANG_LANGKHONGCHIHUYET,
+                    VITRIKYNANG_VANKIEMXUYENTAM, VITRIKYNANG_BANGTAMTHUC, VITRIKYNANG_NGUKIEMPHITIEN, VITRIKYNANG_NGUKIEMTHUAT),
+}
+# Kết quả xét kỹ năng quan trọng (tính trong danh sách kỹ năng của phái) cũ hơn chừng này giây thì coi như rảnh
+THOIGIANHIEULUCKYNANGQUANTRONG = 0.5
 YEUCAUDICHUYENKHAIKHOANG = 100
 YEUCAUDICHUYENDAOTANGBAODO = 200
 
