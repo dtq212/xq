@@ -551,7 +551,17 @@ class GiaoDienHienThi:
         hangnut = ttk.Frame(nhom)
         hangnut.grid(row = 2, column = 0, columnspan = 2, sticky = tk.EW, pady = (4, 0))
         self.var_nguocchieu = tk.BooleanVar()
-        ttk.Checkbutton(hangnut, text = "Đi ngược chiều", variable = self.var_nguocchieu).pack(side = tk.LEFT)
+        # Lưu xuống bot (theo nhân vật) để Tự chọn / tự nạp mẫu khi chưa có điểm cũng đi theo chiều này, không chỉ khi bấm Nạp mẫu.
+        # Vừa tích: (hwnd, giá trị, thời điểm) chờ bot nhận, update_ui không nạp lại giá trị cũ đè lên
+        self._nguocchieuchoxacnhan = None
+
+        def on_nguocchieu():
+            hwnd = self.get_selected_hwnd()
+            if hwnd:
+                self.command_dict[hwnd] = f"set_nguocchieulotrinh:{1 if self.var_nguocchieu.get() else 0}"
+                self._nguocchieuchoxacnhan = (hwnd, self.var_nguocchieu.get(), time.time())
+
+        ttk.Checkbutton(hangnut, text = "Đi ngược chiều", variable = self.var_nguocchieu, command = on_nguocchieu).pack(side = tk.LEFT)
 
         def on_tuchon_lotrinhmau():
             hwnd = self.get_selected_hwnd()
@@ -975,6 +985,11 @@ class GiaoDienHienThi:
             self._baothutrieuhoichoxacnhan = choxacnhan = None
         if not choxacnhan and info.get("_baothutrieuhoimaoson") in BAOTHUTRIEUHOIMAOSONs and self.str_baothutrieuhoi.get() != info["_baothutrieuhoimaoson"]:
             self.str_baothutrieuhoi.set(info["_baothutrieuhoimaoson"])
+        choxacnhan = self._nguocchieuchoxacnhan
+        if choxacnhan and (choxacnhan[0] != hwnd_to_show or info.get("_is_nguocchieulotrinh") == choxacnhan[1] or time.time() - choxacnhan[2] > 5.):
+            self._nguocchieuchoxacnhan = choxacnhan = None
+        if not choxacnhan and "_is_nguocchieulotrinh" in info and self.var_nguocchieu.get() != bool(info["_is_nguocchieulotrinh"]):
+            self.var_nguocchieu.set(bool(info["_is_nguocchieulotrinh"]))
         tenbodos = info.get("_tenbodotrieuhoi") or []
         self.lbl_bodotrieuhoi.config(text = ", ".join(tenbodos) if tenbodos else "(chưa ghi bộ đồ)")
 

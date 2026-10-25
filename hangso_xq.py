@@ -1012,8 +1012,22 @@ CHENHLECHKHOANGCACHDOIMUCTIEU = 1.5
 # Khựng sau đòn (tư thế 11) chỉ là hiệu ứng che mắt ở client (máy chủ không tính): luồng nhanh thấy tư thế 11 là ghi về đứng im ngay
 IS_BOKHUNGSAUTANCONG = True
 CHUKYBOKHUNGSAUTANCONG = 0.02
+# Chỉ bỏ khựng khi tư thế khựng sau đòn đã kéo dài chừng này giây (đặt ngay khi vừa vào khựng thì cắt ngang đòn / chiêu chưa xong)
+THOIGIANCHOBOKHUNGSAUTANCONG = 1.
+# Sau khi hết tư thế xuất chiêu (6 / 9, ~0.68s) còn khựng chừng này giây: vẫn dùng kỹ năng được nhưng không di chuyển
+# (MoiTruong.get_is_dangxuatchieu)
+THOIGIANKHUNGSAUXUATCHIEU = 1.
+# Trong lúc xuất chiêu / khựng, mỗi vòng đẩy mốc "được tự gửi lệnh" của client lên trước chừng này giây để client không tự
+# bước (MoiTruong.action_chandichuyen); phải dài hơn chu kỳ LoopGiuOTrongHanhTrang
+THOIGIANCHANTUDICHUYENCLIENT = 0.15
+# Gửi chiêu trong tầm rồi thì chặn client tự bước tối đa chừng này giây chờ vào tư thế xuất chiêu
+THOIGIANCHANTUDICHUYENTRUOCXUATCHIEU = 0.25
+# Trong lúc xuất chiêu / khựng chỉ gửi chiêu nhắm mục tiêu khi mục tiêu trong chừng này ô (ngoài tầm thì game tự chạy lại gần)
+KHOANGCACHCHIEUKHIXUATCHIEU = KHOANGCACHSUDUNGKYNANGCANCHIEN
 # Đang chế đồ (vận khí): kiểm tra ô cuối hành trang 1 mỗi chừng này giây, có vật phẩm thì chuyển sang hành trang khác ngay
 CHUKYGIUOTRONGHANHTRANG = 0.03
+# Kỹ năng cần đứng lại khi ra đòn: chờ tối đa chừng này giây để nhân vật vào tư thế xuất chiêu rồi mới ngắt di chuyển
+THOIGIANCHONGATDICHUYENXUATCHIEU = 1.
 
 SOLANGUITOIDASPAMKYNANG = 3
 SOGIAYDEMSPAMKYNANG = 1.5

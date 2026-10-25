@@ -221,6 +221,7 @@ class CuaSo:
                     "_is_doidokhitrieuhoi": self.tactu._is_doidokhitrieuhoi,
                     "_tenbodotrieuhoi": [mon["ten"] for mon in self.tactu._bodotrieuhoi],
                     "_baothutrieuhoimaoson": self.tactu._baothutrieuhoimaoson,
+                    "_is_nguocchieulotrinh": self.tactu._is_nguocchieulotrinh,
                 }
                 # Tầm nhìn chia sẻ cho nhân vật khác cùng máy (đối tượng thù địch mình thấy); lỗi thì vẫn cập nhật phần còn lại
                 try:
@@ -256,6 +257,8 @@ class CuaSo:
                         self.tactu.nap_lotrinhmau(int(phan[0]), phan[1], phan[2] == "1", is_bosung = cmd.startswith("bosung_lotrinhmau:"))
                 elif cmd == "tuchon_lotrinhmau":
                     self.tactu.tuchon_lotrinhmau()
+                elif isinstance(cmd, str) and cmd.startswith("set_nguocchieulotrinh:"):
+                    self.tactu.thietlap_nguocchieulotrinh(cmd.split(":", 1)[1] == "1")
                 elif cmd == "tieptuchoatdong":
                     self.tactu.tieptuchoatdong()
                 elif isinstance(cmd, str) and cmd.startswith("luu_lotrinhmau:"):

@@ -1,3 +1,4 @@
+import ctypes
 import queue
 import struct
 import threading
@@ -115,6 +116,19 @@ class MoiTruong:
         self._thoidiemsudungchucnangmorong5 = 0.
         self._thoidiemtuthenhanvatdungimgannhat = 0.
         self._thoidiemtuthenhanvattanconggannhat = 0.
+        # Lần cuối còn thấy tư thế xuất chiêu (get_is_dangxuatchieu): chặn di chuyển thêm THOIGIANKHUNGSAUXUATCHIEU giây sau mốc này
+        self._thoidiemxuatchieugannhat = 0.
+        # Chiêu bot gửi gần nhất có cần đứng yên lúc ra đòn không (is_ngatdichuyen trong danh sách kỹ năng); chiêu ra sát thương ngay
+        # (Đại Hải Vô Lượng, Ba Động Quyền...) thì tư thế xuất chiêu của nó không chặn di chuyển
+        self._is_chieucanngatdichuyen = True
+        # Có giữ thêm THOIGIANKHUNGSAUXUATCHIEU giây khựng sau tư thế xuất chiêu không (chiêu lướt Khai Thiên Tịch Địa: chỉ giữ hoạt ảnh)
+        self._is_khungsauxuatchieu = True
+        # Mục tiêu của chiêu đó (địa chỉ, id lúc gửi): mục tiêu đã chết / biến mất thì thôi chặn di chuyển ngay
+        self._diachimuctieuxuatchieu = None
+        self._idmuctieuxuatchieu = None
+        # Số bay của mục tiêu lúc gửi chiêu (_docsobaydoituong) và đã thấy số bay mới chưa (chiêu đã trúng): thả khựng sớm
+        self._sobaymuctieuxuatchieu = None
+        self._is_datrungchieu = False
         self._thoidiemtuthenhanvatdungimcomuctieugannhat = 0.
         self._thoidiemtuthenhanvatkhongdichuyengannhat = 0.
         # Theo từng bảo thú (Mao Sơn có thể có nhiều bảo thú triệu hồi cùng lúc, dùng chung một mốc thì con sau bị chặn lệnh)
@@ -247,6 +261,10 @@ class MoiTruong:
             # Lệnh vào hàng đợi trước khi khoá vận khí triệu hồi mà tới giờ mới gửi: bỏ (vòng lặp sau tự gửi lại nếu còn cần)
             if self._is_lenhbichankhoavankhi(lenh.caulenh):
                 self._loglenh(lenh.caulenh, "bỏ: đang khoá vận khí triệu hồi")
+                return
+            # Lệnh nhặt đồ (chạy tới vật phẩm) vào hàng đợi trước khi xuất chiêu mà tới giờ mới gửi: bỏ
+            if lenh.caulenh.startswith("get ") and self.get_is_dangxuatchieu():
+                self._loglenh(lenh.caulenh, "bỏ: đang xuất chiêu")
                 return
             self._loglenh(lenh.caulenh, f"hàng đợi, ưu tiên {lenh.douutien}")
             diachidulieu = self.diachihamthucthicaulenh + 0x40
@@ -426,6 +444,9 @@ class MoiTruong:
 
     def action_nhatvatphamtoado(self, toadox, toadoy, delay = 0.05):
         if time.time() - self._thoidiemnhatvatphamtoadogannhat < delay:
+            return False
+        # "get x y" làm nhân vật chạy tới vật phẩm: không gửi khi đang xuất chiêu
+        if self.get_is_dangxuatchieu():
             return False
         self._thoidiemnhatvatphamtoadogannhat = time.time()
         caulenh = "get {} {}".format(toadox, toadoy)
@@ -669,8 +690,8 @@ class MoiTruong:
         return self.action_thucthicaulenh2(caulenh, delay = 0.)
 
     def auto_assemble_nhatvatpham(self):
-        # Nhặt đồ xung quanh làm nhân vật chạy tới vật phẩm => ngắt vận khí triệu hồi
-        if self.get_is_khoavankhitrieuhoi():
+        # Nhặt đồ xung quanh làm nhân vật chạy tới vật phẩm => ngắt vận khí triệu hồi / mất tác dụng chiêu đang xuất
+        if self.get_is_khoavankhitrieuhoi() or self.get_is_dangxuatchieu():
             return
         if not self._is_dasetupautoassemblenhatvatpham:
             self._diachiautoassemblenhatvatpham = self.tientrinh.allocate(64)
@@ -1091,9 +1112,10 @@ class MoiTruong:
 
         if idtuthenhanvat not in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT):
             self._thoidiemtuthenhanvattanconggannhat = time.time()
-        elif time.time() - self._thoidiemtuthenhanvattanconggannhat > 0.4 and not self.get_is_khoavankhitrieuhoi():
-            # Đang vận khí triệu hồi thì không ghi đè tư thế (có thể làm game coi như dừng chiêu)
-            self.set_idtuthenhanvat(TUTHENHANVAT_DELAYSAUTANCONG)
+
+        # elif time.time() - self._thoidiemtuthenhanvattanconggannhat > 0.4 and not self.get_is_khoavankhitrieuhoi():
+        #     # Đang vận khí triệu hồi thì không ghi đè tư thế (có thể làm game coi như dừng chiêu)
+        #     self.set_idtuthenhanvat(TUTHENHANVAT_DELAYSAUTANCONG)
 
         if not diachicosothongtinnhanvatmuctieuhientai or self.get_is_dangvankhi():
             self._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
@@ -1854,7 +1876,7 @@ class MoiTruong:
     def action_dichuyen(self, x, y, delay = 0.05, is_rangbuoctrongmanhinh = False):
         if self._is_vohieuhoadichuyen:
             return False
-        if self.get_is_khoavankhitrieuhoi():
+        if self.get_is_khoavankhitrieuhoi() or self.get_is_dangxuatchieu():
             return False
 
         if time.time() - self._thoidiemdichuyengannhat < delay:
@@ -2156,6 +2178,68 @@ class MoiTruong:
         self.action_chovankhi(THOIGIANCHOVAOVANKHI)
         self._inlog(f"[KHOÁ VẬN KHÍ TRIỆU HỒI] bắt đầu, cho phép {sorted(caulenhduocpheps)}")
 
+    def get_is_dangxuatchieu(self):
+        # Đang xuất chiêu (tư thế tấn công vật lý 6 / phép 9; 11 chỉ còn khi bot tự ghi) hoặc chưa hết THOIGIANKHUNGSAUXUATCHIEU giây
+        # khựng sau khi hết tư thế xuất chiêu (game không có tư thế riêng cho khựng): vẫn được dùng kỹ năng nhưng TUYỆT ĐỐI không
+        # di chuyển (di chuyển lúc này vẫn tính hồi chiêu mà chiêu mất tác dụng). Đo 2026-10-25: game giữ tư thế 6 ~0.68s rồi về
+        # thẳng 1 / 2. Các hàm phát lệnh di chuyển / nhặt đồ đều kiểm tra hàm này; luồng nhanh gọi liên tục để cập nhật mốc xuất chiêu
+        # Chỉ tính chiêu cần đứng yên (set_is_chieucanngatdichuyen theo chiêu bot gửi gần nhất). Hoạt ảnh xuất chiêu (~0.68s) luôn giữ
+        # trọn (cắt ngang bị game đánh vi phạm); phần khựng sau đó thì thả sớm khi chiêu đã tác động xong: mục tiêu đã chết / biến mất,
+        # hoặc mục tiêu đã hiện số bay (server báo trúng, _is_muctieudatrungchieu); không thấy thì giữ tối đa THOIGIANKHUNGSAUXUATCHIEU
+        thoidiemhientai = time.time()
+        if self._is_chieucanngatdichuyen \
+                and self.get_idtuthenhanvat() in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT, TUTHENHANVAT_DELAYSAUTANCONG):
+            if self._is_khungsauxuatchieu:
+                self._thoidiemxuatchieugannhat = thoidiemhientai
+            self._is_muctieudatrungchieu()
+            return True
+        if thoidiemhientai - self._thoidiemxuatchieugannhat >= THOIGIANKHUNGSAUXUATCHIEU:
+            return False
+        if self._is_muctieuxuatchieudahet() or self._is_muctieudatrungchieu():
+            self._thoidiemxuatchieugannhat = 0.
+            return False
+        return True
+
+    def _is_muctieuxuatchieudahet(self):
+        if not self._diachimuctieuxuatchieu:
+            return False
+        return self.get_iddoituong(self._diachimuctieuxuatchieu) != self._idmuctieuxuatchieu \
+            or self.get_is_nhanvatdachet(self._diachimuctieuxuatchieu)
+
+    def _docsobaydoituong(self, diachi):
+        # Số máu bay trên đầu đối tượng (dịch ngược xq + 0x1BD21): 10 ô, giá trị + 0x11C4 (dương = mất máu, âm = hồi máu),
+        # bộ đếm khung + 0x1214 (0 -> ~50-70 rồi ô bị xoá về 0). Server báo chiêu trúng thì 1 ô đổi sang số mới, bộ đếm chạy lại từ 0
+        try:
+            dulieu = read_bytes(self.tientrinh, diachi + 0x11C4, 0x78)
+        except Exception:
+            return None
+        return struct.unpack("<10i", dulieu[:40]), struct.unpack("<10i", dulieu[80:120])
+
+    def _is_muctieudatrungchieu(self):
+        # Mục tiêu đã hiện số bay mới so với lúc gửi chiêu (chiêu đánh: mất máu, chiêu hồi: hồi máu). Nhớ lại kết quả (số bay mờ đi sau ~1s)
+        if self._is_datrungchieu:
+            return True
+        if not self._diachimuctieuxuatchieu or not self._sobaymuctieuxuatchieu:
+            return False
+        sobay = self._docsobaydoituong(self._diachimuctieuxuatchieu)
+        if not sobay:
+            return False
+        (giatricu, demcu), (giatri, dem) = self._sobaymuctieuxuatchieu, sobay
+        for i in range(10):
+            if giatri[i] and (giatri[i] != giatricu[i] or dem[i] < demcu[i]):
+                self._is_datrungchieu = True
+                return True
+        self._sobaymuctieuxuatchieu = sobay
+        return False
+
+    def set_is_chieucanngatdichuyen(self, is_chieucanngatdichuyen, diachimuctieu = None, is_khungsauxuatchieu = True):
+        self._is_chieucanngatdichuyen = is_chieucanngatdichuyen
+        self._is_khungsauxuatchieu = is_khungsauxuatchieu
+        self._diachimuctieuxuatchieu = diachimuctieu
+        self._idmuctieuxuatchieu = self.get_iddoituong(diachimuctieu) if diachimuctieu else None
+        self._sobaymuctieuxuatchieu = self._docsobaydoituong(diachimuctieu) if diachimuctieu else None
+        self._is_datrungchieu = False
+
     def get_is_khoavankhitrieuhoi(self):
         # Khoá từ lúc gửi lệnh triệu hồi: chờ tối đa THOIGIANCHOVAOVANKHI để vào vận khí, sau đó giữ tới khi game hết vận khí (tối đa THOIGIANKHOAVANKHITRIEUHOITOIDA)
         khoa = self._khoavankhitrieuhoi
@@ -2201,8 +2285,9 @@ class MoiTruong:
         return x > 0
 
     def action_tudongtimduong(self, x, y, idbando, is_lotrinh = True):
-        # Đặt đích tìm đường mới là bắt đầu di chuyển => ngắt vận khí triệu hồi (huỷ tìm đường thì qua action_ngungtudongtimduong, không chặn)
-        if (x or y) and self.get_is_khoavankhitrieuhoi():
+        # Đặt đích tìm đường mới là bắt đầu di chuyển => ngắt vận khí triệu hồi / mất tác dụng chiêu đang xuất
+        # (huỷ tìm đường thì qua action_ngungtudongtimduong, không chặn)
+        if (x or y) and (self.get_is_khoavankhitrieuhoi() or self.get_is_dangxuatchieu()):
             return False
         a = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
         if not a: return False
@@ -2612,6 +2697,38 @@ class MoiTruong:
     def set_idlenhdichuyen(self, idlenhdichuyen):
         write_int(self.tientrinh, self.diachixq + 0x380AFC, idlenhdichuyen)
 
+    def action_chandichuyen(self):
+        # Vòng xử lý di chuyển của client (xq + 0x182E0) tự gửi "go x,y <chuỗi hướng>" rồi bước nhân vật ở 3 nhánh, nhánh nào cũng
+        # chỉ chạy khi timeGetTime() > [thông tin game] + 0xADFC5C (mốc client được tự gửi lệnh, game tự đặt = lúc gửi + 500ms):
+        #  - đuổi mục tiêu tấn công ngoài tầm ([xq + 0x372864] + 0x15F8 / + 0x1604) khi hoạt ảnh vừa xong (nhân vật + 0x10A0 == + 0x10A4)
+        #  - đi tới đích click chuột còn cất ở [xq + 0x372864] + 0x1608 / + 0x160C
+        #  - bước tiếp chuỗi đường đi toàn cục xq + 0x1FC2B4 (ký tự hướng '1'..'8'); xq + 0x380AFC là chỉ số bước kế tiếp trong
+        #    chuỗi đó (get_idlenhdichuyen), hai nhánh trên đặt nó = [xq + 0x372864] + 0x1620 (2) -> bước 1 - 2 ô ngay khi hết chiêu
+        # Hàm gửi lệnh (xq + 0x95450) không xét mốc này nên lệnh của bot vẫn đi. True khi vừa đẩy mốc
+        thongtingame = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not thongtingame:
+            return False
+        mocmoi = (ctypes.windll.winmm.timeGetTime() + int(THOIGIANCHANTUDICHUYENCLIENT * 1000)) & 0xFFFFFFFF
+        mochientai = struct.unpack("<I", read_bytes(self.tientrinh, thongtingame + 0xADFC5C, 4))[0]
+        if (mochientai - mocmoi) & 0xFFFFFFFF < 0x80000000:
+            return False
+        write_bytes(self.tientrinh, thongtingame + 0xADFC5C, struct.pack("<I", mocmoi), 4)
+        return True
+
+    def action_huybuocdichuyen(self):
+        # Huỷ bước đi đang dở: "ô sắp tới" (nhân vật + 0x18 / + 0x1C) khác vị trí hiện tại thì game vẫn bước tới đó dù đã xoá
+        # lệnh di chuyển và đích tìm đường (đo: bước tiếp 2 ô sau khi hết chiêu). Đặt ô sắp tới = vị trí hiện tại để đứng yên.
+        # True khi thật sự có bước dở vừa huỷ
+        diachi = self.get_diachicosothongtinnhanvat1()
+        if not diachi:
+            return False
+        x, y = struct.unpack("<ii", read_bytes(self.tientrinh, diachi, 8))
+        xsaptoi, ysaptoi = struct.unpack("<ii", read_bytes(self.tientrinh, diachi + 0x18, 8))
+        if (xsaptoi, ysaptoi) == (x, y):
+            return False
+        write_bytes(self.tientrinh, diachi + 0x18, struct.pack("<ii", x, y), 8)
+        return True
+
     def action_ngatdichuyen(self):
         # if self.get_idlenhdichuyen() != 0:
 
@@ -2620,6 +2737,8 @@ class MoiTruong:
 
         self.set_idlenhdichuyen(0)
         self.action_ngungtudongtimduong()
+        # Xoá lệnh di chuyển chưa đủ: client còn tự sinh lại "go" (đuổi mục tiêu, đích click, bước dở) => chặn luôn client tự gửi
+        self.action_chandichuyen()
 
     def action_nhatvatpham(self, diachi, delay = 0.05):
         if time.time() - self._thoidiemnhatvatphamgannhat < delay:

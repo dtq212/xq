@@ -8,7 +8,7 @@ import unicodedata
 
 import pymem.exception
 
-from hangso_xq import IS_BOKHUNGSAUTANCONG, CHUKYBOKHUNGSAUTANCONG, TUTHENHANVAT_DELAYSAUTANCONG, BANDO_BANGPHAI, CHUKYGIUOTRONGHANHTRANG, TRUONGPHONGTIENSINH
+from hangso_xq import IS_BOKHUNGSAUTANCONG, CHUKYBOKHUNGSAUTANCONG, THOIGIANCHOBOKHUNGSAUTANCONG, TUTHENHANVAT_DELAYSAUTANCONG, BANDO_BANGPHAI, CHUKYGIUOTRONGHANHTRANG, TRUONGPHONGTIENSINH
 from hangso_xq import BANDO_CHIENTRUONG, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, VATPHAMKHONGBANs, BANDO_YENTRUONGTHANH3, BANDO_YENTRUONGTHANH2, BANDO_YENTRUONGTHANH1, TANGBAODO, LAMCAU, HACCAU, HIEUUNGKYNANG_TRONGTHUONG
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
@@ -148,7 +148,7 @@ class LoopChinh:
         # if self.moitruong.get_idnguoichoi() == 59844:
         #     print("{}".format(self.moitruong.get_danhsachhieuungnhanvats()))
 
-        if self.moitruong.get_idbandohientai() == BANDO_BANGPHAI:
+        if 0 and self.moitruong.get_idbandohientai() == BANDO_BANGPHAI:
             # Nạp Rương Dự Trữ qua Trưởng Phòng Tiên Sinh: tìm NPC theo tên (id đối tượng có thể đổi), không thấy quanh mình thì thôi
             diachitruongphong = self.moitruong.action_timkiemnhanvat(tennhanvat = TRUONGPHONGTIENSINH)
             idtruongphong = self.moitruong.get_iddoituong(diachitruongphong) if diachitruongphong else 0
@@ -342,18 +342,26 @@ class LoopPhu:
 
 
 class LoopBoKhungSauTanCong:
-    # Luồng riêng, chu kỳ ngắn (CHUKYBOKHUNGSAUTANCONG): tư thế khựng sau đòn chỉ còn ~1 khung hình thay vì 0.2-0.3s
-    # (các luồng khác chạy 0.1-0.5s/lượt nên không bắt kịp)
+    # Luồng riêng, chu kỳ ngắn (CHUKYBOKHUNGSAUTANCONG): tư thế khựng sau đòn kéo dài quá THOIGIANCHOBOKHUNGSAUTANCONG giây
+    # thì ghi về đứng im (các luồng khác chạy 0.1-0.5s/lượt nên không bắt kịp)
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
         self.moitruong = moitruong
         self.tactu = tactu
         self.stop = stop
+        # Lúc nhân vật bắt đầu vào tư thế khựng sau đòn (0 = không đang khựng)
+        self.thoidiembatdaukhung = 0.
 
     def loop(self):
         while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():
             try:
                 if IS_BOKHUNGSAUTANCONG and self.moitruong.get_is_nhanvattontai() and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DELAYSAUTANCONG:
-                    self.moitruong.set_idtuthenhanvat(TUTHENHANVAT_DUNGIM)
+                    if not self.thoidiembatdaukhung:
+                        self.thoidiembatdaukhung = time.time()
+                    elif time.time() - self.thoidiembatdaukhung >= THOIGIANCHOBOKHUNGSAUTANCONG:
+                        self.moitruong.set_idtuthenhanvat(TUTHENHANVAT_DUNGIM)
+                        self.thoidiembatdaukhung = 0.
+                else:
+                    self.thoidiembatdaukhung = 0.
             except (pymem.exception.PymemError, pymem.exception.WinAPIError):
                 time.sleep(1)
             except Exception as e:
@@ -365,7 +373,8 @@ class LoopBoKhungSauTanCong:
 class LoopGiuOTrongHanhTrang:
     # Luồng riêng, chu kỳ ngắn (CHUKYGIUOTRONGHANHTRANG) cho việc hành trang / trang bị cần nhanh trong lúc vận khí
     # (LoopPhu 0.5s/lượt không kịp): đang chế đồ thì vật phẩm vừa vào ô cuối hành trang 1 phải được chuyển đi ngay trước lần chế
-    # kế tiếp; đang vận khí gọi bảo thú triệu hồi thì đổi đồ, xong mặc lại
+    # kế tiếp; đang vận khí gọi bảo thú triệu hồi thì đổi đồ, xong mặc lại; kỹ năng vừa gửi cần đứng lại thì ngắt di chuyển
+    # ngay khi nhân vật vào tư thế xuất chiêu
     def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
         self.moitruong = moitruong
         self.tactu = tactu
@@ -375,8 +384,11 @@ class LoopGiuOTrongHanhTrang:
         while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():
             try:
                 if self.moitruong.get_is_nhanvattontai() and not self.moitruong.get_is_dangmatketnoi():
+                    # Cập nhật mốc xuất chiêu đủ dày để biết chính xác lúc hết tư thế xuất chiêu (khựng tính từ mốc này)
+                    self.moitruong.get_is_dangxuatchieu()
                     self.tactu.action_giuotrongcuoihanhtrang()
                     self.tactu.action_doidokhitrieuhoi()
+                    self.tactu.action_ngatdichuyenkhixuatchieu()
             except (pymem.exception.PymemError, pymem.exception.WinAPIError):
                 time.sleep(1)
             except Exception as e:
