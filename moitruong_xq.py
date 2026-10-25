@@ -1,5 +1,6 @@
 import queue
 import struct
+import threading
 from dataclasses import dataclass, field
 
 import pymem
@@ -9,6 +10,10 @@ from hangso_xq import *
 from tienich_xq import *
 
 OFFSET_DIACHICOSOTHONGTINGAME = 0x380B44
+# Thông tin túi hành trang: con trỏ tại [thông tin game] + 0xADFE0C (cạnh con trỏ hành trang + 0xADFD78),
+# số ô mở của 4 túi là 4 int32 tại + 0xD4 (đo: túi đủ [24, 24, 24, 24], mới mở túi 2 loại 4 ô [24, 4, 0, 0])
+OFFSET_CONTROTUIHANHTRANG = 0xADFE0C
+OFFSET_DUNGLUONGTUIHANHTRANG = 0xD4
 OFFSET_DIACHICOSOTHONGTINNHANVAT1 = 0x380AF8
 OFFSET_DIACHICOSOHIEUUNGNHANVAT = 0x1638
 OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT = 0x13C
@@ -35,10 +40,23 @@ class LenhThucThi:
     vitrikynang: tuple = field(default = None, compare = False)
 
 
+def tinh_is_huongmatvediem(x1, y1, huong, x2, y2, solechtoida = 1):
+    # Đối tượng ở (x1, y1) quay mặt theo huong (8 hướng, ô +0x13F8) có trỏ về (x2, y2) không, lệch tối đa solechtoida hướng.
+    # Đo trên quái đang ra đòn: huong = round((225 - goc) / 45) mod 8, goc = atan2(y2 - y1, x2 - x1) theo tọa độ ô (y hướng xuống)
+    if (x1, y1) == (x2, y2):
+        return True
+    goc = math.degrees(math.atan2(y2 - y1, x2 - x1)) % 360
+    huongdukien = round((225 - goc) / 45) % 8
+    lech = (huong - huongdukien) % 8
+    return min(lech, 8 - lech) <= solechtoida
+
+
 class MoiTruong:
     def __init__(self, idcuaso):
         self._is_dasetupautoassemblethucthicaulenh2 = False
         self._thoidiemthucthicaulenh2gannhat = 0.
+        # Lệnh trực tiếp dùng chung 1 vùng nhớ chứa câu lệnh trong game: nhiều luồng gửi cùng lúc thì ghi đè lệnh của nhau
+        self._khoathucthicaulenh2 = threading.Lock()
         self.diachihamthucthicaulenh2 = 0
         self.thoidiembatchucnangmoronggannhat = 0.
         self.thoidiemtatchucnangmoronggannhat = 0.
@@ -303,14 +321,22 @@ class MoiTruong:
         self._thoidiemthucthicaulenhgannhat = time.time()
         return True
 
-    def action_thucthicaulenh2(self, caulenh, delay = 0.05):
+    def action_thucthicaulenh2(self, caulenh, delay = 0.05, is_khancap = False):
+        # is_khancap: gửi ngay không chờ lượt chia giữa các nhân vật (vẫn tính 1 lượt để bot khác nghỉ sau nó)
         if self._is_lenhbichankhoavankhi(caulenh):
             return False
         if time.time() - self._thoidiemthucthicaulenh2gannhat < delay:
             return False
         self._thoidiemthucthicaulenh2gannhat = time.time()
         if self.dieuphoi:
-            self.dieuphoi.xinluot()
+            if is_khancap:
+                self.dieuphoi.ghinhanguingay()
+            else:
+                self.dieuphoi.xinluot()
+        with self._khoathucthicaulenh2:
+            return self._thucthicaulenh2(caulenh)
+
+    def _thucthicaulenh2(self, caulenh):
         self._loglenh(caulenh, "trực tiếp")
 
         diachihampheduyetcaulenh = self.diachixq + 0x95468
@@ -529,11 +555,14 @@ class MoiTruong:
         caulenh = "move {}# {}".format(hex(iddoituong), vitri).replace("0x", "")
         return self.action_thucthicaulenh(caulenh)
 
-    def action_dichuyenvatphamsanghanhtrangkhac(self, iddoituong, vitri, delay = 0.4):
+    def action_dichuyenvatphamsanghanhtrangkhac(self, iddoituong, vitri, delay = 0.4, is_guingay = False):
+        # is_guingay: gửi thẳng vào game, không qua hàng đợi lệnh / chờ lượt (cần nhanh, vd giữ ô trống khi đang chế đồ)
         if time.time() - self._thoidiemdichuyenvatphamsanghanhtrangkhacgannhat < delay:
             return False
         self._thoidiemdichuyenvatphamsanghanhtrangkhacgannhat = time.time()
         caulenh = "move {}# to {}".format(hex(iddoituong), vitri).replace("0x", "")
+        if is_guingay:
+            return self.action_thucthicaulenh2(caulenh, delay = 0., is_khancap = True)
         return self.action_thucthicaulenh(caulenh)
 
     def action_trochuyenvoinpc(self, iddoituong, noidungtrochuyen, delay = 0.2, caulenhtrochuyen = "tallk"):
@@ -874,24 +903,66 @@ class MoiTruong:
         x = self.get_diachicosothongtinvatphamhanhtrang()
         return read_string(self.tientrinh, x + idvitri * 0x20 + 0x1A8) if x else False
 
+    def get_tentrangbi(self, vitri):
+        # Tên món đang mặc ở ô trang bị vitri (VITRITRANGBIDAUTIEN...), "" nếu ô trống
+        if not self.get_iddoituongvatphamhanhtrang(vitri):
+            return ""
+        return re.sub(r'\x1b[a-zA-Z0-9]', '', self.get_tenvatphamhanhtrang(vitri) or "").strip()
+
+    def get_tenphapbaohientai(self):
+        # Pháp bảo đang đeo: ô trang bị VITRITRANGBI_PHAPBAO (sau 96 ô hành trang), "" nếu không đeo
+        return self.get_tentrangbi(VITRITRANGBI_PHAPBAO)
+
+    @staticmethod
+    def get_vantayvatpham(mota):
+        # "Dấu vân tay" của 1 món từ mô tả, để phân biệt các món cùng tên (khác sao / chỉ số / cường hoá). Chỉ giữ phần cố định:
+        # dòng tên (bỏ ngoặc cuối như "（Vật phẩm sẽ Phong Ấn）", "(Vật phẩm hiệu ứng [Khoá])" vì đổi khi đeo), dòng loại "［Nón］...",
+        # dòng sao và các dòng chỉ số "...: +x". Bỏ độ bền (giảm dần), dòng bộ "Cự Tượng(5/5)" và hiệu ứng bộ (đổi theo số món đang mặc)
+        dongs = [dong.strip() for dong in re.sub(r'\x1b[a-zA-Z0-9]', '', mota or "").split("\n") if dong.strip()]
+        if not dongs:
+            return ""
+        giu = [re.sub(r"\s*[（(][^（()）]*(?:\[[^\]]*\])?[^（()）]*[）)]\s*$", "", dongs[0]).strip()]
+        for dong in dongs[1:]:
+            if re.match(r"^[\[［]", dong) or "★" in dong or re.search(r":\s*\+", dong):
+                giu.append(dong)
+        return "|".join(giu)
+
+    def get_motavatphamhanhtrangcosan(self, idvitri):
+        # Mô tả game đã nạp sẵn cho ô này (không gửi lệnh desc như get_motavatphamhanhtrang), "" nếu chưa nạp
+        x = self.get_diachicosothongtinvatphamhanhtrang()
+        return (read_string(self.tientrinh, x + idvitri * 0x44C + 0xF52, 1024) or "") if x else ""
+
     def truyvan_motavatphamhanhtrang(self, idvitri):
         x = self.get_diachicosothongtinvatphamhanhtrang()
         if not x:
             return False
         iddoituongvatphamhanhtrang = self.get_iddoituongvatphamhanhtrang(idvitri)
         if not iddoituongvatphamhanhtrang: return False
-        is_ok = self.action_thucthicaulenh("desc {}#".format(hex(iddoituongvatphamhanhtrang)).replace("0x", ""))
+        if idvitri >= VITRITRANGBIDAUTIEN:
+            # Đồ đang mặc: desc theo vị trí ô trang bị đếm từ 1 (vũ khí = "desc 3"); "desc <id>#" không nạp mô tả đồ đang mặc
+            is_ok = self.action_thucthicaulenh("desc {}".format(idvitri - VITRITRANGBIDAUTIEN + 1))
+        else:
+            is_ok = self.action_thucthicaulenh("desc {}#".format(hex(iddoituongvatphamhanhtrang)).replace("0x", ""))
         if is_ok: time.sleep(0.2)
         return is_ok
 
-    def get_motavatphamhanhtrang(self, idvitri):
+    def _chomotavatphamhanhtrang(self, x, idvitri, thoigianchotoida):
+        # Sau lệnh desc, máy chủ trả mô tả sau khoảng 0.25-0.5s (qua hàng đợi lệnh còn lâu hơn): đọc lại mỗi 0.05s tới khi có hoặc hết giờ
+        thoidiemhet = time.time() + thoigianchotoida
+        while True:
+            mota = read_string(self.tientrinh, x + idvitri * 0x44C + 0xF52, 1024)
+            if mota or time.time() >= thoidiemhet:
+                return mota
+            time.sleep(0.05)
+
+    def get_motavatphamhanhtrang(self, idvitri, thoigianchotoida = 1.):
         x = self.get_diachicosothongtinvatphamhanhtrang()
         if not x:
             return False
         mota = read_string(self.tientrinh, x + idvitri * 0x44C + 0xF52, 1024)
         if not mota and self.get_iddoituongvatphamhanhtrang(idvitri):
-            self.truyvan_motavatphamhanhtrang(idvitri)
-            mota = read_string(self.tientrinh, x + idvitri * 0x44C + 0xF52, 1024)
+            if self.truyvan_motavatphamhanhtrang(idvitri):
+                mota = self._chomotavatphamhanhtrang(x, idvitri, thoigianchotoida)
         return mota
 
     def get_motavatphamhanhtrang_raw(self, idvitri):
@@ -906,7 +977,8 @@ class MoiTruong:
             mota_raw = mota_raw[:null_index]
 
         if not mota_raw and self.get_iddoituongvatphamhanhtrang(idvitri):
-            self.truyvan_motavatphamhanhtrang(idvitri)
+            if self.truyvan_motavatphamhanhtrang(idvitri):
+                self._chomotavatphamhanhtrang(x, idvitri, 1.)
             mota_raw = read_bytes(self.tientrinh, x + idvitri * 0x44C + 0xF52, 1024)
             null_index = mota_raw.find(b"\x00")
             if null_index != -1:
@@ -1265,12 +1337,7 @@ class MoiTruong:
         # Hướng mặt của đối tượng có trỏ về điểm (x2, y2) không (lệch tối đa solechtoida trong 8 hướng).
         # Đo trên quái đang ra đòn: huong = round((225 - goc) / 45) mod 8, goc = atan2(y2 - y, x2 - x) theo tọa độ ô (y hướng xuống)
         x1, y1 = self.get_toado(diachicosothongtinnhanvat)
-        if (x1, y1) == (x2, y2):
-            return True
-        goc = math.degrees(math.atan2(y2 - y1, x2 - x1)) % 360
-        huongdukien = round((225 - goc) / 45) % 8
-        lech = (self.get_huongmat(diachicosothongtinnhanvat) - huongdukien) % 8
-        return min(lech, 8 - lech) <= solechtoida
+        return tinh_is_huongmatvediem(x1, y1, self.get_huongmat(diachicosothongtinnhanvat), x2, y2, solechtoida)
 
     def get_is_muctieuchaytron(self, diachicosothongtinnhanvat):
         if self.get_idtuthenhanvat(diachicosothongtinnhanvat) != TUTHENHANVAT_DICHUYEN:
@@ -2078,8 +2145,8 @@ class MoiTruong:
             self._thoidiemhetchovankhi = 0.
 
     def action_khoavankhitrieuhoi(self, caulenhduocpheps = ()):
-        # Triệu hồi bảo thú (tốn bùa, thất bại là mất bùa): khoá mọi thao tác có thể ngắt vận khí (di chuyển, kỹ năng, pf, dùng vật phẩm,
-        # nhặt đồ...) cho tới khi vận khí xong. caulenhduocpheps: chính lệnh triệu hồi (đã vào hàng đợi) vẫn được gửi
+        # Triệu hồi bảo thú (tốn bùa, thất bại là mất bùa): khoá các thao tác ngắt vận khí (ra chiêu / đánh thường, di chuyển,
+        # tìm đường, nhặt đồ) cho tới khi vận khí xong. caulenhduocpheps: chính lệnh triệu hồi (đã vào hàng đợi) vẫn được gửi
         thoidiemhientai = time.time()
         self._khoavankhitrieuhoi = {
             "batdau": thoidiemhientai,
@@ -2105,6 +2172,12 @@ class MoiTruong:
         # Đọc khoá 1 lần: luồng khác có thể vừa mở khoá (gán None) ngay sau khi kiểm tra
         khoa = self._khoavankhitrieuhoi
         if not khoa or not self.get_is_khoavankhitrieuhoi():
+            return False
+        # Chỉ ra chiêu (pf, pf2, pf5...) / đánh thường (kill) / nhặt đồ tại ô (get x y, có thể chạy tới vật phẩm) mới ngắt vận khí;
+        # dùng / đeo vật phẩm, desc, move đồ, vứt, bán, nói chuyện NPC, điều khiển bảo thú, thao tác nhóm đều không ảnh hưởng
+        # (đã thử trong game) => cho gửi. Di chuyển / tìm đường / nhặt đồ tự động chặn riêng ở action_dichuyen,
+        # action_tudongtimduong, auto_assemble_nhatvatpham
+        if not caulenh.startswith(("pf", "kill ", "get ")):
             return False
         return caulenh not in khoa["caulenhduocpheps"]
 
@@ -2197,8 +2270,30 @@ class MoiTruong:
             self._thoidiemmaupkgannhat = time.time()
         return is_ok
 
+    def get_dungluongtuihanhtrangs(self):
+        # Số ô đang mở của 4 túi hành trang (túi phụ mở bằng Túi Càn Khôn 4/6/12/24 ô, có hạn dùng), vd [24, 4, 0, 0].
+        # Đọc tại [x + OFFSET_CONTROTUIHANHTRANG] + OFFSET_DUNGLUONGTUIHANHTRANG; đọc lỗi / số lạ thì None
+        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        p = read_int(self.tientrinh, x + OFFSET_CONTROTUIHANHTRANG) if x else 0
+        if not p:
+            return None
+        try:
+            dungluongs = list(struct.unpack("<4i", read_bytes(self.tientrinh, p + OFFSET_DUNGLUONGTUIHANHTRANG, 16)))
+        except Exception:
+            return None
+        if not all(0 <= dungluong <= SOLUONGOMOITUI for dungluong in dungluongs) or not dungluongs[0]:
+            return None
+        return dungluongs
+
+    def get_danhsachvitrimohanhtrang(self):
+        # Vị trí các ô hành trang đang mở (ô ngoài dung lượng túi là ô khoá, trống nhưng không đặt được vật phẩm).
+        # Không đọc được dung lượng túi thì coi cả SOLUONGTUIHANHTRANG túi mở đủ
+        dungluongs = self.get_dungluongtuihanhtrangs() or [SOLUONGOMOITUI] * SOLUONGTUIHANHTRANG
+        return [tui * SOLUONGOMOITUI + o for tui, dungluong in enumerate(dungluongs) for o in range(dungluong)]
+
     def get_soluongvatphamhanhtrangtoida(self):
-        return SOLUONGVATPHAMHANHTRANGTOIDA_MAP[self.get_idnguoichoi()]
+        # Vị trí ô mở cuối cùng (các vòng lặp dùng range(... + 1)); ô khoá xen giữa vẫn nằm trong khoảng này, đọc ra id 0
+        return self.get_danhsachvitrimohanhtrang()[-1]
 
     def _docdanhsachtenvatphamhanhtrang(self, soluongo):
         # Tên của soluongo ô đầu hành trang trong 1 lần đọc (mỗi ô 0x20 byte), thay vì mỗi ô đọc lại địa chỉ gốc + đọc tên riêng.
@@ -2383,7 +2478,10 @@ class MoiTruong:
         if self._is_vohieuhoadichuyen != is_vohieuhoadichuyen: self._is_vohieuhoadichuyen = is_vohieuhoadichuyen
 
     def get_is_dayhanhtrang(self):
-        return all(self._docdanhsachidvatphamhanhtrang(self.get_soluongvatphamhanhtrangtoida() + 1))
+        # Chỉ xét ô đang mở: ô khoá luôn trống (id 0) nhưng không chứa được vật phẩm
+        vitrimos = self.get_danhsachvitrimohanhtrang()
+        ids = self._docdanhsachidvatphamhanhtrang(vitrimos[-1] + 1)
+        return all(ids[vitri] for vitri in vitrimos)
 
     def get_tenmonphai(self):
         return MONPHAI_MAP.get(self.get_idkynang(0, 0))

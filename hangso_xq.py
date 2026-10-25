@@ -6,6 +6,8 @@ STRING_ENCODING = "mbcs"
 
 CHUTIEMSUACHUA = "Chủ Tiệm Sửa Chữa"
 CHUTIEMTAPHOA = "Chủ Tiệm Tạp Hóa"
+# NPC ở bản đồ bang phái để nạp Rương Dự Trữ (tìm theo tên, id đối tượng có thể đổi)
+TRUONGPHONGTIENSINH = "Trưởng Phòng Tiên Sinh"
 CHUTUULAU = "Chủ Tửu Lâu"
 TANTHUTIENCO = "Tân Thủ Tiên Cô"
 SUGIAMONPHAI = "Sứ Giả Môn Phái"
@@ -108,6 +110,10 @@ QUYTOT = "Quỷ Tốt"
 THIENBINH = "Thiên Binh"
 THIENTUONG = "Thiên Tướng"
 THANTUONG = "Thần Tướng"  # Chỉ gọi ra được bằng Tế Thần Tướng
+# Mao Sơn tự gọi bảo thú triệu hồi nào (chọn trên bảng điều khiển, lưu theo nhân vật): tự động = Cương Thi nếu có Cương Thi Phù,
+# không thì Thiên Binh; hoặc chỉ gọi đúng 1 loại CUONGTHI / THIENBINH / QUYTOT
+BAOTHUTRIEUHOI_TUDONG = "Tự động"
+BAOTHUTRIEUHOIMAOSONs = (BAOTHUTRIEUHOI_TUDONG, CUONGTHI, THIENBINH, QUYTOT)
 TROMBAOPHITAC = "Trộm Bảo Phi Tặc"
 TENBANDO_TE = "Tề"
 TENBANDO_HAN = "Hàn"
@@ -138,6 +144,11 @@ KHOANGCACHTIEPCANLOIDONGCUUTHIEN = 2.
 KHOANGCACHTOIDAHOPLE = 255.
 KHOANGCACHSUDUNGKYNANGCANCHIEN = 1.5
 KHOANGCACHSUDUNGKYNANGTAMXA = 9.  # 12.
+# Tầm xa 9 ô đã là con số trừ hao lệch tọa độ client - server (tầm thật ~12 ô), nên không trừ thêm nhiều nữa:
+# - lọc mục tiêu quanh người theo sau dùng tầm xa - TRUHAOTAMXACHONMUCTIEU (dùng trọn 9 ô)
+# - đứng đánh lâu / đang chạy bù thì tầm yêu cầu giảm BUKHOANGCACHTAMXA ô (đánh ở ~8 ô), chạy vào tầm thì dừng ở tầm xa - BU - 1 (~7 ô)
+TRUHAOTAMXACHONMUCTIEU = 0.
+BUKHOANGCACHTAMXA = 1.
 # Thục Sơn chỉ dùng Khai Thiên Tịch Địa để lướt khi nội lực trên mức này (%), chỉnh được ở giao diện
 PHANTRAMNOILUCKHAITHIENTICHDIA = 75.
 KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN = 9.
@@ -520,11 +531,28 @@ TRANGTHAIVANKHI_DANGVANKHI = 1
 TRANGTHAIVANKHI_VANKHITHANHCONG = 2
 TRANGTHAIVANKHI_VANKHITHATBAI = 3
 
-SOLUONGVATPHAMHANHTRANGTOIDA_MAP = defaultdict(lambda: 96 - 1)
+# Hành trang: 4 túi x 24 ô; số ô đang mở của từng túi đọc từ game (MoiTruong.get_dungluongtuihanhtrangs),
+# không đọc được thì coi cả 4 túi mở đủ
+SOLUONGTUIHANHTRANG = 4
+SOLUONGOMOITUI = 24
 
-SOLUONGVATPHAMHANHTRANGTOIDA_MAP[59844] = 72 - 1
-SOLUONGVATPHAMHANHTRANGTOIDA_MAP[59996] = 96 - 1
-SOLUONGVATPHAMHANHTRANGTOIDA_MAP[60055] = 72 - 1
+# Trang bị đang mặc nằm ngay sau 96 ô hành trang, cùng cấu trúc ô (id ở +ô*4, tên ở +0x1A8 + ô*0x20):
+# 96 mũ, 97 dây chuyền, 98 vũ khí, 99 áo, 100 đai, 101 giày, 102 pháp bảo, 103 ngọc, 104 cánh, 105 ngoại trang (đã đo trên 3 nhân vật)
+# Mao Sơn: Di Tinh Đại Pháp (hồi nội lực bảo thú triệu hồi) dùng cách nhau tối thiểu chừng này giây, còn lại theo hồi chiêu của game
+GIANCACHHOIBAOTHUTRIEUHOI = 5.
+# Lưu Huyết Thuật hồi máu DẦN cho bảo thú triệu hồi: liên tục 8 giây, mỗi 2 giây 80 khí huyết (cấp 8, hồi chiêu 2s, 90 pháp lực)
+# => chỉ dùng lại khi lần trước đã hồi xong
+GIANCACHLUUHUYETTHUAT = 8.
+
+VITRITRANGBIDAUTIEN = 96
+SOLUONGOTRANGBI = 10
+VITRITRANGBI_PHAPBAO = VITRITRANGBIDAUTIEN + 6
+# Mao Sơn bật "đổi đồ khi triệu hồi": trong lúc vận khí gọi bảo thú triệu hồi thì đeo "bộ đồ triệu hồi" đã ghi (thường là đồ tấn công),
+# vận khí xong mặc lại bộ cũ. Bộ đồ ghi từ đồ đang mặc ở các ô trang bị này (nón, hạng liên, vũ khí, áo, yêu đới, giày, pháp bảo;
+# không ngọc / cánh / ngoại trang). Loại theo ô nên không cần mô tả để biết món nào được ghi
+VITRITRANGBIDOITRIEUHOIs = tuple(range(VITRITRANGBIDAUTIEN, VITRITRANGBI_PHAPBAO + 1))
+# Pháp bảo đổi sang khi máu thấp (không hư hỏng), xong đeo lại pháp bảo cũ
+PHAPBAOKHONGHUHONGs = ("Thượng Phương Bảo Kiếm", )
 
 PHELIEMPHA = 66
 PHEBACHKHOI = 82
@@ -552,6 +580,8 @@ BANDO_QUELANG = 242
 BANDO_CHU = 80
 BANDO_THUCSON = 273
 BANDO_DAOHOANGUYEN = 289
+# Khai khoáng ở Hư Lăng Động quái đánh đau: ưu tiên Đại Huyết Thạch (hết mới dùng Tiểu Huyết Thạch)
+BANDO_HULANGDONG = 381
 BANDO_DUONGMON = 324
 BANDO_VANMONGCOC = 165
 BANDO_CONLUAN = 54
@@ -696,6 +726,10 @@ VATPHAMKHONGBANs = (
     CUONGTHIPHU,
     *NGUYENLIEULUYENDONs,
 )
+
+# Khai khoáng (hái dược) ở các bản đồ này thì tự vứt các dược không cần (dù có trong VATPHAMKHONGBANs)
+BANDOHAIDUOCs = (261, 262, 263)
+VATPHAMVUTKHIHAIDUOCs = ("La Hán Quả", "Hoàng Liên", "Hà Thủ Ô", "Xuyên Tâm Liên")
 
 VATPHAMTUDONGNHATFARMs = (
     "Kiếm", "Đao", "Mâu", "Thủ", "Thương", "Sáo", "Bổng", " Y", "Giáp",
@@ -978,6 +1012,8 @@ CHENHLECHKHOANGCACHDOIMUCTIEU = 1.5
 # Khựng sau đòn (tư thế 11) chỉ là hiệu ứng che mắt ở client (máy chủ không tính): luồng nhanh thấy tư thế 11 là ghi về đứng im ngay
 IS_BOKHUNGSAUTANCONG = True
 CHUKYBOKHUNGSAUTANCONG = 0.02
+# Đang chế đồ (vận khí): kiểm tra ô cuối hành trang 1 mỗi chừng này giây, có vật phẩm thì chuyển sang hành trang khác ngay
+CHUKYGIUOTRONGHANHTRANG = 0.03
 
 SOLANGUITOIDASPAMKYNANG = 3
 SOGIAYDEMSPAMKYNANG = 1.5
@@ -1042,6 +1078,15 @@ YEUCAUDICHUYENDICHUYENTUDO = 3
 YEUCAUDICHUYENTHEOSAU = 4
 YEUCAUDICHUYENGOMQUAI = 5
 YEUCAUDICHUYENGIUKHOANGCACH = 6
+YEUCAUDICHUYENTIMMUCTIEUCHUNG = 7
+
+# Hết mục tiêu quanh mình thì đi tới mục tiêu nhân vật khác cùng máy đang thấy (tầm nhìn chung): chỉ xét mục tiêu cách mình tối đa
+# KHOANGCACHTIMMUCTIEUCHUNGTOIDA ô, tìm đường tới cách nó KHOANGCACHDUNGTIMMUCTIEUCHUNG ô (đủ gần để tự thấy rồi chọn như thường).
+# Đi tới 1 mục tiêu quá THOIGIANTOIDATIMMUCTIEUCHUNG giây mà vẫn chưa thấy nó thì bỏ qua nó THOIGIANBOQUAMUCTIEUCHUNG giây
+KHOANGCACHTIMMUCTIEUCHUNGTOIDA = 40.
+KHOANGCACHDUNGTIMMUCTIEUCHUNG = 5.
+THOIGIANTOIDATIMMUCTIEUCHUNG = 15.
+THOIGIANBOQUAMUCTIEUCHUNG = 60.
 
 # Giữ khoảng cách với đối tượng đang tấn công mình (tùy chọn trên giao diện, hay bật cho Mao Sơn / Vân Mộng Cốc khi giao tranh)
 KHOANGCACHGIUKETANCONG = 6.
@@ -1062,6 +1107,20 @@ KYNANGQUANTRONGGIUKHOANGCACH_MAP = {
     "thucsonkiem": (VITRIKYNANG_TINHTAMQUYET, VITRIKYNANG_TIENKHI, VITRIKYNANG_TIENTHANVODICH, VITRIKYNANG_LANGKHONGCHIHUYET,
                     VITRIKYNANG_VANKIEMXUYENTAM, VITRIKYNANG_BANGTAMTHUC, VITRIKYNANG_NGUKIEMPHITIEN, VITRIKYNANG_NGUKIEMTHUAT),
 }
+# Tầm nhìn chung giữa các nhân vật cùng máy (qua shared_data): mỗi cửa sổ ghi đối tượng thù địch nó thấy (tối đa SOLUONGTAMNHINTOIDA,
+# gần nhất trước); tầm nhìn cũ hơn THOIGIANHIEULUCTAMNHIN giây thì bỏ, đọc lại tầm nhìn của cửa sổ khác mỗi THOIGIANDOCTAMNHIN giây
+SOLUONGTAMNHINTOIDA = 40
+# Tập hỏa: mục tiêu người theo sau (cùng máy) công bố cũ hơn chừng này giây thì không theo nữa, chọn mục tiêu như cũ
+THOIGIANHIEULUCTAPHOA = 1.
+THOIGIANHIEULUCTAMNHIN = 1.
+THOIGIANDOCTAMNHIN = 0.3
+# Giữ chỗ chiêu lên 1 mục tiêu giữa các bot cùng máy (GiuKyNangMucTieu), theo phái: ô kỹ năng -> khoá hiệu ứng.
+# Bot khác vừa gửi cùng chiêu lên mục tiêu đó (hiệu ứng chưa kịp hiện) thì dùng chiêu tiếp theo, không gửi trùng
+HIEUUNGGIUCHOKYNANG_MAP = {
+    "vanmongcoc": {VITRIKYNANG_PHONGANTHUAT: HIEUUNGKYNANG_TRAMMAC, VITRIKYNANG_HUYENQUANGTHIEMANH: HIEUUNGKYNANG_MULOA, VITRIKYNANG_CAITUHOANSINH: "caituhoansinh"},
+    "maoson": {VITRIKYNANG_THUCCOT: HIEUUNGKYNANG_THUCCOT, VITRIKYNANG_THUCGIAP: HIEUUNGKYNANG_THUCGIAP, VITRIKYNANG_THUCTAM: HIEUUNGKYNANG_THUCTAM},
+    "thucsonkiem": {VITRIKYNANG_LANGKHONGCHIHUYET: HIEUUNGKYNANG_CHOANG},
+}
 # Kết quả xét kỹ năng quan trọng (tính trong danh sách kỹ năng của phái) cũ hơn chừng này giây thì coi như rảnh
 THOIGIANHIEULUCKYNANGQUANTRONG = 0.5
 YEUCAUDICHUYENKHAIKHOANG = 100
@@ -1079,4 +1138,4 @@ NHANVATTODOITUDONGs_LIST = [
 
 TENMUCTIEUKHONGTANCONGs = (*BAOTHUVATPHAMs, "Tần QuốcBinh Sĩ", "Triệu QuốcBinh Sĩ", QUYTOT, THIENBINH, DAUBINH, "CAVE1", "CAVE.2", 'Đỗ Độc', 'Ôn Thần', "Liễu Vọng Tháp")
 TENNGUOICHOICUNGBANGs = tuple()
-TENBOSSBUFFMAOSONs = ("Mã Quỷ", "Lương Hưng", "Yến Thập Tam", "Tư Tà", "Thủ Lĩnh Thành Kiều", TROMBAOPHITAC)
+TENBOSSBUFFMAOSONs = ("Mã Quỷ", "Lương Hưng", "Yến Thập Tam", "Tư Tà", "Thủ Lĩnh Thành Kiều", TROMBAOPHITAC, "Bảo Hộp Phi Tặc")

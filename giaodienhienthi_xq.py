@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import font as tkfont
 from tkinter import ttk
 
-from hangso_xq import laytenbando, KHOANGCACHSUDUNGKYNANGTAMXA, PHANTRAMNOILUCKHAITHIENTICHDIA, KHOANGCACHGIUKETANCONG
+from hangso_xq import laytenbando, KHOANGCACHSUDUNGKYNANGTAMXA, PHANTRAMNOILUCKHAITHIENTICHDIA, KHOANGCACHGIUKETANCONG, BAOTHUTRIEUHOIMAOSONs
 import re
 
 from tienich_xq import tailotrinhmau, duongdanlotrinhmau, tainhomtodoitudongs, luunhomtodoitudongs, duongdantodoitudong, laynhomtodoitudongs
@@ -94,8 +94,11 @@ class GiaoDienHienThi:
             "tranhvungcam": tk.BooleanVar(value = True),
             "giukhoangcachketancong": tk.BooleanVar(),
             "giukhoangcachchimuctieupk": tk.BooleanVar(value = True),
+            "taphoa": tk.BooleanVar(),
+            "timmuctieuchung": tk.BooleanVar(value = True),
             "khoangcachgiuketancong": tk.DoubleVar(value = KHOANGCACHGIUKETANCONG),
             "hoithanhphutheosau": tk.BooleanVar(),
+            "doidotrieuhoi": tk.BooleanVar(),
         }
 
         # Nhịp lệnh dùng chung mọi nhân vật (không theo nhân vật đang chọn nên không đồng bộ trong update_ui)
@@ -306,6 +309,8 @@ class GiaoDienHienThi:
         self._create_check(nhom, "Ưu tiên bảo thú Mao Sơn", self.vars["uutienmaoson"], "battat_uutienbaothukynangtrieuhoi", "Ctrl+Alt+S")
         self._create_check(nhom, "Chế độ buff toàn bang", self.vars["bufftoanbang"], "battat_chedobufftoanbang", "Ctrl+Alt+Shift+N")
         self._create_check(nhom, "Chặn tăng cấp độ", self.vars["chantangcap"], "battat_chantangcapdo", "Ctrl+Alt+Shift+C")
+        self._create_check(nhom, "Tập hỏa: đánh mục tiêu của người mình theo sau (cùng máy)", self.vars["taphoa"], "battat_taphoa")
+        self._create_check(nhom, "Hết mục tiêu thì tìm tới mục tiêu nhân vật khác cùng máy thấy", self.vars["timmuctieuchung"], "battat_timmuctieuchung")
 
         # Giữ khoảng cách với đối tượng đang đánh mình (ra đòn và quay mặt về mình): lùi ra, chỉ buff / hồi máu, bỏ chiêu đánh
         nhom = self._taonhom(tab, "Giữ khoảng cách")
@@ -522,6 +527,18 @@ class GiaoDienHienThi:
         self._ganspinboxapdung(self.spin_bankinhdiemdanh, on_bankinh_change)
         ttk.Label(hangbankinh, text = "ô", style = "Phu.TLabel").pack(side = tk.LEFT)
 
+        # Bấm 1 lần: bot gộp chồng và xếp vật phẩm theo tên trong từng túi; đang xếp thì bấm lại để dừng
+        nhom = self._taonhom(tab, "Hành trang")
+
+        def on_sapxephanhtrang():
+            hwnd = self.get_selected_hwnd()
+            if hwnd:
+                self.command_dict[hwnd] = "battat_sapxephanhtrang"
+
+        self.btn_sapxephanhtrang = ttk.Button(nhom, text = "Sắp xếp hành trang", command = on_sapxephanhtrang)
+        self.btn_sapxephanhtrang.grid(row = 0, column = 0, sticky = tk.W)
+        ttk.Label(nhom, text = "Gộp chồng, xếp theo tên, dồn lên đầu từng túi", style = "Phu.TLabel").grid(row = 1, column = 0, sticky = tk.W, pady = (2, 0))
+
         # Lộ trình mẫu: chọn mẫu (của bất kỳ bản đồ nào) rồi Nạp, hoặc để bot Tự chọn mẫu chưa nhân vật nào dùng
         nhom = self._taonhom(tab, "Lộ trình mẫu")
         self.lbl_lotrinhmau = tk.Label(nhom, text = "Đang dùng: (tự đặt điểm)", fg = MAUCHU_PHU, anchor = tk.W)
@@ -541,14 +558,17 @@ class GiaoDienHienThi:
             if hwnd:
                 self.command_dict[hwnd] = "tuchon_lotrinhmau"
 
-        def on_nap_lotrinhmau():
+        def on_nap_lotrinhmau(is_bosung = False):
+            # Nạp mẫu: thay lộ trình đang có; Bổ sung: nối điểm của mẫu vào cuối lộ trình đang có (bỏ điểm trùng)
             hwnd = self.get_selected_hwnd()
             mau = self._tenmautheohienthi.get(self.str_lotrinhmau.get())
             if hwnd and mau:
                 idbando, tenmau = mau
-                self.command_dict[hwnd] = f"nap_lotrinhmau:{idbando}|{tenmau}|{1 if self.var_nguocchieu.get() else 0}"
+                lenh = "bosung_lotrinhmau" if is_bosung else "nap_lotrinhmau"
+                self.command_dict[hwnd] = f"{lenh}:{idbando}|{tenmau}|{1 if self.var_nguocchieu.get() else 0}"
 
         ttk.Button(hangnut, text = "Tự chọn", command = on_tuchon_lotrinhmau).pack(side = tk.RIGHT)
+        ttk.Button(hangnut, text = "Bổ sung", command = lambda: on_nap_lotrinhmau(True)).pack(side = tk.RIGHT, padx = (0, 4))
         ttk.Button(hangnut, text = "Nạp mẫu", command = on_nap_lotrinhmau).pack(side = tk.RIGHT, padx = (0, 4))
 
         hangluu = ttk.Frame(nhom)
@@ -664,6 +684,40 @@ class GiaoDienHienThi:
         nhom = self._taonhom(tab, "Bảo thú")
         self._create_check(nhom, "Tự động gọi bảo thú", self.vars["trieuhoibaothu"], "battat_tudongtrieuhoibaothugiangho")
         self._create_check(nhom, "Tự động dùng kỹ năng bảo thú", self.vars["sudungkynangbaothu"], "battat_tudongsudungkynangbaothu")
+        # Mao Sơn tự gọi bảo thú triệu hồi nào: Tự động (Cương Thi nếu có Cương Thi Phù, không thì Thiên Binh) hoặc đúng 1 loại
+        hangbaothu = ttk.Frame(nhom)
+        hangbaothu.grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W, pady = 1)
+        ttk.Label(hangbaothu, text = "Mao Sơn gọi bảo thú:").pack(side = tk.LEFT)
+        self.str_baothutrieuhoi = tk.StringVar(value = BAOTHUTRIEUHOIMAOSONs[0])
+        self.cbo_baothutrieuhoi = ttk.Combobox(hangbaothu, textvariable = self.str_baothutrieuhoi, values = BAOTHUTRIEUHOIMAOSONs,
+                                               state = "readonly", width = 12)
+        self.cbo_baothutrieuhoi.pack(side = tk.LEFT, padx = 4)
+        # Vừa chọn: (hwnd, lựa chọn, thời điểm) để chờ bot nhận, update_ui không nạp lại giá trị cũ đè lên
+        self._baothutrieuhoichoxacnhan = None
+
+        def on_chon_baothutrieuhoi(event = None):
+            hwnd = self.get_selected_hwnd()
+            if hwnd:
+                baothu = self.str_baothutrieuhoi.get()
+                self.command_dict[hwnd] = f"set_baothutrieuhoimaoson:{baothu}"
+                self._baothutrieuhoichoxacnhan = (hwnd, baothu, time.time())
+
+        self.cbo_baothutrieuhoi.bind("<<ComboboxSelected>>", on_chon_baothutrieuhoi)
+
+        self._create_check(nhom, "Mao Sơn: khi triệu hồi đeo bộ đồ đã ghi, xong mặc lại", self.vars["doidotrieuhoi"], "battat_doidokhitrieuhoi")
+
+        # Bộ đồ triệu hồi: mặc bộ đồ muốn dùng khi triệu hồi rồi bấm Ghi (nhận món theo mô tả, đồ để đâu trong hành trang cũng được)
+        hangbodo = ttk.Frame(nhom)
+        hangbodo.grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.EW, padx = (22, 0), pady = (0, 2))
+
+        def on_ghibodotrieuhoi():
+            hwnd = self.get_selected_hwnd()
+            if hwnd:
+                self.command_dict[hwnd] = "ghi_bodotrieuhoi"
+
+        ttk.Button(hangbodo, text = "Ghi bộ đồ đang mặc", command = on_ghibodotrieuhoi).pack(side = tk.LEFT)
+        self.lbl_bodotrieuhoi = tk.Label(hangbodo, text = "", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(300))
+        self.lbl_bodotrieuhoi.pack(side = tk.LEFT, fill = tk.X, expand = True, padx = (6, 0))
 
     def _taotabtodoi(self, tab):
         # Danh sách dùng chung cho mọi nhân vật (lưu file todoi.json), bật/tắt thì theo từng nhân vật ở tab Chiến đấu
@@ -901,7 +955,10 @@ class GiaoDienHienThi:
                 ("tranhvungcam", "_is_tranhvungcam"),
                 ("giukhoangcachketancong", "_is_giukhoangcachketancong"),
                 ("giukhoangcachchimuctieupk", "_is_giukhoangcachchimuctieupk"),
+                ("taphoa", "_is_taphoa"),
+                ("timmuctieuchung", "_is_timmuctieuchung"),
                 ("hoithanhphutheosau", "_is_hoithanhphutheosau"),
+                ("doidotrieuhoi", "_is_doidokhitrieuhoi"),
                 ("khaikhoang", "_is_tudongkhaikhoang"),
                 ("chientruong", "_is_tudongdichientruong"),
                 ("daobaodo", "_is_tudongdaotangbaodo"),
@@ -911,6 +968,15 @@ class GiaoDienHienThi:
                 ("chantangcap", "_is_chantangcapdo"),
                 ("diemdanhxungquanh", "_is_tudongdichuyendiemdanhxungquanh")):
             self.vars[ten].set(info.get(khoa, False))
+
+        self.btn_sapxephanhtrang.config(text = "Dừng sắp xếp" if info.get("_is_dangsapxephanhtrang") else "Sắp xếp hành trang")
+        choxacnhan = self._baothutrieuhoichoxacnhan
+        if choxacnhan and (choxacnhan[0] != hwnd_to_show or info.get("_baothutrieuhoimaoson") == choxacnhan[1] or time.time() - choxacnhan[2] > 5.):
+            self._baothutrieuhoichoxacnhan = choxacnhan = None
+        if not choxacnhan and info.get("_baothutrieuhoimaoson") in BAOTHUTRIEUHOIMAOSONs and self.str_baothutrieuhoi.get() != info["_baothutrieuhoimaoson"]:
+            self.str_baothutrieuhoi.set(info["_baothutrieuhoimaoson"])
+        tenbodos = info.get("_tenbodotrieuhoi") or []
+        self.lbl_bodotrieuhoi.config(text = ", ".join(tenbodos) if tenbodos else "(chưa ghi bộ đồ)")
 
         try:
             widgetdangfocus = self.root.focus_get()

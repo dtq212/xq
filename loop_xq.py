@@ -8,7 +8,7 @@ import unicodedata
 
 import pymem.exception
 
-from hangso_xq import IS_BOKHUNGSAUTANCONG, CHUKYBOKHUNGSAUTANCONG, TUTHENHANVAT_DELAYSAUTANCONG
+from hangso_xq import IS_BOKHUNGSAUTANCONG, CHUKYBOKHUNGSAUTANCONG, TUTHENHANVAT_DELAYSAUTANCONG, BANDO_BANGPHAI, CHUKYGIUOTRONGHANHTRANG, TRUONGPHONGTIENSINH
 from hangso_xq import BANDO_CHIENTRUONG, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, VATPHAMKHONGBANs, BANDO_YENTRUONGTHANH3, BANDO_YENTRUONGTHANH2, BANDO_YENTRUONGTHANH1, TANGBAODO, LAMCAU, HACCAU, HIEUUNGKYNANG_TRONGTHUONG
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
@@ -126,6 +126,11 @@ class LoopChinh:
             except Exception as e:
                 print(f"[Loop CHÍNH] Lỗi không xác định: {e}")
                 traceback.print_exc()
+                # Ghi cả vào file log nhân vật: lỗi lặp lại mỗi lượt làm nhân vật đứng im không dùng kỹ năng mà log không thấy gì
+                try:
+                    self.moitruong._inlog(f"[Loop CHÍNH] Lỗi: {e}\n{traceback.format_exc()}")
+                except Exception:
+                    pass
                 time.sleep(1)
             time.sleep(0.1)
 
@@ -143,34 +148,22 @@ class LoopChinh:
         # if self.moitruong.get_idnguoichoi() == 59844:
         #     print("{}".format(self.moitruong.get_danhsachhieuungnhanvats()))
 
-        # if self.moitruong.get_idnguoichoi() in (29, 30, 31, 32):
-        #     if not self.moitruong.action_timkiemvatphamhanhtrang("Rương Dự Trữ"):
-        #         time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("tallk 4cdfa# info.10")
-        #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("tallk 4cdfa# info.11")
-        #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("tallk 4cdfa# info.20")
-        #     time.sleep(0.25)
-        #     self.moitruong.action_thucthicaulenh("tallk 4cdfa# info.21")
-        #     time.sleep(0.25)
+        if self.moitruong.get_idbandohientai() == BANDO_BANGPHAI:
+            # Nạp Rương Dự Trữ qua Trưởng Phòng Tiên Sinh: tìm NPC theo tên (id đối tượng có thể đổi), không thấy quanh mình thì thôi
+            diachitruongphong = self.moitruong.action_timkiemnhanvat(tennhanvat = TRUONGPHONGTIENSINH)
+            idtruongphong = self.moitruong.get_iddoituong(diachitruongphong) if diachitruongphong else 0
+            if idtruongphong:
+                if not self.moitruong.action_timkiemvatphamhanhtrang("Rương Dự Trữ"):
+                    time.sleep(0.25)
+                for noidung in ("info.55", "info.11", "info.20", "info.21"):
+                    self.moitruong.action_thucthicaulenh("talk {}# {}".format(hex(idtruongphong).replace("0x", ""), noidung))
+                    time.sleep(0.25)
 
-        # Nộp Rương dự trữ (khôi phục từ main2/loop.py, commit cae781b) — id NPC (810a) đổi mỗi lần, cần sửa trước khi bật
-        # self.moitruong.action_thucthicaulenh("tallk 810a# info.58", delay = 0.)
-        # time.sleep(0.25)
-        # self.moitruong.action_thucthicaulenh("tallk 810a# info.18", delay = 0.)
-        # time.sleep(0.25)
-        # self.moitruong.action_thucthicaulenh("tallk 810a# info.20", delay = 0.)
-        # time.sleep(0.25)
-        # self.moitruong.action_thucthicaulenh("tallk 810a# info.21", delay = 0.)
-        # time.sleep(0.25)
-
-        if self.moitruong.get_idnguoichoi() in (29, 30, 31, 32, 192):
-            # Mỗi lượt mở 1 túi; action_sudungvatphamhanhtrang tự giãn cách 0.25s giữa 2 lần dùng
-            # (trước đây sleep 0.25s sau mỗi túi ngay trong loop chính: tới 1.25s không ra kỹ năng, không chọn mục tiêu)
-            for tenvatpham in ("Túi Ngân Lượng", "Chén Bạc", "Túi Kim Bảo", "Túi Quà Vô Song", "Túi Pháp Bảo"):
+        if self.moitruong.get_idnguoichoi() == 187:
+            for tenvatpham in ("Túi Ngân Lượng", "Túi Kim Bảo", "Túi Quà Vô Song", "Túi Pháp Bảo"):
                 if self.tactu.action_sudungvatphamhanhtrang(tenvatpham):
                     break
+
         # vitrivatphams = [0, ]
         # if self.moitruong.get_idnguoichoi() == 102:
         #     for vitrivatpham in vitrivatphams:
@@ -302,6 +295,7 @@ class LoopPhu:
         self.tactu.action_tudongsudungvatpham()
         self.tactu.action_chantangcapdo()
         self.tactu.action_tudongxepchongvatpham()
+        self.tactu.action_sapxephanhtrang()
         self.tactu.action_tudongtodoi()
         self.tactu.action_tudongdoimaupk()
         self.tactu.action_tudongmuavatpham()
@@ -366,6 +360,30 @@ class LoopBoKhungSauTanCong:
                 print(f"[Loop BỎ KHỰNG] Lỗi không xác định: {e}")
                 time.sleep(1)
             time.sleep(CHUKYBOKHUNGSAUTANCONG)
+
+
+class LoopGiuOTrongHanhTrang:
+    # Luồng riêng, chu kỳ ngắn (CHUKYGIUOTRONGHANHTRANG) cho việc hành trang / trang bị cần nhanh trong lúc vận khí
+    # (LoopPhu 0.5s/lượt không kịp): đang chế đồ thì vật phẩm vừa vào ô cuối hành trang 1 phải được chuyển đi ngay trước lần chế
+    # kế tiếp; đang vận khí gọi bảo thú triệu hồi thì đổi đồ, xong mặc lại
+    def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
+        self.moitruong = moitruong
+        self.tactu = tactu
+        self.stop = stop
+
+    def loop(self):
+        while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():
+            try:
+                if self.moitruong.get_is_nhanvattontai() and not self.moitruong.get_is_dangmatketnoi():
+                    self.tactu.action_giuotrongcuoihanhtrang()
+                    self.tactu.action_doidokhitrieuhoi()
+            except (pymem.exception.PymemError, pymem.exception.WinAPIError):
+                time.sleep(1)
+            except Exception as e:
+                print(f"[Loop GIỮ Ô TRỐNG] Lỗi không xác định: {e}")
+                traceback.print_exc()
+                time.sleep(1)
+            time.sleep(CHUKYGIUOTRONGHANHTRANG)
 
 
 class LoopXuLyLenh:
