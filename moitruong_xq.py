@@ -195,8 +195,10 @@ class MoiTruong:
         self._thoidiemnhatvatphamtoadogannhat = 0.
 
         self._is_nhanvatbichoang = False
+        self._is_nhanvatbibatdong = False
         self._is_nhanvatbitrammac = False
         self._is_nhanvatbimongdu = False
+        self._is_nhanvatbibienthan = False
         # địa chỉ đối tượng -> (thời điểm đọc, (số lượng, [(id, có lợi, thời gian)])), xem THOIGIANNHOBANGHIEUUNG
         self._banghieuung_cache = {}
         # Tâm Trận Pháp Lạc Ảnh đang giữ mình (người dùng chiêu, xem _timtamtrandolacanh), None khi không bị giữ
@@ -1210,9 +1212,13 @@ class MoiTruong:
         if self.get_is_nhanvatchuasansang(self.get_diachicosothongtinnhanvat1()):
             self._thoidiemnhanvatkhongsansanggannhat = time.time()
 
-        self._is_nhanvatbichoang = self.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), macdinh = False, is_hieuungcoloi = 0)
+        loai9002 = self.get_loaihieuung9002()
+        # Hôn Mê cũng không làm gì được như choáng; Bất Động chỉ không đi được
+        self._is_nhanvatbichoang = loai9002 in ("choang", "honme")
+        self._is_nhanvatbibatdong = loai9002 == "batdong"
         self._is_nhanvatbitrammac = self.get_is_cohieuungs((HIEUUNGKYNANG_TRAMMAC,), macdinh = False, is_hieuungcoloi = 0)
         self._is_nhanvatbimongdu = self.get_is_cohieuungs((HIEUUNGKYNANG_MONGDU,), macdinh = False, is_hieuungcoloi = 0)
+        self._is_nhanvatbibienthan = self.get_is_cohieuungs((HIEUUNGKYNANG_BIENTHANTHUAT,), macdinh = False, is_hieuungcoloi = 0)
         if self.get_is_cohieuungs((HIEUUNGKYNANG_DAOHOALACANH,), macdinh = False, is_hieuungcoloi = 0):
             if not self._toadotrandolacanh:
                 self._toadotrandolacanh = self._timtamtrandolacanh()
@@ -1237,7 +1243,21 @@ class MoiTruong:
         self._lichsutrochuyen5s.clear()
 
     def get_is_nhanvatbichoang(self):
+        # Choáng hoặc Hôn Mê: không dùng kỹ năng, không đánh thường, không di chuyển
         return self._is_nhanvatbichoang
+
+    def get_is_nhanvatbibatdong(self):
+        # Bất Động: không di chuyển, vẫn dùng kỹ năng
+        return self._is_nhanvatbibatdong
+
+    def get_loaihieuung9002(self, diachicosothongtinnhanvat = None):
+        # Hiệu ứng 9002 (có hại) trên đối tượng là "choang" / "batdong" / "honme" theo thời gian tối đa (xem THOIGIANTOIDACHOANG), không có thì None
+        for idhieuung, is_hieuungcoloi, thoigianhieuluctoida in self.get_danhsachhieuungnhanvats(diachicosothongtinnhanvat):
+            if idhieuung == HIEUUNGKYNANG_CHOANG and is_hieuungcoloi == 0:
+                if thoigianhieuluctoida <= THOIGIANTOIDACHOANG:
+                    return "choang"
+                return "batdong" if thoigianhieuluctoida <= THOIGIANTOIDABATDONG else "honme"
+        return None
 
     def _timtamtrandolacanh(self):
         # Trận lấy người dùng chiêu làm tâm: lúc vừa bị dính, người chơi ngoài nhóm trong KHOANGCACHTIMNGUOIDUNGTRANDO ô, ưu tiên người
@@ -1279,9 +1299,9 @@ class MoiTruong:
         return x, y
 
     def get_is_khongthedungkynang(self):
-        # Bị choáng thì không dùng được kỹ năng nào (cũng không đánh thường, không di chuyển được); bị mộng du thì không dùng được kỹ năng;
-        # bị Trầm Mặc thì môn phái phép thuật (MONPHAIPHEPTHUATs) không dùng được kỹ năng
-        return self._is_nhanvatbichoang or self._is_nhanvatbimongdu or (self._is_nhanvatbitrammac and self.get_tenmonphai() in MONPHAIPHEPTHUATs)
+        # Bị choáng thì không dùng được kỹ năng nào (cũng không đánh thường, không di chuyển được); bị mộng du / Biến Thân Thuật (cóc) thì
+        # không dùng được kỹ năng; bị Trầm Mặc thì môn phái phép thuật (MONPHAIPHEPTHUATs) không dùng được kỹ năng
+        return self._is_nhanvatbichoang or self._is_nhanvatbimongdu or self._is_nhanvatbibienthan or (self._is_nhanvatbitrammac and self.get_tenmonphai() in MONPHAIPHEPTHUATs)
 
     def get_thoidiemthaydoibandogannhat(self):
         return self._thoidiemthaydoibandogannhat
@@ -1838,10 +1858,13 @@ class MoiTruong:
                     if diachicosothongtinnhanvatchunhan:
                         return self.get_is_cothetancong(diachicosothongtinnhanvatchunhan)
 
-        # Người chơi đang mộng du (Thôi Miên Thuật chỉ dùng lên người chơi) thì không tấn công được: bỏ qua để chọn mục tiêu khác, không gửi
-        # chiêu vào vô ích. Quái không bị mộng du nên khỏi đọc bảng hiệu ứng
-        if idloainhanvat == LOAIMUCTIEU_NGUOICHOIKHACNHOM and self.get_is_cohieuungs((HIEUUNGKYNANG_MONGDU,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvat, is_hieuungcoloi = 0):
-            return False
+        # Người chơi đang mộng du (Thôi Miên Thuật chỉ dùng lên người chơi) thì không tấn công được, đang Hôn Mê thì đánh vào là tỉnh lại:
+        # bỏ qua để chọn mục tiêu khác. Quái không bị hai hiệu ứng này nên khỏi đọc bảng hiệu ứng
+        if idloainhanvat == LOAIMUCTIEU_NGUOICHOIKHACNHOM:
+            if self.get_is_cohieuungs((HIEUUNGKYNANG_MONGDU,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvat, is_hieuungcoloi = 0):
+                return False
+            if self.get_loaihieuung9002(diachicosothongtinnhanvat) == "honme":
+                return False
 
         if idmaupk == MAUPK_TUDO:
             return True

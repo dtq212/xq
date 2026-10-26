@@ -23,6 +23,10 @@ GAME_TITLE_PREFIX = "Chien Quoc 2D"
 
 DANH_SACH_CUA_SO_LOI = ["warning", "play"]
 
+# Cửa sổ bị dis về màn hình đăng nhập: thử đăng nhập lại ngay trong nó tối đa bấy nhiêu lần (vào lại tại chỗ, không mất chỗ phó bản),
+# vẫn không vào được thì thôi giữ chỗ, xử lý như client không đăng nhập (đóng, mở game mới)
+SOLANDANGNHAPLAICUASODIS = 2
+
 TOADO_LAUNCHER = {
     "BTN_VAO_GAME": (530, 495)
 }
@@ -189,7 +193,8 @@ def chuanhoatennhanvat(tennhanvat):
 
 
 def laydanhsachnhanvatonlines():
-    online_chars = {"ten": set(), "id": set()}
+    # "cuaso": {hwnd: ID người chơi} của các cửa sổ đang có nhân vật (để nhận ra cửa sổ đó khi bị dis về màn hình đăng nhập)
+    online_chars = {"ten": set(), "id": set(), "cuaso": {}}
 
     def callback(hwnd, _):
         if win32gui.IsWindowVisible(hwnd):
@@ -205,6 +210,7 @@ def laydanhsachnhanvatonlines():
                         idnguoichoi = mt.get_idnguoichoi()
                         if idnguoichoi:
                             online_chars["id"].add(int(idnguoichoi))
+                            online_chars["cuaso"][hwnd] = int(idnguoichoi)
                         tennhanvat = chuanhoatennhanvat(mt.get_tendoituong())
                         if tennhanvat:
                             online_chars["ten"].add(tennhanvat)
@@ -256,11 +262,23 @@ def _is_cuasodadangnhap(hwnd):
         return False
 
 
-def timcuasogamedangbiket():
+def _is_cuasomanhinhdangnhap(hwnd):
+    # Cửa sổ game đang ở màn hình đăng nhập (mới mở, hoặc bị dis về), chưa có nhân vật
+    if not win32gui.IsWindow(hwnd) or not win32gui.IsWindowVisible(hwnd) or GAME_TITLE_LOGIN_SCREEN not in win32gui.GetWindowText(hwnd):
+        return False
+    r = win32gui.GetWindowRect(hwnd)
+    w, h = r[2] - r[0], r[3] - r[1]
+    return 790 < w < 830 and 590 < h < 660 and not _is_cuasodadangnhap(hwnd)
+
+
+def timcuasogamedangbiket(boquas = ()):
+    # boquas: cửa sổ bị dis đang giữ chỗ cho nhân vật khác (đăng nhập lại ngay trong đó thì vào lại tại chỗ, đóng là mất chỗ phó bản)
     hwnd_found = 0
 
     def callback(hwnd, _):
         nonlocal hwnd_found
+        if hwnd in boquas:
+            return
         if win32gui.IsWindowVisible(hwnd):
             title = win32gui.GetWindowText(hwnd)
             if GAME_TITLE_LOGIN_SCREEN in title:
@@ -273,10 +291,11 @@ def timcuasogamedangbiket():
     return hwnd_found
 
 
-def mogamevadangnhap(char_name, config, duongdangame):
+def mogamevadangnhap(char_name, config, duongdangame, cuasogiuchos = ()):
+    # cuasogiuchos: cửa sổ bị dis của nhân vật khác, không đóng / không nhận nhầm là cửa sổ mới mở
     print(f"\n[ĐĂNG NHẬP] >>> BẮT ĐẦU QUY TRÌNH CHO: {char_name}")
     try:
-        hwnd_game_stuck = timcuasogamedangbiket()
+        hwnd_game_stuck = timcuasogamedangbiket(cuasogiuchos)
         if hwnd_game_stuck:
             print(f"   -> Phát hiện cửa sổ chờ (HWND: {hwnd_game_stuck}). Đang đóng...")
             try:
@@ -297,7 +316,7 @@ def mogamevadangnhap(char_name, config, duongdangame):
             print("   -> Mở file exe mới...")
             game_dir = os.path.dirname(duongdangame)
 
-            dondepclientkhongdangnhap()
+            dondepclientkhongdangnhap(cuasogiuchos = cuasogiuchos)
 
             max_retries = 3
             success_open = False
@@ -324,7 +343,7 @@ def mogamevadangnhap(char_name, config, duongdangame):
                             print(f"      -> Lỗi khi đóng: {e}")
 
                         dondeptientrinhaovuabithoatgame()
-                        dondepclientkhongdangnhap(tuoitoithieu = 0.)
+                        dondepclientkhongdangnhap(tuoitoithieu = 0., cuasogiuchos = cuasogiuchos)
 
                         break
 
@@ -348,7 +367,7 @@ def mogamevadangnhap(char_name, config, duongdangame):
         hwnd_game = 0
         for i in range(60):
             time.sleep(1)
-            hwnd_game = timcuasogamedangbiket()
+            hwnd_game = timcuasogamedangbiket(cuasogiuchos)
             if hwnd_game: break
             # Click có thể bị launcher nuốt mất: bấm lại "Vào game" mỗi 15s
             if (i + 1) % 15 == 0 and win32gui.IsWindow(hwnd_launcher):
@@ -361,7 +380,15 @@ def mogamevadangnhap(char_name, config, duongdangame):
             return
 
         print(f"[5] Game đã lên (HWND: {hwnd_game}). Đợi load Login (2s)...")
+        dangnhaptrongcuaso(hwnd_game, char_name, config)
 
+    except Exception as e:
+        print(f"❌ Exception: {e}")
+
+
+def dangnhaptrongcuaso(hwnd_game, char_name, config):
+    # Từ màn hình chọn cụm / máy chủ (cửa sổ mới mở, hoặc cửa sổ bị dis quay về) tới khi vào game
+    try:
         vitri = config.get("vitricuaso", 1)
         dichuyencuasotheovitri(hwnd_game, vitri)
 
@@ -508,7 +535,7 @@ def _laytuoitientrinh(pid):
         return 0.
 
 
-def dondepclientkhongdangnhap(tuoitoithieu = 120.):
+def dondepclientkhongdangnhap(tuoitoithieu = 120., cuasogiuchos = ()):
     # Client vừa bị dis vẫn còn cửa sổ "Chien Quoc 2D..." nên không bị coi là tiến trình ảo, nhưng vẫn chiếm suất
     # => game báo "You can not run more client program!". Kill các client không có nhân vật đang đăng nhập.
     # Bỏ qua client mới mở (< tuoitoithieu giây) vì có thể đang đăng nhập dở.
@@ -519,7 +546,8 @@ def dondepclientkhongdangnhap(tuoitoithieu = 120.):
         if win32gui.IsWindowVisible(hwnd) and GAME_TITLE_PREFIX in win32gui.GetWindowText(hwnd):
             _, pid = win32process.GetWindowThreadProcessId(hwnd)
             pid_cuasogames.add(pid)
-            if _is_cuasodadangnhap(hwnd):
+            # Cửa sổ bị dis đang giữ chỗ: coi như đang đăng nhập, không kill
+            if hwnd in cuasogiuchos or _is_cuasodadangnhap(hwnd):
                 pid_dangnhaps.add(pid)
 
     win32gui.EnumWindows(callback, None)
@@ -594,6 +622,10 @@ class TuDongDangNhap:
         self.trangthai = "Đang tắt" if not self.is_bat else "Đang khởi động..."
         # [(tên, ID, "online"/"vắng"/"đang đăng nhập")] lần quét gần nhất
         self.danhsach = []
+        # hwnd -> ID nhân vật lần cuối thấy trong cửa sổ đó: cửa sổ bị dis về màn hình đăng nhập vẫn giữ chỗ (phó bản), đăng nhập lại
+        # ngay trong nó thì vào lại tại chỗ, đóng cửa sổ là mất chỗ. hwnd -> số lần đã thử đăng nhập lại trong cửa sổ bị dis
+        self._idtheocuaso = {}
+        self._solandangnhaplaicuaso = {}
         self._luong = threading.Thread(target = self.loop, daemon = True)
 
     def batdau(self):
@@ -644,6 +676,19 @@ class TuDongDangNhap:
         dondeptientrinhaovuabithoatgame()
         online = laydanhsachnhanvatonlines()
 
+        # Cửa sổ đang có nhân vật: nhớ là của ai. Cửa sổ đã đóng thì quên
+        for hwnd, idnguoichoi in online["cuaso"].items():
+            self._idtheocuaso[hwnd] = idnguoichoi
+            self._solandangnhaplaicuaso.pop(hwnd, None)
+        for hwnd in [h for h in self._idtheocuaso if not win32gui.IsWindow(h)]:
+            self._idtheocuaso.pop(hwnd, None)
+            self._solandangnhaplaicuaso.pop(hwnd, None)
+        # Cửa sổ bị dis: đang ở màn hình đăng nhập, nhân vật của nó chưa online ở cửa sổ khác, chưa thử đăng nhập lại quá
+        # SOLANDANGNHAPLAICUASODIS lần. Không đóng / kill, không nhận nhầm là cửa sổ mới mở
+        cuasodis = {hwnd: idnguoichoi for hwnd, idnguoichoi in self._idtheocuaso.items()
+                    if hwnd not in online["cuaso"] and idnguoichoi not in online["id"]
+                    and self._solandangnhaplaicuaso.get(hwnd, 0) < SOLANDANGNHAPLAICUASODIS and _is_cuasomanhinhdangnhap(hwnd)}
+
         canhdangnhap = None
         danhsach = []
         for taikhoan in taikhoans:
@@ -664,5 +709,14 @@ class TuDongDangNhap:
             return
 
         ten = canhdangnhap.get("tennhanvat") or str(canhdangnhap.get("idnguoichoi"))
+        idcanhdangnhap = int(canhdangnhap["idnguoichoi"]) if canhdangnhap.get("idnguoichoi") else None
+        hwnd_dis = next((hwnd for hwnd, idnguoichoi in cuasodis.items() if idnguoichoi == idcanhdangnhap), None)
+        if hwnd_dis:
+            # Đăng nhập lại ngay trong cửa sổ bị dis: vào lại tại chỗ (phó bản), không về thành
+            self._solandangnhaplaicuaso[hwnd_dis] = self._solandangnhaplaicuaso.get(hwnd_dis, 0) + 1
+            self.trangthai = f"Đang đăng nhập lại {ten} trong cửa sổ bị dis..."
+            print(f"\n[ĐĂNG NHẬP] {ten} bị dis, đăng nhập lại ngay trong cửa sổ cũ (HWND: {hwnd_dis}, lần {self._solandangnhaplaicuaso[hwnd_dis]})")
+            dangnhaptrongcuaso(hwnd_dis, ten, canhdangnhap)
+            return
         self.trangthai = f"Đang đăng nhập {ten}..."
-        mogamevadangnhap(ten, canhdangnhap, cauhinh["duongdangame"])
+        mogamevadangnhap(ten, canhdangnhap, cauhinh["duongdangame"], cuasogiuchos = set(cuasodis))

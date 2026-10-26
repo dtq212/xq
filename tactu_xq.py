@@ -829,7 +829,7 @@ class TacTu:
         if not dangchay:
             return
         thoidiemhientai = time.time()
-        if self.moitruong.get_is_dangvankhi() or self.moitruong.get_is_nhanvatbichoang() or self.moitruong.get_is_bigiutrongtrando() or thoidiemhientai - self._thoidiemtamngungdichuyensudungkynang < 0. \
+        if self.moitruong.get_is_dangvankhi() or self.moitruong.get_is_nhanvatbichoang() or self.moitruong.get_is_nhanvatbibatdong() or self.moitruong.get_is_bigiutrongtrando() or thoidiemhientai - self._thoidiemtamngungdichuyensudungkynang < 0. \
                 or (thoidiemhientai < self._thoidiemhetgiuchieudangra and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_TANCONGPHEPTHUAT):
             dangchay["batdau"], dangchay["toado"] = thoidiemhientai, (x1, y1)
             return
@@ -922,12 +922,14 @@ class TacTu:
         if self.moitruong.get_is_nhanvatdachet():
             if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Nhân vật đang CHẾT")
             return
-        if self.moitruong.get_is_nhanvatbichoang() or self.moitruong.get_is_bigiutrongtrando():
-            # Bị choáng / bị Trận Pháp Lạc Ảnh giữ: đo kẹt lại từ đầu để thời gian đứng im (hoặc bị giữ ở mép trận) không bị tính là kẹt tường
+        is_khongdiduoc = self.moitruong.get_is_nhanvatbichoang() or self.moitruong.get_is_nhanvatbibatdong()
+        if is_khongdiduoc or self.moitruong.get_is_bigiutrongtrando():
+            # Bị choáng / Hôn Mê / Bất Động / bị Trận Pháp Lạc Ảnh giữ: đo kẹt lại từ đầu để thời gian đứng im (hoặc bị giữ ở mép trận)
+            # không bị tính là kẹt tường
             self._thoidiembatdaukiemtraket = time.time()
             self._toadokiemtraket = self.moitruong.get_toado()
-        if self.moitruong.get_is_nhanvatbichoang():
-            # Bị choáng không đi được: không gửi lệnh di chuyển
+        if is_khongdiduoc:
+            # Không đi được: không gửi lệnh di chuyển (Bất Động vẫn ra chiêu với mục tiêu trong tầm)
             return
         if self.moitruong.get_is_dangclickchuottrai():
             if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Đang CLICK CHUỘT TRÁI")
@@ -5698,7 +5700,7 @@ class TacTu:
         # Quái sau tường: đường chim bay thì gần nhưng chạy mãi không lại gần hơn. Trả về True nếu bị kẹt.
         thoidiemhientai = time.time()
         # Đang bận việc khác (nhặt đồ ưu tiên, đứng im dùng skill) thì không tính là kẹt
-        is_dangbanviec = self._is_danguutiennhatdo or self.moitruong.get_is_nhanvatbichoang() or self.moitruong.get_is_bigiutrongtrando() or thoidiemhientai - self._thoidiemtamngungdichuyensudungkynang < 0.
+        is_dangbanviec = self._is_danguutiennhatdo or self.moitruong.get_is_nhanvatbichoang() or self.moitruong.get_is_nhanvatbibatdong() or self.moitruong.get_is_bigiutrongtrando() or thoidiemhientai - self._thoidiemtamngungdichuyensudungkynang < 0.
         if idmuctieu != self._idgomtheodoiket or is_dangbanviec or khoangcach < self._khoangcachgomtotnhat - 0.5:
             self._idgomtheodoiket = idmuctieu
             self._khoangcachgomtotnhat = khoangcach

@@ -409,6 +409,12 @@ HIEUUNGKYNANG_LANHNGUYETTAMPHAP = 2221
 HIEUUNGKYNANG_BANGPHACHNGANTAM = 2222
 HIEUUNGKYNANG_TRONGTHUONG = 9020
 HIEUUNGKYNANG_CHOANG = 9002
+# Choáng, Bất Động (Côn Luân), Hôn Mê (Đường Môn) cùng hiệu ứng 9002; tên chỉ có trong ô hiệu ứng sau khi rê chuột xem tooltip nên phân biệt
+# theo thời gian tối đa (đo 2026-10-27 trên Ngọc: choáng 1s, Bất Động 6s, Hôn Mê 30s): <= THOIGIANTOIDACHOANG giây là choáng (không làm gì
+# được), <= THOIGIANTOIDABATDONG là Bất Động (không đi được, vẫn ra chiêu), dài hơn là Hôn Mê (không làm gì được, bị đánh thì tỉnh lại).
+# Chưa chính xác hẳn: có choáng dài 6s (Thiên Cân của bảo thú giang hồ) sẽ bị coi là Bất Động
+THOIGIANTOIDACHOANG = 3
+THOIGIANTOIDABATDONG = 15
 HIEUUNGKYNANG_NHANSAM = 6
 
 HIEUUNGKYNANG_ROILOAN = 9018
@@ -452,6 +458,7 @@ HIEUUNGKYNANG_AMMANHAPTHE = 4147
 
 HIEUUNGKYNANG_THIEUDOT = 9026
 HIEUUNGKYNANG_CANKHONNADI = 4252
+# Biến Thân Thuật (Côn Luân): biến thành cóc, không dùng được kỹ năng nào
 HIEUUNGKYNANG_BIENTHANTHUAT = 4243
 HIEUUNGKYNANG_THANTUEPHAPCHU = 4171
 HIEUUNGKYNANG_LINHKHIHOTHE = 5911
