@@ -84,10 +84,7 @@ class MoiTruong:
             raise Exception("Lấy kích thước cửa sổ game không thành công")
 
         self._kichthuoccuasogame = 800, 600
-        self._xmax, self._ymax = 800, 600
-        self._centerx, self._centery = 430, 300
 
-        self._is_dasetupautoassembledichuyen = False
         # Đoạn mã gọi hàm tìm đường cục bộ của client (_get_chuoihuongtimduongcucbo): địa chỉ mã, ô tham số, bộ đệm chuỗi hướng
         self._diachitimduongcucbo = None
         # Lần gửi "desc pf <id>" gần nhất theo id kỹ năng (get_tieuhaokynang)
@@ -230,7 +227,6 @@ class MoiTruong:
 
         self._diachibodemnoidungtrochuyen = False
         self._diachihamkichbannoidungtrochuyen = False
-        self._diachiautoassembledichuyen = False
 
     def __del__(self):
         def safe_free_old(flag_name, addr_name):
@@ -247,7 +243,6 @@ class MoiTruong:
             safe_free_old("_is_dasetupactionthietlaphooknoidungtrochuyen", "_diachihamkichbannoidungtrochuyen")
 
         mem_map = [
-            ("_is_dasetupautoassembledichuyen", "_diachiautoassembledichuyen"),
             ("_is_dasetupautoassemblekhoitaothongtinbando", "_diachiautoassemblekhoitaothongtinbando"),
             ("_is_dasetupautoassemblenhatvatpham", "_diachiautoassemblenhatvatpham")
         ]
@@ -2076,77 +2071,12 @@ class MoiTruong:
         x = read_int(self.tientrinh, x + DC.TG_CUASOYESNO)
         return read_string(self.tientrinh, x + 0x7C).strip() if x else False
 
-    def auto_assemble_dichuyen(self, x, y):
-        self._xdichuyengannhat = x
-        self._ydichuyengannhat = y
-        self._thoidiemboquadichuyencungtoadogannhat = time.time()
-
-        if not self._is_dasetupautoassembledichuyen:
-            self._diachiautoassembledichuyen = self.tientrinh.allocate(64)
-
-            write_bytes(self.tientrinh, self._diachiautoassembledichuyen, bytes.fromhex("8B 3D"), 2)
-            write_int(self.tientrinh, self._diachiautoassembledichuyen + 2, self.diachixq + DC.THONGTINGAME)
-
-            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 6, bytes.fromhex("8D 77 14"), 3)
-
-            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 9, bytes.fromhex("BB"), 1)
-            write_int(self.tientrinh, self._diachiautoassembledichuyen + 10, y)
-
-            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 14, bytes.fromhex("BD"), 1)
-            write_int(self.tientrinh, self._diachiautoassembledichuyen + 15, x)
-
-            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 19, bytes.fromhex("6A 00"), 2)
-
-            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 21, bytes.fromhex("53"), 1)
-            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 22, bytes.fromhex("55"), 1)
-
-            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 23, bytes.fromhex("8B CF"), 2)
-
-            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 25, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassembledichuyen + 26, self.diachixq + DC.HAMCLICKMANHINH - (self._diachiautoassembledichuyen + 25) - 5)
-
-            write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 30, bytes.fromhex("C3"), 1)
-            self._is_dasetupautoassembledichuyen = True
-        else:
-            write_int(self.tientrinh, self._diachiautoassembledichuyen + 10, y)
-            write_int(self.tientrinh, self._diachiautoassembledichuyen + 15, x)
-
-        self.tientrinh.start_thread(self._diachiautoassembledichuyen)
-        time.sleep(0.05)
-
     def _get_is_duocbatdaudichuyen(self):
         # Đang đứng mà sắp chạy: phải tới lượt (các nhân vật lần lượt nhấc chân, không cùng lúc). Đang chạy rồi thì chỉnh hướng tự do.
         # Không chờ: chưa tới lượt thì bỏ lần này, loop di chuyển tự gọi lại ngay sau
         if not self.dieuphoidichuyen or self.get_idtuthenhanvat() == TUTHENHANVAT_DICHUYEN:
             return True
         return self.dieuphoidichuyen.thuxinluot()
-
-    def action_dichuyenclickmanhinh(self, x, y, delay = 0.05, is_rangbuoctrongmanhinh = False):
-        # Click chuột tại điểm ảnh (x, y) trên màn hình (gọi hàm xử lý click của client xq + 0x47790). Quy đổi ô <-> điểm ảnh quanh tâm
-        # màn hình nên lệch theo camera: chỉ còn là đường dự phòng khi không đi theo ô được (action_dichuyenoo)
-        if self._is_vohieuhoadichuyen:
-            return False
-        if self.get_is_khoavankhitrieuhoi() or self.get_is_dangxuatchieu():
-            return False
-
-        if time.time() - self._thoidiemdichuyengannhat < delay:
-            return False
-
-        if not self._get_is_duocbatdaudichuyen():
-            return False
-
-        if self.get_is_cohieuungs((HIEUUNGKYNANG_ROILOAN,), macdinh = False, is_hieuungcoloi = 0):
-            x = 2 * self._centerx - x
-            y = 2 * self._centery - y
-        if is_rangbuoctrongmanhinh:
-            x = max(min(x, self._xmax - 25), 25)
-            y = max(min(y, self._ymax - 25), 25)
-
-        self._thoidiemdichuyengannhat = time.time()
-
-        self.auto_assemble_dichuyen(int(x), int(y))
-
-        return True
 
     def _get_chuoihuongtimduongcucbo(self, x1, y1, x2, y2):
         # Gọi hàm tìm đường cục bộ của client xq + 0x4B0D60 (hàm dùng khi click chuột: thiscall, ecx = [thông tin game] + 0xAE1178,
@@ -2186,8 +2116,8 @@ class MoiTruong:
     def action_dichuyenoo(self, x, y, delay = 0.05):
         # Đi tới đúng ô (x, y): lấy chuỗi hướng từ hàm tìm đường cục bộ của client rồi ghi vào chuỗi đường đi xq + 0x1FC2B4 (từ chỉ số 1)
         # và đặt chỉ số bước xq + 0x380AFC = 1 => client tự gửi "go x,y <chuỗi>" mỗi ~0.5s 2 bước tới hết chuỗi (thử trên Ngọc: lệch 0 ô).
-        # Không qua click điểm ảnh nên không lệch theo camera / khung màn hình. False: bị chặn như action_dichuyenclickmanhinh; None: không tìm
-        # được đường (gọi click như cũ)
+        # Không qua click điểm ảnh nên không lệch theo camera / khung màn hình. False: bị chặn (vô hiệu hoá di chuyển, khoá vận khí, đang xuất chiêu, chưa tới lượt); None: không tìm
+        # được đường (nơi gọi dùng tự động tìm đường của game)
         if self._is_vohieuhoadichuyen:
             return False
         if self.get_is_khoavankhitrieuhoi() or self.get_is_dangxuatchieu():
@@ -2250,24 +2180,10 @@ class MoiTruong:
                         return True
         return False
 
-    def _action_dichuyentheovector(self, x1, y1, deltax, deltay, delay = 0.05, is_rangbuoctrongmanhinh = False, is_bokiemtravungcam = False):
-        # deltax, deltay: độ lệch theo đơn vị toạ độ game tính từ bản thân (deltay = y1 - y2, dương = click xuống dưới màn hình)
+    def _action_dichuyentheovector(self, x1, y1, deltax, deltay, delay = 0.05, is_bokiemtravungcam = False):
+        # deltax, deltay: độ lệch theo đơn vị toạ độ game tính từ bản thân (deltay = y1 - y2)
         if not deltax and not deltay:
             return False
-
-        tylex = self._xmax / KHOANGCACHTOANMANHINH
-        tyley = self._ymax / KHOANGCACHTOANMANHINH
-
-        if is_rangbuoctrongmanhinh:
-            # Thu nhỏ cả vector theo cùng tỉ lệ để giữ đúng hướng (kẹp riêng từng trục làm lệch hướng đi)
-            gioihanx = (self._xmax - 25 - self._centerx) if deltax > 0 else (self._centerx - 25)
-            gioihany = (self._ymax - 25 - self._centery) if deltay > 0 else (self._centery - 25)
-            tyle = 1.
-            if deltax:
-                tyle = min(tyle, gioihanx / (abs(deltax) * tylex))
-            if deltay:
-                tyle = min(tyle, gioihany / (abs(deltay) * tyley))
-            deltax, deltay = deltax * tyle, deltay * tyle
 
         xdich, ydich = x1 + deltax, y1 - deltay
 
@@ -2284,24 +2200,21 @@ class MoiTruong:
         if self.is_tranhvungcam and not is_bokiemtravungcam and self.get_is_duongdicatvungcam(x1, y1, xdich, ydich):
             return False
 
-        # Bỏ qua nếu vẫn đang chạy tới đúng điểm đích vừa click (tránh click dồn làm nhân vật khựng lại)
+        # Bỏ qua nếu vẫn đang chạy tới đúng điểm đích vừa gửi (tránh gửi dồn làm nhân vật khựng lại)
         if time.time() - self._thoidiemboquadichuyencungtoadogannhat < 0.3 and math.dist((xdich, ydich), (self._xdichuyengannhat, self._ydichuyengannhat)) < 0.5 and self.get_idtuthenhanvat() == TUTHENHANVAT_DICHUYEN:
             return True
 
-        xclick = round(self._centerx + deltax * tylex)
-        yclick = round(self._centery + deltay * tyley)
-        if xclick == self._centerx and yclick == self._centery:
+        if (round(xdich), round(ydich)) == (x1, y1):
             return False
 
-        # Đi theo ô (tìm đường cục bộ của client, đúng ô đích); không được (chưa có đối tượng tìm đường, không ra đường, đang Rối Loạn
-        # phải lật hướng click) thì click như cũ
-        is_ok = None
+        # Đi theo ô (tìm đường cục bộ của client, đúng ô đích). Rối Loạn chỉ đảo hướng chuột ở client, chuỗi hướng ghi thẳng vào bộ nhớ
+        # không bị đảo nên vẫn đi theo ô được. Không ra đường (chưa có đối tượng tìm đường, xa / bị bao kín) thì dùng tự động tìm đường của game.
+        # Đã bỏ hẳn di chuyển bằng click điểm ảnh (lệch theo camera, không có sự kiện nhả chuột nên dính long click)
         nhan = "ĐI Ô"
-        if IS_DICHUYENTHEOO and not self.get_is_cohieuungs((HIEUUNGKYNANG_ROILOAN,), macdinh = False, is_hieuungcoloi = 0):
-            is_ok = self.action_dichuyenoo(round(xdich), round(ydich), delay = delay)
+        is_ok = self.action_dichuyenoo(round(xdich), round(ydich), delay = delay)
         if is_ok is None:
-            nhan = "CLICK"
-            is_ok = self.action_dichuyenclickmanhinh(xclick, yclick, delay = delay)
+            nhan = "TÌM ĐƯỜNG"
+            is_ok = self.action_tudongtimduong(round(xdich), round(ydich), self.get_idbandohientai(), is_lotrinh = False)
         if is_ok and IS_LOGDICHUYEN and (round(xdich), round(ydich)) != self._dichclicklogcuoi:
             self._dichclicklogcuoi = (round(xdich), round(ydich))
             self._inlog(f"[{nhan}] từ {(x1, y1)} (đang ở {self.get_toado()}, tư thế {self.get_idtuthenhanvat()}) -> {(round(xdich, 1), round(ydich, 1))}")
@@ -2347,15 +2260,13 @@ class MoiTruong:
         xdich, ydich = round(x2 + (x1 - x2) * tyle), round(y2 + (y1 - y2) * tyle)
         if (xdich, ydich) == (x1, y1):
             return False
-        # Game không biết vùng cấm: đích tìm đường rơi vào vùng cấm thì chuyển sang click (có lớp chặn đường đi cắt vùng cấm)
+        # Game không biết vùng cấm: đích tìm đường rơi vào vùng cấm thì đi theo vector (có lớp chặn đường đi cắt vùng cấm)
         if self.is_tranhvungcam and self.get_is_duongdicatvungcam(xdich, ydich, xdich, ydich):
             return self.action_dichuyengiukhoangcachtoidadiem(x2, y2, khoangcachtoida)
         # Đi theo ô (tìm đường cục bộ của client, không hiện "Bắt đầu / Hoàn tất tự động tìm đường"); không ra đường (xa quá 100 bước,
         # chưa có đối tượng tìm đường) thì dùng tự động tìm đường của game như cũ
-        is_ok = None
         nhan = "TIẾP CẬN ĐI Ô"
-        if IS_DICHUYENTHEOO:
-            is_ok = self.action_dichuyenoo(xdich, ydich, delay = 0.)
+        is_ok = self.action_dichuyenoo(xdich, ydich, delay = 0.)
         if is_ok is None:
             nhan = "TIẾP CẬN TÌM ĐƯỜNG"
             is_ok = self.action_tudongtimduong(xdich, ydich, self.get_idbandohientai(), is_lotrinh = False)
@@ -2409,7 +2320,7 @@ class MoiTruong:
             deltax, deltay = khoangcachdichuyen, khoangcachdichuyen
         return self._action_dichuyentheovector(x1, y1, deltax, deltay, delay = delay)
 
-    def action_dichuyengiukhoangcachtoidadiem(self, x2, y2, khoangcachtoida, khoangcachdichuyentoida = 0, delay = 0.05, is_rangbuoctrongmanhinh = False, is_bokiemtravungcam = False):
+    def action_dichuyengiukhoangcachtoidadiem(self, x2, y2, khoangcachtoida, khoangcachdichuyentoida = 0, delay = 0.05, is_bokiemtravungcam = False):
         if x2 <= 0 or y2 <= 0:
             return False
 
@@ -2438,7 +2349,7 @@ class MoiTruong:
         if math.dist((x1 + deltax, y1 - deltay), (x2, y2)) >= math.dist((xhientai, yhientai), (x2, y2)):
             return False
 
-        return self._action_dichuyentheovector(x1, y1, deltax, deltay, delay = delay, is_rangbuoctrongmanhinh = is_rangbuoctrongmanhinh, is_bokiemtravungcam = is_bokiemtravungcam)
+        return self._action_dichuyentheovector(x1, y1, deltax, deltay, delay = delay, is_bokiemtravungcam = is_bokiemtravungcam)
 
     def action_dichuyengiukhoangcachtoithieudiem(self, x2, y2, khoangcachtoithieu, khoangcachdichuyentoida = 0, delay = 0.05):
         if x2 <= 0 or y2 <= 0:
@@ -2467,10 +2378,10 @@ class MoiTruong:
     def action_dichuyentiepcan(self, diachi2, khoangcachdichuyentoida = 0, delay = 0.05):
         return self.action_dichuyengiukhoangcachtoida(diachi2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
 
-    def action_dichuyentiepcandiem(self, x2, y2, khoangcachdichuyentoida = 0, delay = 0.05, is_rangbuoctrongmanhinh = False):
+    def action_dichuyentiepcandiem(self, x2, y2, khoangcachdichuyentoida = 0, delay = 0.05):
         if x2 <= 0 or y2 <= 0:
             return False
-        return self.action_dichuyengiukhoangcachtoidadiem(x2, y2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay, is_rangbuoctrongmanhinh = is_rangbuoctrongmanhinh)
+        return self.action_dichuyengiukhoangcachtoidadiem(x2, y2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
 
     def action_sudungkynangvitriphudau(self, idvitri_x, idvitri_y, diachi2, khoangcachphudau, delay = 1):
         # idvitri_x là mã kỹ năng (id hoặc vị trí (x, y)) khi không truyền idvitri_y
@@ -2619,7 +2530,7 @@ class MoiTruong:
             return False
         # Chỉ ra chiêu (pf, pf2, pf5...) / đánh thường (kill) / nhặt đồ tại ô (get x y, có thể chạy tới vật phẩm) mới ngắt vận khí;
         # dùng / đeo vật phẩm, desc, move đồ, vứt, bán, nói chuyện NPC, điều khiển bảo thú, thao tác nhóm đều không ảnh hưởng
-        # (đã thử trong game) => cho gửi. Di chuyển / tìm đường / nhặt đồ tự động chặn riêng ở action_dichuyenclickmanhinh,
+        # (đã thử trong game) => cho gửi. Di chuyển / tìm đường / nhặt đồ tự động chặn riêng ở action_dichuyenoo,
         # action_tudongtimduong, auto_assemble_nhatvatpham
         if not caulenh.startswith(("pf", "kill ", "get ")):
             return False

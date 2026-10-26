@@ -46,7 +46,6 @@ CHUKY = {
     "HAMNHATVATPHAM": ("ma", "83 EC 1C 89 4C 24 04", 0, 0xb400),  # nhặt vật phẩm xung quanh
     "HAMCAPPHAT": ("goi", "75 45 68 18 08 00 00 E8 ?? ?? ?? ??", 8, 0x17dd0c),  # toán tử new của game
     "HAMKHOITAOTIMDUONG": ("goi", "74 3D 8B C8 E8 ?? ?? ?? ?? EB 36", 5, 0xceeb0),  # hàm khởi tạo cấu trúc tìm đường / bản đồ
-    "HAMCLICKMANHINH": ("goi", "6A 00 53 55 8B CF ?? ?? ?? ?? ??", 7, 0x47790),  # xử lý click chuột tại điểm ảnh
     "HAMTIMDUONGCUCBO": ("ma", "C2 18 00 90 90 90 90 90 51", 8, 0xb0d60),  # tìm đường cục bộ (chuỗi hướng né vật cản)
     "HAMTANGCAPDO": ("goi", "57 52 E8 ?? ?? ?? ?? 5F 5E 5D", 3, 0x16c730),  # hàm được gọi ở chỗ vá chặn tăng cấp độ
     "VA_AUTOINGAME": ("ma", "C7 81 24 C9 AE 00 01 00 00 00", 0, 0x6ec9),  # NOP 10 byte khi tắt auto trong game

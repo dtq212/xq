@@ -41,7 +41,6 @@ MUCTIEU = [
     ("HAMNHATVATPHAM", 0xB400, "ma", "nhặt vật phẩm xung quanh"),
     ("HAMCAPPHAT", 0x17DD0C, "ma", "toán tử new của game"),
     ("HAMKHOITAOTIMDUONG", 0xCEEB0, "ma", "hàm khởi tạo cấu trúc tìm đường / bản đồ"),
-    ("HAMCLICKMANHINH", 0x47790, "ma", "xử lý click chuột tại điểm ảnh"),
     ("HAMTIMDUONGCUCBO", 0xB0D60, "ma", "tìm đường cục bộ (chuỗi hướng né vật cản)"),
     ("HAMTANGCAPDO", 0x16C730, "ma", "hàm được gọi ở chỗ vá chặn tăng cấp độ"),
     # Chỗ vá mã

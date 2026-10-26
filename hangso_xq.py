@@ -437,8 +437,9 @@ HIEUUNGKYNANG_DATINCUONGLUC = 3191
 HIEUUNGKYNANG_KIMCUONGTHANPHAP = 3192
 HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN = 2114
 HIEUUNGKYNANG_TRAMMAC = 9010
-# Mộng du (Thôi Miên Thuật 5313 của Vân Mộng Cốc): không dùng được kỹ năng. Id đoán theo id chiêu, chưa đo được trong game
-HIEUUNGKYNANG_MONGDU = 5313
+# Mộng du (Thôi Miên Thuật của Vân Mộng Cốc): không dùng được kỹ năng, người bị cũng không bị tấn công. Đo 2026-10-27 trên ThichVaCham:
+# hiệu ứng 9016, có hại, 30s (không trùng id chiêu 5313)
+HIEUUNGKYNANG_MONGDU = 9016
 # Bảng hiệu ứng của mỗi đối tượng đọc 1 lần rồi nhớ bấy nhiêu giây (ngắn hơn 1 vòng bot): trong 1 vòng nhiều lượt quét / nhiều kiểm tra
 # hiệu ứng (mộng du khi chọn mục tiêu, Thực Cốt, choáng, Hộ Thể Kim Cang...) trên cùng đối tượng dùng chung 1 lần đọc
 THOIGIANNHOBANGHIEUUNG = 0.1
@@ -934,11 +935,8 @@ CHUDICHTRAM = "Chủ Dịch Trạm"
 
 # In ra console mọi câu lệnh gửi vào game và mỗi lần kỹ năng bị khoá chặn (để dò lỗi), tắt thì để False
 IS_LOGCAULENH = True
-# Ghi log mỗi lần lý do / điểm đích di chuyển thay đổi, và điểm click thật sự ([DI CHUYỂN], [CLICK])
+# Ghi log mỗi lần lý do / điểm đích di chuyển thay đổi, và đích thật sự gửi đi ([DI CHUYỂN], [ĐI Ô], [TÌM ĐƯỜNG])
 IS_LOGDICHUYEN = True
-# Di chuyển theo ô bằng hàm tìm đường cục bộ của client (MoiTruong.action_dichuyenoo) thay cho click điểm ảnh (lệch theo camera);
-# False để quay về click như cũ
-IS_DICHUYENTHEOO = True
 
 # Xoay vòng lệnh giữa các bot: tại mỗi thời điểm chỉ 1 bot được gửi lệnh, lần lượt từng bot (bot nào cũng có lệnh thì chia đều lượt),
 # giữa 2 lệnh liên tiếp (của 2 bot bất kỳ) nghỉ ngẫu nhiên trong khoảng KHOANGNGHIGIUALENH giây, để các bot không bấm cùng lúc như máy.
