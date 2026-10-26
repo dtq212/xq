@@ -362,28 +362,6 @@ VITRIKYNANG_CHANTHIENNOHONG = 3483
 VITRIKYNANG_SINHTUTHANLUC = 3484
 VITRIKYNANG_LUANHOIVANCHUYEN = 3485
 
-NGUYENKHIYEUCAUKYNANGCAMVEQUAN_MAP = {
-    VITRIKYNANG_GIAOLONGNHAPHAI: 1,
-    VITRIKYNANG_TRUCDAOHOANGLONG: 2,
-    VITRIKYNANG_THIENLYTATSAT: 2,
-    VITRIKYNANG_PHILONGTAMCHAU: 4,
-    VITRIKYNANG_LOIDINHKICH: 4,
-
-    VITRIKYNANG_HOANHTAOTHIENQUAN: 3,
-    VITRIKYNANG_THIENBONGNHATKICH: 4,
-    VITRIKYNANG_NGULOIAPDINH: 4,
-    VITRIKYNANG_MEHONTHUC: 4,
-    VITRIKYNANG_DAIHAICUONGDAO: 4,
-    VITRIKYNANG_BADAONOLANG: 4,
-
-    VITRIKYNANG_MANHHOBOPHAP: 1,
-    VITRIKYNANG_KIMSUBOGIAP: 4,
-
-    VITRIKYNANG_THIENTRI: 2,
-    VITRIKYNANG_CHANTHIENNOHONG: 4,
-    VITRIKYNANG_SINHTUTHANLUC: 4,
-    VITRIKYNANG_LUANHOIVANCHUYEN: 0,
-}
 
 VITRIKYNANG_HACHODAOTAM = 2110
 VITRIKYNANG_KHITRANGSONHA = 2111
@@ -402,26 +380,6 @@ VITRIKYNANG_PHANTOA = 2124
 VIRIKYNANG_NGUYENKHIQUYNGUYEN = 3172
 VIRIKYNANG_HOTHEKIMCANG = 3173
 
-NGUYENKHIYEUCAUKYNANGDAOHOANGUYEN_MAP = {
-    VITRIKYNANG_HACHODAOTAM: 1,
-    VITRIKYNANG_KHITRANGSONHA: 1,
-    VITRIKYNANG_BADONGQUYEN: 2,
-    VITRIKYNANG_THONKINH: 2,
-    VITRIKYNANG_DAOHOALACANH: 3,
-    VITRIKYNANG_PHONGMAQUYET: 4,
-    VITRIKYNANG_METUNGQUYEN: 4,
-    VITRIKYNANG_KHONGTHUNHAPBACHNHAN: 4,
-    VITRIKYNANG_DAIHAIVOLUONG: 4,
-    VITRIKYNANG_NHATQUYENBATSON: 4,
-    VITRIKYNANG_LACKICH: 2,
-    VITRIKYNANG_KIMTRUNGCHAO: 1,
-    VITRIKYNANG_TRANCOTHANUY: 1,
-    VIRIKYNANG_NGUYENKHIQUYNGUYEN: 1,
-    VIRIKYNANG_HOTHEKIMCANG: 1,
-    VITRIKYNANG_DATINCUONGLUC: 12,
-    VITRIKYNANG_KIMCUONGTHANPHAP: 12,
-    VITRIKYNANG_PHANTOA: 6,
-}
 
 HINHTHUCSUDUNGKYNANG_CANMUCTIEU = 3
 HINHTHUCSUDUNGKYNANG_KHONGCANMUCTIEU = 1
@@ -538,6 +496,11 @@ GIANCACHHOIBAOTHUTRIEUHOI = 5.
 # => chỉ dùng lại khi lần trước đã hồi xong
 GIANCACHLUUHUYETTHUAT = 8.
 
+# Tiêu hao kỹ năng (pháp lực / khí huyết / nguyên khí) đọc từ mô tả trong game được nhớ lại bấy nhiêu giây
+THOIGIANNHOTIEUHAOKYNANG = 10.
+# Có bảo thú (thú triệu hồi) còn dưới bấy nhiêu % sinh lực thì dùng Lưu Huyết Thuật
+PHANTRAMSINHLUCLUUHUYETTHUAT = 75
+
 VITRITRANGBIDAUTIEN = 96
 SOLUONGOTRANGBI = 10
 VITRITRANGBI_PHAPBAO = VITRITRANGBIDAUTIEN + 6
@@ -565,6 +528,15 @@ MONPHAI_MAP = {
 
 # Vân Mộng Cốc buff đồng đội cùng máy theo môn phái: chỉ Ngân Châm Độ Ách hoặc chỉ Kim Châm Độ Ách.
 # Môn phái không có trong 2 danh sách (hoặc không biết vì khác máy) thì buff cả hai như cũ
+# Môn phái dùng chiêu phép thuật: bị Trầm Mặc thì không dùng được kỹ năng (vẫn đánh thường, di chuyển được)
+# Dính Trận Pháp Lạc Ảnh (hiệu ứng HIEUUNGKYNANG_DAOHOALACANH, ~13s) thì không ra khỏi được chừng 3 ô quanh NGƯỜI DÙNG CHIÊU
+# (đo 2026-10-26, Thọ nhốt 30: bị giữ ở cách Thọ 2-2.8 ô, có lần cách chỗ bị dính tới 4.5 ô): đích di chuyển ngoài bán kính này
+# quanh tâm trận bị kéo về mép trận. Tâm trận = người chơi ngoài nhóm trong KHOANGCACHTIMNGUOIDUNGTRANDO ô lúc vừa bị dính, ưu tiên người đánh tay không (Đào Hoa Nguyên) rồi tới người gần nhất
+BANKINHTRANDOLACANH = 2.5
+KHOANGCACHTIMNGUOIDUNGTRANDO = 4.
+
+MONPHAIPHEPTHUATs = ("vanmongcoc", "maoson", "conluan")
+
 MONPHAICHIBUFFNGANCHAMs = ("daohoanguyen", "camvequan", "duongmon")
 MONPHAICHIBUFFKIMCHAMs = ("vanmongcoc", "maoson", "conluan")
 
@@ -1043,6 +1015,8 @@ IDKYNANGKHONGCHANSPAMs = (2118,)
 # Nhân vật trong tổ đội tự động (cùng hay khác nhóm, trừ khi đang theo sau trưởng nhóm) có ID nhỏ hơn được giữ vùng: nhân vật ID lớn hơn tránh mọi quái
 # và điểm lộ trình trong bán kính này quanh nó
 BANKINHVUNGNHUONGQUAIDONGDOI = 15.
+# Gom quái: đủ số tối thiểu rồi mà còn quái chưa kéo cách đám đang gom (con neo) không quá bấy nhiêu mét thì kéo nốt rồi mới đánh
+BANKINHKEOTHEMGOMQUAI = 8.
 
 # Chỗ đứng NPC trên từng bản đồ (khi chưa thấy NPC thì chạy tới đây)
 VITRITANTHUTIENCO_MAP = {

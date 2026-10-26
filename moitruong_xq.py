@@ -92,6 +92,8 @@ class MoiTruong:
         self._diachitimduongcucbo = None
         # Lần gửi "desc pf <id>" gần nhất theo id kỹ năng (get_tieuhaokynang)
         self._thoidiemtruyvanmotakynang_map = {}
+        # id kỹ năng -> (thời điểm đọc, tiêu hao hoặc None): hàm ra chiêu xét tiêu hao mỗi lượt cho mọi chiêu nên nhớ lại một lúc
+        self._tieuhaokynang_cache = {}
         # Bảng {id kỹ năng đã học: vị trí} (_get_bangvitrikynangdahoc) và lúc đọc
         self._bangvitrikynangdahoc = {}
         self._thoidiemdocbangkynang = 0.
@@ -196,6 +198,9 @@ class MoiTruong:
         self._thoidiemnhatvatphamtoadogannhat = 0.
 
         self._is_nhanvatbichoang = False
+        self._is_nhanvatbitrammac = False
+        # Tâm Trận Pháp Lạc Ảnh đang giữ mình (người dùng chiêu, xem _timtamtrandolacanh), None khi không bị giữ
+        self._toadotrandolacanh = None
 
         self.diachihamthucthicaulenh = 0
 
@@ -277,6 +282,10 @@ class MoiTruong:
             # Lệnh vào hàng đợi trước khi khoá vận khí triệu hồi mà tới giờ mới gửi: bỏ (vòng lặp sau tự gửi lại nếu còn cần)
             if self._is_lenhbichankhoavankhi(lenh.caulenh):
                 self._loglenh(lenh.caulenh, "bỏ: đang khoá vận khí triệu hồi")
+                return
+            # Lệnh chiêu / đánh vào hàng đợi trước khi bị choáng (hoặc Trầm Mặc với phái phép thuật) mà tới giờ mới gửi: bỏ, hết khống chế vòng lặp tự gửi lại
+            if (lenh.caulenh.startswith("pf ") and self.get_is_khongthedungkynang()) or (lenh.caulenh.startswith("kill ") and self._is_nhanvatbichoang):
+                self._loglenh(lenh.caulenh, "bỏ: đang bị khống chế")
                 return
             # Lệnh nhặt đồ (chạy tới vật phẩm) vào hàng đợi trước khi xuất chiêu mà tới giờ mới gửi: bỏ
             if lenh.caulenh.startswith("get ") and self.get_is_dangxuatchieu():
@@ -531,7 +540,7 @@ class MoiTruong:
         return False
 
     def action_sudungkynang(self, idkynang, delay = 0.05, vitrikynang = None):
-        if self.get_is_dangkhoakynang():
+        if self.get_is_dangkhoakynang() or self.get_is_khongthedungkynang():
             return False
         if time.time() - self._thoidiemsudungkynanggannhat < delay:
             return False
@@ -542,6 +551,8 @@ class MoiTruong:
         return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO, vitrikynang = vitrikynang)
 
     def action_sudungtancongvatly(self, diachicosothongtinnhanvatmuctieu, delay = 0.):
+        if self._is_nhanvatbichoang:
+            return False
         if time.time() - self._thoidiemsudungtancongvatlygannhat < delay:
             return False
         self._thoidiemsudungtancongvatlygannhat = time.time()
@@ -559,7 +570,7 @@ class MoiTruong:
         return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO)
 
     def action_sudungkynangmuctieunguoichoi(self, idkynang, idnguoichoi, delay = 0.05, vitrikynang = None):
-        if self.get_is_dangkhoakynang():
+        if self.get_is_dangkhoakynang() or self.get_is_khongthedungkynang():
             return False
         if time.time() - self._thoidiemsudungkynangmuctieugannhat < delay:
             return False
@@ -568,7 +579,7 @@ class MoiTruong:
         return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO, vitrikynang = vitrikynang)
 
     def action_sudungkynangmuctieukhacnguoichoi(self, idkynang, iddoituong, delay = 0.05, vitrikynang = None):
-        if self.get_is_dangkhoakynang():
+        if self.get_is_dangkhoakynang() or self.get_is_khongthedungkynang():
             return False
         if time.time() - self._thoidiemsudungkynangmuctieugannhat < delay:
             return False
@@ -577,7 +588,7 @@ class MoiTruong:
         return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO, vitrikynang = vitrikynang)
 
     def action_sudungkynangtoado(self, idkynang, toadox, toadoy, delay = 0.05):
-        if self.get_is_dangkhoakynang():
+        if self.get_is_dangkhoakynang() or self.get_is_khongthedungkynang():
             return False
         if time.time() - self._thoidiemsudungkynangtoadogannhat < delay:
             return False
@@ -1195,6 +1206,12 @@ class MoiTruong:
             self._thoidiemnhanvatkhongsansanggannhat = time.time()
 
         self._is_nhanvatbichoang = self.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), macdinh = False, is_hieuungcoloi = 0)
+        self._is_nhanvatbitrammac = self.get_is_cohieuungs((HIEUUNGKYNANG_TRAMMAC,), macdinh = False, is_hieuungcoloi = 0)
+        if self.get_is_cohieuungs((HIEUUNGKYNANG_DAOHOALACANH,), macdinh = False, is_hieuungcoloi = 0):
+            if not self._toadotrandolacanh:
+                self._toadotrandolacanh = self._timtamtrandolacanh()
+        else:
+            self._toadotrandolacanh = None
 
         if not self.get_is_dangbatchucnangmorong():
             self.thoidiemcochucnangmoronggannhat = time.time()
@@ -1215,6 +1232,50 @@ class MoiTruong:
 
     def get_is_nhanvatbichoang(self):
         return self._is_nhanvatbichoang
+
+    def _timtamtrandolacanh(self):
+        # Trận lấy người dùng chiêu làm tâm: lúc vừa bị dính, người chơi ngoài nhóm trong KHOANGCACHTIMNGUOIDUNGTRANDO ô, ưu tiên người
+        # đánh tay không (Đào Hoa Nguyên dùng quyền) rồi tới người gần nhất (đứng sát nhau thì chỉ xét gần nhất hay chọn nhầm người phái khác);
+        # không thấy ai thì lấy chỗ mình đang đứng
+        toadobanthan = self.get_toado()
+        idbanthan = self.get_idnguoichoi()
+        idcungnhoms = set(self.get_danhsachidnguoichoithanhviennhoms() or ()) if self.get_is_dangnamtrongnhom() else set()
+        tam, tennguoidung, khoatot = toadobanthan, None, None
+        for diachi in self._get_diachidoituongxungquanhs(is_nguoichoi = True):
+            idnguoichoi = self.get_idnguoichoi(diachi)
+            if idnguoichoi == idbanthan or idnguoichoi in idcungnhoms:
+                continue
+            toado = self.get_toado(diachi)
+            khoangcach = math.dist(toadobanthan, toado)
+            if khoangcach > KHOANGCACHTIMNGUOIDUNGTRANDO:
+                continue
+            khoa = (self.get_idloaivukhi(diachi) != IDLOAIVUKHI_TAYKHONG, khoangcach)
+            if khoatot is None or khoa < khoatot:
+                tam, tennguoidung, khoatot = toado, self.get_tendoituong(diachi), khoa
+        self._inlog(f"[TRẬN ĐỒ] Dính Trận Pháp Lạc Ảnh tại {toadobanthan}, tâm trận {tam} ({tennguoidung or 'không thấy người dùng chiêu, lấy chỗ mình đứng'})")
+        return tam
+
+    def get_is_bigiutrongtrando(self):
+        return bool(self._toadotrandolacanh)
+
+    def _kepdichtrongtrando(self, x, y):
+        # Đang bị Trận Pháp Lạc Ảnh giữ: đích ngoài trận kéo về mép trận theo hướng tâm trận -> đích (vẫn tiến về phía đích hết mức được).
+        # Trả về None nếu đích sau khi kéo trùng chỗ đang đứng (bấm cũng không đi được)
+        tam = self._toadotrandolacanh
+        if not tam:
+            return x, y
+        khoangcach = math.dist(tam, (x, y))
+        if khoangcach > BANKINHTRANDOLACANH:
+            tyle = BANKINHTRANDOLACANH / khoangcach
+            x, y = tam[0] + (x - tam[0]) * tyle, tam[1] + (y - tam[1]) * tyle
+            if math.dist(self.get_toado(), (x, y)) < 0.7:
+                return None
+        return x, y
+
+    def get_is_khongthedungkynang(self):
+        # Bị choáng thì không dùng được kỹ năng nào (cũng không đánh thường, không di chuyển được);
+        # bị Trầm Mặc thì môn phái phép thuật (MONPHAIPHEPTHUATs) không dùng được kỹ năng
+        return self._is_nhanvatbichoang or (self._is_nhanvatbitrammac and self.get_tenmonphai() in MONPHAIPHEPTHUATs)
 
     def get_thoidiemthaydoibandogannhat(self):
         return self._thoidiemthaydoibandogannhat
@@ -1652,7 +1713,17 @@ class MoiTruong:
     def get_tieuhaokynang(self, idkynang, is_truyvan = True):
         # Tiêu hao / tái sử dụng của kỹ năng lấy từ các dòng mô tả nằm trong ô kỹ năng (vd "Pháp Lực tiêu hao: 6 điểm", "Nguyên khí tiêu
         # hao: 1 điểm", "Tái sử dụng sau: 10 giây"): {"pháp lực": 6, ..., "tái sử dụng": 10.0}. Mô tả chỉ có sau khi game lấy về (rê chuột
-        # hoặc "desc pf <id>"): chưa có thì gửi "desc pf <id>" (tối đa 1 lần / 2s mỗi kỹ năng) và trả None, lần gọi sau sẽ có
+        # hoặc "desc pf <id>"): chưa có thì gửi "desc pf <id>" (tối đa 1 lần / 2s mỗi kỹ năng) và trả None, lần gọi sau sẽ có;
+        # có mô tả mà không ghi số tiêu hao thì {}.
+        # Đọc được thì nhớ THOIGIANNHOTIEUHAOKYNANG giây (tiêu hao chỉ đổi khi lên cấp chiêu), chưa đọc được thì nhớ 0.5s
+        dem = self._tieuhaokynang_cache.get(idkynang)
+        if dem and time.time() - dem[0] < (THOIGIANNHOTIEUHAOKYNANG if dem[1] is not None else 0.5):
+            return dem[1]
+        ketqua = self._doctieuhaokynang(idkynang, is_truyvan)
+        self._tieuhaokynang_cache[idkynang] = (time.time(), ketqua)
+        return ketqua
+
+    def _doctieuhaokynang(self, idkynang, is_truyvan):
         dulieu = self._docokynangtheoid(idkynang)
         if not dulieu:
             return None
@@ -1661,7 +1732,9 @@ class MoiTruong:
         taisudung = re.search(r"Tái sử dụng sau: ([\d.]+) giây", noidung)
         if taisudung:
             ketqua["tái sử dụng"] = float(taisudung.group(1))
-        if ketqua:
+        # Mô tả đã có (dòng "Võ công yêu cầu" / "Yêu cầu võ công") mà không ghi số tiêu hao (Triệu Hoán Chú, Nguyên Khí Quy Nguyên,
+        # "Nguyên khí tiêu hao: Toàn bộ"...) thì trả {} để không gửi "desc pf" mãi
+        if ketqua or "yêu cầu" in noidung.lower():
             return ketqua
         if is_truyvan and time.time() - self._thoidiemtruyvanmotakynang_map.get(idkynang, 0.) > 2.:
             self._thoidiemtruyvanmotakynang_map[idkynang] = time.time()
@@ -2096,6 +2169,10 @@ class MoiTruong:
             return False
         if not self._get_is_duocbatdaudichuyen():
             return False
+        dichtrongtran = self._kepdichtrongtrando(x, y)
+        if dichtrongtran is None:
+            return False
+        x, y = round(dichtrongtran[0]), round(dichtrongtran[1])
         diachinhanvat = self.get_diachicosothongtinnhanvat1()
         if not diachinhanvat:
             return None
@@ -2166,6 +2243,14 @@ class MoiTruong:
             deltax, deltay = deltax * tyle, deltay * tyle
 
         xdich, ydich = x1 + deltax, y1 - deltay
+
+        # Đang bị Trận Pháp Lạc Ảnh giữ thì không bấm ra ngoài trận
+        dichtrongtran = self._kepdichtrongtrando(xdich, ydich)
+        if dichtrongtran is None:
+            return False
+        if dichtrongtran != (xdich, ydich):
+            xdich, ydich = dichtrongtran
+            deltax, deltay = xdich - x1, y1 - ydich
 
         # Lớp chặn cuối: mọi kiểu di chuyển (tiếp cận, lùi giữ khoảng cách, phủ đầu...) đều không được cắt qua vùng cấm
         # (trừ khi chạy theo trưởng nhóm: lỡ đứng trong vùng cấm thì mọi đường đi đều "cắt vùng cấm" và nhân vật bị kẹt luôn)
@@ -2537,6 +2622,11 @@ class MoiTruong:
         # (huỷ tìm đường thì qua action_ngungtudongtimduong, không chặn)
         if (x or y) and (self.get_is_khoavankhitrieuhoi() or self.get_is_dangxuatchieu()):
             return False
+        if x or y:
+            dichtrongtran = self._kepdichtrongtrando(x, y)
+            if dichtrongtran is None:
+                return False
+            x, y = round(dichtrongtran[0]), round(dichtrongtran[1])
         a = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not a: return False
         a = read_int(self.tientrinh, a + DC.TG_TIMDUONG)
