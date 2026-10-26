@@ -965,6 +965,9 @@ CHUDICHTRAM = "Chủ Dịch Trạm"
 IS_LOGCAULENH = True
 # Ghi log mỗi lần lý do / điểm đích di chuyển thay đổi, và điểm click thật sự ([DI CHUYỂN], [CLICK])
 IS_LOGDICHUYEN = True
+# Di chuyển theo ô bằng hàm tìm đường cục bộ của client (MoiTruong.action_dichuyenoo) thay cho click điểm ảnh (lệch theo camera);
+# False để quay về click như cũ
+IS_DICHUYENTHEOO = True
 
 # Xoay vòng lệnh giữa các bot: tại mỗi thời điểm chỉ 1 bot được gửi lệnh, lần lượt từng bot (bot nào cũng có lệnh thì chia đều lượt),
 # giữa 2 lệnh liên tiếp (của 2 bot bất kỳ) nghỉ ngẫu nhiên trong khoảng KHOANGNGHIGIUALENH giây, để các bot không bấm cùng lúc như máy.

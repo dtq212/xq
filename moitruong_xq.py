@@ -86,6 +86,12 @@ class MoiTruong:
         self._centerx, self._centery = 430, 300
 
         self._is_dasetupautoassembledichuyen = False
+        # Đoạn mã gọi hàm tìm đường cục bộ của client (_get_chuoihuongtimduongcucbo): địa chỉ mã, ô tham số, bộ đệm chuỗi hướng
+        self._diachitimduongcucbo = None
+        # Đích đi theo ô gần nhất (action_dichuyenoo): còn đang đi tới đích này thì không ghi lại chuỗi
+        self._dichdioogannhat = None
+        self._dulieutimduongcucbo = None
+        self._buftimduongcucbo = None
         self._is_dasetupautoassemblenhatvatpham = False
         self._is_dasetupautoassemblekhoitaothongtinbando = False
         self._is_dasetupactionthietlaphooknoidungtrochuyen = False
@@ -243,6 +249,8 @@ class MoiTruong:
 
         if self.diachihamthucthicaulenh:
             safe_free(self.diachihamthucthicaulenh)
+        if getattr(self, "_diachitimduongcucbo", None):
+            safe_free(self._diachitimduongcucbo)
 
     def _ghilenhvaobonho(self, lenh):
         if not self.diachihamthucthicaulenh:
@@ -1903,7 +1911,9 @@ class MoiTruong:
             return True
         return self.dieuphoidichuyen.thuxinluot()
 
-    def action_dichuyen(self, x, y, delay = 0.05, is_rangbuoctrongmanhinh = False):
+    def action_dichuyenclickmanhinh(self, x, y, delay = 0.05, is_rangbuoctrongmanhinh = False):
+        # Click chuột tại điểm ảnh (x, y) trên màn hình (gọi hàm xử lý click của client xq + 0x47790). Quy đổi ô <-> điểm ảnh quanh tâm
+        # màn hình nên lệch theo camera: chỉ còn là đường dự phòng khi không đi theo ô được (action_dichuyenoo)
         if self._is_vohieuhoadichuyen:
             return False
         if self.get_is_khoavankhitrieuhoi() or self.get_is_dangxuatchieu():
@@ -1926,6 +1936,78 @@ class MoiTruong:
 
         self.auto_assemble_dichuyen(int(x), int(y))
 
+        return True
+
+    def _get_chuoihuongtimduongcucbo(self, x1, y1, x2, y2):
+        # Gọi hàm tìm đường cục bộ của client xq + 0x4B0D60 (hàm dùng khi click chuột: thiscall, ecx = [thông tin game] + 0xAE1178,
+        # tham số x1, y1, x2, y2, buf, 100) => chuỗi hướng '1'..'8' né vật cản ('1' (+1, 0), '2' (+1, -1), '3' (0, -1), '4' (-1, -1),
+        # '5' (-1, 0), '6' (-1, +1), '7' (0, +1), '8' (+1, +1)). Chưa có đối tượng tìm đường (client chưa click lần nào) thì None
+        if not self._diachitimduongcucbo:
+            vung = self.tientrinh.allocate(512)
+            self._dulieutimduongcucbo, self._buftimduongcucbo = vung + 0x80, vung + 0x100
+            dulieu = self._dulieutimduongcucbo
+            ma = f"""
+                mov eax, dword ptr [{hex(self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)}]
+                mov ecx, dword ptr [eax + 0xAE1178]
+                test ecx, ecx
+                je ketthuc
+                push 0x64
+                push {hex(self._buftimduongcucbo)}
+                push dword ptr [{hex(dulieu + 12)}]
+                push dword ptr [{hex(dulieu + 8)}]
+                push dword ptr [{hex(dulieu + 4)}]
+                push dword ptr [{hex(dulieu)}]
+                mov eax, {hex(self.diachixq + 0xB0D60)}
+                call eax
+            ketthuc:
+                ret
+            """
+            encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(ma)
+            write_bytes(self.tientrinh, vung, bytes(encoding), len(encoding))
+            self._diachitimduongcucbo = vung
+        thongtingame = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        if not thongtingame or not read_int(self.tientrinh, thongtingame + 0xAE1178):
+            return None
+        write_bytes(self.tientrinh, self._dulieutimduongcucbo, struct.pack("<iiii", x1, y1, x2, y2), 16)
+        write_bytes(self.tientrinh, self._buftimduongcucbo, bytes(100), 100)
+        self.tientrinh.start_thread(self._diachitimduongcucbo)
+        return read_bytes(self.tientrinh, self._buftimduongcucbo, 100).split(b"\0")[0] or None
+
+    def action_dichuyenoo(self, x, y, delay = 0.05):
+        # Đi tới đúng ô (x, y): lấy chuỗi hướng từ hàm tìm đường cục bộ của client rồi ghi vào chuỗi đường đi xq + 0x1FC2B4 (từ chỉ số 1)
+        # và đặt chỉ số bước xq + 0x380AFC = 1 => client tự gửi "go x,y <chuỗi>" mỗi ~0.5s 2 bước tới hết chuỗi (thử trên Ngọc: lệch 0 ô).
+        # Không qua click điểm ảnh nên không lệch theo camera / khung màn hình. False: bị chặn như action_dichuyenclickmanhinh; None: không tìm
+        # được đường (gọi click như cũ)
+        if self._is_vohieuhoadichuyen:
+            return False
+        if self.get_is_khoavankhitrieuhoi() or self.get_is_dangxuatchieu():
+            return False
+        if time.time() - self._thoidiemdichuyengannhat < delay:
+            return False
+        if not self._get_is_duocbatdaudichuyen():
+            return False
+        diachinhanvat = self.get_diachicosothongtinnhanvat1()
+        if not diachinhanvat:
+            return None
+        xsaptoi, ysaptoi = struct.unpack("<ii", read_bytes(self.tientrinh, diachinhanvat + 0x18, 8))
+        if (xsaptoi, ysaptoi) == (x, y):
+            return False
+        # Đang đi theo ô tới đúng đích này (chuỗi chưa hết) thì để client đi tiếp, ghi lại chuỗi làm đứt nhịp gửi "go"
+        if self._dichdioogannhat == (x, y) and self.get_idlenhdichuyen():
+            return True
+        chuoihuong = self._get_chuoihuongtimduongcucbo(xsaptoi, ysaptoi, x, y)
+        if not chuoihuong:
+            return None
+        # Huỷ đích tự động tìm đường đang có: game tự tìm đường lại khi đứng yên và ghi đè chuỗi đi theo ô (2 nguồn cùng gửi "go")
+        self.action_ngungtudongtimduong()
+        self._dichdioogannhat = (x, y)
+        khoidieukhien = read_int(self.tientrinh, self.diachixq + 0x372864)
+        if khoidieukhien:
+            write_bytes(self.tientrinh, khoidieukhien + 0x1608, bytes(8), 8)
+        write_bytes(self.tientrinh, self.diachixq + 0x1FC2B4, b"\0" + chuoihuong + bytes(99 - len(chuoihuong)), 100)
+        self.set_idlenhdichuyen(1)
+        self._thoidiemdichuyengannhat = time.time()
+        self._thoidiemboquadichuyencungtoadogannhat = time.time()
         return True
 
     def get_is_duongdicatvungcam(self, x1, y1, x2, y2):
@@ -1989,10 +2071,18 @@ class MoiTruong:
         if xclick == self._centerx and yclick == self._centery:
             return False
 
-        is_ok = self.action_dichuyen(xclick, yclick, delay = delay)
+        # Đi theo ô (tìm đường cục bộ của client, đúng ô đích); không được (chưa có đối tượng tìm đường, không ra đường, đang Rối Loạn
+        # phải lật hướng click) thì click như cũ
+        is_ok = None
+        nhan = "ĐI Ô"
+        if IS_DICHUYENTHEOO and not self.get_is_cohieuungs((HIEUUNGKYNANG_ROILOAN,), macdinh = False, is_hieuungcoloi = 0):
+            is_ok = self.action_dichuyenoo(round(xdich), round(ydich), delay = delay)
+        if is_ok is None:
+            nhan = "CLICK"
+            is_ok = self.action_dichuyenclickmanhinh(xclick, yclick, delay = delay)
         if is_ok and IS_LOGDICHUYEN and (round(xdich), round(ydich)) != self._dichclicklogcuoi:
             self._dichclicklogcuoi = (round(xdich), round(ydich))
-            self._inlog(f"[CLICK] từ {(x1, y1)} (đang ở {self.get_toado()}, tư thế {self.get_idtuthenhanvat()}) -> {(round(xdich, 1), round(ydich, 1))}")
+            self._inlog(f"[{nhan}] từ {(x1, y1)} (đang ở {self.get_toado()}, tư thế {self.get_idtuthenhanvat()}) -> {(round(xdich, 1), round(ydich, 1))}")
         if is_ok:
             self._xdichuyengannhat, self._ydichuyengannhat = xdich, ydich
             self._thoidiemboquadichuyencungtoadogannhat = time.time()
@@ -2038,10 +2128,18 @@ class MoiTruong:
         # Game không biết vùng cấm: đích tìm đường rơi vào vùng cấm thì chuyển sang click (có lớp chặn đường đi cắt vùng cấm)
         if self.is_tranhvungcam and self.get_is_duongdicatvungcam(xdich, ydich, xdich, ydich):
             return self.action_dichuyengiukhoangcachtoidadiem(x2, y2, khoangcachtoida)
-        is_ok = self.action_tudongtimduong(xdich, ydich, self.get_idbandohientai(), is_lotrinh = False)
+        # Đi theo ô (tìm đường cục bộ của client, không hiện "Bắt đầu / Hoàn tất tự động tìm đường"); không ra đường (xa quá 100 bước,
+        # chưa có đối tượng tìm đường) thì dùng tự động tìm đường của game như cũ
+        is_ok = None
+        nhan = "TIẾP CẬN ĐI Ô"
+        if IS_DICHUYENTHEOO:
+            is_ok = self.action_dichuyenoo(xdich, ydich, delay = 0.)
+        if is_ok is None:
+            nhan = "TIẾP CẬN TÌM ĐƯỜNG"
+            is_ok = self.action_tudongtimduong(xdich, ydich, self.get_idbandohientai(), is_lotrinh = False)
         if is_ok and IS_LOGDICHUYEN and (xdich, ydich) != self._dichclicklogcuoi:
             self._dichclicklogcuoi = (xdich, ydich)
-            self._inlog(f"[TIẾP CẬN TÌM ĐƯỜNG] (đang ở {(x1, y1)}, tư thế {self.get_idtuthenhanvat()}) -> {(xdich, ydich)}")
+            self._inlog(f"[{nhan}] (đang ở {(x1, y1)}, tư thế {self.get_idtuthenhanvat()}) -> {(xdich, ydich)}")
         return is_ok
 
     def _laytoadodondau(self, diachimuctieu):
@@ -2289,7 +2387,7 @@ class MoiTruong:
             return False
         # Chỉ ra chiêu (pf, pf2, pf5...) / đánh thường (kill) / nhặt đồ tại ô (get x y, có thể chạy tới vật phẩm) mới ngắt vận khí;
         # dùng / đeo vật phẩm, desc, move đồ, vứt, bán, nói chuyện NPC, điều khiển bảo thú, thao tác nhóm đều không ảnh hưởng
-        # (đã thử trong game) => cho gửi. Di chuyển / tìm đường / nhặt đồ tự động chặn riêng ở action_dichuyen,
+        # (đã thử trong game) => cho gửi. Di chuyển / tìm đường / nhặt đồ tự động chặn riêng ở action_dichuyenclickmanhinh,
         # action_tudongtimduong, auto_assemble_nhatvatpham
         if not caulenh.startswith(("pf", "kill ", "get ")):
             return False
