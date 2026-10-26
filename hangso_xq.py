@@ -1107,6 +1107,13 @@ KHOANGCACHDUNGTIMMUCTIEUCHUNG = 5.
 THOIGIANTOIDATIMMUCTIEUCHUNG = 15.
 THOIGIANBOQUAMUCTIEUCHUNG = 60.
 
+# Đứng đánh mà đòn không trúng (bị chắn tầm nhìn, quái lỗi, server từ chối...): từ chiêu đầu tiên gửi vào mục tiêu (tính lại mỗi lần
+# thấy số bay mất máu mới trên nó) đã quá THOIGIANKHONGTRUNGCHIEUTOIDA giây và gửi ít nhất SOCHIEUKHONGTRUNGTOIDA chiêu mà vẫn
+# không có số bay mới thì bỏ qua quái đó THOIGIANBOQUAMUCTIEUKHONGTRUNG giây (không áp cho mục tiêu PK: có thể đang bất tử)
+THOIGIANKHONGTRUNGCHIEUTOIDA = 8.
+SOCHIEUKHONGTRUNGTOIDA = 3
+THOIGIANBOQUAMUCTIEUKHONGTRUNG = 60.
+
 # Giữ khoảng cách với đối tượng đang tấn công mình (tùy chọn trên giao diện, hay bật cho Mao Sơn / Vân Mộng Cốc khi giao tranh)
 KHOANGCACHGIUKETANCONG = 6.
 # Đối tượng ra đòn quay mặt về mình thì coi là đang tấn công mình trong chừng này giây (tư thế ra đòn nhấp nháy giữa các đòn)
