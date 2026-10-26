@@ -199,6 +199,9 @@ class MoiTruong:
 
         self._is_nhanvatbichoang = False
         self._is_nhanvatbitrammac = False
+        self._is_nhanvatbimongdu = False
+        # địa chỉ đối tượng -> (thời điểm đọc, (số lượng, [(id, có lợi, thời gian)])), xem THOIGIANNHOBANGHIEUUNG
+        self._banghieuung_cache = {}
         # Tâm Trận Pháp Lạc Ảnh đang giữ mình (người dùng chiêu, xem _timtamtrandolacanh), None khi không bị giữ
         self._toadotrandolacanh = None
 
@@ -522,8 +525,9 @@ class MoiTruong:
         return thoidiemhientai < self._thoidiemhetkhoakynang or thoidiemhientai < self._thoidiemhetkhoaspamkynang_map.get(idkynang, 0.)
 
     def _is_kynangbispam(self, idkynang):
-        # Kỹ năng không mục tiêu (buff, tế, chuyển hoá...) không bao giờ cần gửi dồn dập: game báo "sẵn sàng" mà kỹ năng không ra
-        # thì trước đây cứ gửi lại mỗi lượt, ngập hàng đợi lệnh khiến các kỹ năng khác không chen vào được
+        # Không kỹ năng nào cần gửi dồn dập (chiêu nào cũng có hồi chiêu >= 1s): game báo "sẵn sàng" mà kỹ năng không ra (bị khống chế
+        # mà bot chưa biết hiệu ứng như mộng du, mục tiêu đặc biệt...) thì trước đây cứ gửi lại mỗi lượt (Cam Lộ Trì 625 lần / 3 phút làm
+        # server đơ), ngập hàng đợi lệnh khiến các kỹ năng khác không chen vào được. Áp cho cả kỹ năng có mục tiêu
         if idkynang in IDKYNANGKHONGCHANSPAMs:
             return False
         thoidiemhientai = time.time()
@@ -533,7 +537,9 @@ class MoiTruong:
         if len(thoidiemguis) >= SOLANGUITOIDASPAMKYNANG:
             self._thoidiemhetkhoaspamkynang_map[idkynang] = thoidiemhientai + THOIGIANKHOASPAMKYNANG
             self._thoidiemguikynangkhongmuctieu_map[idkynang] = []
-            self._inlog(f"[CHẶN SPAM] kỹ năng {idkynang} gửi {len(thoidiemguis)} lần trong {SOGIAYDEMSPAMKYNANG}s mà vẫn sẵn sàng => tạm khoá {THOIGIANKHOASPAMKYNANG}s")
+            # Ghi kèm hiệu ứng đang có trên người để tìm ra khống chế nào làm kỹ năng không ra
+            hieuungs = [(idhieuung, is_coloi) for idhieuung, is_coloi, _ in self.get_danhsachhieuungnhanvats()]
+            self._inlog(f"[CHẶN SPAM] kỹ năng {idkynang} gửi {len(thoidiemguis)} lần trong {SOGIAYDEMSPAMKYNANG}s mà vẫn sẵn sàng => tạm khoá {THOIGIANKHOASPAMKYNANG}s | hiệu ứng (id, có lợi): {hieuungs}")
             return True
         thoidiemguis.append(thoidiemhientai)
         self._thoidiemguikynangkhongmuctieu_map[idkynang] = thoidiemguis
@@ -574,6 +580,8 @@ class MoiTruong:
             return False
         if time.time() - self._thoidiemsudungkynangmuctieugannhat < delay:
             return False
+        if self._is_kynangbispam(idkynang):
+            return False
         self._thoidiemsudungkynangmuctieugannhat = time.time()
         caulenh = "pf {} {}".format(idkynang, idnguoichoi)
         return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO, vitrikynang = vitrikynang)
@@ -582,6 +590,8 @@ class MoiTruong:
         if self.get_is_dangkhoakynang() or self.get_is_khongthedungkynang():
             return False
         if time.time() - self._thoidiemsudungkynangmuctieugannhat < delay:
+            return False
+        if self._is_kynangbispam(idkynang):
             return False
         self._thoidiemsudungkynangmuctieugannhat = time.time()
         caulenh = "pf {} {}#".format(idkynang, hex(iddoituong)).replace("0x", "")
@@ -1207,6 +1217,7 @@ class MoiTruong:
 
         self._is_nhanvatbichoang = self.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), macdinh = False, is_hieuungcoloi = 0)
         self._is_nhanvatbitrammac = self.get_is_cohieuungs((HIEUUNGKYNANG_TRAMMAC,), macdinh = False, is_hieuungcoloi = 0)
+        self._is_nhanvatbimongdu = self.get_is_cohieuungs((HIEUUNGKYNANG_MONGDU,), macdinh = False, is_hieuungcoloi = 0)
         if self.get_is_cohieuungs((HIEUUNGKYNANG_DAOHOALACANH,), macdinh = False, is_hieuungcoloi = 0):
             if not self._toadotrandolacanh:
                 self._toadotrandolacanh = self._timtamtrandolacanh()
@@ -1273,9 +1284,9 @@ class MoiTruong:
         return x, y
 
     def get_is_khongthedungkynang(self):
-        # Bị choáng thì không dùng được kỹ năng nào (cũng không đánh thường, không di chuyển được);
+        # Bị choáng thì không dùng được kỹ năng nào (cũng không đánh thường, không di chuyển được); bị mộng du thì không dùng được kỹ năng;
         # bị Trầm Mặc thì môn phái phép thuật (MONPHAIPHEPTHUATs) không dùng được kỹ năng
-        return self._is_nhanvatbichoang or (self._is_nhanvatbitrammac and self.get_tenmonphai() in MONPHAIPHEPTHUATs)
+        return self._is_nhanvatbichoang or self._is_nhanvatbimongdu or (self._is_nhanvatbitrammac and self.get_tenmonphai() in MONPHAIPHEPTHUATs)
 
     def get_thoidiemthaydoibandogannhat(self):
         return self._thoidiemthaydoibandogannhat
@@ -1531,6 +1542,17 @@ class MoiTruong:
         return idhieuung
 
     def _docbanghieuung(self, diachicosothongtinnhanvat):
+        thoidiemhientai = time.time()
+        dem = self._banghieuung_cache.get(diachicosothongtinnhanvat)
+        if dem and thoidiemhientai - dem[0] < THOIGIANNHOBANGHIEUUNG:
+            return dem[1]
+        ketqua = self._docbanghieuungtubonho(diachicosothongtinnhanvat)
+        if len(self._banghieuung_cache) > 1024:
+            self._banghieuung_cache = {k: v for k, v in list(self._banghieuung_cache.items()) if thoidiemhientai - v[0] < THOIGIANNHOBANGHIEUUNG}
+        self._banghieuung_cache[diachicosothongtinnhanvat] = (thoidiemhientai, ketqua)
+        return ketqua
+
+    def _docbanghieuungtubonho(self, diachicosothongtinnhanvat):
         # Đọc cả bảng hiệu ứng trong 1 lần (trước đây 3-4 lần đọc bộ nhớ cho mỗi ô, lại đọc lại số lượng/tồn tại ở mỗi ô).
         # Số lượng đổi giữa lúc đọc thì đọc lại (giống bản cũ bắt đầu đếm lại). Trả về (số lượng, [(id hiệu ứng, có lợi, thời gian)])
         kichthuoc = SOLUONGHIEUUNGNHANVATTOIDA * DC.NV_KICHTHUOCHIEUUNG
@@ -1820,6 +1842,11 @@ class MoiTruong:
                     diachicosothongtinnhanvatchunhan = self.action_timkiemnhanvat(tennhanvat = tenchunhan)
                     if diachicosothongtinnhanvatchunhan:
                         return self.get_is_cothetancong(diachicosothongtinnhanvatchunhan)
+
+        # Người chơi đang mộng du (Thôi Miên Thuật chỉ dùng lên người chơi) thì không tấn công được: bỏ qua để chọn mục tiêu khác, không gửi
+        # chiêu vào vô ích. Quái không bị mộng du nên khỏi đọc bảng hiệu ứng
+        if idloainhanvat == LOAIMUCTIEU_NGUOICHOIKHACNHOM and self.get_is_cohieuungs((HIEUUNGKYNANG_MONGDU,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtinnhanvat, is_hieuungcoloi = 0):
+            return False
 
         if idmaupk == MAUPK_TUDO:
             return True

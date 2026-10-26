@@ -437,6 +437,11 @@ HIEUUNGKYNANG_DATINCUONGLUC = 3191
 HIEUUNGKYNANG_KIMCUONGTHANPHAP = 3192
 HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN = 2114
 HIEUUNGKYNANG_TRAMMAC = 9010
+# Mộng du (Thôi Miên Thuật 5313 của Vân Mộng Cốc): không dùng được kỹ năng. Id đoán theo id chiêu, chưa đo được trong game
+HIEUUNGKYNANG_MONGDU = 5313
+# Bảng hiệu ứng của mỗi đối tượng đọc 1 lần rồi nhớ bấy nhiêu giây (ngắn hơn 1 vòng bot): trong 1 vòng nhiều lượt quét / nhiều kiểm tra
+# hiệu ứng (mộng du khi chọn mục tiêu, Thực Cốt, choáng, Hộ Thể Kim Cang...) trên cùng đối tượng dùng chung 1 lần đọc
+THOIGIANNHOBANGHIEUUNG = 0.1
 HIEUUNGKYNANG_MULOA = 9024
 
 HIEUUNGKYNANG_THUCGIAP = 4143
@@ -959,7 +964,7 @@ THOIGIANNHOSHAREDDATA = 0.25
 # Chết rồi chờ bấy nhiêu giây (có thể được người khác cứu) mới tự phục sinh
 THOIGIANCHOTRUOCKHIPHUCSINH = 30.
 
-# Kỹ năng không mục tiêu gửi >= SOLANGUITOIDASPAMKYNANG lần trong SOGIAYDEMSPAMKYNANG giây (tức là game báo sẵn sàng mà kỹ năng không ra)
+# Kỹ năng (có hay không mục tiêu) gửi >= SOLANGUITOIDASPAMKYNANG lần trong SOGIAYDEMSPAMKYNANG giây (tức là game báo sẵn sàng mà kỹ năng không ra)
 # thì tạm khoá riêng kỹ năng đó THOIGIANKHOASPAMKYNANG giây
 CAPDOTOITHIEUTETHANTUONG = 60
 
@@ -1133,4 +1138,5 @@ NHANVATTODOITUDONGs_LIST = [
 TENMUCTIEUKHONGTANCONGs = (*BAOTHUVATPHAMs, "Tần QuốcBinh Sĩ", "Triệu QuốcBinh Sĩ", QUYTOT, THIENBINH, DAUBINH, "CAVE1", "CAVE.2", 'Đỗ Độc', 'Ôn Thần', "Liễu Vọng Tháp")
 TENNGUOICHOICUNGBANGs = tuple()
 TENBOSSBUFFMAOSONs = ("Mã Quỷ", "Lương Hưng", "Yến Thập Tam", "Tư Tà", "Thủ Lĩnh Thành Kiều", TROMBAOPHITAC, "Bảo Hộp Phi Tặc",
-                      "Tướng Quân Dũng", "Lăng Mộ Tà Linh", "Đường Truy", "Thế Công Minh", "Thạch Tướng Quân", "Cơ Quan Tướng Quân")
+                      "Tướng Quân Dũng", "Lăng Mộ Tà Linh", "Đường Truy", "Thế Công Minh", "Thạch Tướng Quân", "Cơ Quan Tướng Quân",
+                      "Hào Quật")
