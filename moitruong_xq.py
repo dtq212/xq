@@ -8,19 +8,18 @@ from dataclasses import dataclass, field
 import pymem
 from keystone import Ks, KS_ARCH_X86, KS_MODE_32
 
+import diachi_xq
+from diachi_xq import DC
 from hangso_xq import *
 from tienich_xq import *
 
-OFFSET_DIACHICOSOTHONGTINGAME = 0x380B44
 # Thông tin túi hành trang: con trỏ tại [thông tin game] + 0xADFE0C (cạnh con trỏ hành trang + 0xADFD78),
 # số ô mở của 4 túi là 4 int32 tại + 0xD4 (đo: túi đủ [24, 24, 24, 24], mới mở túi 2 loại 4 ô [24, 4, 0, 0])
 OFFSET_CONTROTUIHANHTRANG = 0xADFE0C
 OFFSET_DUNGLUONGTUIHANHTRANG = 0xD4
-OFFSET_DIACHICOSOTHONGTINNHANVAT1 = 0x380AF8
 OFFSET_DIACHICOSOHIEUUNGNHANVAT = 0x1638
 OFFSET_DIACHICOSOMOIHIEUUNGNHANVAT = 0x13C
 OFFSET_DIACHICOSOMOIKYNANG = 0x224
-OFFSET_DIACHICOSOTHONGTINNHANVATX = 0x1BDA60
 # Bảng địa chỉ đối tượng xung quanh: các vòng quét đều chạy từ ô 0 tới ô 512 (hoặc gặp ô trống)
 SOLUONGDOITUONGXUNGQUANHTOIDA = 513
 # Tên đối tượng đọc lại trong khoảng này thì dùng bản vừa đọc (1 vòng chọn mục tiêu đọc tên cùng 1 đối tượng 5-6 lần)
@@ -76,6 +75,8 @@ class MoiTruong:
             raise Exception("Tìm không thấy module xq.exe. Có vẻ cửa sổ Game không phải cửa sổ Game Chiến Quốc. Vui lòng thử lại")
         self.diachixq = xqmodule.lpBaseOfDll
         self.gamemodule = xqmodule
+        # Địa chỉ trong xq.exe (DC.<tên>, tính từ base) dò bằng chữ ký trên file xq.exe (1 lần cho mọi cửa sổ, có lưu đệm)
+        diachi_xq.khoitao(xqmodule.filename)
 
         kichthuoccuaso = win32gui.GetWindowRect(self.idcuaso)
         if not kichthuoccuaso:
@@ -366,7 +367,7 @@ class MoiTruong:
     def _thucthicaulenh2(self, caulenh):
         self._loglenh(caulenh, "trực tiếp")
 
-        diachihampheduyetcaulenh = self.diachixq + 0x95468
+        diachihampheduyetcaulenh = self.diachixq + DC.HAMPHEDUYETCAULENH
         if read_bytes(self.tientrinh, diachihampheduyetcaulenh, 1) == b"\x74":
             write_bytes(self.tientrinh, diachihampheduyetcaulenh, b"\xEB", 1)
 
@@ -380,7 +381,7 @@ class MoiTruong:
             write_int(self.tientrinh, self.diachihamthucthicaulenh2 + 6, self.diachihamthucthicaulenh2 + 19)
 
             write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 10, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self.diachihamthucthicaulenh2 + 11, self.diachixq + 0x95450 - (self.diachihamthucthicaulenh2 + 10) - 5)
+            write_int(self.tientrinh, self.diachihamthucthicaulenh2 + 11, self.diachixq + DC.HAMGUILENH - (self.diachihamthucthicaulenh2 + 10) - 5)
 
             write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 15, bytes.fromhex("83 C4 08"), 3)
             write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 18, bytes.fromhex("C3"), 1)
@@ -429,7 +430,7 @@ class MoiTruong:
 
         self.thoidiembatchucnangmoronggannhat = time.time()
 
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not x:
             return False
         a = read_int(self.tientrinh, x + 0xAEBC0C)
@@ -705,26 +706,43 @@ class MoiTruong:
         if not self._is_dasetupautoassemblenhatvatpham:
             self._diachiautoassemblenhatvatpham = self.tientrinh.allocate(64)
             write_bytes(self.tientrinh, self._diachiautoassemblenhatvatpham, bytes.fromhex("8B 0D"), 2)
-            write_int(self.tientrinh, self._diachiautoassemblenhatvatpham + 2, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+            write_int(self.tientrinh, self._diachiautoassemblenhatvatpham + 2, self.diachixq + DC.THONGTINGAME)
             write_bytes(self.tientrinh, self._diachiautoassemblenhatvatpham + 6, bytes.fromhex("8D 59 14"), 3)
             write_bytes(self.tientrinh, self._diachiautoassemblenhatvatpham + 9, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassemblenhatvatpham + 10, self.diachixq + 0xB400 - (self._diachiautoassemblenhatvatpham + 9) - 5)
+            write_int(self.tientrinh, self._diachiautoassemblenhatvatpham + 10, self.diachixq + DC.HAMNHATVATPHAM - (self._diachiautoassemblenhatvatpham + 9) - 5)
             write_bytes(self.tientrinh, self._diachiautoassemblenhatvatpham + 14, bytes.fromhex("C3"), 1)
             self._is_dasetupautoassemblenhatvatpham = True
         self.tientrinh.start_thread(self._diachiautoassemblenhatvatpham)
 
     def auto_assemble_khoitaothongtinbando(self):
+        # Cấu trúc tìm đường / bản đồ [thông tin game] + 0xADFDEC (đích tìm đường + 0x37C534, bản đồ + 0x37C85C) game chỉ tạo khi cần,
+        # 1 lần mỗi phiên đăng nhập (đặt về 0 duy nhất ở xq + 0x3755F lúc khởi tạo thông tin game, đổi bản đồ vẫn giữ).
+        # Trước đây gọi hàm phím tắt xq + 0x3C100 (phím mở bản đồ 0x64): tạo cấu trúc rồi bật / tắt cửa sổ bản đồ => bản đồ hiện lên.
+        # Nay làm như game tự làm ở xq + 0x225D0 / 0x22A51 (luồng tìm đường): cấp phát 0x37C868 byte (new, xq + 0x17DD0C), gọi hàm khởi
+        # tạo xq + 0xCEEB0 (trả về this) rồi gán vào [thông tin game] + 0xADFDEC, không đụng tới cửa sổ bản đồ
         if not self._is_dasetupautoassemblekhoitaothongtinbando:
             self._diachiautoassemblekhoitaothongtinbando = self.tientrinh.allocate(128)
-            addr_base_ptr = self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME
-            addr_func_init = self.diachixq + 0x3C100
+            addr_base_ptr = self.diachixq + DC.THONGTINGAME
             asm_script = f"""
-                mov eax, {addr_base_ptr}
-                mov ecx, [eax]          
-                push 0x01002020         
-                push 0x64               
-                mov eax, {addr_func_init}
-                call eax                
+                mov eax, dword ptr [{hex(addr_base_ptr)}]
+                test eax, eax
+                je ketthuc
+                cmp dword ptr [eax + 0xADFDEC], 0
+                jne ketthuc
+                push 0x37C868
+                mov eax, {hex(self.diachixq + DC.HAMCAPPHAT)}
+                call eax
+                add esp, 4
+                test eax, eax
+                je ketthuc
+                mov ecx, eax
+                mov eax, {hex(self.diachixq + DC.HAMKHOITAOTIMDUONG)}
+                call eax
+                mov ecx, dword ptr [{hex(addr_base_ptr)}]
+                cmp dword ptr [ecx + 0xADFDEC], 0
+                jne ketthuc
+                mov dword ptr [ecx + 0xADFDEC], eax
+            ketthuc:
                 ret
             """
             ks = Ks(KS_ARCH_X86, KS_MODE_32)
@@ -737,9 +755,8 @@ class MoiTruong:
         time.sleep(0.1)
 
     def action_thietlaphooknoidungtrochuyen(self):
-        hook_offset = 0x5964
-        addr_at_hook = self.diachixq + hook_offset
-        addr_return = self.diachixq + hook_offset + 6
+        addr_at_hook = self.diachixq + DC.HOOK_TROCHUYEN
+        addr_return = self.diachixq + DC.HOOK_TROCHUYEN + 6
 
         if not self._is_dasetupactionthietlaphooknoidungtrochuyen:
             self._diachibodemnoidungtrochuyen = self.tientrinh.allocate(128)
@@ -784,23 +801,23 @@ class MoiTruong:
         return True
 
     def get_sinhlucconlai(self):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         return read_int(self.tientrinh, x + 0x152C) if x else False
 
     def get_sinhluctoida(self):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         return read_int(self.tientrinh, x + 0x1530) if x else False
 
     def get_noilucconlai(self):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         return read_int(self.tientrinh, x + 0x1534) if x else False
 
     def get_noiluctoida(self):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         return read_int(self.tientrinh, x + 0x1538) if x else False
 
     def get_thelucconlai(self):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         return read_int(self.tientrinh, x + 0x15A8) if x else False
 
     def get_phantramnoilucconlai(self):
@@ -808,68 +825,68 @@ class MoiTruong:
         return (self.get_noilucconlai() * 100. / noiluctoida) if noiluctoida else 0
 
     def get_nguyenkhiconlai(self):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         return read_int(self.tientrinh, x + 0x1560) if x else False
 
     def get_capdonhanvat(self):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         return read_int(self.tientrinh, x + 0x15B0) if x else False
 
     def get_idbandohientai(self):
         return self._idbandohientai
 
     def _get_idbandohientai(self):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         return read_int(self.tientrinh, x + 0x15F4) if x else False
 
     def get_diempk(self):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         return read_int(self.tientrinh, x + 0x1568) if x else False
 
     def get_iddoituongbaothu(self, sothutu = 1):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         if not x:
             return False
         return read_int(self.tientrinh, x + 0x184 + 0x6C * (sothutu - 1))
 
     def get_tendoituongbaothu(self, sothutu = 1):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         if not x:
             return False
         return read_string(self.tientrinh, x + 0x188 + 0x6C * (sothutu - 1))
 
     def get_trangthaihanhvidoituongbaothu(self, sothutu = 1):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         if not x:
             return False
         return read_int(self.tientrinh, x + 0x1E0 + 0x6C * (sothutu - 1))
 
     def get_toadodoituongbaothu(self, sothutu = 1):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         if not x:
             return False
         return read_int(self.tientrinh, x + 0x1B4 + 0x6C * (sothutu - 1)), read_int(self.tientrinh, x + 0x1B8 + 0x6C * (sothutu - 1))
 
     def get_idbandohientaidoituongbaothu(self, sothutu = 1):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         if not x:
             return False
         return read_int(self.tientrinh, x + 0x1E4 + 0x6C * (sothutu - 1))
 
     def get_phantramsinhlucconlaidoituongbaothukynangtrieuhoi(self, sothutu = 1):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         if not x:
             return False
         return read_int(self.tientrinh, x + 0x1D4 + 0x6C * (sothutu - 1)) * 2
 
     def get_phantramnoilucconlaidoituongbaothukynangtrieuhoi(self, sothutu = 1):
-        x = read_int(self.tientrinh, self.diachixq + 0x372864)
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         if not x:
             return False
         return read_int(self.tientrinh, x + 0x1D8 + 0x6C * (sothutu - 1)) * 2
 
     def get_diachicosothongtinnhanvat1(self):
-        return read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVAT1)
+        return read_int(self.tientrinh, self.diachixq + DC.NHANVAT)
 
     def get_diachicosothongtindoituongx(self, x):
         # Mọi vòng quét đối tượng đều đi từ ô 0 lên: tới ô 0 thì đọc cả bảng 1 lần, các ô sau lấy từ bản vừa đọc
@@ -877,14 +894,14 @@ class MoiTruong:
         if x == 0:
             try:
                 kichthuoc = SOLUONGDOITUONGXUNGQUANHTOIDA * 4
-                dulieu = read_bytes(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVATX, kichthuoc)
+                dulieu = read_bytes(self.tientrinh, self.diachixq + DC.BANGDOITUONG, kichthuoc)
                 self._bangdiachidoituongs = struct.unpack("<%di" % SOLUONGDOITUONGXUNGQUANHTOIDA, dulieu)
             except Exception:
                 self._bangdiachidoituongs = ()
         bang = self._bangdiachidoituongs
         if 0 <= x < len(bang):
             return bang[x]
-        return read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVATX + x * 0x4)
+        return read_int(self.tientrinh, self.diachixq + DC.BANGDOITUONG + x * 0x4)
 
     def _get_tenthucte(self, diachicosothongtinnhanvat):
         # Tên gốc (còn phần "( Cấp ...)", tên chủ nhân bảo thú) tại +0x10AC, nhớ tạm THOIGIANNHOTENDOITUONG giây
@@ -918,7 +935,7 @@ class MoiTruong:
             yield diachi
 
     def get_diachicosothongtinvatphamhanhtrang(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         return read_int(self.tientrinh, x + 0xADFD78) if x else False
 
     def get_iddoituongvatphamhanhtrang(self, idvitri):
@@ -1048,11 +1065,11 @@ class MoiTruong:
         return mota_raw
 
     def get_diachicosothongtinkynang(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         return read_int(self.tientrinh, x + 0xADFE18) if x else False
 
     def get_is_dangmocuasoxacnhan(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not x:
             return False
         x = read_int(self.tientrinh, x + 0xADFD8C)
@@ -1060,14 +1077,14 @@ class MoiTruong:
 
     def set_is_dangmocuasoxacnhan(self, is_dangmocuasoxacnhan):
         if self.get_is_dangmocuasoxacnhan() == is_dangmocuasoxacnhan: return
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not x: return
         x = read_int(self.tientrinh, x + 0xADFD8C)
         if not x: return
         write_boolean(self.tientrinh, x + 0xB4, is_dangmocuasoxacnhan)
 
     def get_noidungcuasomaxacnhan(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not x: return ""
         x = read_int(self.tientrinh, x + 0xADFD8C)
         return read_string(self.tientrinh, x + 0xBC) if x else ""
@@ -1203,7 +1220,7 @@ class MoiTruong:
         return win32gui.GetForegroundWindow() == self.idcuaso
 
     def get_diachicosothongtinnhanvatdangchichuot(self):
-        return read_int(self.tientrinh, self.diachixq + 0x380B64)
+        return read_int(self.tientrinh, self.diachixq + DC.NHANVATDANGCHICHUOT)
 
     def get_is_cothegaychoang(self, diachicosothongtinnhanvat, thoigiangiancach = 2.0):
         if not diachicosothongtinnhanvat or not self.get_is_nguoichoi(diachicosothongtinnhanvat): return False
@@ -1265,7 +1282,7 @@ class MoiTruong:
         return self.get_tendoituong(diachi) if diachi else False
 
     def get_noidungthongbaogannhat(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not x:
             return False
         x = read_int(self.tientrinh, x + 0xADFD70)
@@ -1313,14 +1330,14 @@ class MoiTruong:
         return struct.unpack("<ii", read_bytes(self.tientrinh, diachicosothongtinnhanvat + offset, 8))
 
     def get_toadobandochichuot(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not x:
             return False
         x = read_int(self.tientrinh, x + 0xADFDEC)
         return (read_int(self.tientrinh, x + 0x371C80), read_int(self.tientrinh, x + 0x371C84)) if x else False
 
     def get_idbandochichuot(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not x:
             return False
         x = read_int(self.tientrinh, x + 0xADFDEC)
@@ -1330,12 +1347,12 @@ class MoiTruong:
         return read_int(self.tientrinh, x + 0x23C + 0x16C * y) if y else False
 
     def get_idmaupk(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         return read_int(self.tientrinh, x + 0xAED6CC) if x else False
 
     def set_idmaupk(self, idmaupk):
         if self.get_idmaupk() != idmaupk:
-            x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+            x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
             if x: write_int(self.tientrinh, x + 0xAED6CC, idmaupk)
 
     def get_tenbang(self, diachicosothongtinnhanvat = None):
@@ -1346,7 +1363,7 @@ class MoiTruong:
         return self.get_idnguoichoi(diachicosothongtinnhanvat) in laynhanvattodoitudongs()
 
     def get_idtrangthaichuot(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not x:
             return False
         x = read_int(self.tientrinh, x + 0xADFDA8)
@@ -1354,7 +1371,7 @@ class MoiTruong:
 
     def set_idtrangthaichuot(self, idtrangthaichuot):
         if idtrangthaichuot != self.get_idtrangthaichuot():
-            x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+            x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
             if x:
                 x = read_int(self.tientrinh, x + 0xADFDA8)
                 if x: write_int(self.tientrinh, x + 0x1A4, idtrangthaichuot)
@@ -1440,7 +1457,7 @@ class MoiTruong:
     def _get_idhieuungtheovitri(self, idvitrihieuung):
         idhieuung = self._idhieuungtheovitri_map.get(idvitrihieuung)
         if idhieuung is None:
-            idhieuung = read_int(self.tientrinh, self.diachixq + 0x1C05E0 + idvitrihieuung * 4)
+            idhieuung = read_int(self.tientrinh, self.diachixq + DC.BANGHIEUUNG + idvitrihieuung * 4)
             # Game chưa nạp xong bảng thì ô còn 0: chưa nhớ, lần sau đọc lại
             if idhieuung:
                 self._idhieuungtheovitri_map[idvitrihieuung] = idhieuung
@@ -1513,7 +1530,7 @@ class MoiTruong:
         return macdinh
 
     def get_diachicosoidthanhviennhom(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not x:
             return False
         return read_int(self.tientrinh, x + 0xADFDA4) if x else False
@@ -1653,42 +1670,42 @@ class MoiTruong:
         return True
 
     def get_is_batalt(self):
-        x = read_int(self.tientrinh, self.diachixq + 0x380B38)
+        x = read_int(self.tientrinh, self.diachixq + DC.CONTROALT)
         return read_boolean(self.tientrinh, x) if x else False
 
     def set_is_batalt(self, is_batalt):
         if self.get_is_batalt() != is_batalt:
-            x = read_int(self.tientrinh, self.diachixq + 0x380B38)
+            x = read_int(self.tientrinh, self.diachixq + DC.CONTROALT)
             if x: write_boolean(self.tientrinh, x, is_batalt)
 
     def get_is_batautoingame(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         return read_boolean(self.tientrinh, x + 0xAEC924) if x else False
 
     def set_is_batautoingame(self, is_batautoingame):
         if not is_batautoingame:
-            if read_bytes(self.tientrinh, self.diachixq + 0x6EC9, 1) != bytes.fromhex("90"):
-                write_bytes(self.tientrinh, self.diachixq + 0x6EC9, bytes.fromhex("90 90 90 90 90 90 90 90 90 90"), 10)
+            if read_bytes(self.tientrinh, self.diachixq + DC.VA_AUTOINGAME, 1) != bytes.fromhex("90"):
+                write_bytes(self.tientrinh, self.diachixq + DC.VA_AUTOINGAME, bytes.fromhex("90 90 90 90 90 90 90 90 90 90"), 10)
 
         if self.get_is_batautoingame() != is_batautoingame:
-            x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+            x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
             if x: write_boolean(self.tientrinh, x + 0xAEC924, is_batautoingame)
 
     def get_is_dangbatchucnangmorong(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINNHANVAT1)
+        x = read_int(self.tientrinh, self.diachixq + DC.NHANVAT)
         if not x:
             return True
         return read_string(self.tientrinh, x + 0x1136) == "Tự Động Đánh"
 
     def get_is_bathanhtrang(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not x:
             return False
         x = read_int(self.tientrinh, x + 0xADFE0C)
         return read_boolean(self.tientrinh, x + 0x34) if x else False
 
     def get_is_dangbatenter(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not x:
             return False
         x = read_int(self.tientrinh, x + 0xADFD60)
@@ -1702,13 +1719,13 @@ class MoiTruong:
         return self.get_iddoituong(diachi) if diachi else False
 
     def get_is_dangclickchuottrai(self):
-        return read_boolean(self.tientrinh, self.diachixq + 0x380B7D)
+        return read_boolean(self.tientrinh, self.diachixq + DC.DANGCLICKCHUOTTRAI)
 
     def get_diachicosothongtinnhanvatmuctieudangchon(self):
         return self._diachicosothongtinnhanvatmuctieudangchon
 
     def _get_diachicosothongtinnhanvatmuctieudangchon(self):
-        return read_int(self.tientrinh, self.diachixq + 0x1BD4F0)
+        return read_int(self.tientrinh, self.diachixq + DC.MUCTIEUDANGCHON)
 
     def get_thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat(self):
         return self._thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat
@@ -1722,19 +1739,22 @@ class MoiTruong:
         self._thoidiemthietlapdiachicosothongtinnhanvatmuctieudangchongannhat = time.time()
         diachi = self._diachicosothongtinnhanvatmuctieudangchon
         if diachi and self.get_iddoituong(diachi) > 0:
-            write_int(self.tientrinh, self.diachixq + 0x1BD4F0, diachi)
-            write_int(self.tientrinh, self.diachixq + 0x37284C, self.get_iddoituong(diachi))
-            write_int(self.tientrinh, self.diachixq + 0x1BD550, diachi)
-            write_int(self.tientrinh, self.diachixq + 0x1BD554, self.get_iddoituong(diachi))
+            write_int(self.tientrinh, self.diachixq + DC.MUCTIEUDANGCHON, diachi)
+            write_int(self.tientrinh, self.diachixq + DC.IDMUCTIEUDANGCHON, self.get_iddoituong(diachi))
+            write_int(self.tientrinh, self.diachixq + DC.MUCTIEUDANGCHON2, diachi)
+            write_int(self.tientrinh, self.diachixq + DC.IDMUCTIEUDANGCHON2, self.get_iddoituong(diachi))
             return
-        write_int(self.tientrinh, self.diachixq + 0x1BD4F0, 0)
-        write_int(self.tientrinh, self.diachixq + 0x37284C, 0)
-        write_int(self.tientrinh, self.diachixq + 0x1BD550, 0)
-        write_int(self.tientrinh, self.diachixq + 0x1BD554, 0)
+        write_int(self.tientrinh, self.diachixq + DC.MUCTIEUDANGCHON, 0)
+        write_int(self.tientrinh, self.diachixq + DC.IDMUCTIEUDANGCHON, 0)
+        write_int(self.tientrinh, self.diachixq + DC.MUCTIEUDANGCHON2, 0)
+        write_int(self.tientrinh, self.diachixq + DC.IDMUCTIEUDANGCHON2, 0)
 
     # Các lệnh "mov dword ptr [esi+0x11B8], 0x0B" của game đặt tư thế delay sau tấn công; vá giá trị 0x0B thành đứng im.
     # Đã thử vá thêm 0x19EBE, 0x1A0CE (ghi thẳng 0x0B vào tư thế +0x1178) nhưng Đào Hoa Nguyên vẫn delay ~0.25s sau đòn như cũ => đã bỏ
-    DIACHIGHITUTHEDELAYSAUTANCONGs = (0x1AFE3, 0x1B377)
+    # (địa chỉ dò bằng chữ ký, xem diachi_xq.py)
+    @property
+    def DIACHIGHITUTHEDELAYSAUTANCONGs(self):
+        return (DC.VA_TUTHEDELAY1, DC.VA_TUTHEDELAY2)
 
     def action_vohieuhoatuthedelaysautancong(self):
         for diachi in self.DIACHIGHITUTHEDELAYSAUTANCONGs:
@@ -1745,59 +1765,59 @@ class MoiTruong:
             if read_int(self.tientrinh, self.diachixq + diachi + 0x6) != TUTHENHANVAT_DELAYSAUTANCONG: write_int(self.tientrinh, self.diachixq + diachi + 0x6, TUTHENHANVAT_DELAYSAUTANCONG)
 
     def action_vohieuhoathietlapmuctieu(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0xA20F0, 1) != bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0xA20F0, bytes.fromhex("90 90 90 90 90"), 5)
-        if read_bytes(self.tientrinh, self.diachixq + 0xA20F8, 1) != bytes.fromhex("90"): write_bytes(self.tientrinh, self.diachixq + 0xA20F8, bytes.fromhex("90 90 90 90 90 90"), 6)
-        if read_bytes(self.tientrinh, self.diachixq + 0xA20FE, 1) != bytes.fromhex("90"): write_bytes(self.tientrinh, self.diachixq + 0xA20FE, bytes.fromhex("90 90 90 90 90"), 5)
-        if read_bytes(self.tientrinh, self.diachixq + 0xA2106, 1) != bytes.fromhex("90"): write_bytes(self.tientrinh, self.diachixq + 0xA2106, bytes.fromhex("90 90 90 90 90 90"), 6)
+        if read_bytes(self.tientrinh, self.diachixq + DC.VA_GHIMUCTIEU2, 1) != bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + DC.VA_GHIMUCTIEU2, bytes.fromhex("90 90 90 90 90"), 5)
+        if read_bytes(self.tientrinh, self.diachixq + DC.VA_GHIIDMUCTIEU2, 1) != bytes.fromhex("90"): write_bytes(self.tientrinh, self.diachixq + DC.VA_GHIIDMUCTIEU2, bytes.fromhex("90 90 90 90 90 90"), 6)
+        if read_bytes(self.tientrinh, self.diachixq + DC.VA_GHIMUCTIEU, 1) != bytes.fromhex("90"): write_bytes(self.tientrinh, self.diachixq + DC.VA_GHIMUCTIEU, bytes.fromhex("90 90 90 90 90"), 5)
+        if read_bytes(self.tientrinh, self.diachixq + DC.VA_GHIIDMUCTIEU, 1) != bytes.fromhex("90"): write_bytes(self.tientrinh, self.diachixq + DC.VA_GHIIDMUCTIEU, bytes.fromhex("90 90 90 90 90 90"), 6)
 
     def action_tatvohieuhoathietlapmuctieu(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0xA20F0, 1) == bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0xA20F0, bytes.fromhex("A3"), 1)
-            write_int(self.tientrinh, self.diachixq + 0xA20F0 + 1, self.diachixq + 0x1BD550)
-        if read_bytes(self.tientrinh, self.diachixq + 0xA20F8, 1) == bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0xA20F8, bytes.fromhex("89 0D"), 2)
-            write_int(self.tientrinh, self.diachixq + 0xA20F8 + 2, self.diachixq + 0x1BD554)
-        if read_bytes(self.tientrinh, self.diachixq + 0xA20FE, 1) == bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0xA20FE, bytes.fromhex("A3"), 1)
-            write_int(self.tientrinh, self.diachixq + 0xA20FE + 1, self.diachixq + 0x1BD4F0)
-        if read_bytes(self.tientrinh, self.diachixq + 0xA2106, 1) == bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0xA2106, bytes.fromhex("89 15"), 2)
-            write_int(self.tientrinh, self.diachixq + 0xA2106 + 2, self.diachixq + 0x37284C)
+        if read_bytes(self.tientrinh, self.diachixq + DC.VA_GHIMUCTIEU2, 1) == bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + DC.VA_GHIMUCTIEU2, bytes.fromhex("A3"), 1)
+            write_int(self.tientrinh, self.diachixq + DC.VA_GHIMUCTIEU2 + 1, self.diachixq + DC.MUCTIEUDANGCHON2)
+        if read_bytes(self.tientrinh, self.diachixq + DC.VA_GHIIDMUCTIEU2, 1) == bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + DC.VA_GHIIDMUCTIEU2, bytes.fromhex("89 0D"), 2)
+            write_int(self.tientrinh, self.diachixq + DC.VA_GHIIDMUCTIEU2 + 2, self.diachixq + DC.IDMUCTIEUDANGCHON2)
+        if read_bytes(self.tientrinh, self.diachixq + DC.VA_GHIMUCTIEU, 1) == bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + DC.VA_GHIMUCTIEU, bytes.fromhex("A3"), 1)
+            write_int(self.tientrinh, self.diachixq + DC.VA_GHIMUCTIEU + 1, self.diachixq + DC.MUCTIEUDANGCHON)
+        if read_bytes(self.tientrinh, self.diachixq + DC.VA_GHIIDMUCTIEU, 1) == bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + DC.VA_GHIIDMUCTIEU, bytes.fromhex("89 15"), 2)
+            write_int(self.tientrinh, self.diachixq + DC.VA_GHIIDMUCTIEU + 2, self.diachixq + DC.IDMUCTIEUDANGCHON)
 
     def action_vohieuhoaxoamuctieu(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x9542B, 1) != bytes.fromhex("90"): write_bytes(self.tientrinh, self.diachixq + 0x9542B, bytes.fromhex("90 90 90 90 90 90 90 90 90 90"), 10)
-        if read_bytes(self.tientrinh, self.diachixq + 0x95435, 1) != bytes.fromhex("90"): write_bytes(self.tientrinh, self.diachixq + 0x95435, bytes.fromhex("90 90 90 90 90 90 90 90 90 90"), 10)
+        if read_bytes(self.tientrinh, self.diachixq + DC.VA_XOAIDMUCTIEU2, 1) != bytes.fromhex("90"): write_bytes(self.tientrinh, self.diachixq + DC.VA_XOAIDMUCTIEU2, bytes.fromhex("90 90 90 90 90 90 90 90 90 90"), 10)
+        if read_bytes(self.tientrinh, self.diachixq + DC.VA_XOAMUCTIEU, 1) != bytes.fromhex("90"): write_bytes(self.tientrinh, self.diachixq + DC.VA_XOAMUCTIEU, bytes.fromhex("90 90 90 90 90 90 90 90 90 90"), 10)
 
     def action_tatvohieuhoaxoamuctieu(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x9542B, 1) == bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0x9542B, bytes.fromhex("C7 05"), 2)
-            write_int(self.tientrinh, self.diachixq + 0x9542B + 2, self.diachixq + 0x1BD554)
-            write_int(self.tientrinh, self.diachixq + 0x9542B + 6, 0)
-        if read_bytes(self.tientrinh, self.diachixq + 0x95435, 1) == bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0x95435, bytes.fromhex("C7 05"), 2)
-            write_int(self.tientrinh, self.diachixq + 0x95435 + 2, self.diachixq + 0x1BD4F0)
-            write_int(self.tientrinh, self.diachixq + 0x95435 + 6, 0)
+        if read_bytes(self.tientrinh, self.diachixq + DC.VA_XOAIDMUCTIEU2, 1) == bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + DC.VA_XOAIDMUCTIEU2, bytes.fromhex("C7 05"), 2)
+            write_int(self.tientrinh, self.diachixq + DC.VA_XOAIDMUCTIEU2 + 2, self.diachixq + DC.IDMUCTIEUDANGCHON2)
+            write_int(self.tientrinh, self.diachixq + DC.VA_XOAIDMUCTIEU2 + 6, 0)
+        if read_bytes(self.tientrinh, self.diachixq + DC.VA_XOAMUCTIEU, 1) == bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + DC.VA_XOAMUCTIEU, bytes.fromhex("C7 05"), 2)
+            write_int(self.tientrinh, self.diachixq + DC.VA_XOAMUCTIEU + 2, self.diachixq + DC.MUCTIEUDANGCHON)
+            write_int(self.tientrinh, self.diachixq + DC.VA_XOAMUCTIEU + 6, 0)
 
     def action_vohieuhoalongclick(self):
-        if read_int(self.tientrinh, self.diachixq + 0x4993C + 0x6) != 0: write_int(self.tientrinh, self.diachixq + 0x4993C + 0x6, 0)
+        if read_int(self.tientrinh, self.diachixq + DC.VA_LONGCLICK + 0x6) != 0: write_int(self.tientrinh, self.diachixq + DC.VA_LONGCLICK + 0x6, 0)
 
     def action_tatvohieuhoalongclick(self):
-        if read_int(self.tientrinh, self.diachixq + 0x4993C + 0x6) != 1: write_int(self.tientrinh, self.diachixq + 0x4993C + 0x6, 1)
+        if read_int(self.tientrinh, self.diachixq + DC.VA_LONGCLICK + 0x6) != 1: write_int(self.tientrinh, self.diachixq + DC.VA_LONGCLICK + 0x6, 1)
 
     def action_vohieuhoatrangthaichuotchonmuctieukynang(self):
-        if read_int(self.tientrinh, self.diachixq + 0x5416C + 0x6) != 0: write_int(self.tientrinh, self.diachixq + 0x5416C + 0x6, 0)
+        if read_int(self.tientrinh, self.diachixq + DC.VA_CHUOTCHONMUCTIEUKYNANG + 0x6) != 0: write_int(self.tientrinh, self.diachixq + DC.VA_CHUOTCHONMUCTIEUKYNANG + 0x6, 0)
 
     def action_tatvohieuhoatrangthaichuotchonmuctieukynang(self):
-        if read_int(self.tientrinh, self.diachixq + 0x5416C + 0x6) != 2: write_int(self.tientrinh, self.diachixq + 0x5416C + 0x6, 2)
+        if read_int(self.tientrinh, self.diachixq + DC.VA_CHUOTCHONMUCTIEUKYNANG + 0x6) != 2: write_int(self.tientrinh, self.diachixq + DC.VA_CHUOTCHONMUCTIEUKYNANG + 0x6, 2)
 
     def action_chantangcapdo(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x13FB61, 1) == bytes.fromhex("E8"): write_bytes(self.tientrinh, self.diachixq + 0x13FB61, bytes.fromhex("83 C4 08 90 90"), 5)
+        if read_bytes(self.tientrinh, self.diachixq + DC.VA_TANGCAPDO, 1) == bytes.fromhex("E8"): write_bytes(self.tientrinh, self.diachixq + DC.VA_TANGCAPDO, bytes.fromhex("83 C4 08 90 90"), 5)
 
     def action_bochantangcapdo(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x13FB61, 1) == bytes.fromhex("83"):
-            write_bytes(self.tientrinh, self.diachixq + 0x13FB61, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self.diachixq + 0x13FB61 + 1, self.diachixq + 0x16C730 - (self.diachixq + 0x13FB61) - 5)
+        if read_bytes(self.tientrinh, self.diachixq + DC.VA_TANGCAPDO, 1) == bytes.fromhex("83"):
+            write_bytes(self.tientrinh, self.diachixq + DC.VA_TANGCAPDO, bytes.fromhex("E8"), 1)
+            write_int(self.tientrinh, self.diachixq + DC.VA_TANGCAPDO + 1, self.diachixq + DC.HAMTANGCAPDO - (self.diachixq + DC.VA_TANGCAPDO) - 5)
 
     def action_vohieuhoakhoanhvungkynang(self):
         pass
@@ -1812,27 +1832,27 @@ class MoiTruong:
         pass
 
     def action_vohieuhoahookchienquoc2(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x95450, 1) != bytes.fromhex("90"):
-            write_bytes(self.tientrinh, self.diachixq + 0x95450, b'\x90\x90\x90\x90\x90', 5)
+        if read_bytes(self.tientrinh, self.diachixq + DC.HAMGUILENH, 1) != bytes.fromhex("90"):
+            write_bytes(self.tientrinh, self.diachixq + DC.HAMGUILENH, b'\x90\x90\x90\x90\x90', 5)
 
     def action_vohieuhieuungmuloa(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x4C0E + 0x6, 1) != bytes.fromhex("00"): write_bytes(self.tientrinh, self.diachixq + 0x4C0E + 0x6, bytes.fromhex("00"), 1)
+        if read_bytes(self.tientrinh, self.diachixq + DC.VA_HIEUUNGMULOA + 0x6, 1) != bytes.fromhex("00"): write_bytes(self.tientrinh, self.diachixq + DC.VA_HIEUUNGMULOA + 0x6, bytes.fromhex("00"), 1)
 
     def action_vohieuhoadichuyen(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x9BE38, 1) != bytes.fromhex("EB"): write_bytes(self.tientrinh, self.diachixq + 0x9BE38, bytes.fromhex("EB"), 1)
+        if read_bytes(self.tientrinh, self.diachixq + DC.VA_DICHUYEN, 1) != bytes.fromhex("EB"): write_bytes(self.tientrinh, self.diachixq + DC.VA_DICHUYEN, bytes.fromhex("EB"), 1)
 
     def action_tatvohieuhoadichuyen(self):
-        if read_bytes(self.tientrinh, self.diachixq + 0x9BE38, 1) != bytes.fromhex("7E"): write_bytes(self.tientrinh, self.diachixq + 0x9BE38, bytes.fromhex("7E"), 1)
+        if read_bytes(self.tientrinh, self.diachixq + DC.VA_DICHUYEN, 1) != bytes.fromhex("7E"): write_bytes(self.tientrinh, self.diachixq + DC.VA_DICHUYEN, bytes.fromhex("7E"), 1)
 
     def get_is_dangmobando(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not x:
             return False
         x = read_int(self.tientrinh, x + 0xADFDEC)
         return read_boolean(self.tientrinh, x) if x else False
 
     def get_is_danghiencuasoyesno(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not x:
             return False
         x = read_int(self.tientrinh, x + 0xADFE10)
@@ -1840,13 +1860,13 @@ class MoiTruong:
 
     def set_is_danghiencuasoyesno(self, is_danghiencuasoyesno):
         if self.get_is_danghiencuasoyesno() != is_danghiencuasoyesno:
-            x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+            x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
             if x:
                 x = read_int(self.tientrinh, x + 0xADFE10)
                 if x: write_boolean(self.tientrinh, x + 0x34, is_danghiencuasoyesno)
 
     def get_is_danghiencuasotuychon(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not x:
             return False
         x = read_int(self.tientrinh, x + 0xADFD74)
@@ -1854,13 +1874,13 @@ class MoiTruong:
 
     def set_is_danghiencuasotuychon(self, is_danghiencuasotuychon):
         if self.get_is_danghiencuasotuychon() != is_danghiencuasotuychon:
-            x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+            x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
             if x:
                 x = read_int(self.tientrinh, x + 0xADFD74)
                 if x: write_boolean(self.tientrinh, x + 0x1E38, is_danghiencuasotuychon)
 
     def get_caulenhmoinhomhientai(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not x:
             return False
         x = read_int(self.tientrinh, x + 0xADFE10)
@@ -1875,7 +1895,7 @@ class MoiTruong:
             self._diachiautoassembledichuyen = self.tientrinh.allocate(64)
 
             write_bytes(self.tientrinh, self._diachiautoassembledichuyen, bytes.fromhex("8B 3D"), 2)
-            write_int(self.tientrinh, self._diachiautoassembledichuyen + 2, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+            write_int(self.tientrinh, self._diachiautoassembledichuyen + 2, self.diachixq + DC.THONGTINGAME)
 
             write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 6, bytes.fromhex("8D 77 14"), 3)
 
@@ -1893,7 +1913,7 @@ class MoiTruong:
             write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 23, bytes.fromhex("8B CF"), 2)
 
             write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 25, bytes.fromhex("E8"), 1)
-            write_int(self.tientrinh, self._diachiautoassembledichuyen + 26, self.diachixq + 0x47790 - (self._diachiautoassembledichuyen + 25) - 5)
+            write_int(self.tientrinh, self._diachiautoassembledichuyen + 26, self.diachixq + DC.HAMCLICKMANHINH - (self._diachiautoassembledichuyen + 25) - 5)
 
             write_bytes(self.tientrinh, self._diachiautoassembledichuyen + 30, bytes.fromhex("C3"), 1)
             self._is_dasetupautoassembledichuyen = True
@@ -1947,7 +1967,7 @@ class MoiTruong:
             self._dulieutimduongcucbo, self._buftimduongcucbo = vung + 0x80, vung + 0x100
             dulieu = self._dulieutimduongcucbo
             ma = f"""
-                mov eax, dword ptr [{hex(self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)}]
+                mov eax, dword ptr [{hex(self.diachixq + DC.THONGTINGAME)}]
                 mov ecx, dword ptr [eax + 0xAE1178]
                 test ecx, ecx
                 je ketthuc
@@ -1957,7 +1977,7 @@ class MoiTruong:
                 push dword ptr [{hex(dulieu + 8)}]
                 push dword ptr [{hex(dulieu + 4)}]
                 push dword ptr [{hex(dulieu)}]
-                mov eax, {hex(self.diachixq + 0xB0D60)}
+                mov eax, {hex(self.diachixq + DC.HAMTIMDUONGCUCBO)}
                 call eax
             ketthuc:
                 ret
@@ -1965,7 +1985,7 @@ class MoiTruong:
             encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(ma)
             write_bytes(self.tientrinh, vung, bytes(encoding), len(encoding))
             self._diachitimduongcucbo = vung
-        thongtingame = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        thongtingame = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not thongtingame or not read_int(self.tientrinh, thongtingame + 0xAE1178):
             return None
         write_bytes(self.tientrinh, self._dulieutimduongcucbo, struct.pack("<iiii", x1, y1, x2, y2), 16)
@@ -2001,10 +2021,10 @@ class MoiTruong:
         # Huỷ đích tự động tìm đường đang có: game tự tìm đường lại khi đứng yên và ghi đè chuỗi đi theo ô (2 nguồn cùng gửi "go")
         self.action_ngungtudongtimduong()
         self._dichdioogannhat = (x, y)
-        khoidieukhien = read_int(self.tientrinh, self.diachixq + 0x372864)
+        khoidieukhien = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         if khoidieukhien:
             write_bytes(self.tientrinh, khoidieukhien + 0x1608, bytes(8), 8)
-        write_bytes(self.tientrinh, self.diachixq + 0x1FC2B4, b"\0" + chuoihuong + bytes(99 - len(chuoihuong)), 100)
+        write_bytes(self.tientrinh, self.diachixq + DC.CHUOIDUONGDI, b"\0" + chuoihuong + bytes(99 - len(chuoihuong)), 100)
         self.set_idlenhdichuyen(1)
         self._thoidiemdichuyengannhat = time.time()
         self._thoidiemboquadichuyencungtoadogannhat = time.time()
@@ -2278,7 +2298,7 @@ class MoiTruong:
         return is_ok
 
     def get_is_damocuasotuychonnhanvatchinhlandau(self):
-        x = read_int(self.tientrinh, self.diachixq + 0x3A642C)
+        x = read_int(self.tientrinh, self.diachixq + DC.CUASOTUYCHONNHANVAT)
         if not x:
             return False
         x = read_int(self.tientrinh, x + 0x2C)
@@ -2399,14 +2419,14 @@ class MoiTruong:
         return self._get_is_dangvankhitrongame()
 
     def _get_is_dangvankhitrongame(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not x:
             return False
         x = read_int(self.tientrinh, x + 0xADFDE8)
         return read_int(self.tientrinh, x + 0xD8) == TRANGTHAIVANKHI_DANGVANKHI if x else False
 
     def get_is_dakhoitaothongtinbando(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not x:
             return False
         x = read_int(self.tientrinh, x + 0xADFDEC)
@@ -2417,7 +2437,7 @@ class MoiTruong:
         # (huỷ tìm đường thì qua action_ngungtudongtimduong, không chặn)
         if (x or y) and (self.get_is_khoavankhitrieuhoi() or self.get_is_dangxuatchieu()):
             return False
-        a = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        a = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not a: return False
         a = read_int(self.tientrinh, a + 0xADFDEC)
         if not a:
@@ -2438,7 +2458,7 @@ class MoiTruong:
         return True
 
     def action_ngungtudongtimduong(self):
-        a = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        a = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not a:
             return False
         a = read_int(self.tientrinh, a + 0xADFDEC)
@@ -2486,7 +2506,7 @@ class MoiTruong:
     def get_dungluongtuihanhtrangs(self):
         # Số ô đang mở của 4 túi hành trang (túi phụ mở bằng Túi Càn Khôn 4/6/12/24 ô, có hạn dùng), vd [24, 4, 0, 0].
         # Đọc tại [x + OFFSET_CONTROTUIHANHTRANG] + OFFSET_DUNGLUONGTUIHANHTRANG; đọc lỗi / số lạ thì None
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         p = read_int(self.tientrinh, x + OFFSET_CONTROTUIHANHTRANG) if x else 0
         if not p:
             return None
@@ -2700,7 +2720,7 @@ class MoiTruong:
         return MONPHAI_MAP.get(self.get_idkynang(0, 0))
 
     def get_diachicosobaothugiangho(self):
-        x = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         return read_int(self.tientrinh, x + 0xADFDDC) if x else False
 
     def get_is_datrieuhoibaothugiangho(self):
@@ -2820,10 +2840,10 @@ class MoiTruong:
         return is_ok
 
     def get_idlenhdichuyen(self):
-        return read_int(self.tientrinh, self.diachixq + 0x380AFC)
+        return read_int(self.tientrinh, self.diachixq + DC.CHISOBUOCDICHUYEN)
 
     def set_idlenhdichuyen(self, idlenhdichuyen):
-        write_int(self.tientrinh, self.diachixq + 0x380AFC, idlenhdichuyen)
+        write_int(self.tientrinh, self.diachixq + DC.CHISOBUOCDICHUYEN, idlenhdichuyen)
 
     def action_chandichuyen(self):
         # Vòng xử lý di chuyển của client (xq + 0x182E0) tự gửi "go x,y <chuỗi hướng>" rồi bước nhân vật ở 3 nhánh, nhánh nào cũng
@@ -2833,7 +2853,7 @@ class MoiTruong:
         #  - bước tiếp chuỗi đường đi toàn cục xq + 0x1FC2B4 (ký tự hướng '1'..'8'); xq + 0x380AFC là chỉ số bước kế tiếp trong
         #    chuỗi đó (get_idlenhdichuyen), hai nhánh trên đặt nó = [xq + 0x372864] + 0x1620 (2) -> bước 1 - 2 ô ngay khi hết chiêu
         # Hàm gửi lệnh (xq + 0x95450) không xét mốc này nên lệnh của bot vẫn đi. True khi vừa đẩy mốc
-        thongtingame = read_int(self.tientrinh, self.diachixq + OFFSET_DIACHICOSOTHONGTINGAME)
+        thongtingame = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not thongtingame:
             return False
         mocmoi = (ctypes.windll.winmm.timeGetTime() + int(THOIGIANCHANTUDICHUYENCLIENT * 1000)) & 0xFFFFFFFF
