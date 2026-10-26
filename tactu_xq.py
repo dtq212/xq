@@ -1781,8 +1781,9 @@ class TacTu:
 
     def _timmuctieuchung(self, toadobanthan, toadotheosau, khoangcachchophepmuctieutheosau, toadodongdois):
         # Mình không còn mục tiêu hợp lệ nào: lấy đối tượng thù địch nhân vật khác cùng máy đang thấy (mình chưa thấy), lọc như khi chọn
-        # mục tiêu (tên, PK, vùng cấm, điểm đánh, vùng quanh người theo sau, nhường quái), chọn con gần mình nhất => yêu cầu tìm đường tới đó
-        if not self._is_timmuctieuchung:
+        # mục tiêu (tên, PK, vùng cấm, điểm đánh, vùng quanh người theo sau, nhường quái), chọn con gần mình nhất => yêu cầu tìm đường tới đó.
+        # Tắt tự động sử dụng kỹ năng thì tới nơi cũng không đánh: không đi
+        if not self._is_timmuctieuchung or not self._is_tudongsudungkynang:
             return None
         if self._diemdanhxungquanhs and self._is_tudongdichuyendiemdanhxungquanh:
             danhsachbandohople = [diem[2] for diem in self._diemdanhxungquanhs if len(diem) >= 3]
