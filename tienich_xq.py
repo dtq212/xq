@@ -179,6 +179,19 @@ def tailotrinhmau():
         return {}
 
 
+def thaythefile(filetam, filepath, solanthu = 5):
+    # os.replace trên Windows bị từ chối (WinError 5 / 32) nếu đúng lúc đó chương trình khác đang mở file đích (diệt virus, Windows Search,
+    # PyCharm, git, cửa sổ khác đang đọc...): chờ chút rồi thử lại, hết lượt thì báo lỗi như cũ (file đích cũ vẫn nguyên)
+    for lanthu in range(solanthu):
+        try:
+            os.replace(filetam, filepath)
+            return
+        except PermissionError:
+            if lanthu == solanthu - 1:
+                raise
+            time.sleep(0.05)
+
+
 def luulotrinhmau(lotrinhmau):
     filepath = duongdanlotrinhmau()
     try:
@@ -186,7 +199,7 @@ def luulotrinhmau(lotrinhmau):
         filetam = filepath + ".tmp"
         with open(filetam, "w", encoding = "utf-8") as file:
             json.dump(lotrinhmau, file, ensure_ascii = False, indent = 2)
-        os.replace(filetam, filepath)
+        thaythefile(filetam, filepath)
     except Exception as err:
         print(err)
 
@@ -237,7 +250,7 @@ def luunhomtodoitudongs(nhoms):
         filetam = filepath + ".tmp"
         with open(filetam, "w", encoding = "utf-8") as file:
             json.dump({"nhoms": _chuanhoanhomtodoitudongs(nhoms)}, file, ensure_ascii = False, indent = 2)
-        os.replace(filetam, filepath)
+        thaythefile(filetam, filepath)
     except Exception as err:
         print(err)
 
@@ -281,7 +294,7 @@ def luuthietlap(tennhanvat, thietlap):
         filetam = filepath + ".tmp"
         with open(filetam, "wb") as file:
             pickle.dump(thietlap, file)
-        os.replace(filetam, filepath)
+        thaythefile(filetam, filepath)
 
     except Exception as err:
         print(err)
@@ -359,7 +372,7 @@ def ghitamngung(idnguoichoi, thoidiemhet, lydo):
         filetam = filepath + ".tmp"
         with open(filetam, "w", encoding = "utf-8") as file:
             json.dump({"thoidiemhet": thoidiemhet, "lydo": lydo}, file, ensure_ascii = False)
-        os.replace(filetam, filepath)
+        thaythefile(filetam, filepath)
     except Exception as err:
         print(f"Lỗi khi ghi trạng thái tạm ngưng: {err}")
 
