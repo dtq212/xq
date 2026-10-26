@@ -295,7 +295,7 @@ class MoiTruong:
 
     def _is_lenhkynangdavaohoichieu(self, lenh):
         # Lệnh dùng kỹ năng nằm chờ mà kỹ năng đó đã vào hồi chiêu (lệnh trước đã ra chiêu) => gửi cũng vô ích, bỏ
-        if not lenh.vitrikynang or self.get_is_kynangsansang(*lenh.vitrikynang):
+        if not lenh.vitrikynang or self.get_is_kynangsansang(lenh.vitrikynang):
             return False
         self._loglenh(lenh.caulenh, "BỎ - kỹ năng đã vào hồi chiêu")
         return True
