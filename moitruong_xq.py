@@ -1,5 +1,6 @@
 import ctypes
 import queue
+import re
 import struct
 import threading
 import unicodedata
@@ -16,6 +17,10 @@ from tienich_xq import *
 # Thông tin túi hành trang: con trỏ tại [thông tin game] + 0xADFE0C (cạnh con trỏ hành trang + 0xADFD78),
 # số ô mở của 4 túi là 4 int32 tại + 0xD4 (đo: túi đủ [24, 24, 24, 24], mới mở túi 2 loại 4 ô [24, 4, 0, 0])
 OFFSET_DUNGLUONGTUIHANHTRANG = 0xD4
+# Trong ô kỹ năng, tính từ chỗ chứa id (KN_ID): cờ đã học (3 = đã học, 0 = chưa học), xem MoiTruong.get_is_kynangdahoc
+OFFSET_KYNANGDAHOC = 0x1C
+# Bảng vị trí kỹ năng đã học đọc lại sau chừng này giây
+THOIGIANNHOBANGKYNANG = 2.
 # Bảng địa chỉ đối tượng xung quanh: các vòng quét đều chạy từ ô 0 tới ô 512 (hoặc gặp ô trống)
 SOLUONGDOITUONGXUNGQUANHTOIDA = 513
 # Tên đối tượng đọc lại trong khoảng này thì dùng bản vừa đọc (1 vòng chọn mục tiêu đọc tên cùng 1 đối tượng 5-6 lần)
@@ -85,6 +90,11 @@ class MoiTruong:
         self._is_dasetupautoassembledichuyen = False
         # Đoạn mã gọi hàm tìm đường cục bộ của client (_get_chuoihuongtimduongcucbo): địa chỉ mã, ô tham số, bộ đệm chuỗi hướng
         self._diachitimduongcucbo = None
+        # Lần gửi "desc pf <id>" gần nhất theo id kỹ năng (get_tieuhaokynang)
+        self._thoidiemtruyvanmotakynang_map = {}
+        # Bảng {id kỹ năng đã học: vị trí} (_get_bangvitrikynangdahoc) và lúc đọc
+        self._bangvitrikynangdahoc = {}
+        self._thoidiemdocbangkynang = 0.
         # Đích đi theo ô gần nhất (action_dichuyenoo): còn đang đi tới đích này thì không ghi lại chuỗi
         self._dichdioogannhat = None
         self._dulieutimduongcucbo = None
@@ -1573,13 +1583,97 @@ class MoiTruong:
         if self.get_phantramsinhlucconlai(diachicosothongtinnhanvat) > 100: return True
         return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x155C) in (25, 40)
 
-    def get_idkynang(self, idvitri_x, idvitri_y):
+    def get_idkynang(self, idvitri_x, idvitri_y = None):
+        # idvitri_x là mã kỹ năng (id hoặc vị trí (x, y)) khi không truyền idvitri_y
+        vitri = self._giaivitrikynang(idvitri_x, idvitri_y)
+        if not vitri:
+            return False
+        idvitri_x, idvitri_y = vitri
         diachicosothongtinkynang = self.get_diachicosothongtinkynang()
         if not diachicosothongtinkynang: return False
         idvitrikynang = 14 * idvitri_y + idvitri_x
         return read_int(self.tientrinh, diachicosothongtinkynang + idvitrikynang * DC.KN_KICHTHUOC + DC.KN_ID)
 
-    def get_is_kynangsansang(self, idvitri_x, idvitri_y):
+    def _giaivitrikynang(self, idvitri_x, idvitri_y = None):
+        # Mã kỹ năng -> vị trí (x, y) trên bảng kỹ năng, None khi không dùng được. Mã kỹ năng là id kỹ năng (VITRIKYNANG_* của các phái đã
+        # chuyển sang id: tra vị trí hiện tại, chưa học thì None - hàng kỹ năng đổi chỗ / chèn hàng khi học chiêu mới vẫn đúng) hoặc vị trí
+        # (x, y) cũ (phái chưa có id: Đường Môn, Cẩm Vệ Quân)
+        if idvitri_y is not None:
+            return idvitri_x, idvitri_y
+        if isinstance(idvitri_x, tuple):
+            return idvitri_x
+        return self._get_bangvitrikynangdahoc().get(idvitri_x)
+
+    def _get_bangvitrikynangdahoc(self):
+        # {id kỹ năng đã học: (x, y)} đọc cả bảng 1 lần, nhớ THOIGIANNHOBANGKYNANG giây (hàm kỹ năng gọi liên tục mỗi lượt)
+        thoidiemhientai = time.time()
+        if thoidiemhientai - self._thoidiemdocbangkynang < THOIGIANNHOBANGKYNANG:
+            return self._bangvitrikynangdahoc
+        diachicosothongtinkynang = self.get_diachicosothongtinkynang()
+        bang = {}
+        if diachicosothongtinkynang:
+            dulieu = read_bytes(self.tientrinh, diachicosothongtinkynang + DC.KN_ID, 14 * 6 * DC.KN_KICHTHUOC)
+            for idvitri in range(14 * 6):
+                idkynang, dahoc = struct.unpack_from("<i", dulieu, idvitri * DC.KN_KICHTHUOC)[0], struct.unpack_from("<i", dulieu, idvitri * DC.KN_KICHTHUOC + OFFSET_KYNANGDAHOC)[0]
+                if idkynang and dahoc:
+                    bang[idkynang] = (idvitri % 14, idvitri // 14)
+        self._bangvitrikynangdahoc = bang
+        self._thoidiemdocbangkynang = thoidiemhientai
+        return bang
+
+    def get_vitrikynangtheoid(self, idkynang):
+        # Vị trí (x, y) của kỹ năng có id idkynang trên bảng kỹ năng (14 ô mỗi hàng, 6 hàng; id tại ô + KN_ID), không có thì None.
+        # Id kỹ năng cố định theo kỹ năng (vd Không Thủ Nhập Bạch Nhẫn 2114, Hộ Thể Kim Cang 3173 - đa số trùng HIEUUNGKYNANG_*),
+        # còn vị trí thì cùng 1 ô mỗi phái là 1 kỹ năng khác (ô (0, 2) Mao Sơn là Huyết Ma Chú, Đào Hoa là Kim Trung Chao)
+        diachicosothongtinkynang = self.get_diachicosothongtinkynang()
+        if not diachicosothongtinkynang:
+            return None
+        dulieu = read_bytes(self.tientrinh, diachicosothongtinkynang + DC.KN_ID, 14 * 6 * DC.KN_KICHTHUOC)
+        for idvitri in range(14 * 6):
+            if struct.unpack_from("<i", dulieu, idvitri * DC.KN_KICHTHUOC)[0] == idkynang:
+                return idvitri % 14, idvitri // 14
+        return None
+
+    def _docokynangtheoid(self, idkynang):
+        # Dữ liệu ô kỹ năng (tính từ + KN_ID) của kỹ năng idkynang, không có trên bảng thì None
+        vitri = self.get_vitrikynangtheoid(idkynang)
+        diachicosothongtinkynang = self.get_diachicosothongtinkynang()
+        if not vitri or not diachicosothongtinkynang:
+            return None
+        return read_bytes(self.tientrinh, diachicosothongtinkynang + (14 * vitri[1] + vitri[0]) * DC.KN_KICHTHUOC + DC.KN_ID, DC.KN_KICHTHUOC)
+
+    def get_is_kynangdahoc(self, idkynang):
+        # Ô kỹ năng + KN_ID + OFFSET_KYNANGDAHOC = 3 khi đã học, 0 khi chưa (game dựa vào đây để bôi mờ chiêu chưa học). Đo trên Vân Mộng
+        # Cốc: Nghênh Phong Trảm 0 -> 3 lúc học, Phá Không Kích 0 -> 3, Đơn Đao Trực Nhập lên cấp 2 vẫn 3; tên kỹ năng ở + 0x8 cố định
+        # 0x14 byte nên trường này không bị chữ đè. Kỹ năng không có trên bảng cũng là chưa học
+        dulieu = self._docokynangtheoid(idkynang)
+        return bool(dulieu) and struct.unpack_from("<i", dulieu, OFFSET_KYNANGDAHOC)[0] != 0
+
+    def get_tieuhaokynang(self, idkynang, is_truyvan = True):
+        # Tiêu hao / tái sử dụng của kỹ năng lấy từ các dòng mô tả nằm trong ô kỹ năng (vd "Pháp Lực tiêu hao: 6 điểm", "Nguyên khí tiêu
+        # hao: 1 điểm", "Tái sử dụng sau: 10 giây"): {"pháp lực": 6, ..., "tái sử dụng": 10.0}. Mô tả chỉ có sau khi game lấy về (rê chuột
+        # hoặc "desc pf <id>"): chưa có thì gửi "desc pf <id>" (tối đa 1 lần / 2s mỗi kỹ năng) và trả None, lần gọi sau sẽ có
+        dulieu = self._docokynangtheoid(idkynang)
+        if not dulieu:
+            return None
+        noidung = unicodedata.normalize("NFC", dulieu.replace(b"\x00", b"\n").decode("utf-8", "ignore"))
+        ketqua = {loai.strip().lower(): int(so) for loai, so in re.findall(r"([^\n:]+?) tiêu hao: (\d+)", noidung)}
+        taisudung = re.search(r"Tái sử dụng sau: ([\d.]+) giây", noidung)
+        if taisudung:
+            ketqua["tái sử dụng"] = float(taisudung.group(1))
+        if ketqua:
+            return ketqua
+        if is_truyvan and time.time() - self._thoidiemtruyvanmotakynang_map.get(idkynang, 0.) > 2.:
+            self._thoidiemtruyvanmotakynang_map[idkynang] = time.time()
+            self.action_thucthicaulenh(f"desc pf {idkynang}")
+        return None
+
+    def get_is_kynangsansang(self, idvitri_x, idvitri_y = None):
+        # idvitri_x là mã kỹ năng (id hoặc vị trí (x, y)) khi không truyền idvitri_y
+        vitri = self._giaivitrikynang(idvitri_x, idvitri_y)
+        if not vitri:
+            return False
+        idvitri_x, idvitri_y = vitri
         diachicosothongtinkynang = self.get_diachicosothongtinkynang()
         if not diachicosothongtinkynang: return False
         idvitrikynang = 14 * idvitri_y + idvitri_x
@@ -2267,11 +2361,21 @@ class MoiTruong:
         return self.action_dichuyengiukhoangcachtoidadiem(x2, y2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay, is_rangbuoctrongmanhinh = is_rangbuoctrongmanhinh)
 
     def action_sudungkynangvitriphudau(self, idvitri_x, idvitri_y, diachi2, khoangcachphudau, delay = 1):
+        # idvitri_x là mã kỹ năng (id hoặc vị trí (x, y)) khi không truyền idvitri_y
+        vitri = self._giaivitrikynang(idvitri_x, idvitri_y)
+        if not vitri:
+            return False
+        idvitri_x, idvitri_y = vitri
         if not diachi2 or not self.get_is_nhanvattontai(diachi2):
             return False
         return self.action_sudungkynangvitriphudaudiem(idvitri_x, idvitri_y, *self.get_toado(diachi2), khoangcachphudau = khoangcachphudau, delay = delay)
 
     def action_sudungkynangvitriphudaudiem(self, idvitri_x, idvitri_y, x2, y2, khoangcachphudau, delay = 1):
+        # idvitri_x là mã kỹ năng (id hoặc vị trí (x, y)) khi không truyền idvitri_y
+        vitri = self._giaivitrikynang(idvitri_x, idvitri_y)
+        if not vitri:
+            return False
+        idvitri_x, idvitri_y = vitri
         idvitri = (idvitri_x, idvitri_y)
         if idvitri in self._thoidiemsudungkynangvitrigannhat_map and time.time() - self._thoidiemsudungkynangvitrigannhat_map[idvitri] < delay:
             return False
@@ -2775,10 +2879,20 @@ class MoiTruong:
             return 100
         return self.get_noilucconlaibaothugiangho() * 100 / max(1, self.get_noiluctoidabaothugiangho())
 
-    def get_thoidiemsudungkynangvitrigannhat(self, idvitri_x, idvitri_y, macdinh = None):
+    def get_thoidiemsudungkynangvitrigannhat(self, idvitri_x, idvitri_y = None, macdinh = None):
+        # idvitri_x là mã kỹ năng (id hoặc vị trí (x, y)) khi không truyền idvitri_y
+        vitri = self._giaivitrikynang(idvitri_x, idvitri_y)
+        if not vitri:
+            return macdinh
+        idvitri_x, idvitri_y = vitri
         return self._thoidiemsudungkynangvitrigannhat_map.get((idvitri_x, idvitri_y), macdinh)
 
-    def action_sudungkynangvitrimuctieu(self, idvitri_x, idvitri_y, diachicosothongtinnhanvatmuctieu = False, is_khongkiemtracothetancong = False, delay = 0.):
+    def action_sudungkynangvitrimuctieu(self, idvitri_x, idvitri_y = None, diachicosothongtinnhanvatmuctieu = False, is_khongkiemtracothetancong = False, delay = 0.):
+        # idvitri_x là mã kỹ năng (id hoặc vị trí (x, y)) khi không truyền idvitri_y
+        vitri = self._giaivitrikynang(idvitri_x, idvitri_y)
+        if not vitri:
+            return False
+        idvitri_x, idvitri_y = vitri
         if time.time() - self._thoidiemsudungkynanggannhat < 0.05:
             return False
         idvitri = (idvitri_x, idvitri_y)
@@ -2802,7 +2916,12 @@ class MoiTruong:
             self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
         return is_ok
 
-    def action_sudungkynangvitri(self, idvitri_x, idvitri_y, delay = 0.):
+    def action_sudungkynangvitri(self, idvitri_x, idvitri_y = None, delay = 0.):
+        # idvitri_x là mã kỹ năng (id hoặc vị trí (x, y)) khi không truyền idvitri_y
+        vitri = self._giaivitrikynang(idvitri_x, idvitri_y)
+        if not vitri:
+            return False
+        idvitri_x, idvitri_y = vitri
         if time.time() - self._thoidiemsudungkynanggannhat < delay:
             return False
         idvitri = (idvitri_x, idvitri_y)
@@ -2820,7 +2939,12 @@ class MoiTruong:
             self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
         return is_ok
 
-    def action_sudungkynangvitrilenbanthan(self, idvitri_x, idvitri_y, delay = 0.):
+    def action_sudungkynangvitrilenbanthan(self, idvitri_x, idvitri_y = None, delay = 0.):
+        # idvitri_x là mã kỹ năng (id hoặc vị trí (x, y)) khi không truyền idvitri_y
+        vitri = self._giaivitrikynang(idvitri_x, idvitri_y)
+        if not vitri:
+            return False
+        idvitri_x, idvitri_y = vitri
         if time.time() - self._thoidiemsudungkynanggannhat < delay:
             return False
         idvitri = (idvitri_x, idvitri_y)

@@ -856,7 +856,7 @@ class TacTu:
                 continue
             if kynangchopheps is not None and vitrikynang not in kynangchopheps:
                 continue
-            if not self.moitruong.get_is_kynangsansang(*vitrikynang):
+            if not self.moitruong.get_is_kynangsansang(vitrikynang):
                 continue
             if callable(dieukien) and not dieukien():
                 continue
@@ -1467,7 +1467,7 @@ class TacTu:
         if math.dist(self.moitruong.get_toado(), (x_dich, y_dich)) <= 3.:
             return False
 
-        is_khaithiensansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KHAITHIENTICHDIA)
+        is_khaithiensansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_KHAITHIENTICHDIA)
         if self._is_khaithientichdiasansang and not is_khaithiensansang:
             # Vừa ra chiêu: tạm ngưng di chuyển 0.5s như bản cũ, vào tư thế xuất chiêu thì ngắt tiếp (action_ngatdichuyenkhixuatchieu)
             self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.5)
@@ -1489,7 +1489,7 @@ class TacTu:
                 self._thoidiembiphatkhaithien = time.time()
 
         if self._solanthatbaikhaithien < self._solanthatbaikhaithientoida:
-            idkynang = self.moitruong.get_idkynang(*VITRIKYNANG_KHAITHIENTICHDIA)
+            idkynang = self.moitruong.get_idkynang(VITRIKYNANG_KHAITHIENTICHDIA)
             if idkynang and self.moitruong.action_sudungkynangtoado(idkynang, int(x_dich), int(y_dich), delay = 0.05):
                 # Chiêu lướt để đi đường: giữ trọn hoạt ảnh xuất chiêu (chặn client tự gửi "go" từ lúc gửi tới hết tư thế xuất chiêu,
                 # đo: không chặn thì client gửi "go" ngay trong lúc xuất chiêu) nhưng không khựng thêm sau đó
@@ -2927,20 +2927,20 @@ class TacTu:
 
             is_dasudung = True
             if loaikynang == "sudungkynangkhongmuctieu":
-                is_dasudung = self.moitruong.action_sudungkynangvitri(*vitrikynang)
+                is_dasudung = self.moitruong.action_sudungkynangvitri(vitrikynang)
             elif loaikynang == "sudungkynanglenbanthan":
-                is_dasudung = self.moitruong.action_sudungkynangvitrilenbanthan(*vitrikynang)
+                is_dasudung = self.moitruong.action_sudungkynangvitrilenbanthan(vitrikynang)
             elif loaikynang == "tancongvatly":
                 is_dasudung = self.moitruong.action_sudungtancongvatly(diachimuctieu)
                 if is_dasudung:
                     self._is_battudongtancongvatly = True
                     self._diachimuctieutancongvatly = diachimuctieu
             elif loaikynang == "sudungkynangmuctieu":
-                is_dasudung = self.moitruong.action_sudungkynangvitrimuctieu(*vitrikynang, diachicosothongtinnhanvatmuctieu = diachimuctieu)
+                is_dasudung = self.moitruong.action_sudungkynangvitrimuctieu(vitrikynang, diachicosothongtinnhanvatmuctieu = diachimuctieu)
             elif loaikynang == "sudungkynanglendongdoi":
-                is_dasudung = self.moitruong.action_sudungkynangvitrimuctieu(*vitrikynang, diachicosothongtinnhanvatmuctieu = diachimuctieu, is_khongkiemtracothetancong = True)
+                is_dasudung = self.moitruong.action_sudungkynangvitrimuctieu(vitrikynang, diachicosothongtinnhanvatmuctieu = diachimuctieu, is_khongkiemtracothetancong = True)
             elif loaikynang == "sudungkynangphudau":
-                self.moitruong.action_sudungkynangvitriphudau(*vitrikynang, diachimuctieu, khoangcachphudau = khoangcachyeucau)
+                self.moitruong.action_sudungkynangvitriphudau(vitrikynang, None, diachimuctieu, khoangcachphudau = khoangcachyeucau)
             else:
                 is_dasudung = False
 
@@ -3048,27 +3048,27 @@ class TacTu:
         if self.moitruong.get_is_nhanvatdachet(): return
         if self.moitruong.get_is_dangvankhi(): return
 
-        is_kynangamkichsansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_AMKICH)
+        is_kynangamkichsansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_AMKICH)
         if self._is_kynangamkichsansang and not is_kynangamkichsansang:
             self._thoidiemsudungamkichgannhat = time.time()
         self._is_kynangamkichsansang = is_kynangamkichsansang
 
-        is_kynangthichsatsansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_THICHSAT)
+        is_kynangthichsatsansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_THICHSAT)
         if self._is_kynangthichsatsansang and not is_kynangthichsatsansang:
             self._thoidiemsudungthichsatgannhat = time.time()
         self._is_kynangthichsatsansang = is_kynangthichsatsansang
 
-        is_kynangbisatsansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_BISAT)
+        is_kynangbisatsansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_BISAT)
         if self._is_kynangbisatsansang and not is_kynangbisatsansang:
             self._thoidiemsudungbisatgannhat = time.time()
         self._is_kynangbisatsansang = is_kynangbisatsansang
 
-        is_kynangmatamthuatsansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_MATAMTHUAT)
+        is_kynangmatamthuatsansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_MATAMTHUAT)
         if self._is_kynangmatamthuatsansang and not is_kynangmatamthuatsansang:
             self._thoidiemsudungmatamthuatgannhat = time.time()
         self._is_kynangmatamthuatsansang = is_kynangmatamthuatsansang
 
-        is_kynangnhiephonchamsansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NHIEPHONCHAM)
+        is_kynangnhiephonchamsansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_NHIEPHONCHAM)
         if self._is_kynangnhiephonchamsansang and not is_kynangnhiephonchamsansang:
             self._thoidiemsudungnhiephonchamgannhat = time.time()
         self._is_kynangnhiephonchamsansang = is_kynangnhiephonchamsansang
@@ -3098,7 +3098,7 @@ class TacTu:
         noilucconlai = self.moitruong.get_noilucconlai()
 
         danhsachuutien = [
-            (VITRIKYNANG_ANTHANTHUAT, "sudungkynangkhongmuctieu", lambda: noilucconlai > 50 and not is_anthan and diachimuctieu and is_muctieutienthanvodich and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_BISAT), 0, None, False),
+            (VITRIKYNANG_ANTHANTHUAT, "sudungkynangkhongmuctieu", lambda: noilucconlai > 50 and not is_anthan and diachimuctieu and is_muctieutienthanvodich and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and self.moitruong.get_is_kynangsansang(VITRIKYNANG_BISAT), 0, None, False),
             (VITRIKYNANG_BISAT, "sudungkynangmuctieu", lambda: noilucconlai > 50 and is_anthan and diachimuctieu and is_muctieutienthanvodich and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
             (VITRIKYNANG_MATAMTHUAT, "sudungkynangkhongmuctieu", lambda: noilucconlai > 50 and not is_anthan and diachimuctieu and is_muctieugiukhoangcach and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN + 1.5 and time.time() - self._thoidiemsudungnhiephonchamgannhat < 1., 0, None, False),
             (None, "dichuyengiukhoangcach", lambda: not is_bidaohoalacanh and diachimuctieu and is_muctieugiukhoangcach and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN + 1.5 and (time.time() - self._thoidiemsudungmatamthuatgannhat < 0.5 or time.time() - self._thoidiemsudungamkichgannhat < 0.5 or time.time() - self._thoidiemsudungthichsatgannhat < 0.5), khoangcach + 3., None, False),
@@ -3127,7 +3127,7 @@ class TacTu:
 
             if callable(dieukien) and not dieukien():
                 continue
-            if vitrikynang and not self.moitruong.get_is_kynangsansang(*vitrikynang):
+            if vitrikynang and not self.moitruong.get_is_kynangsansang(vitrikynang):
                 continue
 
             target = target if target else diachimuctieu
@@ -3158,7 +3158,7 @@ class TacTu:
         if not diachimuctieu and self.moitruong.get_is_dangnamtrongnhom():
             diachidongdoicanbuff = self._diachidoituongcanbuffhothekimcangdaohoanguyen
 
-        is_nhatquyenbatsonsansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NHATQUYENBATSON)
+        is_nhatquyenbatsonsansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_NHATQUYENBATSON)
         is_anhhuongboimuctieutheosau = bool(self._laytoadomuctieutheosau())
 
         danhsachuutien = [
@@ -3196,7 +3196,7 @@ class TacTu:
             hieuunggiucho = phu[0] if phu else None
 
             if callable(dieukien) and not dieukien(): continue
-            if vitrikynang and not self.moitruong.get_is_kynangsansang(*vitrikynang): continue
+            if vitrikynang and not self.moitruong.get_is_kynangsansang(vitrikynang): continue
 
             # Trấn Cổ Thần Uy chỉ ra chiêu khi đang di chuyển: đứng im thì nhích rồi kết thúc lượt
             # (các kỹ năng cận chiến phía sau có ngắt di chuyển, sẽ huỷ cú nhích), lượt sau đang di chuyển mới gửi
@@ -3280,7 +3280,7 @@ class TacTu:
         if self.moitruong.get_idtuthenhanvat() != TUTHENHANVAT_DUNGIM:
             return False
         # Kỹ năng đang bị khoá (chống spam / khoá kỹ năng lúc triệu hồi bảo thú) thì lượt sau cũng không gửi được, nhích vô ích
-        idkynang = self.moitruong.get_idkynang(*vitrikynang)
+        idkynang = self.moitruong.get_idkynang(vitrikynang)
         if not idkynang or self.moitruong.get_is_kynangdangbikhoa(idkynang):
             return False
 
@@ -3338,7 +3338,7 @@ class TacTu:
             vitrikynang, loaikynang, dieukien, khoangcachyeucau, target, is_yeucaukhongdichuyen = item
 
             if callable(dieukien) and not dieukien(): continue
-            if vitrikynang and not self.moitruong.get_is_kynangsansang(*vitrikynang): continue
+            if vitrikynang and not self.moitruong.get_is_kynangsansang(vitrikynang): continue
 
             target = target if target else diachimuctieu
 
@@ -3529,7 +3529,7 @@ class TacTu:
     def _khoavankhitrieuhoi(self, vitrikynang):
         # Lệnh triệu hồi vừa vào hàng đợi là "pf <id kỹ năng>" (action_sudungkynang): vẫn cho gửi, các lệnh chiêu / đánh khác
         # và di chuyển bị chặn tới khi vận khí xong (xem moitruong._is_lenhbichankhoavankhi)
-        idkynang = self.moitruong.get_idkynang(*vitrikynang)
+        idkynang = self.moitruong.get_idkynang(vitrikynang)
         self.moitruong.action_khoavankhitrieuhoi(caulenhduocpheps = ("pf {}".format(idkynang),) if idkynang else ())
         self._yeucautancong = None
 
@@ -3626,7 +3626,7 @@ class TacTu:
                 continue
             if callable(dieukien) and not dieukien():
                 continue
-            if vitrikynang and not self.moitruong.get_is_kynangsansang(*vitrikynang):
+            if vitrikynang and not self.moitruong.get_is_kynangsansang(vitrikynang):
                 continue
             target_use = target if target else diachimuctieu
             # Bot khác cùng máy vừa gửi cùng chiêu (Thực Cốt / Thực Giáp / Thực Tâm) lên mục tiêu này thì dùng chiêu tiếp theo
@@ -3683,45 +3683,45 @@ class TacTu:
 
         diachicantiepcan = None
 
-        if diachidoituongcanbuffphonganthuat and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_PHONGANTHUAT):
+        if diachidoituongcanbuffphonganthuat and self.moitruong.get_is_kynangsansang(VITRIKYNANG_PHONGANTHUAT):
             diachicantiepcan = diachidoituongcanbuffphonganthuat
-        elif diachidoituongcanbuffhuyenquangthiemanh and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_HUYENQUANGTHIEMANH):
+        elif diachidoituongcanbuffhuyenquangthiemanh and self.moitruong.get_is_kynangsansang(VITRIKYNANG_HUYENQUANGTHIEMANH):
             diachicantiepcan = diachidoituongcanbuffhuyenquangthiemanh
         # Chỉ tiếp cận đối tượng cần buff khi kỹ năng tương ứng đã học và sẵn sàng, tránh đứng yên cạnh đồng đội/bản thân mà không đánh quái
-        elif diachidoituongcanhoisinh and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_CAITUHOANSINH):
+        elif diachidoituongcanhoisinh and self.moitruong.get_is_kynangsansang(VITRIKYNANG_CAITUHOANSINH):
             diachicantiepcan = diachidoituongcanhoisinh
-        elif diachidoituongcanbufftaytranquyet and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TAYTRANQUYET):
+        elif diachidoituongcanbufftaytranquyet and self.moitruong.get_is_kynangsansang(VITRIKYNANG_TAYTRANQUYET):
             diachicantiepcan = diachidoituongcanbufftaytranquyet
         elif diachidoituongcanbommau and any(self.moitruong.get_is_kynangsansang(*vitri) for vitri in (VITRIKYNANG_CAMLOTRI, VITRIKYNANG_KHIETVANQUYET, VITRIKYNANG_SOTRI, VITRIKYNANG_VODINHLUUTHUY)):
             diachicantiepcan = diachidoituongcanbommau
-        elif diachidoituongcanbufftaytranquyet2 and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TAYTRANQUYET):
+        elif diachidoituongcanbufftaytranquyet2 and self.moitruong.get_is_kynangsansang(VITRIKYNANG_TAYTRANQUYET):
             diachicantiepcan = diachidoituongcanbufftaytranquyet2
-        elif diachidoituongcanbuffkimcham and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KIMCHAMDOACH):
+        elif diachidoituongcanbuffkimcham and self.moitruong.get_is_kynangsansang(VITRIKYNANG_KIMCHAMDOACH):
             diachicantiepcan = diachidoituongcanbuffkimcham
-        elif diachidoituongcanbuffngancham and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NGANCHAMDOACH):
+        elif diachidoituongcanbuffngancham and self.moitruong.get_is_kynangsansang(VITRIKYNANG_NGANCHAMDOACH):
             diachicantiepcan = diachidoituongcanbuffngancham
-        elif diachidoituongcanbuffcuongthethuat and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_CUONGTHETHUAT):
+        elif diachidoituongcanbuffcuongthethuat and self.moitruong.get_is_kynangsansang(VITRIKYNANG_CUONGTHETHUAT):
             diachicantiepcan = diachidoituongcanbuffcuongthethuat
         elif diachimuctieu and not is_muctieulanguoichoi:
             diachicantiepcan = diachimuctieu
-        elif diachidoituongcanbufflinhkhihothe and self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LINHKHIHOTHE):
+        elif diachidoituongcanbufflinhkhihothe and self.moitruong.get_is_kynangsansang(VITRIKYNANG_LINHKHIHOTHE):
             diachicantiepcan = diachidoituongcanbufflinhkhihothe
         # Đối tượng cần tiếp cận là đồng đội cần buff (không phải quái/đối thủ) thì chỉ chạy vừa vào tầm
         loaitiepcan = "dichuyentiepcanbuff" if diachicantiepcan and diachicantiepcan in (diachidoituongcanhoisinh, diachidoituongcanbufftaytranquyet, diachidoituongcanbommau, diachidoituongcanbufftaytranquyet2, diachidoituongcanbuffkimcham, diachidoituongcanbuffngancham, diachidoituongcanbuffcuongthethuat, diachidoituongcanbufflinhkhihothe) else "dichuyentiepcantamxa"
 
-        is_nganchamdoachsansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_NGANCHAMDOACH)
+        is_nganchamdoachsansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_NGANCHAMDOACH)
         if self._is_nganchamdoachsansang and not is_nganchamdoachsansang and self._idnguoichoibuffnganchamgannhat:
             self._thoidiembuffnganchamgannhat_map[self._idnguoichoibuffnganchamgannhat] = time.time()
             self._thoidiembuffnganchamgannhat_map = donbangthoidiem(self._thoidiembuffnganchamgannhat_map, 120.)
         self._is_nganchamdoachsansang = is_nganchamdoachsansang
 
-        is_kimchamdoachsansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_KIMCHAMDOACH)
+        is_kimchamdoachsansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_KIMCHAMDOACH)
         if self._is_kimchamdoachsansang and not is_kimchamdoachsansang and self._idnguoichoibuffkimchamgannhat:
             self._thoidiembuffkimchamgannhat_map[self._idnguoichoibuffkimchamgannhat] = time.time()
             self._thoidiembuffkimchamgannhat_map = donbangthoidiem(self._thoidiembuffkimchamgannhat_map, 120.)
         self._is_kimchamdoachsansang = is_kimchamdoachsansang
 
-        is_cuongthethuatsansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_CUONGTHETHUAT)
+        is_cuongthethuatsansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_CUONGTHETHUAT)
         if self._is_cuongthethuatsansang and not is_cuongthethuatsansang and self._idnguoichoibuffcuongthethuatgannhat:
             self._thoidiembuffcuongthethuatgannhat_map[self._idnguoichoibuffcuongthethuatgannhat] = time.time()
             self._thoidiembuffcuongthethuatgannhat_map = donbangthoidiem(self._thoidiembuffcuongthethuatgannhat_map, 120.)
@@ -3778,7 +3778,7 @@ class TacTu:
             vitrikynang, loaikynang, dieukien, khoangcachyeucau, target, is_yeucaukhongdichuyen = item
 
             if callable(dieukien) and not dieukien(): continue
-            if vitrikynang and not self.moitruong.get_is_kynangsansang(*vitrikynang): continue
+            if vitrikynang and not self.moitruong.get_is_kynangsansang(vitrikynang): continue
 
             target = target if target else diachimuctieu
 
@@ -3946,7 +3946,7 @@ class TacTu:
                 phantramsinhlucdongdoithapnhat = phantramsinhlucdongdoi
                 diachidongdoimauthap = addr
         self._is_khongcongidebuff = not diachidongdoicanbuff
-        is_tieuchuthiensansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIEUCHUTHIEN)
+        is_tieuchuthiensansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_TIEUCHUTHIEN)
         if self._is_tieuchuthiensansang and not is_tieuchuthiensansang and self._idnguoichoibuffnoikhanggannhat:
             self._thoidiembuffnoikhanggannhat_map[self._idnguoichoibuffnoikhanggannhat] = time.time()
             self._thoidiembuffnoikhanggannhat_map = donbangthoidiem(self._thoidiembuffnoikhanggannhat_map, 120.)
@@ -3990,7 +3990,7 @@ class TacTu:
             if callable(dieukien) and not dieukien():
                 continue
 
-            if vitrikynang and not self.moitruong.get_is_kynangsansang(*vitrikynang):
+            if vitrikynang and not self.moitruong.get_is_kynangsansang(vitrikynang):
                 continue
 
             # Bot khác cùng máy vừa gây choáng (Lăng Không Chỉ Huyệt...) lên mục tiêu này thì dùng chiêu tiếp theo
@@ -4055,7 +4055,7 @@ class TacTu:
                 break
 
         self._is_khongcongidebuff = not diachidongdoicanbuff
-        is_tieuchuthiensansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_TIEUCHUTHIEN)
+        is_tieuchuthiensansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_TIEUCHUTHIEN)
         if self._is_tieuchuthiensansang and not is_tieuchuthiensansang and self._idnguoichoibuffnoikhanggannhat:
             self._thoidiembuffnoikhanggannhat_map[self._idnguoichoibuffnoikhanggannhat] = time.time()
             self._thoidiembuffnoikhanggannhat_map = donbangthoidiem(self._thoidiembuffnoikhanggannhat_map, 120.)
@@ -4066,7 +4066,7 @@ class TacTu:
                 self._idmuctieuluutinhtruymang = diachimuctieu
                 self._solanthatbailuutinhtruymang = 0
 
-            is_luutinhtruymangsansang = self.moitruong.get_is_kynangsansang(*VITRIKYNANG_LUUTINHTRUYMANG)
+            is_luutinhtruymangsansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_LUUTINHTRUYMANG)
 
             if self._is_luutinhtruymangsansang and not is_luutinhtruymangsansang:
                 if khoangcach <= 1.5:
@@ -4096,7 +4096,7 @@ class TacTu:
 
             if khoangcach <= self._khoangcachsudungkynangtamxa and is_duocphepsudungluutinhtruymang and not is_bimatamthuat:
                 self._yeucautancong = None
-                if self.moitruong.action_sudungkynangvitrimuctieu(*VITRIKYNANG_LUUTINHTRUYMANG):
+                if self.moitruong.action_sudungkynangvitrimuctieu(VITRIKYNANG_LUUTINHTRUYMANG):
                     # Gửi thẳng, không qua action_xulyuutiensudungkynang: tự đánh dấu chiêu cần đứng yên và chặn client tự bước từ lúc gửi
                     self.moitruong.set_is_chieucanngatdichuyen(True, diachimuctieu)
                     self._ghinhanchieuguivaomuctieu(diachimuctieu)
@@ -4121,7 +4121,7 @@ class TacTu:
 
         for vitrikynang, loaikynang, dieukien, khoangcachyeucau, target, is_ngat in danhsachuutien:
             if callable(dieukien) and not dieukien(): continue
-            if vitrikynang and not self.moitruong.get_is_kynangsansang(*vitrikynang): continue
+            if vitrikynang and not self.moitruong.get_is_kynangsansang(vitrikynang): continue
 
             is_ok, is_break = self.action_xulyuutiensudungkynang(loaikynang, vitrikynang, target if target else diachimuctieu, khoangcachyeucau, is_ngat)
             if is_ok and vitrikynang == VITRIKYNANG_TIEUCHUTHIEN and target:
@@ -6055,7 +6055,7 @@ class TacTu:
                 self._thoidiemchuyentrangthai = time.time()
 
         elif self._trangthaiveban == 1:
-            if not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_XUYENKHONGHANH):
+            if not self.moitruong.get_is_kynangsansang(VITRIKYNANG_XUYENKHONGHANH):
                 print("[AUTO-SELL] Xuyên không hành thành công (đang hồi chiêu). Chuyển bước.")
                 self._trangthaiveban = 2
                 self._thoidiemchuyentrangthai = time.time()
@@ -6091,7 +6091,7 @@ class TacTu:
                 self._thoidiemchuyentrangthai = time.time()
 
         elif self._trangthaiveban == 4:
-            if not self.moitruong.get_is_kynangsansang(*VITRIKYNANG_XUYENKHONGHANH):
+            if not self.moitruong.get_is_kynangsansang(VITRIKYNANG_XUYENKHONGHANH):
                 print("[AUTO-SELL] Xuyên không hành (Quay lại) thành công. Kết thúc quy trình.")
                 self._trangthaiveban = 0
                 self._yeucautudo = None
