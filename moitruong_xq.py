@@ -2,6 +2,7 @@ import ctypes
 import queue
 import struct
 import threading
+import unicodedata
 from dataclasses import dataclass, field
 
 import pymem
@@ -985,6 +986,35 @@ class MoiTruong:
             if self.truyvan_motavatphamhanhtrang(idvitri):
                 mota = self._chomotavatphamhanhtrang(x, idvitri, thoigianchotoida)
         return mota
+
+    def action_truyvandobentrangbi(self):
+        # Xoá mô tả cũ (độ bền trong đó không tự cập nhật) rồi desc lại các món sửa được đang mặc; trả về số lệnh desc đã gửi.
+        # Không chờ: máy chủ trả mô tả sau đó, đọc bằng get_dobentrangbisuaduocs
+        x = self.get_diachicosothongtinvatphamhanhtrang()
+        if not x:
+            return 0
+        soluong = 0
+        for vitri in VITRITRANGBISUADUOCs:
+            if not self.get_iddoituongvatphamhanhtrang(vitri):
+                continue
+            write_bytes(self.tientrinh, x + vitri * 0x44C + 0xF52, b"\x00", 1)
+            if self.action_thucthicaulenh("desc {}".format(vitri - VITRITRANGBIDAUTIEN + 1), douutien = DOUUTIEN_THAP):
+                soluong += 1
+        return soluong
+
+    def get_dobentrangbisuaduocs(self):
+        # {ô trang bị: (độ bền hiện tại, tối đa)} cho các món sửa được đang mặc, None nếu mô tả chưa nạp / không đọc được độ bền
+        x = self.get_diachicosothongtinvatphamhanhtrang()
+        if not x:
+            return {}
+        dobens = {}
+        for vitri in VITRITRANGBISUADUOCs:
+            if not self.get_iddoituongvatphamhanhtrang(vitri):
+                continue
+            mota = unicodedata.normalize("NFC", read_string(self.tientrinh, x + vitri * 0x44C + 0xF52, 1024) or "")
+            khop = re.search(r"bền\s*[:：]\s*(\d+)\s*/\s*(\d+)", mota)
+            dobens[vitri] = (int(khop.group(1)), int(khop.group(2))) if khop else None
+        return dobens
 
     def get_motavatphamhanhtrang_raw(self, idvitri):
         x = self.get_diachicosothongtinvatphamhanhtrang()
