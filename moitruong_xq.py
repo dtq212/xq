@@ -151,6 +151,8 @@ class MoiTruong:
         self._thoidiemralenhbaothutheosau_map = {}
         # id bảo thú -> lệnh cuối bot đã ra (1 tấn công, 2 theo sau, 3 dừng im): biết bảo thú đang theo sau để khỏi gọi lại mãi
         self._lenhbaothugannhat_map = {}
+        # id bảo thú -> (địa chỉ đối tượng trong danh sách xung quanh, lúc tìm) (_get_diachidoituongbaothu)
+        self._diachidoituongbaothu_map = {}
         self._thoidiemralenhbaothudungim = 0.
 
         self._idthucuoi = False
@@ -929,13 +931,38 @@ class MoiTruong:
             return False
         return read_int(self.tientrinh, x + 0x1E0 + 0x6C * (sothutu - 1))
 
+    def _get_diachidoituongbaothu(self, sothutu = 1):
+        # Đối tượng bảo thú trong danh sách đối tượng xung quanh (đang trong tầm nhìn), 0 nếu không thấy. Nhớ địa chỉ lần trước
+        idbaothu = self.get_iddoituongbaothu(sothutu)
+        if not idbaothu:
+            return 0
+        diachi, thoidiem = self._diachidoituongbaothu_map.get(idbaothu, (0, 0.))
+        if diachi and self.get_is_nhanvattontai(diachi) and read_int(self.tientrinh, diachi + 0x20) == idbaothu:
+            return diachi
+        # Không thấy thì 1s sau mới quét lại cả danh sách đối tượng
+        if not diachi and time.time() - thoidiem < 1.:
+            return 0
+        diachi = self.action_timkiemnhanvat(iddoituong = idbaothu) or 0
+        if len(self._diachidoituongbaothu_map) > 16:
+            self._diachidoituongbaothu_map.clear()
+        self._diachidoituongbaothu_map[idbaothu] = (diachi, time.time())
+        return diachi
+
     def get_toadodoituongbaothu(self, sothutu = 1):
+        # Toạ độ trong ô bảo thú của khối điều khiển có lúc đứng yên ở chỗ cũ (đo: lệch ~36 ô khi bảo thú đứng ngay cạnh chủ)
+        # => bảo thú trong tầm nhìn thì lấy toạ độ thật của đối tượng, không thấy mới dùng ô của khối điều khiển
+        diachi = self._get_diachidoituongbaothu(sothutu)
+        if diachi:
+            return self.get_toado(diachi)
         x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         if not x:
             return False
         return read_int(self.tientrinh, x + 0x1B4 + 0x6C * (sothutu - 1)), read_int(self.tientrinh, x + 0x1B8 + 0x6C * (sothutu - 1))
 
     def get_idbandohientaidoituongbaothu(self, sothutu = 1):
+        # Đang thấy bảo thú trong tầm nhìn tức là cùng bản đồ (ô bản đồ của khối điều khiển chỉ cập nhật khi vòng sáng là Theo sau)
+        if self._get_diachidoituongbaothu(sothutu):
+            return self.get_idbandohientai()
         x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         if not x:
             return False
@@ -2123,6 +2150,34 @@ class MoiTruong:
             return False
         x = read_int(self.tientrinh, x + DC.TG_CUASOTUYCHON)
         return read_boolean(self.tientrinh, x + 0x1E38) if x else False
+
+    def _get_diachicuasotuychon(self):
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        return read_int(self.tientrinh, x + DC.TG_CUASOTUYCHON) if x else 0
+
+    def get_noidungcuasotuychon(self):
+        # Lời thoại của menu hội thoại NPC gần nhất (cửa sổ tuỳ chọn + 0x34, bỏ mã màu), giữ nguyên cả khi cửa sổ đã đóng
+        x = self._get_diachicuasotuychon()
+        if not x:
+            return ""
+        return re.sub(r'\x1b.', '', read_bytes(self.tientrinh, x + 0x34, 1024).split(b"\0")[0].decode("utf-8", "ignore"))
+
+    def xoa_noidungcuasotuychon(self):
+        # Xoá lời thoại đang giữ để biết khi nào menu mới (trả lời của lệnh vừa gửi) về tới
+        x = self._get_diachicuasotuychon()
+        if x:
+            write_bytes(self.tientrinh, x + 0x34, b"\0", 1)
+
+    def get_lenhcuasotuychons(self):
+        # Lệnh của từng lựa chọn trong menu hội thoại NPC gần nhất theo thứ tự (+ 0x1070, mỗi ô 0xC9 byte, số lựa chọn ở + 0x1DB8),
+        # vd ["talk 87bd# info.21", "CLOSE"]. Nhãn lựa chọn không lưu ở đây (chỉ có trong gói tin)
+        x = self._get_diachicuasotuychon()
+        if not x:
+            return []
+        soluachon = read_int(self.tientrinh, x + 0x1DB8)
+        if not 0 < soluachon <= 20:
+            return []
+        return [read_bytes(self.tientrinh, x + 0x1070 + k * 0xC9, 0xC9).split(b"\0")[0].decode("utf-8", "ignore") for k in range(soluachon)]
 
     def set_is_danghiencuasotuychon(self, is_danghiencuasotuychon):
         if self.get_is_danghiencuasotuychon() != is_danghiencuasotuychon:

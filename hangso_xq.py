@@ -10,6 +10,7 @@ CHUTIEMSUACHUA = "Chủ Tiệm Sửa Chữa"
 CHUTIEMTAPHOA = "Chủ Tiệm Tạp Hóa"
 # NPC ở bản đồ bang phái để nạp Rương Dự Trữ (tìm theo tên, id đối tượng có thể đổi)
 TRUONGPHONGTIENSINH = "Trưởng Phòng Tiên Sinh"
+RUONGDUTRU = "Rương Dự Trữ"
 CHUTUULAU = "Chủ Tửu Lâu"
 TANTHUTIENCO = "Tân Thủ Tiên Cô"
 SUGIAMONPHAI = "Sứ Giả Môn Phái"

@@ -8,7 +8,8 @@ import unicodedata
 
 import pymem.exception
 
-from hangso_xq import IS_BOKHUNGSAUTANCONG, CHUKYBOKHUNGSAUTANCONG, THOIGIANCHOBOKHUNGSAUTANCONG, TUTHENHANVAT_DELAYSAUTANCONG, BANDO_BANGPHAI, CHUKYGIUOTRONGHANHTRANG, TRUONGPHONGTIENSINH
+from hangso_xq import IS_BOKHUNGSAUTANCONG, CHUKYBOKHUNGSAUTANCONG, THOIGIANCHOBOKHUNGSAUTANCONG, TUTHENHANVAT_DELAYSAUTANCONG, CHUKYGIUOTRONGHANHTRANG
+from hangso_xq import BANDO_BANGPHAI, TRUONGPHONGTIENSINH, RUONGDUTRU
 from hangso_xq import BANDO_CHIENTRUONG, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, VATPHAMKHONGBANs, BANDO_YENTRUONGTHANH3, BANDO_YENTRUONGTHANH2, BANDO_YENTRUONGTHANH1, TANGBAODO, LAMCAU, HACCAU, HIEUUNGKYNANG_TRONGTHUONG
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
@@ -134,6 +135,17 @@ class LoopChinh:
                 time.sleep(1)
             time.sleep(0.1)
 
+    def _guilenhchomenu(self, caulenh, thoigianchotoida = 2.):
+        # Gửi lệnh hội thoại NPC rồi chờ menu trả lời về (lời thoại cửa sổ tuỳ chọn có lại), tối đa thoigianchotoida giây.
+        # -> True khi có menu về (không về thì lệnh trong cửa sổ là của menu cũ, đừng dùng)
+        self.moitruong.xoa_noidungcuasotuychon()
+        self.moitruong.action_thucthicaulenh(caulenh)
+        hethan = time.time() + thoigianchotoida
+        while time.time() < hethan and not self.moitruong.get_noidungcuasotuychon():
+            time.sleep(0.1)
+        time.sleep(0.25)
+        return bool(self.moitruong.get_noidungcuasotuychon())
+
     def step(self):
         if not self.moitruong.get_is_nhanvattontai() or self.moitruong.get_is_dangmatketnoi():
             return
@@ -148,16 +160,26 @@ class LoopChinh:
         # if self.moitruong.get_idnguoichoi() == 59844:
         #     print("{}".format(self.moitruong.get_danhsachhieuungnhanvats()))
 
-        if 0 and self.moitruong.get_idbandohientai() == BANDO_BANGPHAI:
-            # Nạp Rương Dự Trữ qua Trưởng Phòng Tiên Sinh: tìm NPC theo tên (id đối tượng có thể đổi), không thấy quanh mình thì thôi
+        if self.moitruong.get_idbandohientai() == BANDO_BANGPHAI:
+            # Nộp Rương Dự Trữ qua Trưởng Phòng Tiên Sinh, 4 bước như bấm tay: Hỗ trợ nhiệm vụ trù bị, Nhận nhiệm vụ,
+            # (bấm lại NPC) Hoàn thành nhiệm vụ trù bị, Xác nhận. Số lệnh info.xx máy chủ đổi (info.55 / 58, info.11 / 18...)
+            # nên mỗi bước lấy lệnh của lựa chọn đầu tiên trong menu vừa hiện thay vì ghi cứng số
             diachitruongphong = self.moitruong.action_timkiemnhanvat(tennhanvat = TRUONGPHONGTIENSINH)
             idtruongphong = self.moitruong.get_iddoituong(diachitruongphong) if diachitruongphong else 0
-            if idtruongphong:
-                if not self.moitruong.action_timkiemvatphamhanhtrang("Rương Dự Trữ"):
-                    time.sleep(0.25)
-                for noidung in ("info.11", "info.21"):
-                    self.moitruong.action_thucthicaulenh("talk {}# {}".format(hex(idtruongphong).replace("0x", ""), noidung))
-                    time.sleep(0.25)
+            if idtruongphong and self.moitruong.action_timkiemvatphamhanhtrang(RUONGDUTRU):
+                # Bấm NPC = "look <id>#" (mở menu gốc), mỗi bước chọn lựa chọn đầu tiên; menu không về thì thôi lượt này.
+                # Nhận nhiệm vụ và Xác nhận không có menu trả lời: gửi xong làm tiếp luôn, không chờ (trước chờ hết 2s mỗi lần)
+                for is_bamnpc, is_comenutraloi in ((True, True), (False, False), (True, True), (False, False)):
+                    if is_bamnpc and not self._guilenhchomenu("look {:x}#".format(idtruongphong)):
+                        break
+                    lenhs = [lenh for lenh in self.moitruong.get_lenhcuasotuychons() if lenh.startswith("talk {:x}# info.".format(idtruongphong))]
+                    if not lenhs:
+                        break
+                    if not is_comenutraloi:
+                        self.moitruong.action_thucthicaulenh(lenhs[0])
+                        time.sleep(0.3)
+                    elif not self._guilenhchomenu(lenhs[0]):
+                        break
 
         if self.moitruong.get_idnguoichoi() == 30:
             for tenvatpham in ("Túi Ngân Lượng", "Túi Kim Bảo", "Túi Quà Vô Song", "Túi Pháp Bảo"):
