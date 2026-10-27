@@ -11,7 +11,7 @@ from hangso_xq import laytenbando, KHOANGCACHSUDUNGKYNANGTAMXA, PHANTRAMNOILUCKH
 import re
 
 from tienich_xq import tailotrinhmau, duongdanlotrinhmau, tainhomtodoitudongs, luunhomtodoitudongs, duongdantodoitudong, laynhomtodoitudongs
-from tienich_xq import duongdantaikhoan
+from tienich_xq import duongdantaikhoan, phatam
 from dangnhap_xq import taicauhinhdangnhap
 from dieuphoi_xq import taicauhinhdieuphoi, luucauhinhdieuphoi, chuanhoacauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
 
@@ -91,7 +91,6 @@ class GiaoDienHienThi:
             "phantramnoiluckhaithien": tk.DoubleVar(value = PHANTRAMNOILUCKHAITHIENTICHDIA),
             "diemdanhxungquanh": tk.BooleanVar(),
             "trieuhoibaothu": tk.BooleanVar(),
-            "tudongbattatchucnangmorong": tk.BooleanVar(),
             "sudungkynangbaothu": tk.BooleanVar(),
             "tranhvungcam": tk.BooleanVar(value = True),
             "giukhoangcachketancong": tk.BooleanVar(),
@@ -354,10 +353,15 @@ class GiaoDienHienThi:
                 self.dieuphoi_trangthai["cauhinh"] = cauhinh
             luucauhinhdieuphoi(cauhinh)
 
+        self._apdungdieuphoi = on_apdung
+
         for kenh, tieude in ((KENH_LENH, "Xoay vòng chiêu có mục tiêu giữa các nhân vật"), (KENH_DICHUYEN, "Lần lượt bắt đầu di chuyển")):
             vars_ = self.vars_dieuphoi[kenh]
+            dong = nhom.grid_size()[1]
             ttk.Checkbutton(nhom, text = tieude, variable = vars_["is_xoayvong"],
-                            command = on_apdung).grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W, pady = 1)
+                            command = on_apdung).grid(row = dong, column = 0, sticky = tk.W, pady = 1)
+            if kenh == KENH_LENH:
+                ttk.Label(nhom, text = "Ctrl+Alt+Shift+F", style = "Phu.TLabel").grid(row = dong, column = 1, sticky = tk.E, padx = (8, 0))
 
             hangnghi = ttk.Frame(nhom)
             hangnghi.grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W, padx = (22, 0), pady = (0, 2))
@@ -378,6 +382,13 @@ class GiaoDienHienThi:
                 spin.pack(side = tk.LEFT, padx = 4)
                 self._ganspinboxapdung(spin, on_apdung)
                 ttk.Label(hangranh, text = "giây thì nhường lượt", style = "Phu.TLabel").pack(side = tk.LEFT)
+
+    def battat_xoayvongchieu(self):
+        # Phím tắt Ctrl+Alt+Shift+F (gọi từ luồng phím tắt qua root.after): bật / tắt xoay vòng chiêu chung mọi nhân vật
+        bien = self.vars_dieuphoi[KENH_LENH]["is_xoayvong"]
+        bien.set(not bien.get())
+        self._apdungdieuphoi()
+        phatam("Bật xoay vòng chiêu" if bien.get() else "Tắt xoay vòng chiêu", is_block = False)
 
     def _taotabmuctieutodoi(self, tab):
         # Gộp 2 danh sách vào 1 khung cho gọn: dòng tiêu đề nhỏ (kèm phím tắt) + nội dung
@@ -896,7 +907,6 @@ class GiaoDienHienThi:
 
     def _taotabkhac(self, tab):
         nhom = self._taonhom(tab, "Tạm ẩn (chưa dùng)")
-        self._create_check(nhom, "Tự động bật/tắt CN mở rộng", self.vars["tudongbattatchucnangmorong"], "battat_tudongbattatchucnangmorong", "Ctrl+Alt+Shift+F")
         self._create_check(nhom, "Tự động khai khoáng", self.vars["khaikhoang"], "battat_tudongkhaikhoang", "Ctrl+Alt+Shift+K")
         self._create_check(nhom, "Đào tàng bảo đồ", self.vars["daobaodo"], "battat_tudongdaotangbaodo", "Ctrl+Alt+Shift+I")
         self._create_check(nhom, "Đi chiến trường", self.vars["chientruong"], "battat_tudongdichientruong", "Ctrl+Alt+Shift+Z")
@@ -995,7 +1005,6 @@ class GiaoDienHienThi:
                 ("sudungkynang", "_is_tudongsudungkynang"),
                 ("gomquai", "_is_tudonggomquai"),
                 ("vebanrac", "_is_tudongvebanrac"),
-                ("tudongbattatchucnangmorong", "_is_tudongbattatchucnangmorong"),
                 ("theosau", "_is_tudongtheosau"),
                 ("todoitudong", "_is_tudongtodoi"),
                 ("timmuctieu", "_is_tudongtimkiemmuctieu"),

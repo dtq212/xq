@@ -32,8 +32,6 @@ class TacTu:
         self._is_tudongmuavatpham = True
         self._diachicosovatphamnhatduphong = False
         self._idquaidautien = 0
-        self._thoidiemvohieuhoatatchucnangmoronggannhat = 0.
-        self._thoidiemvohieuhoabatchucnangmoronggannhat = 0.
         self._thoidiemsudungthaotacbaothugannhat = 0.
         self._thoidiemtamngungsudungkynang = 0.
         self._thoidiemhoiphucbaothugannhat = 0.
@@ -253,6 +251,7 @@ class TacTu:
         self._thoidiemphatamlacmapgannhat = 0.
         self._thoidiemphatamlotrinhkhacbandogannhat = 0.
         self._thoidiemphatamdayhanhtrang = 0.
+        self._thoidiemphatambaothuhethan = 0.
         self._is_tudongdichientruong = False
 
         self._is_yeucauvohieuhoadichuyen = False
@@ -323,7 +322,6 @@ class TacTu:
 
         self._is_dangchaybukhoangcach = False
         self._thoidiemvohieuquadichuyennhatvatpham = 0.0
-        self._is_tudongbattatchucnangmorong = False
         # Tránh vùng cấm (VUNGCAM_MAP) khi chọn mục tiêu, nhặt đồ, gom quái và di chuyển
         self._is_tranhvungcam = True
         # Giữ khoảng cách với đối tượng đang tấn công mình (chỉnh ở giao diện, lưu theo nhân vật)
@@ -419,6 +417,8 @@ class TacTu:
         self._diachidoituongcanbuffhothekimcangdaohoanguyen = None
         # (thời điểm xét, có nhường Trấn Cổ Thần Uy / Hộ Thể Kim Cang cho Đào Hoa Nguyên ưu tiên hơn không)
         self._bonhonhuongbuffdaohoanguyen = (0., False)
+        # Lần chọn gửi gần nhất của tâm pháp bật / tắt (Nguyên Khí Quy Nguyên, Dã Tính Cuồng Lực) theo vị trí kỹ năng
+        self._thoidiemguitamphapbattat_map = {}
 
         self._diachidoituongcanhoisinhvanmongcoc = None
         self._diachidoituongcanbufftaytranquyetvanmongcoc = None
@@ -476,7 +476,6 @@ class TacTu:
             "_khoangcachsudungkynangtamxa": self._khoangcachsudungkynangtamxa,
             "_phantramnoiluckhaithientichdia": self._phantramnoiluckhaithientichdia,
             "_is_tudongtrieuhoibaothugiangho": self._is_tudongtrieuhoibaothugiangho,
-            "_is_tudongbattatchucnangmorong": self._is_tudongbattatchucnangmorong,
             "_is_tudongsudungkynangbaothu": self._is_tudongsudungkynangbaothu,
             "_is_tranhvungcam": self._is_tranhvungcam,
             "_is_giukhoangcachketancong": self._is_giukhoangcachketancong,
@@ -554,7 +553,6 @@ class TacTu:
             if "_khoangcachsudungkynangtamxa" in thietlap: self.thietlap_khoangcachsudungkynangtamxa(thietlap["_khoangcachsudungkynangtamxa"])
             if "_phantramnoiluckhaithientichdia" in thietlap: self.thietlap_phantramnoiluckhaithientichdia(thietlap["_phantramnoiluckhaithientichdia"])
             if "_is_tudongtrieuhoibaothugiangho" in thietlap: self._is_tudongtrieuhoibaothugiangho = thietlap["_is_tudongtrieuhoibaothugiangho"]
-            if "_is_tudongbattatchucnangmorong" in thietlap: self._is_tudongbattatchucnangmorong = thietlap["_is_tudongbattatchucnangmorong"]
             if "_is_tudongsudungkynangbaothu" in thietlap: self._is_tudongsudungkynangbaothu = thietlap["_is_tudongsudungkynangbaothu"]
             if "_is_tranhvungcam" in thietlap: self._is_tranhvungcam = thietlap["_is_tranhvungcam"]
             if "_is_giukhoangcachketancong" in thietlap: self._is_giukhoangcachketancong = thietlap["_is_giukhoangcachketancong"]
@@ -638,13 +636,6 @@ class TacTu:
             phatam("Bật dùng kỹ năng bảo thú")
         else:
             phatam("Tắt dùng kỹ năng bảo thú")
-
-    def battat_tudongbattatchucnangmorong(self):
-        self._is_tudongbattatchucnangmorong = not self._is_tudongbattatchucnangmorong
-        if self._is_tudongbattatchucnangmorong:
-            phatam("Bật tự động bật tắt chức năng mở rộng")
-        else:
-            phatam("Tắt tự động bật tắt chức năng mở rộng")
 
     def battat_tudongtrieuhoibaothugiangho(self):
         self._is_tudongtrieuhoibaothugiangho = not self._is_tudongtrieuhoibaothugiangho
@@ -1405,6 +1396,15 @@ class TacTu:
                 monphai_map[info["idnguoichoi"]] = info["tenmonphai"]
         return monphai_map
 
+    def _is_duocguitamphapbattat(self, vitrikynang):
+        # Tâm pháp bật / tắt: bấm lần nữa là tắt, nên chỉ gửi 1 lần rồi chờ THOIGIANCHOTAMPHAPBATTAT giây cho hiệu ứng hiện
+        # (trước đây vòng lặp gửi 3 lần trong ~0.4s trước khi hiệu ứng kịp lên: bật - tắt - bật). Gọi cuối điều kiện, trả True thì ghi mốc
+        thoidiemhientai = time.time()
+        if thoidiemhientai - self._thoidiemguitamphapbattat_map.get(vitrikynang, 0.) < THOIGIANCHOTAMPHAPBATTAT:
+            return False
+        self._thoidiemguitamphapbattat_map[vitrikynang] = thoidiemhientai
+        return True
+
     def _is_nhuongbuffdaohoanguyen(self):
         # Có nhân vật Đào Hoa Nguyên khác chạy cùng máy, cùng nhóm, đứng trước mình trong danh sách tổ đội tự động,
         # đang bật tự dùng kỹ năng, còn sống và ở gần (cùng bản đồ, trong tầm buff) thì để nhân vật đó dùng Trấn Cổ Thần Uy / Hộ Thể Kim Cang
@@ -1495,7 +1495,6 @@ class TacTu:
             return False
 
         self._is_dangphutheosau = True
-        self._thoidiemvohieuhoabatchucnangmoronggannhat = max(self._thoidiemvohieuhoabatchucnangmoronggannhat, time.time() + 1.)
 
         # Người được theo sau có thể chỉ đi ngang qua bản đồ đó; mình vừa chuyển bản đồ thì chờ tải xong
         if time.time() - self._thoidiemdoibandotheosau < THOIGIANCHOBANDOTHEOSAUONDINH:
@@ -1586,7 +1585,6 @@ class TacTu:
             phatam(f"Đã tới {laytenbando(self._idbandocandi)}")
             self._idbandocandi = 0
             return None
-        self._thoidiemvohieuhoabatchucnangmoronggannhat = max(self._thoidiemvohieuhoabatchucnangmoronggannhat, time.time() + 1.)
         return self._thuchienbuocditoibando(buoc, self._idbandocandi, None, f"[ĐI TỚI BẢN ĐỒ] {laytenbando(self._idbandocandi)}")
 
     def _tudongtimduongtungbando(self, x, y, idbando):
@@ -2088,9 +2086,6 @@ class TacTu:
         muctieuhientai = None
 
         if diachicosothongtinnhanvatmuctieudangchon:
-            if self.moitruong.get_is_nhanvatdachet(diachicosothongtinnhanvatmuctieudangchon):
-                self._thoidiemvohieuhoatatchucnangmoronggannhat = max(self._thoidiemvohieuhoatatchucnangmoronggannhat, time.time() + 10.)
-
             thongtin = self._kiemtramuctieuhople(diachicosothongtinnhanvatmuctieudangchon, is_dongdoi = False)
             if thongtin:
                 _bosungvitri(thongtin)
@@ -2739,6 +2734,20 @@ class TacTu:
                 self._diachidoituongcanbuffhuyenquangthiemanhvanmongcoc
             ])
 
+    def _get_baothuvatphamocuoi(self):
+        # Chỉ triệu hồi bảo thú vật phẩm đặt ở ô mở cuối cùng của hành trang (người chơi tự chọn con nào bằng cách đặt vào ô đó):
+        # (vị trí, tên) nếu ô đó là bảo thú vật phẩm còn hạn, không thì None
+        vitri = self.moitruong.get_soluongvatphamhanhtrangtoida()
+        tenvatpham = self.moitruong.get_tenvatphamhanhtrang(vitri)
+        if tenvatpham not in BAOTHUVATPHAMs or not self.moitruong.get_iddoituongvatphamhanhtrang(vitri):
+            return None
+        if "Hết hạn sử dụng" in (self.moitruong.get_motavatphamhanhtrang(vitri) or ""):
+            if time.time() - self._thoidiemphatambaothuhethan > 60.:
+                self._thoidiemphatambaothuhethan = time.time()
+                phatam("{} đã hết hạn sử dụng".format(tenvatpham), is_block = False)
+            return None
+        return vitri, tenvatpham
+
     def action_tudongsudungvatpham(self):
         if self._is_tudongsudungvatpham:
             if self.moitruong.get_is_nhanvatdachet():
@@ -2775,8 +2784,7 @@ class TacTu:
 
             if self._trangthaitrieuhoibaothuvatpham == 0:
                 # Trước khi dùng vật phẩm: gửi pf 4131.@ xem bảo thú vật phẩm đã triệu hồi chưa (có thì hiện "Đợi lệnh"/"Hành động")
-                if time.time() - self._thoidiemsudungbaothuvatphamgannhat > 3.0 \
-                        and any(co(baothuvatpham) and self.moitruong.action_timkiemvatphamhanhtrang(baothuvatpham, is_kiemtrahansudung = True) for baothuvatpham in BAOTHUVATPHAMs):
+                if time.time() - self._thoidiemsudungbaothuvatphamgannhat > 3.0 and self._get_baothuvatphamocuoi():
                     if IS_LOGCAULENH: print("[TRIỆU HỒI BẢO THÚ] trạng thái 0 -> 4: gửi pf 4131.@ kiểm tra đã triệu hồi chưa")
                     self.moitruong.xoalichsutrochuyen()
                     self.moitruong.action_khoakynang(1.5)
@@ -2792,18 +2800,15 @@ class TacTu:
                     # Dùng không được vật phẩm nào thì về trạng thái 0, 3s sau kiểm tra lại
                     self._trangthaitrieuhoibaothuvatpham = 0
                     self._thoidiemsudungbaothuvatphamgannhat = time.time()
-                    for baothuvatpham in BAOTHUVATPHAMs:
-                        if not co(baothuvatpham) or not self.moitruong.action_timkiemvatphamhanhtrang(baothuvatpham, is_kiemtrahansudung = True):
-                            continue
-                        if self.action_sudungvatphamhanhtrang(baothuvatpham, delay = 0.):
-                            if IS_LOGCAULENH: print(f"[TRIỆU HỒI BẢO THÚ] trạng thái 4 -> 1: đã dùng {baothuvatpham}, chờ 1s rồi spam pf 4131.@")
-                            self._thoidiemtamngungsudungkynang = max(self._thoidiemtamngungsudungkynang, time.time() + 0.5)
-                            self._thoidiemsudungbaothuvatphamgannhat = time.time()
+                    baothuvatphamocuoi = self._get_baothuvatphamocuoi()
+                    if baothuvatphamocuoi and self.action_sudungvatphamhanhtrangtaivitri(*baothuvatphamocuoi, delay = 0.):
+                        if IS_LOGCAULENH: print(f"[TRIỆU HỒI BẢO THÚ] trạng thái 4 -> 1: đã dùng {baothuvatphamocuoi[1]}, chờ 1s rồi spam pf 4131.@")
+                        self._thoidiemtamngungsudungkynang = max(self._thoidiemtamngungsudungkynang, time.time() + 0.5)
+                        self._thoidiemsudungbaothuvatphamgannhat = time.time()
 
-                            self._trangthaitrieuhoibaothuvatpham = 1
-                            self._thoidiemchuyentrangthaitrieuhoibaothuvatpham = time.time()
-                            self.moitruong.xoalichsutrochuyen()
-                            break
+                        self._trangthaitrieuhoibaothuvatpham = 1
+                        self._thoidiemchuyentrangthaitrieuhoibaothuvatpham = time.time()
+                        self.moitruong.xoalichsutrochuyen()
 
             elif self._trangthaitrieuhoibaothuvatpham == 1:
                 if time.time() - self._thoidiemchuyentrangthaitrieuhoibaothuvatpham > 1.0:
@@ -3224,7 +3229,10 @@ class TacTu:
     def _is_dangcholenhdanhtruoc(self, thoidiemhientai):
         # Xem THOIGIANCHOPHANUNGLENH trong hangso_xq.py. Chỉ chờ khi đang ra đòn / dùng phép; khựng sau đòn (đòn đã ra xong)
         # vẫn gửi để game nhận ngay khi hết khựng
-        if self.moitruong.get_idtuthenhanvat() in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT):
+        # Đào Hoa Nguyên không chờ tư thế 6 / 9 (chỉ là hoạt ảnh): test lôi đài 2026-10-28 gửi chiêu kế ngay trong tư thế 6 thì chiêu trước
+        # vẫn ra dame đủ, còn chờ hết tư thế làm chuỗi chậm (game nhận chiêu kế đúng lúc dame chiêu trước hiện)
+        if self.moitruong.get_tenmonphai() != "daohoanguyen" \
+                and self.moitruong.get_idtuthenhanvat() in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT):
             return True
         return thoidiemhientai - self.moitruong.get_thoidiemlenhdanhgannhat() < THOIGIANCHOPHANUNGLENH
 
@@ -3339,43 +3347,53 @@ class TacTu:
         diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
         is_muctieulanguoichoi = self.moitruong.get_is_nguoichoi(diachimuctieu)
         khoangcach = self.moitruong.get_khoangcach(diachimuctieu) if diachimuctieu else 0
-        nguyenkhiconlai = self.moitruong.get_nguyenkhiconlai()
 
         diachidongdoicanbuff = None
         if not diachimuctieu and self.moitruong.get_is_dangnamtrongnhom():
             diachidongdoicanbuff = self._diachidoituongcanbuffhothekimcangdaohoanguyen
 
-        is_nhatquyenbatsonsansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_NHATQUYENBATSON)
         is_anhhuongboimuctieutheosau = bool(self._laytoadomuctieutheosau())
         is_nhuongbuff = self._is_nhuongbuffdaohoanguyen()
+        is_cancanchien = bool(diachimuctieu) and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN
+        idloaivukhimuctieu = self.moitruong.get_idloaivukhi(diachimuctieu) if diachimuctieu and is_muctieulanguoichoi else None
 
+        def is_muctieucohieuung(*hieuungs):
+            return self.moitruong.get_is_cohieuungs(hieuungs, macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu)
+
+        # Thứ tự theo test lôi đài 2026-10-28: chiêu có delay (dame ra sau ~0.4s) đi trước, game nhận chiêu kế ngay lúc dame chiêu
+        # trước hiện; chiêu delay 0 (Lạc Kích, Ba Động, Đại Hải, Đào Hoa Lạc Ảnh) để sau vì sau nó game khoá chiêu kế ~0.6-1s.
+        # Chiêu kế bị game từ chối thì lượt sau gửi lại ngay (các chiêu đánh nằm trong IDKYNANGKHONGCHANSPAMs)
+        # Mở chuỗi: Thốn Kình -> Phong Ma (đao / kiếm: Vân Mộng, phép) hoặc Không Thủ (vũ khí khác) -> Nhất Quyền -> Lạc Kích
+        # (mục tiêu đã có Lạc Kích thì Ba Động: chậm + 40% rối loạn) -> Mê Tung -> Đào Hoa Lạc Ảnh; xoay vòng Nhất Quyền -> Thốn Kình
+        # -> Lạc Kích / Ba Động. Đại Hải chỉ dùng khi nhiều mục tiêu (choáng 1s với 1 người không đáng 4 nguyên khí)
         danhsachuutien = [
             (VITRIKYNANG_TRANCOTHANUY, "sudungkynangkhongmuctieu", lambda: diachimuctieu and not is_nhuongbuff and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRANCOTHANUY,), True, is_hieuungcoloi = 1), 0, None, False, False),
-            (VITRIKYNANG_KIMTRUNGCHAO, "sudungkynangkhongmuctieu", lambda: not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_DATINCUONGLUC,), True, is_hieuungcoloi = 1) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KIMTRUNGCHAO,), True, is_hieuungcoloi = 1), 0, None, False, False),
+            # Dã Tính bật 1 lần là giữ mãi (bấm lại là tắt): chỉ bật khi chắc chắn đang không có. Đang Dã Tính thì không dùng được
+            # Kim Chung Tráo nên không còn dùng Kim Chung Tráo
+            (VITRIKYNANG_DATINHCUONGLUC, "sudungkynangkhongmuctieu", lambda: not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_DATINCUONGLUC,), True, is_hieuungcoloi = 1) and self._is_kynangdungduoc(VITRIKYNANG_DATINHCUONGLUC) and self._is_duocguitamphapbattat(VITRIKYNANG_DATINHCUONGLUC), 0, None, False, False),
             (VIRIKYNANG_HOTHEKIMCANG, "sudungkynanglenbanthan", lambda: not is_nhuongbuff and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_HOTHEKIMCANG,), True, is_hieuungcoloi = 1), 0, None, False, False),
-            (VIRIKYNANG_NGUYENKHIQUYNGUYEN, "sudungkynangkhongmuctieu", lambda: not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NGUYENKHIQUYNGUYEN,), True, is_hieuungcoloi = 1), 0, None, False, False),
+            (VIRIKYNANG_NGUYENKHIQUYNGUYEN, "sudungkynangkhongmuctieu", lambda: not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NGUYENKHIQUYNGUYEN,), True, is_hieuungcoloi = 1) and self._is_kynangdungduoc(VIRIKYNANG_NGUYENKHIQUYNGUYEN) and self._is_duocguitamphapbattat(VIRIKYNANG_NGUYENKHIQUYNGUYEN), 0, None, False, False),
             (VIRIKYNANG_HOTHEKIMCANG, "sudungkynanglendongdoi", lambda: diachidongdoicanbuff and not is_nhuongbuff, self._khoangcachsudungkynangtamxa, diachidongdoicanbuff, False, False),
-            (VITRIKYNANG_KHONGTHUNHAPBACHNHAN, "sudungkynangmuctieu", lambda: diachimuctieu and not is_anhhuongboimuctieutheosau and is_muctieulanguoichoi and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN, HIEUUNGKYNANG_CHOANG), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN),
-            (VITRIKYNANG_DAIHAIVOLUONG, "sudungkynangkhongmuctieu", lambda: diachimuctieu and self._is_nhieumuctieuganbanthan3 and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
+            (VITRIKYNANG_DAIHAIVOLUONG, "sudungkynangkhongmuctieu", lambda: is_cancanchien and self._is_nhieumuctieuganbanthan3, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
+            # Ba Động đánh tầm xa, dame ra ngay: mở đầu / đuổi khi mục tiêu còn ngoài tầm cận chiến
             (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: diachimuctieu and not is_anhhuongboimuctieutheosau and khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN and idtuthenhanvat == TUTHENHANVAT_DICHUYEN, self._khoangcachsudungkynangtamxa, None, False, False),
             (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: diachimuctieu and is_anhhuongboimuctieutheosau and khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN and idtuthenhanvat == TUTHENHANVAT_DICHUYEN and khoangcach < self._khoangcachsudungkynangtamxa - 3, self._khoangcachsudungkynangtamxa, None, False, False),
-            (VITRIKYNANG_DAOHOALACANH, "sudungkynangkhongmuctieu", lambda: diachimuctieu and is_muctieulanguoichoi and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True),
-            (VITRIKYNANG_THONKINH, "sudungkynangmuctieu", lambda: diachimuctieu and not is_anhhuongboimuctieutheosau and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRONGTHUONG,), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_TRONGTHUONG),
-            (VITRIKYNANG_LACKICH, "sudungkynangmuctieu", lambda: diachimuctieu and not is_anhhuongboimuctieutheosau and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_LACKICH,), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False, HIEUUNGKYNANG_LACKICH),
-            (VITRIKYNANG_LACKICH, "sudungkynangmuctieu", lambda: diachimuctieu and is_anhhuongboimuctieutheosau and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_LACKICH,), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False, HIEUUNGKYNANG_LACKICH),
-            (VITRIKYNANG_THONKINH, "sudungkynangmuctieu", lambda: diachimuctieu and is_anhhuongboimuctieutheosau and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRONGTHUONG,), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_TRONGTHUONG),
-            (VITRIKYNANG_PHONGMAQUYET, "sudungkynangmuctieu", lambda: diachimuctieu and is_muctieulanguoichoi and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and self.moitruong.get_idloaivukhi(diachimuctieu) in (IDLOAIVUKHI_DAO, IDLOAIVUKHI_KIEM) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRAMMAC, HIEUUNGKYNANG_CHOANG), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_TRAMMAC),
-            (VITRIKYNANG_METUNGQUYEN, "sudungkynangmuctieu", lambda: diachimuctieu and is_muctieulanguoichoi and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_ROILOAN, HIEUUNGKYNANG_CHOANG), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_ROILOAN),
-            (VITRIKYNANG_KHONGTHUNHAPBACHNHAN, "sudungkynangmuctieu", lambda: diachimuctieu and is_anhhuongboimuctieutheosau and is_muctieulanguoichoi and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN, HIEUUNGKYNANG_CHOANG), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN),
-            (VITRIKYNANG_NHATQUYENBATSON, "sudungkynangmuctieu", lambda: diachimuctieu and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True),
-            (None, "tancongvatly", lambda: diachimuctieu and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and (not self._is_battudongtancongvatly or time.time() - self.moitruong._thoidiemsudungtancongvatlygannhat > 5.), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True),
+            (VITRIKYNANG_THONKINH, "sudungkynangmuctieu", lambda: is_cancanchien and not is_muctieucohieuung(HIEUUNGKYNANG_TRONGTHUONG), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_TRONGTHUONG),
+            (VITRIKYNANG_PHONGMAQUYET, "sudungkynangmuctieu", lambda: is_cancanchien and is_muctieulanguoichoi and idloaivukhimuctieu in (IDLOAIVUKHI_DAO, IDLOAIVUKHI_KIEM) and not is_muctieucohieuung(HIEUUNGKYNANG_TRAMMAC, HIEUUNGKYNANG_CHOANG), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_TRAMMAC),
+            (VITRIKYNANG_KHONGTHUNHAPBACHNHAN, "sudungkynangmuctieu", lambda: is_cancanchien and is_muctieulanguoichoi and idloaivukhimuctieu not in (IDLOAIVUKHI_DAO, IDLOAIVUKHI_KIEM, IDLOAIVUKHI_TAYKHONG) and not is_muctieucohieuung(HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN, HIEUUNGKYNANG_CHOANG), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN),
+            (VITRIKYNANG_NHATQUYENBATSON, "sudungkynangmuctieu", lambda: is_cancanchien, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True),
+            # Chiêu có delay còn lại trước (Thốn Kình lấp chỗ hồi chiêu 2s của Nhất Quyền khi mục tiêu đã có Trọng Thương, Mê Tung),
+            # chiêu delay 0 sau cùng
+            (VITRIKYNANG_THONKINH, "sudungkynangmuctieu", lambda: is_cancanchien, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True),
+            (VITRIKYNANG_METUNGQUYEN, "sudungkynangmuctieu", lambda: is_cancanchien and is_muctieulanguoichoi and not is_muctieucohieuung(HIEUUNGKYNANG_ROILOAN, HIEUUNGKYNANG_CHOANG), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_ROILOAN),
+            (VITRIKYNANG_LACKICH, "sudungkynangmuctieu", lambda: is_cancanchien and not is_muctieucohieuung(HIEUUNGKYNANG_LACKICH), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False, HIEUUNGKYNANG_LACKICH),
+            (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: is_cancanchien, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
+            (VITRIKYNANG_DAOHOALACANH, "sudungkynangkhongmuctieu", lambda: is_cancanchien and is_muctieulanguoichoi, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True),
+            # Lạc Kích đã có hiệu ứng vẫn ra dame ngay
+            (VITRIKYNANG_LACKICH, "sudungkynangmuctieu", lambda: is_cancanchien, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
             (None, "sudungcaoboctacdan", lambda: self.moitruong.get_idbandohientai() not in (BANDO_TIVO, BANDO_CHIENTRUONG) and diachimuctieu and is_muctieulanguoichoi and time.time() - self._thoidiemsudungcaoboctacdangannhat > 5. and self.moitruong.action_timkiemvatphamhanhtrang(CAOBOCTACDAN), self._khoangcachsudungkynangtamxa, None, False, False),
-            # (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: diachimuctieu and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and ((nguyenkhiconlai >= self._laytieuhao(VITRIKYNANG_BADONGQUYEN, "nguyên khí") + self._laytieuhao(VITRIKYNANG_NHATQUYENBATSON, "nguyên khí")) or not is_nhatquyenbatsonsansang), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
-            # (VITRIKYNANG_LACKICH, "sudungkynangmuctieu", lambda: diachimuctieu and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and ((nguyenkhiconlai >= self._laytieuhao(VITRIKYNANG_LACKICH, "nguyên khí") + self._laytieuhao(VITRIKYNANG_NHATQUYENBATSON, "nguyên khí")) or not is_nhatquyenbatsonsansang), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
-            (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: diachimuctieu and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
-            (VITRIKYNANG_LACKICH, "sudungkynangmuctieu", lambda: diachimuctieu and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
-            (VITRIKYNANG_KHITRANGSONHA, "sudungkynangmuctieu", lambda: diachimuctieu and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and nguyenkhiconlai <= 2, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True),
-            (None, "tancongvatly", lambda: diachimuctieu and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True),
+            # Không đánh thường: bật tự đánh thì game giữ tư thế 6 gần như liên tục, _is_dangcholenhdanhtruoc chặn mọi chiêu tới khi tư
+            # thế lọt ra 1 (đo 2026-10-28: mỗi chiêu cách nhau ~2s, không tới được Lạc Kích / Ba Động). Hết chiêu thì đứng chờ chiêu hồi
             (None, "dichuyentiepcancanchien", lambda: diachimuctieu and khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN, 0, None, False, False),
         ]
 
@@ -4508,10 +4526,7 @@ class TacTu:
         phatam("Bỏ thiết lập tên mục tiêu không tấn công".format(len(self._tenmuctieukhongtancongs)))
 
     def action_tudongmuaauto(self):
-        if not self._is_tudongbattatchucnangmorong:
-            return
-        if not self._is_tudongdichuyendiemdanhxungquanh:
-            return
+        # Mua auto trong game (phím tắt Ctrl+Alt+Shift+Y)
         if time.time() - self._thoidiemmuaautogannhat < 5.:
             return
         self._thoidiemmuaautogannhat = time.time()
@@ -4834,9 +4849,6 @@ class TacTu:
                 target_map = self._diemdanhxungquanhhientai[2]
 
             is_khacbando = idbandohientai != target_map
-
-            if is_khacbando:
-                self._thoidiemvohieuhoabatchucnangmoronggannhat = max(self._thoidiemvohieuhoabatchucnangmoronggannhat, time.time() + 1.)
 
             if is_khacbando:
                 # Điểm đánh ở bản đồ khác: phù / chạy bộ từng bản đồ một (không Hồi Thành Phù như trước)
@@ -5455,6 +5467,9 @@ class TacTu:
         vitrimotui1s = [vitri for vitri in vitrimos if vitri < SOLUONGOMOITUI]
         ogius = vitrimotui1s[-soogiu:] if len(vitrimotui1s) < len(vitrimos) else []
         cacvitri = [vitri for vitri in vitrimos if vitri not in ogius] + ogius
+        # Bảo thú vật phẩm ở ô mở cuối cùng là con được chọn để triệu hồi (_get_baothuvatphamocuoi): giữ nguyên chỗ
+        if ids[vitrimos[-1]] and tens[vitrimos[-1]] in BAOTHUVATPHAMs:
+            cacvitri.remove(vitrimos[-1])
 
         # Gộp chồng trước: chồng sau chuyển vào chồng trước cùng tên (bỏ qua cặp đã biết không gộp được)
         chongchuaday_map = self._laychongchuaday_map(cacvitri, tens, ids)
@@ -6548,7 +6563,6 @@ class TacTu:
                 phatam("Không dùng Hồi Thành Phù")
                 return False
             self._thoidiemhoithanhphus.append(time.time())
-            self._thoidiemvohieuhoatatchucnangmoronggannhat = time.time() + 10.
             #self.action_sudungvatphamhanhtrang(HOITHANHPHU)
             self.moitruong.action_thucthicaulenh("dGludmF0 2")
             return True
@@ -6890,33 +6904,6 @@ class TacTu:
 
     def action_tudongbatautoingame(self):
         self.moitruong.set_is_batautoingame(False)
-
-        if self.moitruong.get_is_dangvankhi():
-            return
-
-        if self.moitruong.get_idbandohientai() in (701, 395, 894, 135, 139, BANDO_CHIENTRUONG, BANDO_TIVO, BANDO_BANGPHAI):
-            return
-
-        if self.moitruong.get_idmaupk() != MAUPK_HOABINH:
-            return
-
-        if not self._is_tudongbattatchucnangmorong:
-            return
-
-        if not self._is_tudongdichuyendiemdanhxungquanh:
-            self.moitruong.action_tatchucnangmorong()
-            return
-
-        if self.moitruong.get_idbandohientai() not in BANDOKHONGPKs:
-            if time.time() - self._thoidiemvohieuhoabatchucnangmoronggannhat < 0.:
-                self.moitruong.action_tatchucnangmorong()
-            elif not self._is_tudongsudungkynang or (self.moitruong.get_is_dangbatchucnangmorong() and time.time() - self.moitruong.thoidiemcochucnangmoronggannhat > 10.):
-                if time.time() - self._thoidiemvohieuhoatatchucnangmoronggannhat > 0.:
-                    self.moitruong.action_tatchucnangmorong()
-            else:
-                self.moitruong.action_batchucnangmorong()
-        else:
-            self.moitruong.action_tatchucnangmorong()
 
     def _xoatrangthaisaukhichet(self):
         self._yeucaunhatvatpham = None

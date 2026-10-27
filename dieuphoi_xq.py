@@ -4,7 +4,7 @@ import random
 import threading
 import time
 
-from hangso_xq import IS_XOAYVONGLENHGIUACACBOT, KHOANGGIULUOTLENH, THOIGIANNHUONGLUOTKHIRANH, IS_XOAYVONGBATDAUDICHUYEN, KHOANGNGHIBATDAUDICHUYEN, THOIGIANCHOLUOTTOIDA, THOIGIANGIUKYNANGMUCTIEU
+from hangso_xq import IDKYNANGVANKHIs, IS_XOAYVONGLENHGIUACACBOT, KHOANGGIULUOTLENH, THOIGIANNHUONGLUOTKHIRANH, IS_XOAYVONGBATDAUDICHUYEN, KHOANGNGHIBATDAUDICHUYEN, THOIGIANCHOLUOTTOIDA, THOIGIANGIUKYNANGMUCTIEU
 from tienich_xq import _thumucthietlap
 
 # Bot đăng ký chờ lượt mà quá lâu không làm mới (process đã chết) thì bỏ qua
@@ -22,9 +22,14 @@ KENH_DICHUYEN = "dichuyen"
 
 
 def is_lenhxoayvong(caulenh):
-    # Chiêu có mục tiêu của nhân vật: "pf <id> <mục tiêu>" (pf2 cũng vậy). "pf <id>" (không mục tiêu: diện rộng quanh mình, buff, vận khí),
-    # kỹ năng bảo thú "pf5" và đánh thường "kill" không xoay vòng
-    return caulenh.startswith("pf") and not caulenh.startswith("pf5") and len(caulenh.split()) >= 3
+    # Chiêu của nhân vật: "pf <id> [mục tiêu]" (pf2 cũng vậy), có hay không mục tiêu. Không xoay vòng: chiêu vận khí (IDKYNANGVANKHIs),
+    # lệnh đặc biệt "pf <id>.<x>" (triệu hồi khẩn cấp 4131.@, Xuyên Không Hành 4182.x), kỹ năng bảo thú "pf5", đánh thường "kill"
+    tus = caulenh.split()
+    if len(tus) < 2 or not tus[0].startswith("pf") or tus[0] == "pf5":
+        return False
+    if not tus[1].isdigit():
+        return False
+    return int(tus[1]) not in IDKYNANGVANKHIs
 
 
 def _cauhinhmacdinh():

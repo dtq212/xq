@@ -208,7 +208,6 @@ class CuaSo:
                     "_tenanthanphathien": self.tactu._tenanthanphathien,
                     "_thoigiantamngungphathien": self.tactu._thoigiantamngungphathien,
                     "_is_tudongtrieuhoibaothugiangho": self.tactu._is_tudongtrieuhoibaothugiangho,
-                    "_is_tudongbattatchucnangmorong": self.tactu._is_tudongbattatchucnangmorong,
 
                     "_is_tudongsudungkynangbaothu": self.tactu._is_tudongsudungkynangbaothu,
                     "_is_tranhvungcam": self.tactu._is_tranhvungcam,
@@ -322,8 +321,6 @@ class CuaSo:
 
                     except Exception as e:
                         print(f"Lỗi khi phân tích cú pháp toạ độ: {e}")
-                elif cmd == "battat_tudongbattatchucnangmorong":
-                    self.tactu.battat_tudongbattatchucnangmorong()
                 elif isinstance(cmd, str) and cmd.startswith("set_danhsachmuctieu:"):
                     # set_danhsachmuctieu:{"tancong": [...], "boqua": [...]}
                     try:

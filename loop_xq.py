@@ -181,9 +181,35 @@ class LoopChinh:
                     elif not self._guilenhchomenu(lenhs[0]):
                         break
 
-        if self.moitruong.get_idnguoichoi() == 30:
-            for tenvatpham in ("Túi Ngân Lượng", "Túi Kim Bảo", "Túi Quà Vô Song", "Túi Pháp Bảo"):
+        if self.moitruong.get_idnguoichoi() in (29, 30, 31, 31):
+            for tenvatpham in ("Túi Ngân Lượng", "Túi Kim Bảo", "Túi Quà Vô Song", "Túi Pháp Bảo", "Lễ Bao Khai Quốc", "Túi Linh Thạch cấp 1"):
                 if self.tactu.action_sudungvatphamhanhtrang(tenvatpham):
+                    break
+
+            def chuanhoaten(ten):
+                # Bỏ dấu, gộp khoảng trắng thừa và bỏ phân biệt hoa thường để "Thủy"/"Thuỷ", "Tinh  Thạch" đều khớp
+                if not ten:
+                    return ""
+                ten = "".join(c for c in unicodedata.normalize("NFD", ten) if not unicodedata.combining(c))
+                return " ".join(ten.replace("đ", "d").replace("Đ", "D").split()).lower()
+
+            # Hợp thành Tinh Thạch khi có >= 5 viên cùng tên
+            for tenvatphamhanhtrang, vatphams in self.moitruong.get_danhsachvatphamhanhtrang_map().items():
+                tenchuanhoa = chuanhoaten(tenvatphamhanhtrang)
+                if "tinh thach" not in tenchuanhoa:
+                    continue
+                capdo = re.search(r"cap\s*(\d+)", tenchuanhoa)
+                # Chỉ hợp thành Tinh Thạch dưới cấp 3
+                if capdo and int(capdo.group(1)) >= 3:
+                    continue
+                # Nhóm vừa gửi lệnh hợp thành thì nhường lượt cho nhóm khác, tránh một nhóm lỗi chặn cả các cấp sau
+                if time.time() - self.thoidiemhopthanhtinhthach_map.get(tenvatphamhanhtrang, 0) < 2.:
+                    continue
+                iddoituongs = [iddoituong for vitri, iddoituong in vatphams if iddoituong]
+                if len(iddoituongs) >= 5:
+                    self.moitruong.action_thucthicaulenh2("mix5 {} 0".format(" ".join("{}#".format(hex(x).replace("0x", "")) for x in iddoituongs[:5])))
+                    self.thoidiemhopthanhtinhthach_map[tenvatphamhanhtrang] = time.time()
+                    time.sleep(0.25)
                     break
 
         # vitrivatphams = [0, ]
@@ -347,7 +373,6 @@ class LoopPhu:
         self.tactu.action_tudongbatautoingame()
 
         self.moitruong.action_vohieuhoahookchienquoc2()
-        self.tactu.action_tudongmuaauto()
 
         if self.moitruong.get_idnguoichoi() in (59996, ) and self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
             diachi = self.moitruong.action_timkiemnhanvat("Thiên Sứ Trao Đổi")

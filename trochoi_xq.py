@@ -73,6 +73,8 @@ class TroChoiManager:
 
         root = tk.Tk()
         gui = GiaoDienHienThi(root, self.shared_data, self.command_dict, self.dieuphoi_trangthai, self.dangnhap)
+        # Phím tắt xoay vòng chiêu là cấu hình chung (không gửi cho 1 bot): luồng phím tắt nhờ luồng giao diện bật / tắt
+        self.root, self.gui = root, gui
 
         root.protocol("WM_DELETE_WINDOW", self.stop_all)
 
@@ -126,7 +128,8 @@ class TroChoiManager:
                 elif keyboard.is_pressed("ctrl+alt+shift+b"):
                     cmd = "thuchien_tudongbanrac"
                 elif keyboard.is_pressed("ctrl+alt+shift+f"):
-                    cmd = "battat_tudongbattatchucnangmorong"
+                    self.root.after(0, self.gui.battat_xoayvongchieu)
+                    time.sleep(0.3)
                 elif keyboard.is_pressed("ctrl+alt+shift+g"):
                     cmd = "battat_tudonggomquai"
                 elif keyboard.is_pressed("ctrl+alt+shift+h"):

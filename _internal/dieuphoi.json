@@ -1,13 +1,13 @@
 {
   "lenh": {
-    "is_xoayvong": true,
-    "nghitoithieu": 5.0,
-    "nghitoida": 5.0,
+    "is_xoayvong": false,
+    "nghitoithieu": 4.0,
+    "nghitoida": 4.0,
     "nhuongkhiranh": 0.5
   },
   "dichuyen": {
-    "is_xoayvong": true,
-    "nghitoithieu": 1.0,
-    "nghitoida": 2.0
+    "is_xoayvong": false,
+    "nghitoithieu": 2.0,
+    "nghitoida": 4.0
   }
 }

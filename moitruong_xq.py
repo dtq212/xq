@@ -590,10 +590,11 @@ class MoiTruong:
             return False
         if time.time() - self._thoidiemsudungkynanggannhat < delay:
             return False
-        if self._is_kynangbispam(idkynang):
+        caulenh = "pf {}".format(idkynang)
+        # Chờ lượt xét trước bộ đếm chống spam: lần chưa tới lượt không tính là 1 lần gửi
+        if self._is_chuatoiluotlenh(caulenh) or self._is_kynangbispam(idkynang):
             return False
         self._thoidiemsudungkynanggannhat = time.time()
-        caulenh = "pf {}".format(idkynang)
         return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO, vitrikynang = vitrikynang)
 
     def action_sudungtancongvatly(self, diachicosothongtinnhanvatmuctieu, delay = 0.):

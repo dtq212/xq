@@ -383,6 +383,7 @@ VITRIKYNANG_PHANTOA = 2124
 
 VIRIKYNANG_NGUYENKHIQUYNGUYEN = 3172
 VIRIKYNANG_HOTHEKIMCANG = 3173
+VITRIKYNANG_DATINHCUONGLUC = 3191
 
 
 HINHTHUCSUDUNGKYNANG_CANMUCTIEU = 3
@@ -862,9 +863,11 @@ KHOANGGIULUOTLENH = (1.0, 2.0)
 # cho bot khác. Lúc đang xuất chiêu (bot không gửi gì) luồng nhanh báo còn hoạt động nên không mất lượt giữa 2 chiêu; phần còn lại
 # (vòng lặp chính 0.1s + chờ game chuyển tư thế 0.15s) cần dư ra. Cũng chỉnh được trên giao diện
 THOIGIANNHUONGLUOTKHIRANH = 0.5
-# Chỉ xoay vòng chiêu có mục tiêu của nhân vật (pf <id> <người chơi | đối tượng# | x,y>, cả pf2), xem dieuphoi_xq.is_lenhxoayvong.
-# Kỹ năng bảo thú (pf5), đánh thường (kill), chiêu không mục tiêu (diện rộng quanh mình, buff, vận khí: Lôi Động Cửu Thiên, triệu hồi, Rải Đậu...) và mọi lệnh
-# khác (get, desc, use, move đồ, tallk NPC, pet, team, bán, vứt...) gửi ngay không chờ lượt
+# Chỉ xoay vòng chiêu của nhân vật (pf <id> [mục tiêu], cả pf2), xem dieuphoi_xq.is_lenhxoayvong. Chiêu vận khí (IDKYNANGVANKHIs: đứng
+# vận khí cả lúc, ít lộ), lệnh chiêu đặc biệt dạng "pf <id>.<x>" (triệu hồi khẩn cấp, Xuyên Không Hành), kỹ năng bảo thú (pf5),
+# đánh thường (kill) và mọi lệnh khác (get, desc, use, move đồ, tallk NPC, pet, team, bán, vứt...) gửi ngay không chờ lượt
+IDKYNANGVANKHIs = {VITRIKYNANG_LOIDONGCUUTHIEN, VITRIKYNANG_TRIEUHOIQUYTOT, VITRIKYNANG_TRIEUHOITHIENBINH, VITRIKYNANG_TRIEUHOICUONGTHI,
+                   VITRIKYNANG_RAIDAUTHANHBINH, VITRIKYNANG_TOANPHONGQUYET}
 # Bắt đầu di chuyển (nhân vật đang đứng mà bắt đầu chạy) cũng chia lượt như vậy nhưng trên kênh riêng (không làm chậm lệnh),
 # để 3-4 nhân vật không cùng lúc nhấc chân. Đang chạy rồi thì các lần click chỉnh hướng đi ngay. Cũng chỉnh được trên giao diện
 IS_XOAYVONGBATDAUDICHUYEN = True
@@ -934,8 +937,14 @@ THOIGIANKHOASPAMKYNANG = 3.
 THOIGIANGIUAHAILANNHICH = 1.
 VITRIKYNANGCANNHICHDAOHOANGUYENs = (VITRIKYNANG_TRANCOTHANUY,)
 # Kỹ năng không áp chống spam (gửi dồn bao nhiêu cũng được): Đại Hải Vô Lượng bấm tay liên tục vẫn ra chiêu bình thường,
-# chặn spam chỉ làm nó nghỉ 3s vô ích
-IDKYNANGKHONGCHANSPAMs = (2118,)
+# chặn spam chỉ làm nó nghỉ 3s vô ích. Các chiêu đánh Đào Hoa Nguyên: server nhận chiêu kế lúc sẵn sàng (lệch ngẫu nhiên
+# 0.5-1.7s sau chiêu trước, đo 2026-10-28) nên nối chiêu phải gửi lại tới khi được nhận, khoá 3s làm đứt chuỗi
+# Tâm pháp bật / tắt (Nguyên Khí Quy Nguyên, Dã Tính Cuồng Lực): gửi 1 lần rồi chờ chừng này giây cho hiệu ứng hiện mới gửi lại
+THOIGIANCHOTAMPHAPBATTAT = 3.
+IDKYNANGKHONGCHANSPAMs = (
+    VITRIKYNANG_DAIHAIVOLUONG, VITRIKYNANG_THONKINH, VITRIKYNANG_PHONGMAQUYET, VITRIKYNANG_KHONGTHUNHAPBACHNHAN,
+    VITRIKYNANG_DAOHOALACANH, VITRIKYNANG_METUNGQUYEN, VITRIKYNANG_BADONGQUYEN, VITRIKYNANG_NHATQUYENBATSON, VITRIKYNANG_LACKICH,
+)
 
 # Nhân vật trong tổ đội tự động (cùng hay khác nhóm, trừ khi đang theo sau trưởng nhóm) có ID nhỏ hơn được giữ vùng: nhân vật ID lớn hơn tránh mọi quái
 # và điểm lộ trình trong bán kính này quanh nó
