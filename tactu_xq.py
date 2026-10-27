@@ -227,6 +227,8 @@ class TacTu:
         self._thoidiembatdaukeo = 0.
         self._thoidiemtrieuhoibaothugannhat = 0.
         self._thoidiemraidauthanhbinhgannhat = 0.
+        # ID đối tượng mục tiêu -> lần dùng Phong Vũ Kinh Thiên gần nhất lên nó
+        self._thoidiemphongvukinhthien_map = {}
         self._idgomtheodoiket = 0
         self._khoangcachgomtotnhat = 0.
         self._thoidiemgomcaithiengannhat = 0.
@@ -3793,6 +3795,9 @@ class TacTu:
         is_cothantuong = any(ten.startswith(THANTUONG.lower()) for ten in tenbaothukynangtrieuhois)
         is_cobaothukhongphaicuongthi = any(not ten.startswith(CUONGTHI.lower()) for ten in tenbaothukynangtrieuhois)
         kynangchopheps = self._get_kynangchophep()
+        # Bật xoay vòng chiêu có mục tiêu, mục tiêu là quái: bỏ Phục Ma Quyết (phải chờ lượt), đánh bằng Lôi Động Cửu Thiên (không mục tiêu,
+        # không chờ lượt) dù chỉ 1 mục tiêu, xa quá thì chạy lại gần. Mục tiêu là người chơi (PK) thì không chạy vào sát, vẫn dùng Phục Ma Quyết
+        is_xoayvongchieu = self.moitruong.get_is_batxoayvongchieu() and not is_muctieulanguoichoi
 
         danhsachuutien = [
             # Máu thấp thì tế bảo thú triệu hồi (không bao giờ tế Cương Thi):
@@ -3824,10 +3829,12 @@ class TacTu:
             (VITRIKYNANG_LUUHUYETTHUAT, "sudungkynangkhongmuctieu", lambda: time.time() - self._thoidiemsudungluuhuyetthuatgannhat > GIANCACHLUUHUYETTHUAT and self._is_baothukynangtrieuhoihetsinhluc, 0, None, True, True),
 
             (VITRIKYNANG_LOIDONGCUUTHIEN, "sudungkynangkhongmuctieu", lambda: diachimuctieu and self._is_nhieumuctieuganbanthan3 and khoangcach <= KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN, KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN, None, True, True),
+            (VITRIKYNANG_LOIDONGCUUTHIEN, "sudungkynangkhongmuctieu", lambda: is_xoayvongchieu and diachimuctieu and khoangcach <= KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN, KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN, None, True, True),
+            (VITRIKYNANG_LOIDONGCUUTHIEN, "dichuyentiepcandenkhoangcach", lambda: is_xoayvongchieu and diachimuctieu and khoangcach > KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN, KHOANGCACHTIEPCANLOIDONGCUUTHIEN, None, False, False),
             # Lôi Động Cửu Thiên đánh quanh bản thân 3 ô: có cụm quái quanh mục tiêu (đánh quái, không PK)
             # thì chạy vào sát mục tiêu (giữa cụm) để lượt sau ra chiêu trúng cả cụm
             (VITRIKYNANG_LOIDONGCUUTHIEN, "dichuyentiepcandenkhoangcach", lambda: diachimuctieu and not is_muctieulanguoichoi and self._is_nhieumuctieugan3 and khoangcach > KHOANGCACHTIEPCANLOIDONGCUUTHIEN, KHOANGCACHTIEPCANLOIDONGCUUTHIEN, None, False, False),
-            (VITRIKYNANG_PHUCMAQUYET, "sudungkynangmuctieu", lambda: diachimuctieu and khoangcach <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, True, True),
+            (VITRIKYNANG_PHUCMAQUYET, "sudungkynangmuctieu", lambda: not is_xoayvongchieu and diachimuctieu and khoangcach <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, True, True),
 
             (None, "dichuyentiepcantamxa", lambda: diachimuctieu and khoangcach > self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, False, False),
         ]
@@ -3952,6 +3959,10 @@ class TacTu:
         is_muctieugiukhoangcach = (is_muctieulanguoichoi and idloaivukhimuctieu not in (IDLOAIVUKHI_KIEM, IDLOAIVUKHI_AMKHI))
 
         is_cobaothukynangtrieuhoi = self._get_is_cobaothukynangtrieuhoi()
+        # Bật xoay vòng chiêu có mục tiêu: thay Liệt Phong Quyết (gửi liên tục) bằng Phong Vũ Kinh Thiên (đánh liên tục 8s chỉ với 1 lệnh,
+        # không dùng lại lên cùng mục tiêu trong THOIGIANPHONGVUKINHTHIEN giây) => ít lệnh, hết việc thì nhường lượt cho nhân vật khác
+        is_xoayvongchieu = self.moitruong.get_is_batxoayvongchieu()
+        idmuctieu = self.moitruong.get_iddoituong(diachimuctieu) if diachimuctieu else None
 
         danhsachuutien = [
             # Chưa có bảo thú triệu hồi thì Rải Đậu Thành Binh (tốn 60 pháp lực + Đậu Nành); chờ 3s sau mỗi lần gọi để Đậu Binh kịp xuất hiện
@@ -3976,9 +3987,10 @@ class TacTu:
 
             (VITRIKYNANG_DONGIAPTRAN, "sudungkynangphudau", lambda: diachimuctieu and is_contranky and phantramnoiluc > 25 and khoangcachmuctieutancong <= self._khoangcachsudungkynangtamxa, khoangcachmuctieutancong + random.choice([-1, 1]), None, True),
             (VITRIKYNANG_KYMONTRAN, "sudungkynangphudau", lambda: diachimuctieu and is_contranky and phantramnoiluc > 25 and khoangcachmuctieutancong <= self._khoangcachsudungkynangtamxa, khoangcachmuctieutancong + random.randint(0, 0), None, True),
-            (VITRIKYNANG_LIETPHONGQUYET, "sudungkynangmuctieu", lambda: not is_dangbatpk and diachimuctieu and khoangcachmuctieutancong <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, True),
+            (VITRIKYNANG_LIETPHONGQUYET, "sudungkynangmuctieu", lambda: not is_xoayvongchieu and not is_dangbatpk and diachimuctieu and khoangcachmuctieutancong <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, True),
+            (VITRIKYNANG_PHONGVUKINHTHIEN, "sudungkynangmuctieu", lambda: is_xoayvongchieu and not is_dangbatpk and diachimuctieu and khoangcachmuctieutancong <= self._khoangcachsudungkynangtamxa
+                and time.time() - self._thoidiemphongvukinhthien_map.get(idmuctieu, 0.) >= THOIGIANPHONGVUKINHTHIEN, self._khoangcachsudungkynangtamxa, None, True),
             # (None, "tancongvatly", lambda: diachimuctieu and khoangcachmuctieutancong <= self._khoangcachsudungkynangtamxa and (not self._is_battudongtancongvatly or time.time() - self.moitruong._thoidiemsudungtancongvatlygannhat > 5.), self._khoangcachsudungkynangtamxa, None, True),
-            # (VITRIKYNANG_PHONGVUKINHTHIEN, "sudungkynangmuctieu", lambda: noilucconlai > 200 and not is_dangbatpk and diachimuctieu and khoangcachmuctieutancong <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, True),
 
             (VITRIKYNANG_LINHKHIHOTHE, "sudungkynanglendongdoi", lambda: diachidoituongcanbufflinhkhihothe and self.moitruong.get_khoangcach(diachidoituongcanbufflinhkhihothe) <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, diachidoituongcanbufflinhkhihothe, True),
             (None, "dichuyengiukhoangcach", lambda: diachimuctieu and is_muctieugiukhoangcach and khoangcachmuctieutancong <= KHOANGCACHSUDUNGKYNANGCANCHIEN + 1.5, khoangcachmuctieutancong + 3., None, False),
@@ -4018,6 +4030,10 @@ class TacTu:
                 self.moitruong.action_ngatdichuyen()
                 # Tốn Đậu Nành, vận khí bị ngắt là mất: khoá mọi thao tác tới khi vận khí xong
                 self._khoavankhitrieuhoi(vitrikynang)
+
+            if vitrikynang == VITRIKYNANG_PHONGVUKINHTHIEN and is_ok and idmuctieu:
+                self._thoidiemphongvukinhthien_map[idmuctieu] = time.time()
+                self._thoidiemphongvukinhthien_map = donbangthoidiem(self._thoidiemphongvukinhthien_map, 120.)
 
             if is_ok and target:
                 if self.moitruong.get_is_nguoichoi(target):
@@ -4661,9 +4677,6 @@ class TacTu:
             self._diachicosovatphamdangnhat = False
             self._diachicosovatphamnhatduphong = False
 
-        # Nhặt đồ là thao tác click, làm ngắt kỹ năng vận khí
-        is_dangvankhi = self.moitruong.get_is_dangvankhi()
-
         if self._diachicosovatphamdangnhat:
             khoangcach = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat)
             is_vatphamuutien = self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat) in VATPHAMUUTIENNHATs
@@ -4676,7 +4689,7 @@ class TacTu:
                     "khoangcachtoida": 0,
                     "is_uutien": is_vatphamuutien,
                 }
-            if khoangcach <= 3. and not is_dangvankhi:
+            if khoangcach <= 3.:
                 if self._is_tudongvebanrac and not is_vatphamuutien and not is_covatphamvungcamgan:
                     self.moitruong.action_nhatvatphamxungquanh(delay = 0.2)
                 elif time.time() - self._thoidiemnhatvatphamgannhat_map.get(self._diachicosovatphamdangnhat, 0) > 0.2:
@@ -4684,7 +4697,7 @@ class TacTu:
                     self._thoidiemnhatvatphamgannhat_map[self._diachicosovatphamdangnhat] = time.time()
                     self._thoidiemnhatvatphamgannhat_map = donbangthoidiem(self._thoidiemnhatvatphamgannhat_map, 120.)
 
-        elif self._is_tudongvebanrac and not is_chinhatvatphamuutien and not is_dangvankhi and not is_covatphamvungcamgan:
+        elif self._is_tudongvebanrac and not is_chinhatvatphamuutien and not is_covatphamvungcamgan:
             self.moitruong.action_nhatvatphamxungquanh(delay = 0.5)
 
         self._yeucaunhatvatpham = yeucaunhatvatphammoi

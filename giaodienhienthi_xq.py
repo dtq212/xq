@@ -105,13 +105,9 @@ class GiaoDienHienThi:
 
         # Nhịp lệnh dùng chung mọi nhân vật (không theo nhân vật đang chọn nên không đồng bộ trong update_ui)
         cauhinhdieuphoi = taicauhinhdieuphoi()
-        # {kênh: {is_xoayvong, nghitoithieu, nghitoida}}
+        # {kênh: {is_xoayvong, nghitoithieu, nghitoida}}, kênh lệnh thêm nhuongkhiranh
         self.vars_dieuphoi = {
-            kenh: {
-                "is_xoayvong": tk.BooleanVar(value = cauhinhdieuphoi[kenh]["is_xoayvong"]),
-                "nghitoithieu": tk.DoubleVar(value = cauhinhdieuphoi[kenh]["nghitoithieu"]),
-                "nghitoida": tk.DoubleVar(value = cauhinhdieuphoi[kenh]["nghitoida"]),
-            }
+            kenh: {k: (tk.BooleanVar if k.startswith("is_") else tk.DoubleVar)(value = v) for k, v in cauhinhdieuphoi[kenh].items()}
             for kenh in (KENH_LENH, KENH_DICHUYEN)
         }
 
@@ -358,20 +354,30 @@ class GiaoDienHienThi:
                 self.dieuphoi_trangthai["cauhinh"] = cauhinh
             luucauhinhdieuphoi(cauhinh)
 
-        for kenh, tieude in ((KENH_LENH, "Xoay vòng lệnh giữa các nhân vật"), (KENH_DICHUYEN, "Lần lượt bắt đầu di chuyển")):
+        for kenh, tieude in ((KENH_LENH, "Xoay vòng chiêu có mục tiêu giữa các nhân vật"), (KENH_DICHUYEN, "Lần lượt bắt đầu di chuyển")):
             vars_ = self.vars_dieuphoi[kenh]
             ttk.Checkbutton(nhom, text = tieude, variable = vars_["is_xoayvong"],
                             command = on_apdung).grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W, pady = 1)
 
             hangnghi = ttk.Frame(nhom)
             hangnghi.grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W, padx = (22, 0), pady = (0, 2))
-            ttk.Label(hangnghi, text = "Cách nhau từ").pack(side = tk.LEFT)
+            ttk.Label(hangnghi, text = "Mỗi nhân vật giữ lượt từ" if kenh == KENH_LENH else "Cách nhau từ").pack(side = tk.LEFT)
             for khoa, chu in (("nghitoithieu", "đến"), ("nghitoida", "giây")):
-                spin = ttk.Spinbox(hangnghi, from_ = 0.0, to = 2.0, increment = 0.01, width = 5, format = "%.2f",
+                spin = ttk.Spinbox(hangnghi, from_ = 0.0, to = 30.0 if kenh == KENH_LENH else 5.0, increment = 0.01, width = 5, format = "%.2f",
                                    textvariable = vars_[khoa], command = on_apdung)
                 spin.pack(side = tk.LEFT, padx = 4)
                 self._ganspinboxapdung(spin, on_apdung)
                 ttk.Label(hangnghi, text = chu, style = "Phu.TLabel" if chu == "giây" else "TLabel").pack(side = tk.LEFT)
+
+            if "nhuongkhiranh" in vars_:
+                hangranh = ttk.Frame(nhom)
+                hangranh.grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W, padx = (22, 0), pady = (0, 2))
+                ttk.Label(hangranh, text = "Rảnh quá").pack(side = tk.LEFT)
+                spin = ttk.Spinbox(hangranh, from_ = 0.1, to = 5.0, increment = 0.05, width = 5, format = "%.2f",
+                                   textvariable = vars_["nhuongkhiranh"], command = on_apdung)
+                spin.pack(side = tk.LEFT, padx = 4)
+                self._ganspinboxapdung(spin, on_apdung)
+                ttk.Label(hangranh, text = "giây thì nhường lượt", style = "Phu.TLabel").pack(side = tk.LEFT)
 
     def _taotabmuctieutodoi(self, tab):
         # Gộp 2 danh sách vào 1 khung cho gọn: dòng tiêu đề nhỏ (kèm phím tắt) + nội dung

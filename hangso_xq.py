@@ -140,6 +140,8 @@ THOIGIANCHOVAOVANKHI = 1.5
 THOIGIANKHOAVANKHITRIEUHOITOIDA = 15.
 # Lôi Động Cửu Thiên vận khí 6s (phạm vi 7x7 ô quanh bản thân)
 THOIGIANVANKHILOIDONGCUUTHIEN = 6.
+# Phong Vũ Kinh Thiên (Vân Mộng Cốc) gọi cuồng phong đánh mục tiêu liên tục 8s: trong khoảng này không dùng lại lên cùng mục tiêu
+THOIGIANPHONGVUKINHTHIEN = 8.
 # Mao Sơn: có cụm quái quanh mục tiêu mà mục tiêu xa hơn chừng này thì chạy vào (dừng cách ~1 ô) để ra Lôi Động Cửu Thiên trúng cả cụm
 KHOANGCACHTIEPCANLOIDONGCUUTHIEN = 2.
 
@@ -851,11 +853,18 @@ IS_LOGCAULENH = True
 # Ghi log mỗi lần lý do / điểm đích di chuyển thay đổi, và đích thật sự gửi đi ([DI CHUYỂN], [ĐI Ô], [TÌM ĐƯỜNG])
 IS_LOGDICHUYEN = True
 
-# Xoay vòng lệnh giữa các bot: tại mỗi thời điểm chỉ 1 bot được gửi lệnh, lần lượt từng bot (bot nào cũng có lệnh thì chia đều lượt),
-# giữa 2 lệnh liên tiếp (của 2 bot bất kỳ) nghỉ ngẫu nhiên trong khoảng KHOANGNGHIGIUALENH giây, để các bot không bấm cùng lúc như máy.
+# Xoay vòng lệnh chiêu / đánh giữa các bot: tại mỗi thời điểm chỉ 1 bot được ra chiêu / đánh, giữ lượt ngẫu nhiên KHOANGGIULUOTLENH giây
+# (trong đó gửi bao nhiêu lệnh cũng được) rồi nhường bot đang chờ kế tiếp, để các bot không cùng ra chiêu một lúc như máy.
 # Đây là giá trị mặc định: chỉnh trên giao diện (tab Chiến đấu > Nhịp lệnh) thì lưu vào _internal/dieuphoi.json và dùng giá trị trong đó
 IS_XOAYVONGLENHGIUACACBOT = True
-KHOANGNGHIGIUALENH = (0.06, 0.22)
+KHOANGGIULUOTLENH = (1.0, 2.0)
+# Bot đang giữ lượt mà quá ngần này giây không gửi chiêu có mục tiêu nào (không có chiêu cần dùng, hồi chiêu, hết quái...) thì nhường ngay
+# cho bot khác. Lúc đang xuất chiêu (bot không gửi gì) luồng nhanh báo còn hoạt động nên không mất lượt giữa 2 chiêu; phần còn lại
+# (vòng lặp chính 0.1s + chờ game chuyển tư thế 0.15s) cần dư ra. Cũng chỉnh được trên giao diện
+THOIGIANNHUONGLUOTKHIRANH = 0.5
+# Chỉ xoay vòng chiêu có mục tiêu của nhân vật (pf <id> <người chơi | đối tượng# | x,y>, cả pf2), xem dieuphoi_xq.is_lenhxoayvong.
+# Kỹ năng bảo thú (pf5), đánh thường (kill), chiêu không mục tiêu (diện rộng quanh mình, buff, vận khí: Lôi Động Cửu Thiên, triệu hồi, Rải Đậu...) và mọi lệnh
+# khác (get, desc, use, move đồ, tallk NPC, pet, team, bán, vứt...) gửi ngay không chờ lượt
 # Bắt đầu di chuyển (nhân vật đang đứng mà bắt đầu chạy) cũng chia lượt như vậy nhưng trên kênh riêng (không làm chậm lệnh),
 # để 3-4 nhân vật không cùng lúc nhấc chân. Đang chạy rồi thì các lần click chỉnh hướng đi ngay. Cũng chỉnh được trên giao diện
 IS_XOAYVONGBATDAUDICHUYEN = True

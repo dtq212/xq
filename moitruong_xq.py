@@ -10,6 +10,7 @@ import pymem
 from keystone import Ks, KS_ARCH_X86, KS_MODE_32
 
 import diachi_xq
+from dieuphoi_xq import is_lenhxoayvong
 from diachi_xq import DC
 from hangso_xq import *
 from tienich_xq import *
@@ -277,14 +278,6 @@ class MoiTruong:
         if self.diachihamthucthicaulenh:
             if self._is_lenhkynangdavaohoichieu(lenh):
                 return
-            if self.dieuphoi:
-                if lenh.douutien == DOUUTIEN_KHANCAP and IS_LENHKHANCAPKHONGCHOLUOT:
-                    self.dieuphoi.ghinhanguingay()
-                else:
-                    self.dieuphoi.xinluot()
-                # Chờ lượt (xoay vòng lệnh) có thể lâu: kiểm tra lại lần nữa
-                if self._is_lenhkynangdavaohoichieu(lenh):
-                    return
             # Lệnh vào hàng đợi trước khi khoá vận khí triệu hồi mà tới giờ mới gửi: bỏ (vòng lặp sau tự gửi lại nếu còn cần)
             if self._is_lenhbichankhoavankhi(lenh.caulenh):
                 self._loglenh(lenh.caulenh, "bỏ: đang khoá vận khí triệu hồi")
@@ -292,10 +285,6 @@ class MoiTruong:
             # Lệnh chiêu / đánh vào hàng đợi trước khi bị choáng (hoặc Trầm Mặc với phái phép thuật) mà tới giờ mới gửi: bỏ, hết khống chế vòng lặp tự gửi lại
             if (lenh.caulenh.startswith("pf ") and self.get_is_khongthedungkynang()) or (lenh.caulenh.startswith("kill ") and self._is_nhanvatbichoang):
                 self._loglenh(lenh.caulenh, "bỏ: đang bị khống chế")
-                return
-            # Lệnh nhặt đồ (chạy tới vật phẩm) vào hàng đợi trước khi xuất chiêu mà tới giờ mới gửi: bỏ
-            if lenh.caulenh.startswith("get ") and self.get_is_dangxuatchieu():
-                self._loglenh(lenh.caulenh, "bỏ: đang xuất chiêu")
                 return
             self._loglenh(lenh.caulenh, f"hàng đợi, ưu tiên {lenh.douutien}")
             diachidulieu = self.diachihamthucthicaulenh + 0x40
@@ -351,8 +340,26 @@ class MoiTruong:
         encoding, _ = ks.asm(asm_code)
         write_bytes(self.tientrinh, self.diachihamthucthicaulenh, bytes(encoding), len(encoding))
 
+    def _is_chuatoiluotlenh(self, caulenh = None, is_khancap = False):
+        # Chiêu có mục tiêu chia lượt theo thời gian giữa các nhân vật: chưa tới lượt nhân vật này thì không gửi (vòng lặp tự gửi lại khi
+        # tới lượt). caulenh None: lệnh chiêu có mục tiêu sắp tạo (gọi sớm, trước bộ đếm chống spam)
+        if not self.dieuphoi or (caulenh is not None and not is_lenhxoayvong(caulenh)) or (is_khancap and IS_LENHKHANCAPKHONGCHOLUOT):
+            return False
+        return not self.dieuphoi.thugiuluot()
+
+    def get_is_batxoayvongchieu(self):
+        # Đang bật xoay vòng chiêu có mục tiêu giữa các nhân vật (giao diện > Nhịp lệnh): phái có chiêu không mục tiêu thay được thì dùng chiêu đó
+        return bool(self.dieuphoi) and self.dieuphoi.get_is_batxoayvong()
+
+    def action_baogiuluotkhixuatchieu(self):
+        # Đang xuất chiêu thì bot không gửi gì: báo vẫn đang dùng lượt để không bị nhường mất giữa 2 chiêu
+        if self.dieuphoi and self.get_idtuthenhanvat() in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT):
+            self.dieuphoi.baogiuluot()
+
     def action_thucthicaulenh(self, caulenh, douutien = DOUUTIEN_TRUNGBINH, vitrikynang = None):
         if self._is_lenhbichankhoavankhi(caulenh):
+            return False
+        if self._is_chuatoiluotlenh(caulenh, douutien == DOUUTIEN_KHANCAP):
             return False
         if caulenh in self.caulenhdangchos:
             return False
@@ -371,17 +378,14 @@ class MoiTruong:
         return True
 
     def action_thucthicaulenh2(self, caulenh, delay = 0.05, is_khancap = False):
-        # is_khancap: gửi ngay không chờ lượt chia giữa các nhân vật (vẫn tính 1 lượt để bot khác nghỉ sau nó)
+        # is_khancap: gửi ngay không chờ lượt chia giữa các nhân vật
         if self._is_lenhbichankhoavankhi(caulenh):
             return False
         if time.time() - self._thoidiemthucthicaulenh2gannhat < delay:
             return False
+        if self._is_chuatoiluotlenh(caulenh, is_khancap):
+            return False
         self._thoidiemthucthicaulenh2gannhat = time.time()
-        if self.dieuphoi:
-            if is_khancap:
-                self.dieuphoi.ghinhanguingay()
-            else:
-                self.dieuphoi.xinluot()
         with self._khoathucthicaulenh2:
             return self._thucthicaulenh2(caulenh)
 
@@ -511,9 +515,7 @@ class MoiTruong:
     def action_nhatvatphamtoado(self, toadox, toadoy, delay = 0.05):
         if time.time() - self._thoidiemnhatvatphamtoadogannhat < delay:
             return False
-        # "get x y" làm nhân vật chạy tới vật phẩm: không gửi khi đang xuất chiêu
-        if self.get_is_dangxuatchieu():
-            return False
+        # "get x y" chỉ nhặt tại chỗ (không chạy tới vật phẩm) => không ngắt vận khí, không cắt chiêu đang xuất
         self._thoidiemnhatvatphamtoadogannhat = time.time()
         caulenh = "get {} {}".format(toadox, toadoy)
         return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_THAP)
@@ -618,7 +620,7 @@ class MoiTruong:
             return False
         if time.time() - self._thoidiemsudungkynangmuctieugannhat < delay:
             return False
-        if self._is_kynangbispam(idkynang):
+        if self._is_chuatoiluotlenh() or self._is_kynangbispam(idkynang):
             return False
         self._thoidiemsudungkynangmuctieugannhat = time.time()
         caulenh = "pf {} {}".format(idkynang, idnguoichoi)
@@ -629,7 +631,7 @@ class MoiTruong:
             return False
         if time.time() - self._thoidiemsudungkynangmuctieugannhat < delay:
             return False
-        if self._is_kynangbispam(idkynang):
+        if self._is_chuatoiluotlenh() or self._is_kynangbispam(idkynang):
             return False
         self._thoidiemsudungkynangmuctieugannhat = time.time()
         caulenh = "pf {} {}#".format(idkynang, hex(iddoituong)).replace("0x", "")
@@ -765,9 +767,7 @@ class MoiTruong:
         return self.action_thucthicaulenh2(caulenh, delay = 0.)
 
     def auto_assemble_nhatvatpham(self):
-        # Nhặt đồ xung quanh làm nhân vật chạy tới vật phẩm => ngắt vận khí triệu hồi / mất tác dụng chiêu đang xuất
-        if self.get_is_khoavankhitrieuhoi() or self.get_is_dangxuatchieu():
-            return
+        # Nhặt toàn bộ vật phẩm xung quanh tại chỗ (như "get x y" nhưng không theo 1 toạ độ): không di chuyển => không ngắt vận khí, không cắt chiêu
         if not self._is_dasetupautoassemblenhatvatpham:
             self._diachiautoassemblenhatvatpham = self.tientrinh.allocate(64)
             write_bytes(self.tientrinh, self._diachiautoassemblenhatvatpham, bytes.fromhex("8B 0D"), 2)
@@ -2566,7 +2566,7 @@ class MoiTruong:
 
     def action_khoavankhitrieuhoi(self, caulenhduocpheps = ()):
         # Triệu hồi bảo thú (tốn bùa, thất bại là mất bùa): khoá các thao tác ngắt vận khí (ra chiêu / đánh thường, di chuyển,
-        # tìm đường, nhặt đồ) cho tới khi vận khí xong. caulenhduocpheps: chính lệnh triệu hồi (đã vào hàng đợi) vẫn được gửi
+        # tìm đường) cho tới khi vận khí xong. caulenhduocpheps: chính lệnh triệu hồi (đã vào hàng đợi) vẫn được gửi
         thoidiemhientai = time.time()
         self._khoavankhitrieuhoi = {
             "batdau": thoidiemhientai,
@@ -2580,7 +2580,7 @@ class MoiTruong:
         # Đang xuất chiêu (tư thế tấn công vật lý 6 / phép 9; 11 chỉ còn khi bot tự ghi) hoặc chưa hết THOIGIANKHUNGSAUXUATCHIEU giây
         # khựng sau khi hết tư thế xuất chiêu (game không có tư thế riêng cho khựng): vẫn được dùng kỹ năng nhưng TUYỆT ĐỐI không
         # di chuyển (di chuyển lúc này vẫn tính hồi chiêu mà chiêu mất tác dụng). Đo 2026-10-25: game giữ tư thế 6 ~0.68s rồi về
-        # thẳng 1 / 2. Các hàm phát lệnh di chuyển / nhặt đồ đều kiểm tra hàm này; luồng nhanh gọi liên tục để cập nhật mốc xuất chiêu
+        # thẳng 1 / 2. Các hàm phát lệnh di chuyển đều kiểm tra hàm này; luồng nhanh gọi liên tục để cập nhật mốc xuất chiêu
         # Chỉ tính chiêu cần đứng yên (set_is_chieucanngatdichuyen theo chiêu bot gửi gần nhất). Hoạt ảnh xuất chiêu (~0.68s) luôn giữ
         # trọn (cắt ngang bị game đánh vi phạm); phần khựng sau đó thì thả sớm khi chiêu đã tác động xong: mục tiêu đã chết / biến mất,
         # hoặc mục tiêu đã hiện số bay (server báo trúng, _is_muctieudatrungchieu); không thấy thì giữ tối đa THOIGIANKHUNGSAUXUATCHIEU
@@ -2655,11 +2655,11 @@ class MoiTruong:
         khoa = self._khoavankhitrieuhoi
         if not khoa or not self.get_is_khoavankhitrieuhoi():
             return False
-        # Chỉ ra chiêu (pf, pf2, pf5...) / đánh thường (kill) / nhặt đồ tại ô (get x y, có thể chạy tới vật phẩm) mới ngắt vận khí;
+        # Chỉ ra chiêu (pf, pf2, pf5...) / đánh thường (kill) mới ngắt vận khí; nhặt đồ tại ô (get x y, không chạy tới),
         # dùng / đeo vật phẩm, desc, move đồ, vứt, bán, nói chuyện NPC, điều khiển bảo thú, thao tác nhóm đều không ảnh hưởng
-        # (đã thử trong game) => cho gửi. Di chuyển / tìm đường / nhặt đồ tự động chặn riêng ở action_dichuyenoo,
-        # action_tudongtimduong, auto_assemble_nhatvatpham
-        if not caulenh.startswith(("pf", "kill ", "get ")):
+        # (đã thử trong game) => cho gửi. Di chuyển / tìm đường chặn riêng ở action_dichuyenoo,
+        # action_tudongtimduong
+        if not caulenh.startswith(("pf", "kill ")):
             return False
         return caulenh not in khoa["caulenhduocpheps"]
 
