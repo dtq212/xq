@@ -97,6 +97,7 @@ class CuaSo:
     def tatauto(self, *args, **kwargs):
         if self.idnguoichoi:
             self.tactu.luuthietlap(self.idnguoichoi)
+            self.tactu.luuvitriquai(True)
 
         self.main_stop.set()
         self._chotoanbocacluongdunghan()
@@ -222,6 +223,9 @@ class CuaSo:
                     "_tenbodotrieuhoi": [mon["ten"] for mon in self.tactu._bodotrieuhoi],
                     "_baothutrieuhoimaoson": self.tactu._baothutrieuhoimaoson,
                     "_is_nguocchieulotrinh": self.tactu._is_nguocchieulotrinh,
+                    "_solanthayquaibando": self.tactu.get_solanthayquaibando(),
+                    "_buocdichuyen": self.tactu.get_buocdichuyen(),
+                    "_idbandocandi": self.tactu._idbandocandi,
                 }
                 # Tầm nhìn chia sẻ cho nhân vật khác cùng máy (đối tượng thù địch mình thấy); lỗi thì vẫn cập nhật phần còn lại
                 try:
@@ -255,6 +259,14 @@ class CuaSo:
                     phan = cmd.split(":", 1)[1].split("|")
                     if len(phan) == 3:
                         self.tactu.nap_lotrinhmau(int(phan[0]), phan[1], phan[2] == "1", is_bosung = cmd.startswith("bosung_lotrinhmau:"))
+                elif isinstance(cmd, str) and cmd.startswith("ditoibando:"):
+                    # ditoibando:<id bản đồ> (0 = dừng)
+                    try:
+                        self.tactu.thietlap_ditoibando(int(cmd.split(":", 1)[1]))
+                    except ValueError:
+                        pass
+                elif cmd == "dexuat_lotrinhmau":
+                    self.tactu.dexuat_lotrinhmau()
                 elif cmd == "tuchon_lotrinhmau":
                     self.tactu.tuchon_lotrinhmau()
                 elif isinstance(cmd, str) and cmd.startswith("set_nguocchieulotrinh:"):

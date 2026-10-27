@@ -1,6 +1,8 @@
 from collections import defaultdict
 from math import sqrt
 
+from bando_xq import laytenbandogame, layidbandotheoten, get_solanchuyenbando, BANDOCONG_MAP, SOLANCHUYENBANDOTOIDA
+
 CHUACHONHANVAT = "Chưa chọn nhân vật"
 STRING_ENCODING = "mbcs"
 
@@ -73,6 +75,14 @@ PHIHANHPHU = "Phi Hành Phù"
 KIMCUONGBATHOAIDON = "Kim Cương Bất Hoại Đơn"
 BATTIENDON = "Bát Tiên Đơn"
 HOITHANHPHU = "Hồi Thành Phù"
+# Giá (ngân lượng): Hồi Thành Phù qua Tín Vật (menu Tín Vật trong game), phù Tân Thủ Tiên Cô (từ cấp 50)
+GIAHOITHANHPHU = 1500
+GIAPHUTANTHUTIENCO = 500
+# Mua đồ luôn chừa lại bấy nhiêu ngân lượng (đủ Hồi Thành Phù về rồi phù đi)
+NGANLUONGGIULAI = GIAHOITHANHPHU + GIAPHUTANTHUTIENCO
+# Tối đa bấy nhiêu lần Hồi Thành Phù trong THOIGIANDEMHOITHANHPHU giây: quá thì coi như đang lặp, ngưng dùng (mỗi lần 1.500 lượng)
+SOLANHOITHANHPHUTOIDA = 3
+THOIGIANDEMHOITHANHPHU = 600.
 
 SOCAPDOANTHACH = "Sơ Cấp Đoạn Thạch"
 TRUNGCAPDOANTHACH = "Trung Cấp Đoạn Thạch"
@@ -115,14 +125,6 @@ THANTUONG = "Thần Tướng"  # Chỉ gọi ra được bằng Tế Thần Tư�
 BAOTHUTRIEUHOI_TUDONG = "Tự động"
 BAOTHUTRIEUHOIMAOSONs = (BAOTHUTRIEUHOI_TUDONG, CUONGTHI, THIENBINH, QUYTOT)
 TROMBAOPHITAC = "Trộm Bảo Phi Tặc"
-TENBANDO_TE = "Tề"
-TENBANDO_HAN = "Hàn"
-TENBANDO_TRIEU = "Triệu"
-TENBANDO_NGUY = "Ngụy"
-TENBANDO_TAN = "Tần"
-TENBANDO_SO = "Sở"
-TENBANDO_YEN = "Yên"
-TENBANDO_CHU = "Chu"
 
 KHUYENTHAILANG = "Khuyển Thái Lang"
 
@@ -558,7 +560,6 @@ BANDO_BACHMATRANG = 142
 BANDO_TUONGLANG = 21
 BANDO_MUCDA = 241
 BANDO_QUELANG = 242
-BANDO_CHU = 80
 BANDO_THUCSON = 273
 BANDO_DAOHOANGUYEN = 289
 # Khai khoáng ở Hư Lăng Động quái đánh đau: ưu tiên Đại Huyết Thạch (hết mới dùng Tiểu Huyết Thạch)
@@ -575,10 +576,8 @@ BANDO_KENHTRINHQUOC1 = 151
 BANDO_KENHTRINHQUOC2 = 152
 BANDO_KENHTRINHQUOC3 = 153
 BANDO_CHIENTRUONG = 903
-BANDO_THANHKIEU = 701
 BANDO_COMO = 395
 
-BANDO_BACHVANPHONG = 173
 BANDO_YENTRUONGTHANH1 = 71
 BANDO_YENTRUONGTHANH2 = 72
 BANDO_YENTRUONGTHANH3 = 73
@@ -589,8 +588,6 @@ BANDO_LINHCOCDONG1 = 311
 BANDO_LINHCOCDONG2 = 312
 BANDO_LOANDAO1 = 321
 BANDO_LOANDAO2 = 322
-BANDO_KHONMATRAN1 = 291
-BANDO_KHONMATRAN2 = 292
 BANDO_BATQUAITRAN = 894
 
 BANDO_MADAPHO = 211
@@ -658,18 +655,6 @@ BANDO_YENQUOC = 70
 BANDO_CHUQUOC = 80
 
 BANDO_CULOC = 131
-BANDO_MADAPHO = 211
-
-IDBANDO_MAP = {
-    TENBANDO_TE: BANDO_TEQUOC,
-    TENBANDO_HAN: BANDO_HANQUOC,
-    TENBANDO_TRIEU: BANDO_TRIEUQUOC,
-    TENBANDO_NGUY: BANDO_NGUYQUOC,
-    TENBANDO_TAN: BANDO_TANQUOC,
-    TENBANDO_SO: BANDO_SOQUOC,
-    TENBANDO_YEN: BANDO_YENQUOC,
-    TENBANDO_CHU: BANDO_CHUQUOC,
-}
 
 BAOTHUVATPHAMs = (SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN, THANTHUMAYET, THANTHUDAN, THANTHUSUU, THANTHUDAN2, THANTHUSUU2, THANTHUCHUOT)
 VATPHAMKHONGNHATs = tuple()
@@ -735,8 +720,8 @@ DANHHIEU_MAP = defaultdict(lambda: False)
 
 BANDO_TIVO = 885
 BANDO_BANGPHAI = 886
-BANDOKHONGTANCONGs = (BANDO_TANTHUTHON, BANDO_CHU, )
-BANDOKHONGPKs = (BANDO_TANTHUTHON, BANDO_CHU, BANDO_THUCSON, BANDO_DAOHOANGUYEN, BANDO_DUONGMON, BANDO_VANMONGCOC, BANDO_TEQUOC, BANDO_HANQUOC, BANDO_TRIEUQUOC, BANDO_NGUYQUOC, BANDO_TANQUOC, BANDO_SOQUOC, BANDO_YENQUOC, )
+BANDOKHONGTANCONGs = (BANDO_TANTHUTHON, BANDO_CHUQUOC, )
+BANDOKHONGPKs = (BANDO_TANTHUTHON, BANDO_CHUQUOC, BANDO_THUCSON, BANDO_DAOHOANGUYEN, BANDO_DUONGMON, BANDO_VANMONGCOC, BANDO_TEQUOC, BANDO_HANQUOC, BANDO_TRIEUQUOC, BANDO_NGUYQUOC, BANDO_TANQUOC, BANDO_SOQUOC, BANDO_YENQUOC, )
 
 TEQUOC = [(127, 87, 10), (137, 96, 10), (152, 104, 10), (164, 104, 10), (170, 84, 10), (148, 86, 10), (156, 61, 10), (171, 82, 10), (181, 96, 10), (198, 87, 10), (212, 82, 10), (169, 107, 10), (189, 125, 10), (226, 103, 10), (249, 95, 10), (220, 134, 10), (202, 154, 10), (202, 157, 10), (173, 177, 10), (166, 194, 10), (131, 213, 10), (133, 206, 10), (160, 203, 10), (171, 243, 10), (183, 196, 10), (190, 233, 10), (205, 234, 10), (227, 241, 10), (235, 215, 10), (198, 168, 10), (236, 174, 10), (247, 200, 10),
           (268, 138, 10), (312, 119, 10), (297, 131, 10), (324, 142, 10), (338, 172, 10), (291, 195, 10), (256, 192, 10), (266, 159, 10)]
@@ -782,36 +767,9 @@ YENTRUONGTHANH1 = [(220, 123, 71), (200, 136, 71), (182, 148, 71), (161, 142, 71
 THAONGUYEN = [(79, 125, 510), (142, 64, 510), (179, 58, 510), (227, 86, 510), (246, 118, 510), (198, 173, 510), (142, 175, 510), (133, 109, 510), (194, 98, 510), (177, 149, 510), (145, 122, 510), (168, 125, 510)]
 
 # Tên hiển thị của bản đồ theo ID (dùng cho lộ trình mẫu trên bảng điều khiển). Tên nào sai dấu thì sửa trực tiếp ở đây.
-TENBANDO_MAP = {
-    BANDO_TANTHUTHON: "Tân Thủ Thôn",
-    BANDO_CHU: "Chu",
-    BANDO_TUONGLANG: "Tương Lăng",
-    BANDO_BACHMATRANG: "Bạch Mã Trang",
-    BANDO_MALANGDAO: "Mã Lăng Đạo",
-    BANDO_MUCDA: "Mục Dã",
-    BANDO_QUELANG: "Quế Lăng",
-    BANDO_RANHGIOIDAMLAY: "Ranh Giới Đầm Lầy",
-    BANDO_DIAGIOIDAMLAY: "Địa Giới Đầm Lầy",
-    BANDO_KENHTRINHQUOC1: "Kênh Trịnh Quốc 1",
-    BANDO_KENHTRINHQUOC2: "Kênh Trịnh Quốc 2",
-    BANDO_KENHTRINHQUOC3: "Kênh Trịnh Quốc 3",
-    BANDO_CULOC: "Cự Lộc",
-    BANDO_MADAPHO: "Mã Đạp Phố",
-    BANDO_YENTRUONGTHANH1: "Yên Trường Thành 1",
-    BANDO_YENTRUONGTHANH2: "Yên Trường Thành 2",
-    BANDO_TRIEUTRUONGTHANH2: "Triệu Trường Thành 2",
-    BANDO_TANTRUONGTHANH2: "Tần Trường Thành 2",
-    BANDO_LINHCOCDONG1: "Linh Cốc Động 1",
-    BANDO_LINHCOCDONG2: "Linh Cốc Động 2",
-    BANDO_LOANDAO1: "Loạn Đảo 1",
-    BANDO_LOANDAO2: "Loạn Đảo 2",
-    510: "Thảo Nguyên",
-}
-
-
 def laytenbando(idbando):
     try:
-        return TENBANDO_MAP.get(int(idbando)) or f"Bản đồ {idbando}"
+        return laytenbandogame(int(idbando)) or f"Bản đồ {idbando}"
     except (TypeError, ValueError):
         return f"Bản đồ {idbando}"
 
@@ -845,18 +803,16 @@ DIEMDANHXUNGQUANH_MAP = {
     "{}_{}".format(BANDO_CHIENTRUONG, PHEBACHKHOI): [(181, 141, 903)]
 }
 
-VUNGCAM_MAP = {
+# Vùng cấm (đi vào sẽ bị chuyển bản đồ): mọi cổng chuyển bản đồ (bando_xq.BANDOCONG_MAP, vòng tròn BANKINHVUNGCAMCONG quanh tâm cổng)
+# cộng các vùng cấm khác cổng ghi tay dưới đây (vùng rộng / đường dài, điểm dịch chuyển không có trong jmp.dat)
+BANKINHVUNGCAMCONG = 6.
+# Đứng cách tâm cổng trong khoảng này thì không dùng lệnh nhặt xung quanh của game (nó tự chạy tới vật phẩm, có thể lọt vào cổng)
+KHOANGCACHGANCONGKHONGNHATXUNGQUANH = 15.
+KHUVUCCAM_MAP = {
     BANDO_BACHMATRANG: [
         {"type": "circle", "x": 80, "y": 122, "r": 9.0},
-        {"type": "circle", "x": 95, "y": 54, "r": 6.0},
-        {"type": "circle", "x": 193, "y": 152, "r": 6.0},
         {"type": "line", "x1": 132, "y1": 159, "x2": 160, "y2": 139, "r": 9.0},
         {"type": "line", "x1": 131, "y1": 111, "x2": 160, "y2": 139, "r": 9.0},
-    ],
-    BANDO_TUONGLANG: [
-        {"type": "circle", "x": 175, "y": 50, "r": 6.0},
-        {"type": "circle", "x": 62, "y": 71, "r": 6.0},
-        {"type": "circle", "x": 154, "y": 142, "r": 6.0},
     ],
     BANDO_MALANGDAO: [
         {"type": "line", "x1": 116, "y1": 116, "x2": 145, "y2": 150, "r": 9.0},
@@ -864,78 +820,33 @@ VUNGCAM_MAP = {
     ],
     BANDO_KENHTRINHQUOC1: [
         {"type": "circle", "x": 108, "y": 57, "r": 6.0},
-        {"type": "circle", "x": 77, "y": 22, "r": 6.0},
-        {"type": "circle", "x": 112, "y": 106, "r": 6.0},
-    ],
-    BANDO_KENHTRINHQUOC2: [
-        {"type": "circle", "x": 47, "y": 38, "r": 6.0},
-        {"type": "circle", "x": 106, "y": 104, "r": 6.0},
-        {"type": "circle", "x": 132, "y": 83, "r": 6.0},
-    ],
-    BANDO_KENHTRINHQUOC3: [
-        {"type": "circle", "x": 30, "y": 45, "r": 6.0},
-        {"type": "circle", "x": 58, "y": 25, "r": 6.0},
-        {"type": "circle", "x": 125, "y": 91, "r": 6.0},
-    ],
-    510: [
-        {"type": "circle", "x": 169, "y": 25, "r": 6.0},
-        {"type": "circle", "x": 166, "y": 223, "r": 6.0},
+        # Phó bản Tập Kích Môn Phái dùng chung bản đồ (id vẫn là 151): đi vào 2 chỗ này bị kẹt không đi tiếp được, phải lùi tay
+        {"type": "circle", "x": 103, "y": 53, "r": 3.0},
+        {"type": "circle", "x": 96, "y": 96, "r": 3.0},
     ],
 }
+VUNGCAM_MAP = {
+    idbando: [{"type": "circle", "x": x, "y": y, "r": BANKINHVUNGCAMCONG} for _, x, y, _, _ in BANDOCONG_MAP.get(idbando, ("", ()))[1]]
+             + KHUVUCCAM_MAP.get(idbando, [])
+    for idbando in BANDOCONG_MAP.keys() | KHUVUCCAM_MAP.keys()
+}
 
+# Menu phù của Tân Thủ Tiên Cô (máy chủ gửi, không có trong file game; chụp trong game 2026-10-27): nhóm thứ i (theo cấp) mở bằng
+# "welcome.<i>00", lựa chọn thứ j trong nhóm là "welcome.<i * 100 + j>". Tên lựa chọn là tên bản đồ, tra id bằng bando_xq.layidbandotheoten
+MENUTANTHUTIENCOs = (
+    ("Sở Phương Thành 1", "Sở Phương Thành 2", "Sở Phương Thành 3", "Thượng Dung Quan", "Hoa Sơn", "Đào Hoa Nguyên", "Triều Dương Phong"),  # cấp 10-14
+    ("Thủ Dương Sơn", "Thuý Hoa Sơn", "Hàm Cốc Quan"),  # cấp 15-19
+    ("Vô Định Hà 1", "Vô Định Hà 2", "Bờ Vô Định Hà", "Tương Lăng", "Mã Lăng Đạo", "Bạch Mã Trang", "Mã Đạp Hồ"),  # cấp 20-24
+    ("Hổ Lao Quan", "Ky Quan", "Cự Lộc", "Trác Lộc", "Dị Thủy", "Quế Lăng", "Mục Dã", "Thái Hành Sơn", "Tấn Dương", "Bình Nguyên",
+     "Nhạn Môn Quan", "Trường Bình"),  # cấp 25-30
+    ("Ranh Giới Đầm Lầy", "Địa Giới Đầm Lầy", "Chân Núi Đại Biệt", "Đại Biệt Sơn", "Vu Sơn", "Bà Dương Hồ", "Xích Bích", "Thái Hồ",
+     "Chân Núi Thái Sơn", "Thái Sơn"),  # cấp 31-40
+    ("Đông Hải Ngư Thôn", "Bờ Đông Hải", "Hải Tân 1", "Hải Tân 2", "Đông Hải Đảo", "Kênh Trịnh Quốc 1", "Kênh Trịnh Quốc 2", "Kênh Trịnh Quốc 3"),  # cấp 41-50
+)
+# id bản đồ -> các bước "tallk <id NPC># <bước>" để phù tới
 DICHUYENTANTHUTIENCO_MAP = {
-    BANDO_TUONGLANG: [
-        "welcome.300",
-        "welcome.304",
-    ],
-    BANDO_MALANGDAO: [
-        "welcome.300",
-        "welcome.305",
-    ],
-    BANDO_BACHMATRANG: [
-        "welcome.300",
-        "welcome.306",
-    ],
-    BANDO_QUELANG: [
-        "welcome.400",
-        "welcome.406",
-    ],
-    BANDO_MUCDA: [
-        "welcome.400",
-        "welcome.407",
-    ],
-    BANDO_RANHGIOIDAMLAY: [
-        "welcome.500",
-        "welcome.501"
-    ],
-    BANDO_DIAGIOIDAMLAY: [
-        "welcome.500",
-        "welcome.502"
-    ],
-    BANDO_YENTRUONGTHANH1: [
-        "welcome.400",
-        "welcome.404"
-    ],
-    BANDO_TRIEUTRUONGTHANH1: [
-        "welcome.400",
-        "welcome.403"
-    ],
-    BANDO_DONGHAINGUTHON: [
-        "welcome.600",
-        "welcome.601"
-    ],
-    BANDO_KENHTRINHQUOC1: [
-        "welcome.600",
-        "welcome.606"
-    ],
-    BANDO_KENHTRINHQUOC2: [
-        "welcome.600",
-        "welcome.607"
-    ],
-    BANDO_KENHTRINHQUOC3: [
-        "welcome.600",
-        "welcome.608"
-    ],
+    layidbandotheoten(ten): [f"welcome.{nhom}00", f"welcome.{nhom * 100 + thutu}"]
+    for nhom, tens in enumerate(MENUTANTHUTIENCOs, 1) for thutu, ten in enumerate(tens, 1)
 }
 
 CHUDICHTRAM = "Chủ Dịch Trạm"
@@ -1031,25 +942,30 @@ BANKINHKEOTHEMGOMQUAI = 8.
 # Chỗ đứng NPC trên từng bản đồ (khi chưa thấy NPC thì chạy tới đây)
 VITRITANTHUTIENCO_MAP = {
     BANDO_TANTHUTHON: (148, 145),
-    BANDO_CHU: (X_TANTHUTIENCO_CHU, Y_TANTHUTIENCO_CHU),
+    BANDO_CHUQUOC: (X_TANTHUTIENCO_CHU, Y_TANTHUTIENCO_CHU),
     BANDO_THUCSON: (X_TANTHUTIENCO_THUCSON, Y_TANTHUTIENCO_THUCSON),
 }
 VITRICHUDICHTRAM_MAP = {
     BANDO_TANTHUTHON: (148, 149),
-    BANDO_CHU: (330, 122),
+    BANDO_CHUQUOC: (330, 122),
+}
+# Tên NPC Chủ Dịch Trạm trên từng bản đồ (ở Chu là Trường Hoằng)
+TENCHUDICHTRAM_MAP = {
+    BANDO_TANTHUTHON: CHUDICHTRAM,
+    BANDO_CHUQUOC: "Trường Hoằng",
 }
 
 # Bản đồ phù tới được qua Chủ Dịch Trạm => điểm đến trong câu lệnh "goto.! <điểm đến>"
 DIEMDENCHUDICHTRAM_MAP = {
-    BANDO_TEQUOC: f"{TENBANDO_TE} Quốc",
-    BANDO_HANQUOC: f"{TENBANDO_HAN} Quốc",
-    BANDO_TRIEUQUOC: f"{TENBANDO_TRIEU} Quốc",
-    BANDO_NGUYQUOC: f"{TENBANDO_NGUY} Quốc",
-    BANDO_TANQUOC: f"{TENBANDO_TAN} Quốc",
-    BANDO_SOQUOC: f"{TENBANDO_SO} Quốc",
-    BANDO_YENQUOC: f"{TENBANDO_YEN} Quốc",
-    BANDO_CHUQUOC: f"{TENBANDO_CHU} Quốc",
-    # Môn phái: tên điểm đến chưa kiểm chứng trong game, sai thì sửa ở đây
+    BANDO_TEQUOC: laytenbandogame(BANDO_TEQUOC),
+    BANDO_HANQUOC: laytenbandogame(BANDO_HANQUOC),
+    BANDO_TRIEUQUOC: laytenbandogame(BANDO_TRIEUQUOC),
+    BANDO_NGUYQUOC: laytenbandogame(BANDO_NGUYQUOC),
+    BANDO_TANQUOC: laytenbandogame(BANDO_TANQUOC),
+    BANDO_SOQUOC: laytenbandogame(BANDO_SOQUOC),
+    BANDO_YENQUOC: laytenbandogame(BANDO_YENQUOC),
+    BANDO_CHUQUOC: laytenbandogame(BANDO_CHUQUOC),
+    # Môn phái: tên điểm đến như trong menu Chủ Dịch Trạm ở Tân Thủ Thôn (đọc trong bộ nhớ game 2026-10-27)
     BANDO_THUCSON: "Thục Sơn",
     BANDO_DAOHOANGUYEN: "Đào Hoa Nguyên",
     BANDO_DUONGMON: "Đường Môn",
@@ -1057,6 +973,35 @@ DIEMDENCHUDICHTRAM_MAP = {
     BANDO_CONLUAN: "Côn Luân",
     BANDO_MAOSON: "Mao Sơn",
 }
+
+# Tới bản đồ đích không chỉ chạy bộ: từ Tân Thủ Thôn / Chu phù qua Tân Thủ Tiên Cô hoặc Chủ Dịch Trạm tới bản đồ gần đích nhất rồi chạy bộ tiếp
+_phuongandichuyen_cache = {}
+
+
+def layphuongandichuyen(idbando):
+    # -> (tên NPC, bước: list lệnh welcome (Tân Thủ Tiên Cô) hoặc điểm đến "goto.!" (Chủ Dịch Trạm), id bản đồ phù tới, số cổng chạy bộ tiếp)
+    # của cách phù tới idbando ít cổng chạy bộ nhất (phù thẳng tới = 0 cổng; không quá SOLANCHUYENBANDOTOIDA, cổng client tự tìm đường được),
+    # vd. Yên Trường Thành 1: Chủ Dịch Trạm tới Yên Quốc rồi chạy 1 cổng; Tề Quốc: Chủ Dịch Trạm thẳng tới. Không phù tới được thì None
+    # Về Tân Thủ Thôn thì dùng Hồi Thành Phù, không phù tới bản đồ khác rồi chạy về
+    if idbando == BANDO_TANTHUTHON:
+        return None
+    if idbando not in _phuongandichuyen_cache:
+        tot = None
+        for tennpc, buoc_map in ((TANTHUTIENCO, DICHUYENTANTHUTIENCO_MAP), (CHUDICHTRAM, DIEMDENCHUDICHTRAM_MAP)):
+            for idphutoi, buoc in buoc_map.items():
+                solan = 0 if idphutoi == idbando else get_solanchuyenbando(idphutoi, idbando, is_chicongclienttudi = True)
+                if solan is not None and solan <= SOLANCHUYENBANDOTOIDA and (not tot or solan < tot[3]):
+                    tot = (tennpc, buoc, idphutoi, solan)
+        _phuongandichuyen_cache[idbando] = tot
+    return _phuongandichuyen_cache[idbando]
+
+
+def laynpcphu(loainpc, idbando):
+    # Loại NPC phù (TANTHUTIENCO / CHUDICHTRAM) -> (tên NPC trên bản đồ idbando, chỗ đứng của NPC hoặc None)
+    if loainpc == TANTHUTIENCO:
+        return TANTHUTIENCO, VITRITANTHUTIENCO_MAP.get(idbando)
+    return TENCHUDICHTRAM_MAP.get(idbando, CHUDICHTRAM), VITRICHUDICHTRAM_MAP.get(idbando)
+
 
 # Trưởng nhóm phải ở yên bản đồ mới bấy nhiêu giây mới phù theo (tránh chạy theo khi trưởng nhóm chỉ đi ngang qua)
 THOIGIANCHOBANDOTHEOSAUONDINH = 5.

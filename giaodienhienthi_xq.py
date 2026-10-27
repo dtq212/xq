@@ -5,6 +5,8 @@ import tkinter as tk
 from tkinter import font as tkfont
 from tkinter import ttk
 
+from bando_xq import BANDOCONG_MAP
+from dexuatlotrinh_xq import SOLANTHAYQUAITOITHIEU
 from hangso_xq import laytenbando, KHOANGCACHSUDUNGKYNANGTAMXA, PHANTRAMNOILUCKHAITHIENTICHDIA, KHOANGCACHGIUKETANCONG, BAOTHUTRIEUHOIMAOSONs
 import re
 
@@ -539,6 +541,24 @@ class GiaoDienHienThi:
         self.btn_sapxephanhtrang.grid(row = 0, column = 0, sticky = tk.W)
         ttk.Label(nhom, text = "Gộp chồng, xếp theo tên, dồn lên đầu từng túi", style = "Phu.TLabel").grid(row = 1, column = 0, sticky = tk.W, pady = (2, 0))
 
+        # Đi tới bản đồ: bot tự phù (Chủ Dịch Trạm / Tân Thủ Tiên Cô), Hồi Thành Phù khi xa, chạy bộ từng bản đồ, tới nơi thì dừng.
+        # Dòng "Bước tiếp theo" hiện cả bước của lộ trình điểm đánh / theo sau
+        nhom = self._taonhom(tab, "Đi tới bản đồ")
+        self._idbandotheohienthi = {f"{ten} ({idbando})": idbando for idbando, (ten, _) in sorted(BANDOCONG_MAP.items(), key = lambda m: m[1][0] or "") if ten}
+        self.str_bandocandi = tk.StringVar()
+        self.cbo_bandocandi = ttk.Combobox(nhom, textvariable = self.str_bandocandi, values = list(self._idbandotheohienthi), state = "readonly", height = 20)
+        self.cbo_bandocandi.grid(row = 0, column = 0, sticky = tk.EW)
+
+        def on_ditoibando(idbando):
+            hwnd = self.get_selected_hwnd()
+            if hwnd and idbando is not None:
+                self.command_dict[hwnd] = f"ditoibando:{idbando}"
+
+        ttk.Button(nhom, text = "Đi", width = 5, command = lambda: on_ditoibando(self._idbandotheohienthi.get(self.str_bandocandi.get()))).grid(row = 0, column = 1, padx = (4, 0))
+        ttk.Button(nhom, text = "Dừng", width = 6, command = lambda: on_ditoibando(0)).grid(row = 0, column = 2, padx = (4, 0))
+        self.lbl_buocdichuyen = tk.Label(nhom, text = "Bước tiếp theo: -", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = 320)
+        self.lbl_buocdichuyen.grid(row = 1, column = 0, columnspan = 3, sticky = tk.W, pady = (4, 0))
+
         # Lộ trình mẫu: chọn mẫu (của bất kỳ bản đồ nào) rồi Nạp, hoặc để bot Tự chọn mẫu chưa nhân vật nào dùng
         nhom = self._taonhom(tab, "Lộ trình mẫu")
         self.lbl_lotrinhmau = tk.Label(nhom, text = "Đang dùng: (tự đặt điểm)", fg = MAUCHU_PHU, anchor = tk.W)
@@ -595,6 +615,19 @@ class GiaoDienHienThi:
 
         ttk.Button(hangluu, text = "Lưu", width = 6, command = on_luu_lotrinhmau).pack(side = tk.RIGHT)
         ttk.Entry(hangluu, textvariable = self.str_tenmaumoi, width = 12).pack(side = tk.RIGHT, padx = 4)
+
+        # Tự đề xuất: gom vị trí quái đã thấy trên bản đồ hiện tại thành vòng điểm đánh, lưu thành mẫu "Tự đề xuất"
+        hangdexuat = ttk.Frame(nhom)
+        hangdexuat.grid(row = 4, column = 0, columnspan = 2, sticky = tk.EW, pady = (2, 0))
+        self.lbl_solanthayquai = ttk.Label(hangdexuat, text = "Đã thấy quái: -", style = "Phu.TLabel")
+        self.lbl_solanthayquai.pack(side = tk.LEFT)
+
+        def on_dexuat_lotrinhmau():
+            hwnd = self.get_selected_hwnd()
+            if hwnd:
+                self.command_dict[hwnd] = "dexuat_lotrinhmau"
+
+        ttk.Button(hangdexuat, text = "Tự đề xuất", command = on_dexuat_lotrinhmau).pack(side = tk.RIGHT)
 
         # Điểm đánh hiện tại: mỗi điểm một dòng
         nhom = self._taonhom(tab, "Điểm đánh của nhân vật")
@@ -1093,6 +1126,15 @@ class GiaoDienHienThi:
         self.lbl_idnhanvatdangchon.config(text = text)
 
     def _capnhatlotrinhmau(self, hwnd_to_show, info, idbando, tenbando):
+        idbandocandi = info.get("_idbandocandi")
+        buocdichuyen = info.get("_buocdichuyen") or "-"
+        if idbandocandi:
+            self.lbl_buocdichuyen.config(text = f"Đang đi tới {laytenbando(idbandocandi)}\nBước tiếp theo: {buocdichuyen}", fg = MAUCHU_XANH)
+        else:
+            self.lbl_buocdichuyen.config(text = f"Bước tiếp theo: {buocdichuyen}", fg = MAUCHU_PHU)
+        solanthayquai = info.get("_solanthayquaibando")
+        self.lbl_solanthayquai.config(text = f"Đã thấy quái ở {tenbando}: {solanthayquai if solanthayquai is not None else '-'} lần"
+                                             f"{f' (cần {SOLANTHAYQUAITOITHIEU})' if solanthayquai is not None and solanthayquai < SOLANTHAYQUAITOITHIEU else ''}")
         tatcamau = self._laylotrinhmau()
         dsmaubando = tatcamau.get(str(idbando), [])
         # Mẫu bản đồ hiện tại lên đầu, sau đó các bản đồ khác theo tên

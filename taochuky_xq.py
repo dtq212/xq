@@ -108,6 +108,7 @@ MUCTIEU = [
     ("KDK_NOILUCTOIDA", 0x1538, "hang", "nội lực tối đa"),
     ("KDK_NGUYENKHI", 0x1560, "hang", "nguyên khí"),
     ("KDK_DIEMPK", 0x1568, "hang", "điểm PK"),
+    ("KDK_NGANLUONG", 0x15A4, "hang", "ngân lượng"),
     ("KDK_THELUC", 0x15A8, "hang", "thể lực"),
     ("KDK_CAPDO", 0x15B0, "hang", "cấp độ"),
     ("KDK_BANDO", 0x15F4, "hang", "bản đồ hiện tại"),

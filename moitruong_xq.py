@@ -87,6 +87,8 @@ class MoiTruong:
 
         # Đoạn mã gọi hàm tìm đường cục bộ của client (_get_chuoihuongtimduongcucbo): địa chỉ mã, ô tham số, bộ đệm chuỗi hướng
         self._diachitimduongcucbo = None
+        # Luồng di chuyển và lệnh tự đề xuất lộ trình cùng gọi hàm tìm đường cục bộ (chung ô tham số / bộ đệm trong game)
+        self._khoatimduongcucbo = threading.Lock()
         # Lần gửi "desc pf <id>" gần nhất theo id kỹ năng (get_tieuhaokynang)
         self._thoidiemtruyvanmotakynang_map = {}
         # id kỹ năng -> (thời điểm đọc, tiêu hao hoặc None): hàm ra chiêu xét tiêu hao mỗi lượt cho mọi chiêu nên nhớ lại một lúc
@@ -843,6 +845,11 @@ class MoiTruong:
     def get_thelucconlai(self):
         x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         return read_int(self.tientrinh, x + DC.KDK_THELUC) if x else False
+
+    def get_nganluong(self):
+        # Ngân lượng mang theo (khung Hành Trang), None khi chưa đọc được
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
+        return read_int(self.tientrinh, x + DC.KDK_NGANLUONG) if x else None
 
     def get_phantramnoilucconlai(self):
         noiluctoida = self.get_noiluctoida()
@@ -2128,13 +2135,18 @@ class MoiTruong:
             encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(ma)
             write_bytes(self.tientrinh, vung, bytes(encoding), len(encoding))
             self._diachitimduongcucbo = vung
-        thongtingame = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
-        if not thongtingame or not read_int(self.tientrinh, thongtingame + DC.TG_TIMDUONGCUCBO):
+        if not self.get_is_cotimduongcucbo():
             return None
-        write_bytes(self.tientrinh, self._dulieutimduongcucbo, struct.pack("<iiii", x1, y1, x2, y2), 16)
-        write_bytes(self.tientrinh, self._buftimduongcucbo, bytes(100), 100)
-        self.tientrinh.start_thread(self._diachitimduongcucbo)
-        return read_bytes(self.tientrinh, self._buftimduongcucbo, 100).split(b"\0")[0] or None
+        with self._khoatimduongcucbo:
+            write_bytes(self.tientrinh, self._dulieutimduongcucbo, struct.pack("<iiii", x1, y1, x2, y2), 16)
+            write_bytes(self.tientrinh, self._buftimduongcucbo, bytes(100), 100)
+            self.tientrinh.start_thread(self._diachitimduongcucbo)
+            return read_bytes(self.tientrinh, self._buftimduongcucbo, 100).split(b"\0")[0] or None
+
+    def get_is_cotimduongcucbo(self):
+        # Client đã tạo đối tượng tìm đường cục bộ chưa (tạo khi click di chuyển lần đầu)
+        thongtingame = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        return bool(thongtingame and read_int(self.tientrinh, thongtingame + DC.TG_TIMDUONGCUCBO))
 
     def action_dichuyenoo(self, x, y, delay = 0.05):
         # Đi tới đúng ô (x, y): lấy chuỗi hướng từ hàm tìm đường cục bộ của client rồi ghi vào chuỗi đường đi xq + 0x1FC2B4 (từ chỉ số 1)
