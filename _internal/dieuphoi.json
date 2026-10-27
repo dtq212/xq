@@ -1,0 +1,12 @@
+{
+  "lenh": {
+    "is_xoayvong": false,
+    "nghitoithieu": 0.15,
+    "nghitoida": 0.28
+  },
+  "dichuyen": {
+    "is_xoayvong": false,
+    "nghitoithieu": 0.5,
+    "nghitoida": 1.0
+  }
+}

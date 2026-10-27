@@ -217,7 +217,7 @@ class CuaSo:
                     "_is_giukhoangcachchimuctieupk": self.tactu._is_giukhoangcachchimuctieupk,
                     "_is_taphoa": self.tactu._is_taphoa,
                     "_is_timmuctieuchung": self.tactu._is_timmuctieuchung,
-                    "_is_hoithanhphutheosau": self.tactu._is_hoithanhphutheosau,
+                    "_is_tutimduongtheosau": self.tactu._is_tutimduongtheosau,
                     "_is_dangsapxephanhtrang": self.tactu._is_dangsapxephanhtrang,
                     "_is_doidokhitrieuhoi": self.tactu._is_doidokhitrieuhoi,
                     "_tenbodotrieuhoi": [mon["ten"] for mon in self.tactu._bodotrieuhoi],
@@ -346,8 +346,8 @@ class CuaSo:
                         self.tactu.thietlap_khoangcachgiuketancong(float(cmd.split(":")[1]))
                     except Exception:
                         pass
-                elif cmd == "battat_hoithanhphutheosau":
-                    self.tactu.battat_hoithanhphutheosau()
+                elif cmd == "battat_tutimduongtheosau":
+                    self.tactu.battat_tutimduongtheosau()
                 elif cmd == "battat_sapxephanhtrang":
                     self.tactu.battat_sapxephanhtrang()
                 elif cmd == "battat_doidokhitrieuhoi":

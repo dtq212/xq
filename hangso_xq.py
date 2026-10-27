@@ -106,7 +106,6 @@ HOANGKIMTHANHY = "Hoàng Kim Thánh Y"
 
 TOAILANG = "Toái Lăng"
 TOAISA = "Toái Sa"
-TOAIMABO = "Toái Ma Bố"
 NHIEPHONTHACH = "Nhiếp Hồn Thạch"
 DASOI = "Da Sói"
 LYHON = "Ly Hồn"
@@ -705,13 +704,8 @@ VATPHAMTUDONGNHATFARMs = (
     " Nguyệt", "Trứng gà", " cấp ", "Kim Cương"
 )
 
-VATPHAMXEPCHONGs = tuple(["Toái Lăng", "Lá", "Hoạt Lạc Hoàn", "Lam Cầu", "Hắc Cầu", "Mồi Câu", KHIMACHDON, TAITAOHOAN, TIEUDAOTAN, QUYNGUYENDON, KIMTANGTAN, KHIMACHDON, TUTAMDON, TOAIMABO,
-                          LAOTUU, "Trái Đào", "Chuối", "Khoai Lang Nướng", "Thiên Dao Tửu", DUAHAU,
-                          "Lễ Bao Khai Quốc",
-                          "Tơ Nhện", "Thạch Tín", "Đuôi Bọ Cạp", "Kịch Độc Châm", "Cánh Ong", "Phi Hành Phiến", "Núm Vú", "Huỳnh Quang Thạch", "Hành Quân Tán", "Bắp", "Mật Ong",
-                          "Ly Hồn", "Ma Tinh Thạch", "Cánh Ong", "Ly Phách", "Chính Khí Tán", "Cẩu Bì Dược Cao", "Búi Tóc",
-                          "Phục Dược", "Trị Dược", "Chiến Quốc Lệnh", "Chiến Quốc Lệnh x3", DAIHUYETTHACH, DAIPHAPLUCTHACH,
-                          ])
+# Xếp chồng tự nhận biết (món có số lượng >= 1 trong hành trang), 1 ô tối đa = số lớn nhất từng thấy (ít nhất 30);
+# món có số tối đa khác thì ghi ở đây
 SOLUONGXEPCHONGTOIDA_MAP = {
     "Hoạt Lạc Hoàn": 30
 }

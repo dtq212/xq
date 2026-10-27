@@ -17,11 +17,18 @@ THOIGIANLUUVITRIQUAI = 60.
 # Ít hơn số lần thấy quái này trên bản đồ thì chưa đủ dữ liệu để đề xuất
 SOLANTHAYQUAITOITHIEU = 50
 SODIEMDEXUATTOIDA = 8
+# Các điểm đề xuất cách nhau ít nhất chừng này ô (một tầm màn hình). Không dùng bán kính điểm đánh của nhân vật: đó là bộ lọc mục tiêu,
+# có thể đặt 999 (không giới hạn) làm cả bản đồ gộp thành 1 điểm
+KHOANGCACHDIEMDEXUAT = 18.
 # Cụm có mật độ dưới tỷ lệ này so với cụm đông nhất thì bỏ (vài con lẻ tẻ)
 TYLECUMTOITHIEU = 0.15
 TENMAUDEXUAT = "Tự đề xuất"
-# Hàm tìm đường cục bộ của client trả chuỗi hướng tối đa 99 bước: đoạn xa hơn thì đi tiếp từ chỗ dừng / chia đôi, tối đa chừng này lần
-SOLANCHIADOANTOIDA = 4
+# Hàm tìm đường cục bộ của client trả mỗi lần chừng 50 bước (đo ở Khốn Ma Trận 1): đoạn xa hơn thì đi tiếp từ chỗ dừng / chia đôi,
+# tối đa chừng này lần
+SOLANCHIADOANTOIDA = 10
+# Đích rơi vào ô vật cản (tâm cụm quái là trung bình vị trí quái, hay trúng đá / cây) thì game tìm đường tới ô đi được gần nhất:
+# dừng cách đích không quá chừng này ô vẫn coi là tới (nhân vật đánh trong bán kính điểm đánh)
+SAISODIEMDEN = 3.
 
 # Chuỗi hướng của hàm tìm đường cục bộ: ký tự -> (dx, dy) (xem MoiTruong._get_chuoihuongtimduongcucbo)
 HUONGTIMDUONG_MAP = {"1": (1, 0), "2": (1, -1), "3": (0, -1), "4": (-1, -1), "5": (-1, 0), "6": (-1, 1), "7": (0, 1), "8": (1, 1)}
@@ -97,11 +104,11 @@ def gomcum(demo, bankinh, is_vungcam = None, sodiemtoida = SODIEMDEXUATTOIDA):
         if cums and trongso < cums[0][2] * TYLECUMTOITHIEU:
             break
         quanh = [((tot[0] + dx, tot[1] + dy), conlai[(tot[0] + dx, tot[1] + dy)]) for dx, dy in lechs if (tot[0] + dx, tot[1] + dy) in conlai]
-        x = round(sum(_tamo(*o)[0] * n for o, n in quanh) / trongso)
-        y = round(sum(_tamo(*o)[1] * n for o, n in quanh) / trongso)
-        # Tâm có trọng số rơi vào vùng cấm (cụm sát cổng) thì lấy tâm ô đông nhất của cụm
-        if is_vungcam and is_vungcam(x, y):
-            x, y = _tamo(*max(quanh, key = lambda q: q[1])[0])
+        xtam = sum(_tamo(*o)[0] * n for o, n in quanh) / trongso
+        ytam = sum(_tamo(*o)[1] * n for o, n in quanh) / trongso
+        # Điểm đánh đặt vào ô đã thấy quái đứng gần tâm cụm nhất (quái đứng được thì nhân vật đứng được), không lấy thẳng tâm trung bình:
+        # tâm hay rơi trúng đá / cây / tường. Ô trong vùng cấm đã bị loại khỏi conlai
+        x, y = _tamo(*min(quanh, key = lambda q: math.dist(_tamo(*q[0]), (xtam, ytam)))[0])
         cums.append((x, y, trongso))
         conlai = {o: n for o, n in conlai.items() if math.dist(_tamo(*o), (x, y)) >= bankinh}
     return cums
@@ -140,7 +147,7 @@ def kiemtradoan(x1, y1, x2, y2, timduong, is_vungcam = None, solan = SOLANCHIADO
             x, y = x + dx, y + dy
             if is_vungcam and is_vungcam(x, y):
                 return False
-        if (x, y) == (x2, y2):
+        if math.dist((x, y), (x2, y2)) <= SAISODIEMDEN:
             return True
         # Chuỗi hướng bị cắt (xa quá): đi tiếp từ chỗ dừng nếu đã lại gần đích
         if solan > 0 and math.dist((x, y), (x2, y2)) < math.dist((x1, y1), (x2, y2)) - 1:
@@ -153,7 +160,7 @@ def kiemtradoan(x1, y1, x2, y2, timduong, is_vungcam = None, solan = SOLANCHIADO
     return False
 
 
-def dexuatlotrinh(demo, bankinh, timduong = None, is_vungcam = None, sodiemtoida = SODIEMDEXUATTOIDA):
+def dexuatlotrinh(demo, bankinh = KHOANGCACHDIEMDEXUAT, timduong = None, is_vungcam = None, sodiemtoida = SODIEMDEXUATTOIDA):
     # -> (danh sách điểm [(x, y), ...] theo thứ tự đi, số điểm bị bỏ vì không đi được); timduong None thì không kiểm tra đường đi
     diems = gomcum(demo, bankinh, is_vungcam, sodiemtoida)
     # Kiểm tra trước mọi cặp điểm (8 điểm: 28 cặp), coi như đi 2 chiều như nhau

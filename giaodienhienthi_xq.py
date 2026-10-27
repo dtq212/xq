@@ -99,7 +99,7 @@ class GiaoDienHienThi:
             "taphoa": tk.BooleanVar(),
             "timmuctieuchung": tk.BooleanVar(value = True),
             "khoangcachgiuketancong": tk.DoubleVar(value = KHOANGCACHGIUKETANCONG),
-            "hoithanhphutheosau": tk.BooleanVar(),
+            "tutimduongtheosau": tk.BooleanVar(),
             "doidotrieuhoi": tk.BooleanVar(),
         }
 
@@ -721,7 +721,7 @@ class GiaoDienHienThi:
         self.spin_khoangcach.pack(side = tk.LEFT, padx = 4)
         self._ganspinboxapdung(self.spin_khoangcach, on_khoangcach_change)
 
-        self._create_check(nhom, "Hồi Thành Phù về để phù sang chỗ người theo sau", self.vars["hoithanhphutheosau"], "battat_hoithanhphutheosau")
+        self._create_check(nhom, "Tự tìm đường tới người được theo sau (phù / Hồi Thành Phù / chạy bộ)", self.vars["tutimduongtheosau"], "battat_tutimduongtheosau")
         self._create_check(nhom, "Tổ đội tự động (danh sách ở tab Mục tiêu & Tổ đội)", self.vars["todoitudong"], "battat_tudongtodoi")
 
         nhom = self._taonhom(tab, "Bảo thú")
@@ -1000,7 +1000,7 @@ class GiaoDienHienThi:
                 ("giukhoangcachchimuctieupk", "_is_giukhoangcachchimuctieupk"),
                 ("taphoa", "_is_taphoa"),
                 ("timmuctieuchung", "_is_timmuctieuchung"),
-                ("hoithanhphutheosau", "_is_hoithanhphutheosau"),
+                ("tutimduongtheosau", "_is_tutimduongtheosau"),
                 ("doidotrieuhoi", "_is_doidokhitrieuhoi"),
                 ("khaikhoang", "_is_tudongkhaikhoang"),
                 ("chientruong", "_is_tudongdichientruong"),

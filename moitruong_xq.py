@@ -149,6 +149,8 @@ class MoiTruong:
         # Theo từng bảo thú (Mao Sơn có thể có nhiều bảo thú triệu hồi cùng lúc, dùng chung một mốc thì con sau bị chặn lệnh)
         self._thoidiemralenhbaothutancong_map = {}
         self._thoidiemralenhbaothutheosau_map = {}
+        # id bảo thú -> lệnh cuối bot đã ra (1 tấn công, 2 theo sau, 3 dừng im): biết bảo thú đang theo sau để khỏi gọi lại mãi
+        self._lenhbaothugannhat_map = {}
         self._thoidiemralenhbaothudungim = 0.
 
         self._idthucuoi = False
@@ -421,7 +423,19 @@ class MoiTruong:
         self._thoidiemralenhbaothutancong_map[iddoituongbaothu] = time.time()
         self._thoidiemralenhbaothutancong_map = donbangthoidiem(self._thoidiemralenhbaothutancong_map, 120.)
         caulenh = f"pet {hex(iddoituongbaothu)}# 1 {hex(iddoituongnhanvatmuctieudangchon)}#".replace("0x", "")
-        return self.action_thucthicaulenh2(caulenh, delay = 0.)
+        if not self.action_thucthicaulenh2(caulenh, delay = 0.):
+            return False
+        self._ghilenhbaothu(iddoituongbaothu, 1)
+        return True
+
+    def _ghilenhbaothu(self, iddoituongbaothu, lenh):
+        if len(self._lenhbaothugannhat_map) > 64:
+            self._lenhbaothugannhat_map.clear()
+        self._lenhbaothugannhat_map[iddoituongbaothu] = lenh
+
+    def get_is_baothudangtheosau(self, iddoituongbaothu):
+        # Lệnh cuối bot ra cho bảo thú này là theo sau (chưa bị lệnh tấn công / dừng im thay)
+        return self._lenhbaothugannhat_map.get(iddoituongbaothu) == 2
 
     def action_ralenhbaothutheosau(self, iddoituongbaothu, delay = 0.25):
         if time.time() - self._thoidiemralenhbaothutheosau_map.get(iddoituongbaothu, 0.) < delay:
@@ -432,6 +446,7 @@ class MoiTruong:
         if not self.action_thucthicaulenh2(caulenh, delay = 0.):
             return False
         self._set_trangthaihanhvibaothu(iddoituongbaothu, 2)
+        self._ghilenhbaothu(iddoituongbaothu, 2)
         return True
 
     def action_ralenhbaothudungim(self, iddoituongbaothu, delay = 0.25):
@@ -442,6 +457,7 @@ class MoiTruong:
         if not self.action_thucthicaulenh2(caulenh, delay = 0.):
             return False
         self._set_trangthaihanhvibaothu(iddoituongbaothu, 3)
+        self._ghilenhbaothu(iddoituongbaothu, 3)
         return True
 
     def _set_trangthaihanhvibaothu(self, iddoituongbaothu, trangthai):
