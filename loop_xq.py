@@ -155,11 +155,11 @@ class LoopChinh:
             if idtruongphong:
                 if not self.moitruong.action_timkiemvatphamhanhtrang("Rương Dự Trữ"):
                     time.sleep(0.25)
-                for noidung in ("info.55", "info.11", "info.20", "info.21"):
+                for noidung in ("info.11", "info.21"):
                     self.moitruong.action_thucthicaulenh("talk {}# {}".format(hex(idtruongphong).replace("0x", ""), noidung))
                     time.sleep(0.25)
 
-        if self.moitruong.get_idnguoichoi() == 187:
+        if self.moitruong.get_idnguoichoi() == 30:
             for tenvatpham in ("Túi Ngân Lượng", "Túi Kim Bảo", "Túi Quà Vô Song", "Túi Pháp Bảo"):
                 if self.tactu.action_sudungvatphamhanhtrang(tenvatpham):
                     break
@@ -275,7 +275,10 @@ class LoopPhu:
 
         self.moitruong.action_vohieuhoathietlapmuctieu()
         self.moitruong.action_vohieuhoatuthedelaysautancong()
-        self.moitruong.action_vohieuhoalongclick()
+        if self.tactu._is_tudongsudungkynang:
+            self.moitruong.action_vohieuhoalongclick()
+        else:
+            self.moitruong.action_tatvohieuhoalongclick()
         self.moitruong.action_vohieuhoatrangthaichuotchonmuctieukynang()
         self.moitruong.action_vohieuhoakhoanhvungkynang()
         self.moitruong.action_vohieuhoaphimspace()
