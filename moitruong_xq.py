@@ -429,14 +429,35 @@ class MoiTruong:
         self._thoidiemralenhbaothutheosau_map[iddoituongbaothu] = time.time()
         self._thoidiemralenhbaothutheosau_map = donbangthoidiem(self._thoidiemralenhbaothutheosau_map, 120.)
         caulenh = f"pet {hex(iddoituongbaothu)}# 2".replace("0x", "")
-        return self.action_thucthicaulenh2(caulenh, delay = 0.)
+        if not self.action_thucthicaulenh2(caulenh, delay = 0.):
+            return False
+        self._set_trangthaihanhvibaothu(iddoituongbaothu, 2)
+        return True
 
     def action_ralenhbaothudungim(self, iddoituongbaothu, delay = 0.25):
         if time.time() - self._thoidiemralenhbaothudungim < delay:
             return False
         self._thoidiemralenhbaothudungim = time.time()
         caulenh = f"pet {hex(iddoituongbaothu)}# 3".replace("0x", "")
-        return self.action_thucthicaulenh2(caulenh, delay = 0.)
+        if not self.action_thucthicaulenh2(caulenh, delay = 0.):
+            return False
+        self._set_trangthaihanhvibaothu(iddoituongbaothu, 3)
+        return True
+
+    def _set_trangthaihanhvibaothu(self, iddoituongbaothu, trangthai):
+        # Lệnh gõ chỉ gửi lên server, không như chuột phải vào nút Theo sau / Chờ đợi (xq.exe gửi cùng lệnh rồi ghi ô +0x1E0
+        # = 2 / 3, vòng sáng vẽ theo ô này) => tự ghi. Vòng sáng kẹt ở Chờ đợi còn làm sang bản đồ mới client không cập nhật
+        # bản đồ của bảo thú (+0x1E4, chỉ cập nhật khi +0x1E0 == 2) => tưởng bảo thú ở bản đồ khác mà gọi về mãi
+        # Chuột phải nút Tấn công trong game không làm gì nên lệnh tấn công không ghi
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
+        if not x:
+            return
+        for sothutu in range(3):
+            diachi = x + 0x184 + 0x6C * sothutu
+            if read_int(self.tientrinh, diachi) == iddoituongbaothu:
+                if read_int(self.tientrinh, diachi + 0x1E0 - 0x184) != trangthai:
+                    write_int(self.tientrinh, diachi + 0x1E0 - 0x184, trangthai)
+                return
 
     def action_batchucnangmorong(self, delay = 5.):
         if self.get_is_dangbatchucnangmorong():
