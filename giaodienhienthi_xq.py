@@ -742,15 +742,16 @@ class GiaoDienHienThi:
         self._create_check(nhom, "Tổ đội tự động (danh sách ở tab Mục tiêu & Tổ đội)", self.vars["todoitudong"], "battat_tudongtodoi")
 
         nhom = self._taonhom(tab, "Bảo thú")
-        self._create_check(nhom, "Tự động gọi bảo thú", self.vars["trieuhoibaothu"], "battat_tudongtrieuhoibaothugiangho")
-        self._create_check(nhom, "Tự động dùng kỹ năng bảo thú", self.vars["sudungkynangbaothu"], "battat_tudongsudungkynangbaothu")
-        # Mao Sơn tự gọi bảo thú triệu hồi nào: Tự động (Cương Thi nếu có Cương Thi Phù, không thì Thiên Binh) hoặc đúng 1 loại
+        self._create_check(nhom, "Triệu hồi bảo thú giang hồ", self.vars["trieuhoibaothu"], "battat_tudongtrieuhoibaothugiangho")
+        self._create_check(nhom, "Tự động dùng kỹ năng bảo thú giang hồ", self.vars["sudungkynangbaothu"], "battat_tudongsudungkynangbaothu")
+        # Triệu hồi bảo thú kỹ năng nào: Tự động (Mao Sơn: Cương Thi nếu có Cương Thi Phù, không thì Thiên Binh; Vân Mộng Cốc: Đậu Binh),
+        # đúng 1 loại, hoặc không triệu hồi
         hangbaothu = ttk.Frame(nhom)
         hangbaothu.grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W, pady = 1)
-        ttk.Label(hangbaothu, text = "Mao Sơn gọi bảo thú:").pack(side = tk.LEFT)
+        ttk.Label(hangbaothu, text = "Triệu hồi bảo thú kỹ năng:").pack(side = tk.LEFT)
         self.str_baothutrieuhoi = tk.StringVar(value = BAOTHUTRIEUHOIMAOSONs[0])
         self.cbo_baothutrieuhoi = ttk.Combobox(hangbaothu, textvariable = self.str_baothutrieuhoi, values = BAOTHUTRIEUHOIMAOSONs,
-                                               state = "readonly", width = 12)
+                                               state = "readonly", width = 15)
         self.cbo_baothutrieuhoi.pack(side = tk.LEFT, padx = 4)
         # Vừa chọn: (hwnd, lựa chọn, thời điểm) để chờ bot nhận, update_ui không nạp lại giá trị cũ đè lên
         self._baothutrieuhoichoxacnhan = None

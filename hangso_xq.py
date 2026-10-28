@@ -32,6 +32,8 @@ HOACAU = "Hoa Cầu"
 LAMCAU = "Lam Cầu"
 HACCAU = "Hắc Cầu"
 SOTRIDUOC = "Sơ Trị Dược"
+TRIDUOC = "Trị Dược"
+PHUCDUOC = "Phục Dược"
 GATAYNOEL = "Gà Tây Noel"
 LIXI = "Phong Bao Lì Xì"
 LEBAOKHAIQUOC = "Lễ Bao Khai Quốc"
@@ -120,10 +122,12 @@ QUYTOT = "Quỷ Tốt"
 THIENBINH = "Thiên Binh"
 THIENTUONG = "Thiên Tướng"
 THANTUONG = "Thần Tướng"  # Chỉ gọi ra được bằng Tế Thần Tướng
-# Mao Sơn tự gọi bảo thú triệu hồi nào (chọn trên bảng điều khiển, lưu theo nhân vật): tự động = Cương Thi nếu có Cương Thi Phù,
-# không thì Thiên Binh; hoặc chỉ gọi đúng 1 loại CUONGTHI / THIENBINH / QUYTOT
+# Triệu hồi bảo thú kỹ năng nào (chọn trên bảng điều khiển, lưu theo nhân vật): tự động = Mao Sơn gọi Cương Thi nếu có Cương Thi Phù,
+# không thì Thiên Binh; Vân Mộng Cốc gọi Đậu Binh. Hoặc chỉ gọi đúng 1 loại CUONGTHI / THIENBINH / QUYTOT (Mao Sơn) / DAUBINH (Vân Mộng Cốc);
+# BAOTHUTRIEUHOI_KHONG thì không triệu hồi con nào
 BAOTHUTRIEUHOI_TUDONG = "Tự động"
-BAOTHUTRIEUHOIMAOSONs = (BAOTHUTRIEUHOI_TUDONG, CUONGTHI, THIENBINH, QUYTOT)
+BAOTHUTRIEUHOI_KHONG = "Không triệu hồi"
+BAOTHUTRIEUHOIMAOSONs = (BAOTHUTRIEUHOI_TUDONG, CUONGTHI, THIENBINH, QUYTOT, DAUBINH, BAOTHUTRIEUHOI_KHONG)
 TROMBAOPHITAC = "Trộm Bảo Phi Tặc"
 
 KHUYENTHAILANG = "Khuyển Thái Lang"
@@ -153,6 +157,10 @@ KHOANGCACHSUDUNGKYNANGTAMXA = 9.  # 12.
 # - đứng đánh lâu / đang chạy bù thì tầm yêu cầu giảm BUKHOANGCACHTAMXA ô (đánh ở ~8 ô), chạy vào tầm thì dừng ở tầm xa - BU - 1 (~7 ô)
 TRUHAOTAMXACHONMUCTIEU = 0.
 BUKHOANGCACHTAMXA = 1.
+# Tiếp cận cận chiến như client khi bấm chiêu trên phím tắt (xq + 0x1873A, đọc 2026-10-28): tìm đường tới ô mục tiêu, mỗi lần chỉ
+# ghi chừng này bước (client: KDK + 0x1620 = 2), đích đổi thì chừng này giây sau lần ghi trước mới tìm lại (client: mốc +500ms)
+SOBUOCTIEPCANCANCHIEN = 2
+THOIGIANTINHLAITIEPCANCANCHIEN = 0.5
 # Thục Sơn chỉ dùng Khai Thiên Tịch Địa để lướt khi nội lực trên mức này (%), chỉnh được ở giao diện
 PHANTRAMNOILUCKHAITHIENTICHDIA = 75.
 KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN = 9.
@@ -222,6 +230,11 @@ VITRIPHIMTATKYNANG_Z = 8
 VITRIPHIMTATKYNANG_X = 9
 
 VITRIPHIMTATKYNANG_THUCANBAOTHU = VITRIPHIMTATKYNANG_X
+
+# Bộ đệm vòng hook trò chuyện (MoiTruong.action_thietlaphooknoidungtrochuyen): số ô (lũy thừa của 2, asm lấy dư bằng and) và số
+# byte mỗi ô (dòng dài hơn bị cắt)
+SOLUONGDONGTROCHUYEN = 64
+KICHTHUOCDONGTROCHUYEN = 128
 
 VITRIKYNANG_DONDAOTRUCNHAP = 2210
 VITRIKYNANG_NGHENHPHONGTRAM = 2211
@@ -385,6 +398,25 @@ VIRIKYNANG_NGUYENKHIQUYNGUYEN = 3172
 VIRIKYNANG_HOTHEKIMCANG = 3173
 VITRIKYNANG_DATINHCUONGLUC = 3191
 
+# "kill" (bật tự động đánh thường lên mục tiêu, không phải kỹ năng) đã bật với mục tiêu này thì chừng này giây mới gửi lại cho chắc
+THOIGIANGUILAITANCONGVATLY = 5.
+# Đào Hoa Nguyên chỉ "kill" (bật đánh thường) khi nguyên khí không quá chừng này: còn nguyên khí thì spam chiêu, đánh thường làm chiêu ra chậm
+NGUYENKHITANCONGVATLYDAOHOA = 2
+# Nguyên khí hồi tới chừng này thì ngắt đánh thường (cách xa ngưỡng bật để không đánh vài chiêu lại phải "kill" lại)
+NGUYENKHINGATTANCONGVATLYDAOHOA = 8
+# Thốn Kình lấp chỗ (mục tiêu đã có Trọng Thương) chỉ dùng khi nguyên khí dư hẳn (cùng mức ngắt đánh thường), không ăn phần tích cho Nhất Quyền
+NGUYENKHITOITHIEUTHONKINHLAPCHO = 8
+# Ba Động cận chiến / Lạc Kích lặp lại (mục tiêu đã có Lạc Kích): chỉ dùng khi sau nó còn đủ cho Nhất Quyền (2 + 4 trên mô tả)
+NGUYENKHITOITHIEUCHIEULOT = 6
+# Nhất Quyền đã hồi chiêu mà nguyên khí không quá chừng này thì không dùng Đại Hải (tốn 4) để lót, đánh thường để dành cho Nhất Quyền
+NGUYENKHIGIUCHONHATQUYEN = 4
+# Ngắt đánh thường: Tự Động Công Kích (thẻ Cơ Bản, gửi bằng pf2; "pf 14" máy chủ bỏ qua) "pf2 14 <mục tiêu>" là bật / tắt qua lại,
+# máy chủ báo "Sử dụng “Tự Động Công Kích”." / "Bạn đã ngừng “Tự Động Công Kích”." => gửi tới khi thấy tin ngừng, mỗi lần cách nhau
+# THOIGIANCHONGATTANCONGVATLY giây chờ tin. Đổi mục tiêu / mục tiêu chết thì máy chủ tự ngừng, không báo
+IDKYNANG_TUDONGCONGKICH = 14
+TENKYNANG_TUDONGCONGKICH = "Tự Động Công Kích"
+THOIGIANCHONGATTANCONGVATLY = 0.25
+
 
 HINHTHUCSUDUNGKYNANG_CANMUCTIEU = 3
 HINHTHUCSUDUNGKYNANG_KHONGCANMUCTIEU = 1
@@ -517,7 +549,7 @@ GIANCACHLUUHUYETTHUAT = 8.
 # Tiêu hao kỹ năng (pháp lực / khí huyết / nguyên khí) đọc từ mô tả trong game được nhớ lại bấy nhiêu giây
 THOIGIANNHOTIEUHAOKYNANG = 10.
 # Có bảo thú (thú triệu hồi) còn dưới bấy nhiêu % sinh lực thì dùng Lưu Huyết Thuật
-PHANTRAMSINHLUCLUUHUYETTHUAT = 75
+PHANTRAMSINHLUCLUUHUYETTHUAT = 90
 
 VITRITRANGBIDAUTIEN = 96
 SOLUONGOTRANGBI = 10
@@ -592,6 +624,8 @@ BANDO_LINHCOCDONG2 = 312
 BANDO_LOANDAO1 = 321
 BANDO_LOANDAO2 = 322
 BANDO_BATQUAITRAN = 894
+# Phó bản: rời nhóm khi đang là trưởng nhóm sẽ giải tán, đá cả đội ra ngoài => tổ đội tự động không tự rời nhóm ở đây
+BANDOPHOBANs = (BANDO_BATQUAITRAN, 702, 703, 704)
 
 BANDO_MADAPHO = 211
 BANDO_CUTHUDAO = 549
