@@ -181,6 +181,30 @@ class ThongKe:
             else:
                 loai = ("vatphamchuyenden" if chenh > 0 else "vatphamchuyendi") if khop else ("vatphamnhan" if chenh > 0 else "vatphammat")
                 self._congvatpham(loai, tenvatpham, abs(chenh), vitri)
+                if loai == "vatphamnhan":
+                    self._kiemtradohiem(tenvatpham, chenh)
+
+    def _kiemtradohiem(self, tenvatpham, soluong):
+        # Nhặt được (không phải chuyển từ nhân vật khác) món khớp luật túi đồ có 📣 thì báo Telegram kèm ảnh (thongbao_xq.baodohiem).
+        # Chạy sau THOIGIANCHOKHOP giây kể từ lúc nhặt vì phải chờ xem có phải đồ chuyển không
+        from luattuido_xq import is_coluatbao
+        if not is_coluatbao():
+            return
+        try:
+            vitri = self.moitruong.action_timkiemvitrivatphamhanhtrang(tenvatpham)
+            # Chỉ xét các luật 📣 (luật Giữ / Bán đứng trên không chặn báo)
+            if vitri is False:
+                # Món đã rời túi (bán / vứt / dùng ngay): chỉ xét được luật theo tên
+                from luattuido_xq import timluatbao
+                luat = timluatbao(tenvatpham, lambda: None)
+            else:
+                luat = self.tactu._layluatbaovatpham(tenvatpham, vitri)
+            if luat:
+                from thongbao_xq import baodohiem
+                baodohiem(self.moitruong, tenvatpham, soluong, luat.get("ghichu", ""))
+                self.moitruong._inlog(f"[ĐỒ HIẾM] Nhặt được {soluong} {tenvatpham}, đã báo Telegram")
+        except Exception as err:
+            print(f"[THỐNG KÊ] Lỗi xét đồ hiếm {tenvatpham}: {err}")
 
     def step(self):
         with self._khoa:

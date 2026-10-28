@@ -31,9 +31,10 @@ CAUHINHMAU = {
     # Tên máy hiện trong mọi tin (để trống = tên máy tính Windows)
     "tenmay": "",
     "phutbaocao": 120,
-    "loaisuco": {"chet": True, "bipk": True, "tamngung": True, "giamsat": True, "vatpham": True},
+    "loaisuco": {"chet": True, "bipk": True, "tamngung": True, "giamsat": True, "vatpham": True, "dohiem": True},
 }
-TENLOAISUCO = {"chet": "chết", "bipk": "bị người chơi đánh", "tamngung": "tạm ngưng", "giamsat": "kẹt / mở lại client", "vatpham": "vật phẩm"}
+TENLOAISUCO = {"chet": "chết", "bipk": "bị người chơi đánh", "tamngung": "tạm ngưng", "giamsat": "kẹt / mở lại client", "vatpham": "vật phẩm",
+               "dohiem": "nhặt được đồ hiếm (luật túi đồ có 📣)"}
 
 # Cùng một tin (khoá) của một tiến trình không gửi lại trong chừng này giây
 GIANCACHTINMACDINH = 120.
@@ -189,7 +190,7 @@ def guitin(noidung, khoa = None, giancach = GIANCACHTINMACDINH, is_html = False)
     return True
 
 
-BIEUTUONGSUCO = {"chet": "💀", "bipk": "⚔️", "tamngung": "🕵️", "giamsat": "🛠", "vatpham": "🎒"}
+BIEUTUONGSUCO = {"chet": "💀", "bipk": "⚔️", "tamngung": "🕵️", "giamsat": "🛠", "vatpham": "🎒", "dohiem": "🎁"}
 
 
 def baosuco(moitruong, loai, noidung, khoa = None, giancach = GIANCACHTINMACDINH):
@@ -209,6 +210,37 @@ def baosuco(moitruong, loai, noidung, khoa = None, giancach = GIANCACHTINMACDINH
     return guitin(f"{BIEUTUONGSUCO.get(loai, '⚠️')} <b>{html.escape(ten)}</b> · {html.escape(bando)}\n{html.escape(noidung)}"
                   f"\n<i>🖥 {html.escape(laytenmay(cauhinh))}</i>",
                   khoa = (loai, khoa if khoa is not None else noidung), giancach = giancach, is_html = True)
+
+
+def baodohiem(moitruong, tenvatpham, soluong, ghichu = ""):
+    # Nhặt được món khớp luật túi đồ có 📣 (thongke_xq gọi sau khi chắc không phải đồ chuyển từ nhân vật khác): gửi ảnh chụp cửa sổ
+    # game kèm chú thích, chụp hỏng thì gửi chữ. Chạy ở luồng riêng (chụp + gửi ảnh mất 1-2s)
+    cauhinh = taicauhinh()
+    if not cauhinh.get("is_bat") or not cauhinh.get("token") or not cauhinh.get("chat_id") or not cauhinh["loaisuco"].get("dohiem", True):
+        return False
+    try:
+        ten = moitruong.get_tendoituong() or f"ID {moitruong.get_idnguoichoi()}"
+        bando = laytenbando(moitruong.get_idbandohientai())
+        x, y = moitruong.get_toado() or (0, 0)
+    except Exception:
+        ten, bando, x, y = "?", "?", 0, 0
+    chuthich = (f"🎁 <b>{html.escape(ten)}</b> · {html.escape(bando)} ({round(x)}, {round(y)})\n"
+                f"Nhặt được <b>{html.escape(tenvatpham)}</b> ×{_so(soluong)}" + (f"\n<i>{html.escape(ghichu)}</i>" if ghichu else "") +
+                f"\n<i>🖥 {html.escape(laytenmay(cauhinh))} · 🕒 {time.strftime('%H:%M:%S')}</i>")
+
+    def gui():
+        try:
+            anh = chupcuaso(moitruong.idcuaso)
+        except Exception as err:
+            print(f"[TELEGRAM] Chụp màn hình đồ hiếm lỗi: {err}")
+            anh = None
+        if anh:
+            _guianh(cauhinh["token"], cauhinh["chat_id"], anh, chuthich)
+        else:
+            _gui(cauhinh["token"], cauhinh["chat_id"], chuthich, True)
+
+    threading.Thread(target = gui, daemon = True).start()
+    return True
 
 
 class TheoDoiSuCo:

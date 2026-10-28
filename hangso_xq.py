@@ -100,10 +100,6 @@ DAKHONGDEDOs = ("Đoạn Thạch", "Linh Thạch", "Tinh Thạch")
 # Loại vật phẩm = chữ trong cặp ［］ đầu tiên của mô tả (sau dòng tên), vd ［Vũ Khí］［Nón］［Tinh luyện］［Có thể sử dụng］[Pháp Bảo]
 LOAIVATPHAM_COTHESUDUNG = "Có thể sử dụng"
 LOAIVATPHAMDAs = ("Tinh luyện",)
-# Loại vật phẩm (so không phân biệt hoa thường, chứa là được) không bao giờ đem bán rác
-LOAIVATPHAMKHONGBANs = ("nhập môn", "bí kíp", "pháp bảo")
-# Chữ (thường) có ở bất kỳ đâu trong mô tả (trừ dòng tên) thì không bán
-MOTAVATPHAMKHONGBANs = ("ngự thạch",)
 
 SOCAPDOANTHACH = "Sơ Cấp Đoạn Thạch"
 TRUNGCAPDOANTHACH = "Trung Cấp Đoạn Thạch"
@@ -766,25 +762,9 @@ TINHNGUYENDON = "Tinh Nguyên Đơn"
 HOIBANGPHU = "Hồi Bang Phù"
 NGUYENLIEULUYENDONs = ("Hoàng Kỳ", "Cúc Dại", "Quả Anh Túc", "Điền Thất", "Táo Đỏ", "Trần Bì", "Dương Kim Hoa", "Linh Chi Thảo", "Sơn Sâm", "Cát Cánh", "Cam Thảo", "Sinh Địa", "Xuyên Tâm Liên", "Hoàng Liên", "Hà Thủ Ô", "La Hán Quả", "Bạch Kỳ", "Đương Quy", "Xuyên Bối", "Đông Trùng Thảo")
 CUONGTHIPHU = "Cương Thi Phù"
-VATPHAMKHONGBANs = (
-    *VATPHAMTUDONGNHATs, *BAOTHUVATPHAMs, BUAGIAY, HYDUONG, TRANKY, TUIPHAPBAO, SOCAPDOANTHACH, TRUNGCAPDOANTHACH, CAOCAPDOANTHACH, CHIENQUOCLENH, NHIEPHONLINH, CHUONGHAMTHIEN, BATTIENDON, CUULONGTHANHOATRAO, DAIPHAPLUCTHACH, TIEUPHAPLUCTHACH, DAIHUYETTHACH, TIEUHUYETTHACH, ANTHANHOAN, THUONGPHUONGBAOKIEM, DAUNANH, TIEUDAOTAN, QUYNGUYENDON, KIMTANGTAN, KHIMACHDON, XALOITU, NGANHANHTU, TUTINHDON, PHUCSINHDON, THANHTAMDAN, KHUMATAN, THILUYENDON, THILUYENQUA, CAOCAPBAOTHUTHUCPHAM, ANXAPHU, TIEUHUYETTHACH, TIEUPHAPLUCTHACH, DAIHUYETTHACH, DAIPHAPLUCTHACH, NHANSAM, TAITAOHOAN, HOITHANHPHU, THIENLYHUUTINH, PHIHANHPHU, THOHANHCHAU, NHIEPHONLINH, CAOBOCTACDAN, TANGBAODO, THIENNGUYENDON, THIENNGUYENDAN, HOIBANGPHU, TINHNGUYENDON,
-    "Đá Kim Cương",
-    "Đế Kim Cương",
-    "Chuôi Kim Cương",
-    "Khoan Kim Cương",
-    "Cờ Đỏ",
-    "Sao Vàng",
-    "Cường Hóa Ngân Châm Độ Ách",
-    "Trang Sách Cũ",
-    "Bột Tiêu Thạch",
-    "Huy Hiệu 2D",
-    "Chiến Quốc Lệnh x3",
-    "Chiến Quốc Lệnh",
-    CUONGTHIPHU,
-    *NGUYENLIEULUYENDONs,
-)
+# Danh sách không bán (VATPHAMKHONGBANs) đã chuyển thành luật Giữ mặc định trong luattuido_xq.LUATMACDINH (sửa ở tab Túi đồ)
 
-# Khai khoáng (hái dược) ở các bản đồ này thì tự vứt các dược không cần (dù có trong VATPHAMKHONGBANs)
+# Khai khoáng (hái dược) ở các bản đồ này thì tự vứt các dược không cần (dù có luật Giữ)
 BANDOHAIDUOCs = (261, 262, 263)
 VATPHAMVUTKHIHAIDUOCs = ("La Hán Quả", "Hoàng Liên", "Hà Thủ Ô", "Xuyên Tâm Liên")
 
