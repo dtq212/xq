@@ -160,7 +160,13 @@ BUKHOANGCACHTAMXA = 1.
 # Tiếp cận cận chiến như client khi bấm chiêu trên phím tắt (xq + 0x1873A, đọc 2026-10-28): tìm đường tới ô mục tiêu, mỗi lần chỉ
 # ghi chừng này bước (client: KDK + 0x1620 = 2), đích đổi thì chừng này giây sau lần ghi trước mới tìm lại (client: mốc +500ms)
 SOBUOCTIEPCANCANCHIEN = 2
-THOIGIANTINHLAITIEPCANCANCHIEN = 0.5
+# Bot tìm đường lại và ghi đoạn mới mỗi chừng này giây kể cả khi đích không đổi (client 0.5s; ngắn hơn để chuỗi không cạn giữa đường)
+THOIGIANTINHLAITIEPCANCANCHIEN = 0.25
+# Mục tiêu đang đi về phía mình, bước tới của nó cách mình không quá chừng này ô (theo ô, max |dx| |dy|) thì đứng chờ
+KHOANGCACHCHOMUCTIEUTOI = 2
+# Mục tiêu chạy ra xa mà còn cách từ chừng này ô thì đón đầu nhẹ, tối đa QUANGDONDAUCANCHIEN ô; gần hơn thì nhắm ô của nó như client
+KHOANGCACHDONDAUCANCHIEN = 3
+QUANGDONDAUCANCHIEN = 2.
 # Thục Sơn chỉ dùng Khai Thiên Tịch Địa để lướt khi nội lực trên mức này (%), chỉnh được ở giao diện
 PHANTRAMNOILUCKHAITHIENTICHDIA = 75.
 KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN = 9.
@@ -395,19 +401,30 @@ VITRIKYNANG_LACKICH = 2123
 VITRIKYNANG_PHANTOA = 2124
 
 VIRIKYNANG_NGUYENKHIQUYNGUYEN = 3172
+# Nguyên Khí Quy Nguyên quá ~30 phút có lúc còn hiệu ứng mà hết tác dụng: bật được chừng này giây thì bấm làm mới (thu hồi rồi bật lại)
+TENKYNANG_NGUYENKHIQUYNGUYEN = "Nguyên Khí Quy Nguyên"
+THOIGIANLAMMOINGUYENKHIQUYNGUYEN = 28 * 60.
+# Sau mỗi lần gửi Nguyên Khí Quy Nguyên, chừng này giây mới được làm mới lần nữa (chờ tin; lỡ không bắt được tin thì không bấm qua lại)
+THOIGIANCHOTINLAMMOINGUYENKHIQUYNGUYEN = 30.
 VIRIKYNANG_HOTHEKIMCANG = 3173
 VITRIKYNANG_DATINHCUONGLUC = 3191
 
 # "kill" (bật tự động đánh thường lên mục tiêu, không phải kỹ năng) đã bật với mục tiêu này thì chừng này giây mới gửi lại cho chắc
 THOIGIANGUILAITANCONGVATLY = 5.
-# Đào Hoa Nguyên chỉ "kill" (bật đánh thường) khi nguyên khí không quá chừng này: còn nguyên khí thì spam chiêu, đánh thường làm chiêu ra chậm
-NGUYENKHITANCONGVATLYDAOHOA = 2
+# Đào Hoa Nguyên chỉ "kill" (bật đánh thường) khi nguyên khí không quá chừng này: còn nguyên khí thì spam chiêu, đánh thường làm chiêu ra chậm.
+# 3 = chưa đủ 4 cho Nhất Quyền (để 2 thì nguyên khí 3 + mục tiêu đã có Trọng Thương / Lạc Kích không chiêu nào được dùng, đứng im ~1s)
+NGUYENKHITANCONGVATLYDAOHOA = 3
 # Nguyên khí hồi tới chừng này thì ngắt đánh thường (cách xa ngưỡng bật để không đánh vài chiêu lại phải "kill" lại)
 NGUYENKHINGATTANCONGVATLYDAOHOA = 8
 # Thốn Kình lấp chỗ (mục tiêu đã có Trọng Thương) chỉ dùng khi nguyên khí dư hẳn (cùng mức ngắt đánh thường), không ăn phần tích cho Nhất Quyền
 NGUYENKHITOITHIEUTHONKINHLAPCHO = 8
-# Ba Động cận chiến / Lạc Kích lặp lại (mục tiêu đã có Lạc Kích): chỉ dùng khi sau nó còn đủ cho Nhất Quyền (2 + 4 trên mô tả)
+# Ba Động cận chiến / Lạc Kích lặp lại (mục tiêu đã có Lạc Kích): dùng khi sau nó còn đủ cho Nhất Quyền (2 + 4 trên mô tả), hoặc khi
+# Nhất Quyền còn hồi ít nhất THOIGIANHOICHIEUCONLAICHIEULOT giây (bước chờ delay 0 -> Nhất Quyền 0.8-1.7s bị hồi chiêu che mất) và
+# nguyên khí còn NGUYENKHITOITHIEUCHIEULOTKHIHOICHIEU. Thời gian còn lại tính từ lúc Nhất Quyền vào hồi chiêu + tái sử dụng trên mô tả
 NGUYENKHITOITHIEUCHIEULOT = 6
+THOIGIANHOICHIEUCONLAICHIEULOT = 1.
+NGUYENKHITOITHIEUCHIEULOTKHIHOICHIEU = 4
+THOIGIANHOICHIEUNHATQUYEN = 2.
 # Nhất Quyền đã hồi chiêu mà nguyên khí không quá chừng này thì không dùng Đại Hải (tốn 4) để lót, đánh thường để dành cho Nhất Quyền
 NGUYENKHIGIUCHONHATQUYEN = 4
 # Ngắt đánh thường: Tự Động Công Kích (thẻ Cơ Bản, gửi bằng pf2; "pf 14" máy chủ bỏ qua) "pf2 14 <mục tiêu>" là bật / tắt qua lại,
@@ -697,7 +714,7 @@ BAOTHUVATPHAMs = (SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN, THANTHU
 VATPHAMKHONGNHATs = tuple()
 # Vật phẩm ưu tiên nhặt trên mọi hành động khác (tấn công, theo nhóm, gom quái, ...)
 VATPHAMUUTIENNHATs = (LEBAOKHAIQUOC,)
-VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUSAMDON, CAPCUUDON, HOATTAMDON, TIEUDAOTAN, KIMTANGTAN, QUYNGUYENDON, KHIMACHDON, TUTAMDON,  HOANGKIMTHANHY, "Thanh Đồng Bảo Hộp", TUKIMBAOHOP, "Mồi Câu", "Đá Tương Uyên", TIENTE, "Vô Song Điểm Phiếu", "Cờ Đỏ", "Sao Vàng", LEBAOKHAIQUOC, "Âu Dã Bảo Thạch", "Long Cốt",
+VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUSAMDON, CAPCUUDON, HOATTAMDON, TIEUDAOTAN, KIMTANGTAN, QUYNGUYENDON, KHIMACHDON, TUTAMDON,  HOANGKIMTHANHY, "Thanh Đồng Bảo Hộp", TUKIMBAOHOP, "Mồi Câu", "Đá Tương Uyên", TIENTE, "Vô Song Điểm Phiếu", "Cờ Đỏ", "Sao Vàng", LEBAOKHAIQUOC, "Âu Dã Bảo Thạch", "Long Cốt", "Phấn Huỳnh Quang"
                       # Phôi vũ khí cấp 75: Kiếm, Đao, Thương, Côn, Ám Khí, Quyền
                       "Ngọc Kiếm", "Kim Đao", "Xích Anh Thương", "Cổ Phương Côn", "Nguyệt Hoàn", "Thạch Điêu Quyền Nhẫn", )
 
@@ -934,8 +951,9 @@ THOIGIANGOIBAOTHUVETOIDA = 4.
 
 # Chờ lệnh đánh: đang ra đòn / dùng phép thì không gửi lệnh đánh nào (game đang bận; game cập nhật cờ sẵn sàng chậm, gửi chiêu khác là
 # cắt ngang chiêu đang ra), còn lại (đứng im, di chuyển, khựng sau đòn) gửi ngay, riêng vừa gửi xong thì chờ tối đa ngần này giây
-# cho game kịp chuyển tư thế (nếu không sẽ gửi tiếp chiêu khác, cắt ngang chiêu vừa gửi)
-THOIGIANCHOPHANUNGLENH = 0.15
+# cho game kịp chuyển tư thế (nếu không sẽ gửi tiếp chiêu khác, cắt ngang chiêu vừa gửi). Phải ngắn hơn 1 vòng bot (~0.123s):
+# 0.15 làm cứ gửi 1 vòng lại bỏ 1 vòng => spam chiêu thực tế 0.25s/lần (đo log 2026-10-28), lúc server nhận bị làm tròn theo 0.25s
+THOIGIANCHOPHANUNGLENH = 0.1
 # Chọn mục tiêu khi đang chạy: con nằm sau lưng (ngược hướng đang chạy) bị tính xa thêm ngần này ô, để không quay đầu đổi qua lại
 PHATMUCTIEUSAULUNG = 3.
 # Mục tiêu đang đánh chỉ bị thay bằng con khác chỉ vì gần hơn khi con đó gần hơn ít nhất ngần này ô (giữa các ứng viên khác chỉ cần 0.5):

@@ -557,8 +557,9 @@ class MoiTruong:
             self._inlog(f"[LỆNH {nguon}] {caulenh}")
 
     def get_thoidiemlenhdanhgannhat(self):
-        # Lần gửi lệnh đánh gần nhất (kỹ năng hoặc bật tự động đánh thường "kill")
-        return max(self._thoidiemsudungkynanggannhat, self._thoidiemsudungtancongvatlygannhat)
+        # Lần gửi kỹ năng gần nhất. "kill" chỉ là yêu cầu máy chủ bắt đầu đánh thường (không phải chiêu / đòn đánh, không ra ngay) nên
+        # không tính: gửi kill xong vẫn gửi chiêu được ngay
+        return self._thoidiemsudungkynanggannhat
 
     def get_is_kynangdangbikhoa(self, idkynang):
         # Đang khoá mọi kỹ năng hoặc riêng kỹ năng này đang bị khoá chống spam: gửi lúc này chắc chắn không đi (không log)
@@ -2250,7 +2251,8 @@ class MoiTruong:
 
     def action_dichuyenoo(self, x, y, delay = 0.05, sobuoctoida = None, is_dungkedich = False, thoigiantinhlai = 0.):
         # sobuoctoida: chỉ ghi chừng này bước đầu của chuỗi (hết bước thì lần gọi sau tìm đường lại). is_dungkedich: bỏ bước cuối, dừng ở
-        # ô kề đích (đích là ô mục tiêu đang đứng). thoigiantinhlai: đang đi mà đích đổi thì chừng này giây sau lần ghi trước mới tìm lại
+        # ô kề đích (đích là ô mục tiêu đang đứng). thoigiantinhlai: tìm đường lại và ghi đoạn mới mỗi chừng này giây kể cả khi đích không
+        # đổi (như client tính lại liên tục trong lúc đi, chuỗi không cạn giữa đường => không khựng / không phải chờ lượt nhấc chân)
         # Đi tới đúng ô (x, y): lấy chuỗi hướng từ hàm tìm đường cục bộ của client rồi ghi vào chuỗi đường đi xq + 0x1FC2B4 (từ chỉ số 1)
         # và đặt chỉ số bước xq + 0x380AFC = 1 => client tự gửi "go x,y <chuỗi>" mỗi ~0.5s 2 bước tới hết chuỗi (thử trên Ngọc: lệch 0 ô).
         # Không qua click điểm ảnh nên không lệch theo camera / khung màn hình. False: bị chặn (vô hiệu hoá di chuyển, khoá vận khí, đang xuất chiêu, chưa tới lượt); None: không tìm
@@ -2274,10 +2276,10 @@ class MoiTruong:
         if (xsaptoi, ysaptoi) == (x, y):
             return False
         # Đang đi theo ô tới đúng đích này (chuỗi chưa hết) thì để client đi tiếp, ghi lại chuỗi làm đứt nhịp gửi "go"
-        if self._dichdioogannhat == (x, y) and self.get_idlenhdichuyen():
-            return True
-        # Đích đổi (mục tiêu vừa bước) mà chuỗi cũ chưa đi hết: chưa tới lúc tìm lại thì đi nốt (client cũng chỉ tìm lại mỗi 0.5s)
-        if thoigiantinhlai and self.get_idlenhdichuyen() and time.time() - self._thoidiemdichuyengannhat < thoigiantinhlai:
+        if thoigiantinhlai:
+            if self.get_idlenhdichuyen() and time.time() - self._thoidiemdichuyengannhat < thoigiantinhlai:
+                return True
+        elif self._dichdioogannhat == (x, y) and self.get_idlenhdichuyen():
             return True
         chuoihuong = self._get_chuoihuongtimduongcucbo(xsaptoi, ysaptoi, x, y)
         if not chuoihuong:
@@ -2394,19 +2396,36 @@ class MoiTruong:
             return False
         x1, y1 = struct.unpack("<ii", read_bytes(self.tientrinh, diachinhanvat + 0x18, 8))
         x2, y2 = struct.unpack("<ii", read_bytes(self.tientrinh, diachimuctieu + 0x18, 8))
-        if max(abs(x2 - x1), abs(y2 - y1)) <= 1:
+        xhientai, yhientai = struct.unpack("<ii", read_bytes(self.tientrinh, diachimuctieu, 8))
+
+        def kc(xa, ya):
+            return max(abs(xa - x1), abs(ya - y1))
+
+        # Đã kề: còn chuỗi bước thì ngắt ngay, không chạy xuyên qua mục tiêu (ngắt chỉ chặn client tự bước THOIGIANCHANTUDICHUYENCLIENT)
+        # Mục tiêu đang đi về phía mình và bước tới đã gần (KHOANGCACHCHOMUCTIEUTOI ô) thì đứng chờ nó tới, không đi rồi quay đầu
+        if kc(x2, y2) <= 1 or (kc(x2, y2) < kc(xhientai, yhientai) and kc(x2, y2) <= KHOANGCACHCHOMUCTIEUTOI):
+            if self.get_idlenhdichuyen():
+                self.action_ngatdichuyen()
             return False
-        if self.is_tranhvungcam and self.get_is_duongdicatvungcam(x1, y1, x2, y2):
-            return self.action_dichuyengiukhoangcachtoidadiem(x2, y2, khoangcachtoida)
+
+        # Mục tiêu chạy ra xa mà còn cách xa (KHOANGCACHDONDAUCANCHIEN ô): đón đầu nhẹ (tối đa QUANGDONDAUCANCHIEN ô), gần rồi thì nhắm ô
+        # của nó như client. Chạy xuyên đã có chặn ở trên: vừa kề là ngắt
         nhan = "TIẾP CẬN CẬN CHIẾN"
-        is_ok = self.action_dichuyenoo(x2, y2, delay = 0., sobuoctoida = SOBUOCTIEPCANCANCHIEN, is_dungkedich = True,
+        xdich, ydich = x2, y2
+        if kc(x2, y2) >= KHOANGCACHDONDAUCANCHIEN:
+            xdon, ydon = self._laytoadodondau(diachimuctieu, quangdondautoida = QUANGDONDAUCANCHIEN)
+            if (round(xdon), round(ydon)) != (xhientai, yhientai):
+                xdich, ydich, nhan = round(xdon), round(ydon), "TIẾP CẬN CẬN CHIẾN ĐÓN ĐẦU"
+        if self.is_tranhvungcam and self.get_is_duongdicatvungcam(x1, y1, xdich, ydich):
+            return self.action_dichuyengiukhoangcachtoidadiem(xdich, ydich, khoangcachtoida)
+        is_ok = self.action_dichuyenoo(xdich, ydich, delay = 0., sobuoctoida = SOBUOCTIEPCANCANCHIEN, is_dungkedich = True,
                                        thoigiantinhlai = THOIGIANTINHLAITIEPCANCANCHIEN)
         if is_ok is None:
             # Không ra đường (chưa có đối tượng tìm đường, xa / bị bao kín): tự động tìm đường của game như cũ
-            return self._tiepcanbangtimduong(x2, y2, khoangcachtoida)
-        if is_ok and IS_LOGDICHUYEN and (x2, y2) != self._dichclicklogcuoi:
-            self._dichclicklogcuoi = (x2, y2)
-            self._inlog(f"[{nhan}] (đang ở {(x1, y1)}, tư thế {self.get_idtuthenhanvat()}) -> mục tiêu {(x2, y2)}")
+            return self._tiepcanbangtimduong(xdich, ydich, khoangcachtoida)
+        if is_ok and IS_LOGDICHUYEN and (xdich, ydich) != self._dichclicklogcuoi:
+            self._dichclicklogcuoi = (xdich, ydich)
+            self._inlog(f"[{nhan}] (đang ở {(x1, y1)}, tư thế {self.get_idtuthenhanvat()}) -> {(xdich, ydich)}, mục tiêu {(x2, y2)}")
         return is_ok
 
     def action_dichuyengiukhoangcachtoidadiembangtimduong(self, x2, y2, khoangcachtoida):
@@ -2440,7 +2459,7 @@ class MoiTruong:
             self._inlog(f"[{nhan}] (đang ở {(x1, y1)}, tư thế {self.get_idtuthenhanvat()}) -> {(xdich, ydich)}")
         return is_ok
 
-    def _laytoadodondau(self, diachimuctieu):
+    def _laytoadodondau(self, diachimuctieu, quangdondautoida = 6.0):
         # Mục tiêu đang chạy ra xa: click vào vị trí hiện tại thì tới nơi nó đã chạy tiếp (đuổi theo cái bóng, không bao giờ kịp).
         # Ước lượng vận tốc từ vị trí trong ~1s gần nhất rồi nhắm điểm phía trước mục tiêu.
         x, y = self.get_toado(diachimuctieu)
@@ -2466,7 +2485,7 @@ class MoiTruong:
         if (x - x1) * vx + (y - y1) * vy <= 0:
             return x, y
         khoangcach = math.dist((x1, y1), (x, y))
-        quangdondau = min(tocdo * min(1.5, khoangcach / tocdo), 6.0)
+        quangdondau = min(tocdo * min(1.5, khoangcach / tocdo), quangdondautoida)
         return x + vx / tocdo * quangdondau, y + vy / tocdo * quangdondau
 
     def action_dichuyenphudau(self, diachicosothongtinnhanvat2, khoangcachphudau = 1, delay = 0.05):
