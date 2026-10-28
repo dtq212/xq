@@ -3,12 +3,14 @@ import os
 import random
 import re
 import time
+import unicodedata
 
 import pymem
 import win32gui
 import win32con
 
 from hangso_xq import *
+from thongbao_xq import baosuco, LYDOTAMNGUNGTUXA
 from moitruong_xq import MoiTruong, DOUUTIEN_THAP, DOUUTIEN_KHANCAP, DOUUTIEN_CAO, SOLUONGDOITUONGXUNGQUANHTOIDA, tinh_is_huongmatvediem
 from tienich_xq import luuthietlap as util_luuthietlap
 from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam
@@ -147,7 +149,18 @@ class TacTu:
         self._soluongchonglonnhat_map = {}
         self._langopgannhat = None
         self._capkhonggopduocs = set()
-        # Sắp xếp hành trang (bấm nút trên bảng điều khiển): mỗi lượt chuyển 1 vật phẩm, xem action_sapxephanhtrang
+        # Sắp xếp hành trang (bấm nút trên bảng điều khiển): mỗi lượt chuyển 1 vật phẩm, xem action_sapxephanhtrang.
+        # {tên: loại vật phẩm trong mô tả, vd "Có thể sử dụng", "Tinh luyện", "" nếu không có}: cùng tên cùng loại nên nhớ theo tên,
+        # chỉ desc tên chưa biết (_docloaivatpham)
+        self._loaivatpham_map = {}
+        # Tự động đặt vật phẩm mới vào chỗ hợp lý (action_tudongdatvatphammoi): id hành trang lượt trước, {id món mới: [lúc thấy,
+        # số lần đã chuyển]}
+        self._is_tudongdatvatphammoi = True
+        self._idhanhtrangtruoc = None
+        self._vatphammoi_map = {}
+        self._thoidiemdatvatphammoigannhat = 0.
+        # Đổi chỗ 2 viên đá khi túi đầy: (id món trung gian, id đá cần đặt, ô đích, lúc gửi bước 1), xem _timbuocsapxephanhtrang
+        self._xoayvongsapxep = None
         self._is_dangsapxephanhtrang = False
         self._thoidiembatdausapxephanhtrang = 0.
         self._thoidiemsapxephanhtranggannhat = 0.
@@ -406,8 +419,6 @@ class TacTu:
         self._thoidiemchuyentrangthaitrieuhoibaothuvatpham = 0.
         # Bảo thú kỹ năng triệu hồi đang bị gọi về vì ra quá xa nhân vật
         self._idbaothudanggoive = set()
-        # {id bảo thú: số giây chờ trước lần gọi về tiếp theo} (gấp đôi sau mỗi lần gọi)
-        self._khoangthoigiangoibaothuve_map = {}
         self._thoidiemyeucaubaothuvatphamdoilenh = 0.
 
         self._is_danguutiennhatdo = False
@@ -627,6 +638,7 @@ class TacTu:
         self._solandichuyensapxep = 0
         self._lenhsapxepgannhat = None
         self._solanlaplenhsapxep = 0
+        self._xoayvongsapxep = None
         phatam("Bắt đầu sắp xếp hành trang")
 
     def _ketthucsapxephanhtrang(self, thongbao):
@@ -1041,6 +1053,10 @@ class TacTu:
             # Đang sang bản đồ của người được theo sau: đi theo trước tấn công / gom quái / nhặt đồ
             yeucauduocchon = self._yeucautheosau
             lydochon = "THEO SAU SANG BẢN ĐỒ KHÁC"
+        elif self._idbandocandi and self._yeucautudo:
+            # Đang Đi tới bản đồ: đi tiếp trước tấn công / gom quái / nhặt đồ
+            yeucauduocchon = self._yeucautudo
+            lydochon = "ĐI TỚI BẢN ĐỒ"
         elif is_yeucaunhatvatphamuutien:
             yeucauduocchon = self._yeucaunhatvatpham
             lydochon = "NHẶT ĐỒ ƯU TIÊN"
@@ -1418,10 +1434,14 @@ class TacTu:
         return True
 
     def _lammoinguyenkhiquynguyen(self):
-        # Nguyên Khí Quy Nguyên chạy quá ~30 phút thì có lúc vẫn còn trong danh sách hiệu ứng nhưng hết tác dụng (người dùng phát hiện
-        # 2026-10-28: thiếu nguyên khí mà không biết). Game báo "Tập trung vận khí “Nguyên Khí Quy Nguyên”." khi bật, "Bạn thu hồi …" khi tắt
-        # => ghi mốc bật theo tin; bật đã lâu (THOIGIANLAMMOINGUYENKHIQUYNGUYEN) hoặc chưa biết lúc bật thì bấm 1 lần: đang bật thật thì
-        # thu hồi (lượt sau danh sách chiêu tự bật lại, có mốc mới), đang hết tác dụng thì thành bật lại luôn
+        # Quá ~30 phút server cho Nguyên Khí Quy Nguyên hết hạn mà client vẫn hiện hiệu ứng (người dùng phát hiện 2026-10-28: thiếu nguyên
+        # khí mà không biết). Server báo "Tập trung vận khí “Nguyên Khí Quy Nguyên”." khi bật, "Bạn thu hồi …" khi tắt. Người dùng chốt:
+        # client CÓ hiệu ứng thì chưa chắc server có, client KHÔNG có thì chắc chắn server không có. Nên:
+        #  - không có hiệu ứng: chắc chắn tắt => bấm bật, bị từ chối (đang ra chiêu...) thì THOIGIANCHOTAMPHAPBATTAT giây sau bấm lại
+        #  - có hiệu ứng, tin "Tập trung" chưa quá THOIGIANLAMMOINGUYENKHIQUYNGUYEN: đang bật
+        #  - có hiệu ứng mà chưa có tin / quá hạn: bấm làm mới 1 lần rồi chờ tin (server bật thì thành thu hồi, hiệu ứng mất => nhánh đầu
+        #    bật lại; server đã hết hạn thì thành bật). Chưa có tin thì không bấm tiếp trong THOIGIANCHOTINLAMMOINGUYENKHIQUYNGUYEN
+        thoidiemhientai = time.time()
         for thoidiem, noidung in self.moitruong.get_lichsutrochuyen5s():
             if thoidiem <= self._thoidiemxettinnguyenkhiquynguyen or TENKYNANG_NGUYENKHIQUYNGUYEN not in noidung:
                 continue
@@ -1430,19 +1450,25 @@ class TacTu:
                 self._thoidiembatnguyenkhiquynguyen = thoidiem
             elif "thu hồi" in noidung:
                 self._thoidiembatnguyenkhiquynguyen = None
-        if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NGUYENKHIQUYNGUYEN,), False, is_hieuungcoloi = 1):
-            return
-        if self._thoidiembatnguyenkhiquynguyen is not None \
-                and time.time() - self._thoidiembatnguyenkhiquynguyen < THOIGIANLAMMOINGUYENKHIQUYNGUYEN:
-            return
-        # Vừa gửi (tự bật hay làm mới) thì chờ tin xác nhận: không bắt được tin cũng không bấm qua lại liên tục
-        if time.time() - self._thoidiemguitamphapbattat_map.get(VIRIKYNANG_NGUYENKHIQUYNGUYEN, 0.) < THOIGIANCHOTINLAMMOINGUYENKHIQUYNGUYEN:
+        # Đọc bảng hiệu ứng chưa chắc (đang tải lại) thì coi như có: chỉ khi chắc chắn không có mới bấm ngay
+        is_cohieuung = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NGUYENKHIQUYNGUYEN,), True, is_hieuungcoloi = 1)
+        dabat = self._thoidiembatnguyenkhiquynguyen
+        if is_cohieuung:
+            if dabat is not None and thoidiemhientai - dabat < THOIGIANLAMMOINGUYENKHIQUYNGUYEN:
+                return
+            # Chưa chắc trạng thái: đã bấm mà server chưa trả tin thì chờ, không bấm dồn (lỡ đang bật thì bấm thêm là tắt)
+            thoidiemgui = self._thoidiemguitamphapbattat_map.get(VIRIKYNANG_NGUYENKHIQUYNGUYEN, 0.)
+            if thoidiemgui > self._thoidiemxettinnguyenkhiquynguyen and thoidiemhientai - thoidiemgui < THOIGIANCHOTINLAMMOINGUYENKHIQUYNGUYEN:
+                return
+        elif dabat is not None and thoidiemhientai - dabat < THOIGIANCHOTAMPHAPBATTAT:
+            # Vừa có tin bật mà hiệu ứng chưa kịp hiện trên client: chờ, đừng bấm thành tắt
             return
         if not self._is_kynangdungduoc(VIRIKYNANG_NGUYENKHIQUYNGUYEN) or not self._is_duocguitamphapbattat(VIRIKYNANG_NGUYENKHIQUYNGUYEN):
             return
         if self.moitruong.action_sudungkynangvitri(VIRIKYNANG_NGUYENKHIQUYNGUYEN) and IS_LOGCAULENH:
-            dabat = self._thoidiembatnguyenkhiquynguyen
-            self.moitruong._inlog(f"[LÀM MỚI NGUYÊN KHÍ QUY NGUYÊN] {'chưa biết lúc bật' if dabat is None else f'đã bật {(time.time() - dabat) / 60:.0f} phút'}")
+            lydo = "không có hiệu ứng" if not is_cohieuung else ("có hiệu ứng, chưa có tin bật" if dabat is None
+                                                                else f"đã bật {(thoidiemhientai - dabat) / 60:.0f} phút, làm mới")
+            self.moitruong._inlog(f"[NGUYÊN KHÍ QUY NGUYÊN] bấm: {lydo}")
 
     def _get_thoigianconlaihoichieunhatquyen(self, is_sansang):
         # Thời gian hồi chiêu còn lại của Nhất Quyền: ghi mốc lúc nó chuyển từ sẵn sàng sang đang hồi, lấy thời gian tái sử dụng trên mô tả
@@ -1608,14 +1634,22 @@ class TacTu:
                 loainpc, _, idphutoi, solanphu = phuongan
                 return {"loai": "phu", "solan": solanphu,
                         "mota": f"Phù {laynpcphu(loainpc, idbandohientai)[0]} tới {laytenbando(idphutoi)}{f', chạy tiếp {solanphu} cổng tới {ten}' if solanphu else ''}"}
-        elif is_hoithanhphu and is_xa and (idbandodich == BANDO_TANTHUTHON or (phuongan and (solanbo is None or phuongan[3] + 1 < solanbo))) \
-                and not self.get_lydokhonghoithanhphu():
-            diphu = f" rồi phù tới {laytenbando(phuongan[2])}" if idbandodich != BANDO_TANTHUTHON else ""
-            return {"loai": "hoithanhphu", "solan": phuongan[3] if phuongan else 0, "mota": f"Hồi Thành Phù về Tân Thủ Thôn{diphu} ({ten})"}
+        lydokhongphu = ""
+        if idbandohientai not in (BANDO_TANTHUTHON, BANDO_CHUQUOC) and is_hoithanhphu and is_xa \
+                and (idbandodich == BANDO_TANTHUTHON or (phuongan and (solanbo is None or phuongan[3] + 1 < solanbo))):
+            lydo = self.get_lydokhonghoithanhphu()
+            if not lydo:
+                diphu = f" rồi phù tới {laytenbando(phuongan[2])}" if idbandodich != BANDO_TANTHUTHON else ""
+                chaytiep = f", chạy tiếp {phuongan[3]} cổng" if idbandodich != BANDO_TANTHUTHON and phuongan[3] else ""
+                return {"loai": "hoithanhphu", "solan": phuongan[3] if phuongan else 0,
+                        "mota": f"Hồi Thành Phù về Tân Thủ Thôn{diphu}{chaytiep} ({ten}), thay vì chạy bộ {solanbo} cổng"}
+            lydokhongphu = f" (không Hồi Thành Phù: {lydo})"
         if duongdi:
             _, xcong, ycong, idke = duongdi[0]
+            # Hiện cả đường đi: "còn 15 cổng" không thì không biết là qua những bản đồ nào
+            duong = " → ".join(laytenbando(b[3]) for b in duongdi)
             return {"loai": "chaybo", "solan": solanbo, "cong": (xcong, ycong),
-                    "mota": f"Chạy tới cổng ({xcong}, {ycong}) sang {laytenbando(idke)}, còn {solanbo} cổng tới {ten}"}
+                    "mota": f"Chạy tới cổng ({xcong}, {ycong}) sang {laytenbando(idke)}, còn {solanbo} cổng tới {ten}{lydokhongphu}: {duong}"}
         return {"loai": "khongduong", "solan": None, "mota": f"Không có đường chạy bộ / phù tới {ten}: để game tự tìm đường"}
 
     def _thuchienbuocditoibando(self, buoc, idbandodich, toadodich, nhanlog):
@@ -2118,6 +2152,11 @@ class TacTu:
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             return
 
+        # Đang Đi tới bản đồ người dùng chọn: không chọn quái dọc đường (trước đây gặp quái là đứng lại đánh), tới nơi mới đánh
+        if self._idbandocandi:
+            self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
+            return
+
         def _thaydoimuctieu(diachimuctieu):
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(diachimuctieu)
             self.moitruong._thoidiemtuthenhanvatdungimcomuctieugannhat = time.time()
@@ -2543,21 +2582,20 @@ class TacTu:
                 is_boss = not is_nguoichoi and not is_baothu and tendoituong in TENBOSSBUFFMAOSONs
                 if not is_nguoichoi and not is_baothu and not is_boss and idbandohientai not in (BANDO_COMO, BANDO_BATQUAITRAN):
                     continue
-                # Bát Quái Trận buff cả quái trừ Phá Thiên Yêu
-                if not is_nguoichoi and not is_baothu and tendoituong == "Phá Thiên Yêu":
-                    continue
                 if is_bandokhongpk and not is_boss:
                     continue
+                # Phá Thiên Yêu chỉ buff Thực Cốt
+                is_chibuffthuccot = not is_nguoichoi and not is_baothu and tendoituong == "Phá Thiên Yêu"
 
                 if khoangcach < khoangcachthuccotgannhat and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCCOT,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtindoituongmuctieuxemxet, is_hieuungcoloi = 0):
                     diachidoituongcanbuffthuccot = diachicosothongtindoituongmuctieuxemxet
                     khoangcachthuccotgannhat = khoangcach
 
-                if khoangcach < khoangcachthucgiapgannhat and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCGIAP,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtindoituongmuctieuxemxet, is_hieuungcoloi = 0):
+                if not is_chibuffthuccot and khoangcach < khoangcachthucgiapgannhat and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCGIAP,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtindoituongmuctieuxemxet, is_hieuungcoloi = 0):
                     diachidoituongcanbuffthucgiap = diachicosothongtindoituongmuctieuxemxet
                     khoangcachthucgiapgannhat = khoangcach
 
-                if khoangcach < khoangcachthuctamgannhat and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCTAM,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtindoituongmuctieuxemxet, is_hieuungcoloi = 0):
+                if not is_chibuffthuccot and khoangcach < khoangcachthuctamgannhat and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCTAM,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtindoituongmuctieuxemxet, is_hieuungcoloi = 0):
                     diachidoituongcanbuffthuctam = diachicosothongtindoituongmuctieuxemxet
                     khoangcachthuctamgannhat = khoangcach
 
@@ -2841,6 +2879,7 @@ class TacTu:
             if time.time() - self._thoidiemphatambaothuhethan > 60.:
                 self._thoidiemphatambaothuhethan = time.time()
                 phatam("{} đã hết hạn sử dụng".format(tenvatpham), is_block = False)
+                baosuco(self.moitruong, "vatpham", f"{tenvatpham} đã hết hạn sử dụng", giancach = 3600.)
             return None
         return vitri, tenvatpham
 
@@ -2949,8 +2988,8 @@ class TacTu:
                     if co(TIEUPHAPLUCTHACH):
                         self.action_sudungvatphamhanhtrang(TIEUPHAPLUCTHACH)
 
-                # Mao Sơn máu dưới 25% thì dùng Tiểu Huyết Thạch ở mọi bản đồ, không cần bật PK hay tự động khai khoáng
-                if ((is_bandopk and (is_dangbatpk or self._is_tudongkhaikhoang) and phantramsinhlucconlai < 75.) or (tenmonphai == "maoson" and phantramsinhlucconlai < 25.)) \
+                # Máu dưới 25% thì dùng Tiểu Huyết Thạch ở mọi bản đồ, mọi môn phái, không cần bật PK hay tự động khai khoáng
+                if ((is_bandopk and (is_dangbatpk or self._is_tudongkhaikhoang) and phantramsinhlucconlai < 75.) or phantramsinhlucconlai < 25.) \
                         and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_HUYETTHACH,), True, is_hieuungcoloi = 1):
                     # Khai khoáng ở Hư Lăng Động: Đại Huyết Thạch trước, hết mới Tiểu Huyết Thạch
                     huyetthachs = [DAIHUYETTHACH, TIEUHUYETTHACH] if self._is_tudongkhaikhoang and idbandohientai == BANDO_HULANGDONG else [TIEUHUYETTHACH]
@@ -2967,81 +3006,89 @@ class TacTu:
                         self.action_sudungvatphamhanhtrang(NGANHANHTU, delay = 0.)
                     if co(XALOITU) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_XALOITU,), macdinh = True, is_hieuungcoloi = 1):
                         self.action_sudungvatphamhanhtrang(XALOITU, delay = 0.)
-                    if phantramsinhlucconlai < 75 and co(DUAHAU) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_PHUCHOISINHLUC,), macdinh = True, is_hieuungcoloi = 1):
-                        self.action_sudungvatphamhanhtrang(DUAHAU, delay = 0.)
 
             if self.moitruong.get_diempk() > 0:
                 if co(ANXAPHU):
                     self.action_sudungvatphamhanhtrang(ANXAPHU, is_boquaxacnhan = True, delay = 0.)
 
-            if not self._is_tudongdichientruong:
-                # Máu thấp: lưu tên pháp bảo đang đeo (đọc ô trang bị, không dò hành trang) rồi đổi sang pháp bảo không hư hỏng;
-                # máu hồi lại (cao hơn lúc đổi 15%) thì tìm pháp bảo cũ trong hành trang đeo lại, xác nhận bằng cách đọc lại ô trang bị
-                tenphapbaohientai = self.moitruong.get_tenphapbaohientai()
-                # Vừa ra lệnh đổi: game chưa kịp cập nhật ô trang bị thì chưa xét, tránh tưởng đã đeo lại / người chơi tự đổi
-                is_dangchodoiphapbao = time.time() - self._thoidiemhoandoiphapbao < 2.
+            # Máu thấp: lưu tên pháp bảo đang đeo (đọc ô trang bị, không dò hành trang) rồi đổi sang pháp bảo không hư hỏng;
+            # máu hồi lại (cao hơn lúc đổi 15%) thì tìm pháp bảo cũ trong hành trang đeo lại, xác nhận bằng cách đọc lại ô trang bị
+            tenphapbaohientai = self.moitruong.get_tenphapbaohientai()
+            # Vừa ra lệnh đổi: game chưa kịp cập nhật ô trang bị thì chưa xét, tránh tưởng đã đeo lại / người chơi tự đổi
+            is_dangchodoiphapbao = time.time() - self._thoidiemhoandoiphapbao < 2.
 
-                if self._tenphapbaocu is not None and not is_dangchodoiphapbao:
-                    if self._tenphapbaocu and tenphapbaohientai == self._tenphapbaocu:
-                        print("{}: đã đeo lại pháp bảo {}".format(self.moitruong.get_tendoituong(), self._tenphapbaocu))
+            if self._tenphapbaocu is not None and not is_dangchodoiphapbao:
+                if self._tenphapbaocu and tenphapbaohientai == self._tenphapbaocu:
+                    print("{}: đã đeo lại pháp bảo {}".format(self.moitruong.get_tendoituong(), self._tenphapbaocu))
+                    self._tenphapbaocu = None
+                elif tenphapbaohientai not in PHAPBAOKHONGHUHONGs:
+                    # Không còn đeo pháp bảo không hư hỏng (người chơi tự đổi / tháo): thôi không đeo lại
+                    print("{}: pháp bảo đang đeo là {}, bỏ đeo lại {}".format(self.moitruong.get_tendoituong(), tenphapbaohientai or "(không)", self._tenphapbaocu))
+                    self._tenphapbaocu = None
+                elif phantramsinhlucconlai >= self._mucsinhluckhihoandoi + 15 and time.time() - self._thoidiemthumaclaiphapbao > 2.:
+                    if not self._tenphapbaocu:
+                        # Trước đó không đeo pháp bảo nào: không có gì để đeo lại
                         self._tenphapbaocu = None
-                    elif tenphapbaohientai not in PHAPBAOKHONGHUHONGs:
-                        # Không còn đeo pháp bảo không hư hỏng (người chơi tự đổi / tháo): thôi không đeo lại
-                        print("{}: pháp bảo đang đeo là {}, bỏ đeo lại {}".format(self.moitruong.get_tendoituong(), tenphapbaohientai or "(không)", self._tenphapbaocu))
-                        self._tenphapbaocu = None
-                    elif phantramsinhlucconlai >= self._mucsinhluckhihoandoi + 15 and time.time() - self._thoidiemthumaclaiphapbao > 2.:
-                        if not self._tenphapbaocu:
-                            # Trước đó không đeo pháp bảo nào: không có gì để đeo lại
-                            self._tenphapbaocu = None
-                        else:
-                            vitriphapbaocu = self.moitruong.action_timkiemvitrivatphamhanhtrang(self._tenphapbaocu)
-                            if vitriphapbaocu is not False and self.action_sudungvatphamhanhtrangtaivitri(vitriphapbaocu, self._tenphapbaocu, delay = 0.):
-                                self._thoidiemthumaclaiphapbao = time.time()
-                                self._thoidiemhoandoiphapbao = time.time()
-
-                if ((phantramsinhlucconlai <= 25 and idbandohientai not in (BANDO_CHIENTRUONG, BANDO_COMO, BANDO_TIVO, *BANDOKHONGPKs)) or (phantramsinhlucconlai < 15 and idbandohientai == BANDO_COMO)) \
-                        and not is_dangchodoiphapbao and tenphapbaohientai not in PHAPBAOKHONGHUHONGs:
-                    for phapbaokhonghuhong in PHAPBAOKHONGHUHONGs:
-                        if not co(phapbaokhonghuhong):
-                            continue
-                        if self.action_sudungvatphamhanhtrang(phapbaokhonghuhong, delay = 0.):
+                    else:
+                        vitriphapbaocu = self.moitruong.action_timkiemvitrivatphamhanhtrang(self._tenphapbaocu)
+                        if vitriphapbaocu is not False and self.action_sudungvatphamhanhtrangtaivitri(vitriphapbaocu, self._tenphapbaocu, delay = 0.):
+                            self._thoidiemthumaclaiphapbao = time.time()
                             self._thoidiemhoandoiphapbao = time.time()
-                            # Đổi lại lần nữa khi chưa kịp đeo lại pháp bảo cũ: vẫn giữ tên pháp bảo cũ ban đầu
-                            if self._tenphapbaocu is None:
-                                self._tenphapbaocu = tenphapbaohientai
-                                self._mucsinhluckhihoandoi = phantramsinhlucconlai
-                                print("{}: máu {}%, lưu pháp bảo đang đeo: {} -> đổi sang {}".format(
-                                    self.moitruong.get_tendoituong(), phantramsinhlucconlai, tenphapbaohientai or "(không)", phapbaokhonghuhong))
-                        break
 
-                if is_dangbatpk and is_bandopk and self._is_tudongsudungkynang and phantramsinhlucconlai <= 75 and time.time() - self._thoidiemsudungvatphamhoisinhlucgannhat > 5.:
-                    for tenvatphamhoisinhluc in [THILUYENDON, THILUYENQUA, CAPCUUDON, TRIDUOC, ]:
-                        if co(tenvatphamhoisinhluc):
-                            self._thoidiemsudungvatphamhoisinhlucgannhat = time.time()
-                            self.action_sudungvatphamhanhtrang(tenvatphamhoisinhluc, delay = 0.)
-                            break
-                elif self._is_tudongsudungkynang and phantramsinhlucconlai <= 75 and time.time() - self._thoidiemsudungvatphamhoisinhlucgannhat > 5.:
-                    if co(HOATLACHOAN):
-                        self._thoidiemsudungvatphamhoisinhlucgannhat = time.time()
-                        self.action_sudungvatphamhanhtrang(HOATLACHOAN, delay = 0.)
+            if ((phantramsinhlucconlai <= 25 and idbandohientai not in (BANDO_CHIENTRUONG, BANDO_COMO, BANDO_TIVO, *BANDOKHONGPKs)) or (phantramsinhlucconlai < 15 and idbandohientai == BANDO_COMO)) \
+                    and not is_dangchodoiphapbao and tenphapbaohientai not in PHAPBAOKHONGHUHONGs:
+                for phapbaokhonghuhong in PHAPBAOKHONGHUHONGs:
+                    if not co(phapbaokhonghuhong):
+                        continue
+                    if self.action_sudungvatphamhanhtrang(phapbaokhonghuhong, delay = 0.):
+                        self._thoidiemhoandoiphapbao = time.time()
+                        # Đổi lại lần nữa khi chưa kịp đeo lại pháp bảo cũ: vẫn giữ tên pháp bảo cũ ban đầu
+                        if self._tenphapbaocu is None:
+                            self._tenphapbaocu = tenphapbaohientai
+                            self._mucsinhluckhihoandoi = phantramsinhlucconlai
+                            print("{}: máu {}%, lưu pháp bảo đang đeo: {} -> đổi sang {}".format(
+                                self.moitruong.get_tendoituong(), phantramsinhlucconlai, tenphapbaohientai or "(không)", phapbaokhonghuhong))
+                    break
 
-                # Hồi nội lực: đang PK (hoặc Bát Quái Trận nội lực dưới 25%) ở bản đồ PK thì Hoạt Tâm Đơn (hết thì Long Tiên Thảo), ngoài ra thì An Thần Hoàn
-                if self._is_tudongsudungkynang and time.time() - self._thoidiemsudungvatphamhoinoilucgannhat > 5.:
-                    if (is_dangbatpk or (idbandohientai == BANDO_BATQUAITRAN and phantramnoilucconlai < 25)) and is_bandopk:
-                        if noilucmatdi > 2000:
-                            for tenvatphamhoinoiluc in [HOATTAMDON, "Long Tiên Thảo", PHUCDUOC, ]:
-                                if co(tenvatphamhoinoiluc):
-                                    self._thoidiemsudungvatphamhoinoilucgannhat = time.time()
-                                    self.action_sudungvatphamhanhtrang(tenvatphamhoinoiluc, delay = 0.)
-                                    break
-                    elif phantramnoilucconlai <= 75 and co(ANTHANHOAN):
-                        self._thoidiemsudungvatphamhoinoilucgannhat = time.time()
-                        self.action_sudungvatphamhanhtrang(ANTHANHOAN, delay = 0.)
+            # Hồi sinh lực/nội lực: chưa mất đủ nhiều mà dùng thuốc thì phí => ngoài phần trăm còn phải mất quá 2500 sinh lực / 3000 nội lực.
+            # Đang PK ở bản đồ PK: dưới 75%; ở phó bản (không PK): dưới 25%
+            is_hoiphucpk = is_dangbatpk and is_bandopk
+            is_hoiphucphoban = not is_hoiphucpk and idbandohientai in BANDOPHOBANs
+            nguongphantramhoiphuc = 75 if is_hoiphucpk else 25
+            sinhlucmatdi = self.moitruong.get_sinhluctoida() - self.moitruong.get_sinhlucconlai()
 
-                if is_dangbatpk and is_bandopk and self._is_tudongsudungkynang and self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCCOT, HIEUUNGKYNANG_THUCGIAP, HIEUUNGKYNANG_THIEUDOT, HIEUUNGKYNANG_THAUCOTDINH, HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN), macdinh = False, is_hieuungcoloi = 0) and time.time() - self._thoidiemsudungthanhtamdangannhat > 5.:
-                    if co(KHUMATAN):
-                        self._thoidiemsudungthanhtamdangannhat = time.time()
-                        self.action_sudungvatphamhanhtrang(KHUMATAN, delay = 0.)
+            # Vật phẩm hồi ngay dùng chung thời gian hồi theo nhóm: chỉ gửi lệnh khi client báo đã hồi xong (_sudungvatphamhoi).
+            # Lệnh không phải lúc nào cũng thành công: gửi rồi mà vẫn chưa vào hồi thì THOIGIANCHOXACNHANHOIVATPHAM giây sau gửi lại
+            if time.time() - self._thoidiemsudungvatphamhoisinhlucgannhat > THOIGIANCHOXACNHANHOIVATPHAM:
+                hoisinhlucs = []
+                # Phó bản thì không cần bật tự động kỹ năng
+                if (is_hoiphucpk and self._is_tudongsudungkynang) or is_hoiphucphoban:
+                    if phantramsinhlucconlai < nguongphantramhoiphuc and sinhlucmatdi > 2500:
+                        hoisinhlucs = [TRIDUOC, THILUYENQUA, CAPCUUDON, HOATLACHOAN, ]
+                        # Phó bản không PK: dùng theo thứ tự ngược lại (cả sinh lực và nội lực)
+                        if is_hoiphucphoban:
+                            hoisinhlucs.reverse()
+                elif self._is_tudongsudungkynang and phantramsinhlucconlai <= 75:
+                    hoisinhlucs = [HOATLACHOAN, ]
+                if self._sudungvatphamhoi(hoisinhlucs, co):
+                    self._thoidiemsudungvatphamhoisinhlucgannhat = time.time()
+
+            if self._is_tudongsudungkynang and time.time() - self._thoidiemsudungvatphamhoinoilucgannhat > THOIGIANCHOXACNHANHOIVATPHAM:
+                hoinoilucs = []
+                if is_hoiphucpk or is_hoiphucphoban:
+                    if phantramnoilucconlai < nguongphantramhoiphuc and noilucmatdi > 3000:
+                        hoinoilucs = [PHUCDUOC, LONGTIENTHAO, HOATTAMDON, ANTHANHOAN, ]
+                        if is_hoiphucphoban:
+                            hoinoilucs.reverse()
+                elif phantramnoilucconlai <= 75:
+                    hoinoilucs = [ANTHANHOAN, ]
+                if self._sudungvatphamhoi(hoinoilucs, co):
+                    self._thoidiemsudungvatphamhoinoilucgannhat = time.time()
+
+            if is_dangbatpk and is_bandopk and self._is_tudongsudungkynang and self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCCOT, HIEUUNGKYNANG_THUCGIAP, HIEUUNGKYNANG_THIEUDOT, HIEUUNGKYNANG_THAUCOTDINH, HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN), macdinh = False, is_hieuungcoloi = 0) and time.time() - self._thoidiemsudungthanhtamdangannhat > THOIGIANCHOXACNHANHOIVATPHAM:
+                # Khu Ma Tán trước, hết (hoặc đang hồi) thì Thanh Tâm Đơn (tác dụng tương tự)
+                if self._sudungvatphamhoi([KHUMATAN, THANHTAMDON, ], co):
+                    self._thoidiemsudungthanhtamdangannhat = time.time()
 
             if self.moitruong.get_idnguoichoi() == 59844:
                 if time.time() - self._thoidiemdocsachgannhat > 30.:
@@ -3101,6 +3148,23 @@ class TacTu:
                 if time.time() - self._thoidiemsudungbattiendongannhat > 30.:
                     if co(BATTIENDON) and self.action_sudungvatphamhanhtrang(BATTIENDON):
                         self._thoidiemsudungbattiendongannhat = time.time()
+
+    def _sudungvatphamhoi(self, tenvatphams, co):
+        # Dùng món đầu tiên còn trong hành trang mà client báo đã hết thời gian hồi; True nếu đã gửi được lệnh dùng
+        tenvatphams = [ten for ten in tenvatphams if co(ten)]
+        if not tenvatphams:
+            return False
+        thoigianhois = self.moitruong.get_thoigianhoiconlaivatphams(tenvatphams)
+        for ten in tenvatphams:
+            if thoigianhois[ten] <= 0 and self.action_sudungvatphamhanhtrang(ten, delay = 0.):
+                return True
+        # Tất cả đang hồi nhưng sẽ xong trước vòng lặp kế tiếp: chờ tới đúng lúc hồi xong rồi dùng ngay, không trễ thêm 1 vòng
+        conlai = min(thoigianhois.values())
+        if 0 < conlai <= THOIGIANCHOHOIXONGTOIDA:
+            time.sleep(conlai + 0.02)
+            ten = next(ten for ten in tenvatphams if thoigianhois[ten] <= conlai)
+            return self.action_sudungvatphamhanhtrang(ten, delay = 0.)
+        return False
 
     def action_lammoitrangthai(self):
         danhhieu = DANHHIEU_MAP[self.moitruong.get_idnguoichoi()]
@@ -3278,6 +3342,11 @@ class TacTu:
         # Phải xoá NGAY TỪ LÚC ĐANG XUẤT CHIÊU, không chờ thấy tư thế di chuyển: đo được game bước đi đúng lúc hết tư thế xuất chiêu
         # (+0.00s, trước lượt kiểm tra đầu tiên của bot), dùng đích tìm đường / lệnh di chuyển đặt từ lúc tiếp cận còn nằm lại.
         # Game còn giữ "ô sắp tới" (bước dở, có khi đặt ngay trong lúc ra chiêu) thì cũng kéo về vị trí hiện tại
+        # Người chơi đang giữ chuột kéo nhân vật đi: không chặn / xoá lệnh đi của người chơi, bỏ luôn các hạn chờ ngắt đang treo
+        if self.moitruong.get_is_dangclickchuottrai():
+            self._thoidiemhetchantudichuyentruocxuatchieu = 0.
+            self._thoidiemhetchongatdichuyen = 0.
+            return
         if self.moitruong.get_is_dangxuatchieu():
             self._thoidiemhetchantudichuyentruocxuatchieu = 0.
             self.moitruong.action_chandichuyen()
@@ -3478,7 +3547,7 @@ class TacTu:
             # Kim Chung Tráo: game không cho dùng khi đang Dã Tính nên bỏ qua lúc đó
             (VITRIKYNANG_KIMTRUNGCHAO, "sudungkynangkhongmuctieu", lambda: not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_DATINCUONGLUC,), True, is_hieuungcoloi = 1) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KIMTRUNGCHAO,), True, is_hieuungcoloi = 1), 0, None, False, False),
             (VIRIKYNANG_HOTHEKIMCANG, "sudungkynanglenbanthan", lambda: not is_nhuongbuff and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_HOTHEKIMCANG,), True, is_hieuungcoloi = 1), 0, None, False, False),
-            (VIRIKYNANG_NGUYENKHIQUYNGUYEN, "sudungkynangkhongmuctieu", lambda: not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NGUYENKHIQUYNGUYEN,), True, is_hieuungcoloi = 1) and self._is_kynangdungduoc(VIRIKYNANG_NGUYENKHIQUYNGUYEN) and self._is_duocguitamphapbattat(VIRIKYNANG_NGUYENKHIQUYNGUYEN), 0, None, False, False),
+            # Nguyên Khí Quy Nguyên: bật / làm mới theo tin server ở _lammoinguyenkhiquynguyen (gọi trước danh sách)
             (VIRIKYNANG_HOTHEKIMCANG, "sudungkynanglendongdoi", lambda: diachidongdoicanbuff and not is_nhuongbuff, self._khoangcachsudungkynangtamxa, diachidongdoicanbuff, False, False),
             # "kill" chỉ bật Tự Động Công Kích lên mục tiêu (không phải kỹ năng): gửi được từ xa, máy chủ giữ lệnh cả khi di chuyển và chỉ
             # đánh khi đã ở gần. Đánh thường làm chiêu ra chậm hẳn nên chỉ bật khi gần hết nguyên khí (NGUYENKHITANCONGVATLYDAOHOA), còn
@@ -3681,16 +3750,43 @@ class TacTu:
             kynangchopheps = KYNANGCHOPHEPTHEONHANVAT_MAP.get(tennhanvat)
         return set(kynangchopheps) if kynangchopheps is not None else None
 
-    def _get_tenbaothukynangtrieuhois(self):
-        # Bảo thú kỹ năng triệu hồi có tên dạng "Thiên Binh ( chủ nhân ) (cấp 65)", bảo thú giang hồ thì không có ngoặc
-        tenbaothus = []
+    def _get_baothukynangtrieuhois(self):
+        # [(tên viết thường, % sinh lực còn lại)] của bảo thú kỹ năng triệu hồi
+        # Tên dạng "Thiên Binh ( chủ nhân ) (cấp 65)", bảo thú giang hồ thì không có ngoặc
+        baothus = []
         for sothutu in range(1, 4):
             if not self.moitruong.get_iddoituongbaothu(sothutu):
                 continue
             tendoituongbaothu = self.moitruong.get_tendoituongbaothu(sothutu) or ""
             if "(" in tendoituongbaothu and ")" in tendoituongbaothu:
-                tenbaothus.append(tendoituongbaothu.lower())
-        return tenbaothus
+                # Đọc hụt (False) thì coi như đầy máu, không tế nhầm
+                phantramsinhluc = self.moitruong.get_phantramsinhlucconlaidoituongbaothukynangtrieuhoi(sothutu)
+                baothus.append((tendoituongbaothu.lower(), phantramsinhluc if phantramsinhluc is not False else 100))
+        return baothus
+
+    def _get_tenbaothukynangtrieuhois(self):
+        return [ten for ten, _ in self._get_baothukynangtrieuhois()]
+
+    def _get_phantramsinhlucthapnhatthanhviennhomgan(self, khoangcachtoida):
+        # % sinh lực thấp nhất của thành viên nhóm (không tính bản thân) còn sống trong khoangcachtoida ô; không có ai thì None
+        if not self.moitruong.get_is_dangnamtrongnhom():
+            return None
+        idnguoichoithanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms()
+        idnguoichoi = self.moitruong.get_idnguoichoi()
+        phantramthapnhat = None
+        j = -1
+        while True:
+            j += 1
+            addr = self.moitruong.get_diachicosothongtindoituongx(j)
+            if not addr:
+                return phantramthapnhat
+            if not self.moitruong.get_is_nhanvattontai(addr) or self.moitruong.get_is_nhanvatdachet(addr):
+                continue
+            id_nd = self.moitruong.get_idnguoichoi(addr)
+            if id_nd in idnguoichoithanhviennhoms and id_nd != idnguoichoi and self.moitruong.get_khoangcach(addr) <= khoangcachtoida:
+                phantram = self.moitruong.get_phantramsinhlucconlai(addr)
+                if phantramthapnhat is None or phantram < phantramthapnhat:
+                    phantramthapnhat = phantram
 
     def _get_is_cobaothukynangtrieuhoi(self, tenbaothu = None):
         # tenbaothu: chỉ tính bảo thú triệu hồi có tên này (vd: THIENBINH)
@@ -3921,25 +4017,31 @@ class TacTu:
 
         idbandohientai = self.moitruong.get_idbandohientai()
 
-        tenbaothukynangtrieuhois = self._get_tenbaothukynangtrieuhois()
-        is_cobaothukynangtrieuhoi = bool(tenbaothukynangtrieuhois)
-        is_cothienbinh = any(ten.startswith(THIENBINH.lower()) for ten in tenbaothukynangtrieuhois)
-        is_cothantuong = any(ten.startswith(THANTUONG.lower()) for ten in tenbaothukynangtrieuhois)
-        is_cobaothukhongphaicuongthi = any(not ten.startswith(CUONGTHI.lower()) for ten in tenbaothukynangtrieuhois)
+        baothukynangtrieuhois = self._get_baothukynangtrieuhois()
+        is_cobaothukynangtrieuhoi = bool(baothukynangtrieuhois)
+        is_cobaothusaphet = any(phantram < PHANTRAMSINHLUCTETHANTUONG for _, phantram in baothukynangtrieuhois)
+        # Mệnh Tế / Huyết Tế: người cần hồi dưới 25% máu thì tế mọi bảo thú triệu hồi,
+        # dưới 50% máu thì chỉ tế khi bảo thú triệu hồi không phải Cương Thi / Thần Tướng
+        is_khongphaicuongthithantuong = is_cobaothukynangtrieuhoi and all(
+            not ten.startswith((CUONGTHI.lower(), THANTUONG.lower())) for ten, _ in baothukynangtrieuhois)
+        is_cantebaothu = lambda phantram: is_cobaothukynangtrieuhoi and (phantram < 25 or (phantram < 50 and is_khongphaicuongthithantuong))
+        # Thành viên nhóm thấp máu nhất trong 21x21 ô (None: không có ai): Mệnh Tế hồi cả nhóm nên xét cả máu của họ
+        phantramthanhviennhomgan = self._get_phantramsinhlucthapnhatthanhviennhomgan(KHOANGCACHHIEUQUAMENHTE) if is_cobaothukynangtrieuhoi else None
+        is_cothanhviennhomgan = phantramthanhviennhomgan is not None
         kynangchopheps = self._get_kynangchophep()
         # Bật xoay vòng chiêu có mục tiêu, mục tiêu là quái: bỏ Phục Ma Quyết (phải chờ lượt), đánh bằng Lôi Động Cửu Thiên (không mục tiêu,
         # không chờ lượt) dù chỉ 1 mục tiêu, xa quá thì chạy lại gần. Mục tiêu là người chơi (PK) thì không chạy vào sát, vẫn dùng Phục Ma Quyết
         is_xoayvongchieu = self.moitruong.get_is_batxoayvongchieu() and not is_muctieulanguoichoi
 
         danhsachuutien = [
-            # Máu thấp thì tế bảo thú triệu hồi (không bao giờ tế Cương Thi):
-            #   Tế Thần Tướng (120 pháp lực, hồi 180s) sẵn sàng thì dùng trước: hy sinh bảo thú để gọi Thần Tướng
-            #   đang hồi chiêu thì Mệnh Tế (Thần Tướng, 150 pháp lực: 25% khí huyết của nó hồi cho cả nhóm trong 21x21 ô)
-            #   hoặc Huyết Tế (Thiên Binh, 100 pháp lực: hy sinh 50% khí huyết của nó hồi cho bản thân)
+            # Bảo thú triệu hồi sắp chết (dưới PHANTRAMSINHLUCTETHANTUONG% sinh lực) thì Tế Thần Tướng (120 pháp lực, hồi 180s): hy sinh nó để gọi Thần Tướng
             # Tế Thần Tướng chỉ có từ cấp CAPDOTOITHIEUTETHANTUONG: cấp thấp chưa học mà game vẫn báo ô kỹ năng sẵn sàng nên bị spam liên tục
-            (VITRIKYNANG_TETHANTUONG, "sudungkynangkhongmuctieu", lambda: phantramsinhlucconlai < 50 and is_cobaothukhongphaicuongthi and self.moitruong.get_capdonhanvat() >= CAPDOTOITHIEUTETHANTUONG, 0, None, True, True),
-            (VITRIKYNANG_MENHTE, "sudungkynangkhongmuctieu", lambda: phantramsinhlucconlai < 50 and is_cothantuong, 0, None, True, True),
-            (VITRIKYNANG_HUYETTE, "sudungkynangkhongmuctieu", lambda: phantramsinhlucconlai < 50 and is_cothienbinh, 0, None, True, True),
+            (VITRIKYNANG_TETHANTUONG, "sudungkynangkhongmuctieu", lambda: is_cobaothusaphet and self.moitruong.get_capdonhanvat() >= CAPDOTOITHIEUTETHANTUONG, 0, None, True, True),
+            # Máu thấp (xem is_cantebaothu) thì tế khí huyết bảo thú:
+            #   có thành viên nhóm trong 21x21 ô thì Mệnh Tế (150 pháp lực: 25% khí huyết bảo thú hồi cho cả nhóm), xét bản thân hoặc thành viên đó thấp máu
+            #   không thì Huyết Tế (100 pháp lực: hy sinh 50% khí huyết bảo thú hồi cho bản thân)
+            (VITRIKYNANG_MENHTE, "sudungkynangkhongmuctieu", lambda: is_cothanhviennhomgan and is_cantebaothu(min(phantramsinhlucconlai, phantramthanhviennhomgan)), 0, None, True, True),
+            (VITRIKYNANG_HUYETTE, "sudungkynangkhongmuctieu", lambda: not is_cothanhviennhomgan and is_cantebaothu(phantramsinhlucconlai), 0, None, True, True),
             # Chưa có bảo thú triệu hồi thì gọi bảo thú theo lựa chọn _baothutrieuhoimaoson; chờ 3s sau mỗi lần gọi để bảo thú kịp xuất hiện
             #   Tự động: có Cương Thi Phù trong hành trang thì ưu tiên gọi Cương Thi,
             #   không thì gọi Thiên Binh (3 Bùa Giấy). Pháp lực / khí huyết / nguyên khí đủ hay chưa thì _is_kynangdungduoc xét theo mô tả trong game
@@ -3998,7 +4100,7 @@ class TacTu:
                 self._bogiuchokynangphai(giucho)
 
             if vitrikynang == VITRIKYNANG_LOIDONGCUUTHIEN and loaikynang == "sudungkynangkhongmuctieu" and is_ok:
-                self.moitruong.action_chovankhi(1.5)
+                self.moitruong.action_chovankhi(THOIGIANCHOVAOVANKHI)
                 self._thoidiemsudungloidongcuuthiengannhat = time.time()
             if vitrikynang in (VITRIKYNANG_TRIEUHOICUONGTHI, VITRIKYNANG_TRIEUHOITHIENBINH, VITRIKYNANG_TRIEUHOIQUYTOT) and is_ok:
                 self._thoidiemtrieuhoibaothugannhat = time.time()
@@ -4965,6 +5067,24 @@ class TacTu:
 
             is_khacbando = idbandohientai != target_map
 
+            # Đang ở phó bản mà điểm kế ở bản đồ khác không có đường chạy bộ tới (ra khỏi phó bản / sang tầng chưa có cổng): bỏ qua,
+            # lấy điểm kế tiếp ở bản đồ này hoặc tới được; không còn điểm nào thì đứng yên
+            if is_khacbando and idbandohientai in BANDOPHOBANs and timduongbando(idbandohientai, target_map) is None:
+                sodiem = len(diemdanhxungquanhs)
+                for buocnhay in range(1, sodiem + 1):
+                    idx = (self._iddiemdanhxungquanhhientai + buocnhay) % sodiem
+                    p_map_id = diemdanhxungquanhs[idx][2]
+                    if p_map_id == idbandohientai or timduongbando(idbandohientai, p_map_id) is not None:
+                        break
+                else:
+                    self._capnhatbuocdichuyen(f"Ở phó bản {laytenbando(idbandohientai)}: không có điểm đánh nào tới được")
+                    break
+                self._iddiemdanhxungquanhhientai = idx
+                self._diemdanhxungquanhhientai = diemdanhxungquanhs[idx]
+                self._thoidiembatdaudendiem = time.time()
+                target_map = self._diemdanhxungquanhhientai[2]
+                is_khacbando = idbandohientai != target_map
+
             if is_khacbando:
                 # Điểm đánh ở bản đồ khác: phù / chạy bộ từng bản đồ một (không Hồi Thành Phù như trước)
                 buoc = self._lapbuocditoibando(target_map)
@@ -5089,7 +5209,14 @@ class TacTu:
         if is_moibatdau:
             thoigianhienthi = f"{int(thoigian // 60)} phút" if thoigian >= 60 else f"{int(thoigian)} giây"
             print(f"[TẠM NGƯNG] {lydo} -> Ngưng mọi hoạt động {thoigianhienthi}")
-            phatam("Phát hiện ẩn thân, tạm ngưng" if "ẩn thân" in lydo else "Phát hiện người lạ, tạm ngưng")
+            if lydo == LYDOTAMNGUNGTUXA:
+                phatam("Tạm ngưng từ xa")
+            else:
+                phatam("Phát hiện ẩn thân, tạm ngưng" if "ẩn thân" in lydo else "Phát hiện người lạ, tạm ngưng")
+                # Chỉ nhân vật tự phát hiện ("phát hiện <tên>") báo, các nhân vật ngưng theo ("<ai đó> phát hiện ...") thì không, cho
+                # 1 lần phát hiện chỉ ra 1 tin
+                if lydo.startswith("phát hiện"):
+                    baosuco(self.moitruong, "tamngung", f"Phát hiện {lydo[len('phát hiện '):]}, cả máy tạm ngưng {thoigianhienthi}", khoa = lydo)
             self.moitruong.action_ngatdichuyen()
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             self._yeucautancong = None
@@ -5576,10 +5703,17 @@ class TacTu:
         return is_ok
 
     def _timbuocsapxephanhtrang(self, soogiu = 2):
-        # Bước tiếp theo để hành trang ngăn nắp: (id vật phẩm, ô đích), False = đã xong, None = chưa đọc được hành trang.
-        # Xếp chung cả 4 túi như 1 dãy ô mở (túi phụ có thể chỉ mở 4/6/12 ô, ô khoá bỏ qua): gộp chồng trước (xuyên túi),
-        # rồi xếp theo tên dồn từ đầu túi 1. "move <id># <ô>" chuyển thẳng được sang ô túi khác, ô đích có vật phẩm khác thì
-        # game đổi chỗ 2 món => mỗi lệnh đặt ít nhất 1 món vào đúng chỗ cuối cùng, không dời tạm ra ô trống.
+        # Bước tiếp theo để hành trang ngăn nắp: ("o", id vật phẩm, ô đích) / ("tui", id vật phẩm, túi đích 1-4),
+        # chuỗi = dừng với thông báo đó, None = chưa đọc được hành trang / chờ kết quả lần trước.
+        # Xếp chung cả 4 túi như 1 dãy ô mở (túi phụ có thể chỉ mở 4/6/12 ô, ô khoá bỏ qua): gộp chồng trước, rồi xếp: đồ khác
+        # (theo loại ［Vũ Khí］［Nón］... rồi tên) dồn từ đầu túi 1, đồ ［Có thể sử dụng］ rồi thuốc (THUOCSAPXEPs) dồn về cuối túi cuối.
+        # Game chỉ có 2 lệnh: "move <id># <ô>" trong CÙNG túi (ô đích có món khác thì đổi chỗ 2 món) và
+        # "move <id># to <túi>" sang túi khác (rơi vào ô trống của túi đó, túi đầy thì không được), không có lệnh đổi 2 món khác túi. Nên:
+        # 1. Giữa các túi: so theo tên, túi nào thừa món tên X (nhiều hơn số ô tên X của túi đó trong bố cục đích) chuyển sang túi đang
+        #    thiếu X mà còn ô trống. Các túi thiếu đều đầy (vòng tròn A cần món ở B, B cần món ở A...) thì dời tạm 1 món thừa của túi
+        #    thiếu đó sang túi còn trống bất kỳ, lượt sau túi vừa trống nhận món nó cần => tối đa 2 lệnh là bớt 1 món sai túi.
+        #    Cả hành trang không còn ô trống nào thì không chuyển giữa túi được: chỉ xếp trong từng túi rồi báo.
+        # 2. Trong từng túi: mỗi lệnh đổi chỗ đặt ít nhất 1 món vào đúng ô cuối cùng.
         # soogiu ô mở cuối túi 1 xếp sau cùng (chỉ dùng khi các túi khác đầy) để chế đồ không phải chuyển đi (action_giuotrongcuoihanhtrang)
         vitrimos = self.moitruong.get_danhsachvitrimohanhtrang()
         soluongo = vitrimos[-1] + 1
@@ -5599,32 +5733,190 @@ class TacTu:
         chongchuaday_map = self._laychongchuaday_map(cacvitri, tens, ids)
         buoc = self._chonbuocxepchong(chongchuaday_map)
         if buoc:
-            return buoc[1], buoc[2]
+            onguon, idnguon, odich = buoc
+            if onguon // SOLUONGOMOITUI != odich // SOLUONGOMOITUI:
+                return "tui", idnguon, odich // SOLUONGOMOITUI + 1
+            return "o", idnguon, odich
         if self._langopgannhat:
             # Đang chờ kết quả lần gộp trước
             return None
 
-        tensapxeps = sorted((tens[i] for i in cacvitri if ids[i]), key = lambda ten: ten.lower())
-        tencan_map = {vitri: tensapxeps[k] if k < len(tensapxeps) else None for k, vitri in enumerate(cacvitri)}
+        # Loại vật phẩm (_docloaivatpham) của mọi tên đang có: tên chưa biết thì đọc mô tả / desc (mỗi lượt 1 tên)
+        tenchuabiet = next((tens[i] for i in cacvitri if ids[i] and tens[i] not in self._loaivatpham_map), None)
+        if tenchuabiet is not None:
+            self._docloaivatpham(tenchuabiet, next(i for i in cacvitri if ids[i] and tens[i] == tenchuabiet))
+            return None
+
+        # Bố cục đích: đồ khác dồn từ đầu túi 1, đồ dùng được rồi thuốc dồn về cuối túi cuối, ô trống ở giữa. Các ô giữ cuối túi 1
+        # chỉ nhận đồ khác khi hết chỗ
+        tensapxeps = sorted((tens[i] for i in cacvitri if ids[i]), key = self._khoasapxepvatpham)
+        vitrichinhs = [vitri for vitri in cacvitri if vitri not in ogius]
+        sokhac = sum(1 for ten in tensapxeps if self._khoasapxepvatpham(ten)[0] == 0)
+        socuoi = len(tensapxeps) - sokhac
+        if socuoi <= len(vitrichinhs):
+            sokhacchinh = min(sokhac, len(vitrichinhs) - socuoi)
+            vitridichs = vitrichinhs[:sokhacchinh] + ogius[:sokhac - sokhacchinh] + vitrichinhs[len(vitrichinhs) - socuoi:]
+        else:
+            vitridichs = cacvitri[:len(tensapxeps)]
+        tencan_map = dict.fromkeys(cacvitri)
+        tencan_map.update(zip(vitridichs, tensapxeps))
+
+        def tui(vitri):
+            return vitri // SOLUONGOMOITUI
 
         def is_dungcho(vitri):
             return (tens[vitri] if ids[vitri] else None) == tencan_map[vitri]
 
+        # Bước 2 của lần đổi chỗ 2 viên đá (xem cuối hàm) làm trước mọi việc khác, kẻo bị xếp lại mất ô vừa dọn:
+        # ô okiemtra đã có idkiemtra (0 = trống) thì chuyển idchuyen tới ô của idmuctieu (None = chính okiemtra)
+        if self._xoayvongsapxep:
+            okiemtra, idkiemtra, idchuyen, idmuctieu, thoidiem = self._xoayvongsapxep
+            if ids[okiemtra] == idkiemtra and idchuyen in ids and (idmuctieu is None or idmuctieu in ids):
+                self._xoayvongsapxep = None
+                odich = okiemtra if idmuctieu is None else ids.index(idmuctieu)
+                if tui(ids.index(idchuyen)) == tui(odich):
+                    return "o", idchuyen, odich
+            elif time.time() - thoidiem < 3.:
+                # Chờ game cập nhật bước 1
+                return None
+            self._xoayvongsapxep = None
+
+        # 1. Giữa các túi. thua_map[túi][tên] > 0: túi thừa bấy nhiêu món tên đó, < 0: còn thiếu
+        thua_map = {}
+        for vitri in cacvitri:
+            demtui = thua_map.setdefault(tui(vitri), {})
+            if ids[vitri]:
+                demtui[tens[vitri]] = demtui.get(tens[vitri], 0) + 1
+            if tencan_map[vitri] is not None:
+                demtui[tencan_map[vitri]] = demtui.get(tencan_map[vitri], 0) - 1
+        sootrong_map = {}
+        for vitri in vitrimos:
+            sootrong_map[tui(vitri)] = sootrong_map.get(tui(vitri), 0) + (0 if ids[vitri] else 1)
+
+        def chonmonthua(tuinguon, ten = None):
+            # Món thừa trong tuinguon (tên ten, hoặc tên bất kỳ đang thừa) cần chuyển đi, ưu tiên món đang nằm sai ô
+            ungviens = [i for i in cacvitri if tui(i) == tuinguon and ids[i] and thua_map[tuinguon].get(tens[i], 0) > 0
+                        and (ten is None or tens[i] == ten)]
+            return min(ungviens, key = is_dungcho, default = None)
+
+        cachuyengiuatui = any(sl > 0 for demtui in thua_map.values() for sl in demtui.values())
+        if cachuyengiuatui:
+            # Chuyển thẳng: món thừa sang túi đang thiếu tên đó mà còn ô trống
+            for tuidich, demtui in thua_map.items():
+                if not sootrong_map.get(tuidich):
+                    continue
+                for ten, sl in demtui.items():
+                    if sl >= 0:
+                        continue
+                    for tuinguon in thua_map:
+                        if tuinguon != tuidich and thua_map[tuinguon].get(ten, 0) > 0:
+                            return "tui", ids[chonmonthua(tuinguon, ten)], tuidich + 1
+            # Các túi đang thiếu đều đầy: dời tạm 1 món thừa của túi thiếu sang túi còn nhiều ô trống nhất
+            tuitrongs = sorted((t for t, so in sootrong_map.items() if so), key = lambda t: -sootrong_map[t])
+            for tuinguon, demtui in thua_map.items():
+                if not any(sl < 0 for sl in demtui.values()):
+                    continue
+                nguon = chonmonthua(tuinguon)
+                tuidich = next((t for t in tuitrongs if t != tuinguon), None)
+                if nguon is not None and tuidich is not None:
+                    return "tui", ids[nguon], tuidich + 1
+            # Hết ô trống: không chuyển giữa túi được, vẫn xếp trong từng túi
+
+        # 2. Trong từng túi: nguồn là món tên tencan cùng túi đang nằm sai chỗ; ưu tiên món mà sau khi đổi chỗ, món ở dich
+        # rơi đúng vào chỗ của nó. Túi chưa đủ món (chưa chuyển giữa túi xong) thì ô thiếu bỏ qua.
+        # Đá (DAKHONGDEDOs) không được đè lên ô có món: chuyển món ở dich sang ô của đá (vẫn là đổi chỗ 2 món); 2 bên đều là đá thì
+        # dời đá ở dich ra ô trống cùng túi, không có thì xoay vòng qua món thường cùng túi, túi toàn đá thì tạm gửi sang túi khác
+        sokhongxepduoc = 0
         for dich in cacvitri:
             tencan = tencan_map[dich]
-            if tencan is None:
-                break
-            if is_dungcho(dich):
+            if tencan is None or is_dungcho(dich):
                 continue
-            # Nguồn: món tên tencan đang nằm sai chỗ; ưu tiên món mà sau khi đổi chỗ, món ở dich rơi đúng vào chỗ của nó
-            nguons = [i for i in cacvitri if ids[i] and tens[i] == tencan and not is_dungcho(i)]
+            nguons = [i for i in cacvitri if tui(i) == tui(dich) and ids[i] and tens[i] == tencan and not is_dungcho(i)]
             if not nguons:
-                # Hành trang vừa đổi giữa lúc đọc: lượt sau đọc lại
-                return None
+                continue
             tendich = tens[dich] if ids[dich] else None
             nguon = next((i for i in nguons if tencan_map[i] == tendich), nguons[0])
-            return ids[nguon], dich
-        return False
+            if not ids[dich] or not self._is_dakhongdedo(tencan):
+                return "o", ids[nguon], dich
+            if not self._is_dakhongdedo(tendich):
+                return "o", ids[dich], nguon
+            otrongs = [i for i in cacvitri if tui(i) == tui(dich) and not ids[i]]
+            if otrongs:
+                # Ưu tiên ô trống không cần món nào, khỏi phải dời lần nữa
+                return "o", ids[dich], min(otrongs, key = lambda i: tencan_map[i] is not None)
+            # Túi đầy: xoay vòng qua 1 món thường Z cùng túi (ưu tiên món đang sai chỗ): Z đè lên dich (đá ở dich sang ô của Z),
+            # lượt sau Z đè lên ô đá cần đặt (đá đó vào dich, xem _xoayvongsapxep) => đá không bao giờ là món đi đè
+            trunggians = [i for i in cacvitri if tui(i) == tui(dich) and ids[i] and i not in (dich, nguon)
+                          and not self._is_dakhongdedo(tens[i])]
+            if trunggians:
+                trunggian = min(trunggians, key = is_dungcho)
+                self._xoayvongsapxep = (dich, ids[trunggian], ids[trunggian], ids[nguon], time.time())
+                return "o", ids[trunggian], dich
+            # Túi toàn đá: tạm đưa đá ở dich sang túi khác còn trống ("to túi" chỉ vào ô trống), lượt sau đặt đá cần vào dich,
+            # viên đưa đi được bước 1 chuyển về sau
+            tuitam = max((t for t, so in sootrong_map.items() if so and t != tui(dich)), key = sootrong_map.get, default = None)
+            if tuitam is not None:
+                self._xoayvongsapxep = (dich, 0, ids[nguon], None, time.time())
+                return "tui", ids[dich], tuitam + 1
+            sokhongxepduoc += 1
+        if cachuyengiuatui:
+            return "Hành trang hết ô trống, không chuyển được vật phẩm giữa các hành trang"
+        if sokhongxepduoc:
+            return f"Còn {sokhongxepduoc} ô đá chưa xếp được (túi không còn ô trống để đổi chỗ 2 viên đá)"
+        if not all(is_dungcho(vitri) for vitri in cacvitri):
+            # Hành trang vừa đổi giữa lúc đọc: lượt sau đọc lại
+            return None
+        return "Đã sắp xếp xong hành trang"
+
+    @staticmethod
+    def _chuanhoatenvatpham(ten):
+        return unicodedata.normalize("NFC", re.sub(r'\x1b[a-zA-Z0-9]', '', ten or "")).strip()
+
+    def _is_thuocsapxep(self, ten):
+        ten = self._chuanhoatenvatpham(ten)
+        return any(ten.startswith(thuoc) for thuoc in THUOCSAPXEPs)
+
+    def _khoasapxepvatpham(self, ten):
+        # Thứ tự khi sắp xếp hành trang (tên đã có trong _loaivatpham_map): nhóm 0 đồ khác, 1 đồ ［Có thể sử dụng］, 2 thuốc;
+        # trong nhóm theo loại (Vũ Khí, Nón, Tinh luyện...) rồi tên, món không ghi loại (nguyên liệu...) để sau
+        loai = self._loaivatpham_map.get(ten, "")
+        nhom = 2 if self._is_thuocsapxep(ten) else 1 if loai == LOAIVATPHAM_COTHESUDUNG else 0
+        return nhom, not loai, loai.lower(), ten.lower()
+
+    def _is_dakhongdedo(self, ten):
+        # Đá (xem DAKHONGDEDOs): loại ［Tinh luyện］, tên có Đoạn / Linh / Tinh Thạch, hoặc tên có "Thạch" mà chưa biết / không có loại
+        tenchuan = self._chuanhoatenvatpham(ten)
+        loai = self._loaivatpham_map.get(ten)
+        return bool(tenchuan) and (loai in LOAIVATPHAMDAs or any(da in tenchuan for da in DAKHONGDEDOs)
+                                   or (not loai and "Thạch" in tenchuan))
+
+    def _docloaivatpham(self, ten, vitri):
+        # Ghi _loaivatpham_map[ten] = loại vật phẩm: chữ trong cặp [] / ［］ đầu tiên của mô tả, bỏ qua dòng tên (dòng tên có thể có
+        # "(Vật phẩm hiệu ứng [Khoá])"), "" nếu không có (nguyên liệu...). Mô tả lưu theo ô nên chỉ tin khi dòng đầu khớp ten, không
+        # thì desc lại; desc không ra thì coi là không có loại (khỏi hỏi lại mãi)
+        tenchuan = self._chuanhoatenvatpham(ten)
+
+        def laydongs(mota):
+            return [dong.strip() for dong in self._chuanhoatenvatpham(mota).split("\n") if dong.strip()]
+
+        dongs = laydongs(self.moitruong.get_motavatphamhanhtrangcosan(vitri))
+        if not dongs or tenchuan not in dongs[0]:
+            dongs = laydongs(self.moitruong.get_motavatphamhanhtrang(vitri, is_napmoi = True) or "")
+        if not dongs or tenchuan not in dongs[0]:
+            print("{}: không đọc được mô tả {}, coi là không có loại khi sắp xếp".format(self.moitruong.get_tendoituong(), tenchuan))
+            self._loaivatpham_map[ten] = ""
+            return False
+        khop = re.search(r"[\[［]\s*([^\]］\n]*?)\s*[\]］]", "\n".join(dongs[1:]))
+        self._loaivatpham_map[ten] = khop.group(1) if khop else ""
+        return True
+
+    def _is_loaivatphamkhongban(self, ten, vitri):
+        # Nhập môn / Bí kíp / Pháp Bảo (theo loại trong mô tả) không bán; chưa đọc được mô tả thì cũng chưa bán (lần sau đọc lại)
+        if ten not in self._loaivatpham_map and not self._docloaivatpham(ten, vitri):
+            self._loaivatpham_map.pop(ten, None)
+            return True
+        loai = self._loaivatpham_map[ten].lower()
+        return any(loaikhongban in loai for loaikhongban in LOAIVATPHAMKHONGBANs)
 
     def action_sapxephanhtrang(self, delay = 0.6, thoigiantoida = 180., solandichuyentoida = 300):
         if not self._is_dangsapxephanhtrang:
@@ -5647,8 +5939,8 @@ class TacTu:
         buoc = self._timbuocsapxephanhtrang()
         if buoc is None:
             return
-        if not buoc:
-            self._ketthucsapxephanhtrang("Đã sắp xếp xong hành trang")
+        if isinstance(buoc, str):
+            self._ketthucsapxephanhtrang(buoc)
             return
 
         # Cùng một lệnh lặp lại mãi (game không cho chuyển) thì dừng, tránh kẹt
@@ -5661,10 +5953,171 @@ class TacTu:
             self._lenhsapxepgannhat = buoc
             self._solanlaplenhsapxep = 0
 
-        iddoituong, dich = buoc
-        if self.moitruong.action_dichuyenvatphamhanhtrang(iddoituong, dich + 1, delay = 0.):
+        kieu, iddoituong, dich = buoc
+        if kieu == "tui":
+            is_ok = self.moitruong.action_dichuyenvatphamsanghanhtrangkhac(iddoituong, dich, delay = 0.)
+        else:
+            is_ok = self.moitruong.action_dichuyenvatphamhanhtrang(iddoituong, dich + 1, delay = 0.)
+        if is_ok:
             self._thoidiemsapxephanhtranggannhat = time.time()
             self._solandichuyensapxep += 1
+
+    def action_tudongdatvatphammoi(self, thoigiancho = 3., delay = 0.6, solanchuyentoida = 3, soogiu = 2):
+        # Tự động nhẹ (khác nút Sắp xếp hành trang): so danh sách id mỗi lượt, món MỚI vào hành trang (nhặt, chế, mua, lấy kho...) nằm
+        # yên thoigiancho giây thì chèn vào đúng thứ tự với 2 món kề bên (_khoasapxepvatpham), chỗ đang nằm đã đúng thì thôi. Mỗi món
+        # chỉ vài lệnh (xem 4 cách bên dưới), không dồn cả hành trang; món bị rút ra thì để trống, không dồn lại.
+        # Xử lý quá solanchuyentoida lần vẫn chưa đúng chỗ thì bỏ qua món đó
+        if not self._is_tudongdatvatphammoi or self._is_dangsapxephanhtrang:
+            self._idhanhtrangtruoc = None
+            self._vatphammoi_map = {}
+            return
+        vitrimos = self.moitruong.get_danhsachvitrimohanhtrang()
+        soluongo = vitrimos[-1] + 1
+        ids = self.moitruong._docdanhsachidvatphamhanhtrang(soluongo)
+        if len(ids) < soluongo:
+            return
+        idhientais = {ids[vitri] for vitri in vitrimos if ids[vitri]}
+        if self._idhanhtrangtruoc is not None:
+            for idvatpham in idhientais - self._idhanhtrangtruoc:
+                # [lúc thấy, số lần đã xử lý, ô đang chờ trống để đưa vào]
+                self._vatphammoi_map[idvatpham] = [time.time(), 0, None]
+        self._idhanhtrangtruoc = idhientais
+        self._vatphammoi_map = {k: v for k, v in self._vatphammoi_map.items() if k in idhientais}
+        if not self._vatphammoi_map or time.time() - self._thoidiemdatvatphammoigannhat < delay:
+            return
+        if self.moitruong.get_is_dangclickchuottrai() or self.moitruong.get_is_nhanvatdachet() \
+                or self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DICHUYEN:
+            return
+        idvatpham = next((k for k, mon in self._vatphammoi_map.items() if time.time() - mon[0] >= thoigiancho), None)
+        if idvatpham is None:
+            return
+
+        tens = self.moitruong._docdanhsachtenvatphamhanhtrang(soluongo)
+        if len(tens) < soluongo:
+            return
+        vitri = ids.index(idvatpham)
+        ten = tens[vitri]
+        if ten not in self._loaivatpham_map:
+            self._docloaivatpham(ten, vitri)
+            return
+        # Thứ tự ô như Sắp xếp hành trang, bỏ các ô giữ cuối túi 1 (chế đồ) và ô bảo thú cuối cùng (giữ nguyên chỗ)
+        vitrimotui1s = [v for v in vitrimos if v < SOLUONGOMOITUI]
+        ogius = vitrimotui1s[-soogiu:] if len(vitrimotui1s) < len(vitrimos) else []
+        cacvitri = [v for v in vitrimos if v not in ogius]
+        if ids[vitrimos[-1]] and tens[vitrimos[-1]] in BAOTHUVATPHAMs:
+            if vitrimos[-1] == vitri:
+                del self._vatphammoi_map[idvatpham]
+                return
+            cacvitri.remove(vitrimos[-1])
+
+        khoa = self._khoasapxepvatpham(ten)
+        khoatheoo = {v: self._khoasapxepvatpham(tens[v]) for v in cacvitri if ids[v] and v != vitri}
+        thutu = {v: k for k, v in enumerate(cacvitri)}
+
+        def tui(o):
+            return o // SOLUONGOMOITUI
+
+        def is_hople(o, k, khoatheoo, muc = 4):
+            # Đặt món khoá k ở ô o: món kề trước (bỏ qua ô trống) không đứng sau nó, món kề sau không đứng trước. So muc phần đầu
+            # của khoá: 4 = tới tên, 3 = chỉ nhóm + loại (tự động nhẹ: chèn đúng tên không được thì đúng nhóm, đúng loại là đủ)
+            truoc = next((khoatheoo[v] for v in reversed(cacvitri[:thutu[o]]) if v in khoatheoo), None)
+            sau = next((khoatheoo[v] for v in cacvitri[thutu[o] + 1:] if v in khoatheoo), None)
+            return (truoc is None or truoc[:muc] <= k[:muc]) and (sau is None or k[:muc] <= sau[:muc])
+
+        def is_otrongdau(o, otrongcons):
+            # "to túi" thả vào ô trống đầu tiên của túi (tính cả ô giữ): o phải là ô đó thì mới rơi đúng chỗ
+            return next((v for v in vitrimos if tui(v) == tui(o) and v in otrongcons), None) == o
+
+        mon = self._vatphammoi_map[idvatpham]
+        # Lượt trước đã dời món chắn ở ô mon[2] đi (cách 3 dưới đây): ô đã trống thì đưa món mới vào
+        if mon[2] is not None:
+            ocho, mon[2] = mon[2], None
+            if not ids[ocho] and (tui(ocho) == tui(vitri) or is_otrongdau(ocho, {v for v in vitrimos if not ids[v]})):
+                self._chuyenvatphammoi(idvatpham, ten, vitri, ocho)
+                return
+        mon[1] += 1
+        if mon[1] > solanchuyentoida:
+            print("{}: không đặt được {} vào chỗ hợp lý, bỏ qua".format(self.moitruong.get_tendoituong(), ten))
+            del self._vatphammoi_map[idvatpham]
+            return
+        otrongs = [v for v in cacvitri if not ids[v]]
+        otrongtatcas = {v for v in vitrimos if not ids[v]}
+        if vitri in thutu and is_hople(vitri, khoa, khoatheoo):
+            # Đã đúng thứ tự nhưng còn lạc giữa khúc trống thì vẫn dồn sát về nhóm của nó (đồ khác ô hợp lệ sớm nhất, đồ dùng / thuốc
+            # ô hợp lệ muộn nhất), kẻo chắn đường các món chèn sau
+            ohoples = [v for v in otrongs if is_hople(v, khoa, khoatheoo)
+                       and (thutu[v] < thutu[vitri] if khoa[0] == 0 else thutu[v] > thutu[vitri])]
+            if ohoples:
+                self._chuyenvatphammoi(idvatpham, ten, vitri, ohoples[0] if khoa[0] == 0 else ohoples[-1])
+            else:
+                del self._vatphammoi_map[idvatpham]
+            return
+
+        # Thử chèn đúng tới tên (muc 4) trước, không được thì đúng nhóm + loại (muc 3); món Y bị dời đi chỉ cần đúng nhóm + loại
+        for muc in (4, 3):
+            if muc == 3 and vitri in thutu and is_hople(vitri, khoa, khoatheoo, 3):
+                del self._vatphammoi_map[idvatpham]
+                return
+
+            # 1. Ô trống đúng thứ tự: đồ khác lấy ô sớm nhất, đồ dùng được / thuốc ô muộn nhất
+            ohoples = [v for v in otrongs if is_hople(v, khoa, khoatheoo, muc)]
+            if ohoples:
+                self._chuyenvatphammoi(idvatpham, ten, vitri, ohoples[0] if khoa[0] == 0 else ohoples[-1])
+                return
+
+            # 2. Khúc đó đã kín: đổi chỗ với 1 món Y cùng túi mà sau khi đổi cả 2 đều đúng thứ tự (vd thuốc mới ở khúc trống giữa đổi
+            # với món dùng được cuối cùng ngay trước khúc thuốc). Đá không đè lên đồ: món mới là đá thì cho Y đè sang ô món mới
+            if vitri in thutu:
+                for o in sorted((v for v in khoatheoo if tui(v) == tui(vitri)), key = lambda v: abs(thutu[v] - thutu[vitri])):
+                    khoay = khoatheoo[o]
+                    khoasaudoi = {**{v: k for v, k in khoatheoo.items() if v != o}, vitri: khoay}
+                    if not is_hople(o, khoa, khoasaudoi, muc) or not is_hople(vitri, khoay, khoasaudoi, 3):
+                        continue
+                    if not self._is_dakhongdedo(ten):
+                        self.moitruong.action_dichuyenvatphamhanhtrang(idvatpham, o + 1, delay = 0.)
+                    elif not self._is_dakhongdedo(tens[o]):
+                        self.moitruong.action_dichuyenvatphamhanhtrang(ids[o], vitri + 1, delay = 0.)
+                    else:
+                        continue
+                    self._thoidiemdatvatphammoigannhat = time.time()
+                    del self._vatphammoi_map[idvatpham]
+                    print("{}: đặt vật phẩm mới {} vào ô {} (đổi chỗ với {})".format(self.moitruong.get_tendoituong(), ten, o, tens[o]))
+                    return
+
+            # 3. Khác túi: dời 1 món Y đang chắn chỗ đúng của món mới sang 1 ô trống mà Y vẫn đúng thứ tự, lượt sau đưa món mới vào ô
+            # của Y (mon[2]). Chuyển sang túi khác ("to túi" thả vào ô trống đầu túi) thì ô đích phải là ô trống đầu túi đó
+            for o in sorted(khoatheoo, key = lambda v: (tui(v) != tui(vitri), abs(thutu[v] - thutu.get(vitri, thutu[v])))):
+                conlai = {v: k for v, k in khoatheoo.items() if v != o}
+                if not is_hople(o, khoa, conlai, muc) or (tui(o) != tui(vitri) and not is_otrongdau(o, otrongtatcas | {o})):
+                    continue
+                khoay = khoatheoo[o]
+                e = next((e for e in otrongs if is_hople(e, khoay, {**conlai, o: khoa}, 3)
+                          and (tui(e) == tui(o) or is_otrongdau(e, otrongtatcas))), None)
+                if e is not None:
+                    self._chuyenvatphammoi(ids[o], tens[o], o, e)
+                    mon[2] = o
+                    return
+
+        # 4. Không chèn được: chỉ chuyển 1 lần về phía nhóm của nó (đồ khác ô trống đầu, đồ dùng / thuốc ô trống cuối) nếu thế là gần
+        # hơn. Sang túi khác thì còn theo dõi: tới túi đó rồi lượt sau có thể đổi chỗ trong túi (cách 2); cùng túi thì thôi, không
+        # chuyển qua lại
+        odich = (otrongs[0] if khoa[0] == 0 else otrongs[-1]) if otrongs else None
+        if odich is None or (vitri in thutu and (thutu[odich] > thutu[vitri]) == (khoa[0] == 0)):
+            del self._vatphammoi_map[idvatpham]
+            return
+        if tui(odich) == tui(vitri):
+            del self._vatphammoi_map[idvatpham]
+        self._chuyenvatphammoi(idvatpham, ten, vitri, odich)
+
+    def _chuyenvatphammoi(self, idvatpham, ten, vitri, odich):
+        # Ô trống cùng túi thì chuyển thẳng vào ô, khác túi thì "to túi" (rơi vào ô trống đầu túi đó, lượt sau chỉnh trong túi)
+        if odich // SOLUONGOMOITUI == vitri // SOLUONGOMOITUI:
+            is_ok = self.moitruong.action_dichuyenvatphamhanhtrang(idvatpham, odich + 1, delay = 0.)
+        else:
+            is_ok = self.moitruong.action_dichuyenvatphamsanghanhtrangkhac(idvatpham, odich // SOLUONGOMOITUI + 1, delay = 0.)
+        if is_ok:
+            self._thoidiemdatvatphammoigannhat = time.time()
+            print("{}: đặt vật phẩm mới {} từ ô {} vào ô {}".format(self.moitruong.get_tendoituong(), ten, vitri, odich))
 
     def action_giuotrongcuoihanhtrang(self, soogiu = 2, thoigianchoketqua = 0.5, solanthatbaitoida = 3, thoigianboqua = 60.):
         # Đang vận khí (chế đồ) thì soogiu ô mở cuối của hành trang 1 luôn phải trống (giữ 2 ô cho thong thả, 1 ô dễ không kịp),
@@ -5725,6 +6178,7 @@ class TacTu:
         if tuidich is None:
             if self._solanchuyenotrongthatbai == 0 and not self._idvatphamotrongdangchuyen:
                 phatam("Các hành trang khác đã đầy, không chuyển được ô cuối hành trang 1")
+                baosuco(self.moitruong, "vatpham", "Hành trang đã đầy", giancach = 1800.)
             self._thoidiemhetboquaotrong_map[idvatpham] = time.time() + thoigianboqua
             return
 
@@ -5750,8 +6204,9 @@ class TacTu:
         return soluong
 
     def _get_soluongxepchongtoida(self, tenvatpham):
-        # 1 ô chồng tối đa bao nhiêu: ghi trong SOLUONGXEPCHONGTOIDA_MAP, không thì số lớn nhất từng thấy (ít nhất 30)
-        return SOLUONGXEPCHONGTOIDA_MAP.get(tenvatpham) or max(30, self._soluongchonglonnhat_map.get(tenvatpham, 0))
+        # 1 ô chồng tối đa bao nhiêu: ghi trong SOLUONGXEPCHONGTOIDA_MAP (món khác mức chung), không thì SOLUONGXEPCHONGMACDINH
+        # (game nâng lên 100), từng thấy chồng lớn hơn thì lấy số đó
+        return SOLUONGXEPCHONGTOIDA_MAP.get(tenvatpham) or max(SOLUONGXEPCHONGMACDINH, self._soluongchonglonnhat_map.get(tenvatpham, 0))
 
     def _chonbuocxepchong(self, chongchuaday_map):
         # chongchuaday_map: {tên: [(ô, id vật phẩm, số lượng), ...]} các chồng chưa đầy theo thứ tự ô. -> (ô nguồn, id nguồn, ô đích) hoặc None.
@@ -5909,7 +6364,6 @@ class TacTu:
                             self._idbaothudanggoive.add(iddoituongbaothu)
                         elif khoangcach <= KHOANGCACHBAOTHUDAVE:
                             self._idbaothudanggoive.discard(iddoituongbaothu)
-                            self._khoangthoigiangoibaothuve_map.pop(iddoituongbaothu, None)
 
                         is_muctieutancongduoc = bool(diachimuctieu) and self.moitruong.get_is_cothetancong(diachimuctieu) and self.moitruong.get_khoangcach(diachimuctieu) <= KHOANGCACHTOANMANHINH
                         iddoituongnhanvatmuctieu = self.moitruong.get_iddoituong(diachimuctieu) if is_muctieutancongduoc else 0
@@ -5917,13 +6371,8 @@ class TacTu:
                         if self._is_danggomquai:
                             self.moitruong.action_ralenhbaothutheosau(iddoituongbaothu)
                         elif iddoituongbaothu in self._idbaothudanggoive:
-                            # Bảo thú có thể bị kẹt: không gọi dồn dập mà dãn cách gấp đôi sau mỗi lần gọi, tối đa THOIGIANGOIBAOTHUVETOIDA
-                            khoangthoigiangoi = self._khoangthoigiangoibaothuve_map.get(iddoituongbaothu, THOIGIANGOIBAOTHUVEBANDAU)
-                            if self.moitruong.action_ralenhbaothutheosau(iddoituongbaothu, delay = khoangthoigiangoi):
-                                self._khoangthoigiangoibaothuve_map[iddoituongbaothu] = min(khoangthoigiangoi * 2, THOIGIANGOIBAOTHUVETOIDA)
-                                # Mỗi lần triệu hồi lại bảo thú có id mới: chỉ giữ các con đang gọi về
-                                if len(self._khoangthoigiangoibaothuve_map) > 32:
-                                    self._khoangthoigiangoibaothuve_map = {k: v for k, v in list(self._khoangthoigiangoibaothuve_map.items()) if k in self._idbaothudanggoive}
+                            # Gọi đều mỗi THOIGIANGOIBAOTHUVE giây tới khi về gần (mỗi lệnh chưa đủ xa để phù về chỉ chạy thêm một đoạn)
+                            self.moitruong.action_ralenhbaothutheosau(iddoituongbaothu, delay = THOIGIANGOIBAOTHUVE)
                         elif iddoituongnhanvatmuctieu:
                             self.moitruong.action_ralenhbaothutancong(iddoituongbaothu, iddoituongnhanvatmuctieu)
                         elif not (self.moitruong.get_is_baothudangtheosau(iddoituongbaothu) and idbandohientaidoituongbaothu == idbandohientai
@@ -5947,6 +6396,7 @@ class TacTu:
                                                 self._thoidiemhoiphucbaothugannhat = time.time()
                                         else:
                                             phatam("Hết lão tửu")
+                                            baosuco(self.moitruong, "vatpham", "Hết Lão Tửu cho bảo thú", giancach = 1800.)
                                             self._thoidiemhoiphucbaothugannhat = time.time()
 
                                     if self.moitruong.get_sinhluctoidabaothugiangho() - self.moitruong.get_sinhlucconlaibaothugiangho() >= 1200:
@@ -5990,7 +6440,7 @@ class TacTu:
             iddoituongvatphamhanhtrang = self.moitruong.get_iddoituongvatphamhanhtrang(i)
 
             tenvatphamhanhtrang = self.moitruong.get_tenvatphamhanhtrang(i)
-            if iddoituongvatphamhanhtrang and iddoituongvatphamhanhtrang > 0 and tenvatphamhanhtrang not in VATPHAMKHONGBANs and "Bí kíp" not in tenvatphamhanhtrang and "Nhập môn" not in tenvatphamhanhtrang and "Bảo Thạch" not in tenvatphamhanhtrang and "Ngọc Thạch" not in tenvatphamhanhtrang and "cấp" not in tenvatphamhanhtrang and "Tàng Đồ" not in tenvatphamhanhtrang and "Phục Dược" not in tenvatphamhanhtrang and "Trị Dược" not in tenvatphamhanhtrang:
+            if iddoituongvatphamhanhtrang and iddoituongvatphamhanhtrang > 0 and tenvatphamhanhtrang not in VATPHAMKHONGBANs and "Bí kíp" not in tenvatphamhanhtrang and "Nhập môn" not in tenvatphamhanhtrang and "Bảo Thạch" not in tenvatphamhanhtrang and "Ngọc Thạch" not in tenvatphamhanhtrang and "cấp" not in tenvatphamhanhtrang and "Tàng Đồ" not in tenvatphamhanhtrang and "Phục Dược" not in tenvatphamhanhtrang and "Trị Dược" not in tenvatphamhanhtrang and not self._is_loaivatphamkhongban(tenvatphamhanhtrang, i):
                 hangdoi.append("sell ! {}# {}# 30".format(hex(idnpc).replace("0x", ""), hex(iddoituongvatphamhanhtrang).replace("0x", "")))
         self._hangdoibanrac = hangdoi
         self._thoidiemguibanractieptheo = 0.
@@ -6669,7 +7119,9 @@ class TacTu:
 
     def get_lydokhonghoithanhphu(self):
         # Không được Hồi Thành Phù (mỗi lần GIAHOITHANHPHU lượng) thì trả lý do: thiếu tiền, hoặc đã dùng SOLANHOITHANHPHUTOIDA lần trong
-        # THOIGIANDEMHOITHANHPHU giây (đang lặp: về rồi lại không tới được nơi cần tới). Được thì None
+        # THOIGIANDEMHOITHANHPHU giây (đang lặp: về rồi lại không tới được nơi cần tới), hoặc đang ở phó bản (về là mất phó bản). Được thì None
+        if self.moitruong.get_idbandohientai() in BANDOPHOBANs:
+            return f"đang ở phó bản {laytenbando(self.moitruong.get_idbandohientai())}"
         nganluong = self.moitruong.get_nganluong()
         if nganluong is not None and nganluong < GIAHOITHANHPHU:
             return f"còn {nganluong} lượng, không đủ {GIAHOITHANHPHU} lượng Hồi Thành Phù"

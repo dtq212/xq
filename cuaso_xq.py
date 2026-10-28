@@ -17,9 +17,12 @@ from loop_xq import (
 from dieuphoi_xq import DieuPhoiLuot, GiuKyNangMucTieu, KENH_LENH, KENH_DICHUYEN
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
+from thongke_xq import ThongKe, CHUKYLAYMAU
+from giamsat_xq import GiamSat, CHUKYGIAMSAT
+from thongbao_xq import TheoDoiSuCo, LYDOTAMNGUNGTUXA
 
 
-def khoidong_looptonghop(moitruong, tactu, stop):
+def khoidong_looptonghop(moitruong, tactu, stop, giamsat):
     l_lammoi = LoopLamMoiTrangThaiMoiTruong(moitruong, tactu, stop)
     l_timkiem = LoopTimKiemMucTieu(moitruong, tactu, stop)
     l_dieuphoi = LoopDieuPhoiDiChuyen(moitruong, tactu, stop)
@@ -35,11 +38,12 @@ def khoidong_looptonghop(moitruong, tactu, stop):
             print(f"Lỗi luồng tổng hợp: {e}")
             traceback.print_exc()
             time.sleep(1)
+        giamsat.danhdau("tổng hợp")
         time.sleep(0.1)
 
 
-def khoidong_loopphu(moitruong, tactu, stop):
-    LoopPhu(moitruong, tactu, stop).loop()
+def khoidong_loopphu(moitruong, tactu, stop, giamsat):
+    LoopPhu(moitruong, tactu, stop, giamsat).loop()
 
 def khoidong_loopxulylenh(moitruong, tactu, stop):
     LoopXuLyLenh(moitruong, tactu, stop).loop()
@@ -49,6 +53,26 @@ def khoidong_loopbokhung(moitruong, tactu, stop):
 
 def khoidong_loopgiuotrong(moitruong, tactu, stop):
     LoopGiuOTrongHanhTrang(moitruong, tactu, stop).loop()
+
+def khoidong_loopthongke(thongke, moitruong, stop):
+    while not stop.is_set() and moitruong.get_is_cuasogametontai():
+        try:
+            thongke.step()
+        except Exception as e:
+            print(f"[Loop THỐNG KÊ] Lỗi: {e}")
+        time.sleep(CHUKYLAYMAU)
+
+def khoidong_loopgiamsat(giamsat, theodoisuco, moitruong, stop):
+    while not stop.is_set() and moitruong.get_is_cuasogametontai():
+        try:
+            giamsat.step()
+        except Exception as e:
+            print(f"[Loop GIÁM SÁT] Lỗi: {e}")
+        try:
+            theodoisuco.step()
+        except Exception as e:
+            print(f"[Loop GIÁM SÁT] Lỗi theo dõi sự cố: {e}")
+        time.sleep(CHUKYGIAMSAT)
 
 class CuaSo:
     def __init__(self, idcuaso, shared_data, command_dict, dieuphoi_khoa = None, dieuphoi_trangthai = None, dieuphoi_dangchos = None, dieuphoi_giukynangs = None):
@@ -67,17 +91,23 @@ class CuaSo:
         self.tactu.shared_data = shared_data
         self.tactu.idcuaso = idcuaso
         self.main_stop = threading.Event()
+        self.thongke = ThongKe(self.moitruong, self.tactu)
+        self.giamsat = GiamSat(self.moitruong, self.tactu)
+        # Tin sự cố gửi về Telegram (thongbao_xq): chết, bị người chơi đánh
+        self.theodoisuco = TheoDoiSuCo(self.moitruong, self.tactu)
 
         self.tennhanvat = None
         self.idnguoichoi = 0
         self.thoidiemluuthietlap = time.time()
 
         self.luongs = (
-            threading.Thread(target = khoidong_looptonghop, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
-            threading.Thread(target = khoidong_loopphu, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_looptonghop, args = [self.moitruong, self.tactu, self.main_stop, self.giamsat], daemon = True),
+            threading.Thread(target = khoidong_loopphu, args = [self.moitruong, self.tactu, self.main_stop, self.giamsat], daemon = True),
             threading.Thread(target = khoidong_loopxulylenh, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopbokhung, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopgiuotrong, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_loopthongke, args = [self.thongke, self.moitruong, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_loopgiamsat, args = [self.giamsat, self.theodoisuco, self.moitruong, self.main_stop], daemon = True),
         )
 
         for luong in self.luongs:
@@ -98,6 +128,7 @@ class CuaSo:
         if self.idnguoichoi:
             self.tactu.luuthietlap(self.idnguoichoi)
             self.tactu.luuvitriquai(True)
+        self.thongke.luu(is_tatca = True)
 
         self.main_stop.set()
         self._chotoanbocacluongdunghan()
@@ -225,6 +256,11 @@ class CuaSo:
                     "_solanthayquaibando": self.tactu.get_solanthayquaibando(),
                     "_buocdichuyen": self.tactu.get_buocdichuyen(),
                     "_idbandocandi": self.tactu._idbandocandi,
+                    "_thongkephien": self.thongke.get_tomtatphien(),
+                    # Ngân lượng mang theo hiện tại (báo cáo Telegram)
+                    "nganluong": self.moitruong.get_nganluong(),
+                    # Biến động ngân lượng / vật phẩm gần đây để cửa sổ khác nhận ra chuyển cho nhau (thongke_xq)
+                    "_biendongtainguyen": self.thongke.get_biendongganday(),
                 }
                 # Tầm nhìn chia sẻ cho nhân vật khác cùng máy (đối tượng thù địch mình thấy); lỗi thì vẫn cập nhật phần còn lại
                 try:
@@ -272,6 +308,9 @@ class CuaSo:
                     self.tactu.thietlap_nguocchieulotrinh(cmd.split(":", 1)[1] == "1")
                 elif cmd == "tieptuchoatdong":
                     self.tactu.tieptuchoatdong()
+                elif isinstance(cmd, str) and cmd.startswith("tamngungtuxa:"):
+                    # Lệnh /tamdung từ Telegram: tạm ngưng như khi phát hiện ẩn thân (cả tự động đăng nhập cũng chờ), số giây sau dấu ":"
+                    self.tactu._batdautamngung(LYDOTAMNGUNGTUXA, float(cmd.split(":", 1)[1]))
                 elif isinstance(cmd, str) and cmd.startswith("luu_lotrinhmau:"):
                     self.tactu.luu_lotrinhmau(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_khoangcachtheosau:"):

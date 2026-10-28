@@ -5,16 +5,22 @@ import traceback
 from multiprocessing import Process, Manager, freeze_support
 
 import keyboard
+import win32api
 import win32gui
+import win32job
 # Thêm các thư viện cần thiết để xử lý tiến trình rác
 import csv
 import subprocess
 import win32process
 
+from amthanh_xq import khoitaocom, datamthanhtientrinhs
 from cuaso_xq import CuaSo
 from dangnhap_xq import TuDongDangNhap
 from dieuphoi_xq import taicauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
 from giaodienhienthi_xq import GiaoDienHienThi
+from hangso_xq import IS_CHIBATAMTHANHCUASOUUTIEN, THOIGIANKIEMTRAAMTHANH
+from thongbao_xq import DieuKhienTelegram
+from tienich_xq import laynhomtodoitudongs
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
@@ -70,6 +76,8 @@ class TroChoiManager:
         # Tự động đăng nhập lại nhân vật vắng mặt (thay cho các kịch bản tudongdangnhap*.py chạy riêng)
         self.dangnhap = TuDongDangNhap()
         self.dangnhap.batdau()
+        # Lệnh từ Telegram và báo cáo định kỳ (thongbao_xq), 1 luồng cho cả máy
+        DieuKhienTelegram(self.shared_data, self.command_dict).batdau()
 
         root = tk.Tk()
         gui = GiaoDienHienThi(root, self.shared_data, self.command_dict, self.dieuphoi_trangthai, self.dangnhap)
@@ -84,6 +92,10 @@ class TroChoiManager:
 
         t_hotkey = threading.Thread(target = self.loop_hotkey, daemon = True)
         t_hotkey.start()
+
+        if IS_CHIBATAMTHANHCUASOUUTIEN:
+            t_amthanh = threading.Thread(target = self.loop_amthanh, daemon = True)
+            t_amthanh.start()
 
         print("--- ĐANG CHẠY MANAGER CHIẾN QUỐC ---")
         try:
@@ -111,6 +123,55 @@ class TroChoiManager:
                     self.dieuphoi_dangchos.pop((kenh, h), None)
 
             time.sleep(2)
+
+    def _pidcuasogames(self):
+        pids = {}
+        for hwnd in list(self.bot_processes):
+            try:
+                pids[hwnd] = win32process.GetWindowThreadProcessId(hwnd)[1]
+            except Exception:
+                pass
+        return pids
+
+    def _chonhwndphatamthanh(self, hwnds):
+        # Cửa sổ có nhân vật đứng trước nhất trong danh sách tổ đội tự động; chưa ai có trong danh sách (hoặc chưa đọc được ID)
+        # thì lấy cửa sổ mở sớm nhất (hwnd nhỏ nhất) để khỏi đổi qua lại
+        thutus = {id_: (i, j) for i, nhom in enumerate(laynhomtodoitudongs()) for j, id_ in enumerate(nhom)}
+
+        def khoa(hwnd):
+            info = self.shared_data.get(hwnd)
+            idnguoichoi = info.get("idnguoichoi") if isinstance(info, dict) else None
+            return thutus.get(idnguoichoi, (len(thutus), 0)), hwnd
+
+        return min(hwnds, key = khoa) if hwnds else None
+
+    def loop_amthanh(self):
+        try:
+            khoitaocom()
+        except Exception as err:
+            print(f"Lỗi khởi tạo âm thanh: {err}")
+            return
+        while True:
+            try:
+                pids = self._pidcuasogames()
+                hwndphat = self._chonhwndphatamthanh(list(pids))
+                if pids:
+                    datamthanhtientrinhs({pid: hwnd != hwndphat for hwnd, pid in pids.items()})
+            except Exception as err:
+                print(f"Lỗi chỉnh âm thanh: {err}")
+            time.sleep(THOIGIANKIEMTRAAMTHANH)
+
+    def _batlaiamthanh(self):
+        # Windows nhớ trạng thái tắt tiếng của client: thoát tool thì bật lại hết, lần sau mở game riêng vẫn có tiếng
+        if not IS_CHIBATAMTHANHCUASOUUTIEN:
+            return
+        try:
+            khoitaocom()
+            pids = self._pidcuasogames()
+            if pids:
+                datamthanhtientrinhs({pid: False for pid in pids.values()})
+        except Exception as err:
+            print(f"Lỗi bật lại âm thanh: {err}")
 
     def loop_hotkey(self):
         while True:
@@ -183,6 +244,7 @@ class TroChoiManager:
 
     def stop_all(self):
         print("\nĐang dọn dẹp và thoát...")
+        self._batlaiamthanh()
         for p in self.bot_processes.values():
             try:
                 p.terminate()
@@ -191,7 +253,25 @@ class TroChoiManager:
         os._exit(0)
 
 
+def _gantientrinhvaojob():
+    # Tiến trình chính bị tắt ngang (Stop trong PyCharm, đóng console, crash) thì không kịp dọn: tiến trình Manager và tiến trình bot
+    # từng cửa sổ (multiprocessing) sống mãi (đo 2026-10-29: 209 tiến trình sót từ 5 ngày, ~3,2 GB RAM). Gắn tiến trình chính vào Job
+    # "đóng là kill hết": tiến trình con tạo sau đó cũng vào Job, tiến trình chính chết thì Windows đóng Job, kill cả bọn.
+    # Cho phép tách khỏi Job để game mở từ dangnhap_xq.mogame không bị tắt theo. Giữ handle tới khi thoát (đóng handle = kill)
+    try:
+        job = win32job.CreateJobObject(None, "")
+        thongtin = win32job.QueryInformationJobObject(job, win32job.JobObjectExtendedLimitInformation)
+        thongtin["BasicLimitInformation"]["LimitFlags"] |= win32job.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE | win32job.JOB_OBJECT_LIMIT_BREAKAWAY_OK
+        win32job.SetInformationJobObject(job, win32job.JobObjectExtendedLimitInformation, thongtin)
+        win32job.AssignProcessToJobObject(job, win32api.GetCurrentProcess())
+        return job
+    except Exception as err:
+        print(f"Không gắn được Job tự dọn tiến trình con: {err}")
+        return None
+
+
 if __name__ == "__main__":
     freeze_support()
+    jobdondep = _gantientrinhvaojob()
     manager = TroChoiManager()
     manager.run()

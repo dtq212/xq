@@ -63,9 +63,11 @@ NGANHANHTU = "Ngân Hạnh Tử"
 TUTINHDON = "Tử Tinh Đơn"
 PHUCSINHDON = "Phục Sinh Đơn"
 THANHTAMDAN = "Thanh Tâm Đan"
+THANHTAMDON = "Thanh Tâm Đơn"
 KHUMATAN = "Khu Ma Tán"
 THILUYENQUA = "Thí Luyện Quả"
 THILUYENDON = "Thí Luyện Đơn"
+LONGTIENTHAO = "Long Tiên Thảo"
 
 TUILINHTHACHCAP1 = "Túi Linh Thạch cấp 1"
 TUILINHTHACHCAP2 = "Túi Linh Thạch cấp 2"
@@ -86,6 +88,20 @@ NGANLUONGGIULAI = GIAHOITHANHPHU + GIAPHUTANTHUTIENCO
 # Tối đa bấy nhiêu lần Hồi Thành Phù trong THOIGIANDEMHOITHANHPHU giây: quá thì coi như đang lặp, ngưng dùng (mỗi lần 1.500 lượng)
 SOLANHOITHANHPHUTOIDA = 3
 THOIGIANDEMHOITHANHPHU = 600.
+
+# Sắp xếp hành trang: thuốc dồn về cuối túi cuối cùng, trước nó là đồ có "[Có thể sử dụng]" trong mô tả. So theo đầu tên nên
+# bản "... Luyện Chế" (và tên bị cắt ngắn) cũng tính
+THUOCSAPXEPs = (NGANHANHTU, TUTAMDON, KHIMACHDON, TIEUDAOTAN, LONGTIENTHAO, THILUYENQUA, THILUYENDON, KIMTANGTAN,
+                QUYNGUYENDON, KHUMATAN, THANHTAMDON)
+# Đá không được "move" đè lên ô có món khác: game tưởng là muốn đập / tinh luyện đá vào đồ đó. Đá = loại ［Tinh luyện］ (Kim / Thổ /
+# Ám Tinh Thạch...), tên có chữ trong DAKHONGDEDOs, hoặc tên có "Thạch" mà mô tả không ghi loại (cho chắc). Món có loại khác như
+# Đại Huyết Thạch ［Có thể sử dụng］, Hồng Bảo Thạch Hạng Liên ［Hạng Liên］ thì không phải đá. Đổi chỗ thì chuyển món kia sang ô của đá
+DAKHONGDEDOs = ("Đoạn Thạch", "Linh Thạch", "Tinh Thạch")
+# Loại vật phẩm = chữ trong cặp ［］ đầu tiên của mô tả (sau dòng tên), vd ［Vũ Khí］［Nón］［Tinh luyện］［Có thể sử dụng］[Pháp Bảo]
+LOAIVATPHAM_COTHESUDUNG = "Có thể sử dụng"
+LOAIVATPHAMDAs = ("Tinh luyện",)
+# Loại vật phẩm (so không phân biệt hoa thường, chứa là được) không bao giờ đem bán rác
+LOAIVATPHAMKHONGBANs = ("nhập môn", "bí kíp", "pháp bảo")
 
 SOCAPDOANTHACH = "Sơ Cấp Đoạn Thạch"
 TRUNGCAPDOANTHACH = "Trung Cấp Đoạn Thạch"
@@ -109,6 +125,7 @@ HOANGKIMTHANHY = "Hoàng Kim Thánh Y"
 
 TOAILANG = "Toái Lăng"
 TOAISA = "Toái Sa"
+TOAICAM = "Toái Cẩm"
 NHIEPHONTHACH = "Nhiếp Hồn Thạch"
 DASOI = "Da Sói"
 LYHON = "Ly Hồn"
@@ -138,8 +155,9 @@ KHOANGCACHNUAMANHINH = 9.
 KHOANGCACHTOANMANHINH = 18.
 
 KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN = 3
-# Kỹ năng vận khí: từ lúc gửi lệnh tới lúc game vào trạng thái vận khí mất 0-1s (chờ dư)
-THOIGIANCHOVAOVANKHI = 1.5
+# Kỹ năng vận khí: từ lúc gửi lệnh tới lúc game vào trạng thái vận khí thường 0.5-1.5s, có lúc tới ~1.6-2s
+# (log: chờ 1.5s hết là Huyết Ma Chú chen vào ngắt vận khí triệu hồi) nên chờ dư
+THOIGIANCHOVAOVANKHI = 2.5
 # Khoá vận khí triệu hồi bảo thú giữ tối đa chừng này (phòng đọc trạng thái vận khí sai mà khoá mãi)
 THOIGIANKHOAVANKHITRIEUHOITOIDA = 15.
 # Lôi Động Cửu Thiên vận khí 6s (phạm vi 7x7 ô quanh bản thân)
@@ -401,9 +419,10 @@ VITRIKYNANG_LACKICH = 2123
 VITRIKYNANG_PHANTOA = 2124
 
 VIRIKYNANG_NGUYENKHIQUYNGUYEN = 3172
-# Nguyên Khí Quy Nguyên quá ~30 phút có lúc còn hiệu ứng mà hết tác dụng: bật được chừng này giây thì bấm làm mới (thu hồi rồi bật lại)
+# Nguyên Khí Quy Nguyên quá ~30 phút thì server cho hết hạn nhưng client vẫn hiện hiệu ứng: bật được chừng này giây thì bấm làm mới
+# (thu hồi rồi bật lại). Người dùng chọn 10 phút cho an toàn
 TENKYNANG_NGUYENKHIQUYNGUYEN = "Nguyên Khí Quy Nguyên"
-THOIGIANLAMMOINGUYENKHIQUYNGUYEN = 28 * 60.
+THOIGIANLAMMOINGUYENKHIQUYNGUYEN = 10 * 60.
 # Sau mỗi lần gửi Nguyên Khí Quy Nguyên, chừng này giây mới được làm mới lần nữa (chờ tin; lỡ không bắt được tin thì không bấm qua lại)
 THOIGIANCHOTINLAMMOINGUYENKHIQUYNGUYEN = 30.
 VIRIKYNANG_HOTHEKIMCANG = 3173
@@ -570,6 +589,13 @@ PHANTRAMSINHLUCLUUHUYETTHUAT = 90
 
 VITRITRANGBIDAUTIEN = 96
 SOLUONGOTRANGBI = 10
+# Mảng thời gian hồi vật phẩm của client có đủ 106 ô (hành trang + trang bị)
+SOLUONGOTHOIGIANHOI = VITRITRANGBIDAUTIEN + SOLUONGOTRANGBI
+# Đã gửi lệnh dùng vật phẩm hồi sinh lực / nội lực mà chưa thấy client báo vào thời gian hồi (lệnh không thành công) thì
+# chờ bấy nhiêu giây rồi gửi lại
+THOIGIANCHOXACNHANHOIVATPHAM = 1.
+# Vật phẩm cần dùng sẽ hồi xong trong vòng chừng này giây (≈ 1 vòng loop phụ 0.5s) thì chờ luôn tới lúc xong rồi dùng ngay
+THOIGIANCHOHOIXONGTOIDA = 0.5
 VITRITRANGBI_PHAPBAO = VITRITRANGBIDAUTIEN + 6
 # Ô trang bị Chủ Tiệm Sửa Chữa sửa được: nón, hạng liên, vũ khí, áo, yêu đới, giày (pháp bảo / ngọc / cánh / ngoại trang không sửa)
 VITRITRANGBISUADUOCs = tuple(range(VITRITRANGBIDAUTIEN, VITRITRANGBI_PHAPBAO))
@@ -641,8 +667,16 @@ BANDO_LINHCOCDONG2 = 312
 BANDO_LOANDAO1 = 321
 BANDO_LOANDAO2 = 322
 BANDO_BATQUAITRAN = 894
-# Phó bản: rời nhóm khi đang là trưởng nhóm sẽ giải tán, đá cả đội ra ngoài => tổ đội tự động không tự rời nhóm ở đây
-BANDOPHOBANs = (BANDO_BATQUAITRAN, 702, 703, 704)
+# Thành Kiều Quân Doanh: vào ở Tần Quốc (216, 64). Lăng Ly Sơn 3 tầng (Tầng Trên Lăng Mộ, Tầng Dưới Lăng Mộ, Tổng Giám Công Thư Phòng):
+# vào ở Thuý Hoa Sơn (138, 117). id theo thứ tự tên trong menu/main/vl.dat và map/701..704.dat
+BANDO_THANHKIEU = 701
+BANDO_LANGLYSON1 = 702
+BANDO_LANGLYSON2 = 703
+BANDO_LANGLYSON3 = 704
+BANDO_PHOBAN895 = 895
+# Phó bản: rời nhóm khi đang là trưởng nhóm sẽ giải tán, đá cả đội ra ngoài => tổ đội tự động không tự rời nhóm ở đây.
+# Hồi Thành Phù là ra khỏi phó bản => tuyệt đối không dùng ở đây (get_lydokhonghoithanhphu)
+BANDOPHOBANs = (BANDO_BATQUAITRAN, BANDO_THANHKIEU, BANDO_LANGLYSON1, BANDO_LANGLYSON2, BANDO_LANGLYSON3, BANDO_PHOBAN895)
 
 BANDO_MADAPHO = 211
 BANDO_CUTHUDAO = 549
@@ -714,7 +748,8 @@ BAOTHUVATPHAMs = (SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN, THANTHU
 VATPHAMKHONGNHATs = tuple()
 # Vật phẩm ưu tiên nhặt trên mọi hành động khác (tấn công, theo nhóm, gom quái, ...)
 VATPHAMUUTIENNHATs = (LEBAOKHAIQUOC,)
-VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUSAMDON, CAPCUUDON, HOATTAMDON, TIEUDAOTAN, KIMTANGTAN, QUYNGUYENDON, KHIMACHDON, TUTAMDON,  HOANGKIMTHANHY, "Thanh Đồng Bảo Hộp", TUKIMBAOHOP, "Mồi Câu", "Đá Tương Uyên", TIENTE, "Vô Song Điểm Phiếu", "Cờ Đỏ", "Sao Vàng", LEBAOKHAIQUOC, "Âu Dã Bảo Thạch", "Long Cốt", "Phấn Huỳnh Quang"
+VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUSAMDON, CAPCUUDON, HOATTAMDON, TIEUDAOTAN, KIMTANGTAN, QUYNGUYENDON, KHIMACHDON, TUTAMDON,  HOANGKIMTHANHY, "Thanh Đồng Bảo Hộp", TUKIMBAOHOP, "Mồi Câu", "Đá Tương Uyên", TIENTE, "Vô Song Điểm Phiếu", "Cờ Đỏ", "Sao Vàng", LEBAOKHAIQUOC, "Âu Dã Bảo Thạch", "Long Cốt", "Phấn Huỳnh Quang",
+                      THANHTAMDON, TOAICAM,
                       # Phôi vũ khí cấp 75: Kiếm, Đao, Thương, Côn, Ám Khí, Quyền
                       "Ngọc Kiếm", "Kim Đao", "Xích Anh Thương", "Cổ Phương Côn", "Nguyệt Hoàn", "Thạch Điêu Quyền Nhẫn", )
 
@@ -761,8 +796,9 @@ VATPHAMTUDONGNHATFARMs = (
 
 # Xếp chồng tự nhận biết (món có số lượng >= 1 trong hành trang), 1 ô tối đa = số lớn nhất từng thấy (ít nhất 30);
 # món có số tối đa khác thì ghi ở đây
+# 1 ô hành trang chồng tối đa bao nhiêu món (game nâng từ 30 lên 100); món nào khác mức này thì ghi riêng vào SOLUONGXEPCHONGTOIDA_MAP
+SOLUONGXEPCHONGMACDINH = 100
 SOLUONGXEPCHONGTOIDA_MAP = {
-    "Hoạt Lạc Hoàn": 30
 }
 
 DANHHIEU_MAP = defaultdict(lambda: False)
@@ -932,6 +968,11 @@ THOIGIANCHOLUOTTOIDA = 2.0
 # Hết khoảng mà mục tiêu vẫn chưa dính (né, kháng) thì bot nào cũng được gửi lại
 THOIGIANGIUKYNANGMUCTIEU = 2.0
 
+# Nhiều cửa sổ cùng phát nhạc nghe bị vọng: chỉ để tiếng cửa sổ có nhân vật ưu tiên cao nhất trong danh sách tổ đội tự động
+# (nhóm đầu, ID đứng trước), các cửa sổ khác tắt tiếng trong Volume Mixer của Windows. Thoát tool thì bật lại tiếng tất cả
+IS_CHIBATAMTHANHCUASOUUTIEN = True
+THOIGIANKIEMTRAAMTHANH = 2.
+
 # Dữ liệu chung giữa các cửa sổ (shared_data) đọc lại sau mỗi khoảng này (các cửa sổ cập nhật 0.25s/lần)
 THOIGIANNHOSHAREDDATA = 0.25
 
@@ -941,13 +982,17 @@ THOIGIANCHOTRUOCKHIPHUCSINH = 30.
 # Kỹ năng (có hay không mục tiêu) gửi >= SOLANGUITOIDASPAMKYNANG lần trong SOGIAYDEMSPAMKYNANG giây (tức là game báo sẵn sàng mà kỹ năng không ra)
 # thì tạm khoá riêng kỹ năng đó THOIGIANKHOASPAMKYNANG giây
 CAPDOTOITHIEUTETHANTUONG = 60
+# Bảo thú triệu hồi còn dưới PHANTRAMSINHLUCTETHANTUONG% sinh lực thì Tế Thần Tướng
+PHANTRAMSINHLUCTETHANTUONG = 25
+# Mệnh Tế hồi cho cả nhóm trong 21x21 ô quanh bản thân (10 ô mỗi phía)
+KHOANGCACHHIEUQUAMENHTE = 10
 
 # Bảo thú kỹ năng triệu hồi xa nhân vật quá KHOANGCACHGOIBAOTHUVE ô thì gọi theo sau, tới khi về trong KHOANGCACHBAOTHUDAVE ô mới cho đánh tiếp
 KHOANGCACHGOIBAOTHUVE = 18.
 KHOANGCACHBAOTHUDAVE = 9.
-# Gọi về dãn cách theo cấp số nhân (bảo thú có thể bị kẹt): 0.5s -> 1s -> 2s -> 4s rồi giữ 4s
-THOIGIANGOIBAOTHUVEBANDAU = 0.5
-THOIGIANGOIBAOTHUVETOIDA = 4.
+# Đang gọi về thì gửi lệnh Theo sau đều mỗi chừng này giây tới khi về gần: xa đủ thì mỗi lệnh phù bảo thú về cạnh chủ, chưa đủ
+# xa thì mỗi lệnh chỉ chạy thêm một đoạn => gọi một lần (hoặc dãn cách dài) nó chạy được một đoạn lại quay về chỗ cũ
+THOIGIANGOIBAOTHUVE = 0.5
 
 # Chờ lệnh đánh: đang ra đòn / dùng phép thì không gửi lệnh đánh nào (game đang bận; game cập nhật cờ sẵn sàng chậm, gửi chiêu khác là
 # cắt ngang chiêu đang ra), còn lại (đứng im, di chuyển, khựng sau đòn) gửi ngay, riêng vừa gửi xong thì chờ tối đa ngần này giây
@@ -971,6 +1016,11 @@ THOIGIANKHUNGSAUXUATCHIEU = 1.
 # Trong lúc xuất chiêu / khựng, mỗi vòng đẩy mốc "được tự gửi lệnh" của client lên trước chừng này giây để client không tự
 # bước (MoiTruong.action_chandichuyen); phải dài hơn chu kỳ LoopGiuOTrongHanhTrang
 THOIGIANCHANTUDICHUYENCLIENT = 0.15
+# Người chơi giữ chuột trái trên cửa sổ game quá THOIGIANGIUCHUOTTOITHIEU giây (kéo nhân vật đi, click thường không tính):
+# bot ngưng tấn công / di chuyển, nhả chuột rồi còn ngưng thêm THOIGIANNGUNGSAUNHACHUOT giây để nhân vật kịp đi tiếp theo
+# click cuối (MoiTruong.get_is_dangclickchuottrai)
+THOIGIANGIUCHUOTTOITHIEU = 0.3
+THOIGIANNGUNGSAUNHACHUOT = 0.4
 # Gửi chiêu trong tầm rồi thì chặn client tự bước tối đa chừng này giây chờ vào tư thế xuất chiêu
 THOIGIANCHANTUDICHUYENTRUOCXUATCHIEU = 0.25
 # Trong lúc xuất chiêu / khựng chỉ gửi chiêu nhắm mục tiêu khi mục tiêu trong chừng này ô (ngoài tầm thì game tự chạy lại gần)
@@ -1045,8 +1095,9 @@ _phuongandichuyen_cache = {}
 
 def layphuongandichuyen(idbando):
     # -> (tên NPC, bước: list lệnh welcome (Tân Thủ Tiên Cô) hoặc điểm đến "goto.!" (Chủ Dịch Trạm), id bản đồ phù tới, số cổng chạy bộ tiếp)
-    # của cách phù tới idbando ít cổng chạy bộ nhất (phù thẳng tới = 0 cổng; không quá SOLANCHUYENBANDOTOIDA, cổng client tự tìm đường được),
-    # vd. Yên Trường Thành 1: Chủ Dịch Trạm tới Yên Quốc rồi chạy 1 cổng; Tề Quốc: Chủ Dịch Trạm thẳng tới. Không phù tới được thì None
+    # của cách phù tới idbando ít cổng chạy bộ nhất (phù thẳng tới = 0 cổng; cổng client tự tìm đường được), vd. Yên Trường Thành 1: Chủ
+    # Dịch Trạm tới Yên Quốc rồi chạy 1 cổng; Tề Quốc: Chủ Dịch Trạm thẳng tới. Không giới hạn số cổng chạy tiếp (Thiên Môn Trận 1: phù Tề
+    # Quốc rồi chạy 6 cổng vẫn hơn chạy bộ 15 cổng từ Sở Quốc), nơi gọi tự so với chạy bộ. Không phù tới được thì None
     # Về Tân Thủ Thôn thì dùng Hồi Thành Phù, không phù tới bản đồ khác rồi chạy về
     if idbando == BANDO_TANTHUTHON:
         return None
@@ -1055,7 +1106,7 @@ def layphuongandichuyen(idbando):
         for tennpc, buoc_map in ((TANTHUTIENCO, DICHUYENTANTHUTIENCO_MAP), (CHUDICHTRAM, DIEMDENCHUDICHTRAM_MAP)):
             for idphutoi, buoc in buoc_map.items():
                 solan = 0 if idphutoi == idbando else get_solanchuyenbando(idphutoi, idbando, is_chicongclienttudi = True)
-                if solan is not None and solan <= SOLANCHUYENBANDOTOIDA and (not tot or solan < tot[3]):
+                if solan is not None and (not tot or solan < tot[3]):
                     tot = (tennpc, buoc, idphutoi, solan)
         _phuongandichuyen_cache[idbando] = tot
     return _phuongandichuyen_cache[idbando]

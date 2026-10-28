@@ -280,10 +280,12 @@ class LoopChinh:
 
 
 class LoopPhu:
-    def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event):
+    def __init__(self, moitruong: MoiTruong, tactu: TacTu, stop: threading.Event, giamsat = None):
         self.moitruong = moitruong
         self.tactu = tactu
         self.stop = stop
+        # Watchdog (giamsat_xq): mỗi lượt đánh dấu nhịp, lâu không có là luồng treo
+        self.giamsat = giamsat
         self.thoidiemthongbaochetgannhat = time.time()
         self.thoidiempfgannhat = time.time()
 
@@ -315,6 +317,8 @@ class LoopPhu:
             except Exception as e:
                 traceback.print_exc()
                 print(f"[Loop PHỤ] Lỗi không xác định: {e}")
+            if self.giamsat:
+                self.giamsat.danhdau("phụ")
             time.sleep(0.5)
 
     def step(self):
@@ -347,6 +351,7 @@ class LoopPhu:
         self.tactu.action_chantangcapdo()
         self.tactu.action_tudongxepchongvatpham()
         self.tactu.action_sapxephanhtrang()
+        self.tactu.action_tudongdatvatphammoi()
         self.tactu.action_tudongtodoi()
         self.tactu.action_tudongdoimaupk()
         self.tactu.action_tudongmuavatpham()

@@ -161,6 +161,9 @@ class MoiTruong:
         self._is_tamngungtancong = False
         self._is_vohieuhoadichuyen = False
         self._thoidiemkhongcomuctieugannhat = 0.
+        # Lúc bắt đầu giữ chuột trái (0 = không giữ) và lần gần nhất thấy đã giữ đủ lâu trên cửa sổ game (get_is_dangclickchuottrai)
+        self._thoidiembatdaugiuchuottrai = 0.
+        self._thoidiemgiuchuottraigannhat = 0.
 
         self._soluonghieuungnhanvattruocdo_map = {}
         self._thoidiemsoluonghieuungbangkhonggannhat_map = {}
@@ -902,6 +905,25 @@ class MoiTruong:
         x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         return read_int(self.tientrinh, x + DC.KDK_NGANLUONG) if x else None
 
+    def get_kinhnghiem(self):
+        # Kinh nghiệm hiện có (chặn tăng cấp thì cứ cộng dồn, lên cấp thì bị trừ đi), None khi chưa đọc được
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
+        return read_int(self.tientrinh, x + DC.KDK_KINHNGHIEM) if x else None
+
+    def get_soluongvatphamhanhtrangtheoten(self):
+        # {tên: tổng số lượng} của cả hành trang trong 2 lần đọc; món không xếp chồng (số lượng 0) tính là 1
+        soluongo = self.get_soluongvatphamhanhtrangtoida() + 1
+        tens = self._docdanhsachtenvatphamhanhtrang(soluongo)
+        x = self.get_diachicosothongtinvatphamhanhtrang()
+        if not x or len(tens) != soluongo:
+            return None
+        soluongs = struct.unpack("<%di" % soluongo, read_bytes(self.tientrinh, x + DC.HT_SOLUONG, soluongo * 4))
+        ketqua = {}
+        for ten, soluong in zip(tens, soluongs):
+            if ten:
+                ketqua[ten] = ketqua.get(ten, 0) + max(1, soluong)
+        return ketqua
+
     def get_phantramnoilucconlai(self):
         noiluctoida = self.get_noiluctoida()
         return (self.get_noilucconlai() * 100. / noiluctoida) if noiluctoida else 0
@@ -1109,10 +1131,13 @@ class MoiTruong:
                 return mota
             time.sleep(0.05)
 
-    def get_motavatphamhanhtrang(self, idvitri, thoigianchotoida = 1.):
+    def get_motavatphamhanhtrang(self, idvitri, thoigianchotoida = 1., is_napmoi = False):
+        # is_napmoi: xoá mô tả đang có rồi desc lại (mô tả theo ô, chuyển đồ xong có thể còn mô tả của món trước đó ở ô này)
         x = self.get_diachicosothongtinvatphamhanhtrang()
         if not x:
             return False
+        if is_napmoi:
+            write_bytes(self.tientrinh, x + idvitri * DC.HT_KICHTHUOCMOTA + DC.HT_MOTA, b"\x00", 1)
         mota = read_string(self.tientrinh, x + idvitri * DC.HT_KICHTHUOCMOTA + DC.HT_MOTA, 1024)
         if not mota and self.get_iddoituongvatphamhanhtrang(idvitri):
             if self.truyvan_motavatphamhanhtrang(idvitri):
@@ -2007,7 +2032,30 @@ class MoiTruong:
         return self.get_iddoituong(diachi) if diachi else False
 
     def get_is_dangclickchuottrai(self):
-        return read_boolean(self.tientrinh, self.diachixq + DC.DANGCLICKCHUOTTRAI)
+        # Cờ của game chỉ bật khi giữ chuột để đi, game tự tắt khi nhân vật vào đánh (lệnh "kill" / chiêu bot gửi) => bot đánh
+        # tiếp, người chơi không kéo ra được. Xét thêm phím chuột trái thật đang giữ khi cửa sổ game đang kích hoạt và con trỏ nằm
+        # trong vùng game. Chỉ tính khi giữ liền quá THOIGIANGIUCHUOTTOITHIEU giây (click thường để chọn mục tiêu không làm bot
+        # dừng); nhả chuột sau khi đã giữ đủ lâu thì vẫn tính đang giữ thêm THOIGIANNGUNGSAUNHACHUOT giây
+        thoidiemhientai = time.time()
+        if read_boolean(self.tientrinh, self.diachixq + DC.DANGCLICKCHUOTTRAI) or self._is_dangdichuottraitrongcuaso():
+            if not self._thoidiembatdaugiuchuottrai:
+                self._thoidiembatdaugiuchuottrai = thoidiemhientai
+            if thoidiemhientai - self._thoidiembatdaugiuchuottrai >= THOIGIANGIUCHUOTTOITHIEU:
+                self._thoidiemgiuchuottraigannhat = thoidiemhientai
+                return True
+        else:
+            self._thoidiembatdaugiuchuottrai = 0.
+        return thoidiemhientai - self._thoidiemgiuchuottraigannhat < THOIGIANNGUNGSAUNHACHUOT
+
+    def _is_dangdichuottraitrongcuaso(self):
+        if not ctypes.windll.user32.GetAsyncKeyState(0x01) & 0x8000 or not self.get_is_cuasogamekichhoat():
+            return False
+        try:
+            x, y = win32gui.ScreenToClient(self.idcuaso, win32gui.GetCursorPos())
+            _, _, rong, cao = win32gui.GetClientRect(self.idcuaso)
+        except Exception:
+            return False
+        return 0 <= x < rong and 0 <= y < cao
 
     def get_diachicosothongtinnhanvatmuctieudangchon(self):
         return self._diachicosothongtinnhanvatmuctieudangchon
@@ -2857,6 +2905,34 @@ class MoiTruong:
             ten = o[:vitriketthuc].decode("utf-8", errors = "ignore")
             tens.append(re.sub(r'\x1b[a-zA-Z0-9]', '', ten).strip())
         return tens
+
+    def get_thoigianhoiconlaivatphams(self, tenvatphams):
+        # Số giây còn phải chờ để dùng lại từng vật phẩm (0 = dùng được ngay), theo đúng dữ liệu client dùng để vẽ ô tối xoay dần.
+        # Máy chủ báo hồi theo nhóm (vd Trị Dược / Thí Luyện Quả / Cấp Cứu Đơn chung nhóm 4, hồi 5s), client ghi thời lượng (giây) +
+        # timeGetTime lúc nhận vào mọi ô cùng nhóm, hết hồi thì về 0 => còn lại = bắt đầu + thời lượng - bây giờ.
+        # Xét cả nhóm (lấy ô hồi muộn nhất) vì ô mới nhặt sau lúc dùng không được ghi hồi. Nhóm 0 = không có nhóm, xét riêng từng ô
+        x = self.get_diachicosothongtinvatphamhanhtrang()
+        if not x:
+            return {ten: 0. for ten in tenvatphams}
+        tens = self._docdanhsachtenvatphamhanhtrang(SOLUONGOTHOIGIANHOI)
+        nhoms = read_bytes(self.tientrinh, x + DC.HT_NHOMHOI, SOLUONGOTHOIGIANHOI)
+        thoiluongs = struct.unpack("<%dI" % SOLUONGOTHOIGIANHOI, read_bytes(self.tientrinh, x + DC.HT_THOILUONGHOI, SOLUONGOTHOIGIANHOI * 4))
+        batdaus = struct.unpack("<%dI" % SOLUONGOTHOIGIANHOI, read_bytes(self.tientrinh, x + DC.HT_BATDAUHOI, SOLUONGOTHOIGIANHOI * 4))
+        baygio = ctypes.windll.winmm.timeGetTime()
+        conlais = []
+        for i in range(SOLUONGOTHOIGIANHOI):
+            # Trừ theo 32 bit (timeGetTime quay vòng ~49 ngày); quá hạn thì ra số âm => đã hồi xong
+            conlai = (batdaus[i] + thoiluongs[i] * 1000 - baygio) & 0xFFFFFFFF
+            conlais.append(conlai if thoiluongs[i] and conlai < 0x80000000 else 0)
+        conlainhoms = {}
+        for i in range(SOLUONGOTHOIGIANHOI):
+            if nhoms[i]:
+                conlainhoms[nhoms[i]] = max(conlainhoms.get(nhoms[i], 0), conlais[i])
+        ketqua = {}
+        for i, ten in enumerate(tens):
+            if ten in tenvatphams and ten not in ketqua:
+                ketqua[ten] = (conlainhoms[nhoms[i]] if nhoms[i] else conlais[i]) / 1000.
+        return {ten: ketqua.get(ten, 0.) for ten in tenvatphams}
 
     def _docdanhsachidvatphamhanhtrang(self, soluongo):
         x = self.get_diachicosothongtinvatphamhanhtrang()
