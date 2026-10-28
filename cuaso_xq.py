@@ -139,6 +139,13 @@ class CuaSo:
         if self.idcuaso in self.command_dict:
             del self.command_dict[self.idcuaso]
 
+    def _laydiemdanhdangden(self):
+        tactu = self.tactu
+        diem = tactu._diemdanhxungquanhhientai
+        if not tactu._is_tudongdichuyendiemdanhxungquanh or not diem or len(diem) < 3:
+            return None
+        return [round(diem[0]), round(diem[1]), diem[2], tactu._iddiemdanhxungquanhhientai, len(tactu._diemdanhxungquanhs)]
+
     def loop_hienthigiaodien(self):
         while not self.main_stop.is_set():
             try:
@@ -256,6 +263,8 @@ class CuaSo:
                     "_solanthayquaibando": self.tactu.get_solanthayquaibando(),
                     "_buocdichuyen": self.tactu.get_buocdichuyen(),
                     "_idbandocandi": self.tactu._idbandocandi,
+                    # Điểm đánh lộ trình đang đi tới [x, y, id bản đồ, số thứ tự, tổng số điểm] (cột "Đang đi tới" trên Telegram)
+                    "_diemdanhdangden": self._laydiemdanhdangden(),
                     "_thongkephien": self.thongke.get_tomtatphien(),
                     # Ngân lượng mang theo hiện tại (báo cáo Telegram)
                     "nganluong": self.moitruong.get_nganluong(),

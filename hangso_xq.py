@@ -102,6 +102,8 @@ LOAIVATPHAM_COTHESUDUNG = "Có thể sử dụng"
 LOAIVATPHAMDAs = ("Tinh luyện",)
 # Loại vật phẩm (so không phân biệt hoa thường, chứa là được) không bao giờ đem bán rác
 LOAIVATPHAMKHONGBANs = ("nhập môn", "bí kíp", "pháp bảo")
+# Chữ (thường) có ở bất kỳ đâu trong mô tả (trừ dòng tên) thì không bán
+MOTAVATPHAMKHONGBANs = ("ngự thạch",)
 
 SOCAPDOANTHACH = "Sơ Cấp Đoạn Thạch"
 TRUNGCAPDOANTHACH = "Trung Cấp Đoạn Thạch"

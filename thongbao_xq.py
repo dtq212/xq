@@ -6,6 +6,8 @@
 #     của bot tại 1 thời điểm (getUpdates cùng lúc báo 409 Conflict) nên mỗi máy hỏi nhanh (không chờ) mỗi CHUKYHOILENH giây, không xác
 #     nhận tin ngay để máy khác cũng đọc được; tin mình thấy quá THOIGIANGIUTIN giây mới xác nhận cho Telegram xoá. Máy nào có nhân vật
 #     được gọi tên thì làm, /trangthai /baocao thì máy nào cũng trả lời phần của mình
+#   - Lỗi chứng chỉ HTTPS (CERTIFICATE_VERIFY_FAILED, hay gặp ở Windows 7 / máy có diệt virus soi HTTPS): tự thử kho chứng chỉ Windows
+#     rồi certifi; vẫn lỗi thì "chungchi": "<đường dẫn .pem chứng chỉ gốc>", bất đắc dĩ mới "is_bokiemtrassl": true (không kiểm tra)
 # Tiến trình bot (từng cửa sổ) gửi tin sự cố qua baosuco / TheoDoiSuCo; tiến trình giao diện chạy DieuKhienTelegram (nhận lệnh + báo cáo)
 import hashlib
 import html
@@ -85,10 +87,64 @@ def laytenmay(cauhinh = None):
     return ((cauhinh or taicauhinh()).get("tenmay") or "").strip() or socket.gethostname()
 
 
+_ngucanh_ssl = {"dangdung": None}
+
+
+def _cacngucanhssl():
+    # Các cách kiểm tra chứng chỉ HTTPS thử lần lượt: kho chứng chỉ Windows (mặc định), bộ chứng chỉ certifi (Windows 7 cũ không còn
+    # cập nhật chứng chỉ gốc), file chứng chỉ gốc tự chỉ định "chungchi" (vd chứng chỉ của phần mềm diệt virus soi HTTPS, xuất ra .pem),
+    # cuối cùng là không kiểm tra nếu đặt "is_bokiemtrassl": true (kém an toàn: ai chen giữa đường mạng đọc được token)
+    import ssl
+    cauhinh = taicauhinh()
+    ketqua = [("kho chứng chỉ Windows", ssl.create_default_context())]
+    try:
+        import certifi
+        ketqua.append(("certifi", ssl.create_default_context(cafile = certifi.where())))
+    except Exception:
+        pass
+    if cauhinh.get("chungchi"):
+        try:
+            ketqua.append((f"chứng chỉ {cauhinh['chungchi']}", ssl.create_default_context(cafile = cauhinh["chungchi"])))
+        except Exception as err:
+            print(f"[TELEGRAM] Không đọc được file chứng chỉ {cauhinh['chungchi']}: {err}")
+    if cauhinh.get("is_bokiemtrassl"):
+        ngucanh = ssl.create_default_context()
+        ngucanh.check_hostname = False
+        ngucanh.verify_mode = ssl.CERT_NONE
+        ketqua.append(("KHÔNG kiểm tra chứng chỉ", ngucanh))
+    return ketqua
+
+
+def _moketnoi(yeucau, thoigiancho):
+    # urlopen với cách kiểm tra chứng chỉ đang dùng được; lỗi chứng chỉ thì thử cách kế tiếp và nhớ cách nào chạy
+    import ssl
+    if _ngucanh_ssl["dangdung"] is not None:
+        try:
+            return urllib.request.urlopen(yeucau, timeout = thoigiancho, context = _ngucanh_ssl["dangdung"])
+        except urllib.error.URLError as err:
+            if not isinstance(err.reason, ssl.SSLCertVerificationError):
+                raise
+            _ngucanh_ssl["dangdung"] = None
+    loicuoi = None
+    for ten, ngucanh in _cacngucanhssl():
+        try:
+            phanhoi = urllib.request.urlopen(yeucau, timeout = thoigiancho, context = ngucanh)
+        except urllib.error.URLError as err:
+            if not isinstance(err.reason, ssl.SSLCertVerificationError):
+                raise
+            loicuoi = err
+            continue
+        _ngucanh_ssl["dangdung"] = ngucanh
+        print(f"[TELEGRAM] Kết nối HTTPS bằng: {ten}")
+        return phanhoi
+    print("[TELEGRAM] Lỗi chứng chỉ HTTPS với mọi cách thử: xem hướng dẫn \"chungchi\" / \"is_bokiemtrassl\" đầu thongbao_xq.py")
+    raise loicuoi
+
+
 def _goiapi(token, phuongthuc, thamso, thoigiancho = 15.):
     dulieu = urllib.parse.urlencode(thamso).encode("utf-8")
     yeucau = urllib.request.Request(f"https://api.telegram.org/bot{token}/{phuongthuc}", data = dulieu)
-    with urllib.request.urlopen(yeucau, timeout = thoigiancho) as phanhoi:
+    with _moketnoi(yeucau, thoigiancho) as phanhoi:
         return json.loads(phanhoi.read().decode("utf-8"))
 
 
@@ -246,11 +302,82 @@ def _tieude(tieude):
     return f"<b>{tieude}</b>\n🖥 {html.escape(laytenmay())} · 🕒 {time.strftime('%H:%M:%S')}"
 
 
+VIECNGAN = {"Tấn công": "Đánh", "Di chuyển": "Đi", "Đứng im": "Đứng", "Đã chết": "Chết"}
+# Chấm màu trước chữ ở cột Việc (Telegram không tô màu chữ được). Emoji rộng hơn 1 ký tự và luôn vẽ cỡ cố định (không chỉnh được) nên
+# cột Việc để cuối hàng: đứng giữa thì các cột sau bị lệch
+MAUVIEC = {"Đánh": "🟢", "Đi": "🔵", "Đứng": "⚪", "Dừng": "🟡", "Chết": "🔴"}
+
+
+def _o(chu, rong, is_canhphai = False):
+    # 1 ô của bảng chữ đều độ rộng: dài quá thì cắt kèm "…", thiếu thì đệm dấu cách (chữ tiếng Việt dựng sẵn rộng 1 ký tự)
+    import unicodedata
+    chu = unicodedata.normalize("NFC", str(chu))
+    if len(chu) > rong:
+        chu = chu[:rong - 1] + "…"
+    return chu.rjust(rong) if is_canhphai else chu.ljust(rong)
+
+
+def _dangdentoi(info):
+    # Nơi đang đi tới: bản đồ đích của "Đi tới bản đồ", không thì điểm đánh lộ trình đang tới ("Điểm 3/8 221,67" nếu cùng bản đồ,
+    # khác bản đồ thì tên bản đồ của điểm đó). Không biết thì ""
+    if info.get("_idbandocandi"):
+        return laytenbando(info["_idbandocandi"])
+    diem = info.get("_diemdanhdangden")
+    if not diem:
+        return ""
+    x, y, idbando, thutu, tongso = diem
+    if idbando != info.get("tenbando"):
+        return laytenbando(idbando)
+    return f"Điểm {thutu + 1}/{tongso} {x},{y}"
+
+
+def _oviec(info):
+    # Ô cuối hàng: "🔵 Đi → Điểm 3/8 221,67", "🟢 Đánh", "🟡 Dừng"...
+    status = info.get("status", "-")
+    viec = "Dừng" if info.get("_thoigiantamngungconlai", 0) > 0 else VIECNGAN.get(status, status)
+    oviec = f"{MAUVIEC.get(viec, '⚫')} {viec}"
+    dentoi = _dangdentoi(info) if viec == "Đi" else ""
+    return f"{oviec} → {dentoi}" if dentoi else oviec
+
+
 def taobaocao(cacinfo, tieude, is_daydu):
-    # Cả tin: tiêu đề, mỗi nhân vật 1 thẻ, cuối là tổng ngân lượng
+    # Cả tin: tiêu đề, bảng (mỗi nhân vật 1 hàng trong khối <pre> chữ đều độ rộng cho cột thẳng hàng, cột Việc kèm chấm màu và nơi
+    # đang đi tới ở cuối hàng), dòng tổng, ghi chú tạm dừng / tắt tấn công. Báo cáo (is_daydu) thêm cột ngân lượng/giờ và chết
     cacinfo = sorted(cacinfo, key = lambda i: i.get("tennhanvat") or "")
-    tongnganluong = sum(i.get("nganluong") or 0 for i in cacinfo)
-    return "\n".join([_tieude(tieude)] + [_tomtatnhanvat(i, is_daydu) for i in cacinfo] + [f"💰 Tổng: <b>{_so(tongnganluong)}</b> ngân lượng"])
+    cots = [("Nhân vật", 12, False), ("Bản đồ", 20, False), ("Máu", 4, True), ("Ngân lượng", 11, True)]
+    if is_daydu:
+        cots += [("/giờ", 7, True), ("Chết", 4, True)]
+    hang = lambda giatris, viec = "": (" ".join(_o(g, rong, phai) for g, (_, rong, phai) in zip(giatris, cots)) + "  " + viec).rstrip()
+    gach = "─" * (sum(rong for _, rong, _ in cots) + len(cots) - 1)
+    dongs = [hang([ten for ten, _, _ in cots], "Việc"), gach]
+    ghichus = []
+    tongnganluong = tongtylegio = tongchet = giaylaunhat = 0
+    is_cotylegio = False
+    for info in cacinfo:
+        phien = info.get("_thongkephien") or {}
+        giay = phien.get("giay", 0)
+        tylegio = phien.get("nganluong", 0) * 3600. / giay if giay >= 60 else None
+        giatris = [info.get("tennhanvat") or "?", laytenbando(info.get("tenbando")), f"{info.get('phantramsinhluc', 0)}%",
+                   _so(info.get("nganluong")) if info.get("nganluong") is not None else "-"]
+        if is_daydu:
+            giatris += [_so(tylegio) if tylegio is not None else "-", phien.get("chet", 0)]
+        dongs.append(hang(giatris, _oviec(info)))
+        tongnganluong += info.get("nganluong") or 0
+        tongtylegio += tylegio or 0
+        is_cotylegio = is_cotylegio or tylegio is not None
+        tongchet += phien.get("chet", 0)
+        giaylaunhat = max(giaylaunhat, giay)
+        ten = html.escape(info.get("tennhanvat") or "?")
+        if info.get("_thoigiantamngungconlai", 0) > 0:
+            ghichus.append(f"⏸ <b>{ten}</b>: <i>{html.escape(info.get('_lydotamngung', ''))}</i> · còn {int(info['_thoigiantamngungconlai']) // 60} phút")
+        elif info.get("_is_tudongsudungkynang") is False:
+            ghichus.append(f"⚠️ <b>{ten}</b>: đang tắt tự động tấn công")
+    dongs.append(gach)
+    dongs.append(hang(["Tổng", "", "", _so(tongnganluong)] + ([_so(tongtylegio) if is_cotylegio else "-", tongchet] if is_daydu else [])))
+    phans = [_tieude(tieude), "<pre>" + html.escape("\n".join(dongs)) + "</pre>"]
+    if is_daydu:
+        phans.append(f"⏱ Phiên chạy {_thoigian(giaylaunhat)}")
+    return "\n".join(phans + ghichus)
 
 
 def taothongkehomnay(cacinfo):
@@ -331,7 +458,7 @@ def _guianh(token, chat_id, anh, chuthich):
     yeucau = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendPhoto", data = b"".join(phans),
                                     headers = {"Content-Type": f"multipart/form-data; boundary={ranhgioi}"})
     try:
-        with urllib.request.urlopen(yeucau, timeout = 30) as phanhoi:
+        with _moketnoi(yeucau, 30) as phanhoi:
             phanhoi.read()
     except Exception as err:
         print(f"[TELEGRAM] Gửi ảnh lỗi: {err}")
@@ -402,6 +529,7 @@ class DieuKhienTelegram:
         # Nút đã xử lý: {(id tin, callback_data): thời điểm}. Telegram không khoá được nút, bấm liền 2-3 lần trong 1 nhịp hỏi thành
         # 2-3 lần bấm riêng (vd gửi 2-3 ảnh chụp): cùng nút trên cùng tin trong GIANCACHBAMTRUNG giây thì bỏ qua
         self._dabamnut = {}
+        self._trangthai_log = None
 
     def batdau(self):
         threading.Thread(target = self.loop, daemon = True).start()
@@ -409,6 +537,15 @@ class DieuKhienTelegram:
     def loop(self):
         while True:
             cauhinh = taicauhinh()
+            # In 1 dòng mỗi khi đổi trạng thái: máy mới chép code mà thiếu telegram.json (bị .gitignore) thì tự tạo mẫu đang tắt, không
+            # báo gì thì khó biết vì sao máy đó không trả lời
+            if not cauhinh.get("is_bat") or not cauhinh.get("token") or not cauhinh.get("chat_id"):
+                trangthai = f"đang tắt ({'is_bat = false' if not cauhinh.get('is_bat') else 'thiếu token' if not cauhinh.get('token') else 'chưa có chat_id, nhắn /start cho bot'})"
+            else:
+                trangthai = f"đang bật · tên máy {laytenmay(cauhinh)}"
+            if trangthai != self._trangthai_log:
+                self._trangthai_log = trangthai
+                print(f"[TELEGRAM] {trangthai} · {duongdancauhinh()}")
             if not cauhinh.get("is_bat") or not cauhinh.get("token"):
                 time.sleep(10)
                 continue

@@ -153,6 +153,7 @@ class TacTu:
         # {tên: loại vật phẩm trong mô tả, vd "Có thể sử dụng", "Tinh luyện", "" nếu không có}: cùng tên cùng loại nên nhớ theo tên,
         # chỉ desc tên chưa biết (_docloaivatpham)
         self._loaivatpham_map = {}
+        self._is_motakhongban_map = {}
         # Tự động đặt vật phẩm mới vào chỗ hợp lý (action_tudongdatvatphammoi): id hành trang lượt trước, {id món mới: [lúc thấy,
         # số lần đã chuyển]}
         self._is_tudongdatvatphammoi = True
@@ -5908,15 +5909,18 @@ class TacTu:
             return False
         khop = re.search(r"[\[［]\s*([^\]］\n]*?)\s*[\]］]", "\n".join(dongs[1:]))
         self._loaivatpham_map[ten] = khop.group(1) if khop else ""
+        motathuong = "\n".join(dongs[1:]).lower()
+        self._is_motakhongban_map[ten] = any(chu in motathuong for chu in MOTAVATPHAMKHONGBANs)
         return True
 
     def _is_loaivatphamkhongban(self, ten, vitri):
-        # Nhập môn / Bí kíp / Pháp Bảo (theo loại trong mô tả) không bán; chưa đọc được mô tả thì cũng chưa bán (lần sau đọc lại)
-        if ten not in self._loaivatpham_map and not self._docloaivatpham(ten, vitri):
+        # Nhập môn / Bí kíp / Pháp Bảo (theo loại trong mô tả) hoặc mô tả có Ngự Thạch... không bán; chưa đọc được mô tả thì cũng
+        # chưa bán (lần sau đọc lại)
+        if ten not in self._is_motakhongban_map and not self._docloaivatpham(ten, vitri):
             self._loaivatpham_map.pop(ten, None)
             return True
         loai = self._loaivatpham_map[ten].lower()
-        return any(loaikhongban in loai for loaikhongban in LOAIVATPHAMKHONGBANs)
+        return self._is_motakhongban_map[ten] or any(loaikhongban in loai for loaikhongban in LOAIVATPHAMKHONGBANs)
 
     def action_sapxephanhtrang(self, delay = 0.6, thoigiantoida = 180., solandichuyentoida = 300):
         if not self._is_dangsapxephanhtrang:
