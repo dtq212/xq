@@ -1,4 +1,4 @@
-# Nhiệm vụ sư môn (bật tay trên giao diện, tối đa 20 lượt / ngày): mỗi lượt đọc nhiệm vụ trong cửa sổ nhiệm vụ (nhiemvu_xq) rồi làm bước
+# Nhiệm vụ sư môn (bật tay trên giao diện, tới khi NPC báo đã làm đủ 20 lần trong ngày): mỗi lượt đọc nhiệm vụ trong cửa sổ nhiệm vụ (nhiemvu_xq) rồi làm bước
 # kế tiếp, nhiệm vụ đổi thì bước đổi theo (không nhớ quy trình riêng nên bot tắt / bật lại giữa chừng vẫn làm tiếp được):
 #   không có nhiệm vụ   : tới NPC giao nhiệm vụ (Côn Luân dưới 60: Văn Xương Chân Quân), "2. Tiếp nhận nhiệm vụ" -> "1. Tiếp nhận"
 #                         (tallk <id># quest -> tallk <id># accept_quest)
@@ -18,7 +18,8 @@ import os
 import time
 
 from hangso_xq import *
-from bando_xq import timduongbando
+from bando_xq import timduongbando, CAPQUAI_MAP, BANDOCONG_MAP
+from dexuatlotrinh_xq import taiviquaibando, dexuatlotrinh, SOLANTHAYQUAITOITHIEU
 from giaodo_xq import taolenhgiao
 from nhiemvu_xq import *
 from thongbao_xq import baosuco
@@ -36,6 +37,18 @@ KHOANGCACHBATBAOTHU = 3.
 KHOANGCACHNOICHUYEN = 3.
 # Gửi xong hội thoại chừng này giây mà nhiệm vụ chưa đổi thì thử lại, quá SOLANTHUSUMON lần thì dừng
 THOIGIANCHONHIEMVUDOI = 4.
+# Nhận nhiệm vụ: cửa sổ nhiệm vụ có lúc cập nhật chậm (Luyện tập), chờ lâu hơn trước khi gửi lại
+THOIGIANCHONHANNHIEMVU = 12.
+# Luyện tập / Du lịch tự chọn bãi: quái cấp thấp nhất >= cấp - CAPTHAPHONTOIDA, cấp cao nhất <= cấp + CAPCAOHONTOIDA
+CAPTHAPHONTOIDA = 12
+CAPCAOHONTOIDA = 3
+# Bãi train người dùng chọn theo cấp (ưu tiên hơn tự chọn; các bãi này game không ghi cấp quái): (từ cấp, tới dưới cấp, các tầng).
+# Lấy tầng đầu tiên có lộ trình mẫu, không có thì tầng đầu
+BANDOTRAINTHEOCAP = (
+    (70, 80, (311, 312, 313)),             # Linh Cốc Động
+    (80, 90, (291, 292, 293)),             # Khốn Ma Trận
+    (90, 100, (331, 332, 333, 334, 335)),  # Hầm Vạn Nhân
+)
 SOLANTHUSUMON = 3
 # Mỗi bước hội thoại cách nhau, chờ menu trả lời tối đa
 GIANCACHBUOCHOITHOAI = 0.8
@@ -77,7 +90,8 @@ class TacTuSuMon:
 
     def get_trangthaisumon(self):
         if self._sumon:
-            return f"Sư môn: {self._sumon['trangthai']}"
+            solan = self._sumon.get("solanhomnay")
+            return f"Sư môn{f' (hôm nay {solan}/{SOLANSUMONTOIDA} lần)' if solan is not None else ''}: {self._sumon['trangthai']}"
         return self._ketquasumon or ""
 
     def thietlap_npcgiaosumon(self, ten):
@@ -88,8 +102,9 @@ class TacTuSuMon:
         return self._sumon_npcgiao or NPCSUMONMACDINH.get(self.moitruong.get_tenmonphai(), ("", ""))[0]
 
     def _laytenmuctieutancongs(self):
-        # Danh sách tên được đánh: lúc Thu thập thì chỉ đánh quái ra vật phẩm cần, còn lại là danh sách của người dùng
-        if self._sumon and self._sumon["chedo"] == "danhquai" and self._sumon["tenquai"]:
+        # Danh sách tên được đánh: lúc Thu thập thì chỉ đánh quái ra vật phẩm cần, ở bãi train tự chọn thì đánh mọi quái (rỗng), còn lại là
+        # danh sách của người dùng
+        if self._sumon and self._sumon["chedo"] == "danhquai" and (self._sumon["tenquai"] or self._sumon.get("is_train")):
             return self._sumon["tenquai"]
         return self._tenmuctieutancongs
 
@@ -366,7 +381,7 @@ class TacTuSuMon:
             return self._dentoi(s, moitruong.get_idbandohientai(), x, y, tennpc)
         khoa = f"{nv['luot'] if nv else 0}|{nv['loai'] if nv else ''}|{viec}"
         solan, luc = s["thu"].get(khoa, (0, 0.))
-        if time.time() - luc < THOIGIANCHONHIEMVUDOI:
+        if time.time() - luc < (THOIGIANCHONHIEMVUDOI if nv else THOIGIANCHONHANNHIEMVU):
             s["trangthai"] = f"chờ {tennpc} ({viec})"
             return None
         if solan >= SOLANTHUSUMON:
@@ -400,6 +415,22 @@ class TacTuSuMon:
             moitruong.xoa_noidungcuasotuychon()
             moitruong.action_thucthicaulenh(f"look {manpc}")
             hoithoai["dangchomenu"] = True
+        elif buoc == "demsolan":
+            # Lời NPC sau "Tiếp nhận nhiệm vụ" có số lần đã làm hôm nay: đủ SOLANSUMONTOIDA thì không nhận nữa (làm thêm không có thưởng)
+            if not moitruong.get_noidungcuasotuychon() and now - hoithoai["luc"] < THOIGIANCHOMENU:
+                return
+            solan = laysolanhomnay(moitruong.get_noidungcuasotuychon())
+            if solan is not None:
+                s["solanhomnay"] = solan
+                print(f"[SƯ MÔN] Hôm nay đã làm {solan} lần")
+                if solan >= SOLANSUMONTOIDA:
+                    s["hoithoai"] = None
+                    if moitruong.get_is_danghiencuasotuychon():
+                        moitruong.set_is_danghiencuasotuychon(False)
+                    self._ketthucsumon(thongbao = f"✅ Hôm nay đã làm {solan} lần sư môn (từ {SOLANSUMONTOIDA} lần trở lên không còn thưởng), dừng")
+                    return
+            hoithoai["buocs"].pop(0)
+            return
         elif buoc.startswith("give:"):
             moitruong.action_thucthicaulenh(buoc[5:])
             hoithoai["dangchomenu"] = False
@@ -430,22 +461,20 @@ class TacTuSuMon:
             return None
 
         nv = laynhiemvusumon(moitruong.get_danhsachmucnhiemvu())
-        # Lượt đang nhận đổi (trả xong / sang lượt mới): đếm lượt đã trả, xong lượt cuối thì dừng
+        # Lượt đang nhận đổi (trả xong / sang lượt mới): đếm số lượt phiên này đã trả. Giới hạn trong ngày xét lúc nhận nhiệm vụ mới theo
+        # số NPC báo (bước "demsolan"); "Lượt thứ" trong tên nhiệm vụ chỉ là thứ tự trong chuỗi (lặp lại), không phải số lần trong ngày
         if s["luotdangnhan"] and (not nv or nv["luot"] != s["luotdangnhan"]):
             s["soluotxong"] += 1
             print(f"[SƯ MÔN] Đã trả lượt {s['luotdangnhan']}")
-            if s["luotdangnhan"] >= SOLUOTSUMONTOIDA:
-                self._ketthucsumon(thongbao = f"✅ Đã làm xong {SOLUOTSUMONTOIDA} lượt sư môn hôm nay")
-                return None
         s["luotdangnhan"] = nv["luot"] if nv else 0
-        s["tenquai"], s["vatphamnhat"] = set(), set()
+        s["tenquai"], s["vatphamnhat"], s["is_train"] = set(), set(), False
         s["chedo"] = "dichuyen"
 
         npcgiao = self._laynpcgiaosumon()
         bandomonphai = BANDOMONPHAI.get(moitruong.get_tenmonphai())
         if not nv:
             s["trangthai"] = "nhận nhiệm vụ"
-            return self._noichuyen(s, nv, npcgiao, ["look", "quest", "accept_quest"], "nhận nhiệm vụ", bandomonphai)
+            return self._noichuyen(s, nv, npcgiao, ["look", "quest", "demsolan", "accept_quest"], "nhận nhiệm vụ", bandomonphai)
         loai = nv["loai"]
         if nv["is_xong"] or (loai in (LOAI_LUYENTAP, LOAI_DULICH) and (is_dutiendo(nv) or self._is_dukinhnghiem(s, nv))):
             return self._noichuyen(s, nv, npcgiao, ["look", "task_info"], "trả nhiệm vụ", bandomonphai)
@@ -460,11 +489,13 @@ class TacTuSuMon:
                       or timbandotheoten(nv.get("bando"))
             return self._noichuyen(s, nv, nv["npc"], ["look", "task_info"], "thăm viếng", idbando)
         if loai in (LOAI_LUYENTAP, LOAI_DULICH):
-            s["chedo"] = "farm"
-            s["trangthai"] = f"{TENLOAI[loai]}: farm theo lộ trình" + (f" ({nv['tiendo'][0]}/{nv['tiendo'][1]})" if nv["tiendo"] else "")
-            if not self._diemdanhxungquanhs:
-                self._baomotlan(s, "chualotrinh", f"{TENLOAI[loai]} cần lộ trình farm hợp cấp: nhân vật chưa có điểm đánh, đang đánh quanh chỗ đứng")
-            return None
+            tiendo = f" ({nv['tiendo'][0]}/{nv['tiendo'][1]})" if nv["tiendo"] else ""
+            if self._diemdanhxungquanhs:
+                # Nhân vật có lộ trình điểm đánh riêng: farm theo lộ trình đó
+                s["chedo"] = "farm"
+                s["trangthai"] = f"{TENLOAI[loai]}: farm theo lộ trình{tiendo}"
+                return None
+            return self._buoctrain(s, f"{TENLOAI[loai]}{tiendo}")
         if loai == LOAI_BATYEUQUAI:
             # Bắt được thì quái thành bảo thú trong danh sách (cửa sổ nhiệm vụ không báo Xong): về trả ngay
             if any(chuanhoaten(ten) == chuanhoaten(nv["quai"]) for ten in moitruong.get_danhsachtenbaothugiangho()):
@@ -472,6 +503,59 @@ class TacTuSuMon:
             return self._buocbatyeuquai(s, nv)
         self._ketthucsumon(f"chưa biết làm nhiệm vụ này: {nv['ten']} – {nv['mucdich']}")
         return None
+
+    def _chonbandotrain(self):
+        # Bãi hợp cấp cho Luyện tập / Du lịch (CAPQUAI_MAP: cấp quái theo bản đồ, từ file game): quái không thấp hơn cấp - CAPTHAPHONTOIDA,
+        # không cao hơn cấp + CAPCAOHONTOIDA, không phải phó bản, phù tới được. Ưu tiên phù thẳng tới, có sẵn điểm đánh (lộ trình mẫu /
+        # vị trí quái đã thấy), quái cấp cao nhất. Không có bãi nào thì lấy bãi có cấp quái gần nhất. -> id bản đồ hoặc None
+        capdo = self.moitruong.get_capdonhanvat() or 0
+        lotrinhmau = util_tailotrinhmau()
+        for captu, capden, tangs in BANDOTRAINTHEOCAP:
+            if captu <= capdo < capden:
+                return next((t for t in tangs if str(t) in lotrinhmau), tangs[0])
+        ungviens = []
+        for idbando, (captoithieu, captoida) in CAPQUAI_MAP.items():
+            phuongan = layphuongandichuyen(idbando)
+            if idbando in BANDOPHOBANs or idbando not in BANDOCONG_MAP or not phuongan:
+                continue
+            is_hopcap = captoithieu >= capdo - CAPTHAPHONTOIDA and captoida <= capdo + CAPCAOHONTOIDA
+            is_codiem = str(idbando) in lotrinhmau or sum(taiviquaibando(idbando).values()) >= SOLANTHAYQUAITOITHIEU
+            ungviens.append(((not is_hopcap, abs((captoithieu + captoida) / 2 - capdo) if not is_hopcap else 0, phuongan[3] > 0,
+                              not is_codiem, -captoida), idbando))
+        return min(ungviens)[1] if ungviens else None
+
+    def _laydiemtrain(self, idbando):
+        # Điểm đi tuần ở bãi train: lộ trình mẫu, không có thì đề xuất từ vị trí quái đã thấy, không nữa thì quanh tâm bản đồ (tránh cổng)
+        for mau in util_tailotrinhmau().get(str(idbando), []):
+            diems = [(int(d[0]), int(d[1])) for d in mau.get("diem") or [] if len(d) < 3 or int(d[2]) == idbando]
+            if diems:
+                return diems
+        demo = taiviquaibando(idbando)
+        if sum(demo.values()) >= SOLANTHAYQUAITOITHIEU:
+            diems, _ = dexuatlotrinh(demo)
+            if diems:
+                return [tuple(d) for d in diems]
+        return laydiemkhampha(idbando)
+
+    def _buoctrain(self, s, nhan):
+        # Luyện tập / Du lịch khi nhân vật chưa có lộ trình điểm đánh: tự chọn bãi hợp cấp (giữ nguyên bãi trong cả phiên sư môn, lên cấp
+        # thì chọn lại), phù tới, đi tuần qua các điểm và đánh mọi quái (theo danh sách tên mục tiêu của nhân vật nếu có)
+        capdo = self.moitruong.get_capdonhanvat() or 0
+        if not s.get("bandotrain") or s.get("captrain") != capdo:
+            s["bandotrain"], s["captrain"] = self._chonbandotrain(), capdo
+            if s["bandotrain"]:
+                capquai = CAPQUAI_MAP.get(s["bandotrain"])
+                print(f"[SƯ MÔN] {nhan}: chọn bãi {laytenbando(s['bandotrain'])}"
+                      f" ({f'quái cấp {capquai[0]}~{capquai[1]}, ' if capquai else ''}nhân vật cấp {capdo})")
+        idbando = s["bandotrain"]
+        if not idbando:
+            self._ketthucsumon(f"không tìm được bãi train hợp cấp {capdo} cho {nhan}")
+            return None
+        s["trangthai"] = f"{nhan}: train ở {laytenbando(idbando)}"
+        if self.moitruong.get_idbandohientai() != idbando:
+            return self._dentoi(s, idbando, None, None, f"bãi train {laytenbando(idbando)}")
+        s["chedo"], s["is_train"] = "danhquai", True
+        return self._diquadiem(s, f"train|{idbando}", idbando, self._laydiemtrain(idbando), f"train ở {laytenbando(idbando)}")
 
     def _is_dukinhnghiem(self, s, nv):
         # Luyện tập mà máy chủ không gửi tiến độ: tự đếm kinh nghiệm tăng từ lúc thấy lượt này

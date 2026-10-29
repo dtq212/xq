@@ -17,7 +17,8 @@ from bando_xq import layidbandotheoten, BANDOCONG_MAP
 from hangso_xq import BANDO_TANTHUTHON, BANDO_CONLUAN, BANDO_MAOSON, BANDO_THUCSON, BANDO_DUONGMON, BANDO_DAOHOANGUYEN, BANDO_VANMONGCOC
 
 MUCSUMON = "Nhiệm Vụ Sư Môn"
-SOLUOTSUMONTOIDA = 20
+# Quá chừng này lần trong ngày (số NPC giao nhiệm vụ báo "Số lần nhiệm vụ đã tích lũy ngày hôm nay") thì làm thêm không có thưởng
+SOLANSUMONTOIDA = 20
 
 LOAI_DENTIM = "dentim"          # Đi tìm Thạch Sư: tới NPC phụ nhận việc Thu thập / Mua sắm
 LOAI_THUTHAP = "thuthap"        # Thu thập N cái <vật phẩm>, và giao cho <NPC>
@@ -199,6 +200,12 @@ def phantichcuahang(cuahang):
             if idbando:
                 return " ".join(tus[:-sotu]), idbando
     return " ".join(tus), BANDO_TANTHUTHON
+
+
+def laysolanhomnay(loithoai):
+    # "Số lần nhiệm vụ đã tích lũy ngày hôm nay: 29 lần" trong lời NPC giao nhiệm vụ (sau "Tiếp nhận nhiệm vụ") -> 29, không có thì None
+    m = re.search(r"tích lũy ngày hôm nay\s*[:：]\s*(\d+)", boma(loithoai or ""))
+    return int(m.group(1)) if m else None
 
 
 def is_dutiendo(nv):
