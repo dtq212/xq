@@ -188,14 +188,15 @@ def phantichnhiemvu(tenmuc, mota):
 
 
 def phantichcuahang(cuahang):
-    # "Chủ Tiệm Vũ Khí Tần Quốc" -> ("Chủ Tiệm Vũ Khí", bản đồ Tần Quốc); không ghi nước ("Chủ Tiệm Y Dược") thì ở Tân Thủ Thôn
+    # "Chủ Tiệm Vũ Khí Tần Quốc" -> ("Chủ Tiệm Vũ Khí", bản đồ Tần Quốc); đuôi là tên bản đồ bất kỳ ("Tân Thủ Thôn", "Nước Ngụy"...);
+    # không ghi nơi ("Chủ Tiệm Y Dược") thì ở Tân Thủ Thôn
     tus = (cuahang or "").split()
-    for sotu in (2, 3):
-        if len(tus) > sotu:
-            nuoc = tus[-sotu:]
+    for sotu in (3, 2):
+        if len(tus) > sotu + 1:
+            noi = tus[-sotu:]
             # "Nước Ngụy" = "Ngụy Quốc"
-            idbando = timbandotheoten(" ".join(nuoc[1:] + ["Quốc"]) if nuoc[0] == "Nước" else " ".join(nuoc))
-            if idbando and idbando % 10 == 0 and idbando <= 80:
+            idbando = timbandotheoten(" ".join(noi[1:] + ["Quốc"]) if noi[0] == "Nước" else " ".join(noi))
+            if idbando:
                 return " ".join(tus[:-sotu]), idbando
     return " ".join(tus), BANDO_TANTHUTHON
 
