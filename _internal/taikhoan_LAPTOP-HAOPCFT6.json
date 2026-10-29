@@ -1,11 +1,11 @@
 {
-    "is_tudongdangnhap": true,
+    "is_tudongdangnhap": false,
     "duongdangame": "E:\\Games\\ChienQuoc2D_Aegis\\xq.exe",
     "taikhoans": [
         {
-            "tennhanvat": "Thọ",
-            "idnguoichoi": 29,
-            "user": "tholuumanh",
+            "tennhanvat": "Mộc Lan",
+            "idnguoichoi": 132,
+            "user": "moclan",
             "pass": "hateva",
             "group": 1,
             "server": 1,
@@ -13,9 +13,9 @@
             "vitricuaso": 1
         },
         {
-            "tennhanvat": "Ngọc",
-            "idnguoichoi": 30,
-            "user": "ngoclasat",
+            "tennhanvat": "tieuhac",
+            "idnguoichoi": 133,
+            "user": "tieuhac",
             "pass": "hateva",
             "group": 1,
             "server": 1,
@@ -23,9 +23,9 @@
             "vitricuaso": 2
         },
         {
-            "tennhanvat": "ThichVaCham",
-            "idnguoichoi": 31,
-            "user": "thichvacham",
+            "tennhanvat": "Suong Chieu",
+            "idnguoichoi": 134,
+            "user": "suongchieu",
             "pass": "hateva",
             "group": 1,
             "server": 1,
@@ -33,9 +33,9 @@
             "vitricuaso": 3
         },
         {
-            "tennhanvat": "KNgaiVaCham",
-            "idnguoichoi": 32,
-            "user": "kngaivacham",
+            "tennhanvat": "BốBánhBao",
+            "idnguoichoi": 135,
+            "user": "bobanhbao",
             "pass": "hateva",
             "group": 1,
             "server": 1,
