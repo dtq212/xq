@@ -111,10 +111,26 @@ class TacTuSuMon:
     def _layvatphamnhatsumon(self):
         return self._sumon["vatphamnhat"] if self._sumon and self._sumon["chedo"] == "danhquai" else ()
 
+    # Ô cần cho đánh quái: (thuộc tính, giá trị cần, tên trên giao diện)
+    _TUYCHONDANHQUAI = (("_is_tudongsudungkynang", True, "Tự động sử dụng kỹ năng"), ("_is_tudongtimkiemmuctieu", True, "Tự tìm mục tiêu"),
+                        ("_is_chidanhnguoichoi", False, "Chỉ đánh người chơi"))
+
+    def _batdanhquai(self, s):
+        # Bước cần đánh quái (Luyện tập, Du lịch, Thu thập): ô nào người dùng quên bật (hoặc đang "Chỉ đánh người chơi") thì đổi giúp,
+        # nhớ giá trị cũ để trả lại khi dừng sư môn
+        for thuoctinh, giatri, ten in self._TUYCHONDANHQUAI:
+            if getattr(self, thuoctinh) != giatri:
+                s.setdefault("tuychoncu", {}).setdefault(thuoctinh, getattr(self, thuoctinh))
+                setattr(self, thuoctinh, giatri)
+                print(f"[SƯ MÔN] {'Bật' if giatri else 'Tắt'} \"{ten}\" để đánh quái (dừng sư môn thì trả lại)")
+
     def _ketthucsumon(self, loi = None, thongbao = None):
         s = self._sumon
         self._sumon = None
         self._yeucautudo = None
+        # Trả lại các ô đánh quái bot đã tự đổi
+        for thuoctinh, giatri in ((s or {}).get("tuychoncu") or {}).items():
+            setattr(self, thuoctinh, giatri)
         noidung = thongbao or (f"❌ Sư môn dừng: {loi}" if loi else "✅ Xong nhiệm vụ sư môn")
         if s and s["soluotxong"]:
             noidung += f" (phiên này trả {s['soluotxong']} lượt)"
@@ -493,6 +509,7 @@ class TacTuSuMon:
             if self._diemdanhxungquanhs:
                 # Nhân vật có lộ trình điểm đánh riêng: farm theo lộ trình đó
                 s["chedo"] = "farm"
+                self._batdanhquai(s)
                 s["trangthai"] = f"{TENLOAI[loai]}: farm theo lộ trình{tiendo}"
                 return None
             return self._buoctrain(s, f"{TENLOAI[loai]}{tiendo}")
@@ -555,6 +572,7 @@ class TacTuSuMon:
         if self.moitruong.get_idbandohientai() != idbando:
             return self._dentoi(s, idbando, None, None, f"bãi train {laytenbando(idbando)}")
         s["chedo"], s["is_train"] = "danhquai", True
+        self._batdanhquai(s)
         return self._diquadiem(s, f"train|{idbando}", idbando, self._laydiemtrain(idbando), f"train ở {laytenbando(idbando)}")
 
     def _is_dukinhnghiem(self, s, nv):
@@ -579,6 +597,7 @@ class TacTuSuMon:
         if self.moitruong.get_idbandohientai() != idbando:
             return self._dentoi(s, idbando, None, None, nhan)
         s["chedo"] = "danhquai"
+        self._batdanhquai(s)
         s["tenquai"], s["vatphamnhat"] = {nv["quai"]}, {nv["vatpham"]}
         s["trangthai"] = nhan
         return self._diquadiem(s, f"quai|{nv['quai']}|{idbando}", idbando, self._laydiemtimquai(nv["quai"], idbando), nhan)
