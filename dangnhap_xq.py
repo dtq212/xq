@@ -36,6 +36,8 @@ SOCLIENTTOIDA = 4
 SOLANBIDALIENTUC = 3
 THOIGIANDEMBIDA = 1800
 THOIGIANTAMHOAN = 1800
+# Nhân vật vắng chừng này giây mà tự đăng nhập vẫn chưa đưa vào lại được thì báo Telegram (kẹt quy trình đăng nhập...)
+THOIGIANBAOVANG = 600
 
 TOADO_LAUNCHER = {
     "BTN_VAO_GAME": (530, 495)
@@ -238,8 +240,9 @@ def chuanhoatennhanvat(tennhanvat):
 
 
 def laydanhsachnhanvatonlines():
-    # "cuaso": {hwnd: ID người chơi} của các cửa sổ đang có nhân vật (để nhận ra cửa sổ đó khi bị dis về màn hình đăng nhập)
-    online_chars = {"ten": set(), "id": set(), "cuaso": {}}
+    # "cuaso": {hwnd: ID người chơi} của các cửa sổ đang có nhân vật (để nhận ra cửa sổ đó khi bị dis về màn hình đăng nhập),
+    # "tentheocuaso": {hwnd: tên đã chuẩn hoá} (nhận ra cửa sổ của tài khoản chưa điền ID / tự điền ID)
+    online_chars = {"ten": set(), "id": set(), "cuaso": {}, "tentheocuaso": {}}
 
     def callback(hwnd, _):
         if win32gui.IsWindowVisible(hwnd):
@@ -259,6 +262,7 @@ def laydanhsachnhanvatonlines():
                         tennhanvat = chuanhoatennhanvat(mt.get_tendoituong())
                         if tennhanvat:
                             online_chars["ten"].add(tennhanvat)
+                            online_chars["tentheocuaso"][hwnd] = tennhanvat
                 except:
                     pass
 
@@ -352,7 +356,7 @@ def mogamevadangnhap(char_name, config, duongdangame, cuasogiuchos = ()):
 
         if not giaiphongchoclient(cuasogiuchos):
             print(f"   -> Đã đủ {SOCLIENTTOIDA} client mà không có client nào đóng được (đều đang chơi / giữ chỗ). Không mở thêm.")
-            return
+            return False
 
         hwnd_launcher = timlauncherdangmo()
         if hwnd_launcher:
@@ -689,6 +693,13 @@ def dichuyencuasotheovitri(hwnd, vitricuaso):
         print(f"   ❌ Lỗi khi di chuyển cửa sổ: {e}")
 
 
+def _is_cuasocuataikhoan(taikhoan, idnguoichoi, tennhanvat):
+    # Cửa sổ (đã biết ID / tên nhân vật lúc còn online) có phải của tài khoản này: so ID, chưa điền ID thì so tên
+    if taikhoan.get("idnguoichoi"):
+        return idnguoichoi is not None and int(taikhoan["idnguoichoi"]) == idnguoichoi
+    return bool(tennhanvat) and chuanhoatennhanvat(taikhoan.get("tennhanvat")) == tennhanvat
+
+
 def _is_taikhoanonline(taikhoan, online):
     # Ưu tiên ID (cố định); chưa điền ID thì tạm so theo tên (tên có thể đổi). None = cấu hình thiếu cả hai
     idnguoichoi = taikhoan.get("idnguoichoi")
@@ -713,6 +724,10 @@ class TuDongDangNhap:
         # ngay trong nó thì vào lại tại chỗ, đóng cửa sổ là mất chỗ. hwnd -> số lần đã thử đăng nhập lại trong cửa sổ bị dis
         self._idtheocuaso = {}
         self._solandangnhaplaicuaso = {}
+        # hwnd -> tên nhân vật (đã chuẩn hoá) lần cuối thấy trong cửa sổ đó: nhận ra cửa sổ bị dis của tài khoản chưa có ID
+        self._tentheocuaso = {}
+        # Tài khoản ("user") -> lúc bắt đầu vắng mà chưa đăng nhập lại được (báo Telegram khi vắng quá THOIGIANBAOVANG giây)
+        self._batdauvang = {}
         # Theo dõi rớt game theo tài khoản ("user"): online lượt quét trước, [các lần rớt trong THOIGIANDEMBIDA giây], tạm hoãn tự
         # đăng nhập tới thời điểm này
         self._onlinetruoc = {}
@@ -803,12 +818,17 @@ class TuDongDangNhap:
         dondeptientrinhaovuabithoatgame()
         online = laydanhsachnhanvatonlines()
 
+        self._tudienid(cauhinh, online)
+
         # Cửa sổ đang có nhân vật: nhớ là của ai. Cửa sổ đã đóng thì quên
         for hwnd, idnguoichoi in online["cuaso"].items():
             self._idtheocuaso[hwnd] = idnguoichoi
+            if online["tentheocuaso"].get(hwnd):
+                self._tentheocuaso[hwnd] = online["tentheocuaso"][hwnd]
             self._solandangnhaplaicuaso.pop(hwnd, None)
         for hwnd in [h for h in self._idtheocuaso if not win32gui.IsWindow(h)]:
             self._idtheocuaso.pop(hwnd, None)
+            self._tentheocuaso.pop(hwnd, None)
             self._solandangnhaplaicuaso.pop(hwnd, None)
         # Cửa sổ bị dis: đang ở màn hình đăng nhập, nhân vật của nó chưa online ở cửa sổ khác, chưa thử đăng nhập lại quá
         # SOLANDANGNHAPLAICUASODIS lần. Không đóng / kill, không nhận nhầm là cửa sổ mới mở
@@ -817,13 +837,18 @@ class TuDongDangNhap:
                     and self._solandangnhaplaicuaso.get(hwnd, 0) < SOLANDANGNHAPLAICUASODIS and _is_cuasomanhinhdangnhap(hwnd)}
 
         # Nhân vật vắng có cửa sổ bị dis được đăng nhập trước: dis cùng lúc nhiều acc mà lấy nhân vật đầu danh sách (cửa sổ của nó đã
-        # hết lượt thử) thì phải mở client mới trong khi các cửa sổ bị dis khác vẫn chiếm đủ chỗ
-        idcodis = set(cuasodis.values())
+        # hết lượt thử) thì phải mở client mới trong khi các cửa sổ bị dis khác vẫn chiếm đủ chỗ. Khớp cửa sổ theo ID, tài khoản chưa có
+        # ID thì theo tên (trước đây chỉ theo ID: 4 tài khoản chưa điền ID bị dis cùng lúc thì không cửa sổ nào khớp, mở client mới
+        # cũng không được vì cả 4 cửa sổ đang giữ chỗ -> kẹt mãi, 2026-10-29)
+        def cuasodiscua(taikhoan):
+            return next((hwnd for hwnd, idnguoichoi in cuasodis.items()
+                         if _is_cuasocuataikhoan(taikhoan, idnguoichoi, self._tentheocuaso.get(hwnd))), None)
+
         self._theodoiroigame(taikhoans, online)
         # Tài khoản đang tạm hoãn (bị đá liên tục: máy khác đang đăng nhập cùng tài khoản) thì không đăng nhập lại, kẻo hai máy đá nhau mãi
         vangs = [taikhoan for taikhoan in taikhoans if _is_taikhoanonline(taikhoan, online) is False and not self._is_dangtamhoan(taikhoan)]
-        canhdangnhap = next((taikhoan for taikhoan in vangs if taikhoan.get("idnguoichoi") and int(taikhoan["idnguoichoi"]) in idcodis),
-                            vangs[0] if vangs else None)
+        self._baovanglau(taikhoans, online, vangs)
+        canhdangnhap = next((taikhoan for taikhoan in vangs if cuasodiscua(taikhoan)), vangs[0] if vangs else None)
         danhsach = []
         for taikhoan in taikhoans:
             is_online = _is_taikhoanonline(taikhoan, online)
@@ -844,8 +869,7 @@ class TuDongDangNhap:
             return
 
         ten = canhdangnhap.get("tennhanvat") or str(canhdangnhap.get("idnguoichoi"))
-        idcanhdangnhap = int(canhdangnhap["idnguoichoi"]) if canhdangnhap.get("idnguoichoi") else None
-        hwnd_dis = next((hwnd for hwnd, idnguoichoi in cuasodis.items() if idnguoichoi == idcanhdangnhap), None)
+        hwnd_dis = cuasodiscua(canhdangnhap)
         if hwnd_dis:
             # Đăng nhập lại ngay trong cửa sổ bị dis: vào lại tại chỗ (phó bản), không về thành
             self._solandangnhaplaicuaso[hwnd_dis] = self._solandangnhaplaicuaso.get(hwnd_dis, 0) + 1
@@ -854,4 +878,46 @@ class TuDongDangNhap:
             dangnhaptrongcuaso(hwnd_dis, ten, canhdangnhap)
             return
         self.trangthai = f"Đang đăng nhập {ten}..."
-        mogamevadangnhap(ten, canhdangnhap, cauhinh["duongdangame"], cuasogiuchos = set(cuasodis))
+        if mogamevadangnhap(ten, canhdangnhap, cauhinh["duongdangame"], cuasogiuchos = set(cuasodis)) is False and cuasodis:
+            # Đủ client mà chỗ nào cũng bị cửa sổ dis giữ (của nhân vật khác / không nhận ra của ai): bỏ giữ chỗ để lượt sau đóng được
+            # một cửa sổ mà mở client mới, không thì kẹt mãi
+            import html
+            from thongbao_xq import guitinmay
+            print(f"   -> Bỏ giữ chỗ {len(cuasodis)} cửa sổ bị dis để mở được client mới cho {ten}")
+            for hwnd in cuasodis:
+                self._solandangnhaplaicuaso[hwnd] = SOLANDANGNHAPLAICUASODIS
+            guitinmay("dangnhap", f"⚠️ Đủ {SOCLIENTTOIDA} client đều là cửa sổ bị dis đang giữ chỗ, không mở thêm được để đăng nhập "
+                                  f"<b>{html.escape(ten)}</b>: bỏ giữ chỗ, đóng bớt cửa sổ dis rồi mở client mới", khoa = "kethetcho", giancach = 600.)
+
+    def _tudienid(self, cauhinh, online):
+        # Tài khoản chưa điền ID mà nhân vật cùng tên đang online: ghi ID vào file tài khoản (ID cố định, tên có thể đổi; nhận cửa sổ bị
+        # dis theo ID chắc hơn theo tên)
+        tentheoid = {}
+        for hwnd, idnguoichoi in online["cuaso"].items():
+            if online["tentheocuaso"].get(hwnd):
+                tentheoid[online["tentheocuaso"][hwnd]] = idnguoichoi
+        dadien = []
+        for taikhoan in cauhinh["taikhoans"]:
+            ten = chuanhoatennhanvat(taikhoan.get("tennhanvat"))
+            if not taikhoan.get("idnguoichoi") and ten in tentheoid:
+                taikhoan["idnguoichoi"] = tentheoid[ten]
+                dadien.append(f"{taikhoan.get('tennhanvat')} = {tentheoid[ten]}")
+        if dadien:
+            print(f"[ĐĂNG NHẬP] Tự điền ID vào {os.path.basename(duongdantaikhoan())}: {', '.join(dadien)}")
+            luucauhinhdangnhap(cauhinh)
+
+    def _baovanglau(self, taikhoans, online, vangs):
+        # Nhân vật vắng quá THOIGIANBAOVANG giây mà vẫn chưa vào lại được: báo Telegram (30 phút nhắc lại 1 lần)
+        import html
+        from thongbao_xq import guitinmay
+        now = time.time()
+        khoavangs = {taikhoan.get("user") for taikhoan in vangs}
+        for khoa in [k for k in self._batdauvang if k not in khoavangs]:
+            self._batdauvang.pop(khoa)
+        for taikhoan in vangs:
+            khoa = taikhoan.get("user")
+            batdau = self._batdauvang.setdefault(khoa, now)
+            if now - batdau >= THOIGIANBAOVANG:
+                ten = html.escape(taikhoan.get("tennhanvat") or str(taikhoan.get("idnguoichoi") or khoa))
+                guitinmay("dangnhap", f"❗ <b>{ten}</b> vắng {int(now - batdau) // 60} phút mà tự đăng nhập chưa đưa vào lại được "
+                                      f"({self.trangthai})", khoa = ("vanglau", khoa), giancach = 1800.)
