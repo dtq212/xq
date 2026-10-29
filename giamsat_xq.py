@@ -2,7 +2,7 @@
 #   1. Nhân vật kẹt: đang tự đánh theo lộ trình mà quá THOIGIANKETLAMMOI giây không đổi tọa độ / bản đồ / mục tiêu, không lên kinh nghiệm,
 #      không đổi ngân lượng / số vật phẩm hành trang (kinh nghiệm đầy ở cấp tối đa thì không tăng nữa, nên không chỉ dựa vào nó) (kẹt vật cản, lệch đồng bộ với server, mạng chết ngầm mà client vẫn hiện trong game) => ngắt di chuyển, bỏ mục tiêu,
 #      chọn lại điểm đánh gần nhất. Vẫn kẹt tới THOIGIANKETKILL giây => kill client cho dangnhap_xq mở lại, đăng nhập rồi lộ trình tự đưa về
-#      bãi. Chỉ kill khi đang bật tự động đăng nhập, nhân vật có trong taikhoan.json, không có nhân vật nào đang tạm ngưng, và chưa kill
+#      bãi. Chỉ kill khi đang bật tự động đăng nhập, nhân vật có trong file tài khoản, không có nhân vật nào đang tạm ngưng, và chưa kill
 #      nhân vật này quá SOLANKILLTOIDA lần trong 1 giờ (lưu _internal/giamsat.json vì tiến trình bot chết theo client)
 #   2. Luồng bot treo: vòng tổng hợp / vòng phụ quá THOIGIANTREOLUONG giây không chạy hết 1 lượt => thoát tiến trình bot, trochoi_xq tự
 #      mở lại tiến trình mới cho cửa sổ đó

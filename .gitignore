@@ -153,10 +153,9 @@ Thumbs.db
 *.swo
 # Trạng thái tạm ngưng (ẩn thân / người lạ) của từng máy, kịch bản tự đăng nhập đọc
 _internal/tamngung/
-# Tài khoản tự đăng nhập của từng máy (có mật khẩu)
+# Tài khoản (taikhoan_<tên máy>.json) và token Telegram (telegram.json) CÓ đưa lên git: repo riêng tư, người dùng chọn đồng bộ
+# qua git giữa các máy (2026-10-29). Riêng file tên cũ taikhoan.json thì bỏ qua: bot bản cũ tự tạo lại file mẫu rỗng
 _internal/taikhoan.json
-# Token bot Telegram và chat nhận tin của từng máy (thongbao_xq)
-_internal/telegram.json
 # Số lần watchdog mở lại client theo nhân vật (giamsat_xq)
 _internal/giamsat.json
 # Log lệnh từng nhân vật (IS_LOGCAULENH)

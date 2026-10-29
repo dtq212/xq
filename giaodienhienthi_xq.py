@@ -1028,7 +1028,7 @@ class GiaoDienHienThi:
         self._luutodoi([n for _, n in conlai], chon = vitri)
 
     def _taotabdangnhap(self, tab):
-        # Chung cả máy (không theo nhân vật đang chọn): tài khoản trong _internal/taikhoan.json
+        # Chung cả máy (không theo nhân vật đang chọn): tài khoản trong _internal/taikhoan_<tên máy tính>.json
         nhom = self._taonhom(tab, "Tự động đăng nhập (chung cả máy)")
         self.var_tudongdangnhap = tk.BooleanVar(value = self.dangnhap.is_bat)
 

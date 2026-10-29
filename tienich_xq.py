@@ -352,7 +352,15 @@ def laythunghiem(khoa, macdinh = None):
 
 
 def duongdantaikhoan():
-    # Tài khoản tự đăng nhập của riêng máy này (có mật khẩu, không đưa lên git)
+    # Tài khoản tự đăng nhập của riêng máy này (có mật khẩu, không đưa lên git): taikhoan_<tên máy tính>.json, để chép cả thư mục bot
+    # sang máy khác (vd máy ảo) không đè mất tài khoản của máy đó (trước đây cùng tên taikhoan.json, đã mất 1 lần 2026-10-29)
+    import socket
+    tenmay = re.sub(r"[^\w.-]", "_", socket.gethostname()) or "maynay"
+    return os.path.join(os.path.dirname(_thumucthietlap()), f"taikhoan_{tenmay}.json")
+
+
+def duongdantaikhoancu():
+    # File chung tên cũ: máy chưa có file riêng thì chép từ đây sang (dangnhap_xq.taicauhinhdangnhap)
     return os.path.join(os.path.dirname(_thumucthietlap()), "taikhoan.json")
 
 

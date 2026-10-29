@@ -1,9 +1,10 @@
 # Tự động đăng nhập lại nhân vật vắng mặt (trước đây là các kịch bản tudongdangnhap*.py chạy riêng).
-# Tài khoản + đường dẫn game của từng máy nằm trong _internal/taikhoan.json, luồng chạy trong trochoi_xq.py
+# Tài khoản + đường dẫn game của từng máy nằm trong _internal/taikhoan_<tên máy tính>.json, luồng chạy trong trochoi_xq.py
 
 import csv
 import json
 import os
+import shutil
 import subprocess
 import threading
 import time
@@ -15,7 +16,7 @@ import win32gui
 import win32process
 
 from moitruong_xq import MoiTruong
-from tienich_xq import duongdantaikhoan, laytamngungdanghieuluc
+from tienich_xq import duongdantaikhoan, duongdantaikhoancu, laytamngungdanghieuluc
 
 LAUNCHER_TITLE = "client 2.01.07"
 GAME_TITLE_LOGIN_SCREEN = "Chien Quoc 2D --ooo2026ooo-- v.2.01.07"
@@ -29,6 +30,12 @@ SOLANDANGNHAPLAICUASODIS = 2
 
 # Game chỉ cho chạy bấy nhiêu client cùng lúc, mở thêm thì client mới báo lỗi và treo cả quy trình đăng nhập
 SOCLIENTTOIDA = 4
+
+# Rớt khỏi game chừng này lần trong THOIGIANDEMBIDA giây thì coi như đang giành tài khoản với máy khác: tạm hoãn tự đăng nhập
+# tài khoản đó THOIGIANTAMHOAN giây (xem TuDongDangNhap._theodoiroigame)
+SOLANBIDALIENTUC = 3
+THOIGIANDEMBIDA = 1800
+THOIGIANTAMHOAN = 1800
 
 TOADO_LAUNCHER = {
     "BTN_VAO_GAME": (530, 495)
@@ -81,7 +88,12 @@ def taicauhinhdangnhap():
     # Đọc lỗi (sai cú pháp JSON...) thì trả về cấu hình rỗng có khoá "loi" để báo lên giao diện, và không được lưu đè lên file
     duongdan = duongdantaikhoan()
     if not os.path.exists(duongdan):
-        luucauhinhdangnhap(CAUHINHMAU)
+        # Lần đầu chạy bản tách file theo tên máy: dùng tiếp file chung tên cũ (taikhoan.json) nếu có, không thì tạo file mẫu
+        if os.path.exists(duongdantaikhoancu()):
+            shutil.copy2(duongdantaikhoancu(), duongdan)
+            print(f"[ĐĂNG NHẬP] Đã chép {os.path.basename(duongdantaikhoancu())} sang {os.path.basename(duongdan)} (file riêng của máy này)")
+        else:
+            luucauhinhdangnhap(CAUHINHMAU)
     try:
         # utf-8-sig: Notepad (nhất là Windows 7) lưu "UTF-8" kèm BOM ở đầu file
         with open(duongdan, encoding = "utf-8-sig") as file:
@@ -701,10 +713,48 @@ class TuDongDangNhap:
         # ngay trong nó thì vào lại tại chỗ, đóng cửa sổ là mất chỗ. hwnd -> số lần đã thử đăng nhập lại trong cửa sổ bị dis
         self._idtheocuaso = {}
         self._solandangnhaplaicuaso = {}
+        # Theo dõi rớt game theo tài khoản ("user"): online lượt quét trước, [các lần rớt trong THOIGIANDEMBIDA giây], tạm hoãn tự
+        # đăng nhập tới thời điểm này
+        self._onlinetruoc = {}
+        self._lanroigames = {}
+        self._tamhoanden = {}
         self._luong = threading.Thread(target = self.loop, daemon = True)
 
     def batdau(self):
         self._luong.start()
+
+    def _is_dangtamhoan(self, taikhoan):
+        return time.time() < self._tamhoanden.get(taikhoan.get("user"), 0.)
+
+    def _theodoiroigame(self, taikhoans, online):
+        # Nhân vật đang online (lượt quét trước) mà giờ vắng: rớt mạng / bị đá (tài khoản đăng nhập ở máy khác) / game đóng -> báo
+        # Telegram. Rớt SOLANBIDALIENTUC lần trong THOIGIANDEMBIDA giây thì gần như chắc có máy khác đang đăng nhập cùng tài khoản (vd chép
+        # nhầm file tài khoản sang máy ảo, 2026-10-29 hai máy đá nhau cả buổi sáng): tạm hoãn tự đăng nhập tài khoản đó THOIGIANTAMHOAN
+        # giây và báo, để hai máy thôi giành nhau
+        import html
+        from thongbao_xq import guitinmay
+        now = time.time()
+        for taikhoan in taikhoans:
+            khoa = taikhoan.get("user")
+            is_online = _is_taikhoanonline(taikhoan, online)
+            if not khoa or is_online is None:
+                continue
+            if self._onlinetruoc.get(khoa) and not is_online:
+                ten = html.escape(taikhoan.get("tennhanvat") or str(taikhoan.get("idnguoichoi") or khoa))
+                lans =[t for t in self._lanroigames.get(khoa, []) if now - t < THOIGIANDEMBIDA] + [now]
+                self._lanroigames[khoa] = lans
+                if len(lans) >= SOLANBIDALIENTUC:
+                    self._tamhoanden[khoa] = now + THOIGIANTAMHOAN
+                    self._lanroigames[khoa] = []
+                    print(f"[ĐĂNG NHẬP] {ten} rớt {len(lans)} lần trong {THOIGIANDEMBIDA // 60} phút: tạm hoãn tự đăng nhập {THOIGIANTAMHOAN // 60} phút")
+                    guitinmay("dangnhap", f"🚫 <b>{ten}</b> bị đá khỏi game {len(lans)} lần trong {THOIGIANDEMBIDA // 60} phút\n"
+                                          f"Có thể máy khác đang đăng nhập cùng tài khoản <b>{html.escape(khoa)}</b>. "
+                                          f"Tạm hoãn tự đăng nhập tài khoản này {THOIGIANTAMHOAN // 60} phút.", khoa = ("bida", khoa), giancach = 600.)
+                else:
+                    guitinmay("dangnhap", f"⚠️ <b>{ten}</b> rớt khỏi game (mất kết nối, game đóng hoặc tài khoản bị đăng nhập ở nơi khác)"
+                                          f"{(', đang tạm hoãn tự đăng nhập' if self._is_dangtamhoan(taikhoan) else ', đang tự đăng nhập lại') if self.is_bat else ''}",
+                             khoa = ("roigame", khoa), giancach = 120.)
+            self._onlinetruoc[khoa] = is_online
 
     def set_is_bat(self, is_bat):
         global is_chophepdong
@@ -769,7 +819,9 @@ class TuDongDangNhap:
         # Nhân vật vắng có cửa sổ bị dis được đăng nhập trước: dis cùng lúc nhiều acc mà lấy nhân vật đầu danh sách (cửa sổ của nó đã
         # hết lượt thử) thì phải mở client mới trong khi các cửa sổ bị dis khác vẫn chiếm đủ chỗ
         idcodis = set(cuasodis.values())
-        vangs = [taikhoan for taikhoan in taikhoans if _is_taikhoanonline(taikhoan, online) is False]
+        self._theodoiroigame(taikhoans, online)
+        # Tài khoản đang tạm hoãn (bị đá liên tục: máy khác đang đăng nhập cùng tài khoản) thì không đăng nhập lại, kẻo hai máy đá nhau mãi
+        vangs = [taikhoan for taikhoan in taikhoans if _is_taikhoanonline(taikhoan, online) is False and not self._is_dangtamhoan(taikhoan)]
         canhdangnhap = next((taikhoan for taikhoan in vangs if taikhoan.get("idnguoichoi") and int(taikhoan["idnguoichoi"]) in idcodis),
                             vangs[0] if vangs else None)
         danhsach = []
@@ -778,6 +830,9 @@ class TuDongDangNhap:
             ten = taikhoan.get("tennhanvat") or str(taikhoan.get("idnguoichoi") or taikhoan.get("user"))
             if is_online is None:
                 danhsach.append((ten, None, "thiếu ID/tên"))
+            elif is_online is False and self._is_dangtamhoan(taikhoan):
+                conlai = int(self._tamhoanden[taikhoan.get("user")] - time.time()) // 60 + 1
+                danhsach.append((ten, taikhoan.get("idnguoichoi"), f"tạm hoãn {conlai} phút (bị đá liên tục)"))
             elif taikhoan is canhdangnhap:
                 danhsach.append((ten, taikhoan.get("idnguoichoi"), "đang đăng nhập"))
             else:

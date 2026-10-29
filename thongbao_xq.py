@@ -31,10 +31,10 @@ CAUHINHMAU = {
     # Tên máy hiện trong mọi tin (để trống = tên máy tính Windows)
     "tenmay": "",
     "phutbaocao": 120,
-    "loaisuco": {"chet": True, "bipk": True, "tamngung": True, "giamsat": True, "vatpham": True, "dohiem": True},
+    "loaisuco": {"chet": True, "bipk": True, "tamngung": True, "giamsat": True, "vatpham": True, "dohiem": True, "dangnhap": True},
 }
 TENLOAISUCO = {"chet": "chết", "bipk": "bị người chơi đánh", "tamngung": "tạm ngưng", "giamsat": "kẹt / mở lại client", "vatpham": "vật phẩm",
-               "dohiem": "nhặt được đồ hiếm (luật túi đồ có 📣)"}
+               "dohiem": "nhặt được đồ hiếm (luật túi đồ có 📣)", "dangnhap": "rớt khỏi game / bị đá liên tục (giành tài khoản)"}
 
 # Cùng một tin (khoá) của một tiến trình không gửi lại trong chừng này giây
 GIANCACHTINMACDINH = 120.
@@ -191,6 +191,16 @@ def guitin(noidung, khoa = None, giancach = GIANCACHTINMACDINH, is_html = False)
 
 
 BIEUTUONGSUCO = {"chet": "💀", "bipk": "⚔️", "tamngung": "🕵️", "giamsat": "🛠", "vatpham": "🎒", "dohiem": "🎁"}
+
+
+def guitinmay(loai, noidung, khoa = None, giancach = GIANCACHTINMACDINH):
+    # Tin của cả máy (không gắn 1 nhân vật, vd luồng đăng nhập): nội dung HTML (chữ từ game phải html.escape trước), thêm tên máy
+    # ở cuối, tắt được theo loại trong "loaisuco"
+    cauhinh = taicauhinh()
+    if not cauhinh["loaisuco"].get(loai, True):
+        return False
+    return guitin(f"{noidung}\n<i>🖥 {html.escape(laytenmay(cauhinh))} · 🕒 {time.strftime('%H:%M:%S')}</i>", khoa = (loai, khoa),
+                  giancach = giancach, is_html = True)
 
 
 def baosuco(moitruong, loai, noidung, khoa = None, giancach = GIANCACHTINMACDINH):
@@ -585,6 +595,10 @@ class DieuKhienTelegram:
                 if not self._is_dadatmenu:
                     _goiapi(cauhinh["token"], "setMyCommands", {"commands": json.dumps(MENULENH, ensure_ascii = False)})
                     self._is_dadatmenu = True
+                    # Mỗi lần bật bot báo 1 tin: máy nào không thấy tin này (vd lỗi chứng chỉ, mất mạng) là biết máy đó không gửi được gì
+                    if cauhinh.get("chat_id"):
+                        _gui(cauhinh["token"], cauhinh["chat_id"], f"🟢 Bot đã khởi động · 🖥 <b>{html.escape(laytenmay(cauhinh))}</b> · "
+                                                                   f"🕒 {time.strftime('%H:%M:%S')}", True)
                 self._nhanlenh(cauhinh)
                 self._baocaodinhky(cauhinh)
             except urllib.error.HTTPError as err:
