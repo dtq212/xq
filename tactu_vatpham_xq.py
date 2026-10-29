@@ -1357,7 +1357,8 @@ class TacTuVatPham:
         self._thoidiemsudunghoithanhphugannhat = time.time()
 
     def _xulydangbanrac(self):
-        # Bước 3 của về bán rác (dùng chung cho mọi phái): bán hết -> sửa đồ -> cất kho (tactu_catkho_xq) -> trả về True khi xong (túi hết đầy)
+        # Bước 3 của về bán rác (dùng chung cho mọi phái): bán hết -> sửa đồ -> cất kho (tactu_catkho_xq) -> giao đồ nếu gặp người nhận
+        # (tactu_giaodo_xq) -> trả về True khi xong (túi hết đầy)
         if time.time() < self._thoidiemthulaibanrac:
             return False
         if self._buocbanrac == 0:
@@ -1378,7 +1379,14 @@ class TacTuVatPham:
             self.batdau_catkho_sauban()
             self._buocbanrac = 3
             return False
-        if self._buocbanrac == 3 and not self._xulycatkhobanrac():
+        if self._buocbanrac == 3:
+            if not self._xulycatkhobanrac():
+                return False
+            # Cất kho xong: yêu cầu giao đang chờ mà người nhận đang ở đây thì giao luôn (tactu_giaodo_xq)
+            self.batdau_giaodo_sauban()
+            self._buocbanrac = 4
+            return False
+        if self._buocbanrac == 4 and not self._xulygiaodobanrac():
             return False
         self._buocbanrac = 0
         if not self.moitruong.get_is_dayhanhtrang():

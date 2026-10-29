@@ -1320,8 +1320,13 @@ class GiaoDienHienThi:
         hangnut.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
         ttk.Button(hangnut, text = "Thêm", command = self._themgiaodo).pack(side = tk.LEFT, padx = (0, 4))
         ttk.Button(hangnut, text = "Huỷ / bỏ dòng", command = self._huygiaodo).pack(side = tk.LEFT)
-        tk.Label(nhom, text = "Người giao phải đang chạy bot trên máy này. Đồ ghi mỗi dòng 1 món, dạng \"Tên x số lượng\". Đứng cách người nhận "
-                              "tối đa 3 ô mới giao; giao xong kiểm tra ngân lượng / túi đồ đã giảm rồi báo Telegram.",
+        ttk.Button(hangnut, text = "🚚 Về giao ngay", command = self._vegiaongay).pack(side = tk.LEFT, padx = (8, 4))
+        ttk.Button(hangnut, text = "Cả máy về giao", command = lambda: self._vegiaongay(is_tatca = True)).pack(side = tk.LEFT)
+        tk.Label(nhom, text = "Yêu cầu mới được để dành, bot vẫn đánh tiếp. Giao khi: về bán rác mà người nhận đang ở Tân Thủ Thôn (không thấy "
+                              "thì bỏ qua, không chờ, để lần sau), hoặc bấm Về giao ngay (nhân vật của dòng đang chọn) / Cả máy về giao: về Tiệm Tạp Hóa chờ người "
+                              "nhận tối đa 10 phút. Người giao phải đang chạy bot trên máy này; \"Tất cả nhân vật trên máy\" thì mỗi nhân vật "
+                              "(trừ người nhận) 1 yêu cầu. Đồ ghi mỗi dòng 1 món, dạng \"Tên x số lượng\". Đứng cách người nhận tối đa 3 ô "
+                              "mới giao; giao xong kiểm tra ngân lượng / túi đồ đã giảm rồi báo Telegram.",
                  fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(560)).grid(row = 2, column = 0, sticky = tk.W, pady = (4, 0))
         self._giaododanghien = None
 
@@ -1372,11 +1377,13 @@ class GiaoDienHienThi:
         hwndchon = self.get_selected_hwnd()
         nguoigiao = (self.shared_data.get(hwndchon) or {}).get("tennhanvat") if hwndchon else None
         tenbiet = sorted(set(self._tentheoid().values()) - {nguoigiao})
-        truongs = [("nguoigiao", "Người giao (nhân vật trên máy này)", sorted(cacnhanvat)), ("nguoinhan", "Người nhận", tenbiet),
+        # "Tất cả nhân vật trên máy": mỗi nhân vật (trừ chính người nhận) 1 yêu cầu riêng
+        TATCA = "Tất cả nhân vật trên máy"
+        truongs = [("nguoigiao", "Người giao (nhân vật trên máy này)", [TATCA] + sorted(cacnhanvat)), ("nguoinhan", "Người nhận", tenbiet),
                    ("tien", "Ngân lượng: giữ 10k = giao hết chừa 10k · hết · 500k", None), ("vatphams", "Vật phẩm", None)]
 
         def kiemtra(kq):
-            if kq["nguoigiao"] not in cacnhanvat:
+            if kq["nguoigiao"] not in cacnhanvat and kq["nguoigiao"] != TATCA:
                 return "Chọn người giao trong danh sách"
             if not kq["nguoinhan"].strip():
                 return "Nhập tên người nhận"
@@ -1393,7 +1400,25 @@ class GiaoDienHienThi:
         if not kq:
             return
         tien, giulai = doctien(kq["tien"])
-        guiyeucau(self.command_dict, cacnhanvat[kq["nguoigiao"]], taoyeucau(kq["nguoinhan"], tien, docvatphams(kq["vatphams"]), giulaitien = giulai))
+        nguoigiaos = [ten for ten in cacnhanvat if ten != kq["nguoinhan"].strip()] if kq["nguoigiao"] == TATCA else [kq["nguoigiao"]]
+        for ten in nguoigiaos:
+            guiyeucau(self.command_dict, cacnhanvat[ten], taoyeucau(kq["nguoinhan"], tien, docvatphams(kq["vatphams"]), giulaitien = giulai))
+
+    def _vegiaongay(self, is_tatca = False):
+        # Yêu cầu giao đang chờ của nhân vật (dòng đang chọn trong bảng giao, không thì nhân vật đang chọn ở danh sách trên; is_tatca: mọi
+        # nhân vật có yêu cầu đang chờ) về giao ngay
+        if is_tatca:
+            hwnds = [hwnd for hwnd, info in dict(self.shared_data.items()).items() if isinstance(info, dict)
+                     and any(y["trangthai"] not in ("xong", "lỗi") for y in info.get("_hangchogiaodo") or [])]
+        else:
+            chon = self.tree_giaodo.selection()
+            hwnds = [int(chon[0].split("|", 1)[0])] if chon else [self.get_selected_hwnd()] if self.get_selected_hwnd() else []
+        if not hwnds:
+            from tkinter import messagebox
+            messagebox.showwarning("Về giao ngay", "Chọn một dòng trong bảng giao (hoặc một nhân vật) trước", parent = self.root)
+            return
+        for hwnd in hwnds:
+            self.command_dict[int(hwnd)] = "vegiao"
 
     def _huygiaodo(self):
         chon = self.tree_giaodo.selection()
