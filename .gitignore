@@ -163,3 +163,5 @@ _internal/log/
 
 # Đệm vị trí NPC từ bản đồ nhỏ của game: bot tự sinh lại (nhiemvu_xq._taibandonho)
 _internal/bandonho_cache.json
+# Đệm địa chỉ dò bằng chữ ký trên xq.exe: bot tự dò lại (diachi_xq.khoitao)
+_internal/diachi_cache.json
