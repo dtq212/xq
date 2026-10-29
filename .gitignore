@@ -160,3 +160,6 @@ _internal/taikhoan.json
 _internal/giamsat.json
 # Log lệnh từng nhân vật (IS_LOGCAULENH)
 _internal/log/
+
+# Đệm vị trí NPC từ bản đồ nhỏ của game: bot tự sinh lại (nhiemvu_xq._taibandonho)
+_internal/bandonho_cache.json
