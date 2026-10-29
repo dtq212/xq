@@ -1240,9 +1240,40 @@ class GiaoDienHienThi:
                           ("↑ Lên", lambda: self._doichomuctuido(-1)), ("↓ Xuống", lambda: self._doichomuctuido(1))):
             ttk.Button(hangnut, text = chu, command = lenh).pack(side = tk.LEFT, padx = (0, 4))
         tk.Label(nhom, text = "Về bán rác: món KHÔNG khớp luật nào thì BÁN, muốn giữ thì phải có luật Giữ. Vứt: vứt ngay khi có trong túi. "
-                              "Cất kho: chưa chạy (chỉ giữ lại món đó). 📣: nhặt được món khớp bất kỳ luật 📣 nào thì báo Telegram kèm ảnh "
-                              "(xét riêng, luật đứng trên không chặn). Nhấp đúp một dòng để sửa.",
+                              "📣: nhặt được món khớp bất kỳ luật 📣 nào thì báo Telegram kèm ảnh (xét riêng, luật đứng trên không chặn). "
+                              "Món trong bảng Cất kho bên dưới thì không bán, không vứt. Nhấp đúp một dòng để sửa.",
                  fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(560)).grid(row = 2, column = 0, sticky = tk.W, pady = (4, 0))
+
+        # Cất kho (tactu_catkho_xq): bảng riêng "catkho" trong cùng file luật, xét riêng với luật hành động ở trên
+        nhom = self._taonhom(tab, "Cất kho (gửi Quản Khố ở Tân Thủ Thôn)")
+        self.tree_catkho = ttk.Treeview(nhom, columns = ("bat", "dieukien", "ruong", "giulai", "ghichu"), show = "headings", height = 4, selectmode = "browse")
+        for col, text, width, anchor in (
+                ("bat", "Bật", 40, tk.CENTER),
+                ("dieukien", "Điều kiện", 250, tk.W),
+                ("ruong", "Rương", 70, tk.CENTER),
+                ("giulai", "Giữ lại", 55, tk.CENTER),
+                ("ghichu", "Ghi chú", 140, tk.W)):
+            self.tree_catkho.heading(col, text = text)
+            self.tree_catkho.column(col, width = self._px(width), anchor = anchor, stretch = col == "dieukien")
+        self.tree_catkho.grid(row = 0, column = 0, sticky = tk.EW)
+        self.tree_catkho.bind("<Double-1>", lambda e: self._suacatkho(is_moi = False))
+        hangnut = ttk.Frame(nhom)
+        hangnut.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
+        for chu, lenh in (("Thêm", lambda: self._suacatkho(is_moi = True)), ("Sửa", lambda: self._suacatkho(is_moi = False)),
+                          ("Xoá", lambda: self._xoamuctuido("catkho", self.tree_catkho))):
+            ttk.Button(hangnut, text = chu, command = lenh).pack(side = tk.LEFT, padx = (0, 4))
+        self.var_catkhosauban = tk.BooleanVar(value = True)
+        ttk.Checkbutton(hangnut, text = "Tự cất sau mỗi lần về bán rác", variable = self.var_catkhosauban,
+                        command = self._doicatkhosauban).pack(side = tk.LEFT, padx = (8, 4))
+        # Cất kho ngay cho nhân vật đang chọn; trạng thái lấy từ shared_data "_trangthaicatkho" (_capnhatgiaodo vẽ lại)
+        ttk.Button(hangnut, text = "🗄 Cất kho ngay", command = self._catkhongay).pack(side = tk.LEFT, padx = (8, 4))
+        self.lbl_catkho = tk.Label(nhom, text = "", fg = MAUCHU_PHU, anchor = tk.W)
+        self.lbl_catkho.grid(row = 2, column = 0, sticky = tk.W)
+        tk.Label(nhom, text = "Món khớp luật bật nào trong bảng này thì không bán, không vứt, và được cất (thứ tự không quan trọng, luật Giữ ở "
+                              "trên không chặn). Rương: \"Tự động\" = rương còn chỗ, hoặc số rương cố định (đầy thì báo, không cất chỗ khác). "
+                              "Giữ lại: chừa chừng đó cái trong túi. Trong rương ưu tiên gộp chồng cùng loại, không thì ô trống; cất xong "
+                              "tự đóng cửa sổ kho.",
+                 fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(560)).grid(row = 3, column = 0, sticky = tk.W, pady = (4, 0))
 
         nhom = self._taonhom(tab, "Mua bù ở Tân Thủ Thôn (còn ít hơn \"Mua khi dưới\" thì mua cho đủ)")
         self.tree_muabu = ttk.Treeview(nhom, columns = ("bat", "vatpham", "npc", "o", "dongia", "duoi", "muatoi", "monphai", "chikhi"),
@@ -1270,12 +1301,120 @@ class GiaoDienHienThi:
                  fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(540)).grid(row = 2, column = 0, sticky = tk.W, pady = (4, 0))
         self._hienluattuido()
 
-    def _hienluattuido(self, chonluat = None, chonmuabu = None):
+        # Giao tiền / đồ (giaodo_xq, tactu_giaodo_xq): hàng chờ của mọi nhân vật trên máy, lấy từ shared_data "_hangchogiaodo"
+        nhom = self._taonhom(tab, "Giao tiền / đồ (người giao về Tiệm Tạp Hóa ở Tân Thủ Thôn chờ người nhận)")
+        self.tree_giaodo = ttk.Treeview(nhom, columns = ("nguoigiao", "nguoinhan", "noidung", "trangthai"), show = "headings", height = 5,
+                                        selectmode = "browse")
+        for col, text, width, anchor in (
+                ("nguoigiao", "Người giao", 95, tk.W),
+                ("nguoinhan", "Người nhận", 95, tk.W),
+                ("noidung", "Tiền / đồ", 200, tk.W),
+                ("trangthai", "Trạng thái", 150, tk.W)):
+            self.tree_giaodo.heading(col, text = text)
+            self.tree_giaodo.column(col, width = self._px(width), anchor = anchor, stretch = col in ("noidung", "trangthai"))
+        self.tree_giaodo.tag_configure("xong", foreground = MAUCHU_LUC)
+        self.tree_giaodo.tag_configure("lỗi", foreground = MAUCHU_DO)
+        self.tree_giaodo.tag_configure("dangchay", foreground = MAUCHU_XANH)
+        self.tree_giaodo.grid(row = 0, column = 0, sticky = tk.EW)
+        hangnut = ttk.Frame(nhom)
+        hangnut.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
+        ttk.Button(hangnut, text = "Thêm", command = self._themgiaodo).pack(side = tk.LEFT, padx = (0, 4))
+        ttk.Button(hangnut, text = "Huỷ / bỏ dòng", command = self._huygiaodo).pack(side = tk.LEFT)
+        tk.Label(nhom, text = "Người giao phải đang chạy bot trên máy này. Đồ ghi mỗi dòng 1 món, dạng \"Tên x số lượng\". Đứng cách người nhận "
+                              "tối đa 3 ô mới giao; giao xong kiểm tra ngân lượng / túi đồ đã giảm rồi báo Telegram.",
+                 fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(560)).grid(row = 2, column = 0, sticky = tk.W, pady = (4, 0))
+        self._giaododanghien = None
+
+    def _catkhongay(self):
+        hwnd = self.get_selected_hwnd()
+        if not hwnd:
+            from tkinter import messagebox
+            messagebox.showwarning("Cất kho", "Chọn một nhân vật trong danh sách trước", parent = self.root)
+            return
+        info = self.shared_data.get(hwnd) or {}
+        self.command_dict[int(hwnd)] = "huycatkho" if info.get("_is_dangcatkho") else "catkho"
+
+    def _capnhatgiaodo(self):
+        # Vẽ lại khi hàng chờ giao của các nhân vật đổi (iid = "<hwnd>|<id yêu cầu>"); kèm trạng thái cất kho của nhân vật đang chọn
+        from giaodo_xq import motayeucau
+        hwndchon = self.get_selected_hwnd()
+        infochon = (self.shared_data.get(hwndchon) or {}) if hwndchon else {}
+        chucatkho = infochon.get("_trangthaicatkho") or ""
+        if infochon.get("_is_dangcatkho"):
+            chucatkho += " (bấm lại để huỷ)"
+        if self.lbl_catkho.cget("text") != chucatkho:
+            self.lbl_catkho.config(text = chucatkho)
+        hangs = []
+        for hwnd, info in dict(self.shared_data.items()).items():
+            if not isinstance(info, dict):
+                continue
+            for y in info.get("_hangchogiaodo") or []:
+                trangthai = y["trangthai"] + (f" ({y['ghichu']})" if y.get("ghichu") and y["trangthai"] == "lỗi" else "")
+                tag = y["trangthai"] if y["trangthai"] in ("xong", "lỗi") else "dangchay"
+                hangs.append((f"{hwnd}|{y['id']}", (info.get("tennhanvat") or "?", y["nguoinhan"], motayeucau(y), trangthai), tag))
+        if hangs == self._giaododanghien:
+            return
+        self._giaododanghien = hangs
+        dangchon = self.tree_giaodo.selection()
+        self.tree_giaodo.delete(*self.tree_giaodo.get_children())
+        for iid, values, tag in hangs:
+            self.tree_giaodo.insert("", tk.END, iid = iid, values = values, tags = (tag,))
+        if dangchon and self.tree_giaodo.exists(dangchon[0]):
+            self.tree_giaodo.selection_set(dangchon[0])
+
+    def _themgiaodo(self):
+        from giaodo_xq import taoyeucau, docvatphams, doctien, guiyeucau
+        cacnhanvat = {info.get("tennhanvat"): hwnd for hwnd, info in dict(self.shared_data.items()).items() if isinstance(info, dict) and info.get("tennhanvat")}
+        if not cacnhanvat:
+            from tkinter import messagebox
+            messagebox.showwarning("Giao tiền / đồ", "Chưa có nhân vật nào chạy bot trên máy này", parent = self.root)
+            return
+        hwndchon = self.get_selected_hwnd()
+        nguoigiao = (self.shared_data.get(hwndchon) or {}).get("tennhanvat") if hwndchon else None
+        tenbiet = sorted(set(self._tentheoid().values()) - {nguoigiao})
+        truongs = [("nguoigiao", "Người giao (nhân vật trên máy này)", sorted(cacnhanvat)), ("nguoinhan", "Người nhận", tenbiet),
+                   ("tien", "Ngân lượng: giữ 10k = giao hết chừa 10k · hết · 500k", None), ("vatphams", "Vật phẩm", None)]
+
+        def kiemtra(kq):
+            if kq["nguoigiao"] not in cacnhanvat:
+                return "Chọn người giao trong danh sách"
+            if not kq["nguoinhan"].strip():
+                return "Nhập tên người nhận"
+            if kq["nguoinhan"].strip() == kq["nguoigiao"]:
+                return "Người nhận trùng người giao"
+            tien = doctien(kq["tien"])
+            if tien is None:
+                return "Không đọc được tiền (vd giữ 10k, hết, 500k, 1.5tr)"
+            if not tien[0] and tien[1] is None and not docvatphams(kq["vatphams"]):
+                return "Chưa có tiền hay đồ nào để giao"
+            return None
+
+        kq = self._hopthoaituido("Giao tiền / đồ", truongs, {"nguoigiao": nguoigiao or "", "tien": "giữ 10k", "vatphams": []}, kiemtra, nhieudongs = {"vatphams": "mỗi dòng 1 món: Tên x 50 / x hết / x giữ 20"})
+        if not kq:
+            return
+        tien, giulai = doctien(kq["tien"])
+        guiyeucau(self.command_dict, cacnhanvat[kq["nguoigiao"]], taoyeucau(kq["nguoinhan"], tien, docvatphams(kq["vatphams"]), giulaitien = giulai))
+
+    def _huygiaodo(self):
+        chon = self.tree_giaodo.selection()
+        if chon:
+            hwnd, idyeucau = chon[0].split("|", 1)
+            self.command_dict[int(hwnd)] = f"huygiaodo:{idyeucau}"
+
+    def _hienluattuido(self, chonluat = None, chonmuabu = None, choncatkho = None):
         dulieu = tailuat()
         self.tree_luattuido.delete(*self.tree_luattuido.get_children())
         for i, luat in enumerate(dulieu["luat"]):
             self.tree_luattuido.insert("", tk.END, iid = str(i), values = ("✔" if luat["bat"] else "", "📣" if luat["is_bao"] else "", TENHANHDONG[luat["hanhdong"]],
                                                                           motaluat(luat), luat["ghichu"]))
+        self.tree_catkho.delete(*self.tree_catkho.get_children())
+        for i, luat in enumerate(dulieu["catkho"]):
+            self.tree_catkho.insert("", tk.END, iid = str(i), values = ("✔" if luat["bat"] else "", motaluat(luat),
+                                                                       f"Rương {luat['ruong']}" if luat["ruong"] else "Tự động",
+                                                                       luat["giulai"] or "", luat["ghichu"]))
+        self.var_catkhosauban.set(dulieu["is_catkhosauban"])
+        if choncatkho is not None and self.tree_catkho.exists(str(choncatkho)):
+            self.tree_catkho.selection_set(str(choncatkho))
         self.tree_muabu.delete(*self.tree_muabu.get_children())
         for i, muc in enumerate(dulieu["muabu"]):
             self.tree_muabu.insert("", tk.END, iid = str(i), values = ("✔" if muc["bat"] else "", muc["vatpham"], muc["npc"], muc["o"], self._sogon(muc["dongia"]),
@@ -1285,14 +1424,57 @@ class GiaoDienHienThi:
             if chon is not None and tree.exists(str(chon)):
                 tree.selection_set(str(chon))
 
-    def _luutuido(self, dulieu, chonluat = None, chonmuabu = None):
+    def _luutuido(self, dulieu, chonluat = None, chonmuabu = None, choncatkho = None):
         try:
             luuluat(dulieu)
         except OSError as err:
             from tkinter import messagebox
             messagebox.showerror("Luật túi đồ", f"Không lưu được: {err}", parent = self.root)
             return
-        self._hienluattuido(chonluat, chonmuabu)
+        self._hienluattuido(chonluat, chonmuabu, choncatkho)
+
+    def _doicatkhosauban(self):
+        self._luutuido(dict(tailuat(), is_catkhosauban = bool(self.var_catkhosauban.get())))
+
+    def _suacatkho(self, is_moi):
+        dulieu = tailuat()
+        chon = self.tree_catkho.selection()
+        if not is_moi and not chon:
+            return
+        vitri = None if is_moi else int(chon[0])
+        luat = {"bat": True, "ruong": 0, "giulai": 0} if is_moi else dict(dulieu["catkho"][vitri])
+        luat["ruong"] = f"Rương {luat['ruong']}" if luat.get("ruong") else "Tự động"
+        luat["giulai"] = str(luat.get("giulai") or 0)
+        cacruong = ["Tự động"] + [f"Rương {r}" for r in range(1, 11)]
+        # Form 2 cột, xếp theo cặp: Bật | Ghi chú, Rương | Giữ lại, Tên đúng | Tên chứa, Loại chứa | Mô tả chứa
+        truongs = [("bat", "Bật", None), ("ghichu", "Ghi chú", None), ("ruong", "Rương", cacruong),
+                   ("giulai", "Giữ lại trong túi (cái)", None)] + [(d, TENDIEUKIEN[d], None) for d in DIEUKIENs]
+
+        def docruong(chu):
+            chu = chu.strip().lower().replace("rương", "").strip()
+            return 0 if chu in ("tự động", "tudong", "", "0") else int(chu) if chu.isdigit() else None
+
+        def kiemtra(kq):
+            if docruong(kq["ruong"]) is None:
+                return "Rương: chọn Tự động hoặc Rương 1, 2, ..."
+            if not kq["giulai"].strip().isdigit():
+                return "Giữ lại phải là số (0 = cất hết)"
+            if not any(kq[d].strip() for d in DIEUKIENs):
+                return "Cần ít nhất 1 điều kiện (tên đúng / tên chứa / loại / mô tả), không thì luật không khớp món nào"
+            return None
+
+        kq = self._hopthoaituido("Thêm luật cất kho" if is_moi else "Sửa luật cất kho", truongs, luat, kiemtra, nhieudongs = DIEUKIENs)
+        if not kq:
+            return
+        kq["ruong"], kq["giulai"] = docruong(kq["ruong"]), int(kq["giulai"])
+        dulieu = tailuat()
+        luats = list(dulieu["catkho"])
+        if is_moi:
+            luats.append(kq)
+            vitri = len(luats) - 1
+        else:
+            luats[vitri] = kq
+        self._luutuido(dict(dulieu, catkho = luats), choncatkho = vitri)
 
     def _xoamuctuido(self, khoa, tree):
         chon = tree.selection()
@@ -1341,7 +1523,7 @@ class GiaoDienHienThi:
                 continue
             ttk.Label(o_, text = nhan, font = (FONTCHU, COCHU, "bold")).pack(anchor = tk.W)
             if khoa in nhieudongs:
-                ttk.Label(o_, text = "mỗi dòng 1 giá trị, khớp 1 dòng là đủ", style = "Phu.TLabel").pack(anchor = tk.W)
+                ttk.Label(o_, text = nhieudongs.get(khoa) if isinstance(nhieudongs, dict) else "mỗi dòng 1 giá trị, khớp 1 dòng là đủ", style = "Phu.TLabel").pack(anchor = tk.W)
                 # Text không có .get() kiểu biến Tk: bọc lại để on_luu đọc chung một kiểu
                 khungchu = ttk.Frame(o_)
                 khungchu.pack(fill = tk.BOTH, expand = True, pady = (2, 0))
@@ -1598,6 +1780,7 @@ class GiaoDienHienThi:
             self._capnhatdangnhap()
             self._capnhatbangdieukhien()
             self._capnhatthongke()
+            self._capnhatgiaodo()
             # Nội dung có thể cao lên/thấp xuống (dòng tạm ngưng, danh sách tài khoản...) mà Canvas không tự biết
             for tabcuon in self._tabcuons:
                 self._capnhatcuontab(*tabcuon)

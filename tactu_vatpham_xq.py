@@ -6,7 +6,7 @@ import time
 import unicodedata
 
 from hangso_xq import *
-from luattuido_xq import tailuat, timluat, timluatbao, HANHDONG_BAN, HANHDONG_VUT, CHIKHI_TRIEUHOIBAOTHU
+from luattuido_xq import tailuat, timluat, timluatbao, timluatcatkho, HANHDONG_BAN, HANHDONG_VUT, CHIKHI_TRIEUHOIBAOTHU
 from thongbao_xq import baosuco, LYDOTAMNGUNGTUXA
 from moitruong_xq import MoiTruong, DOUUTIEN_THAP, DOUUTIEN_KHANCAP, DOUUTIEN_CAO, SOLUONGDOITUONGXUNGQUANHTOIDA, tinh_is_huongmatvediem
 from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam
@@ -570,6 +570,14 @@ class TacTuVatPham:
         # Luật 📣 đầu tiên khớp món ở ô vitri, xét riêng với hành động (luật khác đứng trên quyết định bán / giữ cũng không chặn báo)
         return timluatbao(self._chuanhoatenvatpham(ten), lambda: self._laymotaluat(ten, vitri))
 
+    def _layluatcatkho(self, ten, vitri):
+        # Luật bảng Cất kho khớp món ở ô vitri (dict có "ruong" / "giulai") hoặc None; xét riêng với luật hành động
+        return timluatcatkho(self._chuanhoatenvatpham(ten), lambda: self._laymotaluat(ten, vitri))
+
+    def _is_catkhovatpham(self, ten, vitri):
+        # Món khớp bảng Cất kho: không bán, không vứt (kể cả phần "giữ lại trong túi")
+        return bool(self._layluatcatkho(ten, vitri))
+
     def action_tudongvutvatphamtheoluat(self):
         # Vứt món khớp luật "vứt" (luattuido_xq), mỗi giây xét 1 lượt và vứt tối đa 1 món. Món đã gửi lệnh vứt mà vẫn còn (game không
         # cho vứt: khoá...) thì 60s sau mới thử lại. Đang bán rác / sắp xếp hành trang thì thôi (vị trí các ô đang đổi)
@@ -588,7 +596,8 @@ class TacTuVatPham:
             iddoituongvatpham = self.moitruong.get_iddoituongvatphamhanhtrang(i)
             if not iddoituongvatpham or time.time() < self._thoidiemthulaivut_map.get(iddoituongvatpham, 0.):
                 continue
-            if self._layhanhdongluat(tens[i], i) != HANHDONG_VUT:
+            # Món trong bảng Cất kho thì để dành đi cất, không vứt
+            if self._layhanhdongluat(tens[i], i) != HANHDONG_VUT or self._is_catkhovatpham(tens[i], i):
                 continue
             soluong = max(1, self.moitruong.get_soluongvatphamhanhtrang(i) or 1)
             print(f"[VỨT THEO LUẬT] {self.moitruong.get_tendoituong()}: vứt {soluong} {tens[i]} ở ô {i}")
@@ -1299,7 +1308,8 @@ class TacTuVatPham:
             # Theo luật túi đồ (luattuido_xq, tab Túi đồ): không khớp luật nào hoặc luật Bán thì bán; Giữ / Vứt / Cất kho / chưa đọc được
             # mô tả (luật có điều kiện loại / mô tả) thì không bán
             hanhdong = self._layhanhdongluat(tenvatphamhanhtrang, i)
-            if hanhdong in (None, HANHDONG_BAN):
+            # Món khớp luật Cất kho (dù luật đứng dưới luật Bán) thì để dành đi cất, không bán
+            if hanhdong in (None, HANHDONG_BAN) and not self._is_catkhovatpham(tenvatphamhanhtrang, i):
                 hangdoi.append("sell ! {}# {}# 30".format(hex(idnpc).replace("0x", ""), hex(iddoituongvatphamhanhtrang).replace("0x", "")))
         self._hangdoibanrac = hangdoi
         self._thoidiemguibanractieptheo = 0.
@@ -1347,7 +1357,7 @@ class TacTuVatPham:
         self._thoidiemsudunghoithanhphugannhat = time.time()
 
     def _xulydangbanrac(self):
-        # Bước 3 của về bán rác (dùng chung cho mọi phái): bán hết -> sửa đồ -> trả về True khi xong (túi hết đầy)
+        # Bước 3 của về bán rác (dùng chung cho mọi phái): bán hết -> sửa đồ -> cất kho (tactu_catkho_xq) -> trả về True khi xong (túi hết đầy)
         if time.time() < self._thoidiemthulaibanrac:
             return False
         if self._buocbanrac == 0:
@@ -1361,7 +1371,14 @@ class TacTuVatPham:
             self.action_suavatpham()
             self._buocbanrac = 2
             return False
-        if self.get_is_dangsuavatpham():
+        if self._buocbanrac == 2:
+            if self.get_is_dangsuavatpham():
+                return False
+            # Sửa đồ xong: cất các món khớp luật Cất kho (không có món nào thì bước sau xong ngay)
+            self.batdau_catkho_sauban()
+            self._buocbanrac = 3
+            return False
+        if self._buocbanrac == 3 and not self._xulycatkhobanrac():
             return False
         self._buocbanrac = 0
         if not self.moitruong.get_is_dayhanhtrang():

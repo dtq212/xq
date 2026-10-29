@@ -31,10 +31,12 @@ CAUHINHMAU = {
     # Tên máy hiện trong mọi tin (để trống = tên máy tính Windows)
     "tenmay": "",
     "phutbaocao": 120,
-    "loaisuco": {"chet": True, "bipk": True, "tamngung": True, "giamsat": True, "vatpham": True, "dohiem": True, "dangnhap": True},
+    "loaisuco": {"chet": True, "bipk": True, "tamngung": True, "giamsat": True, "vatpham": True, "dohiem": True, "dangnhap": True, "giaodo": True,
+                 "catkho": True},
 }
 TENLOAISUCO = {"chet": "chết", "bipk": "bị người chơi đánh", "tamngung": "tạm ngưng", "giamsat": "kẹt / mở lại client", "vatpham": "vật phẩm",
-               "dohiem": "nhặt được đồ hiếm (luật túi đồ có 📣)", "dangnhap": "rớt khỏi game / bị đá liên tục (giành tài khoản)"}
+               "dohiem": "nhặt được đồ hiếm (luật túi đồ có 📣)", "dangnhap": "rớt khỏi game / bị đá liên tục (giành tài khoản)",
+               "giaodo": "kết quả giao tiền / đồ", "catkho": "kết quả cất kho"}
 
 # Cùng một tin (khoá) của một tiến trình không gửi lại trong chừng này giây
 GIANCACHTINMACDINH = 120.
@@ -190,7 +192,7 @@ def guitin(noidung, khoa = None, giancach = GIANCACHTINMACDINH, is_html = False)
     return True
 
 
-BIEUTUONGSUCO = {"chet": "💀", "bipk": "⚔️", "tamngung": "🕵️", "giamsat": "🛠", "vatpham": "🎒", "dohiem": "🎁"}
+BIEUTUONGSUCO = {"chet": "💀", "bipk": "⚔️", "tamngung": "🕵️", "giamsat": "🛠", "vatpham": "🎒", "dohiem": "🎁", "giaodo": "📦", "catkho": "🗄"}
 
 
 def guitinmay(loai, noidung, khoa = None, giancach = GIANCACHTINMACDINH):
@@ -529,16 +531,26 @@ THANHNUT = {"keyboard": [[NUT_TRANGTHAI, NUT_BAOCAO, NUT_HOMNAY, NUT_DIEUKHIEN, 
 MENULENH = [{"command": "trangthai", "description": "📋 Trạng thái nhân vật"}, {"command": "baocao", "description": "📊 Báo cáo phiên này"},
             {"command": "homnay", "description": "📈 Thống kê hôm nay"}, {"command": "dieukhien", "description": "🎮 Bảng điều khiển"},
             {"command": "chupmanhinh", "description": "📸 Chụp màn hình game"}, {"command": "tamdung", "description": "⏸ Tạm dừng"},
-            {"command": "tieptuc", "description": "▶️ Tiếp tục"}, {"command": "menu", "description": "Hiện thanh nút"}]
+            {"command": "tieptuc", "description": "▶️ Tiếp tục"},
+            {"command": "giao", "description": "📦 Giao tiền/đồ: /giao Thọ > Mộc Lan > giữ 10k > Trị Dược x hết"},
+            {"command": "catkho", "description": "🗄 Cất kho: /catkho Thọ (món trong bảng Cất kho)"},
+            {"command": "menu", "description": "Hiện thanh nút"}]
 # Lệnh (đã chuẩn hoá) -> loại
 LENH_MAP = {"trangthai": "trangthai", "baocao": "baocao", "homnay": "homnay", "thongkehomnay": "homnay", "dieukhien": "dieukhien",
             "chupmanhinh": "chupmanhinh", "chup": "chupmanhinh", "tamdung": "tamdung", "tamngung": "tamdung", "tieptuc": "tieptuc",
-            "batlai": "tieptuc"}
+            "batlai": "tieptuc", "giao": "giao", "giaodo": "giao", "catkho": "catkho"}
 PHUTTAMNGUNGs = (15, 30, 60, 120)
+HUONGDANGIAO = ("<code>/giao Thọ &gt; Mộc Lan &gt; giữ 10k &gt; Trị Dược x hết; Linh Thạch cấp 5 x3</code> (người giao &gt; người nhận &gt; "
+                "tiền &gt; đồ). Tiền: <code>giữ 10k</code> = giao hết chừa 10k, <code>hết</code>, hoặc số cố định <code>500k</code>; "
+                "đồ: <code>x3</code>, <code>x hết</code>, <code>x giữ 20</code>; bỏ trống tiền hoặc đồ được. "
+                "Người giao chạy về Tiệm Tạp Hóa ở Tân Thủ Thôn chờ người nhận rồi giao")
 GIANCACHBAMTRUNG = 15.
 HUONGDAN = ("📋 <b>Trạng thái</b> – nhân vật đang làm gì\n📊 <b>Báo cáo</b> – ngân lượng, thời gian phiên này\n"
             "📈 <b>Hôm nay</b> – thống kê cả ngày, bãi tốt nhất\n🎮 <b>Điều khiển</b> – bật/tắt tấn công, theo sau, gom quái, farm, di chuyển tự do\n"
-            "📸 <b>Chụp màn hình</b> – xem cửa sổ game\n⏸ <b>Tạm dừng</b> / ▶️ <b>Tiếp tục</b>\n\n"
+            "📸 <b>Chụp màn hình</b> – xem cửa sổ game\n⏸ <b>Tạm dừng</b> / ▶️ <b>Tiếp tục</b>\n"
+            f"📦 <b>Giao tiền / đồ</b> – {HUONGDANGIAO}\n"
+            "🗄 <b>Cất kho</b> – <code>/catkho Thọ</code> (hoặc <code>/catkho tất cả</code>): về Quản Khố ở Tân Thủ Thôn cất các món "
+            "trong bảng Cất kho (tab Túi đồ); bot cũng tự cất sau mỗi lần về bán rác nếu bật\n\n"
             "Gõ tay cũng được: <code>/tạm dừng Thọ 30</code>, <code>/tiếp tục tất cả</code>")
 # Thao tác trong bảng điều khiển: mã -> (chữ trên nút, lệnh gửi bot, khoá trạng thái bật/tắt trong shared_data)
 THAOTAC = {
@@ -754,8 +766,64 @@ class DieuKhienTelegram:
             self._guilenhbot(hwnds, phut if is_tamdung else None)
             viec = f"⏸ Đã tạm dừng {phut} phút" if is_tamdung else "▶️ Đã tiếp tục"
             return f"{viec}: <b>{html.escape(self._tennhanvats(hwnds))}</b>\n🖥 {html.escape(laytenmay())}", True, None
+        if loai == "giao":
+            return self._xulylenhgiao(noidung)
+        if loai == "catkho":
+            return self._xulylenhcatkho(thamsos)
         # /start, /menu, lệnh lạ: máy nào cũng báo sẵn sàng (biết luôn máy nào đang chạy) kèm thanh nút
         return f"🖥 <b>{html.escape(laytenmay())}</b> sẵn sàng · {len(self._cacnhanvat())} nhân vật\n\n{HUONGDAN}", True, THANHNUT
+
+    def _xulylenhgiao(self, noidung):
+        # "/giao <người giao> > <người nhận> > <tiền> > <đồ>": máy có nhân vật người giao xếp yêu cầu vào hàng chờ của nhân vật đó,
+        # máy khác im lặng. Chỉ "/giao" thì máy nào cũng trả lời cách dùng + hàng chờ giao của máy mình
+        from giaodo_xq import taoyeucau, docvatphams, doctien, motayeucau, guiyeucau
+        tenmay = html.escape(laytenmay())
+        phan = noidung.split(None, 1)
+        phans = [p.strip() for p in (phan[1] if len(phan) > 1 else "").split(">")]
+        if len(phans) < 2 or not phans[0] or not phans[1]:
+            dongs = [f"📦 <b>Giao tiền / đồ</b> · 🖥 {tenmay}", HUONGDANGIAO]
+            for info in self._cacnhanvat().values():
+                for y in info.get("_hangchogiaodo") or []:
+                    dongs.append(f"• {html.escape(info.get('tennhanvat') or '?')} → {html.escape(y['nguoinhan'])}: {html.escape(motayeucau(y))} "
+                                 f"– <i>{html.escape(y['trangthai'])}{' (' + html.escape(y['ghichu']) + ')' if y.get('ghichu') else ''}</i>")
+            return "\n".join(dongs), True, None
+        cacnhanvat = self._cacnhanvat()
+        tengiao = chuanhoalenh(phans[0])
+        # Tên đúng trước, không có mới tới tên chứa (tránh "Thọ" khớp nhầm nhân vật khác có chữ "thọ")
+        hwnds = [h for h, info in cacnhanvat.items() if chuanhoalenh(info.get("tennhanvat") or "") == tengiao] or self._timnhanvat(phans[0])
+        if not hwnds:
+            return None
+        if len(hwnds) > 1:
+            return f"🖥 {tenmay}: \"{html.escape(phans[0])}\" khớp nhiều nhân vật ({html.escape(self._tennhanvats(hwnds))}), ghi rõ tên hơn", True, None
+        tien = doctien(phans[2] if len(phans) > 2 else "")
+        if tien is None:
+            return f"🖥 {tenmay}: không đọc được tiền \"{html.escape(phans[2])}\" (vd giữ 10k, hết, 500k, 1.5tr)", True, None
+        vatphams = docvatphams(" > ".join(phans[3:]) if len(phans) > 3 else "")
+        if not tien[0] and tien[1] is None and not vatphams:
+            return f"🖥 {tenmay}: chưa có tiền hay đồ nào để giao", True, None
+        yeucau = taoyeucau(phans[1], tien[0], vatphams, giulaitien = tien[1])
+        guiyeucau(self.command_dict, hwnds[0], yeucau)
+        return (f"📦 Đã xếp lệnh giao: <b>{html.escape(cacnhanvat[hwnds[0]].get('tennhanvat') or '?')}</b> → <b>{html.escape(yeucau['nguoinhan'])}</b>\n"
+                f"{html.escape(motayeucau(yeucau))}\nBot sẽ về Tiệm Tạp Hóa ở Tân Thủ Thôn chờ người nhận · 🖥 {tenmay}"), True, None
+
+    def _xulylenhcatkho(self, thamsos):
+        # "/catkho <nhân vật | tất cả>": nhân vật đó về Quản Khố cất các món trong bảng Cất kho; máy không có nhân vật đó im lặng.
+        # Chỉ "/catkho" thì máy nào cũng trả lời trạng thái cất kho của các nhân vật máy mình
+        tenmay = html.escape(laytenmay())
+        cacnhanvat = self._cacnhanvat()
+        if not thamsos:
+            dongs = [f"🗄 <b>Cất kho</b> · 🖥 {tenmay}", "Gõ <code>/catkho Thọ</code> hoặc <code>/catkho tất cả</code>"]
+            for info in cacnhanvat.values():
+                if info.get("_trangthaicatkho"):
+                    dongs.append(f"• {html.escape(info.get('tennhanvat') or '?')}: {html.escape(info['_trangthaicatkho'])}")
+            return "\n".join(dongs), True, None
+        ten = " ".join(thamsos)
+        hwnds = [h for h, info in cacnhanvat.items() if chuanhoalenh(info.get("tennhanvat") or "") == chuanhoalenh(ten)] or self._timnhanvat(ten)
+        if not hwnds:
+            return None
+        for hwnd in hwnds:
+            self.command_dict[hwnd] = "catkho"
+        return f"🗄 Đã gửi lệnh cất kho: <b>{html.escape(self._tennhanvats(hwnds))}</b>\nBot sẽ về Quản Khố ở Tân Thủ Thôn · 🖥 {tenmay}", True, None
 
     def _xulynut(self, cauhinh, bam):
         token = cauhinh["token"]

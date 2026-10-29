@@ -250,5 +250,21 @@
       "bat": true,
       "monphai": ""
     }
-  ]
+  ],
+  "catkho": [
+    {
+      "bat": true,
+      "ten": [
+        "Hắc Cầu",
+        "Lam Cầu"
+      ],
+      "tenchua": [],
+      "loai": [],
+      "mota": [],
+      "ruong": 0,
+      "giulai": 1,
+      "ghichu": ""
+    }
+  ],
+  "is_catkhosauban": true
 }

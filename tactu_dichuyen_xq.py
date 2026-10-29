@@ -313,8 +313,8 @@ class TacTuDiChuyen:
             # Đang sang bản đồ của người được theo sau: đi theo trước tấn công / gom quái / nhặt đồ
             yeucauduocchon = self._yeucautheosau
             lydochon = "THEO SAU SANG BẢN ĐỒ KHÁC"
-        elif self._idbandocandi and self._yeucautudo:
-            # Đang Đi tới bản đồ: đi tiếp trước tấn công / gom quái / nhặt đồ
+        elif (self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangcatkho()) and self._yeucautudo:
+            # Đang Đi tới bản đồ / đi giao đồ / cất kho: đi tiếp trước tấn công / gom quái / nhặt đồ
             yeucauduocchon = self._yeucautudo
             lydochon = "ĐI TỚI BẢN ĐỒ"
         elif is_yeucaunhatvatphamuutien:
@@ -1015,6 +1015,17 @@ class TacTuDiChuyen:
         # Đi tới bản đồ do người dùng chọn: thay hẳn lộ trình điểm đánh tới khi tới nơi / bấm dừng
         if self._idbandocandi:
             self._yeucautudo = self._xulyditoibando()
+            return
+
+        # Đang có yêu cầu giao tiền / đồ (tactu_giaodo_xq): về Tân Thủ Thôn tìm người nhận, thay lộ trình điểm đánh tới khi giao xong
+        if self.get_is_danggiaodo():
+            self._yeucautudo = self._xulygiaodo()
+            return
+
+        # Cất kho bấm tay / Telegram (tactu_catkho_xq): như giao đồ, về Tân Thủ Thôn gửi Quản Khố
+        self._dondepcatkho()
+        if self.get_is_dangcatkho():
+            self._yeucautudo = self._xulycatkho()
             return
 
         if not self._is_tudongdichuyendiemdanhxungquanh:

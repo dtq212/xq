@@ -905,6 +905,11 @@ class MoiTruong:
         x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         return read_int(self.tientrinh, x + DC.KDK_NGANLUONG) if x else None
 
+    def get_tiengui(self):
+        # Tiền gửi trong kho (Quản Khố), None khi chưa đọc được
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
+        return read_int(self.tientrinh, x + DC.KDK_TIENGUI) if x else None
+
     def get_kinhnghiem(self):
         # Kinh nghiệm hiện có (chặn tăng cấp thì cứ cộng dồn, lên cấp thì bị trừ đi), None khi chưa đọc được
         x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
@@ -1078,6 +1083,37 @@ class MoiTruong:
     def get_tenvatphamhanhtrang(self, idvitri):
         x = self.get_diachicosothongtinvatphamhanhtrang()
         return read_string(self.tientrinh, x + idvitri * 0x20 + DC.HT_TEN) if x else False
+
+    def get_khodangmo(self):
+        # Rương kho đang mở (dữ liệu game giữ từ lần mở gần nhất, mở lại để có số mới): {"ruong": số rương (từ 1), "soruong": số rương
+        # dùng được, "os": [(tên, số lượng, mã loại) x SOOMOIRUONGKHO]} hoặc None. Ô trống: tên rỗng, số lượng 0; đồ không chồng được số
+        # lượng 0. Xét trống theo MÃ LOẠI = 0: đổi rương game xoá mã nhưng giữ tên / số lượng cũ của rương trước ở ô trống (bot từng tưởng
+        # mọi rương đều đầy). Tên tối đa 0x20 byte như hành trang (tên dài bị cắt, so bằng is_trungtenkho)
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        kho = read_int(self.tientrinh, x + DC.TG_KHO) if x else 0
+        if not kho:
+            return None
+        dulieu = read_bytes(self.tientrinh, kho + DC.KHO_TEN, SOOMOIRUONGKHO * 0x20)
+        tens = []
+        for i in range(SOOMOIRUONGKHO):
+            ten = dulieu[i * 0x20:(i + 1) * 0x20].split(b"\x00")[0].decode("utf-8", errors = "ignore")
+            tens.append(re.sub(r'\x1b[a-zA-Z0-9]', '', ten).strip())
+        soluongs = struct.unpack("<%dI" % SOOMOIRUONGKHO, read_bytes(self.tientrinh, kho + DC.KHO_SOLUONG, SOOMOIRUONGKHO * 4))
+        mas = struct.unpack("<%dI" % SOOMOIRUONGKHO, read_bytes(self.tientrinh, kho + DC.KHO_MA, SOOMOIRUONGKHO * 4))
+        return {"ruong": read_int(self.tientrinh, kho + DC.KHO_RUONGMO) + 1, "soruong": read_int(self.tientrinh, kho + DC.KHO_SORUONG),
+                "os": [(ten, soluong, ma) if ma else ("", 0, 0) for ten, soluong, ma in zip(tens, soluongs, mas)]}
+
+    def get_is_danghienkho(self):
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        kho = read_int(self.tientrinh, x + DC.TG_KHO) if x else 0
+        return read_boolean(self.tientrinh, kho + DC.KHO_DANGHIEN) if kho else False
+
+    def action_dongcuasokho(self):
+        # Đóng cửa sổ kho như bấm X (ghi cờ đang hiện, như cửa sổ tuỳ chọn); dữ liệu rương vẫn còn trong bộ nhớ
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        kho = read_int(self.tientrinh, x + DC.TG_KHO) if x else 0
+        if kho and read_boolean(self.tientrinh, kho + DC.KHO_DANGHIEN):
+            write_boolean(self.tientrinh, kho + DC.KHO_DANGHIEN, False)
 
     def get_tentrangbi(self, vitri):
         # Tên món đang mặc ở ô trang bị vitri (VITRITRANGBIDAUTIEN...), "" nếu ô trống

@@ -296,8 +296,8 @@ class TacTuMucTieu:
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             return
 
-        # Đang Đi tới bản đồ người dùng chọn: không chọn quái dọc đường (trước đây gặp quái là đứng lại đánh), tới nơi mới đánh
-        if self._idbandocandi:
+        # Đang Đi tới bản đồ người dùng chọn / đi giao đồ / cất kho: không chọn quái dọc đường (trước đây gặp quái là đứng lại đánh), tới nơi mới đánh
+        if self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangcatkho():
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             return
 

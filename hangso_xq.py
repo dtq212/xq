@@ -8,6 +8,8 @@ STRING_ENCODING = "mbcs"
 
 CHUTIEMSUACHUA = "Chủ Tiệm Sửa Chữa"
 CHUTIEMTAPHOA = "Chủ Tiệm Tạp Hóa"
+# NPC kho ở Tân Thủ Thôn (lệnh pawn, tactu_catkho_xq)
+QUANKHO = "Quản Khố"
 # NPC ở bản đồ bang phái để nạp Rương Dự Trữ (tìm theo tên, id đối tượng có thể đổi)
 TRUONGPHONGTIENSINH = "Trưởng Phòng Tiên Sinh"
 RUONGDUTRU = "Rương Dự Trữ"
@@ -686,6 +688,11 @@ BANDOTUDONGLENSAUKHICHETs = (
 
 X_CHUTIEMTAPHOA_TANTHUTHON = 113
 Y_CHUTIEMTAPHOA_TANTHUTHON = 145
+
+X_QUANKHO_TANTHUTHON = 103
+Y_QUANKHO_TANTHUTHON = 127
+# Mỗi rương kho 7 x 7 ô
+SOOMOIRUONGKHO = 49
 
 X_SUGIAMONPHAI_CHU = 280
 Y_SUGIAMONPHAI_CHU = 180

@@ -1,11 +1,18 @@
 # Luật túi đồ: _internal/luattuido.json (sửa ở tab "Túi đồ" trên bảng điều khiển, hoặc bằng tay; bot tự đọc lại khi file đổi).
 # Dùng chung mọi nhân vật trên máy; chưa có file thì tạo từ LUATMACDINH / MUABUMACDINH (luật viết cứng trước đây, chuyển sang đây 2026-10-29).
-#   "luat": xét từ trên xuống, luật ĐẦU TIÊN khớp quyết định hành động. Mỗi luật: {"bat": true, "hanhdong": "giu" | "ban" | "vut" | "catkho",
-#           "ten": [tên đúng...], "tenchua": [tên có chứa...], "loai": [loại trong ［］ có chứa...], "mota": [mô tả có chứa...], "ghichu": ...,
-#           "is_bao": true = nhặt được món khớp luật này thì báo về Telegram kèm ảnh chụp (đồ hiếm), xem thongke_xq}.
+#   "luat": hành động (Giữ / Bán / Vứt): xét từ trên xuống, luật ĐẦU TIÊN khớp quyết định. Mỗi luật: {"bat": true,
+#           "hanhdong": "giu" | "ban" | "vut", "ten": [tên đúng...], "tenchua": [tên có chứa...], "loai": [loại trong ［］ có chứa...],
+#           "mota": [mô tả có chứa...], "ghichu": ...,
+#           "is_bao": true = 📣 nhặt được món khớp luật này thì báo về Telegram kèm ảnh chụp (đồ hiếm), xem thongke_xq; xét riêng với
+#           hành động: có luật bật nào khớp là báo, thứ tự không quan trọng}.
 #           Mỗi điều kiện là danh sách, khớp 1 giá trị bất kỳ là được; để trống là không xét; có nhiều điều kiện thì phải khớp hết;
 #           so không phân biệt hoa thường. Khi về bán rác, món không khớp luật nào thì BÁN (giữ món gì thì phải có luật Giữ).
-#           "catkho" (cất kho) chưa chạy: game cất kho thế nào chưa biết, món khớp luật này chỉ được giữ lại (không bán, không vứt)
+#   "catkho": bảng Cất kho (tactu_catkho_xq), xét riêng với "luat": món khớp luật bật đầu tiên ở đây thì không bán / không vứt, đem gửi
+#           Quản Khố ở Tân Thủ Thôn (sau bán rác nếu "is_catkhosauban", hoặc bấm Cất kho ngay / Telegram). Mỗi luật: {"bat": true,
+#           "ten" / "tenchua" / "loai" / "mota" như "luat", "ruong": 0 = tự động (rương còn chỗ) hoặc số rương (từ 1), "giulai": số cái
+#           chừa lại trong túi (tính theo tên món), "ghichu": ...}.
+#           Luật cũ trong "luat" có "hanhdong": "catkho" (chuyển hẳn sang) hoặc "is_catkho": true (chép sang, luật cũ giữ hành động) tự
+#           chuyển vào đây khi file chưa có "catkho"
 #   "muabu": đứng gần NPC ở Tân Thủ Thôn mà còn ít hơn "duoi" món (đếm cả các chồng) thì mua cho đủ "muatoi". Mỗi mục: {"bat": true,
 #           "vatpham": tên, "npc": tên NPC bán, "o": số ô trong cửa hàng NPC, "dongia": giá 1 món, "duoi": N, "muatoi": M,
 #           "monphai": "" = mọi môn phái hoặc "maoson", "vanmongcoc"..., "chikhi": "" = luôn, "trieuhoibaothu" = chỉ khi bật triệu hồi
@@ -28,8 +35,10 @@ from hangso_xq import (VATPHAMTUDONGNHATs, BAOTHUVATPHAMs, BUAGIAY, HYDUONG, TRA
 HANHDONG_GIU = "giu"
 HANHDONG_BAN = "ban"
 HANHDONG_VUT = "vut"
+# Chỉ còn để đọc luật cũ (trước khi Cất kho thành bảng riêng "catkho")
 HANHDONG_CATKHO = "catkho"
-TENHANHDONG = {HANHDONG_GIU: "Giữ", HANHDONG_BAN: "Bán", HANHDONG_VUT: "Vứt", HANHDONG_CATKHO: "Cất kho (chưa chạy)"}
+RUONGTUDONG = 0
+TENHANHDONG = {HANHDONG_GIU: "Giữ", HANHDONG_BAN: "Bán", HANHDONG_VUT: "Vứt"}
 DIEUKIENs = ("ten", "tenchua", "loai", "mota")
 TENDIEUKIEN = {"ten": "Tên đúng", "tenchua": "Tên chứa", "loai": "Loại chứa", "mota": "Mô tả chứa"}
 TRUONGMUABU = ("vatpham", "npc", "o", "dongia", "duoi", "muatoi", "monphai", "chikhi")
@@ -98,6 +107,7 @@ def _chuanhoaluat(luat):
     luat = dict(luat)
     luat["bat"] = bool(luat.get("bat", True))
     luat["is_bao"] = bool(luat.get("is_bao", False))
+    luat.pop("is_catkho", None)
     if luat.get("hanhdong") not in TENHANHDONG:
         luat["hanhdong"] = HANHDONG_GIU
     for dieukien in DIEUKIENs:
@@ -121,12 +131,32 @@ def _chuanhoamuabu(muc):
     return muc
 
 
+def _chuanhoacatkho(luat):
+    luat = dict(luat)
+    luat["bat"] = bool(luat.get("bat", True))
+    for dieukien in DIEUKIENs:
+        luat[dieukien] = _danhsach(luat.get(dieukien))
+    for truong in ("ruong", "giulai"):
+        try:
+            luat[truong] = max(0, int(luat.get(truong) or 0))
+        except (TypeError, ValueError):
+            luat[truong] = 0
+    luat["ghichu"] = str(luat.get("ghichu") or "")
+    return {k: luat[k] for k in ("bat", *DIEUKIENs, "ruong", "giulai", "ghichu")}
+
+
 def _chuanhoa(dulieu):
-    return {"luat": [_chuanhoaluat(l) for l in dulieu.get("luat") or []], "muabu": [_chuanhoamuabu(m) for m in dulieu.get("muabu") or []]}
+    luats, catkhos = list(dulieu.get("luat") or []), dulieu.get("catkho")
+    if catkhos is None:
+        # File cũ (Cất kho còn là hành động / cờ 🗄 trong "luat"): chuyển sang bảng Cất kho
+        catkhos = [l for l in luats if l.get("hanhdong") == HANHDONG_CATKHO or l.get("is_catkho")]
+        luats = [l for l in luats if l.get("hanhdong") != HANHDONG_CATKHO]
+    return {"luat": [_chuanhoaluat(l) for l in luats], "muabu": [_chuanhoamuabu(m) for m in dulieu.get("muabu") or []],
+            "catkho": [_chuanhoacatkho(l) for l in catkhos], "is_catkhosauban": bool(dulieu.get("is_catkhosauban", True))}
 
 
 def macdinh():
-    return _chuanhoa({"luat": copy.deepcopy(LUATMACDINH), "muabu": copy.deepcopy(MUABUMACDINH)})
+    return _chuanhoa({"luat": copy.deepcopy(LUATMACDINH), "muabu": copy.deepcopy(MUABUMACDINH), "catkho": []})
 
 
 def tailuat():
@@ -206,7 +236,7 @@ def timluat(ten, laymota, dulieu = None):
 
 
 def timhanhdong(ten, laymota, dulieu = None):
-    # Hành động của luật đầu tiên khớp món tên ten: "giu" / "ban" / "vut" / "catkho", None = không luật nào khớp,
+    # Hành động của luật đầu tiên khớp món tên ten: "giu" / "ban" / "vut", None = không luật nào khớp,
     # "chuabiet" = có luật cần mô tả mà chưa đọc được (lượt này đừng làm gì món đó)
     luat = timluat(ten, laymota, dulieu)
     return luat["hanhdong"] if isinstance(luat, dict) else luat
@@ -220,6 +250,17 @@ def timluatbao(ten, laymota, dulieu = None):
         return None
     for luat in (dulieu or tailuat())["luat"]:
         if luat["bat"] and luat["is_bao"] and khopluat(luat, ten, laymota):
+            return luat
+    return None
+
+
+def timluatcatkho(ten, laymota, dulieu = None):
+    # Luật bật đầu tiên trong bảng Cất kho khớp món tên ten (dict, có "ruong" / "giulai") hoặc None. Xét riêng với bảng luật hành động
+    # (vd luật Giữ mặc định có "Nhiếp Hồn Linh" mà bảng Cất kho có "Nhiếp Hồn Linh" thì vẫn cất). Chưa đọc được mô tả coi như không khớp
+    if not ten:
+        return None
+    for luat in (dulieu or tailuat())["catkho"]:
+        if luat["bat"] and khopluat(luat, ten, laymota):
             return luat
     return None
 

@@ -265,6 +265,9 @@ class CuaSo:
                     "_idbandocandi": self.tactu._idbandocandi,
                     # Điểm đánh lộ trình đang đi tới [x, y, id bản đồ, số thứ tự, tổng số điểm] (cột "Đang đi tới" trên Telegram)
                     "_diemdanhdangden": self._laydiemdanhdangden(),
+                    "_hangchogiaodo": self.tactu.get_hangchogiaodo(),
+                    "_trangthaicatkho": self.tactu.get_trangthaicatkho(),
+                    "_is_dangcatkho": bool(self.tactu._catkho),
                     "_thongkephien": self.thongke.get_tomtatphien(),
                     # Ngân lượng mang theo hiện tại (báo cáo Telegram)
                     "nganluong": self.moitruong.get_nganluong(),
@@ -317,6 +320,18 @@ class CuaSo:
                     self.tactu.thietlap_nguocchieulotrinh(cmd.split(":", 1)[1] == "1")
                 elif cmd == "tieptuchoatdong":
                     self.tactu.tieptuchoatdong()
+                elif isinstance(cmd, str) and cmd.startswith("giaodo:"):
+                    # Yêu cầu giao tiền / đồ (giaodo_xq) dạng JSON từ giao diện / Telegram: 1 yêu cầu hoặc danh sách (gửi dồn trước khi bot nhận)
+                    yeucaus = json.loads(cmd.split(":", 1)[1])
+                    for yeucau in (yeucaus if isinstance(yeucaus, list) else [yeucaus]):
+                        self.tactu.them_giaodo(yeucau)
+                elif isinstance(cmd, str) and cmd.startswith("huygiaodo:"):
+                    self.tactu.huy_giaodo(cmd.split(":", 1)[1])
+                elif cmd == "catkho":
+                    # Cất kho ngay (tactu_catkho_xq) từ giao diện / Telegram
+                    self.tactu.yeucau_catkho()
+                elif cmd == "huycatkho":
+                    self.tactu.huy_catkho()
                 elif isinstance(cmd, str) and cmd.startswith("tamngungtuxa:"):
                     # Lệnh /tamdung từ Telegram: tạm ngưng như khi phát hiện ẩn thân (cả tự động đăng nhập cũng chờ), số giây sau dấu ":"
                     self.tactu._batdautamngung(LYDOTAMNGUNGTUXA, float(cmd.split(":", 1)[1]))
