@@ -160,7 +160,8 @@ KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN = 3
 THOIGIANCHOVAOVANKHI = 2.5
 # Khoá vận khí triệu hồi bảo thú giữ tối đa chừng này (phòng đọc trạng thái vận khí sai mà khoá mãi)
 THOIGIANKHOAVANKHITRIEUHOITOIDA = 15.
-# Lôi Động Cửu Thiên vận khí 6s (phạm vi 7x7 ô quanh bản thân)
+# Lôi Động Cửu Thiên (Mao Sơn) vận khí 6s (phạm vi 7x7 ô quanh bản thân); Lôi Long Quyết (Côn Luân, 9x9 ô liên tục 6s) cùng cơ chế,
+# dùng chung các hằng / cách ngắt vận khí này
 THOIGIANVANKHILOIDONGCUUTHIEN = 6.
 # Phong Vũ Kinh Thiên (Vân Mộng Cốc) gọi cuồng phong đánh mục tiêu liên tục 8s: trong khoảng này không dùng lại lên cùng mục tiêu
 THOIGIANPHONGVUKINHTHIEN = 8.
@@ -331,10 +332,13 @@ VITRIKYNANG_KIMTRUNGCHAO = 3161
 VITRIKYNANG_DATINCUONGLUC = 3191
 VITRIKYNANG_KIMCUONGTHANPHAP = 3192
 
-# Côn Luân (đọc bảng kỹ năng + "desc pf" trên ThiênĐạo 2026-10-29): Phong Hỏa Quyết đánh từ xa (10 pháp lực, hồi 1s); Ngự Lôi Thuật
-# đánh + choáng 1s (20 pháp lực + 1 Bùa Giấy, hồi 2s); Hỏa Long Quyết đánh + Thiêu Đốt 12s (40 pháp lực + 3 Bùa Giấy, hồi 2s); Càn Khôn Na Di tâm pháp hộ thể 5 phút (đổi sát thương thành pháp lực, 20 pháp
-# lực, hồi 15s, bấm lại là tắt; hiệu ứng trùng id kỹ năng); Phá Chú giải 1 bùa chú nguyền rủa cho đồng đội (chưa dùng). Chiêu khác chưa
-# rõ công dụng thì chưa đưa vào danh sách ưu tiên (action_sudungkynangmonphaiconluan)
+# Côn Luân (đọc bảng kỹ năng + "desc pf" trên ThiênĐạo 2026-10-29), cách dùng ở action_sudungkynangmonphaiconluan:
+#   Lôi Long Quyết 9x9 quanh bản thân liên tục 6s, vận khí (6 bùa, 250 pháp lực, hồi 4s) - như Lôi Động Cửu Thiên của Mao Sơn;
+#   Hàn Băng Trận 7x7 quanh bản thân, Đóng Băng 6s (5 bùa); Kim Quang Trận 5x5 quanh mục tiêu (3 bùa); Huyền Long Chân Khí (4 bùa);
+#   Hỏa Long Quyết Thiêu Đốt 12s (3 bùa); Thương Long Quyết Đóng Băng 6s (3 bùa); Hàn Băng Thuật Chậm Chạp 6s (1 bùa); Ngự Lôi Thuật
+#   choáng 1s (1 bùa); Phong Hỏa Quyết (không bùa); Phong Ma Chú Trầm Mặc 6s; Càn Khôn Na Di tâm pháp hộ thể 5 phút (bấm lại là tắt,
+#   hiệu ứng trùng id kỹ năng); Đằng Vân Giá Vũ dịch chuyển (chiêu lướt như Khai Thiên Tịch Địa). Chưa dùng: Biến Thân Thuật, Khốn Ma
+#   Thuật / Trận (không tác dụng lên người chơi), Phá Chú (giải bùa cho đồng đội), Long Du Tứ Hải (tới người chơi theo ID)
 VITRIKYNANG_BIENTHANTHUAT = 4211
 
 VITRIKYNANG_PHACHU = 4221
@@ -958,7 +962,7 @@ THOIGIANNHUONGLUOTKHIRANH = 0.5
 # vận khí cả lúc, ít lộ), lệnh chiêu đặc biệt dạng "pf <id>.<x>" (triệu hồi khẩn cấp, Xuyên Không Hành), kỹ năng bảo thú (pf5),
 # đánh thường (kill) và mọi lệnh khác (get, desc, use, move đồ, tallk NPC, pet, team, bán, vứt...) gửi ngay không chờ lượt
 IDKYNANGVANKHIs = {VITRIKYNANG_LOIDONGCUUTHIEN, VITRIKYNANG_TRIEUHOIQUYTOT, VITRIKYNANG_TRIEUHOITHIENBINH, VITRIKYNANG_TRIEUHOICUONGTHI,
-                   VITRIKYNANG_RAIDAUTHANHBINH, VITRIKYNANG_TOANPHONGQUYET}
+                   VITRIKYNANG_RAIDAUTHANHBINH, VITRIKYNANG_TOANPHONGQUYET, VITRIKYNANG_LOILONGQUYET}
 # Bắt đầu di chuyển (nhân vật đang đứng mà bắt đầu chạy) cũng chia lượt như vậy nhưng trên kênh riêng (không làm chậm lệnh),
 # để 3-4 nhân vật không cùng lúc nhấc chân. Đang chạy rồi thì các lần click chỉnh hướng đi ngay. Cũng chỉnh được trên giao diện
 IS_XOAYVONGBATDAUDICHUYEN = True

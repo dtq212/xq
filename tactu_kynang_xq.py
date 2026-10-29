@@ -197,7 +197,7 @@ class TacTuKyNang:
         # Đang lùi giữ khoảng cách với kẻ tấn công: bỏ chiêu đánh, phủ đầu, mọi bước tiếp cận và Lôi Động Cửu Thiên (vận khí đứng yên 6s),
         # chỉ còn buff / hồi máu / triệu hồi... để "buff xong chạy". Trả về (False, False) để thử kỹ năng tiếp theo trong danh sách
         if self._yeucaugiukhoangcach and (loaikynang in ("sudungkynangmuctieu", "tancongvatly", "sudungkynangphudau")
-                                          or loaikynang.startswith("dichuyen") or vitrikynang == VITRIKYNANG_LOIDONGCUUTHIEN):
+                                          or loaikynang.startswith("dichuyen") or vitrikynang in (VITRIKYNANG_LOIDONGCUUTHIEN, VITRIKYNANG_LOILONGQUYET)):
             return False, False
 
         if loaikynang in ("sudungkynangmuctieu", "tancongvatly", "sudungkynanglendongdoi"):
@@ -761,21 +761,49 @@ class TacTuKyNang:
         if not self._is_tudongsudungkynang: return
         if self.moitruong.get_is_dangclickchuottrai(): return
         if self.moitruong.get_is_nhanvatdachet(): return
-        if self.moitruong.get_is_dangvankhi(): return
+        # Đang vận khí Lôi Long Quyết: chờ hết, trừ khi mục tiêu đã ra khỏi tầm và quanh mình hết cụm quái (ngắt sớm, như Lôi Động Cửu Thiên)
+        if self.moitruong.get_is_dangvankhi() and not self._is_ngatvankhiloidongcuuthien(): return
 
         diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
         khoangcach = self.moitruong.get_khoangcach(diachimuctieu) if diachimuctieu else 0
         tamxa = self._khoangcachsudungkynangtamxa
+        is_muctieulanguoichoi = bool(diachimuctieu) and self.moitruong.get_is_nguoichoi(diachimuctieu)
+        # Bùa Giấy: đọc túi 1 lần mỗi lượt, chỉ khi có mục tiêu (chiêu đánh nào cũng tốn bùa trừ Phong Hỏa Quyết / Phong Ma Chú)
+        sobuagiay = (self.moitruong.get_soluongvatphamhanhtrangtheoten() or {}).get(BUAGIAY, 0) if diachimuctieu else 0
 
-        # Không đánh thường: Côn Luân đánh thường chỉ 1-2 máu (người dùng bỏ 2026-10-29), hết pháp lực / chiêu đang hồi thì đứng chờ
+        def muctieuco(hieuung):
+            return self.moitruong.get_is_cohieuungs((hieuung,), macdinh = False, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0)
+
+        # Không đánh thường: Côn Luân đánh thường chỉ 1-2 máu (người dùng bỏ 2026-10-29), hết pháp lực / chiêu đang hồi thì đứng chờ.
+        # Chưa dùng: Biến Thân Thuật, Khốn Ma Thuật / Khốn Ma Trận (không tác dụng lên người chơi), Phá Chú (giải bùa cho đồng đội),
+        # Long Du Tứ Hải (dịch chuyển theo ID người chơi)
         danhsachuutien = [
             # Tâm pháp bật / tắt: chỉ bấm khi chưa có hiệu ứng, gửi 1 lần rồi chờ hiệu ứng hiện (_is_duocguitamphapbattat gọi cuối)
             (VITRIKYNANG_CANKHONNADI, "sudungkynangkhongmuctieu", lambda: not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CANKHONNADI,), macdinh = True, is_hieuungcoloi = 1)
                 and self._is_duocguitamphapbattat(VITRIKYNANG_CANKHONNADI), 0, None, False),
+            # Lôi Long Quyết (6 bùa, 9x9 ô quanh bản thân liên tục 6s, vận khí) như Lôi Động Cửu Thiên của Mao Sơn: cụm quái quanh mình và
+            # mục tiêu trong 3 ô thì ra chiêu đứng yên; cụm quái quanh mục tiêu (đánh quái, không PK) thì chạy vào giữa cụm (cách ~2 ô) để
+            # lượt sau trúng cả cụm (chỉ chạy khi chiêu đang dùng được)
+            (VITRIKYNANG_LOILONGQUYET, "sudungkynangkhongmuctieu", lambda: diachimuctieu and sobuagiay >= 6 and self._is_nhieumuctieuganbanthan3
+                and khoangcach <= KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN, KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN, None, True),
+            (VITRIKYNANG_LOILONGQUYET, "dichuyentiepcandenkhoangcach", lambda: diachimuctieu and sobuagiay >= 6 and not is_muctieulanguoichoi and self._is_nhieumuctieugan3
+                and khoangcach > KHOANGCACHTIEPCANLOIDONGCUUTHIEN, KHOANGCACHTIEPCANLOIDONGCUUTHIEN, None, False),
+            # Hàn Băng Trận (5 bùa, 7x7 ô quanh bản thân, Đóng Băng 6s): cụm quái quanh mình mà Lôi Long Quyết chưa dùng được
+            (VITRIKYNANG_HANBANGTRAN, "sudungkynangkhongmuctieu", lambda: diachimuctieu and sobuagiay >= 5 and self._is_nhieumuctieuganbanthan3
+                and khoangcach <= KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN, KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN, None, True),
+            # Kim Quang Trận (3 bùa, 5x5 ô quanh mục tiêu, +250 nội công): cụm quái quanh mục tiêu
+            (VITRIKYNANG_KIMQUANGTRAN, "sudungkynangmuctieu", lambda: diachimuctieu and sobuagiay >= 3 and self._is_nhieumuctieugan3, tamxa, None, True),
+            # PK: Phong Ma Chú (Trầm Mặc 6s, không tốn bùa) lên người chơi chưa bị Trầm Mặc
+            (VITRIKYNANG_PHONGMACHU, "sudungkynangmuctieu", lambda: is_muctieulanguoichoi and not muctieuco(HIEUUNGKYNANG_TRAMMAC), tamxa, None, True),
+            # Đánh 1 mục tiêu: Huyền Long Chân Khí (4 bùa, +100 nội công) mạnh nhất, rồi các chiêu gây hiệu ứng khi mục tiêu chưa dính
+            (VITRIKYNANG_HUYENLONGCHANKHI, "sudungkynangmuctieu", lambda: diachimuctieu and sobuagiay >= 4, tamxa, None, True),
             # Hỏa Long Quyết (3 Bùa Giấy): gây Thiêu Đốt 12s, mục tiêu đang bị Thiêu Đốt thì để chiêu khác
-            (VITRIKYNANG_HOALONGQUYET, "sudungkynangmuctieu", lambda: diachimuctieu and (self.moitruong.get_soluongvatphamhanhtrangtheoten() or {}).get(BUAGIAY, 0) >= 3
-                and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THIEUDOT,), macdinh = False, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0), tamxa, None, True),
-            (VITRIKYNANG_NGULOITHUAT, "sudungkynangmuctieu", lambda: diachimuctieu and self.moitruong.action_timkiemvatphamhanhtrang(BUAGIAY), tamxa, None, True),
+            (VITRIKYNANG_HOALONGQUYET, "sudungkynangmuctieu", lambda: diachimuctieu and sobuagiay >= 3 and not muctieuco(HIEUUNGKYNANG_THIEUDOT), tamxa, None, True),
+            # Thương Long Quyết (3 bùa, Đóng Băng 6s) khi mục tiêu chưa bị Đóng Băng
+            (VITRIKYNANG_THUONGLONGQUYET, "sudungkynangmuctieu", lambda: diachimuctieu and sobuagiay >= 3 and not muctieuco(HIEUUNGKYNANG_DONGBANG), tamxa, None, True),
+            # Hàn Băng Thuật (1 bùa, +60 nội công, Chậm Chạp 6s)
+            (VITRIKYNANG_HANBANGTHUAT, "sudungkynangmuctieu", lambda: diachimuctieu and sobuagiay >= 1, tamxa, None, True),
+            (VITRIKYNANG_NGULOITHUAT, "sudungkynangmuctieu", lambda: diachimuctieu and sobuagiay >= 1, tamxa, None, True),
             (VITRIKYNANG_PHONGHOAQUYET, "sudungkynangmuctieu", lambda: diachimuctieu, tamxa, None, True),
             (None, "dichuyentiepcantamxa", lambda: diachimuctieu and khoangcach > tamxa, tamxa, None, False),
         ]
@@ -795,6 +823,10 @@ class TacTuKyNang:
                 khoangcachyeucau = khoangcachyeucau,
                 is_yeucaukhongdichuyen = is_yeucaukhongdichuyen
             )
+            if vitrikynang == VITRIKYNANG_LOILONGQUYET and loaikynang == "sudungkynangkhongmuctieu" and is_ok:
+                # Như Lôi Động Cửu Thiên: chờ game vào vận khí, ghi mốc để biết lúc nào được ngắt sớm
+                self.moitruong.action_chovankhi(THOIGIANCHOVAOVANKHI)
+                self._thoidiemsudungloidongcuuthiengannhat = time.time()
             if is_break:
                 return
 
@@ -1034,10 +1066,10 @@ class TacTuKyNang:
         return not self.moitruong.get_is_khongthedungkynang() and self.moitruong.get_is_kynangsansang(makynang) and self._is_dutieuhao(makynang)
 
     def _is_ngatvankhiloidongcuuthien(self):
-        # Đang vận khí Lôi Động Cửu Thiên (vào vận khí 0-1s sau khi ra chiêu, kéo dài 6s) mà mục tiêu đã ra ngoài phạm vi 7x7
-        # và quanh bản thân không còn cụm quái nào thì ngắt luôn (cho di chuyển / dùng chiêu khác), không chờ hết vận khí.
-        # Gọi khi game đang báo vận khí; trả về True thì coi như không vận khí
-        if self.moitruong.get_tenmonphai() != "maoson":
+        # Đang vận khí Lôi Động Cửu Thiên (Mao Sơn) / Lôi Long Quyết (Côn Luân, cùng cơ chế) (vào vận khí 0-1s sau khi ra chiêu, kéo dài
+        # 6s) mà mục tiêu đã ra ngoài phạm vi và quanh bản thân không còn cụm quái nào thì ngắt luôn (cho di chuyển / dùng chiêu khác),
+        # không chờ hết vận khí. Gọi khi game đang báo vận khí; trả về True thì coi như không vận khí
+        if self.moitruong.get_tenmonphai() not in ("maoson", "conluan"):
             return False
         # Đang vận khí triệu hồi bảo thú thì tuyệt đối không ngắt
         if self.moitruong.get_is_khoavankhitrieuhoi():
