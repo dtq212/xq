@@ -32,6 +32,8 @@ SOLANTHUCATKHO = 3
 # Quá lâu (kẹt đường, không thấy Quản Khố...) thì bỏ, báo lỗi
 THOIGIANCATKHOTOIDA = 300.
 THOIGIANCATKHOLENHTAYTOIDA = 600.
+# Lịch sử cất kho giữ chừng này giây (báo cáo định kỳ Telegram chỉ cần từ kỳ trước, tối đa vài giờ)
+THOIGIANGIULICHSUCATKHO = 24 * 3600.
 
 
 def is_trungtenkho(tenkho, ten):
@@ -114,6 +116,9 @@ class TacTuCatKho:
         self._catkho = None
         if viec["is_damokho"]:
             self.moitruong.action_dongcuasokho()
+        if viec["dacat"]:
+            now = time.time()
+            self._lichsucatkho = [l for l in self._lichsucatkho if now - l[0] < THOIGIANGIULICHSUCATKHO] + [[now, dict(viec["dacat"])]]
         dacat = ", ".join(f"{ten} ×{sl}" for ten, sl in viec["dacat"].items())
         bo = [f"{ten} ({lydo})" for ten, lydo in viec["boqua"].items()]
         phans = [f"✅ Đã cất kho: {dacat}"] if dacat else []

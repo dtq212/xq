@@ -746,6 +746,43 @@ class TacTuKyNang:
             if is_break:
                 return
 
+    def action_sudungkynangmonphaiconluan(self):
+        # Côn Luân (phái phép, đánh tầm xa). Chiêu chưa học / chưa hồi / thiếu pháp lực thì _is_kynangdungduoc bỏ qua, danh sách đi tiếp
+        # tới đánh thường. Học thêm chiêu thì thêm dòng vào danh sách (id ở hangso_xq VITRIKYNANG_* Côn Luân)
+        if not self._is_tudongsudungkynang: return
+        if self.moitruong.get_is_dangclickchuottrai(): return
+        if self.moitruong.get_is_nhanvatdachet(): return
+        if self.moitruong.get_is_dangvankhi(): return
+
+        diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+        khoangcach = self.moitruong.get_khoangcach(diachimuctieu) if diachimuctieu else 0
+        tamxa = self._khoangcachsudungkynangtamxa
+
+        danhsachuutien = [
+            (VITRIKYNANG_PHONGHOAQUYET, "sudungkynangmuctieu", lambda: diachimuctieu, tamxa, None, True),
+            (None, "tancongvatly", lambda: diachimuctieu and not self._is_battudongtancongvatly, tamxa, None, True),
+            (None, "dichuyentiepcantamxa", lambda: diachimuctieu and khoangcach > tamxa, tamxa, None, False),
+            (None, "tancongvatly", lambda: diachimuctieu, tamxa, None, True),
+        ]
+
+        for i, item in enumerate(danhsachuutien):
+            vitrikynang, loaikynang, dieukien, khoangcachyeucau, target, is_yeucaukhongdichuyen = item
+
+            if callable(dieukien) and not dieukien(): continue
+            if vitrikynang and not self._is_kynangdungduoc(vitrikynang): continue
+
+            target = target if target else diachimuctieu
+
+            is_ok, is_break = self.action_xulyuutiensudungkynang(
+                loaikynang = loaikynang,
+                vitrikynang = vitrikynang,
+                diachimuctieu = target,
+                khoangcachyeucau = khoangcachyeucau,
+                is_yeucaukhongdichuyen = is_yeucaukhongdichuyen
+            )
+            if is_break:
+                return
+
     def _get_kynangchophep(self):
         # None = không giới hạn; ngược lại là tập vị trí kỹ năng được phép dùng (xem KYNANGCHOPHEPTHEONHANVAT_MAP)
         kynangchopheps = KYNANGCHOPHEPTHEONHANVAT_MAP.get(self.moitruong.get_idnguoichoi())

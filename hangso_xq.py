@@ -418,6 +418,26 @@ VITRIKYNANG_NHATQUYENBATSON = 2119
 VITRIKYNANG_LACKICH = 2123
 VITRIKYNANG_PHANTOA = 2124
 
+# Côn Luân (đọc bảng kỹ năng ThiênĐạo 2026-10-29). Mới biết công dụng Phong Hỏa Quyết (đánh từ xa, 10 pháp lực, hồi 1s); chiêu khác
+# chưa rõ công dụng thì chưa đưa vào danh sách ưu tiên
+VITRIKYNANG_BIENTHANTHUAT = 4211
+VITRIKYNANG_PHACHU = 4221
+VITRIKYNANG_PHONGMACHU = 4222
+VITRIKYNANG_PHONGHOAQUYET = 4231
+VITRIKYNANG_NGULOITHUAT = 4232
+VITRIKYNANG_HOALONGQUYET = 4233
+VITRIKYNANG_HANBANGTHUAT = 4234
+VITRIKYNANG_THUONGLONGQUYET = 4235
+VITRIKYNANG_HANBANGTRAN = 4236
+VITRIKYNANG_HUYENLONGCHAN = 4237
+VITRIKYNANG_KHONMATHUAT = 4241
+VITRIKYNANG_KIMQUANGTRAN = 4242
+VITRIKYNANG_KHONMATRAN = 4243
+VITRIKYNANG_LOILONGQUYET = 4244
+VITRIKYNANG_CANKHONNADI = 4252
+VITRIKYNANG_DANGVANGIAVU = 4253
+VITRIKYNANG_LONGDUTUHAI = 4254
+
 VIRIKYNANG_NGUYENKHIQUYNGUYEN = 3172
 # Nguyên Khí Quy Nguyên quá ~30 phút thì server cho hết hạn nhưng client vẫn hiện hiệu ứng: bật được chừng này giây thì bấm làm mới
 # (thu hồi rồi bật lại). Người dùng chọn 10 phút cho an toàn
@@ -617,6 +637,16 @@ MONPHAI_MAP = {
     2110: "daohoanguyen",
     4211: "conluan",
     2410: "camvequan",
+}
+# Tên hiển thị của mã môn phái (giao diện chọn tên này, file cấu hình lưu mã)
+TENMONPHAI = {
+    "maoson": "Mao Sơn",
+    "vanmongcoc": "Vân Mộng Cốc",
+    "thucson": "Thục Sơn",
+    "duongmon": "Đường Môn",
+    "daohoanguyen": "Đào Hoa Nguyên",
+    "conluan": "Côn Luân",
+    "camvequan": "Cấm Vệ Quân",
 }
 
 # Vân Mộng Cốc buff đồng đội cùng máy theo môn phái: chỉ Ngân Châm Độ Ách hoặc chỉ Kim Châm Độ Ách.

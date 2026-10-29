@@ -268,6 +268,7 @@ class CuaSo:
                     "_hangchogiaodo": self.tactu.get_hangchogiaodo(),
                     "_trangthaicatkho": self.tactu.get_trangthaicatkho(),
                     "_is_dangcatkho": bool(self.tactu._catkho),
+                    "_lichsucatkho": self.tactu._lichsucatkho,
                     "_thongkephien": self.thongke.get_tomtatphien(),
                     # Ngân lượng mang theo hiện tại (báo cáo Telegram)
                     "nganluong": self.moitruong.get_nganluong(),

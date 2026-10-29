@@ -16,7 +16,7 @@ from tienich_xq import duongdantaikhoan, phatam
 from dangnhap_xq import taicauhinhdangnhap, luucauhinhdangnhap
 from thongke_xq import duongdanthongke, taithongke, gopthongke
 from luattuido_xq import tailuat, luuluat, motaluat, TENHANHDONG, DIEUKIENs, TENDIEUKIEN, TRUONGMUABU, TENTRUONGMUABU, TENCHIKHI, CHIKHI_LUON
-from hangso_xq import CHUTIEMTAPHOA, CHUTUULAU
+from hangso_xq import CHUTIEMTAPHOA, CHUTUULAU, TENMONPHAI
 from dieuphoi_xq import taicauhinhdieuphoi, luucauhinhdieuphoi, chuanhoacauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
 
 # Tạm ẩn các tùy chọn chưa dùng/không còn khả dụng (CN mở rộng, Khai khoáng, Đào tàng bảo đồ, Chiến trường).
@@ -1418,7 +1418,7 @@ class GiaoDienHienThi:
         self.tree_muabu.delete(*self.tree_muabu.get_children())
         for i, muc in enumerate(dulieu["muabu"]):
             self.tree_muabu.insert("", tk.END, iid = str(i), values = ("✔" if muc["bat"] else "", muc["vatpham"], muc["npc"], muc["o"], self._sogon(muc["dongia"]),
-                                                                       muc["duoi"], muc["muatoi"], muc["monphai"] or "Tất cả",
+                                                                       muc["duoi"], muc["muatoi"], TENMONPHAI.get(muc["monphai"], muc["monphai"]) or "Tất cả",
                                                                        "Luôn" if muc["chikhi"] == CHIKHI_LUON else "Triệu hồi bảo thú"))
         for tree, chon in ((self.tree_luattuido, chonluat), (self.tree_muabu, chonmuabu)):
             if chon is not None and tree.exists(str(chon)):
@@ -1602,14 +1602,18 @@ class GiaoDienHienThi:
         muc = {"bat": True, "npc": CHUTIEMTAPHOA} if is_moi else dict(dulieu["muabu"][vitri])
         machikhi = {ten: ma for ma, ten in TENCHIKHI.items()}
         muc["chikhi"] = TENCHIKHI.get(muc.get("chikhi"), TENCHIKHI[CHIKHI_LUON])
-        goiys = {"npc": [CHUTIEMTAPHOA, CHUTUULAU], "monphai": ["", "maoson", "vanmongcoc", "thucson", "duongmon", "daohoanguyen", "camvequan"],
-                 "chikhi": list(TENCHIKHI.values())}
+        # Môn phái: hiện tên có dấu, lưu mã ("" = mọi môn phái)
+        mamonphai = {"Tất cả": "", **{ten: ma for ma, ten in TENMONPHAI.items()}}
+        muc["monphai"] = TENMONPHAI.get(muc.get("monphai"), muc.get("monphai")) or "Tất cả"
+        goiys = {"npc": [CHUTIEMTAPHOA, CHUTUULAU], "monphai": list(mamonphai), "chikhi": list(TENCHIKHI.values())}
         # Form 2 cột, xếp theo cặp: Vật phẩm | NPC, Ô | Đơn giá, Mua khi dưới | Mua cho đủ, Môn phái | Chỉ mua khi, Bật
         truongs = [(t, TENTRUONGMUABU[t], goiys.get(t)) for t in TRUONGMUABU] + [("bat", "Bật", None)]
 
         def kiemtra(kq):
             if kq["chikhi"] not in machikhi:
                 return "Chọn \"Chỉ mua khi\" trong danh sách"
+            if kq["monphai"].strip() not in mamonphai and kq["monphai"].strip():
+                return "Chọn môn phái trong danh sách (hoặc Tất cả)"
             if not kq["vatpham"].strip() or not kq["npc"].strip():
                 return "Cần tên vật phẩm và tên NPC bán"
             for t in ("o", "dongia", "duoi", "muatoi"):
@@ -1623,6 +1627,7 @@ class GiaoDienHienThi:
         if not kq:
             return
         kq["chikhi"] = machikhi[kq["chikhi"]]
+        kq["monphai"] = mamonphai.get(kq["monphai"].strip(), "")
         dulieu = tailuat()
         mucs = list(dulieu["muabu"])
         if is_moi:
