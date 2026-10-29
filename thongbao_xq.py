@@ -391,13 +391,15 @@ def khoanhanvat(info):
 
 def taobaocao(cacinfo, tieude, is_daydu, dinhky = None):
     # Cả tin: tiêu đề, bảng (mỗi nhân vật 1 hàng trong khối <pre> chữ đều độ rộng cho cột thẳng hàng, cột Việc kèm chấm màu và nơi
-    # đang đi tới ở cuối hàng), dòng tổng, ghi chú tạm dừng / tắt tấn công. Báo cáo (is_daydu) thêm cột ngân lượng/giờ và chết.
-    # Báo cáo định kỳ (dinhky = {"tang": {khoanhanvat: ngân lượng tăng từ kỳ trước}, "tu": thời điểm kỳ trước, "phut": độ dài kỳ}) thêm
-    # cột ngân lượng tăng trong kỳ và danh sách đồ đã cất kho trong kỳ ("_lichsucatkho" của từng nhân vật)
+    # đang đi tới ở cuối hàng), dòng tổng, ghi chú tạm dừng / tắt tấn công. Báo cáo (is_daydu, bấm tay hay định kỳ như nhau) thêm cột
+    # ngân lượng kiếm được trong phiên, /giờ và chết; dinhky = {"tang": {khoanhanvat: ngân lượng tăng từ báo cáo định kỳ trước}, "tu":
+    # thời điểm báo cáo định kỳ trước} thêm cột "+Kỳ" và danh sách đồ đã cất kho từ lúc đó ("_lichsucatkho" của từng nhân vật)
     cacinfo = sorted(cacinfo, key = lambda i: i.get("tennhanvat") or "")
     cots = [("Nhân vật", 12, False), ("Bản đồ", 20, False), ("Máu", 4, True), ("Ngân lượng", 11, True)]
+    if is_daydu:
+        cots += [("+Phiên", 9, True)]
     if dinhky:
-        cots += [(f"+{dinhky['phut']}p", 9, True)]
+        cots += [("+Kỳ", 9, True)]
     if is_daydu:
         cots += [("/giờ", 7, True), ("Chết", 4, True)]
     hang = lambda giatris, viec = "": (" ".join(_o(g, rong, phai) for g, (_, rong, phai) in zip(giatris, cots)) + "  " + viec).rstrip()
@@ -405,7 +407,7 @@ def taobaocao(cacinfo, tieude, is_daydu, dinhky = None):
     dongs = [hang([ten for ten, _, _ in cots], "Việc"), gach]
     ghichus = []
     catkhos = []
-    tongnganluong = tongtylegio = tongchet = giaylaunhat = tongtang = 0
+    tongnganluong = tongtylegio = tongchet = giaylaunhat = tongtang = tongphien = 0
     is_cotylegio = is_cotang = False
     for info in cacinfo:
         phien = info.get("_thongkephien") or {}
@@ -413,6 +415,10 @@ def taobaocao(cacinfo, tieude, is_daydu, dinhky = None):
         tylegio = phien.get("nganluong", 0) * 3600. / giay if giay >= 60 else None
         giatris = [info.get("tennhanvat") or "?", laytenbando(info.get("tenbando")), f"{info.get('phantramsinhluc', 0)}%",
                    _so(info.get("nganluong")) if info.get("nganluong") is not None else "-"]
+        if is_daydu:
+            # Ngân lượng kiếm được trong phiên (cùng nguồn với /giờ, không tính tiền chuyển qua lại giữa nhân vật)
+            giatris.append(_sotang(phien.get("nganluong", 0)))
+            tongphien += phien.get("nganluong", 0)
         if dinhky:
             tang = dinhky["tang"].get(khoanhanvat(info))
             giatris.append(_sotang(tang) if tang is not None else "-")
@@ -441,11 +447,12 @@ def taobaocao(cacinfo, tieude, is_daydu, dinhky = None):
         elif info.get("_is_tudongsudungkynang") is False:
             ghichus.append(f"⚠️ <b>{ten}</b>: đang tắt tự động tấn công")
     dongs.append(gach)
-    dongs.append(hang(["Tổng", "", "", _so(tongnganluong)] + ([_sotang(tongtang) if is_cotang else "-"] if dinhky else [])
+    dongs.append(hang(["Tổng", "", "", _so(tongnganluong)] + ([_sotang(tongphien)] if is_daydu else [])
+                      + ([_sotang(tongtang) if is_cotang else "-"] if dinhky else [])
                       + ([_so(tongtylegio) if is_cotylegio else "-", tongchet] if is_daydu else [])))
     phans = [_tieude(tieude), "<pre>" + html.escape("\n".join(dongs)) + "</pre>"]
     if is_daydu:
-        phans.append(f"⏱ Phiên chạy {_thoigian(giaylaunhat)}")
+        phans.append(f"⏱ Phiên chạy {_thoigian(giaylaunhat)}" + (f" · Kỳ từ {time.strftime('%H:%M', time.localtime(dinhky['tu']))}" if dinhky else ""))
     if catkhos:
         phans.append(f"🗄 Đã cất kho từ {time.strftime('%H:%M', time.localtime(dinhky['tu']))}:")
         phans += catkhos
@@ -722,11 +729,30 @@ class DieuKhienTelegram:
         for hwnd in hwnds:
             self.command_dict[hwnd] = f"tamngungtuxa:{phut * 60}" if phut else "tieptuchoatdong"
 
+    def _laydinhky(self, is_chot):
+        # Số liệu kỳ cho báo cáo: ngân lượng tăng từ báo cáo định kỳ trước + mốc thời gian (đồ cất kho từ lúc đó). Báo cáo bấm tay
+        # (is_chot False) chỉ xem tạm, không đổi mốc; báo cáo định kỳ chốt mốc cho kỳ sau
+        tu = self._thoidiembaocao
+        tangs = {}
+        for info in self._cacnhanvat().values():
+            khoa, nganluong = khoanhanvat(info), info.get("nganluong")
+            if nganluong is None:
+                continue
+            if khoa in self._nganluongkytruoc:
+                tangs[khoa] = nganluong - self._nganluongkytruoc[khoa]
+            if is_chot or khoa not in self._nganluongkytruoc:
+                self._nganluongkytruoc[khoa] = nganluong
+        if is_chot:
+            self._thoidiembaocao = time.time()
+        return {"tang": tangs, "tu": tu}
+
     def _trangthai(self, is_baocao, dinhky = None):
-        # (nội dung, is_html, nút) của Trạng thái / Báo cáo máy này, kèm nút Làm mới
+        # (nội dung, is_html, nút) của Trạng thái / Báo cáo máy này, kèm nút Làm mới. Báo cáo bấm tay có cả số liệu kỳ (xem tạm)
         cacnhanvat = self._cacnhanvat()
         if not cacnhanvat:
             return f"🖥 <b>{html.escape(laytenmay())}</b>: không có nhân vật nào đang chạy bot", True, None
+        if is_baocao and dinhky is None:
+            dinhky = self._laydinhky(False)
         noidung = taobaocao(cacnhanvat.values(), "📊 Báo cáo" if is_baocao else "📋 Trạng thái", is_baocao, dinhky)
         mamay = self._mamay()
         return noidung, True, {"inline_keyboard": [[_nut("🔄 Làm mới", f"lm|{mamay}|{'bc' if is_baocao else 'tt'}"),
@@ -974,21 +1000,13 @@ class DieuKhienTelegram:
         phut = cauhinh.get("phutbaocao") or 0
         if phut <= 0:
             return
-        # Mốc ngân lượng cho cột "tăng trong kỳ": nhân vật mới thấy lần đầu thì lấy mốc ngay (báo cáo đầu tiên đã có số)
+        # Mốc ngân lượng cho cột "+Kỳ": nhân vật mới thấy lần đầu thì lấy mốc ngay (báo cáo đầu tiên đã có số)
         for info in self._cacnhanvat().values():
             if info.get("nganluong") is not None:
                 self._nganluongkytruoc.setdefault(khoanhanvat(info), info["nganluong"])
         if time.time() - self._thoidiembaocao < phut * 60:
             return
-        tu, self._thoidiembaocao = self._thoidiembaocao, time.time()
-        cacnhanvat = self._cacnhanvat()
-        tangs = {}
-        for info in cacnhanvat.values():
-            khoa = khoanhanvat(info)
-            if info.get("nganluong") is not None:
-                if khoa in self._nganluongkytruoc:
-                    tangs[khoa] = info["nganluong"] - self._nganluongkytruoc[khoa]
-                self._nganluongkytruoc[khoa] = info["nganluong"]
-        if cacnhanvat and cauhinh.get("chat_id"):
-            noidung, is_html, nut = self._trangthai(True, {"tang": tangs, "tu": tu, "phut": phut})
+        dinhky = self._laydinhky(True)
+        if self._cacnhanvat() and cauhinh.get("chat_id"):
+            noidung, is_html, nut = self._trangthai(True, dinhky)
             _gui(cauhinh["token"], cauhinh["chat_id"], noidung.replace("📊 Báo cáo", "📊 Báo cáo định kỳ", 1), is_html, nut)
