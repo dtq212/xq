@@ -10,14 +10,19 @@ from loop_xq import (
     LoopChinh,
     LoopPhu,
     LoopDieuPhoiDiChuyen,
-    LoopXuLyLenh
+    LoopXuLyLenh,
+    LoopBoKhungSauTanCong,
+    LoopGiuOTrongHanhTrang
 )
-from dieuphoi_xq import DieuPhoiLuot, KENH_LENH, KENH_DICHUYEN
+from dieuphoi_xq import DieuPhoiLuot, GiuKyNangMucTieu, KENH_LENH, KENH_DICHUYEN
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
+from thongke_xq import ThongKe, CHUKYLAYMAU
+from giamsat_xq import GiamSat, CHUKYGIAMSAT
+from thongbao_xq import TheoDoiSuCo, LYDOTAMNGUNGTUXA
 
 
-def khoidong_looptonghop(moitruong, tactu, stop):
+def khoidong_looptonghop(moitruong, tactu, stop, giamsat):
     l_lammoi = LoopLamMoiTrangThaiMoiTruong(moitruong, tactu, stop)
     l_timkiem = LoopTimKiemMucTieu(moitruong, tactu, stop)
     l_dieuphoi = LoopDieuPhoiDiChuyen(moitruong, tactu, stop)
@@ -33,17 +38,44 @@ def khoidong_looptonghop(moitruong, tactu, stop):
             print(f"Lỗi luồng tổng hợp: {e}")
             traceback.print_exc()
             time.sleep(1)
+        giamsat.danhdau("tổng hợp")
         time.sleep(0.1)
 
 
-def khoidong_loopphu(moitruong, tactu, stop):
-    LoopPhu(moitruong, tactu, stop).loop()
+def khoidong_loopphu(moitruong, tactu, stop, giamsat):
+    LoopPhu(moitruong, tactu, stop, giamsat).loop()
 
 def khoidong_loopxulylenh(moitruong, tactu, stop):
     LoopXuLyLenh(moitruong, tactu, stop).loop()
 
+def khoidong_loopbokhung(moitruong, tactu, stop):
+    LoopBoKhungSauTanCong(moitruong, tactu, stop).loop()
+
+def khoidong_loopgiuotrong(moitruong, tactu, stop):
+    LoopGiuOTrongHanhTrang(moitruong, tactu, stop).loop()
+
+def khoidong_loopthongke(thongke, moitruong, stop):
+    while not stop.is_set() and moitruong.get_is_cuasogametontai():
+        try:
+            thongke.step()
+        except Exception as e:
+            print(f"[Loop THỐNG KÊ] Lỗi: {e}")
+        time.sleep(CHUKYLAYMAU)
+
+def khoidong_loopgiamsat(giamsat, theodoisuco, moitruong, stop):
+    while not stop.is_set() and moitruong.get_is_cuasogametontai():
+        try:
+            giamsat.step()
+        except Exception as e:
+            print(f"[Loop GIÁM SÁT] Lỗi: {e}")
+        try:
+            theodoisuco.step()
+        except Exception as e:
+            print(f"[Loop GIÁM SÁT] Lỗi theo dõi sự cố: {e}")
+        time.sleep(CHUKYGIAMSAT)
+
 class CuaSo:
-    def __init__(self, idcuaso, shared_data, command_dict, dieuphoi_khoa = None, dieuphoi_trangthai = None, dieuphoi_dangchos = None):
+    def __init__(self, idcuaso, shared_data, command_dict, dieuphoi_khoa = None, dieuphoi_trangthai = None, dieuphoi_dangchos = None, dieuphoi_giukynangs = None):
         self.idcuaso = idcuaso
         self.shared_data = shared_data
         self.command_dict = command_dict
@@ -52,20 +84,30 @@ class CuaSo:
         if dieuphoi_khoa is not None:
             self.moitruong.dieuphoi = DieuPhoiLuot(idcuaso, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos, KENH_LENH)
             self.moitruong.dieuphoidichuyen = DieuPhoiLuot(idcuaso, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos, KENH_DICHUYEN)
+            if dieuphoi_giukynangs is not None:
+                self.moitruong.giukynang = GiuKyNangMucTieu(idcuaso, dieuphoi_khoa, dieuphoi_giukynangs)
         self.moitruong.action_thietlaphooknoidungtrochuyen()
         self.tactu = TacTu(self.moitruong)
         self.tactu.shared_data = shared_data
         self.tactu.idcuaso = idcuaso
         self.main_stop = threading.Event()
+        self.thongke = ThongKe(self.moitruong, self.tactu)
+        self.giamsat = GiamSat(self.moitruong, self.tactu)
+        # Tin sự cố gửi về Telegram (thongbao_xq): chết, bị người chơi đánh
+        self.theodoisuco = TheoDoiSuCo(self.moitruong, self.tactu)
 
         self.tennhanvat = None
         self.idnguoichoi = 0
         self.thoidiemluuthietlap = time.time()
 
         self.luongs = (
-            threading.Thread(target = khoidong_looptonghop, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
-            threading.Thread(target = khoidong_loopphu, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_looptonghop, args = [self.moitruong, self.tactu, self.main_stop, self.giamsat], daemon = True),
+            threading.Thread(target = khoidong_loopphu, args = [self.moitruong, self.tactu, self.main_stop, self.giamsat], daemon = True),
             threading.Thread(target = khoidong_loopxulylenh, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_loopbokhung, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_loopgiuotrong, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_loopthongke, args = [self.thongke, self.moitruong, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_loopgiamsat, args = [self.giamsat, self.theodoisuco, self.moitruong, self.main_stop], daemon = True),
         )
 
         for luong in self.luongs:
@@ -85,6 +127,8 @@ class CuaSo:
     def tatauto(self, *args, **kwargs):
         if self.idnguoichoi:
             self.tactu.luuthietlap(self.idnguoichoi)
+            self.tactu.luuvitriquai(True)
+        self.thongke.luu(is_tatca = True)
 
         self.main_stop.set()
         self._chotoanbocacluongdunghan()
@@ -94,6 +138,13 @@ class CuaSo:
 
         if self.idcuaso in self.command_dict:
             del self.command_dict[self.idcuaso]
+
+    def _laydiemdanhdangden(self):
+        tactu = self.tactu
+        diem = tactu._diemdanhxungquanhhientai
+        if not tactu._is_tudongdichuyendiemdanhxungquanh or not diem or len(diem) < 3:
+            return None
+        return [round(diem[0]), round(diem[1]), diem[2], tactu._iddiemdanhxungquanhhientai, len(tactu._diemdanhxungquanhs)]
 
     def loop_hienthigiaodien(self):
         while not self.main_stop.is_set():
@@ -183,6 +234,8 @@ class CuaSo:
                     "_tenmuctieukhongtancongs": sorted(self.tactu._tenmuctieukhongtancongs),
                     "_khoangcachtoidatheosau": self.tactu._khoangcachtoidatheosau,
                     "_bankinhdiemdanh": self.tactu._bankinhdiemdanh,
+                    "_khoangcachsudungkynangtamxa": self.tactu._khoangcachsudungkynangtamxa,
+                    "_phantramnoiluckhaithientichdia": self.tactu._phantramnoiluckhaithientichdia,
 
                     "_is_tudongdichuyendiemdanhxungquanh": self.tactu._is_tudongdichuyendiemdanhxungquanh,
                     "_diemdanhxungquanhs": self.tactu._diemdanhxungquanhs,
@@ -193,11 +246,42 @@ class CuaSo:
                     "_tenanthanphathien": self.tactu._tenanthanphathien,
                     "_thoigiantamngungphathien": self.tactu._thoigiantamngungphathien,
                     "_is_tudongtrieuhoibaothugiangho": self.tactu._is_tudongtrieuhoibaothugiangho,
-                    "_is_tudongbattatchucnangmorong": self.tactu._is_tudongbattatchucnangmorong,
 
                     "_is_tudongsudungkynangbaothu": self.tactu._is_tudongsudungkynangbaothu,
                     "_is_tranhvungcam": self.tactu._is_tranhvungcam,
+                    "_is_giukhoangcachketancong": self.tactu._is_giukhoangcachketancong,
+                    "_khoangcachgiuketancong": self.tactu._khoangcachgiuketancong,
+                    "_is_giukhoangcachchimuctieupk": self.tactu._is_giukhoangcachchimuctieupk,
+                    "_is_taphoa": self.tactu._is_taphoa,
+                    "_is_timmuctieuchung": self.tactu._is_timmuctieuchung,
+                    "_is_tutimduongtheosau": self.tactu._is_tutimduongtheosau,
+                    "_is_dangsapxephanhtrang": self.tactu._is_dangsapxephanhtrang,
+                    "_is_doidokhitrieuhoi": self.tactu._is_doidokhitrieuhoi,
+                    "_tenbodotrieuhoi": [mon["ten"] for mon in self.tactu._bodotrieuhoi],
+                    "_baothutrieuhoimaoson": self.tactu._baothutrieuhoimaoson,
+                    "_is_nguocchieulotrinh": self.tactu._is_nguocchieulotrinh,
+                    "_solanthayquaibando": self.tactu.get_solanthayquaibando(),
+                    "_buocdichuyen": self.tactu.get_buocdichuyen(),
+                    "_idbandocandi": self.tactu._idbandocandi,
+                    # Điểm đánh lộ trình đang đi tới [x, y, id bản đồ, số thứ tự, tổng số điểm] (cột "Đang đi tới" trên Telegram)
+                    "_diemdanhdangden": self._laydiemdanhdangden(),
+                    "_thongkephien": self.thongke.get_tomtatphien(),
+                    # Ngân lượng mang theo hiện tại (báo cáo Telegram)
+                    "nganluong": self.moitruong.get_nganluong(),
+                    # Biến động ngân lượng / vật phẩm gần đây để cửa sổ khác nhận ra chuyển cho nhau (thongke_xq)
+                    "_biendongtainguyen": self.thongke.get_biendongganday(),
                 }
+                # Tầm nhìn chia sẻ cho nhân vật khác cùng máy (đối tượng thù địch mình thấy); lỗi thì vẫn cập nhật phần còn lại
+                try:
+                    info["tamnhin"] = self.tactu.get_tamnhinchiase()
+                except Exception as err:
+                    print(f"Lỗi tạo tầm nhìn chia sẻ: {err}")
+                # Mục tiêu đang chọn trong game (bot chọn hay người chơi tự click đều ghi vào cùng ô) cho nhân vật theo sau tập hỏa
+                try:
+                    diachimuctieugame = self.moitruong._get_diachicosothongtinnhanvatmuctieudangchon()
+                    info["iddoituongmuctieu"] = self.moitruong.get_iddoituong(diachimuctieugame) if diachimuctieugame else 0
+                except Exception:
+                    info["iddoituongmuctieu"] = 0
                 self.shared_data[self.idcuaso] = info
 
             except Exception as err:
@@ -214,15 +298,28 @@ class CuaSo:
                     self.tactu.action_lammoitrangthai()
                 elif cmd == "battat_tudongdichuyendiemdanhxungquanh":
                     self.tactu.battat_is_tudongdichuyendiemdanhxungquanh()
-                elif isinstance(cmd, str) and cmd.startswith("nap_lotrinhmau:"):
-                    # nap_lotrinhmau:<id bản đồ>|<tên mẫu>|<1 nếu ngược chiều>
+                elif isinstance(cmd, str) and cmd.startswith(("nap_lotrinhmau:", "bosung_lotrinhmau:")):
+                    # nap_lotrinhmau / bosung_lotrinhmau:<id bản đồ>|<tên mẫu>|<1 nếu ngược chiều> (bổ sung: nối vào lộ trình đang có)
                     phan = cmd.split(":", 1)[1].split("|")
                     if len(phan) == 3:
-                        self.tactu.nap_lotrinhmau(int(phan[0]), phan[1], phan[2] == "1")
+                        self.tactu.nap_lotrinhmau(int(phan[0]), phan[1], phan[2] == "1", is_bosung = cmd.startswith("bosung_lotrinhmau:"))
+                elif isinstance(cmd, str) and cmd.startswith("ditoibando:"):
+                    # ditoibando:<id bản đồ> (0 = dừng)
+                    try:
+                        self.tactu.thietlap_ditoibando(int(cmd.split(":", 1)[1]))
+                    except ValueError:
+                        pass
+                elif cmd == "dexuat_lotrinhmau":
+                    self.tactu.dexuat_lotrinhmau()
                 elif cmd == "tuchon_lotrinhmau":
                     self.tactu.tuchon_lotrinhmau()
+                elif isinstance(cmd, str) and cmd.startswith("set_nguocchieulotrinh:"):
+                    self.tactu.thietlap_nguocchieulotrinh(cmd.split(":", 1)[1] == "1")
                 elif cmd == "tieptuchoatdong":
                     self.tactu.tieptuchoatdong()
+                elif isinstance(cmd, str) and cmd.startswith("tamngungtuxa:"):
+                    # Lệnh /tamdung từ Telegram: tạm ngưng như khi phát hiện ẩn thân (cả tự động đăng nhập cũng chờ), số giây sau dấu ":"
+                    self.tactu._batdautamngung(LYDOTAMNGUNGTUXA, float(cmd.split(":", 1)[1]))
                 elif isinstance(cmd, str) and cmd.startswith("luu_lotrinhmau:"):
                     self.tactu.luu_lotrinhmau(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_khoangcachtheosau:"):
@@ -238,6 +335,16 @@ class CuaSo:
                         self.tactu.thietlap_muctieutheosau(int(idmuctieu), tenmuctieu)
                     except Exception as e:
                         print(f"Lỗi khi chọn người theo sau: {e}")
+                elif isinstance(cmd, str) and cmd.startswith("set_khoangcachsudungkynangtamxa:"):
+                    try:
+                        self.tactu.thietlap_khoangcachsudungkynangtamxa(float(cmd.split(":")[1]))
+                    except Exception:
+                        pass
+                elif isinstance(cmd, str) and cmd.startswith("set_phantramnoiluckhaithientichdia:"):
+                    try:
+                        self.tactu.thietlap_phantramnoiluckhaithientichdia(float(cmd.split(":")[1]))
+                    except Exception:
+                        pass
                 elif isinstance(cmd, str) and cmd.startswith("set_bankinhdiemdanh:"):
                     try:
                         self.tactu.thietlap_bankinhdiemdanh(float(cmd.split(":")[1]))
@@ -262,8 +369,6 @@ class CuaSo:
 
                     except Exception as e:
                         print(f"Lỗi khi phân tích cú pháp toạ độ: {e}")
-                elif cmd == "battat_tudongbattatchucnangmorong":
-                    self.tactu.battat_tudongbattatchucnangmorong()
                 elif isinstance(cmd, str) and cmd.startswith("set_danhsachmuctieu:"):
                     # set_danhsachmuctieu:{"tancong": [...], "boqua": [...]}
                     try:
@@ -273,6 +378,29 @@ class CuaSo:
                         print(f"Lỗi khi đọc danh sách mục tiêu: {e}")
                 elif cmd == "battat_tranhvungcam":
                     self.tactu.battat_tranhvungcam()
+                elif cmd == "battat_giukhoangcachketancong":
+                    self.tactu.battat_giukhoangcachketancong()
+                elif cmd == "battat_giukhoangcachchimuctieupk":
+                    self.tactu.battat_giukhoangcachchimuctieupk()
+                elif cmd == "battat_taphoa":
+                    self.tactu.battat_taphoa()
+                elif cmd == "battat_timmuctieuchung":
+                    self.tactu.battat_timmuctieuchung()
+                elif isinstance(cmd, str) and cmd.startswith("set_khoangcachgiuketancong:"):
+                    try:
+                        self.tactu.thietlap_khoangcachgiuketancong(float(cmd.split(":")[1]))
+                    except Exception:
+                        pass
+                elif cmd == "battat_tutimduongtheosau":
+                    self.tactu.battat_tutimduongtheosau()
+                elif cmd == "battat_sapxephanhtrang":
+                    self.tactu.battat_sapxephanhtrang()
+                elif cmd == "battat_doidokhitrieuhoi":
+                    self.tactu.battat_doidokhitrieuhoi()
+                elif cmd == "ghi_bodotrieuhoi":
+                    self.tactu.ghi_bodotrieuhoi()
+                elif isinstance(cmd, str) and cmd.startswith("set_baothutrieuhoimaoson:"):
+                    self.tactu.thietlap_baothutrieuhoimaoson(cmd.split(":", 1)[1])
                 elif cmd == "battat_chantangcapdo":
                     self.tactu.battat_is_chantangcapdo()
                 elif cmd == "battat_tudongkhaikhoang":

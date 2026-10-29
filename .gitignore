@@ -155,3 +155,9 @@ Thumbs.db
 _internal/tamngung/
 # Tài khoản tự đăng nhập của từng máy (có mật khẩu)
 _internal/taikhoan.json
+# Token bot Telegram và chat nhận tin của từng máy (thongbao_xq)
+_internal/telegram.json
+# Số lần watchdog mở lại client theo nhân vật (giamsat_xq)
+_internal/giamsat.json
+# Log lệnh từng nhân vật (IS_LOGCAULENH)
+_internal/log/

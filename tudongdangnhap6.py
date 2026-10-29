@@ -1,6 +1,6 @@
 DUONGDAN_GAME = r"D:\Games\ChienQuoc2D_Aegis\xq.exe"
-LAUNCHER_TITLE = "client 2.01.06"
-GAME_TITLE_LOGIN_SCREEN = "Chien Quoc 2D --ooo2026ooo-- v.2.01.06"
+LAUNCHER_TITLE = "client 2.01.07"
+GAME_TITLE_LOGIN_SCREEN = "Chien Quoc 2D --ooo2026ooo-- v.2.01.07"
 GAME_TITLE_PREFIX = "Chien Quoc 2D"
 
 DANH_SACH_CUA_SO_LOI = ["warning", "play"]

@@ -179,6 +179,19 @@ def tailotrinhmau():
         return {}
 
 
+def thaythefile(filetam, filepath, solanthu = 5):
+    # os.replace trên Windows bị từ chối (WinError 5 / 32) nếu đúng lúc đó chương trình khác đang mở file đích (diệt virus, Windows Search,
+    # PyCharm, git, cửa sổ khác đang đọc...): chờ chút rồi thử lại, hết lượt thì báo lỗi như cũ (file đích cũ vẫn nguyên)
+    for lanthu in range(solanthu):
+        try:
+            os.replace(filetam, filepath)
+            return
+        except PermissionError:
+            if lanthu == solanthu - 1:
+                raise
+            time.sleep(0.05)
+
+
 def luulotrinhmau(lotrinhmau):
     filepath = duongdanlotrinhmau()
     try:
@@ -186,7 +199,7 @@ def luulotrinhmau(lotrinhmau):
         filetam = filepath + ".tmp"
         with open(filetam, "w", encoding = "utf-8") as file:
             json.dump(lotrinhmau, file, ensure_ascii = False, indent = 2)
-        os.replace(filetam, filepath)
+        thaythefile(filetam, filepath)
     except Exception as err:
         print(err)
 
@@ -237,7 +250,7 @@ def luunhomtodoitudongs(nhoms):
         filetam = filepath + ".tmp"
         with open(filetam, "w", encoding = "utf-8") as file:
             json.dump({"nhoms": _chuanhoanhomtodoitudongs(nhoms)}, file, ensure_ascii = False, indent = 2)
-        os.replace(filetam, filepath)
+        thaythefile(filetam, filepath)
     except Exception as err:
         print(err)
 
@@ -281,7 +294,7 @@ def luuthietlap(tennhanvat, thietlap):
         filetam = filepath + ".tmp"
         with open(filetam, "wb") as file:
             pickle.dump(thietlap, file)
-        os.replace(filetam, filepath)
+        thaythefile(filetam, filepath)
 
     except Exception as err:
         print(err)
@@ -296,6 +309,46 @@ def taithietlap(tennhanvat):
                 return pickle.load(file)
     except Exception as err:
         print(err)
+
+
+KICHTHUOCLOGTOIDA = 5 * 1024 * 1024
+
+
+def ghilognhanvat(idnguoichoi, dong):
+    # Log lệnh của từng nhân vật ra _internal/log/<ID người chơi>.log để đọc lại sau (console PyCharm khó tìm, mất khi tắt).
+    # Quá KICHTHUOCLOGTOIDA thì đổi sang .log.cu (giữ 1 bản cũ) để file không phình mãi
+    try:
+        thumuc = os.path.join(os.path.dirname(_thumucthietlap()), "log")
+        os.makedirs(thumuc, exist_ok = True)
+        duongdan = os.path.join(thumuc, f"{idnguoichoi}.log")
+        if os.path.exists(duongdan) and os.path.getsize(duongdan) > KICHTHUOCLOGTOIDA:
+            os.replace(duongdan, duongdan + ".cu")
+        with open(duongdan, "a", encoding = "utf-8") as file:
+            file.write(dong + "\n")
+    except Exception:
+        pass
+
+
+_thunghiem_cache = {"dulieu": {}, "mtime": None, "kiemtra": 0.}
+
+
+def laythunghiem(khoa, macdinh = None):
+    # Cấu hình thử nghiệm đổi được khi tool đang chạy: _internal/thunghiem.json, đọc lại tối đa mỗi giây khi file thay đổi
+    if time.time() - _thunghiem_cache["kiemtra"] > 1.:
+        _thunghiem_cache["kiemtra"] = time.time()
+        duongdan = os.path.join(os.path.dirname(_thumucthietlap()), "thunghiem.json")
+        try:
+            mtime = os.path.getmtime(duongdan)
+        except OSError:
+            mtime = None
+        if mtime != _thunghiem_cache["mtime"]:
+            _thunghiem_cache["mtime"] = mtime
+            try:
+                with open(duongdan, encoding = "utf-8-sig") as file:
+                    _thunghiem_cache["dulieu"] = json.load(file) if mtime else {}
+            except Exception:
+                _thunghiem_cache["dulieu"] = {}
+    return _thunghiem_cache["dulieu"].get(khoa, macdinh)
 
 
 def duongdantaikhoan():
@@ -319,7 +372,7 @@ def ghitamngung(idnguoichoi, thoidiemhet, lydo):
         filetam = filepath + ".tmp"
         with open(filetam, "w", encoding = "utf-8") as file:
             json.dump({"thoidiemhet": thoidiemhet, "lydo": lydo}, file, ensure_ascii = False)
-        os.replace(filetam, filepath)
+        thaythefile(filetam, filepath)
     except Exception as err:
         print(f"Lỗi khi ghi trạng thái tạm ngưng: {err}")
 
