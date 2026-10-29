@@ -264,10 +264,11 @@ class TacTuCatKho:
         return kq in ("xong", "lỗi")
 
     def _dondepcatkho(self):
-        # Quy trình về bán rác bị dừng giữa chừng (tắt bán rác, làm mới...) khi đang cất kho: bỏ việc dở, bước bán về 0 (kẻo lần về bán
-        # sau nhảy thẳng vào bước cất kho mà bỏ qua bán)
-        if self._trangthaiveban == 0 and self._buocbanrac == 3:
+        # Quy trình về bán rác bị dừng giữa chừng (tắt bán rác, làm mới...) khi đang cất kho / giao đồ: bỏ việc dở (yêu cầu giao quay về
+        # chờ), bước bán về 0 (kẻo lần về bán sau nhảy thẳng vào bước cất kho / giao mà bỏ qua bán)
+        if self._trangthaiveban == 0 and self._buocbanrac in (3, 4):
             self._buocbanrac = 0
+            self._bogiaodobanrac()
             if self._catkho and self._catkho["lydo"] == LYDOCATKHO_BANRAC:
                 print("[CẤT KHO] Quy trình bán rác đã dừng, bỏ việc cất kho dở")
                 self._catkho = None

@@ -264,7 +264,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._thoidiemguibanractieptheo = 0.
         self._thoidiemhetsuavatpham = 0.  # > 0: đang đi tìm Chủ Tiệm Sửa Chữa, bỏ cuộc lúc này
         self._thoidiemkiemtrasuavatpham = 0.
-        self._buocbanrac = 0  # bước 3 (đang bán) của về bán rác: 0 chưa bán, 1 đang bán, 2 đang sửa đồ, 3 đang cất kho
+        self._buocbanrac = 0  # bước 3 (đang bán) của về bán rác: 0 chưa bán, 1 đang bán, 2 đang sửa đồ, 3 đang cất kho, 4 đang giao đồ
         self._thoidiemthulaibanrac = 0.
         self._thoidiembatdautimnpcbanrac = 0.  # phái khác, bước 2: bắt đầu đi tìm NPC tạp hoá (bỏ cuộc sau 45s)
         self._thoidiemkiemtranpcbanrac = 0.

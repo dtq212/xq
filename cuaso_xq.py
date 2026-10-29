@@ -326,6 +326,9 @@ class CuaSo:
                     yeucaus = json.loads(cmd.split(":", 1)[1])
                     for yeucau in (yeucaus if isinstance(yeucaus, list) else [yeucaus]):
                         self.tactu.them_giaodo(yeucau)
+                elif cmd == "vegiao":
+                    # Nút "Về giao ngay" / Telegram /vegiao: các yêu cầu giao đang chờ về giao ngay
+                    self.tactu.kichhoat_giaodo()
                 elif isinstance(cmd, str) and cmd.startswith("huygiaodo:"):
                     self.tactu.huy_giaodo(cmd.split(":", 1)[1])
                 elif cmd == "catkho":
