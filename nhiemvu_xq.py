@@ -232,7 +232,7 @@ def _taibandonho(thumucgame):
     # 1 = NPC, 2 Bảo Khố, 3 Giáp Trụ / Trang Phục, 4 Kim Hoàn, 5 Vũ Khí, 6 Sửa Chữa, 7 Y Dược, 8 Dịch Trạm, 9 Tạp Hóa, 10 Tửu Lâu), tên
     # là dòng đó (đếm từ 0) của menu/main/vl.dat, NPC cửa hàng các nước ghi "<danh hiệu> <tên riêng>" ("Chủ Tiệm Vũ Khí Ô Địch").
     # -> {id bản đồ: [(loại, x, y, tên)]}. Đọc hết file bản đồ (~125MB) mất vài giây nên lưu đệm _internal/bandonho_cache.json theo
-    # kích thước + thời điểm sửa của các file đó
+    # tên + kích thước các file đó (không theo thời điểm sửa: file đệm nằm trong repo, dùng chung cho mọi máy)
     if _bandonho["duongdan"] == thumucgame:
         return _bandonho["dulieu"]
     dulieu = {}
@@ -240,7 +240,7 @@ def _taibandonho(thumucgame):
         thumucbando = os.path.join(thumucgame, "map")
         tenfiles = sorted(f for f in os.listdir(thumucbando) if f.endswith(".dat") and f[:-4].isdigit())
         dau = [os.path.join(thumucgame, "menu", "main", "vl.dat")] + [os.path.join(thumucbando, f) for f in tenfiles]
-        dau = "|".join(f"{os.path.getsize(p)}:{int(os.path.getmtime(p))}" for p in dau)
+        dau = "|".join(f"{os.path.basename(p)}:{os.path.getsize(p)}" for p in dau)
         duongdandem = os.path.join(_thumucgoc(), "_internal", "bandonho_cache.json")
         try:
             with open(duongdandem, encoding = "utf-8") as file:
