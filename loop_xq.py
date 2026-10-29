@@ -181,7 +181,7 @@ class LoopChinh:
                     elif not self._guilenhchomenu(lenhs[0]):
                         break
 
-        if self.moitruong.get_idnguoichoi() in (29, 30, 31, 31):
+        if self.moitruong.get_idnguoichoi() in (29, 30, 31, 31, 273):
             for tenvatpham in ("Túi Ngân Lượng", "Túi Kim Bảo", "Túi Quà Vô Song", "Túi Pháp Bảo", "Lễ Bao Khai Quốc", "Túi Linh Thạch cấp 1"):
                 if self.tactu.action_sudungvatphamhanhtrang(tenvatpham):
                     break

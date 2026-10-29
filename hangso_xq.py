@@ -331,8 +331,13 @@ VITRIKYNANG_KIMTRUNGCHAO = 3161
 VITRIKYNANG_DATINCUONGLUC = 3191
 VITRIKYNANG_KIMCUONGTHANPHAP = 3192
 
+# Côn Luân (đọc bảng kỹ năng + "desc pf" trên ThiênĐạo 2026-10-29): Phong Hỏa Quyết đánh từ xa (10 pháp lực, hồi 1s); Ngự Lôi Thuật
+# đánh + choáng 1s (20 pháp lực + 1 Bùa Giấy, hồi 2s); Hỏa Long Quyết đánh + Thiêu Đốt 12s (40 pháp lực + 3 Bùa Giấy, hồi 2s); Càn Khôn Na Di tâm pháp hộ thể 5 phút (đổi sát thương thành pháp lực, 20 pháp
+# lực, hồi 15s, bấm lại là tắt; hiệu ứng trùng id kỹ năng); Phá Chú giải 1 bùa chú nguyền rủa cho đồng đội (chưa dùng). Chiêu khác chưa
+# rõ công dụng thì chưa đưa vào danh sách ưu tiên (action_sudungkynangmonphaiconluan)
 VITRIKYNANG_BIENTHANTHUAT = 4211
 
+VITRIKYNANG_PHACHU = 4221
 VITRIKYNANG_PHONGMACHU = 4222
 
 VITRIKYNANG_PHONGHOAQUYET = 4231
@@ -351,6 +356,7 @@ VITRIKYNANG_LOILONGQUYET = 4244
 VITRIKYNANG_CANKHONNADI = 4252
 VITRIKYNANG_DANGVANGIAVU = 4253
 VITRIKYNANG_LONGDUTUHAI = 4254
+HIEUUNGKYNANG_CANKHONNADI = 4252
 
 VITRIKYNANG_PHUCMAQUYET = 2711
 VITRIKYNANG_LOIDONGCUUTHIEN = 2712
@@ -417,26 +423,6 @@ VITRIKYNANG_NHATQUYENBATSON = 2119
 
 VITRIKYNANG_LACKICH = 2123
 VITRIKYNANG_PHANTOA = 2124
-
-# Côn Luân (đọc bảng kỹ năng ThiênĐạo 2026-10-29). Mới biết công dụng Phong Hỏa Quyết (đánh từ xa, 10 pháp lực, hồi 1s); chiêu khác
-# chưa rõ công dụng thì chưa đưa vào danh sách ưu tiên
-VITRIKYNANG_BIENTHANTHUAT = 4211
-VITRIKYNANG_PHACHU = 4221
-VITRIKYNANG_PHONGMACHU = 4222
-VITRIKYNANG_PHONGHOAQUYET = 4231
-VITRIKYNANG_NGULOITHUAT = 4232
-VITRIKYNANG_HOALONGQUYET = 4233
-VITRIKYNANG_HANBANGTHUAT = 4234
-VITRIKYNANG_THUONGLONGQUYET = 4235
-VITRIKYNANG_HANBANGTRAN = 4236
-VITRIKYNANG_HUYENLONGCHAN = 4237
-VITRIKYNANG_KHONMATHUAT = 4241
-VITRIKYNANG_KIMQUANGTRAN = 4242
-VITRIKYNANG_KHONMATRAN = 4243
-VITRIKYNANG_LOILONGQUYET = 4244
-VITRIKYNANG_CANKHONNADI = 4252
-VITRIKYNANG_DANGVANGIAVU = 4253
-VITRIKYNANG_LONGDUTUHAI = 4254
 
 VIRIKYNANG_NGUYENKHIQUYNGUYEN = 3172
 # Nguyên Khí Quy Nguyên quá ~30 phút thì server cho hết hạn nhưng client vẫn hiện hiệu ứng: bật được chừng này giây thì bấm làm mới

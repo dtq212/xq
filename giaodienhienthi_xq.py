@@ -63,7 +63,7 @@ class GiaoDienHienThi:
         chieucao = min(self._px(900), self.root.winfo_screenheight() - self._px(80))
         # Mở ở giữa màn hình (chừa thanh taskbar ở dưới)
         # Đủ cho hàng 4 tab và nội dung tab kèm thanh cuộn (màn hình thấp) không bị cắt chữ
-        chieurong = self._px(640)
+        chieurong = self._px(700)
         x = max(0, (self.root.winfo_screenwidth() - chieurong) // 2)
         y = max(0, (self.root.winfo_screenheight() - self._px(40) - chieucao) // 2)
         self.root.geometry(f"{chieurong}x{chieucao}+{x}+{y}")
@@ -461,7 +461,7 @@ class GiaoDienHienThi:
 
         hangkhaithien = ttk.Frame(nhom)
         hangkhaithien.grid(row = 1, column = 0, columnspan = 2, sticky = tk.W)
-        ttk.Label(hangkhaithien, text = "Thục Sơn lướt Khai Thiên Tịch Địa khi nội lực trên:").pack(side = tk.LEFT)
+        ttk.Label(hangkhaithien, text = "Lướt (Khai Thiên Tịch Địa / Đằng Vân Giá Vũ) khi nội lực trên:").pack(side = tk.LEFT)
 
         def on_khaithien_change(hwnd = None):
             hwnd = hwnd or self.get_selected_hwnd()

@@ -460,7 +460,7 @@ class TacTuDiChuyen:
             if yeucauduocchon.get("yeucau") == YEUCAUDICHUYENDICHUYENTUDO:
                 toadodich = yeucauduocchon.get("toadodich")
                 if toadodich:
-                    # Tìm đường tới đích cùng bản đồ: Thục Sơn dùng Khai Thiên Tịch Địa lướt thẳng về phía đích
+                    # Tìm đường tới đích cùng bản đồ: Thục Sơn / Côn Luân dùng chiêu lướt (Khai Thiên Tịch Địa / Đằng Vân Giá Vũ) về phía đích
                     if len(toadodich) < 3 or toadodich[2] == self.moitruong.get_idbandohientai():
                         if self._thusudungkhaithientichdia(idtuthenhanvat, toadodich[0], toadodich[1]):
                             return

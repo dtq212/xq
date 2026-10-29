@@ -134,15 +134,24 @@ class TacTuKyNang:
         return is_nhuong
 
     def _thusudungkhaithientichdia(self, idtuthenhanvat, x_dich, y_dich):
-        # Thục Sơn đang di chuyển xa đích > 3 ô và nội lực trên mức % đặt ở giao diện thì dùng Khai Thiên Tịch Địa lướt về phía đích. Trả về True khi đã dùng
-        if idtuthenhanvat != TUTHENHANVAT_DICHUYEN or self.moitruong.get_tenmonphai() != "thucson" or self.moitruong.get_phantramnoilucconlai() <= self._phantramnoiluckhaithientichdia:
+        # Đang di chuyển xa đích > 3 ô và nội lực trên mức % đặt ở giao diện thì dùng chiêu lướt về phía đích: Thục Sơn Khai Thiên Tịch
+        # Địa (nhắm thẳng đích), Côn Luân Đằng Vân Giá Vũ (dịch chuyển tới điểm chọn trong tầm đánh xa: đích xa hơn thì nhắm điểm trên
+        # đường thẳng tới đích, cách bản thân tầm xa - 0.5 ô). Trả về True khi đã dùng
+        tenmonphai = self.moitruong.get_tenmonphai()
+        chieuluot = {"thucson": VITRIKYNANG_KHAITHIENTICHDIA, "conluan": VITRIKYNANG_DANGVANGIAVU}.get(tenmonphai)
+        if idtuthenhanvat != TUTHENHANVAT_DICHUYEN or not chieuluot or self.moitruong.get_phantramnoilucconlai() <= self._phantramnoiluckhaithientichdia:
             return False
         if not x_dich or not y_dich:
             return False
-        if math.dist(self.moitruong.get_toado(), (x_dich, y_dich)) <= 3.:
+        toado = self.moitruong.get_toado()
+        khoangcach = math.dist(toado, (x_dich, y_dich))
+        if khoangcach <= 3.:
             return False
+        if tenmonphai == "conluan" and khoangcach > self._khoangcachsudungkynangtamxa - 0.5:
+            tile = (self._khoangcachsudungkynangtamxa - 0.5) / khoangcach
+            x_dich, y_dich = toado[0] + (x_dich - toado[0]) * tile, toado[1] + (y_dich - toado[1]) * tile
 
-        is_khaithiensansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_KHAITHIENTICHDIA)
+        is_khaithiensansang = self.moitruong.get_is_kynangsansang(chieuluot) and self._is_dutieuhao(chieuluot)
         if self._is_khaithientichdiasansang and not is_khaithiensansang:
             # Vừa ra chiêu: tạm ngưng di chuyển 0.5s như bản cũ, vào tư thế xuất chiêu thì ngắt tiếp (action_ngatdichuyenkhixuatchieu)
             self._thoidiemtamngungdichuyensudungkynang = max(self._thoidiemtamngungdichuyensudungkynang, time.time() + 0.5)
@@ -164,8 +173,8 @@ class TacTuKyNang:
                 self._thoidiembiphatkhaithien = time.time()
 
         if self._solanthatbaikhaithien < self._solanthatbaikhaithientoida:
-            idkynang = self.moitruong.get_idkynang(VITRIKYNANG_KHAITHIENTICHDIA)
-            if idkynang and self.moitruong.action_sudungkynangtoado(idkynang, int(x_dich), int(y_dich), delay = 0.05):
+            idkynang = self.moitruong.get_idkynang(chieuluot)
+            if idkynang and self.moitruong.action_sudungkynangtoado(idkynang, int(round(x_dich)), int(round(y_dich)), delay = 0.05):
                 # Chiêu lướt để đi đường: giữ trọn hoạt ảnh xuất chiêu (chặn client tự gửi "go" từ lúc gửi tới hết tư thế xuất chiêu,
                 # đo: không chặn thì client gửi "go" ngay trong lúc xuất chiêu) nhưng không khựng thêm sau đó
                 self.moitruong.set_is_chieucanngatdichuyen(True, is_khungsauxuatchieu = False)
@@ -748,7 +757,7 @@ class TacTuKyNang:
 
     def action_sudungkynangmonphaiconluan(self):
         # Côn Luân (phái phép, đánh tầm xa). Chiêu chưa học / chưa hồi / thiếu pháp lực thì _is_kynangdungduoc bỏ qua, danh sách đi tiếp
-        # tới đánh thường. Học thêm chiêu thì thêm dòng vào danh sách (id ở hangso_xq VITRIKYNANG_* Côn Luân)
+        # tới chiêu sau. Học thêm chiêu thì thêm dòng vào danh sách (id ở hangso_xq VITRIKYNANG_* Côn Luân)
         if not self._is_tudongsudungkynang: return
         if self.moitruong.get_is_dangclickchuottrai(): return
         if self.moitruong.get_is_nhanvatdachet(): return
@@ -758,11 +767,17 @@ class TacTuKyNang:
         khoangcach = self.moitruong.get_khoangcach(diachimuctieu) if diachimuctieu else 0
         tamxa = self._khoangcachsudungkynangtamxa
 
+        # Không đánh thường: Côn Luân đánh thường chỉ 1-2 máu (người dùng bỏ 2026-10-29), hết pháp lực / chiêu đang hồi thì đứng chờ
         danhsachuutien = [
+            # Tâm pháp bật / tắt: chỉ bấm khi chưa có hiệu ứng, gửi 1 lần rồi chờ hiệu ứng hiện (_is_duocguitamphapbattat gọi cuối)
+            (VITRIKYNANG_CANKHONNADI, "sudungkynangkhongmuctieu", lambda: not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CANKHONNADI,), macdinh = True, is_hieuungcoloi = 1)
+                and self._is_duocguitamphapbattat(VITRIKYNANG_CANKHONNADI), 0, None, False),
+            # Hỏa Long Quyết (3 Bùa Giấy): gây Thiêu Đốt 12s, mục tiêu đang bị Thiêu Đốt thì để chiêu khác
+            (VITRIKYNANG_HOALONGQUYET, "sudungkynangmuctieu", lambda: diachimuctieu and (self.moitruong.get_soluongvatphamhanhtrangtheoten() or {}).get(BUAGIAY, 0) >= 3
+                and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THIEUDOT,), macdinh = False, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0), tamxa, None, True),
+            (VITRIKYNANG_NGULOITHUAT, "sudungkynangmuctieu", lambda: diachimuctieu and self.moitruong.action_timkiemvatphamhanhtrang(BUAGIAY), tamxa, None, True),
             (VITRIKYNANG_PHONGHOAQUYET, "sudungkynangmuctieu", lambda: diachimuctieu, tamxa, None, True),
-            (None, "tancongvatly", lambda: diachimuctieu and not self._is_battudongtancongvatly, tamxa, None, True),
             (None, "dichuyentiepcantamxa", lambda: diachimuctieu and khoangcach > tamxa, tamxa, None, False),
-            (None, "tancongvatly", lambda: diachimuctieu, tamxa, None, True),
         ]
 
         for i, item in enumerate(danhsachuutien):

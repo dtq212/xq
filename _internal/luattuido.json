@@ -249,6 +249,17 @@
       "chikhi": "trieuhoibaothu",
       "bat": true,
       "monphai": ""
+    },
+    {
+      "vatpham": "Bùa Giấy",
+      "npc": "Chủ Tiệm Tạp Hóa",
+      "o": 1,
+      "dongia": 10,
+      "duoi": 5000,
+      "muatoi": 5000,
+      "monphai": "conluan",
+      "chikhi": "",
+      "bat": true
     }
   ],
   "catkho": [
@@ -263,6 +274,34 @@
       "mota": [],
       "ruong": 0,
       "giulai": 1,
+      "ghichu": ""
+    },
+    {
+      "bat": true,
+      "ten": [
+        "Tử Kim Bảo Hộ",
+        "Thanh Đồng Bảo Hộp",
+        "Túi Hoàng Kim Tân Thủ 5* cấp 40",
+        "Túi Hoàng Kim Tân Thủ 5* cấp 20",
+        "Sơ Cấp Đoạn Thạch"
+      ],
+      "tenchua": [],
+      "loai": [],
+      "mota": [],
+      "ruong": 0,
+      "giulai": 0,
+      "ghichu": ""
+    },
+    {
+      "bat": true,
+      "ten": [],
+      "tenchua": [],
+      "loai": [
+        "Tinh luyện"
+      ],
+      "mota": [],
+      "ruong": 0,
+      "giulai": 0,
       "ghichu": ""
     }
   ],
