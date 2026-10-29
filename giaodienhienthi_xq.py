@@ -124,6 +124,7 @@ class GiaoDienHienThi:
         self._taotabmuctieutodoi(self._taotab(notebook, "Mục tiêu & Tổ đội"))
         self._taotabthongke(self._taotab(notebook, "Thống kê"))
         self._taotabtuido(self._taotab(notebook, "Túi đồ"))
+        self._taotabnhiemvu(self._taotab(notebook, "Nhiệm vụ"))
         if self.dangnhap is not None:
             self._taotabdangnhap(self._taotab(notebook, "Đăng nhập"))
         if HIEN_TUYCHON_CHUADUNG:
@@ -1276,14 +1277,12 @@ class GiaoDienHienThi:
                  fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(560)).grid(row = 3, column = 0, sticky = tk.W, pady = (4, 0))
 
         nhom = self._taonhom(tab, "Mua bù ở Tân Thủ Thôn (còn ít hơn \"Mua khi dưới\" thì mua cho đủ)")
-        self.tree_muabu = ttk.Treeview(nhom, columns = ("bat", "vatpham", "npc", "o", "dongia", "duoi", "muatoi", "monphai", "chikhi"),
+        self.tree_muabu = ttk.Treeview(nhom, columns = ("bat", "vatpham", "npc", "duoi", "muatoi", "monphai", "chikhi"),
                                        show = "headings", height = 6, selectmode = "browse")
         for col, text, width, anchor in (
                 ("bat", "Bật", 35, tk.CENTER),
                 ("vatpham", "Vật phẩm", 105, tk.W),
                 ("npc", "NPC", 95, tk.W),
-                ("o", "Ô", 30, tk.CENTER),
-                ("dongia", "Đơn giá", 55, tk.E),
                 ("duoi", "Khi dưới", 55, tk.E),
                 ("muatoi", "Cho đủ", 50, tk.E),
                 ("monphai", "Môn phái", 75, tk.W),
@@ -1297,7 +1296,10 @@ class GiaoDienHienThi:
         for chu, lenh in (("Thêm", lambda: self._suamuabu(is_moi = True)), ("Sửa", lambda: self._suamuabu(is_moi = False)),
                           ("Xoá", lambda: self._xoamuctuido("muabu", self.tree_muabu))):
             ttk.Button(hangnut, text = chu, command = lenh).pack(side = tk.LEFT, padx = (0, 4))
-        tk.Label(nhom, text = "Ô: số thứ tự món trong cửa hàng NPC (đếm từ 1). Mua lần lượt từ trên xuống trong số ngân lượng đang có.",
+        tk.Label(nhom, text = "Ô và giá bot tự tra theo tên món trong cửa hàng (đứng gần NPC thì mở cửa hàng đọc 1 lần rồi đóng, nhớ cho các "
+                              "lần sau). Tên trong cửa hàng khác tên trong túi (vd Thức Ăn Bảo Thú Cao Cấp / Cao Cấp Bảo Thú Thực Phẩm) thì "
+                              "ghi thêm \"Tên ở cửa hàng\". NPC tìm theo tên hoặc danh hiệu (cửa hàng các nước). Mua lần lượt từ trên xuống "
+                              "trong số ngân lượng đang có.",
                  fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(540)).grid(row = 2, column = 0, sticky = tk.W, pady = (4, 0))
         self._hienluattuido()
 
@@ -1329,6 +1331,68 @@ class GiaoDienHienThi:
                               "mới giao; giao xong kiểm tra ngân lượng / túi đồ đã giảm rồi báo Telegram.",
                  fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(560)).grid(row = 2, column = 0, sticky = tk.W, pady = (4, 0))
         self._giaododanghien = None
+
+    def _taotabnhiemvu(self, tab):
+        # Nhiệm vụ sư môn (tactu_sumon_xq) cho nhân vật đang chọn: bấm bắt đầu / dừng, NPC giao nhiệm vụ lưu theo nhân vật
+        nhom = self._taonhom(tab, "Nhiệm vụ sư môn (nhân vật đang chọn)")
+        hangnut = ttk.Frame(nhom)
+        hangnut.grid(row = 0, column = 0, sticky = tk.W)
+        self.btn_sumon = ttk.Button(hangnut, text = "📜 Bắt đầu sư môn", command = self._battatsumon)
+        self.btn_sumon.pack(side = tk.LEFT)
+        self.lbl_sumon = tk.Label(nhom, text = "", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(560))
+        self.lbl_sumon.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
+
+        hangnpc = ttk.Frame(nhom)
+        hangnpc.grid(row = 2, column = 0, sticky = tk.W, pady = (6, 0))
+        ttk.Label(hangnpc, text = "NPC giao nhiệm vụ:").pack(side = tk.LEFT)
+        self.str_sumonnpcgiao = tk.StringVar()
+        self.ent_sumonnpcgiao = ttk.Entry(hangnpc, textvariable = self.str_sumonnpcgiao, width = 26)
+        self.ent_sumonnpcgiao.pack(side = tk.LEFT, padx = 4)
+
+        def on_luunpcgiao(event = None):
+            hwnd = self.get_selected_hwnd()
+            if hwnd:
+                self.command_dict[hwnd] = f"set_sumon_npcgiao:{self.str_sumonnpcgiao.get().strip()}"
+            self.root.focus_set()
+
+        self.ent_sumonnpcgiao.bind("<Return>", on_luunpcgiao)
+        ttk.Button(hangnpc, text = "Lưu", width = 6, command = on_luunpcgiao).pack(side = tk.LEFT)
+        self.lbl_sumonnpcmacdinh = ttk.Label(nhom, text = "", style = "Phu.TLabel")
+        self.lbl_sumonnpcmacdinh.grid(row = 3, column = 0, sticky = tk.W)
+        tk.Label(nhom, text = "Bot đọc nhiệm vụ trong cửa sổ nhiệm vụ của game rồi tự làm tới khi xong 20 lượt: nhận / trả ở NPC giao nhiệm vụ, "
+                              "Đi tìm Thạch Sư, Thu thập (đánh đúng quái trong mô tả, nhặt đồ, đủ thì Hồi môn phái về giao), Thăm viếng, "
+                              "Luyện tập / Du lịch (farm theo lộ trình điểm đánh của nhân vật), Bắt yêu quái (hết Dây Càn Khôn thì tự về "
+                              "Chủ Tiệm Tạp Hóa mua), Mua sắm (tự sang nước trong mô tả tìm cửa hàng theo danh hiệu, mua rồi về giao). "
+                              "Để trống NPC giao = mặc định theo môn phái (Côn Luân: Văn Xương Chân Quân). Vị trí NPC / quái bot thấy được tự ghi "
+                              "lại để lần sau tìm.",
+                 fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(560)).grid(row = 4, column = 0, sticky = tk.W, pady = (6, 0))
+        self._hwndsumonhienthi = None
+
+    def _battatsumon(self):
+        hwnd = self.get_selected_hwnd()
+        if not hwnd:
+            from tkinter import messagebox
+            messagebox.showwarning("Sư môn", "Chọn một nhân vật trong danh sách trước", parent = self.root)
+            return
+        info = self.shared_data.get(hwnd) or {}
+        self.command_dict[int(hwnd)] = "huysumon" if info.get("_is_dangsumon") else "sumon"
+
+    def _capnhatsumon(self):
+        hwnd = self.get_selected_hwnd()
+        info = (self.shared_data.get(hwnd) or {}) if hwnd else {}
+        chunut = "⏹ Dừng sư môn" if info.get("_is_dangsumon") else "📜 Bắt đầu sư môn"
+        if self.btn_sumon.cget("text") != chunut:
+            self.btn_sumon.config(text = chunut)
+        chu = info.get("_trangthaisumon") or ""
+        if self.lbl_sumon.cget("text") != chu:
+            self.lbl_sumon.config(text = chu)
+        macdinh = f"Đang dùng: {info.get('_npcgiaosumon') or '(chưa biết, nhập tên NPC)'}"
+        if self.lbl_sumonnpcmacdinh.cget("text") != macdinh:
+            self.lbl_sumonnpcmacdinh.config(text = macdinh)
+        # Đổi nhân vật thì nạp lại ô NPC giao (đang gõ thì thôi)
+        if info and hwnd != self._hwndsumonhienthi and self.root.focus_get() is not self.ent_sumonnpcgiao:
+            self._hwndsumonhienthi = hwnd
+            self.str_sumonnpcgiao.set(info.get("_sumon_npcgiao") or "")
 
     def _catkhongay(self):
         hwnd = self.get_selected_hwnd()
@@ -1442,7 +1506,8 @@ class GiaoDienHienThi:
             self.tree_catkho.selection_set(str(choncatkho))
         self.tree_muabu.delete(*self.tree_muabu.get_children())
         for i, muc in enumerate(dulieu["muabu"]):
-            self.tree_muabu.insert("", tk.END, iid = str(i), values = ("✔" if muc["bat"] else "", muc["vatpham"], muc["npc"], muc["o"], self._sogon(muc["dongia"]),
+            self.tree_muabu.insert("", tk.END, iid = str(i), values = ("✔" if muc["bat"] else "",
+                                                                       muc["vatpham"] + (f" ({muc['tencuahang']})" if muc["tencuahang"] else ""), muc["npc"],
                                                                        muc["duoi"], muc["muatoi"], TENMONPHAI.get(muc["monphai"], muc["monphai"]) or "Tất cả",
                                                                        "Luôn" if muc["chikhi"] == CHIKHI_LUON else "Triệu hồi bảo thú"))
         for tree, chon in ((self.tree_luattuido, chonluat), (self.tree_muabu, chonmuabu)):
@@ -1631,7 +1696,7 @@ class GiaoDienHienThi:
         mamonphai = {"Tất cả": "", **{ten: ma for ma, ten in TENMONPHAI.items()}}
         muc["monphai"] = TENMONPHAI.get(muc.get("monphai"), muc.get("monphai")) or "Tất cả"
         goiys = {"npc": [CHUTIEMTAPHOA, CHUTUULAU], "monphai": list(mamonphai), "chikhi": list(TENCHIKHI.values())}
-        # Form 2 cột, xếp theo cặp: Vật phẩm | NPC, Ô | Đơn giá, Mua khi dưới | Mua cho đủ, Môn phái | Chỉ mua khi, Bật
+        # Form 2 cột, xếp theo cặp: Vật phẩm | Tên ở cửa hàng, NPC | Mua khi dưới, Mua cho đủ | Môn phái, Chỉ mua khi | Bật
         truongs = [(t, TENTRUONGMUABU[t], goiys.get(t)) for t in TRUONGMUABU] + [("bat", "Bật", None)]
 
         def kiemtra(kq):
@@ -1641,7 +1706,7 @@ class GiaoDienHienThi:
                 return "Chọn môn phái trong danh sách (hoặc Tất cả)"
             if not kq["vatpham"].strip() or not kq["npc"].strip():
                 return "Cần tên vật phẩm và tên NPC bán"
-            for t in ("o", "dongia", "duoi", "muatoi"):
+            for t in ("duoi", "muatoi"):
                 if not kq[t].strip().isdigit() or int(kq[t]) <= 0:
                     return f"\"{TENTRUONGMUABU[t]}\" phải là số lớn hơn 0"
             if int(kq["duoi"]) > int(kq["muatoi"]):
@@ -1811,6 +1876,7 @@ class GiaoDienHienThi:
             self._capnhatbangdieukhien()
             self._capnhatthongke()
             self._capnhatgiaodo()
+            self._capnhatsumon()
             # Nội dung có thể cao lên/thấp xuống (dòng tạm ngưng, danh sách tài khoản...) mà Canvas không tự biết
             for tabcuon in self._tabcuons:
                 self._capnhatcuontab(*tabcuon)

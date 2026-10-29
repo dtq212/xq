@@ -16,10 +16,12 @@ from tactu_baothu_xq import TacTuBaoThu
 from tactu_hoatdong_xq import TacTuHoatDong
 from tactu_giaodo_xq import TacTuGiaoDo
 from tactu_catkho_xq import TacTuCatKho
+from tactu_sumon_xq import TacTuSuMon
+from nhiemvu_xq import SoVitri
 
 
 # Các nhóm việc nằm ở các file tactu_*_xq.py (mixin), TacTu giữ trạng thái (__init__), lưu / nạp thiết lập và các lệnh bật / tắt
-class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu, TacTuHoatDong, TacTuGiaoDo, TacTuCatKho):
+class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu, TacTuHoatDong, TacTuGiaoDo, TacTuCatKho, TacTuSuMon):
     def __init__(self, moitruong: MoiTruong):
         self._thoidiemhettangbaodogannhat = 0.
         self._thoidiemmuaautogannhat = 0.
@@ -117,6 +119,19 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._ketquacatkho = ""
         # Các lần cất kho trong THOIGIANGIULICHSUCATKHO giây gần nhất: [[thời điểm, {tên món: số lượng}]] cho báo cáo định kỳ Telegram
         self._lichsucatkho = []
+        # Nhiệm vụ sư môn (tactu_sumon_xq): việc đang làm (None = không), kết quả lần gần nhất cho giao diện, NPC giao nhiệm vụ người dùng
+        # đặt (rỗng = mặc định theo môn phái, lưu theo nhân vật); vị trí NPC / quái đã thấy (nhiemvu_xq.SoVitri) và lần ghi gần nhất
+        self._sumon = None
+        self._ketquasumon = ""
+        self._sumon_npcgiao = ""
+        self._sovitri = SoVitri()
+        self._thoidiemghivitridoituong = 0.
+        # Mở cửa hàng để đọc hàng (tactu_sumon_xq.batdau_mocuahang): việc đang làm (None = không), kết quả theo (bản đồ, tên NPC);
+        # Mua bù: lần mở cửa hàng gần nhất theo NPC, các lệch ô / giá giữa luật và cửa hàng đã báo
+        self._mocuahang = None
+        self._ketquamocuahang = {}
+        self._lucmocuahangmuabu_map = {}
+        self._lechmuabudabao = set()
         self._buocdichuyen = ("", 0.)
         # Các lần Hồi Thành Phù gần đây (chặn lặp tốn tiền, get_lydokhonghoithanhphu)
         self._thoidiemhoithanhphus = []
@@ -520,6 +535,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_is_doidokhitrieuhoi": self._is_doidokhitrieuhoi,
             "_bodotrieuhoi": self._bodotrieuhoi,
             "_baothutrieuhoimaoson": self._baothutrieuhoimaoson,
+            "_sumon_npcgiao": self._sumon_npcgiao,
         }
         util_luuthietlap(str(idnguoichoi), thietlap)
         # luuthietlap chạy mỗi giây: vị trí quái thì THOIGIANLUUVITRIQUAI giây mới ghi file một lần (thoát thì luuvitriquai(True))
@@ -597,6 +613,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if "_is_doidokhitrieuhoi" in thietlap: self._is_doidokhitrieuhoi = thietlap["_is_doidokhitrieuhoi"]
             if "_bodotrieuhoi" in thietlap: self._bodotrieuhoi = list(thietlap["_bodotrieuhoi"])
             if thietlap.get("_baothutrieuhoimaoson") in BAOTHUTRIEUHOIMAOSONs: self._baothutrieuhoimaoson = thietlap["_baothutrieuhoimaoson"]
+            if "_sumon_npcgiao" in thietlap: self._sumon_npcgiao = thietlap["_sumon_npcgiao"] or ""
 
     def battat_tranhvungcam(self):
         self._is_tranhvungcam = not self._is_tranhvungcam

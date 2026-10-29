@@ -14,7 +14,8 @@
 #           Luật cũ trong "luat" có "hanhdong": "catkho" (chuyển hẳn sang) hoặc "is_catkho": true (chép sang, luật cũ giữ hành động) tự
 #           chuyển vào đây khi file chưa có "catkho"
 #   "muabu": đứng gần NPC ở Tân Thủ Thôn mà còn ít hơn "duoi" món (đếm cả các chồng) thì mua cho đủ "muatoi". Mỗi mục: {"bat": true,
-#           "vatpham": tên, "npc": tên NPC bán, "o": số ô trong cửa hàng NPC, "dongia": giá 1 món, "duoi": N, "muatoi": M,
+#           "vatpham": tên (trong túi), "tencuahang": tên trong cửa hàng nếu khác ("" = như "vatpham"), "npc": tên / danh hiệu NPC bán,
+#           "duoi": N, "muatoi": M, (ô / giá bot tự tra theo tên trong cửa hàng; "o" / "dongia" của bản cũ bỏ đi)
 #           "monphai": "" = mọi môn phái hoặc "maoson", "vanmongcoc"..., "chikhi": "" = luôn, "trieuhoibaothu" = chỉ khi bật triệu hồi
 #           bảo thú giang hồ}. Mua lần lượt từ trên xuống trong số ngân lượng đang có, chừa NGANLUONGGIULAI
 import copy
@@ -41,8 +42,8 @@ RUONGTUDONG = 0
 TENHANHDONG = {HANHDONG_GIU: "Giữ", HANHDONG_BAN: "Bán", HANHDONG_VUT: "Vứt"}
 DIEUKIENs = ("ten", "tenchua", "loai", "mota")
 TENDIEUKIEN = {"ten": "Tên đúng", "tenchua": "Tên chứa", "loai": "Loại chứa", "mota": "Mô tả chứa"}
-TRUONGMUABU = ("vatpham", "npc", "o", "dongia", "duoi", "muatoi", "monphai", "chikhi")
-TENTRUONGMUABU = {"vatpham": "Vật phẩm", "npc": "NPC bán", "o": "Ô trong cửa hàng", "dongia": "Đơn giá", "duoi": "Mua khi dưới",
+TRUONGMUABU = ("vatpham", "tencuahang", "npc", "duoi", "muatoi", "monphai", "chikhi")
+TENTRUONGMUABU = {"vatpham": "Vật phẩm", "tencuahang": "Tên ở cửa hàng (nếu khác)", "npc": "NPC bán", "duoi": "Mua khi dưới",
                   "muatoi": "Mua cho đủ", "monphai": "Môn phái (trống = tất cả)", "chikhi": "Chỉ mua khi"}
 CHIKHI_LUON = ""
 CHIKHI_TRIEUHOIBAOTHU = "trieuhoibaothu"
@@ -74,12 +75,13 @@ LUATMACDINH = [
 ]
 # Mua viết cứng trước đây trong tactu action_tudongmuavatpham (cùng thứ tự)
 MUABUMACDINH = [
-    {"vatpham": TRANKY, "npc": CHUTIEMTAPHOA, "o": 6, "dongia": 60, "duoi": 1999, "muatoi": 1999, "monphai": "vanmongcoc"},
-    {"vatpham": DAUNANH, "npc": CHUTIEMTAPHOA, "o": 7, "dongia": 400, "duoi": 30, "muatoi": 30, "monphai": "vanmongcoc"},
-    {"vatpham": BUAGIAY, "npc": CHUTIEMTAPHOA, "o": 1, "dongia": 10, "duoi": 999, "muatoi": 999, "monphai": "maoson"},
-    {"vatpham": CAOCAPBAOTHUTHUCPHAM, "npc": CHUTIEMTAPHOA, "o": 18, "dongia": 400, "duoi": 30, "muatoi": 30, "chikhi": CHIKHI_TRIEUHOIBAOTHU},
-    {"vatpham": LAOTUU, "npc": CHUTUULAU, "o": 3, "dongia": 1150, "duoi": 30, "muatoi": 30, "chikhi": CHIKHI_TRIEUHOIBAOTHU},
-    {"vatpham": DUAHAU, "npc": CHUTUULAU, "o": 4, "dongia": 1100, "duoi": 30, "muatoi": 30, "chikhi": CHIKHI_TRIEUHOIBAOTHU},
+    {"vatpham": TRANKY, "npc": CHUTIEMTAPHOA, "duoi": 1999, "muatoi": 1999, "monphai": "vanmongcoc"},
+    {"vatpham": DAUNANH, "npc": CHUTIEMTAPHOA, "duoi": 30, "muatoi": 30, "monphai": "vanmongcoc"},
+    {"vatpham": BUAGIAY, "npc": CHUTIEMTAPHOA, "duoi": 999, "muatoi": 999, "monphai": "maoson"},
+    {"vatpham": CAOCAPBAOTHUTHUCPHAM, "tencuahang": "Thức Ăn Bảo Thú Cao Cấp", "npc": CHUTIEMTAPHOA, "duoi": 30, "muatoi": 30,
+     "chikhi": CHIKHI_TRIEUHOIBAOTHU},
+    {"vatpham": LAOTUU, "npc": CHUTUULAU, "duoi": 30, "muatoi": 30, "chikhi": CHIKHI_TRIEUHOIBAOTHU},
+    {"vatpham": DUAHAU, "npc": CHUTUULAU, "duoi": 30, "muatoi": 30, "chikhi": CHIKHI_TRIEUHOIBAOTHU},
 ]
 
 _cache = {"dulieu": None, "mtime": None}
@@ -119,11 +121,14 @@ def _chuanhoaluat(luat):
 def _chuanhoamuabu(muc):
     muc = dict(muc)
     muc["bat"] = bool(muc.get("bat", True))
-    for truong in ("vatpham", "npc", "monphai"):
+    for truong in ("vatpham", "tencuahang", "npc", "monphai"):
         muc[truong] = str(muc.get(truong) or "").strip()
+    # Bản cũ ghi tay ô / đơn giá: bỏ, bot tự tra theo tên trong cửa hàng
+    muc.pop("o", None)
+    muc.pop("dongia", None)
     if muc.get("chikhi") not in TENCHIKHI:
         muc["chikhi"] = CHIKHI_LUON
-    for truong in ("o", "dongia", "duoi", "muatoi"):
+    for truong in ("duoi", "muatoi"):
         try:
             muc[truong] = max(0, int(muc.get(truong) or 0))
         except (TypeError, ValueError):

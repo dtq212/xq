@@ -313,8 +313,8 @@ class TacTuDiChuyen:
             # Đang sang bản đồ của người được theo sau: đi theo trước tấn công / gom quái / nhặt đồ
             yeucauduocchon = self._yeucautheosau
             lydochon = "THEO SAU SANG BẢN ĐỒ KHÁC"
-        elif (self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangcatkho()) and self._yeucautudo:
-            # Đang Đi tới bản đồ / đi giao đồ / cất kho: đi tiếp trước tấn công / gom quái / nhặt đồ
+        elif (self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangcatkho() or self.get_is_sumondichuyen()) and self._yeucautudo:
+            # Đang Đi tới bản đồ / đi giao đồ / cất kho / đi làm sư môn: đi tiếp trước tấn công / gom quái / nhặt đồ
             yeucauduocchon = self._yeucautudo
             lydochon = "ĐI TỚI BẢN ĐỒ"
         elif is_yeucaunhatvatphamuutien:
@@ -994,7 +994,7 @@ class TacTuDiChuyen:
     def _kiemtra_tamdiemdanh(self, x, y):
         # Đang chạy theo lộ trình điểm đánh: mục tiêu phải nằm trong bán kính _bankinhdiemdanh quanh ít nhất 1 điểm đánh của bản đồ hiện tại.
         # Không có điểm đánh nào trên bản đồ này (hoặc không bật lộ trình) thì không giới hạn.
-        if not self._is_tudongdichuyendiemdanhxungquanh or not self._diemdanhxungquanhs:
+        if not self._is_tudongdichuyendiemdanhxungquanh or not self._diemdanhxungquanhs or (self._sumon and self._sumon["chedo"] == "danhquai"):
             return True
         idbandohientai = self.moitruong.get_idbandohientai()
         diemcungbandos = [d for d in self._diemdanhxungquanhs if len(d) >= 3 and d[2] == idbandohientai]
@@ -1028,7 +1028,21 @@ class TacTuDiChuyen:
             self._yeucautudo = self._xulycatkho()
             return
 
-        if not self._is_tudongdichuyendiemdanhxungquanh:
+        # Nhiệm vụ sư môn (tactu_sumon_xq): tự lo đi lại / nói chuyện NPC / bắt yêu quái; Luyện tập, Du lịch thì farm theo lộ trình điểm
+        # đánh như thường (kể cả khi chưa bật ô lộ trình)
+        # Đang mở cửa hàng đọc hàng (sư môn / mua bù): đứng yên tới khi đọc xong
+        self.action_xulymocuahang()
+        if self._mocuahang:
+            self._yeucautudo = None
+            return
+        self.action_ghivitridoituong()
+        if self.get_is_dangsumon():
+            yeucau = self._xulysumon()
+            if not self.get_is_sumonfarm():
+                self._yeucautudo = yeucau
+                return
+
+        if not self._is_tudongdichuyendiemdanhxungquanh and not self.get_is_sumonfarm():
             self._yeucautudo = None
             return
 

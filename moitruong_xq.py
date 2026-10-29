@@ -1499,6 +1499,10 @@ class MoiTruong:
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
         return read_boolean(self.tientrinh, diachicosothongtinnhanvat + DC.NV_CHET)
 
+    def get_danhhieudoituong(self, diachi):
+        # Danh hiệu hiện phía trên tên (NPC cửa hàng các nước: tên riêng "Ô Địch", danh hiệu "Chủ Tiệm Vũ Khí"), "" nếu không có
+        return re.sub(r"\x1b.", "", read_bytes(self.tientrinh, diachi + DC.NV_DANHHIEU, 0x40).split(b"\0")[0].decode("utf-8", "ignore")).strip()
+
     def get_tendoituong(self, diachicosothongtinnhanvat = None):
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
         tendoituong = self._get_tenthucte(diachicosothongtinnhanvat)
@@ -2271,6 +2275,52 @@ class MoiTruong:
         if not 0 < soluachon <= 20:
             return []
         return [read_bytes(self.tientrinh, x + 0x1070 + k * 0xC9, 0xC9).split(b"\0")[0].decode("utf-8", "ignore") for k in range(soluachon)]
+
+    def get_danhsachmucnhiemvu(self):
+        # Các mục của cửa sổ nhiệm vụ ([thông tin game] + TG_NHIEMVU) theo thứ tự hiển thị: [(tên, mô tả)]. Tên mục ở + 0x90, mô tả cùng
+        # thứ tự ở + 0x860 (mỗi mục 1 con trỏ, hết danh sách là con trỏ 0); mục cha (vd "Nhiệm Vụ Sư Môn") không có mô tả, mục con thụt
+        # đầu dòng. Máy chủ tự gửi lại khi nhiệm vụ đổi, cửa sổ không cần mở
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        x = read_int(self.tientrinh, x + DC.TG_NHIEMVU) if x else 0
+        if not x:
+            return []
+        sotoida = 64
+        controtens = struct.unpack("<%dI" % sotoida, read_bytes(self.tientrinh, x + 0x90, sotoida * 4))
+        contromotas = struct.unpack("<%dI" % sotoida, read_bytes(self.tientrinh, x + 0x860, sotoida * 4))
+        mucs = []
+        for controten, contromota in zip(controtens, contromotas):
+            if not controten:
+                break
+            ten = read_bytes(self.tientrinh, controten, 0x80).split(b"\0")[0].decode("utf-8", "ignore")
+            mota = read_bytes(self.tientrinh, contromota, 0x1000).split(b"\0")[0].decode("utf-8", "ignore") if contromota else ""
+            mucs.append((re.sub(r"\x1b.", "", ten), mota))
+        return mucs
+
+    def get_cuahangdangmo(self):
+        # Cửa hàng NPC đang / vừa mở ([thông tin game] + TG_CUAHANG, giữ nguyên sau khi đóng tới lần mở cửa hàng khác):
+        # {"is_danghien": cửa sổ đang hiện (+ 0x108), "hang": [(ô, giá, tên)]}; hàng ở + 0x7D78, mỗi món 0x58 byte: ô + 4 (0 = hết), giá + 8, tên + 0x12.
+        # Mua: "buy <id NPC># <ô> <số lượng> <giá>"
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        x = read_int(self.tientrinh, x + DC.TG_CUAHANG) if x else 0
+        if not x:
+            return None
+        somon = 60
+        dulieu = read_bytes(self.tientrinh, x + 0x7D78, somon * 0x58)
+        hang = []
+        for k in range(somon):
+            mon = dulieu[k * 0x58:(k + 1) * 0x58]
+            o, gia = struct.unpack("<ii", mon[4:12])
+            if o <= 0:
+                break
+            hang.append((o, gia, mon[0x12:].split(b"\0")[0].decode("utf-8", "ignore")))
+        return {"is_danghien": read_boolean(self.tientrinh, x + 0x108), "hang": hang}
+
+    def action_dongcuasocuahang(self):
+        # Đóng cửa sổ cửa hàng như bấm X (cờ đang hiện + 0x108, như cửa sổ kho); danh sách hàng vẫn còn trong bộ nhớ
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        cuahang = read_int(self.tientrinh, x + DC.TG_CUAHANG) if x else 0
+        if cuahang and read_boolean(self.tientrinh, cuahang + 0x108):
+            write_boolean(self.tientrinh, cuahang + 0x108, False)
 
     def set_is_danghiencuasotuychon(self, is_danghiencuasotuychon):
         if self.get_is_danghiencuasotuychon() != is_danghiencuasotuychon:
@@ -3170,6 +3220,18 @@ class MoiTruong:
     def get_tendoituongbaothugiangho(self):
         diachi = self.get_diachicosobaothugiangho()
         return read_string(self.tientrinh, diachi + 0x4F5) if diachi else False
+
+    def get_danhsachtenbaothugiangho(self, soo = 10):
+        # Tên các bảo thú giang hồ đang có (cả con chưa triệu hồi): mỗi ô 0x1670 byte tính từ cùng gốc, id + 0x47C (0 = ô trống), tên + 0x4F5
+        diachi = self.get_diachicosobaothugiangho()
+        if not diachi:
+            return []
+        tens = []
+        for k in range(soo):
+            o = diachi + 0x1670 * k
+            if read_int(self.tientrinh, o + 0x47C) > 0:
+                tens.append(read_bytes(self.tientrinh, o + 0x4F5, 0x20).split(b"\0")[0].decode("utf-8", "ignore"))
+        return tens
 
     def get_dotrungthanhbaothugiangho(self):
         diachi = self.get_diachicosobaothugiangho()

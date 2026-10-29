@@ -32,11 +32,11 @@ CAUHINHMAU = {
     "tenmay": "",
     "phutbaocao": 120,
     "loaisuco": {"chet": True, "bipk": True, "tamngung": True, "giamsat": True, "vatpham": True, "dohiem": True, "dangnhap": True, "giaodo": True,
-                 "catkho": True},
+                 "catkho": True, "sumon": True},
 }
 TENLOAISUCO = {"chet": "chết", "bipk": "bị người chơi đánh", "tamngung": "tạm ngưng", "giamsat": "kẹt / mở lại client", "vatpham": "vật phẩm",
                "dohiem": "nhặt được đồ hiếm (luật túi đồ có 📣)", "dangnhap": "rớt khỏi game / bị đá liên tục (giành tài khoản)",
-               "giaodo": "kết quả giao tiền / đồ", "catkho": "kết quả cất kho"}
+               "giaodo": "kết quả giao tiền / đồ", "catkho": "kết quả cất kho", "sumon": "nhiệm vụ sư môn (xong / kẹt / cần mua tay)"}
 
 # Cùng một tin (khoá) của một tiến trình không gửi lại trong chừng này giây
 GIANCACHTINMACDINH = 120.
@@ -192,7 +192,8 @@ def guitin(noidung, khoa = None, giancach = GIANCACHTINMACDINH, is_html = False)
     return True
 
 
-BIEUTUONGSUCO = {"chet": "💀", "bipk": "⚔️", "tamngung": "🕵️", "giamsat": "🛠", "vatpham": "🎒", "dohiem": "🎁", "giaodo": "📦", "catkho": "🗄"}
+BIEUTUONGSUCO = {"chet": "💀", "bipk": "⚔️", "tamngung": "🕵️", "giamsat": "🛠", "vatpham": "🎒", "dohiem": "🎁", "giaodo": "📦", "catkho": "🗄",
+                 "sumon": "📜"}
 
 
 def guitinmay(loai, noidung, khoa = None, giancach = GIANCACHTINMACDINH):

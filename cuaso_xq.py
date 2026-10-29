@@ -128,6 +128,7 @@ class CuaSo:
         if self.idnguoichoi:
             self.tactu.luuthietlap(self.idnguoichoi)
             self.tactu.luuvitriquai(True)
+            self.tactu._sovitri.luu(is_ngay = True)
         self.thongke.luu(is_tatca = True)
 
         self.main_stop.set()
@@ -269,6 +270,10 @@ class CuaSo:
                     "_trangthaicatkho": self.tactu.get_trangthaicatkho(),
                     "_is_dangcatkho": bool(self.tactu._catkho),
                     "_lichsucatkho": self.tactu._lichsucatkho,
+                    "_trangthaisumon": self.tactu.get_trangthaisumon(),
+                    "_is_dangsumon": self.tactu.get_is_dangsumon(),
+                    "_sumon_npcgiao": self.tactu._sumon_npcgiao,
+                    "_npcgiaosumon": self.tactu._laynpcgiaosumon(),
                     "_thongkephien": self.thongke.get_tomtatphien(),
                     # Ngân lượng mang theo hiện tại (báo cáo Telegram)
                     "nganluong": self.moitruong.get_nganluong(),
@@ -336,6 +341,13 @@ class CuaSo:
                     self.tactu.yeucau_catkho()
                 elif cmd == "huycatkho":
                     self.tactu.huy_catkho()
+                elif cmd == "sumon":
+                    # Nhiệm vụ sư môn (tactu_sumon_xq) bật / tắt từ giao diện
+                    self.tactu.batdau_sumon()
+                elif cmd == "huysumon":
+                    self.tactu.huy_sumon()
+                elif isinstance(cmd, str) and cmd.startswith("set_sumon_npcgiao:"):
+                    self.tactu.thietlap_npcgiaosumon(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("tamngungtuxa:"):
                     # Lệnh /tamdung từ Telegram: tạm ngưng như khi phát hiện ẩn thân (cả tự động đăng nhập cũng chờ), số giây sau dấu ":"
                     self.tactu._batdautamngung(LYDOTAMNGUNGTUXA, float(cmd.split(":", 1)[1]))
