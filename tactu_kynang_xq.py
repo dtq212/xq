@@ -1122,6 +1122,7 @@ class TacTuKyNang:
         is_xoayvongchieu = self.moitruong.get_is_batxoayvongchieu() and not is_muctieulanguoichoi
 
         danhsachuutien = [
+            (VITRIKYNANG_THUCCOT, "sudungkynangmuctieu", lambda: diachithuccot, self._khoangcachsudungkynangtamxa, diachithuccot, True, True),
             # Bảo thú triệu hồi sắp chết (dưới PHANTRAMSINHLUCTETHANTUONG% sinh lực) thì Tế Thần Tướng (120 pháp lực, hồi 180s): hy sinh nó để gọi Thần Tướng
             # Tế Thần Tướng chỉ có từ cấp CAPDOTOITHIEUTETHANTUONG: cấp thấp chưa học mà game vẫn báo ô kỹ năng sẵn sàng nên bị spam liên tục
             (VITRIKYNANG_TETHANTUONG, "sudungkynangkhongmuctieu", lambda: is_cobaothusaphet and self.moitruong.get_capdonhanvat() >= CAPDOTOITHIEUTETHANTUONG, 0, None, True, True),
@@ -1143,7 +1144,6 @@ class TacTuKyNang:
             (VITRIKYNANG_THANTUEPHAPCHU, "sudungkynangkhongmuctieu", lambda: not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THANTUEPHAPCHU,), macdinh = True, is_hieuungcoloi = 1), 0, None, True, False),
 
             (VITRIKYNANG_AMMANHAPTHE, "sudungkynangmuctieu", lambda: diachiammanhapthe, self._khoangcachsudungkynangtamxa, diachiammanhapthe, True, True),
-            (VITRIKYNANG_THUCCOT, "sudungkynangmuctieu", lambda: diachithuccot, self._khoangcachsudungkynangtamxa, diachithuccot, True, True),
             (VITRIKYNANG_THUCGIAP, "sudungkynangmuctieu", lambda: diachithucgiap, self._khoangcachsudungkynangtamxa, diachithucgiap, True, True),
             (VITRIKYNANG_THUCTAM, "sudungkynangmuctieu", lambda: diachithuctam, self._khoangcachsudungkynangtamxa, diachithuctam, True, True),
 

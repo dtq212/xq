@@ -98,7 +98,8 @@ THUOCSAPXEPs = (NGANHANHTU, TUTAMDON, KHIMACHDON, TIEUDAOTAN, LONGTIENTHAO, THIL
 # Đá không được "move" đè lên ô có món khác: game tưởng là muốn đập / tinh luyện đá vào đồ đó. Đá = loại ［Tinh luyện］ (Kim / Thổ /
 # Ám Tinh Thạch...), tên có chữ trong DAKHONGDEDOs, hoặc tên có "Thạch" mà mô tả không ghi loại (cho chắc). Món có loại khác như
 # Đại Huyết Thạch ［Có thể sử dụng］, Hồng Bảo Thạch Hạng Liên ［Hạng Liên］ thì không phải đá. Đổi chỗ thì chuyển món kia sang ô của đá
-DAKHONGDEDOs = ("Đoạn Thạch", "Linh Thạch", "Tinh Thạch")
+# Ngự Thạch (Thổ Ngự Thạch cấp 1...) cũng đập vào đồ như Linh Thạch dù mô tả ghi loại khác
+DAKHONGDEDOs = ("Đoạn Thạch", "Linh Thạch", "Tinh Thạch", "Ngự Thạch")
 # Loại vật phẩm = chữ trong cặp ［］ đầu tiên của mô tả (sau dòng tên), vd ［Vũ Khí］［Nón］［Tinh luyện］［Có thể sử dụng］[Pháp Bảo]
 LOAIVATPHAM_COTHESUDUNG = "Có thể sử dụng"
 LOAIVATPHAMDAs = ("Tinh luyện",)
@@ -259,7 +260,15 @@ VITRIPHIMTATKYNANG_THUCANBAOTHU = VITRIPHIMTATKYNANG_X
 # Bộ đệm vòng hook trò chuyện (MoiTruong.action_thietlaphooknoidungtrochuyen): số ô (lũy thừa của 2, asm lấy dư bằng and) và số
 # byte mỗi ô (dòng dài hơn bị cắt)
 SOLUONGDONGTROCHUYEN = 64
-KICHTHUOCDONGTROCHUYEN = 128
+# Bang phái người chơi khác hỏi bằng "desc user <ID>" (máy chủ trả các dòng " Danh tính: ...", " Bang phái: ..." vào khung tin hệ thống):
+# mỗi lần hỏi cách nhau GIANCACHHOIBANGPHAI giây, chờ trả lời tối đa THOIGIANCHOTRALOIBANGPHAI giây, đã biết thì hỏi lại sau THOIGIANLAMMOIBANGPHAI giây
+GIANCACHHOIBANGPHAI = 1.5
+THOIGIANCHOTRALOIBANGPHAI = 3.
+THOIGIANLAMMOIBANGPHAI = 600.
+# Máy chủ chỉ trả lời "desc user" khi người đó cách mình trong chừng này ô (người dùng thấy), xa hơn thì chờ lại gần mới hỏi
+KHOANGCACHHOIBANGPHAI = 12.
+# Game gửi cả khối nhiều dòng (nối "\n", tới 0x640 byte) vào 1 tin, vd trả lời "desc user": ô 128 byte cắt mất dòng Bang phái
+KICHTHUOCDONGTROCHUYEN = 512
 
 VITRIKYNANG_DONDAOTRUCNHAP = 2210
 VITRIKYNANG_NGHENHPHONGTRAM = 2211
@@ -1238,7 +1247,6 @@ NHANVATTODOITUDONGs_LIST = [
 ]
 
 TENMUCTIEUKHONGTANCONGs = (*BAOTHUVATPHAMs, "Tần QuốcBinh Sĩ", "Triệu QuốcBinh Sĩ", QUYTOT, THIENBINH, DAUBINH, "CAVE1", "CAVE.2", 'Đỗ Độc', 'Ôn Thần', "Liễu Vọng Tháp")
-TENNGUOICHOICUNGBANGs = tuple()
 TENBOSSBUFFMAOSONs = ("Mã Quỷ", "Lương Hưng", "Yến Thập Tam", "Tư Tà", "Thủ Lĩnh Thành Kiều", TROMBAOPHITAC, "Bảo Hộp Phi Tặc",
                       "Tướng Quân Dũng", "Lăng Mộ Tà Linh", "Đường Truy", "Thế Công Minh", "Thạch Tướng Quân", "Cơ Quan Tướng Quân",
                       "Hào Quật")

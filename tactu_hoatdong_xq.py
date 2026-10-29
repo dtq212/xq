@@ -334,6 +334,11 @@ class TacTuHoatDong:
                 self._thoidiemdoimaupkgannhat = time.time()
                 self.action_batpk()
 
+    def action_tudonghoibangphai(self):
+        # Đang PK bang: hỏi bang người chơi xung quanh ("desc user") để get_is_cungbang so được; chưa biết thì coi như cùng bang, không đánh
+        if self.moitruong.get_idmaupk() == MAUPK_BANG:
+            self.moitruong.action_hoibangphai()
+
     def action_batpk(self):
         self.moitruong.action_doimaupk(MAUPK_BANG)
 

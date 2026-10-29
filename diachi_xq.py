@@ -63,6 +63,7 @@ CHUKY = {
     "VA_TUTHEDELAY1": ("ma", "83 F8 06 74 0A 83 F8 09 74 05 83 F8 07 75 16 C7 86 B8 11 00 00 0B 00 00 00", 15, 0x1afe3),  # mov [esi+0x11B8], 0x0B (tư thế delay sau tấn công)
     "VA_TUTHEDELAY2": ("ma", "3B C2 74 0A 83 F8 09 74 05 83 F8 07 75 16 C7 86 B8 11 00 00 0B 00 00 00", 14, 0x1b377),  # mov [esi+0x11B8], 0x0B (tư thế delay sau tấn công)
     "HOOK_TROCHUYEN": ("ma", "55 8B 8A D8 FD AD 00", 1, 0x5964),  # chỗ hook đọc nội dung trò chuyện (6 byte)
+    "HOOK_TINHETHONG": ("ma", "50 55 8B 89 64 FD AD 00", 2, 0x2b63),  # chỗ hook gói 0x3E chỉ in vào khung tin hệ thống (trả lời "desc user"), 6 byte
     "TG_TIMDUONG": ("hang", [('33 F6 39 B2 ?? ?? ?? ?? 75 42', 4), ('8B 1D ?? ?? ?? ?? 8B 93 ?? ?? ?? ?? 3B D6', 8), ('C7 05 ?? ?? ?? ?? 00 00 00 00 8B 96 ?? ?? ?? ??', 12)], None, 0xadfdec),  # cấu trúc tìm đường / bản đồ
     "TG_HANHTRANG": ("hang", [('8A 55 06 8B 0D ?? ?? ?? ?? 52 50 8B 89 ?? ?? ?? ??', 13), ('8B 88 ?? ?? ?? ?? 89 5C 24 18', 2), ('8A 55 02 51 8B 88 ?? ?? ?? ??', 6)], None, 0xadfd78),  # hành trang (id, tên, số lượng, mô tả vật phẩm)
     "TG_KYNANG": ("hang", [('83 C4 1C 8B 15 ?? ?? ?? ?? 8B 82 ?? ?? ?? ??', 11), ('83 C5 04 F3 AB 8B 15 ?? ?? ?? ?? 68 F3 01 00 00 55 8B 82 ?? ?? ?? ??', 19), ('8B B9 ?? ?? ?? ?? 8B 84 2F 60 FF FF FF', 2)], None, 0xadfe18),  # bảng kỹ năng

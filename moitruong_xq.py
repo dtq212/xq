@@ -241,6 +241,13 @@ class MoiTruong:
         self.thoidiembaothuxuathiengannhat_map = {}
 
         self._lichsutrochuyen5s = []
+        # Bang phái người chơi (action_hoibangphai): ID người chơi -> (tên bang, "" nếu không có bang, thời điểm biết); tên -> ID để tra chủ bảo thú
+        self._bangphainguoichoi_map = {}
+        self._idnguoichoitheoten_map = {}
+        # (ID, tên, thời điểm gửi) lần "desc user" đang chờ trả lời; tên người chơi đang gom dòng trả lời (sau dòng "Danh tính")
+        self._yeucaubangphai = None
+        self._tendanggomthongtin = None
+        self._thoidiemhoibangphaiganhat = 0.
         # Bộ đếm dòng của bộ đệm vòng trò chuyện (action_thietlaphooknoidungtrochuyen) đã đọc tới đâu
         self._demdongtrochuyendadoc = 0
 
@@ -249,6 +256,7 @@ class MoiTruong:
 
         self._diachibodemnoidungtrochuyen = False
         self._diachihamkichbannoidungtrochuyen = False
+        self._diachihamkichbantinhethong = False
 
     def __del__(self):
         def safe_free_old(flag_name, addr_name):
@@ -263,6 +271,7 @@ class MoiTruong:
         if getattr(self, "_is_dasetupactionthietlaphooknoidungtrochuyen", False):
             safe_free_old("_is_dasetupactionthietlaphooknoidungtrochuyen", "_diachibodemnoidungtrochuyen")
             safe_free_old("_is_dasetupactionthietlaphooknoidungtrochuyen", "_diachihamkichbannoidungtrochuyen")
+            safe_free_old("_is_dasetupactionthietlaphooknoidungtrochuyen", "_diachihamkichbantinhethong")
 
         mem_map = [
             ("_is_dasetupautoassemblekhoitaothongtinbando", "_diachiautoassemblekhoitaothongtinbando"),
@@ -835,57 +844,63 @@ class MoiTruong:
         time.sleep(0.1)
 
     def action_thietlaphooknoidungtrochuyen(self):
-        addr_at_hook = self.diachixq + DC.HOOK_TROCHUYEN
-        addr_return = self.diachixq + DC.HOOK_TROCHUYEN + 6
+        # 2 chỗ hook cùng chép vào 1 bộ đệm vòng: tin khung trò chuyện (HOOK_TROCHUYEN) và gói 0x3E game chỉ in vào khung tin hệ thống
+        # (HOOK_TINHETHONG, vd trả lời "desc user": " Danh tính / Bang phái ..."), cả 2 đều có dòng chữ ở ebp
+        diachihooks = (
+            (self.diachixq + DC.HOOK_TROCHUYEN, f"mov ecx, [edx + {hex(DC.TG_TROCHUYEN)}]", "_diachihamkichbannoidungtrochuyen"),
+            (self.diachixq + DC.HOOK_TINHETHONG, "mov ecx, [ecx + 0xadfd64]", "_diachihamkichbantinhethong"),
+        )
 
         if not self._is_dasetupactionthietlaphooknoidungtrochuyen:
             # Bộ đệm vòng: [+0] bộ đếm số dòng đã ghi, rồi SOLUONGDONGTROCHUYEN ô x KICHTHUOCDONGTROCHUYEN byte. Trước đây chỉ 1 ô, dòng sau
             # đè dòng trước nên nhiều tin trong cùng 1 vòng làm mới (dame, nhặt đồ, bảo thú...) thì bot chỉ thấy tin cuối
             self._diachibodemnoidungtrochuyen = self.tientrinh.allocate(4 + SOLUONGDONGTROCHUYEN * KICHTHUOCDONGTROCHUYEN)
             write_int(self.tientrinh, self._diachibodemnoidungtrochuyen, 0)
-            self._diachihamkichbannoidungtrochuyen = self.tientrinh.allocate(256)
 
             ks = Ks(KS_ARCH_X86, KS_MODE_32)
+            for addr_at_hook, lenhgoc, tenbien in diachihooks:
+                diachikichban = self.tientrinh.allocate(256)
+                setattr(self, tenbien, diachikichban)
+                # Chép dòng (ebp) vào ô [bộ đếm % số ô], chép xong mới tăng bộ đếm để bot không đọc ô đang chép dở; rồi chạy lại lệnh gốc bị đè
+                asm_script = f"""
+                    pushad
+                    mov ebx, {self._diachibodemnoidungtrochuyen}
+                    mov eax, dword ptr [ebx]
+                    and eax, {SOLUONGDONGTROCHUYEN - 1}
+                    imul eax, eax, {KICHTHUOCDONGTROCHUYEN}
+                    lea edi, [ebx + eax + 4]
+                    mov esi, ebp
+                    mov ecx, {KICHTHUOCDONGTROCHUYEN - 1}
+                loop_copy:
+                    mov al, byte ptr [esi]
+                    mov byte ptr [edi], al
+                    test al, al
+                    jz end_copy
+                    inc esi
+                    inc edi
+                    dec ecx
+                    jnz loop_copy
+                    mov byte ptr [edi], 0
+                end_copy:
+                    inc dword ptr [ebx]
+                    popad
+                    {lenhgoc}
+                    push {addr_at_hook + 6}
+                    ret
+                """
 
-            # Chép dòng (ebp) vào ô [bộ đếm % số ô], chép xong mới tăng bộ đếm để bot không đọc ô đang chép dở
-            asm_script = f"""
-                pushad
-                mov ebx, {self._diachibodemnoidungtrochuyen}
-                mov eax, dword ptr [ebx]
-                and eax, {SOLUONGDONGTROCHUYEN - 1}
-                imul eax, eax, {KICHTHUOCDONGTROCHUYEN}
-                lea edi, [ebx + eax + 4]
-                mov esi, ebp
-                mov ecx, {KICHTHUOCDONGTROCHUYEN - 1}
-            loop_copy:
-                mov al, byte ptr [esi]
-                mov byte ptr [edi], al
-                test al, al
-                jz end_copy
-                inc esi
-                inc edi
-                dec ecx
-                jnz loop_copy
-                mov byte ptr [edi], 0
-            end_copy:
-                inc dword ptr [ebx]
-                popad
-                mov ecx, [edx + {hex(DC.TG_TROCHUYEN)}]
-                push {addr_return}
-                ret
-            """
+                encoding, count = ks.asm(asm_script)
+                if not encoding:
+                    raise Exception("Lỗi compile ASM Keystone")
 
-            encoding, count = ks.asm(asm_script)
-            if not encoding:
-                raise Exception("Lỗi compile ASM Keystone")
-
-            write_bytes(self.tientrinh, self._diachihamkichbannoidungtrochuyen, bytes(encoding), len(encoding))
+                write_bytes(self.tientrinh, diachikichban, bytes(encoding), len(encoding))
 
             self._is_dasetupactionthietlaphooknoidungtrochuyen = True
 
-        relative_offset = self._diachihamkichbannoidungtrochuyen - (addr_at_hook + 5)
-        patch_bytes = b"\xE9" + relative_offset.to_bytes(4, byteorder = "little", signed = True) + b"\x90"
-        write_bytes(self.tientrinh, addr_at_hook, patch_bytes, len(patch_bytes))
+        for addr_at_hook, _, tenbien in diachihooks:
+            relative_offset = getattr(self, tenbien) - (addr_at_hook + 5)
+            patch_bytes = b"\xE9" + relative_offset.to_bytes(4, byteorder = "little", signed = True) + b"\x90"
+            write_bytes(self.tientrinh, addr_at_hook, patch_bytes, len(patch_bytes))
 
         return True
 
@@ -1383,6 +1398,7 @@ class MoiTruong:
 
         for noidungtrochuyen in self._docdongtrochuyenmois():
             self._lichsutrochuyen5s.append((now, noidungtrochuyen))
+            self._xulydongthongtinnguoichoi(noidungtrochuyen)
 
         self._lichsutrochuyen5s = [msg for msg in self._lichsutrochuyen5s if now - msg[0] <= 5.0]
 
@@ -1602,12 +1618,92 @@ class MoiTruong:
             x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
             if x: write_int(self.tientrinh, x + DC.TG_MAUPK, idmaupk)
 
-    def get_tenbang(self, diachicosothongtinnhanvat = None):
+    def get_ngoaihieu(self, diachicosothongtinnhanvat = None):
+        # Ngoại hiệu hiện trên tên người chơi (+0x1134, vd "2VIP"), bỏ mã màu ESC + chữ cái / [ ] như game (xq + 0x22010). Không phải tên bang
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
-        return read_string(self.tientrinh, diachicosothongtinnhanvat + 0x1136)
+        return re.sub(r"\x1b[a-zA-Z\[\]]", "", read_string(self.tientrinh, diachicosothongtinnhanvat + 0x1134) or "").strip()
+
+    def get_bangphai(self, idnguoichoi):
+        # Tên bang của người chơi theo lần "desc user" gần nhất: "" không có bang, None chưa biết
+        thongtin = self._bangphainguoichoi_map.get(idnguoichoi)
+        return thongtin[0] if thongtin else None
 
     def get_is_cungbang(self, diachicosothongtinnhanvat):
-        return self.get_idnguoichoi(diachicosothongtinnhanvat) in laynhanvattodoitudongs()
+        # So bang của mình với bang người đó (hỏi qua "desc user", action_hoibangphai). Chưa biết bang của mình hoặc của họ thì coi như cùng
+        # bang để không đánh nhầm; mình không có bang thì không ai cùng bang
+        return self._is_cungbangtheoid(self.get_idnguoichoi(diachicosothongtinnhanvat))
+
+    def get_is_cungbangtheoten(self, tennguoichoi):
+        # Như get_is_cungbang, dùng khi người đó không ở gần (chủ bảo thú): tra ID theo tên đã gặp trong trả lời "desc user"
+        return self._is_cungbangtheoid(self._idnguoichoitheoten_map.get(tennguoichoi))
+
+    def _is_cungbangtheoid(self, idnguoichoi):
+        bangminh = self.get_bangphai(self.get_idnguoichoi())
+        bangho = self.get_bangphai(idnguoichoi) if idnguoichoi else None
+        if bangminh is None or bangho is None:
+            return True
+        return bool(bangminh) and bangminh == bangho
+
+    def action_hoibangphai(self):
+        # Gửi "desc user <ID>" (game gửi lệnh này khi giữ Ctrl bấm vào người chơi, xq + 0x9967; "desc char" là quan sát, người kia nhận tin
+        # "có ai đó đang lén quan sát bạn") cho mình rồi cho người chơi khác nhóm xung quanh
+        # chưa biết bang / đã lâu; mỗi lần 1 người, chờ trả lời (_xulydongthongtinnguoichoi) hoặc hết THOIGIANCHOTRALOIBANGPHAI mới hỏi tiếp
+        thoidiemhientai = time.time()
+        if thoidiemhientai - self._thoidiemhoibangphaiganhat < GIANCACHHOIBANGPHAI:
+            return
+        if self._yeucaubangphai and thoidiemhientai - self._yeucaubangphai[2] < THOIGIANCHOTRALOIBANGPHAI:
+            return
+        self._yeucaubangphai = None
+        cans = [self.get_diachicosothongtinnhanvat1()] + [diachi for diachi in self._get_diachidoituongxungquanhs(is_nguoichoi = True)
+                                                          if self.get_idloainhanvat(diachi) == LOAIMUCTIEU_NGUOICHOIKHACNHOM
+                                                          and self.get_khoangcach(diachi) <= KHOANGCACHHOIBANGPHAI]
+        for diachi in cans:
+            idnguoichoi = self.get_idnguoichoi(diachi)
+            if not idnguoichoi or idnguoichoi < 0:
+                continue
+            thongtin = self._bangphainguoichoi_map.get(idnguoichoi)
+            if thongtin and thoidiemhientai - thongtin[1] < THOIGIANLAMMOIBANGPHAI:
+                continue
+            if self.action_thucthicaulenh("desc user {}".format(idnguoichoi), douutien = DOUUTIEN_THAP):
+                self._yeucaubangphai = (idnguoichoi, self.get_tendoituong(diachi), thoidiemhientai)
+                self._thoidiemhoibangphaiganhat = thoidiemhientai
+            return
+
+    def _xulydongthongtinnguoichoi(self, noidung):
+        # Trả lời "desc user": " Danh tính: <tên> ( .. )", " Môn phái: ...", " Quốc gia: ...", " Bang phái: <tên bang>", " Ngoại hiệu: ...",
+        # " Điểm PK: ..." cả khối nối "\n" trong 1 tin (xq + 0xC9AF0 nhận cả khối rồi mới tách dòng). Không có dòng Bang phái tới Ngoại hiệu /
+        # Điểm PK thì coi như không có bang
+        for dong in noidung.split("\n"):
+            dong = dong.strip()
+            # Đầu khối còn vài byte điều khiển trước "Danh tính" nên tìm, không khớp từ đầu
+            m = re.search(r"Danh tính:\s*(.+?)\s*\(\s*\d+\s*\)$", dong)
+            if m:
+                self._tendanggomthongtin = m.group(1).strip()
+                continue
+            ten = self._tendanggomthongtin
+            if not ten:
+                continue
+            if dong.startswith("Bang phái:"):
+                self._ghibangphai(ten, dong.split(":", 1)[1].strip())
+            elif dong.startswith(("Ngoại hiệu:", "Điểm PK:")):
+                self._ghibangphai(ten, "")
+
+    def _ghibangphai(self, ten, tenbang):
+        self._tendanggomthongtin = None
+        yeucau = self._yeucaubangphai
+        if yeucau and yeucau[1] == ten:
+            idnguoichoi = yeucau[0]
+            self._yeucaubangphai = None
+        else:
+            # Người chơi tự xem thông tin người khác (chuột): tìm ID theo tên trong số người chơi xung quanh
+            idnguoichoi = next((self.get_idnguoichoi(diachi) for diachi in [self.get_diachicosothongtinnhanvat1()] + list(self._get_diachidoituongxungquanhs(is_nguoichoi = True))
+                                if self.get_tendoituong(diachi) == ten), None)
+        if not idnguoichoi:
+            return
+        if self.get_bangphai(idnguoichoi) != tenbang:
+            self._inlog(f"[BANG PHÁI] {ten} ({idnguoichoi}): {tenbang or 'không có bang'}")
+        self._bangphainguoichoi_map[idnguoichoi] = (tenbang, time.time())
+        self._idnguoichoitheoten_map[ten] = idnguoichoi
 
     def get_idtrangthaichuot(self):
         x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
@@ -2020,11 +2116,14 @@ class MoiTruong:
                     return False
                 tenchunhan = self.get_tenchunhan(diachicosothongtinnhanvat)
                 if tenchunhan:
-                    if tenchunhan == self.get_tendoituong() or tenchunhan in TENNGUOICHOICUNGBANGs:
+                    if tenchunhan == self.get_tendoituong():
                         return False
                     diachicosothongtinnhanvatchunhan = self.action_timkiemnhanvat(tennhanvat = tenchunhan)
                     if diachicosothongtinnhanvatchunhan:
                         return self.get_is_cothetancong(diachicosothongtinnhanvatchunhan)
+                    # Chủ không ở gần: chế độ bang thì tra bang theo tên (chưa biết thì coi như cùng bang, không đánh)
+                    if idmaupk == MAUPK_BANG and self.get_is_cungbangtheoten(tenchunhan):
+                        return False
 
         # Người chơi đang mộng du (Thôi Miên Thuật chỉ dùng lên người chơi) thì không tấn công được, đang Hôn Mê thì đánh vào là tỉnh lại:
         # bỏ qua để chọn mục tiêu khác. Quái không bị hai hiệu ứng này nên khỏi đọc bảng hiệu ứng

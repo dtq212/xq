@@ -296,6 +296,23 @@
       "ruong": 0,
       "giulai": 0,
       "ghichu": ""
+    },
+    {
+      "bat": true,
+      "ten": [
+        "Cam Thảo",
+        "Bạch Kỳ",
+        "Đông Trùng Thảo",
+        "Thục Địa",
+        "Bột Sơn Sâm",
+        "Tử Sâm Đơn"
+      ],
+      "tenchua": [],
+      "loai": [],
+      "mota": [],
+      "ruong": 0,
+      "giulai": 0,
+      "ghichu": ""
     }
   ],
   "is_catkhosauban": true
