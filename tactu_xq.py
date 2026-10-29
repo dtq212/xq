@@ -17,11 +17,13 @@ from tactu_hoatdong_xq import TacTuHoatDong
 from tactu_giaodo_xq import TacTuGiaoDo
 from tactu_catkho_xq import TacTuCatKho
 from tactu_sumon_xq import TacTuSuMon
+from tactu_langlyson_xq import TacTuLangLySon
 from nhiemvu_xq import SoVitri
 
 
 # Các nhóm việc nằm ở các file tactu_*_xq.py (mixin), TacTu giữ trạng thái (__init__), lưu / nạp thiết lập và các lệnh bật / tắt
-class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu, TacTuHoatDong, TacTuGiaoDo, TacTuCatKho, TacTuSuMon):
+class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu, TacTuHoatDong, TacTuGiaoDo, TacTuCatKho, TacTuSuMon,
+            TacTuLangLySon):
     def __init__(self, moitruong: MoiTruong):
         self._thoidiemhettangbaodogannhat = 0.
         self._thoidiemmuaautogannhat = 0.
@@ -110,6 +112,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._idbandotheosaugannhat = None
         self._thoidiemdoibandotheosau = 0.
         self._thoidiemphutoibandogannhat = 0.
+        # Đang nói chuyện NPC để sang bản đồ khác (bando_xq.LOIDINPC_MAP, vd. vào Lăng Ly Sơn): {"idbando", "manpc", "luc", "dachon"} hoặc None
+        self._hoithoailoidinpc = None
         # Đi tới bản đồ (thietlap_ditoibando): id bản đồ đích, 0 = không đi. Bước di chuyển tiếp theo (mô tả, lúc cập nhật) cho giao diện
         self._idbandocandi = 0
         # Hàng chờ giao tiền / đồ (tactu_giaodo_xq): [yêu cầu giaodo_xq kèm trạng thái]
@@ -126,6 +130,12 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._sumon_npcgiao = ""
         self._sovitri = SoVitri()
         self._thoidiemghivitridoituong = 0.
+        # Tự động đi Lăng Ly Sơn (tactu_langlyson_xq): việc đang làm (None = không), kết quả lần gần nhất cho giao diện
+        self._langlyson = None
+        self._ketqualanglyson = ""
+        # Thành viên theo sau: mã thưởng Lăng Ly Sơn đã tự lĩnh (báo trưởng nhóm qua shared_data), việc đang lĩnh dở (None = không)
+        self._khoathuonglanglysondalanh = ""
+        self._lanhthuonglanglyson = None
         # Mở cửa hàng để đọc hàng (tactu_sumon_xq.batdau_mocuahang): việc đang làm (None = không), kết quả theo (bản đồ, tên NPC);
         # Mua bù: lần mở cửa hàng gần nhất theo NPC, các lệch ô / giá giữa luật và cửa hàng đã báo
         self._mocuahang = None

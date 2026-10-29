@@ -274,6 +274,12 @@ class CuaSo:
                     "_is_dangsumon": self.tactu.get_is_dangsumon(),
                     "_sumon_npcgiao": self.tactu._sumon_npcgiao,
                     "_npcgiaosumon": self.tactu._laynpcgiaosumon(),
+                    "_trangthailanglyson": self.tactu.get_trangthailanglyson(),
+                    "_is_danglanglyson": self.tactu.get_is_danglanglyson(),
+                    # Lăng Ly Sơn: trưởng nhóm báo mã thưởng vòng vừa xong, thành viên báo mã đã tự lĩnh (tactu_langlyson_xq)
+                    "_khoathuonglanglyson": self.tactu.get_khoathuonglanglyson(),
+                    "_khoathuonglanglysondalanh": self.tactu._khoathuonglanglysondalanh,
+                    "_langlysonchothanhvien": self.tactu.get_is_langlysonchothanhvien(),
                     "_thongkephien": self.thongke.get_tomtatphien(),
                     # Ngân lượng mang theo hiện tại (báo cáo Telegram)
                     "nganluong": self.moitruong.get_nganluong(),
@@ -346,6 +352,11 @@ class CuaSo:
                     self.tactu.batdau_sumon()
                 elif cmd == "huysumon":
                     self.tactu.huy_sumon()
+                elif cmd == "langlyson":
+                    # Tự động đi Lăng Ly Sơn (tactu_langlyson_xq) bật / tắt từ giao diện
+                    self.tactu.batdau_langlyson()
+                elif cmd == "huylanglyson":
+                    self.tactu.huy_langlyson()
                 elif isinstance(cmd, str) and cmd.startswith("set_sumon_npcgiao:"):
                     self.tactu.thietlap_npcgiaosumon(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("tamngungtuxa:"):

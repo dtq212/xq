@@ -1368,6 +1368,38 @@ class GiaoDienHienThi:
                  fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(560)).grid(row = 4, column = 0, sticky = tk.W, pady = (6, 0))
         self._hwndsumonhienthi = None
 
+        # Tự động đi Lăng Ly Sơn (tactu_langlyson_xq) cho nhân vật đang chọn
+        nhom = self._taonhom(tab, "Phó bản Lăng Ly Sơn (nhân vật đang chọn)")
+        self.btn_langlyson = ttk.Button(nhom, text = "🏯 Bắt đầu Lăng Ly Sơn", command = self._battatlanglyson)
+        self.btn_langlyson.grid(row = 0, column = 0, sticky = tk.W)
+        self.lbl_langlyson = tk.Label(nhom, text = "", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(560))
+        self.lbl_langlyson.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
+        tk.Label(nhom, text = "Bật ở nhân vật trưởng nhóm, các thành viên bật Theo sau (tự nói chuyện NPC vào / qua tầng theo). Mỗi vòng: "
+                              "Thuý Hoa Sơn → Đào Vong Khổ Dịch vào Tầng Trên (đánh Tướng Quân Dũng, khởi động Cơ Quan Thạch, Cơ Quan Thạch Sư "
+                              "sang tầng) → Tầng Dưới (Đường Truy, Thế Công Minh, Thạch Tướng Quân, Hào Quật, Lăng Mộ Thạch Sư) → Thư Phòng "
+                              "(Cơ Quan Tướng Quân) → Hồi Thành Phù ra, Đào Vong Khổ Dịch lĩnh thưởng → giải tán tổ đội, chờ Tổ đội tự động "
+                              "lập nhóm mới rồi đi vòng sau, tới khi bấm dừng.",
+                 fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(560)).grid(row = 2, column = 0, sticky = tk.W, pady = (6, 0))
+
+    def _battatlanglyson(self):
+        hwnd = self.get_selected_hwnd()
+        if not hwnd:
+            from tkinter import messagebox
+            messagebox.showwarning("Lăng Ly Sơn", "Chọn một nhân vật trong danh sách trước", parent = self.root)
+            return
+        info = self.shared_data.get(hwnd) or {}
+        self.command_dict[int(hwnd)] = "huylanglyson" if info.get("_is_danglanglyson") else "langlyson"
+
+    def _capnhatlanglyson(self):
+        hwnd = self.get_selected_hwnd()
+        info = (self.shared_data.get(hwnd) or {}) if hwnd else {}
+        chunut = "⏹ Dừng Lăng Ly Sơn" if info.get("_is_danglanglyson") else "🏯 Bắt đầu Lăng Ly Sơn"
+        if self.btn_langlyson.cget("text") != chunut:
+            self.btn_langlyson.config(text = chunut)
+        chu = info.get("_trangthailanglyson") or ""
+        if self.lbl_langlyson.cget("text") != chu:
+            self.lbl_langlyson.config(text = chu)
+
     def _battatsumon(self):
         hwnd = self.get_selected_hwnd()
         if not hwnd:
@@ -1877,6 +1909,7 @@ class GiaoDienHienThi:
             self._capnhatthongke()
             self._capnhatgiaodo()
             self._capnhatsumon()
+            self._capnhatlanglyson()
             # Nội dung có thể cao lên/thấp xuống (dòng tạm ngưng, danh sách tài khoản...) mà Canvas không tự biết
             for tabcuon in self._tabcuons:
                 self._capnhatcuontab(*tabcuon)

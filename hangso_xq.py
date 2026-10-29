@@ -828,6 +828,10 @@ TANQUOC = [(136, 81, 50), (161, 92, 50), (185, 53, 50), (206, 71, 50), (169, 92,
 SOQUOC = [(105, 167, 60), (116, 130, 60), (141, 158, 60), (140, 118, 60), (168, 128, 60), (159, 96, 60), (193, 107, 60), (176, 67, 60), (217, 58, 60), (214, 92, 60), (213, 113, 60), (236, 134, 60), (259, 156, 60), (299, 172, 60), (324, 156, 60), (312, 125, 60), (296, 105, 60), (275, 90, 60), (229, 92, 60), (220, 61, 60), (203, 100, 60), (175, 70, 60), (180, 108, 60), (182, 127, 60), (155, 98, 60), (158, 143, 60), (136, 120, 60), (116, 122, 60), (85, 153, 60), (109, 162, 60), (133, 163, 60)]
 
 YENQUOC = [(355, 147, 70), (331, 129, 70), (327, 165, 70), (307, 148, 70), (291, 178, 70), (293, 197, 70), (270, 180, 70), (240, 158, 70), (221, 137, 70), (224, 78, 70), (205, 53, 70), (184, 92, 70), (187, 133, 70), (160, 146, 70), (129, 173, 70), (105, 193, 70), (111, 163, 70), (139, 145, 70), (128, 144, 70), (110, 141, 70), (88, 133, 70), (74, 127, 70), (69, 130, 70), (50, 151, 70), (84, 115, 70), (106, 102, 70), (129, 98, 70), (142, 88, 70), (139, 89, 70), (133, 98, 70), (102, 98, 70), (82, 119, 70)]
+# Điểm đi vòng ngoài thành 7 nước (đi được hết, không lọt vào chỗ kẹt): dùng khi đi khắp bản đồ tìm đối thủ (Truy Bắt Thích Khách /
+# Truy Sát Phản Đồ). id bản đồ -> [(x, y), ...]
+DIEMNGOAITHANH_MAP = {idbando: [(x, y) for x, y, _ in diems] for idbando, diems in ((BANDO_TEQUOC, TEQUOC), (BANDO_HANQUOC, HANQUOC),
+    (BANDO_TRIEUQUOC, TRIEUQUOC), (BANDO_NGUYQUOC, NGUYQUOC), (BANDO_TANQUOC, TANQUOC), (BANDO_SOQUOC, SOQUOC), (BANDO_YENQUOC, YENQUOC))}
 
 TRIEUTRUONGTHANH2 = [(52, 82, 32), (63, 92, 32), (76, 104, 32), (90, 112, 32), (104, 122, 32), (116, 133, 32), (129, 142, 32), (144, 150, 32), (162, 164, 32), (176, 156, 32), (191, 145, 32), (206, 136, 32), (218, 126, 32), (230, 118, 32)]
 TANTRUONGTHANH2 = [(232, 111, 52), (219, 102, 52), (205, 90, 52), (192, 80, 52), (176, 81, 52), (162, 94, 52), (149, 106, 52), (134, 116, 52), (118, 128, 52), (98, 141, 52), (84, 131, 52), (67, 121, 52), (51, 106, 52), (29, 92, 52)]
@@ -1083,7 +1087,8 @@ DIEMDENCHUDICHTRAM_MAP = {
     BANDO_TEQUOC: laytenbandogame(BANDO_TEQUOC),
     BANDO_HANQUOC: laytenbandogame(BANDO_HANQUOC),
     BANDO_TRIEUQUOC: laytenbandogame(BANDO_TRIEUQUOC),
-    BANDO_NGUYQUOC: laytenbandogame(BANDO_NGUYQUOC),
+    # Menu / dữ liệu game viết "Nguỵ" (dấu kiểu cũ), gửi "Ngụy" thì Dịch Trạm không nhận
+    BANDO_NGUYQUOC: "Nguỵ Quốc",
     BANDO_TANQUOC: laytenbandogame(BANDO_TANQUOC),
     BANDO_SOQUOC: laytenbandogame(BANDO_SOQUOC),
     BANDO_YENQUOC: laytenbandogame(BANDO_YENQUOC),
@@ -1120,6 +1125,24 @@ def layphuongandichuyen(idbando):
     return _phuongandichuyen_cache[idbando]
 
 
+# Đường người dùng chỉ là nhanh nhất (đếm cổng không ra): (bản đồ đích, vùng đích (x, y) -> bool, bản đồ phù Tân Thủ Tiên Cô tới).
+# Cấm Vệ Quân (phía tây Chu Quốc, Thân Binh (165, 79)): Tân Thủ Tiên Cô phù Thủ Dương Sơn (81) rồi chạy 1 cổng vào Chu (ra ở (46, 144)),
+# không chạy bộ từ môn phái khác qua Triều Dương Phong, không phù Dịch Trạm tới Chu (ra ở tận phía đông (330, 122))
+DUONGUUTIENs = (
+    (BANDO_CHUQUOC, lambda x, y: x < 200, 81),
+)
+
+
+def layduonguutien(idbandodich, toadodich):
+    # -> phương án dạng layphuongandichuyen (Tân Thủ Tiên Cô, bước, bản đồ phù tới, số cổng chạy tiếp) hoặc None
+    if not toadodich:
+        return None
+    for idbando, is_trongvung, idphutoi in DUONGUUTIENs:
+        if idbando == idbandodich and is_trongvung(*toadodich) and idphutoi in DICHUYENTANTHUTIENCO_MAP:
+            return TANTHUTIENCO, DICHUYENTANTHUTIENCO_MAP[idphutoi], idphutoi, 1
+    return None
+
+
 def laynpcphu(loainpc, idbando):
     # Loại NPC phù (TANTHUTIENCO / CHUDICHTRAM) -> (tên NPC trên bản đồ idbando, chỗ đứng của NPC hoặc None)
     if loainpc == TANTHUTIENCO:
@@ -1129,6 +1152,11 @@ def laynpcphu(loainpc, idbando):
 
 # Trưởng nhóm phải ở yên bản đồ mới bấy nhiêu giây mới phù theo (tránh chạy theo khi trưởng nhóm chỉ đi ngang qua)
 THOIGIANCHOBANDOTHEOSAUONDINH = 5.
+# Sang bản đồ bằng nói chuyện NPC (bando_xq.LOIDINPC_MAP): đứng cách NPC tối đa chừng này ô mới nói chuyện, chờ menu hiện tối đa
+# THOIGIANCHOMENULOIDINPC giây, chọn rồi quá THOIGIANTHULAILOIDINPC giây vẫn chưa sang (NPC không cho qua, vận khí bị ngắt) thì nói chuyện lại
+KHOANGCACHNOICHUYENLOIDINPC = 4.
+THOIGIANCHOMENULOIDINPC = 3.
+THOIGIANTHULAILOIDINPC = 15.
 
 IDLOAIVUKHI_TAYKHONG = 60
 IDLOAIVUKHI_DAO = 61

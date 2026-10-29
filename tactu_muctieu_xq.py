@@ -113,7 +113,7 @@ class TacTuMucTieu:
             return False
 
         tendoituong = self.moitruong.get_tendoituong(diachidoituong)
-        if tendoituong in TENMUCTIEUKHONGTANCONGs:
+        if tendoituong in TENMUCTIEUKHONGTANCONGs or self.moitruong.get_is_quairiengnguoikhac(tendoituong):
             return False
         if self._laytenmuctieutancongs() and tendoituong not in self._laytenmuctieutancongs():
             return False
@@ -191,7 +191,8 @@ class TacTuMucTieu:
                 continue
             if thoidiemhientai < self._thoidiemhetboquamuctieuchung_map.get(iddoituong, 0.):
                 continue
-            if ten in TENMUCTIEUKHONGTANCONGs or (self._laytenmuctieutancongs() and ten not in self._laytenmuctieutancongs()) \
+            if ten in TENMUCTIEUKHONGTANCONGs or self.moitruong.get_is_quairiengnguoikhac(ten) \
+                    or (self._laytenmuctieutancongs() and ten not in self._laytenmuctieutancongs()) \
                     or (self._tenmuctieukhongtancongs and ten in self._tenmuctieukhongtancongs):
                 continue
             if (self._is_chidanhnguoichoi and not is_muctieupk) or (is_muctieupk and is_hoabinh):
@@ -296,9 +297,14 @@ class TacTuMucTieu:
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             return
 
+        # Lăng Ly Sơn: trưởng nhóm đang chờ đủ thành viên trước boss cuối (người vắng lúc boss chết không được thưởng): không đánh
+        if self.get_is_camdanhlanglyson():
+            self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
+            return
+
         # Đang Đi tới bản đồ người dùng chọn / đi giao đồ / cất kho / đi làm sư môn: không chọn quái dọc đường (trước đây gặp quái là đứng
         # lại đánh), tới nơi mới đánh
-        if self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangcatkho() or self.get_is_sumondichuyen():
+        if self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangcatkho() or self.get_is_sumondichuyen() or self.get_is_langlysondichuyen():
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             return
 
@@ -588,7 +594,7 @@ class TacTuMucTieu:
         if iddoituong in self._idmuctieubiloi_map:
             return False
         tendoituong = self.moitruong.get_tendoituong(diachidoituong)
-        if tendoituong in TENMUCTIEUKHONGTANCONGs:
+        if tendoituong in TENMUCTIEUKHONGTANCONGs or self.moitruong.get_is_quairiengnguoikhac(tendoituong):
             return False
         if self._laytenmuctieutancongs() and tendoituong not in self._laytenmuctieutancongs():
             return False
@@ -1233,7 +1239,7 @@ class TacTuMucTieu:
             if self.moitruong.get_idloainhanvat(diachidoituongxemxet) != LOAIMUCTIEU_QUAIVATHOACNPC: continue
 
             tendoituongxemxet = self.moitruong.get_tendoituong(diachidoituongxemxet)
-            if tendoituongxemxet in self._tenmuctieukhongtancongs:
+            if tendoituongxemxet in self._tenmuctieukhongtancongs or self.moitruong.get_is_quairiengnguoikhac(tendoituongxemxet):
                 continue
             if self._laytenmuctieutancongs() and tendoituongxemxet not in self._laytenmuctieutancongs():
                 continue

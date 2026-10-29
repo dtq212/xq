@@ -56,7 +56,7 @@ BANDOCONG_MAP = {
     73: ("Yên Trường Thành 3", ((72, 185, 141, 30, 52),)),
     80: ("Chu Quốc", ((89, 258, 63, 84, 48), (181, 233, 302, 224, 41), (81, 42, 138, 245, 152), (281, 113, 84, 29, 150), (888, 266, 184, 120, 60), (888, 292, 164, 41, 69))),
     81: ("Thủ Dương Sơn", ((80, 250, 154, 46, 144), (82, 68, 23, 198, 79))),
-    82: ("Thuý Hoa Sơn", ((81, 204, 80, 73, 26), (251, 69, 79, 224, 34), (702, 138, 117, None, None))),
+    82: ("Thuý Hoa Sơn", ((81, 204, 80, 73, 26), (251, 69, 79, 224, 34))),
     89: ("Hổ Lao Quan", ((43, 272, 224, 62, 80), (80, 82, 44, 252, 65))),
     91: ("Thiên Môn Trận 1", ((375, 221, 74, 129, 145), (92, 49, 128, 230, 87))),
     92: ("Thiên Môn Trận 2", ((91, 234, 84, 53, 124), (93, 39, 124, 200, 62))),
@@ -196,8 +196,9 @@ BANDOCONG_MAP = {
     547: ("Thiên Ngoại Ảo Cảnh Tầng 7", ((546, 47, 131, 284, 126), (548, 291, 126, 54, 131))),
     548: ("Thiên Ngoại Ảo Cảnh Tầng 8", ((547, 47, 131, 284, 126),)),
     549: ("Cự Thú Đảo", ((533, 168, 215, 173, 157), (541, 159, 45, 54, 131))),
-    # Phó bản: lối vào không có trong jmp.dat (người dùng cho toạ độ, chưa biết điểm xuất hiện); đường ra / qua tầng chưa có
-    701: ("Thành Kiều Quân Doanh", ()),
+    # Phó bản: lối vào không có trong jmp.dat (người dùng cho toạ độ, chưa biết điểm xuất hiện); đường ra chưa có.
+    # Lăng Ly Sơn vào / qua tầng bằng nói chuyện NPC: xem LOIDINPC_MAP
+    701:("Thành Kiều Quân Doanh", ()),
     702: ("Tầng Trên Lăng Mộ", ()),
     703: ("Tầng Dưới Lăng Mộ", ()),
     704: ("Tổng Giám Công Thư Phòng", ()),
@@ -210,8 +211,32 @@ BANDOCONG_MAP = {
     889: (None, ((888, 44, 21, 82, 89),)),
 }
 
+# Sang bản đồ khác bằng nói chuyện NPC (chọn lựa chọn đầu "1. ...", vận khí 1 lúc là được đưa sang), không phải cổng chạy bộ:
+# (id bản đồ, id bản đồ tới) -> (x, y NPC, tên NPC). Tìm đường (timduongbando) coi như 1 cổng, bot tự tới NPC nói chuyện (_lapbuocditoibando).
+# Không phải cổng nên không có vùng cấm quanh NPC
+LOIDINPC_MAP = {
+    # Lăng Ly Sơn: Thuý Hoa Sơn -> "1. Tiến vào Lăng Ly Sơn"; Tầng Trên -> "1. Chuyển đến Tầng tiếp theo" (sau khi đánh Tướng Quân Dũng,
+    # khởi động Cơ Quan Thạch (234, 207)); Tầng Dưới -> "1. Tiến vào thư phòng" (sau khi giết Đường Truy, Thế Công Minh, Thạch Tướng Quân, Hào Quật)
+    (82, 702): (137, 117, "Đào Vong Khổ Dịch"),
+    (702, 703): (166, 106, "Cơ Quan Thạch Sư"),
+    (703, 704): (137, 59, "Lăng Mộ Thạch Sư"),
+}
+
+
+def laynpcloidi(idtu, idden):
+    # -> (x, y, tên NPC) nếu từ idtu sang idden bằng nói chuyện NPC, không thì None
+    return LOIDINPC_MAP.get((idtu, idden))
+
+
+def _laycongs(idbando):
+    # Cổng chạy bộ + lối đi qua NPC của bản đồ, cùng dạng (id bản đồ kế, x, y, x xuất hiện, y xuất hiện)
+    congs = (BANDOCONG_MAP.get(idbando) or (None, ()))[1]
+    npcs = tuple((idden, x, y, None, None) for (idtu, idden), (x, y, _) in LOIDINPC_MAP.items() if idtu == idbando)
+    return congs + npcs if npcs else congs
+
+
 # Cổng có trong jmp.dat nhưng không có trong maplink.dat: client không tự tìm đường qua được, phải tự đi tới cổng
-# Lối vào phó bản (50 -> 701, 82 -> 702) cũng không có trong maplink.dat nhưng không ghi ở đây: bot luôn tự chạy tới lối vào
+# Lối vào phó bản (50 -> 701, LOIDINPC_MAP) cũng không có trong maplink.dat nhưng không ghi ở đây: bot luôn tự chạy tới lối vào
 # (_lapbuocditoibando), để phương án phù (layphuongandichuyen) tính được đường phù tới Tần Quốc / Thuý Hoa Sơn rồi chạy vào
 _CONGNGOAIMAPLINK = frozenset((
     (80, 888), (155, 153), (211, 503), (231, 532), (501, 262), (501, 502), (502, 501), (502, 503), (503, 211), (503, 502), (503, 504),
@@ -298,7 +323,7 @@ def timduongbando(idtu, idden, toado = None, is_chicongclienttudi = False):
         if idbando in datham:
             continue
         datham.add(idbando)
-        for idke, x, y, xden, yden in BANDOCONG_MAP.get(idbando, ((),))[1]:
+        for idke, x, y, xden, yden in _laycongs(idbando):
             if idke in datham or (is_chicongclienttudi and (idbando, idke) in _CONGNGOAIMAPLINK):
                 continue
             buoc = math.hypot(x - vitri[0], y - vitri[1]) if vitri else 0.
