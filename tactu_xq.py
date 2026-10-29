@@ -136,6 +136,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         # Thành viên theo sau: mã thưởng Lăng Ly Sơn đã tự lĩnh (báo trưởng nhóm qua shared_data), việc đang lĩnh dở (None = không)
         self._khoathuonglanglysondalanh = ""
         self._lanhthuonglanglyson = None
+        # Lần rời nhóm gần nhất khi giải tán tổ đội cũ (Tổ đội tự động tạm nghỉ)
+        self._thoidiemroinhomlanglyson = 0.
+        # Lần đọc gần nhất (lúc, kết quả) "mình là thành viên vòng Lăng Ly Sơn đang đi" từ shared_data
+        self._bonhogiunhomlanglyson = (0., False)
         # Mở cửa hàng để đọc hàng (tactu_sumon_xq.batdau_mocuahang): việc đang làm (None = không), kết quả theo (bản đồ, tên NPC);
         # Mua bù: lần mở cửa hàng gần nhất theo NPC, các lệch ô / giá giữa luật và cửa hàng đã báo
         self._mocuahang = None
@@ -236,6 +240,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._thoidiemloggomquai = 0.
 
         self._idmuctieubiloi_map = {}
+        # id -> (tên, lý do) mục tiêu đang bị bỏ qua, để giao diện hiện danh sách (get_danhsachmuctieuboqua)
+        self._thongtinmuctieuboqua_map = {}
         self._thoidiemthaymuctieu_map = {}
         # Theo dõi đòn có trúng mục tiêu đang đánh không (xem _kiemtramuctieukhongtrungchieu)
         self._theodoitrungchieu = None
@@ -272,7 +278,6 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
 
         self._idquaidangkeo = 0
         self._thoidiembatdaukeo = 0.
-        self._thoidiemtrieuhoibaothugannhat = 0.
         self._thoidiemraidauthanhbinhgannhat = 0.
         # ID đối tượng mục tiêu -> lần dùng Phong Vũ Kinh Thiên gần nhất lên nó
         self._thoidiemphongvukinhthien_map = {}

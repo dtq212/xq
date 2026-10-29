@@ -1832,8 +1832,16 @@ class MoiTruong:
         return self.get_idloainhanvat(diachicosothongtinnhanvat) in (LOAIMUCTIEU_NGUOICHOIKHACNHOM, LOAIMUCTIEU_NGUOICHOICUNGNHOM)
 
     def get_is_npc(self, diachicosothongtinnhanvat):
-        if self.get_phantramsinhlucconlai(diachicosothongtinnhanvat) > 100: return True
-        return read_int(self.tientrinh, diachicosothongtinnhanvat + 0x155C) in (25, 40)
+        # Lớp đối tượng +0x29 (gói tin xuất hiện): < 0x80 người chơi, 0x80 NPC, 0x82 quái, 0xA0 / 0xA1 bảo thú. Game nhận NPC đúng
+        # bằng == 0x80 (xq + 0x55870 tô tên thù địch, xq + 0xB5C1D cập nhật dấu nhiệm vụ NPC). Trước đây đoán qua +0x155C (nhịp hoạt
+        # ảnh, game chỉ gán cứng 40 / 25 cho NPC ở tư thế 1 / 5) và %máu > 100 (bảo thú vật phẩm 120%) => sót NPC đang đi, nhận nhầm quái
+        if not diachicosothongtinnhanvat:
+            return False
+        return read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0x29) == 0x80
+
+    def get_is_baothuvatpham(self, diachicosothongtinnhanvat):
+        # Bảo thú gọi bằng vật phẩm (Thần Thú, Song Tử...): tên không có chủ nhân trong ngoặc, máu hiện > 100%
+        return bool(diachicosothongtinnhanvat) and self.get_tendoituong(diachicosothongtinnhanvat) in BAOTHUVATPHAMs
 
     def get_idkynang(self, idvitri_x, idvitri_y = None):
         # idvitri_x là mã kỹ năng (id hoặc vị trí (x, y)) khi không truyền idvitri_y
@@ -2000,7 +2008,7 @@ class MoiTruong:
             return False
         if self.get_idbandohientai() == BANDO_CHIENTRUONG and self.get_idphechientruong() == self.get_idphechientruong(diachicosothongtinnhanvat):
             return False
-        if self.get_is_npc(diachicosothongtinnhanvat) or self.get_is_nhanvatchuasansang(diachicosothongtinnhanvat):
+        if self.get_is_npc(diachicosothongtinnhanvat) or self.get_is_baothuvatpham(diachicosothongtinnhanvat)                 or self.get_is_nhanvatchuasansang(diachicosothongtinnhanvat):
             return False
 
         idmaupk = self.get_idmaupk()

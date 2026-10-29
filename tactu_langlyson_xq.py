@@ -10,8 +10,10 @@
 #   nhận thưởng: Hồi Thành Phù ra (chỉ ở bước này mới cho Hồi Thành Phù trong phó bản), phù tới Thuý Hoa Sơn, Đào Vong Khổ Dịch
 #             "1. Lĩnh nhận phần thưởng". Mỗi thành viên phải tự lĩnh: trưởng nhóm lĩnh xong báo mã thưởng qua shared_data, thành viên
 #             theo sau (cùng máy) thấy mã mới thì tự tới lĩnh (_xulylanhthuongtheosau) rồi báo lại đã lĩnh
-#   đổi nhóm: chờ thành viên cùng máy lĩnh xong (tối đa THOIGIANCHOTHANHVIENLANH giây), trưởng nhóm rời nhóm = giải tán (mất phó bản
-#             cũ), chờ Tổ đội tự động lập nhóm mới rồi vào vòng sau
+#   đổi nhóm: chờ thành viên cùng máy lĩnh xong (tối đa THOIGIANCHOTHANHVIENLANH giây), tạm tắt Tổ đội tự động ở mọi người cùng máy
+#             của vòng đó (không thì nó kéo nhau vào lại nhóm cũ còn giữ phó bản đã xong), ai cũng rời nhóm; hết nhóm cũ thì bật lại cho
+#             Tổ đội tự động lập nhóm mới rồi vào vòng sau
+# Bật ở thành viên (không phải trưởng nhóm) thì chỉ làm thành viên: Theo sau lo mọi việc
 # Bước trong từng tầng nhớ theo bản đồ: chết / rớt ra ngoài thì vào lại (tổ đội còn giữ phó bản) làm tiếp từ bước đang dở.
 # Đánh boss: tới gần toạ độ thì đánh mọi quái quanh đó (boss là con gần nhất); đã thấy boss mà THOIGIANBOSSBIENMAT giây không thấy nữa,
 # hoặc tới nơi THOIGIANCHOBOSS giây không thấy boss đâu thì coi như đã giết.
@@ -45,6 +47,8 @@ THOIGIANCHOBOSS = 30.
 THOIGIANBOSSBIENMAT = 3.
 # Giết xong boss cuối chờ chừng này giây (nhặt đồ) rồi mới Hồi Thành Phù ra
 THOIGIANCHORA = 8.
+# Boss cuối đã chết mà chưa đọc được tin "hoàn thành phó bản" (tin có thể không vào khung trò chuyện): chờ tối đa chừng này giây rồi mới ra
+THOIGIANCHOTINHOANTHANH = 15.
 # Nói chuyện NPC trong phó bản: chờ menu, chọn rồi chờ vận khí bắt đầu tối đa chừng này giây, không thì nói lại; quá SOLANTHUNOICHUYEN
 # lần thì quay lại bước trước (boss trước đó có thể chưa chết)
 KHOANGCACHNOICHUYENLLS = 3.
@@ -54,6 +58,8 @@ SOLANTHUNOICHUYEN = 3
 GIANCACHROINHOM = 5.
 # Trưởng nhóm lĩnh xong chờ thành viên cùng máy tự lĩnh tối đa chừng này giây rồi mới giải tán tổ đội
 THOIGIANCHOTHANHVIENLANH = 120.
+# Giải tán tổ đội cũ: tạm tắt Tổ đội tự động ở mọi người, chờ hết người trong nhóm cũ tối đa chừng này giây rồi bật lại
+THOIGIANCHOGIAITAN = 30.
 # Mỗi vòng quá chừng này giây chưa xong thì báo (vẫn chạy tiếp)
 THOIGIANVONGTOIDA = 40 * 60.
 
@@ -65,7 +71,8 @@ class TacTuLangLySon:
             return
         self._langlyson = {"batdau": time.time(), "trangthai": "bắt đầu", "chedo": "dichuyen", "giaidoan": "vao", "buoc": {},
                            "hoithoai": None, "boss": None, "lucbatdauvong": time.time(), "sovong": 0, "dabao": set(),
-                           "thanhviens": {}, "dudoi": False, "lucchodoi": 0., "lucmoi": {}, "diemvao": {}}
+                           "thanhviens": {}, "dudoi": False, "lucchodoi": 0., "lucmoi": {}, "diemvao": {}, "daxongphoban": False,
+                           "tindaghi": set()}
         self.moitruong._inlog("[LĂNG LY SƠN] Bắt đầu tự động đi Lăng Ly Sơn")
         phatam("Bắt đầu Lăng Ly Sơn")
 
@@ -85,16 +92,53 @@ class TacTuLangLySon:
         # (theo mốc bắt đầu chờ chứ không theo chedo: chedo mỗi lượt đặt lại từ đầu, thành viên đọc giữa chừng không bị chập chờn)
         return bool(self._langlyson) and bool(self._langlyson["lucchodoi"])
 
+    def get_dsidgiunhomlanglyson(self):
+        # Vòng đang đi dở (đã vào phó bản, chưa lĩnh thưởng xong / chưa bắt đầu giải tán): ID mình và thành viên vòng này, báo qua
+        # shared_data để Tổ đội tự động của ai cũng không rời nhóm / nhường quyền (rời giữa chừng là mất phó bản). Không thì []
+        s = self._langlyson
+        if not s or s["chedo"] == "thanhvien":
+            return []
+        is_dangdi = (s["giaidoan"] == "vao" and (s["thanhviens"] or self.moitruong.get_idbandohientai() in BUOCLANGLYSON_MAP)) \
+            or s["giaidoan"] == "nhanthuong" or (s["giaidoan"] == "doinhom" and not s.get("tattodoi") and not s["is_daroinhom"])
+        return [self.moitruong.get_idnguoichoi(), *s["thanhviens"]] if is_dangdi else []
+
+    def _is_trongdanhsachcuasokhac(self, khoa):
+        # ID mình có trong danh sách khoa (list ID) mà cửa sổ khác cùng máy đang báo (còn cập nhật)
+        if self.shared_data is None:
+            return False
+        idtoi = self.moitruong.get_idnguoichoi()
+        try:
+            danhsach = list(self.shared_data.items())
+        except Exception:
+            return False
+        return any(idcuaso != self.idcuaso and isinstance(info, dict) and time.time() - info.get("thoidiemcapnhat", 0.) <= 5.
+                   and idtoi in (info.get(khoa) or ()) for idcuaso, info in danhsach)
+
+    def get_is_giunhomlanglyson(self):
+        # Tổ đội tự động không được rời nhóm / nhường quyền trưởng nhóm (xem get_dsidgiunhomlanglyson). Gọi mỗi lượt chọn mục tiêu nên nhớ
+        # kết quả đọc shared_data 0.5s
+        if self.get_dsidgiunhomlanglyson():
+            return True
+        thoidiem, ketqua = self._bonhogiunhomlanglyson
+        if time.time() - thoidiem > 0.5:
+            ketqua = self._is_trongdanhsachcuasokhac("_langlysongiunhom")
+            self._bonhogiunhomlanglyson = (time.time(), ketqua)
+        return ketqua
+
     def get_is_camdanhlanglyson(self):
-        # Không được đánh lúc này: chính mình đang chờ thành viên, hoặc người mình theo sau (trưởng nhóm cùng máy) đang chờ và mình cũng ở
-        # tầng đó. Đang đánh thường ("kill") thì ngắt luôn (máy chủ giữ lệnh đánh cả khi bỏ chọn mục tiêu)
-        if self.get_is_langlysonchothanhvien():
+        # Không được đánh lúc này:
+        #   - đang ở chế độ Lăng Ly Sơn (mình bật, người mình theo sau bật, hoặc mình là thành viên vòng đang đi) mà ở ngoài 3 tầng phó bản:
+        #     không đánh quái dọc đường / ở Thuý Hoa Sơn (đỡ chạy linh tinh)
+        #   - chính mình đang chờ thành viên, hoặc người mình theo sau (trưởng nhóm cùng máy) đang chờ và mình cũng ở tầng đó
+        # Đang đánh thường ("kill") thì ngắt luôn (máy chủ giữ lệnh đánh cả khi bỏ chọn mục tiêu)
+        idbando = self.moitruong.get_idbandohientai()
+        info = self._laythongtinmuctieutheosaucuasokhac() if self._is_tudongtheosau else None
+        if idbando not in BUOCLANGLYSON_MAP:
+            is_cam = bool(self._langlyson) or bool(info and info.get("_is_danglanglyson")) or self.get_is_giunhomlanglyson()
+        elif self.get_is_langlysonchothanhvien():
             is_cam = True
-        elif self._is_tudongtheosau and self.moitruong.get_idbandohientai() in BUOCLANGLYSON_MAP:
-            info = self._laythongtinmuctieutheosaucuasokhac()
-            is_cam = bool(info and info.get("_langlysonchothanhvien") and info.get("tenbando") == self.moitruong.get_idbandohientai())
         else:
-            is_cam = False
+            is_cam = bool(info and info.get("_langlysonchothanhvien") and info.get("tenbando") == idbando)
         if is_cam and self._is_battudongtancongvatly and self._diachimuctieutancongvatly:
             self._ngattancongvatlydaohoa(self._diachimuctieutancongvatly)
         return is_cam
@@ -135,6 +179,19 @@ class TacTuLangLySon:
                 setattr(self, thuoctinh, giatri)
                 self.moitruong._inlog(f"[LĂNG LY SƠN] {'Bật' if giatri else 'Tắt'} \"{ten}\" để đánh boss (dừng thì trả lại)")
 
+    def _doctinphoban(self, s):
+        # Tin trò chuyện có "phó bản" ghi log (mỗi câu 1 lần) để biết game báo gì; "hoàn thành phó bản Lăng Ly Sơn" là chắc chắn đã xong
+        # (game: "Bạn đã hoàn thành phó bản Lăng Ly Sơn, có thể quay về báo cáo Đào Vong Khổ Dịch để nhận thưởng!")
+        for _, noidung in list(self.moitruong.get_lichsutrochuyen5s()):
+            thuong = (noidung or "").lower()
+            if "phó bản" not in thuong or noidung in s["tindaghi"]:
+                continue
+            s["tindaghi"].add(noidung)
+            self.moitruong._inlog(f"[LĂNG LY SƠN] Tin game: {noidung[:120]!r}")
+            if "hoàn thành phó bản" in thuong and "lăng ly sơn" in thuong and not s["daxongphoban"]:
+                s["daxongphoban"] = True
+                self.moitruong._inlog("[LĂNG LY SƠN] Game báo đã hoàn thành phó bản")
+
     # --- Vòng chính ------------------------------------------------------------------------------------------------------------------
     def _xulylanglyson(self):
         # Gọi thay lộ trình điểm đánh khi đang đi Lăng Ly Sơn -> yêu cầu di chuyển hoặc None
@@ -144,6 +201,7 @@ class TacTuLangLySon:
             s["trangthaidaghi"] = s["trangthai"]
             moitruong._inlog(f"[LĂNG LY SƠN] {s['trangthai']}")
         s["chedo"] = "dichuyen"
+        self._doctinphoban(s)
         if moitruong.get_is_nhanvatdachet() or self.get_is_danghoithoainpc() or self._trangthaiveban != 0:
             return None
         if time.time() - s["lucbatdauvong"] > THOIGIANVONGTOIDA:
@@ -155,6 +213,13 @@ class TacTuLangLySon:
                 s["hoithoai"]["vankhi"] = True
             return None
         if time.time() - moitruong.get_thoidiemthaydoibandogannhat() < 2.:
+            return None
+        if s["giaidoan"] == "vao" and moitruong.get_is_dangnamtrongnhom() and not moitruong.get_is_truongnhom():
+            # Bật ở thành viên (không phải trưởng nhóm): không tự đánh boss / lĩnh thưởng theo vòng riêng (từng làm cả 4 nhân vật đều tự
+            # chạy, tự phát mã thưởng rồi chờ nhau). Theo sau lo đi theo, vào / qua tầng, lĩnh thưởng; trưởng nhóm dis mà mình thành trưởng
+            # nhóm thì tự chạy tiếp
+            s["chedo"] = "thanhvien"
+            s["trangthai"] = "thành viên: đi theo trưởng nhóm" + ("" if self._is_tudongtheosau else " (chưa bật Theo sau!)")
             return None
         if s["giaidoan"] == "nhanthuong":
             return self._buocnhanthuong(s)
@@ -269,7 +334,12 @@ class TacTuLangLySon:
                     if s["lucchodoi"]:
                         self.moitruong._inlog(f"[LĂNG LY SƠN] Đủ thành viên sau {int(time.time() - s['lucchodoi'])}s, đánh {tenboss}")
                     s.update(dudoi = True, lucchodoi = 0.)
-            ketqua, yeucau = self._danhboss(s, idbando, tenboss, x, y)
+            # Boss cuối (bước có cờ): không "tới nơi lâu không thấy thì coi như đã giết" (ra nhầm là mất phó bản); game báo hoàn thành là xong
+            is_bosscuoi = len(buoc) > 4 and buoc[4]
+            if is_bosscuoi and s["daxongphoban"]:
+                ketqua, yeucau = "game báo hoàn thành phó bản", None
+            else:
+                ketqua, yeucau = self._danhboss(s, idbando, tenboss, x, y, is_bosscuoi)
             if ketqua:
                 self.moitruong._inlog(f"[LĂNG LY SƠN] {tenbando}: xong {tenboss} ({ketqua})")
                 self._sangbuoc(s, idbando)
@@ -293,8 +363,13 @@ class TacTuLangLySon:
             if ketqua["loai"] in ("toinoi", "khongduong"):
                 return None
             return self._thuchienbuocditoibando(ketqua, idke, None, f"[LĂNG LY SƠN] {tenbando}")
-        # "ra": boss cuối xong, chờ nhặt đồ rồi sang nhận thưởng
+        # "ra": boss cuối xong, chờ nhặt đồ rồi sang nhận thưởng (Hồi Thành Phù ra khỏi phó bản)
         luc = s.setdefault("lucxongboss", time.time())
+        if not s["daxongphoban"] and time.time() - luc < THOIGIANCHOTINHOANTHANH:
+            # Thấy boss cuối chết rồi: chờ thêm tin game báo hoàn thành cho chắc (đọc được tin thì đi ngay sau THOIGIANCHORA)
+            s["chedo"] = "danhquai"
+            s["trangthai"] = f"{tenbando}: boss cuối đã chết, chờ game báo hoàn thành phó bản"
+            return None
         if time.time() - luc < THOIGIANCHORA:
             s["chedo"] = "danhquai"
             s["trangthai"] = f"{tenbando}: xong phó bản, chờ nhặt đồ rồi ra nhận thưởng"
@@ -309,8 +384,9 @@ class TacTuLangLySon:
         s["boss"] = None
         s["hoithoai"] = None
 
-    def _danhboss(self, s, idbando, tenboss, x, y):
-        # -> (lý do xong hoặc None, yêu cầu di chuyển)
+    def _danhboss(self, s, idbando, tenboss, x, y, is_bosscuoi = False):
+        # -> (lý do xong hoặc None, yêu cầu di chuyển). is_bosscuoi: chỉ xong khi đã thấy boss rồi boss biến mất, không thấy thì chờ mãi
+        # (báo Telegram) chứ không đi ra
         moitruong = self.moitruong
         boss = s["boss"]
         if not boss or boss["ten"] != tenboss:
@@ -327,9 +403,13 @@ class TacTuLangLySon:
             boss["luctoi"] = boss["luctoi"] or now
             s["chedo"] = "danhquai"
             self._batdanhquailanglyson(s)
-            if not diachi:
-                if not boss["lucthay"] and now - boss["luctoi"] > THOIGIANCHOBOSS:
+            if not diachi and not boss["lucthay"] and now - boss["luctoi"] > THOIGIANCHOBOSS:
+                if not is_bosscuoi:
                     return f"tới nơi {THOIGIANCHOBOSS:.0f}s không thấy, coi như đã giết", None
+                self._baolanglyson(s, f"khongthayboss|{s['sovong']}", f"⚠️ Lăng Ly Sơn: tới {tenboss} {THOIGIANCHOBOSS:.0f}s không thấy boss, "
+                                                                     f"game cũng chưa báo hoàn thành phó bản: bot đứng chờ, không ra (xem giúp)")
+                s["trangthai"] = f"{laytenbando(idbando)}: không thấy {tenboss}, chưa có tin hoàn thành phó bản, đứng chờ (không ra)"
+                return None, None
             s["trangthai"] = f"{laytenbando(idbando)}: đánh {tenboss}" + ("" if diachi else " (chờ boss hiện)")
             # Bị đánh dạt ra xa toạ độ boss thì quay về (đánh quái vẫn ưu tiên hơn)
             if moitruong.get_khoangcachdiem(x, y) > KHOANGCACHTOIBOSS and not diachi:
@@ -417,15 +497,28 @@ class TacTuLangLySon:
                 return None
             return self._thuchienbuocditoibando(buoc, BANDO_THUYHOASON, (x, y), "[LĂNG LY SƠN] Nhận thưởng")
         s["trangthai"] = f"nhận thưởng ở {tennpc}"
+        if time.time() < s.get("lucthulaithuong", 0.):
+            return None
         ketqua, yeucau = self._noichuyenlls(s, tennpc, x, y, is_chovankhi = False, kiemtramenu = self._is_menunhanthuong)
-        if ketqua in ("xong", "tuchoi"):
+        if ketqua == "tuchoi":
+            # NPC không có lời chúc mừng / phần thưởng: chưa chắc phó bản đã xong => KHÔNG giải tán tổ đội (giải tán là mất phó bản), thử
+            # lại vài lần rồi dừng hẳn, báo người dùng xem
+            s["solantuchoi"] = s.get("solantuchoi", 0) + 1
+            if s["solantuchoi"] < SOLANTHUNOICHUYEN:
+                s["lucthulaithuong"] = time.time() + 10.
+                moitruong._inlog(f"[LĂNG LY SƠN] {tennpc} chưa có phần thưởng, 10s nữa hỏi lại (lần {s['solantuchoi']})")
+                return None
+            baosuco(moitruong, "langlyson", f"⚠️ Lăng Ly Sơn: {tennpc} không có phần thưởng sau {s['solantuchoi']} lần hỏi, chưa chắc phó bản đã "
+                                            f"xong nên KHÔNG giải tán tổ đội, dừng tự động (xem giúp)", khoa = f"{s['batdau']}|tuchoi", giancach = 0.)
+            self._ketthuclanglyson(f"❌ Dừng: {tennpc} không có phần thưởng, không giải tán tổ đội")
+            return None
+        if ketqua == "xong":
             s["sovong"] += 1
-            if ketqua == "tuchoi":
-                self._baolanglyson(s, f"khongthuong|{s['sovong']}", f"⚠️ Lăng Ly Sơn: {tennpc} không có phần thưởng (vòng {s['sovong']}), đổi tổ đội đi vòng mới")
+            s.pop("solantuchoi", None)
             moitruong._inlog(f"[LĂNG LY SƠN] Xong vòng {s['sovong']} ({int((time.time() - s['lucbatdauvong']) // 60)} phút), chờ thành viên lĩnh "
                              f"thưởng rồi đổi tổ đội")
             # Mã thưởng của vòng này báo cho thành viên cùng máy (get_khoathuonglanglyson qua shared_data): ai chưa lĩnh mã này thì tự lĩnh
-            s.update(giaidoan = "doinhom", hoithoai = None, lucroinhom = 0., is_daroinhom = False, lucnhanthuong = time.time(),
+            s.update(giaidoan = "doinhom", hoithoai = None, tattodoi = False, is_daroinhom = False, lucnhanthuong = time.time(),
                      khoathuong = f"{moitruong.get_idnguoichoi()}|{int(s['batdau'])}|{s['sovong']}")
         return yeucau
 
@@ -487,6 +580,42 @@ class TacTuLangLySon:
         # phó bản (lời "...báo thù rửa hận giùm ta...", "1. Tiến vào") thì không chọn
         return any(k in noidung.lower() for k in ("chúc mừng", "phần thưởng"))
 
+    def _laythanhvienconnhom(self, s):
+        # Tên thành viên vòng này chạy cùng máy (shared_data) còn đang ở trong nhóm
+        tens = []
+        try:
+            danhsach = list(self.shared_data.items()) if self.shared_data is not None else []
+        except Exception:
+            return tens
+        for idcuaso, info in danhsach:
+            if idcuaso == self.idcuaso or not isinstance(info, dict) or info.get("idnguoichoi") not in s["thanhviens"]:
+                continue
+            if time.time() - info.get("thoidiemcapnhat", 0.) <= 5. and info.get("idtruongnhom"):
+                tens.append(info.get("tennhanvat") or str(info.get("idnguoichoi")))
+        return tens
+
+    def get_dsidtattodoilanglyson(self):
+        # Đang giải tán tổ đội cũ: ID mình và các thành viên vòng này (báo qua shared_data để cửa sổ của họ tạm tắt Tổ đội tự động)
+        s = self._langlyson
+        if s and s["giaidoan"] == "doinhom" and s.get("tattodoi"):
+            return [self.moitruong.get_idnguoichoi(), *s["thanhviens"]]
+        return []
+
+    def get_is_tamtattodoilanglyson(self):
+        # Tổ đội tự động phải tạm nghỉ: mình đang giải tán tổ đội cũ, hoặc trưởng nhóm cùng máy đang giải tán mà mình là thành viên vòng đó
+        return bool(self.get_dsidtattodoilanglyson()) or self._is_trongdanhsachcuasokhac("_langlysontattodoi")
+
+    def action_roinhomlanglyson(self):
+        # Gọi đầu Tổ đội tự động: đang phải tạm nghỉ thì không mời / nhận lời mời / xin vào nhóm, còn trong nhóm thì rời (trưởng nhóm rời
+        # là giải tán). -> True khi đang tạm nghỉ (Tổ đội tự động bỏ qua lượt này)
+        if not self.get_is_tamtattodoilanglyson():
+            return False
+        if self.moitruong.get_is_dangnamtrongnhom() and time.time() - self._thoidiemroinhomlanglyson > GIANCACHROINHOM:
+            self._thoidiemroinhomlanglyson = time.time()
+            self.moitruong._inlog("[LĂNG LY SƠN] Rời nhóm để giải tán tổ đội cũ (Tổ đội tự động tạm nghỉ)")
+            self.moitruong.action_thoatkhoinhom()
+        return True
+
     def _buocdoinhom(self, s):
         # Phó bản cũ giữ theo tổ đội: trưởng nhóm rời nhóm (= giải tán), chờ Tổ đội tự động lập nhóm mới rồi vào vòng sau
         moitruong = self.moitruong
@@ -501,19 +630,31 @@ class TacTuLangLySon:
             if chualanhs:
                 self._baolanglyson(s, f"chualanh|{s['sovong']}", f"⚠️ Lăng Ly Sơn: {', '.join(chualanhs)} chưa lĩnh thưởng vòng {s['sovong']} "
                                                                  f"sau {int(THOIGIANCHOTHANHVIENLANH)}s, vẫn giải tán tổ đội")
-            s["trangthai"] = "giải tán tổ đội cũ"
-            if time.time() - s["lucroinhom"] > GIANCACHROINHOM:
-                s["lucroinhom"] = time.time()
-                moitruong._inlog("[LĂNG LY SƠN] Rời nhóm để giải tán tổ đội cũ")
-                moitruong.action_thoatkhoinhom()
+        if not s["is_daroinhom"]:
+            # Giải tán: tạm tắt Tổ đội tự động ở mình và mọi thành viên vòng này cùng máy (không thì nó kéo nhau vào lại nhóm cũ, nhóm cũ
+            # còn giữ phó bản đã xong), ai còn trong nhóm thì tự rời (action_roinhomlanglyson). Hết người trong nhóm cũ (hoặc quá
+            # THOIGIANCHOGIAITAN giây) thì bật lại để Tổ đội tự động lập nhóm mới
+            if not s.get("tattodoi"):
+                s.update(tattodoi = True, luctattodoi = time.time())
+                moitruong._inlog("[LĂNG LY SƠN] Tạm tắt Tổ đội tự động, mọi người rời nhóm để giải tán tổ đội cũ")
+            conlais = self._laythanhvienconnhom(s)
+            if is_trongnhom:
+                conlais = [moitruong.get_tendoituong() or "mình"] + conlais
+            if conlais and time.time() - s["luctattodoi"] < THOIGIANCHOGIAITAN:
+                s["trangthai"] = f"giải tán tổ đội cũ (tạm tắt Tổ đội tự động), còn trong nhóm: {', '.join(conlais)}"
+                return None
+            if conlais:
+                self._baolanglyson(s, f"giaitan|{s['sovong']}", f"⚠️ Lăng Ly Sơn: {int(THOIGIANCHOGIAITAN)}s chưa giải tán hết tổ đội cũ "
+                                                                f"({', '.join(conlais)} còn trong nhóm), vẫn lập nhóm mới")
+            s.update(tattodoi = False, is_daroinhom = True)
+            moitruong._inlog("[LĂNG LY SƠN] Đã giải tán tổ đội cũ, bật lại Tổ đội tự động để lập nhóm mới")
             return None
         if not is_trongnhom:
-            s["is_daroinhom"] = True
             s["trangthai"] = "đã giải tán tổ đội, chờ lập tổ đội mới"
             if not self._is_tudongtodoi:
                 self._baolanglyson(s, "todoi", "⚠️ Lăng Ly Sơn: chưa bật Tổ đội tự động, lập tổ đội mới bằng tay để đi vòng sau")
             return None
         s.update(giaidoan = "vao", buoc = {}, boss = None, hoithoai = None, lucbatdauvong = time.time(), thanhviens = {}, dudoi = False,
-                 lucchodoi = 0., lucmoi = {}, diemvao = {})
+                 lucchodoi = 0., lucmoi = {}, diemvao = {}, daxongphoban = False)
         moitruong._inlog(f"[LĂNG LY SƠN] Có tổ đội mới, bắt đầu vòng {s['sovong'] + 1}")
         return None

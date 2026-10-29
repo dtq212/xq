@@ -13,7 +13,7 @@ class TacTuMucTieu:
     def _is_doituongthudich(self, diachidoituong, tenchunhanphe_map):
         # Đối tượng có thể đang đánh mình: quái hoặc người chơi / bảo thú không cùng phe.
         # Khác get_is_cothetancong (mình đánh được nó không): đang hoà bình thì người chơi PK vẫn đánh được mình
-        if self.moitruong.get_is_nhanvatdachet(diachidoituong) or self.moitruong.get_is_npc(diachidoituong):
+        if self.moitruong.get_is_nhanvatdachet(diachidoituong) or self.moitruong.get_is_npc(diachidoituong)                 or self.moitruong.get_is_baothuvatpham(diachidoituong):
             return False
         if self.moitruong.get_idloainhanvat(diachidoituong) == LOAIMUCTIEU_NGUOICHOICUNGNHOM:
             return False
@@ -218,6 +218,7 @@ class TacTuMucTieu:
             self._muctieuchungdangtim = (iddoituong, thoidiemhientai)
         elif thoidiemhientai - self._muctieuchungdangtim[1] > THOIGIANTOIDATIMMUCTIEUCHUNG:
             self._thoidiemhetboquamuctieuchung_map[iddoituong] = thoidiemhientai + THOIGIANBOQUAMUCTIEUCHUNG
+            self._ghimuctieuboqua(iddoituong, "Đi tới mãi không thấy", self._laytamnhinchung().get(iddoituong, ("",) * 6)[5])
             self._thoidiemhetboquamuctieuchung_map = {k: v for k, v in self._thoidiemhetboquamuctieuchung_map.items() if v > thoidiemhientai}
             self._muctieuchungdangtim = None
             return None
@@ -278,8 +279,44 @@ class TacTuMucTieu:
               f"{self.moitruong.get_tendoituong(diachimuctieu)} ({hex(iddoituong)}) mà không thấy số bay -> bỏ qua {THOIGIANBOQUAMUCTIEUKHONGTRUNG:.0f}s")
         # _idmuctieubiloi_map tự xoá sau 120s: lùi mốc để hết bỏ qua sau đúng THOIGIANBOQUAMUCTIEUKHONGTRUNG giây
         self._idmuctieubiloi_map[iddoituong] = thoidiemhientai - (120. - THOIGIANBOQUAMUCTIEUKHONGTRUNG)
+        self._ghimuctieuboqua(iddoituong, "Đánh không trúng", self.moitruong.get_tendoituong(diachimuctieu))
         self._theodoitrungchieu = None
         return True
+
+    def _ghimuctieuboqua(self, iddoituong, lydo, ten = None):
+        # Ghi tên / lý do mục tiêu vừa bị bỏ qua cho giao diện; không biết tên thì tìm trong đối tượng xung quanh
+        if ten is None:
+            ten = next((self.moitruong.get_tendoituong(diachi) for diachi in self.moitruong._get_diachidoituongxungquanhs()
+                        if self.moitruong.get_iddoituong(diachi) == iddoituong), "")
+        self._thongtinmuctieuboqua_map[iddoituong] = (ten or "", lydo)
+
+    def get_danhsachmuctieuboqua(self):
+        # [{id, ten, lydo, conlai}] mục tiêu bot đang tự bỏ qua theo id (_idmuctieubiloi_map hết sau 120s, _thoidiemhetboquamuctieuchung_map theo mốc hết).
+        # Chép dict trước khi duyệt: luồng khác đang thêm / xoá
+        thoidiemhientai = time.time()
+        conlais = {}
+        for iddoituong, thoidiem in self._idmuctieubiloi_map.copy().items():
+            if 120. - (thoidiemhientai - thoidiem) > 0:
+                conlais[iddoituong] = 120. - (thoidiemhientai - thoidiem)
+        for iddoituong, thoidiemhet in self._thoidiemhetboquamuctieuchung_map.copy().items():
+            if thoidiemhet > thoidiemhientai:
+                conlais[iddoituong] = max(conlais.get(iddoituong, 0.), thoidiemhet - thoidiemhientai)
+        thongtins = self._thongtinmuctieuboqua_map.copy()
+        self._thongtinmuctieuboqua_map = {k: v for k, v in thongtins.items() if k in conlais}
+        danhsach = []
+        for iddoituong, conlai in conlais.items():
+            ten, lydo = thongtins.get(iddoituong, ("", "Bị chặn / kẹt"))
+            danhsach.append({"id": iddoituong, "ten": ten, "lydo": lydo, "conlai": round(conlai)})
+        return sorted(danhsach, key = lambda muc: (muc["ten"], muc["id"]))
+
+    def xoa_muctieuboqua(self, iddoituongs = None):
+        # Giao diện bấm Xoá: thôi bỏ qua các id này (None: xoá hết) để bot đánh lại ngay
+        idxoas = set(self._idmuctieubiloi_map) | set(self._thoidiemhetboquamuctieuchung_map) if iddoituongs is None else set(iddoituongs)
+        for iddoituong in idxoas:
+            self._idmuctieubiloi_map.pop(iddoituong, None)
+            self._thoidiemhetboquamuctieuchung_map.pop(iddoituong, None)
+            self._thongtinmuctieuboqua_map.pop(iddoituong, None)
+        print("Thôi bỏ qua mục tiêu: {}".format(", ".join(hex(i) for i in idxoas) or "không có"))
 
     def action_tudongtimkiemmuctieu(self):
         # Yêu cầu đi tới mục tiêu nhân vật khác thấy chỉ tạo lại ở cuối hàm khi mình không có mục tiêu nào
@@ -705,6 +742,7 @@ class TacTuMucTieu:
 
             # Bản đồ không PK (thành Ngụy Quốc...) vẫn xét nhưng chỉ dùng lên boss trong TENBOSSBUFFMAOSONs (Trộm Bảo / Bảo Hộp Phi Tặc xuất hiện trong thành)
             is_bandokhongpk = idbandohientai in BANDOKHONGPKs
+            diachimuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
             i = -1
             while True:
                 i += 1
@@ -735,8 +773,9 @@ class TacTuMucTieu:
                     continue
                 if is_bandokhongpk and not is_boss:
                     continue
-                # Phá Thiên Yêu chỉ buff Thực Cốt
-                is_chibuffthuccot = not is_nguoichoi and not is_baothu and tendoituong == "Phá Thiên Yêu"
+                # Phá Thiên Yêu: Thực Giáp / Thực Tâm chỉ dùng khi nó là mục tiêu đang chọn, con khác chỉ buff Thực Cốt
+                is_chibuffthuccot = not is_nguoichoi and not is_baothu and tendoituong == "Phá Thiên Yêu" \
+                    and diachicosothongtindoituongmuctieuxemxet != diachimuctieudangchon
 
                 if khoangcach < khoangcachthuccotgannhat and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCCOT,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtindoituongmuctieuxemxet, is_hieuungcoloi = 0):
                     diachidoituongcanbuffthuccot = diachicosothongtindoituongmuctieuxemxet
@@ -1049,6 +1088,7 @@ class TacTuMucTieu:
     def _boquaquaibichan(self, idquai):
         print(f"[GOM] Quái {hex(idquai)} bị chặn (tường/vật cản) -> Bỏ qua 120s")
         self._idmuctieubiloi_map[idquai] = time.time()
+        self._ghimuctieuboqua(idquai, "Gom: bị chặn")
         self._danhsachidquaidagom.discard(idquai)
         if self._idquaidautien == idquai:
             self._idquaidautien = 0

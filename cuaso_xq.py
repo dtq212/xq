@@ -233,6 +233,8 @@ class CuaSo:
                     # Danh sách (không nối chuỗi) để giao diện sửa được từng tên
                     "_tenmuctieutancongs": sorted(self.tactu._tenmuctieutancongs),
                     "_tenmuctieukhongtancongs": sorted(self.tactu._tenmuctieukhongtancongs),
+                    # Mục tiêu bot tự bỏ qua theo id (bị chặn, đánh không trúng...), giao diện xoá được khi bỏ nhầm
+                    "_muctieuboquas": self.tactu.get_danhsachmuctieuboqua(),
                     "_khoangcachtoidatheosau": self.tactu._khoangcachtoidatheosau,
                     "_bankinhdiemdanh": self.tactu._bankinhdiemdanh,
                     "_khoangcachsudungkynangtamxa": self.tactu._khoangcachsudungkynangtamxa,
@@ -280,6 +282,8 @@ class CuaSo:
                     "_khoathuonglanglyson": self.tactu.get_khoathuonglanglyson(),
                     "_khoathuonglanglysondalanh": self.tactu._khoathuonglanglysondalanh,
                     "_langlysonchothanhvien": self.tactu.get_is_langlysonchothanhvien(),
+                    "_langlysontattodoi": self.tactu.get_dsidtattodoilanglyson(),
+                    "_langlysongiunhom": self.tactu.get_dsidgiunhomlanglyson(),
                     "_thongkephien": self.thongke.get_tomtatphien(),
                     # Ngân lượng mang theo hiện tại (báo cáo Telegram)
                     "nganluong": self.moitruong.get_nganluong(),
@@ -418,6 +422,13 @@ class CuaSo:
                         self.tactu.thietlap_danhsachmuctieu(danhsach.get("tancong", []), danhsach.get("boqua", []))
                     except Exception as e:
                         print(f"Lỗi khi đọc danh sách mục tiêu: {e}")
+                elif isinstance(cmd, str) and cmd.startswith("xoa_muctieuboqua:"):
+                    # xoa_muctieuboqua:[id, ...] hoặc xoa_muctieuboqua:all
+                    try:
+                        thamso = cmd.split(":", 1)[1]
+                        self.tactu.xoa_muctieuboqua(None if thamso == "all" else [int(i) for i in json.loads(thamso)])
+                    except Exception as e:
+                        print(f"Lỗi khi xoá mục tiêu bỏ qua: {e}")
                 elif cmd == "battat_tranhvungcam":
                     self.tactu.battat_tranhvungcam()
                 elif cmd == "battat_giukhoangcachketancong":

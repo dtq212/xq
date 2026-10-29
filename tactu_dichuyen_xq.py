@@ -443,6 +443,7 @@ class TacTuDiChuyen:
                             if not is_anhhuongboimuctieutheosau:
                                 print(f"[DEBUG-MOVE] KẸT TƯỜNG/GÓC LAG khi đến QUÁI {hex(iddoituongmuctieudanggom)}. Blacklist 120s.")
                                 self._idmuctieubiloi_map[iddoituongmuctieudanggom] = time.time()
+                                self._ghimuctieuboqua(iddoituongmuctieudanggom, "Kẹt tường khi tới")
                         else:
                             print(f"[DEBUG-MOVE] KẸT khi di chuyển. Reset hành động.")
 

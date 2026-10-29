@@ -174,6 +174,9 @@ class TacTuHoatDong:
         phatam("Bật lại hoạt động")
 
     def action_tudongtodoi(self):
+        # Lăng Ly Sơn đang giải tán tổ đội cũ (tactu_langlyson_xq): tạm nghỉ, còn trong nhóm thì rời; xong thì lập nhóm mới như thường
+        if self.action_roinhomlanglyson():
+            return
         if not self._is_tudongtodoi:
             return
 
@@ -196,7 +199,11 @@ class TacTuHoatDong:
         if not danhsachuutientodoi:
             return
 
-        if tenmonphai in ("vanmongcoc", "thucson") and self._is_chedobufftoanbang and idbandohientai in BANDOKHONGPKs:
+        # Lăng Ly Sơn đang đi dở (đã vào phó bản, chưa lĩnh thưởng xong): không rời nhóm / nhường quyền trưởng nhóm (phó bản giữ theo tổ
+        # đội, người đi phó bản phải là trưởng nhóm), vẫn nhận lời mời / mời người rớt nhóm vào lại
+        is_giunhom = self.get_is_giunhomlanglyson()
+
+        if tenmonphai in ("vanmongcoc", "thucson") and self._is_chedobufftoanbang and idbandohientai in BANDOKHONGPKs and not is_giunhom:
             if is_dangtrongnhom:
                 if self.moitruong.get_is_truongnhom() or (self._is_khongcongidebuff and time.time() - self._thoidiemkiemtrakhongcongidebuffgannhat > 10.):
                     self._thoidiemkiemtrakhongcongidebuffgannhat = time.time()
@@ -234,7 +241,7 @@ class TacTuHoatDong:
                 if self._nhomuutiencaohon[0] != idtruongnhomtotnhat:
                     self._nhomuutiencaohon = (idtruongnhomtotnhat, time.time())
                 # Phó bản không bao giờ tự rời (trưởng nhóm rời = giải tán, cả đội bị đá ra); ngoài ra phải thấy liên tục 3s mới rời
-                if idbandohientai not in BANDOPHOBANs and time.time() - self._nhomuutiencaohon[1] > 3. \
+                if idbandohientai not in BANDOPHOBANs and not is_giunhom and time.time() - self._nhomuutiencaohon[1] > 3. \
                         and time.time() - self._thoidiemroinhomtodoigannhat > 3.:
                     self._thoidiemroinhomtodoigannhat = time.time()
                     print(f"[TỔ ĐỘI] Nhóm khác cùng bản đồ ưu tiên cao hơn (trưởng nhóm {idtruongnhomtotnhat}) => rời nhóm để vào nhóm đó")
@@ -268,7 +275,7 @@ class TacTuHoatDong:
 
         if is_dangtrongnhom and self.moitruong.get_is_truongnhom():
             for thanhvien_id in danhsachthanhviens:
-                if xephang_map.get(thanhvien_id, len(xephang_map)) < xephangcuatoi:
+                if xephang_map.get(thanhvien_id, len(xephang_map)) < xephangcuatoi and not is_giunhom:
                     self.moitruong.action_nhuongquyentruongnhom(thanhvien_id)
                     return
 
@@ -278,7 +285,8 @@ class TacTuHoatDong:
                 if self._idmoihangcaohon != idnguoichoixephangcaonhat:
                     self._idmoihangcaohon = idnguoichoixephangcaonhat
                     self._thoidiembatdaumoihangcaohon = time.time()
-                if len(danhsachthanhviens) <= 1 and time.time() - self._thoidiembatdaumoihangcaohon > 15. and idbandohientai not in BANDOPHOBANs:
+                if len(danhsachthanhviens) <= 1 and time.time() - self._thoidiembatdaumoihangcaohon > 15. and idbandohientai not in BANDOPHOBANs \
+                        and not is_giunhom:
                     self._idmoihangcaohon = 0
                     self.moitruong.action_thoatkhoinhom()
                     return

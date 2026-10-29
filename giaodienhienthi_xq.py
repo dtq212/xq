@@ -441,6 +441,26 @@ class GiaoDienHienThi:
         # (hwnd, {"tancong": [...], "boqua": [...]}) đang hiện
         self._muctieudanghien = (None, {"tancong": [], "boqua": []})
 
+        # Mục tiêu bot tự bỏ qua theo id (bị chặn, kẹt tường, đánh không trúng, đi tới mãi không thấy): xoá khi bỏ nhầm để đánh lại ngay
+        nhom = self._taonhom(tab, "Đang tự bỏ qua (của nhân vật đang chọn)")
+        nhom.columnconfigure(0, weight = 1)
+        khung = ttk.Frame(nhom)
+        khung.grid(row = 0, column = 0, columnspan = 2, sticky = tk.NSEW)
+        self.tree_muctieuboqua = ttk.Treeview(khung, columns = ("ten", "id", "lydo", "conlai"), show = "headings", height = 5, selectmode = "extended")
+        for cot, tieude, rong, canh in (("ten", "Tên", 180, tk.W), ("id", "ID", 90, tk.W), ("lydo", "Lý do", 170, tk.W), ("conlai", "Còn lại", 70, tk.E)):
+            self.tree_muctieuboqua.heading(cot, text = tieude)
+            self.tree_muctieuboqua.column(cot, width = self._px(rong), anchor = canh)
+        thanhcuon = ttk.Scrollbar(khung, orient = tk.VERTICAL, command = self.tree_muctieuboqua.yview)
+        self.tree_muctieuboqua.configure(yscrollcommand = thanhcuon.set)
+        self.tree_muctieuboqua.pack(side = tk.LEFT, fill = tk.BOTH, expand = True)
+        thanhcuon.pack(side = tk.RIGHT, fill = tk.Y)
+        self.tree_muctieuboqua.bind("<Delete>", lambda e: self._xoamuctieuboqua())
+        hangnut = ttk.Frame(nhom)
+        hangnut.grid(row = 1, column = 0, columnspan = 2, sticky = tk.W, pady = (4, 0))
+        ttk.Button(hangnut, text = "Xoá", command = self._xoamuctieuboqua).pack(side = tk.LEFT, padx = (0, 4))
+        ttk.Button(hangnut, text = "Xoá hết", command = lambda: self._xoamuctieuboqua(is_tatca = True)).pack(side = tk.LEFT)
+        ttk.Label(hangnut, text = "Xoá = bot thôi bỏ qua, đánh lại ngay", style = "Phu.TLabel").pack(side = tk.LEFT, padx = (8, 0))
+
         nhom = self._taonhom(tab, "Tầm đánh")
         hangtamxa = ttk.Frame(nhom)
         hangtamxa.grid(row = 0, column = 0, columnspan = 2, sticky = tk.W)
@@ -525,6 +545,38 @@ class GiaoDienHienThi:
         danhsachs = {k: list(v) for k, v in self._muctieudanghien[1].items()}
         danhsachs[khoa] = [t for t in danhsachs[khoa] if t not in chon]
         self._guidanhsachmuctieu(danhsachs)
+
+    def _xoamuctieuboqua(self, is_tatca = False):
+        hwnd = self.get_selected_hwnd()
+        if not hwnd:
+            return
+        if is_tatca:
+            self.command_dict[hwnd] = "xoa_muctieuboqua:all"
+            self.tree_muctieuboqua.delete(*self.tree_muctieuboqua.get_children())
+            return
+        chon = self.tree_muctieuboqua.selection()
+        if not chon:
+            return
+        self.command_dict[hwnd] = "xoa_muctieuboqua:" + json.dumps([int(iid) for iid in chon])
+        self.tree_muctieuboqua.delete(*chon)
+
+    def _capnhatmuctieuboqua(self, info):
+        # Giữ dòng đang chọn khi làm mới (iid = id đối tượng)
+        tree = self.tree_muctieuboqua
+        muctieus = info.get("_muctieuboquas") or []
+        dangchon = set(tree.selection())
+        idmois = {str(muc["id"]) for muc in muctieus}
+        for iid in tree.get_children():
+            if iid not in idmois:
+                tree.delete(iid)
+        for muc in muctieus:
+            iid = str(muc["id"])
+            giatri = (muc["ten"] or "?", hex(muc["id"]), muc["lydo"], f"{muc['conlai']}s")
+            if tree.exists(iid):
+                tree.item(iid, values = giatri)
+            else:
+                tree.insert("", tk.END, iid = iid, values = giatri)
+        tree.selection_set([t for t in dangchon if tree.exists(t)])
 
     def _capnhatdanhsachmuctieu(self, hwnd, info):
         tancongs = list(info.get("_tenmuctieutancongs") or [])
@@ -1374,11 +1426,12 @@ class GiaoDienHienThi:
         self.btn_langlyson.grid(row = 0, column = 0, sticky = tk.W)
         self.lbl_langlyson = tk.Label(nhom, text = "", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(560))
         self.lbl_langlyson.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
-        tk.Label(nhom, text = "Bật ở nhân vật trưởng nhóm, các thành viên bật Theo sau (tự nói chuyện NPC vào / qua tầng theo). Mỗi vòng: "
+        tk.Label(nhom, text = "Bật ở nhân vật trưởng nhóm (bật cả ở thành viên cũng được: thành viên chỉ đi theo), các thành viên bật Theo sau "
+                              "(tự nói chuyện NPC vào / qua tầng, tự lĩnh thưởng). Mỗi vòng: "
                               "Thuý Hoa Sơn → Đào Vong Khổ Dịch vào Tầng Trên (đánh Tướng Quân Dũng, khởi động Cơ Quan Thạch, Cơ Quan Thạch Sư "
                               "sang tầng) → Tầng Dưới (Đường Truy, Thế Công Minh, Thạch Tướng Quân, Hào Quật, Lăng Mộ Thạch Sư) → Thư Phòng "
-                              "(Cơ Quan Tướng Quân) → Hồi Thành Phù ra, Đào Vong Khổ Dịch lĩnh thưởng → giải tán tổ đội, chờ Tổ đội tự động "
-                              "lập nhóm mới rồi đi vòng sau, tới khi bấm dừng.",
+                              "(chờ đủ thành viên rồi mới đánh Cơ Quan Tướng Quân) → Hồi Thành Phù ra, Đào Vong Khổ Dịch lĩnh thưởng → tạm tắt "
+                              "Tổ đội tự động, mọi người rời nhóm cũ, bật lại cho lập nhóm mới rồi đi vòng sau, tới khi bấm dừng.",
                  fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(560)).grid(row = 2, column = 0, sticky = tk.W, pady = (6, 0))
 
     def _battatlanglyson(self):
@@ -2072,6 +2125,7 @@ class GiaoDienHienThi:
                 pass
 
         self._capnhatdanhsachmuctieu(hwnd_to_show, info)
+        self._capnhatmuctieuboqua(info)
         self._capnhatmuctieutheosau(hwnd_to_show, info)
 
         self._capnhatlotrinhmau(hwnd_to_show, info, idbando, tenbando)
