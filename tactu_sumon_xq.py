@@ -333,12 +333,19 @@ class TacTuSuMon:
         if diachi:
             return diachi, None
         vitri = self._sovitri.timnpc(tennpc, self._thumucgame(), idbandogoiy if is_chibandogoiy else None)
-        # Tới chỗ đã biết mà không thấy (NPC đổi chỗ / vị trí sai): đi khắp bản đồ đó tìm
+        nhan = tennpc
+        if not vitri and is_chibandogoiy:
+            # Cửa hàng chưa biết chỗ: tới chỗ cửa hàng khác cùng nước (đứng sát nhau)
+            vitri = self._sovitri.timnpccungloai(tennpc, idbandogoiy, self._thumucgame())
+            nhan = f"{tennpc} (khu cửa hàng)"
+        # Tới chỗ đã biết mà không thấy (NPC đổi chỗ / vị trí sai / chỉ biết khu cửa hàng): đi vòng quanh chỗ đó tìm
         if vitri and not (self.moitruong.get_idbandohientai() == vitri[0] and self.moitruong.get_khoangcachdiem(vitri[1], vitri[2]) <= KHOANGCACHTOIDIEM):
-            return None, self._dentoi(s, vitri[0], vitri[1], vitri[2], tennpc)
+            if not (s["khampha"] and s["khampha"]["khoa"] == f"npc|{tennpc}"):
+                return None, self._dentoi(s, vitri[0], vitri[1], vitri[2], nhan)
         idbandogoiy = vitri[0] if vitri else idbandogoiy
         if idbandogoiy:
-            return None, self._diquadiem(s, f"npc|{tennpc}", idbandogoiy, laydiemkhampha(idbandogoiy), f"tìm {tennpc}")
+            diems = laydiemkhampha(idbandogoiy, vitri[1:] if vitri else None)
+            return None, self._diquadiem(s, f"npc|{tennpc}", idbandogoiy, diems, f"tìm {tennpc}")
         return None, None
 
     # --- Hội thoại NPC -----------------------------------------------------------------------------------------------------------

@@ -223,6 +223,61 @@ def _thumucvitri():
     return os.path.join(_thumucgoc(), "_internal", "vitridoituong")
 
 
+_bandonho = {"duongdan": None, "dulieu": {}}
+
+
+def _taibandonho(thumucgame):
+    # Biểu tượng trên bản đồ nhỏ của mọi bản đồ: đoạn chữ trong map/<id>.dat, mỗi dòng "<loại> (<x>,<y>) <số dòng tên>" (loại 0 = cổng,
+    # 1 = NPC, 2 Bảo Khố, 3 Giáp Trụ / Trang Phục, 4 Kim Hoàn, 5 Vũ Khí, 6 Sửa Chữa, 7 Y Dược, 8 Dịch Trạm, 9 Tạp Hóa, 10 Tửu Lâu), tên
+    # là dòng đó (đếm từ 0) của menu/main/vl.dat, NPC cửa hàng các nước ghi "<danh hiệu> <tên riêng>" ("Chủ Tiệm Vũ Khí Ô Địch").
+    # -> {id bản đồ: [(loại, x, y, tên)]}. Đọc hết file bản đồ (~125MB) mất vài giây nên lưu đệm _internal/bandonho_cache.json theo
+    # kích thước + thời điểm sửa của các file đó
+    if _bandonho["duongdan"] == thumucgame:
+        return _bandonho["dulieu"]
+    dulieu = {}
+    try:
+        thumucbando = os.path.join(thumucgame, "map")
+        tenfiles = sorted(f for f in os.listdir(thumucbando) if f.endswith(".dat") and f[:-4].isdigit())
+        dau = [os.path.join(thumucgame, "menu", "main", "vl.dat")] + [os.path.join(thumucbando, f) for f in tenfiles]
+        dau = "|".join(f"{os.path.getsize(p)}:{int(os.path.getmtime(p))}" for p in dau)
+        duongdandem = os.path.join(_thumucgoc(), "_internal", "bandonho_cache.json")
+        try:
+            with open(duongdandem, encoding = "utf-8") as file:
+                dem = json.load(file)
+            if dem.get("dau") == dau:
+                dulieu = {int(k): [tuple(m) for m in v] for k, v in dem["bando"].items()}
+        except (OSError, ValueError, KeyError):
+            pass
+        if not dulieu:
+            with open(os.path.join(thumucgame, "menu", "main", "vl.dat"), encoding = "utf-8-sig") as file:
+                tens = file.read().splitlines()
+            for tenfile in tenfiles:
+                with open(os.path.join(thumucbando, tenfile), "rb") as file:
+                    noidung = file.read()
+                mucs = []
+                for loai, x, y, stt in re.findall(rb"(\d+) \((\d+),(\d+)\) (\d+)\r\n", noidung):
+                    stt = int(stt)
+                    if stt < len(tens) and tens[stt].strip():
+                        muc = (int(loai), int(x), int(y), tens[stt].strip())
+                        if muc not in mucs:
+                            mucs.append(muc)
+                if mucs:
+                    dulieu[int(tenfile[:-4])] = mucs
+            with open(duongdandem, "w", encoding = "utf-8") as file:
+                json.dump({"dau": dau, "bando": dulieu}, file, ensure_ascii = False, separators = (",", ":"))
+    except OSError as err:
+        print(f"[SƯ MÔN] Không đọc được bản đồ nhỏ của game: {err}")
+    _bandonho.update(duongdan = thumucgame, dulieu = dulieu)
+    return dulieu
+
+
+def _laynpcbandonho(thumucgame):
+    # NPC trên bản đồ nhỏ dạng [(tên, bản đồ, x, y)], bỏ cổng (loại 0)
+    if not thumucgame:
+        return []
+    return [(ten, idbando, x, y) for idbando, mucs in _taibandonho(thumucgame).items() for loai, x, y, ten in mucs if loai]
+
+
 _questlink = {"duongdan": None, "dulieu": {}}
 
 
@@ -357,14 +412,19 @@ class SoVitri:
         return gop
 
     def timnpc(self, ten, thumucgame = None, idbando = None):
-        # -> (bản đồ, x, y) hoặc None: bot từng thấy > bảng biết sẵn > questlink của game. idbando: chỉ lấy NPC ở bản đồ đó (cửa hàng
-        # cùng tên đầu "Chủ Tiệm Vũ Khí" có ở mọi nước)
-        npcs = self._laygop()["npc"]
-        for nguon in (npcs, VITRINPCCODINH, _taiquestlink(thumucgame) if thumucgame else {}):
-            for tenxet, vitri in sorted(nguon.items(), key = lambda m: m[0] != ten):
+        # -> (bản đồ, x, y) hoặc None: bot từng thấy > bản đồ nhỏ của game > bảng biết sẵn > questlink. idbando: chỉ lấy NPC ở bản đồ đó
+        # (cửa hàng cùng tên đầu "Chủ Tiệm Vũ Khí" có ở mọi nước)
+        for nguon in self._laynguonnpc(thumucgame):
+            for tenxet, *vitri in sorted(nguon, key = lambda m: m[0] != ten):
                 if (tenxet == ten or is_trungten(ten, tenxet)) and (idbando is None or vitri[0] == idbando):
                     return tuple(vitri[:3])
         return None
+
+    def _laynguonnpc(self, thumucgame):
+        # Các nguồn vị trí NPC theo thứ tự tin cậy, mỗi nguồn [(tên, bản đồ, x, y)] (cùng tên có thể ở nhiều bản đồ)
+        return ([(ten, *v[:3]) for ten, v in self._laygop()["npc"].items()], _laynpcbandonho(thumucgame),
+                [(ten, *v[:3]) for ten, v in VITRINPCCODINH.items()],
+                [(ten, *v[:3]) for ten, v in (_taiquestlink(thumucgame) if thumucgame else {}).items()])
 
     def timhang(self, idbando, tennpc, tenvatpham):
         # -> (ô, giá) của món ở cửa hàng NPC (tên riêng hoặc danh hiệu) trên bản đồ, theo lần mở gần nhất; chưa biết thì None
@@ -378,6 +438,18 @@ class SoVitri:
                     tot = (ch.get("luc", 0), int(o), int(gia))
         return tot[1:] if tot else None
 
+    def timnpccungloai(self, tennpc, idbando, thumucgame = None):
+        # Cửa hàng chưa biết chỗ: các cửa hàng ("Chủ Tiệm ...") của một nước đứng sát nhau, lấy chỗ của cửa hàng bất kỳ đã biết trên
+        # bản đồ đó (bot từng thấy, questlink của game) -> (bản đồ, x, y) hoặc None
+        tiento = chuanhoaten("Chủ Tiệm")
+        if not chuanhoaten(tennpc).startswith(tiento):
+            return None
+        for nguon in self._laynguonnpc(thumucgame):
+            for tenxet, *vitri in nguon:
+                if vitri[0] == idbando and chuanhoaten(tenxet).startswith(tiento):
+                    return tuple(vitri[:3])
+        return None
+
     def timquai(self, ten, idbando):
         # -> (x, y) chỗ gần nhất từng thấy quái tên này trên bản đồ, hoặc None
         for tenxet, theobando in self._laygop()["quai"].items():
@@ -386,21 +458,31 @@ class SoVitri:
         return None
 
 
-def laydiemkhampha(idbando):
-    # Chưa biết NPC / quái ở đâu trên bản đồ: lần lượt đi qua các cổng và điểm xuất hiện của bản đồ (dữ liệu cổng bando_xq)
-    diems = []
-    for idke, xcong, ycong, _, _ in (BANDOCONG_MAP.get(idbando) or ("", ()))[1]:
-        diems.append((xcong, ycong))
-    for idkhac, (_, congs) in BANDOCONG_MAP.items():
+KHOANGCACHTRANHCONG = 12
+
+
+def _laydiemcong(idbando):
+    # Cổng của bản đồ và các điểm xuất hiện khi từ bản đồ khác sang (cạnh đó thường có cổng ngược lại, dữ liệu cổng có thể thiếu:
+    # Hàn Quốc không ghi cổng sang Tuyết Phong Sơn Bí Đạo nhưng điểm xuất hiện từ đó sang (164, 244) nằm ngay trên cổng)
+    diems = [(xcong, ycong) for _, xcong, ycong, _, _ in (BANDOCONG_MAP.get(idbando) or ("", ()))[1]]
+    for _, (_, congs) in BANDOCONG_MAP.items():
         for idke, _, _, xden, yden in congs:
             if idke == idbando and xden is not None:
                 diems.append((xden, yden))
-    # Thêm tâm các điểm và 4 điểm quanh tâm để đi ngang giữa bản đồ (điểm không tới được thì quá giờ tự sang điểm kế)
-    if diems:
-        xtam, ytam = sum(d[0] for d in diems) // len(diems), sum(d[1] for d in diems) // len(diems)
-        diems += [(xtam, ytam), (xtam + 25, ytam), (xtam, ytam + 25), (max(1, xtam - 25), ytam), (xtam, max(1, ytam - 25))]
-    kq = []
-    for d in diems:
-        if all(abs(d[0] - k[0]) + abs(d[1] - k[1]) > 10 for k in kq):
-            kq.append(d)
-    return kq
+    return diems
+
+
+def laydiemkhampha(idbando, tam = None):
+    # Chưa biết NPC / quái ở đâu trên bản đồ: đi vòng quanh tâm (tam, hoặc tâm các cổng của bản đồ) theo 2 vòng 20 / 40 ô.
+    # Bỏ mọi điểm cách cổng / điểm xuất hiện dưới KHOANGCACHTRANHCONG ô (đi tới đó là bị chuyển bản đồ)
+    congs = _laydiemcong(idbando)
+    if tam is None:
+        if not congs:
+            return []
+        tam = (sum(d[0] for d in congs) // len(congs), sum(d[1] for d in congs) // len(congs))
+    xtam, ytam = tam
+    diems = [(xtam, ytam)]
+    for bankinh in (20, 40):
+        diems += [(xtam + dx * bankinh, ytam + dy * bankinh) for dx, dy in ((1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1))]
+    return [d for d in diems if d[0] > 0 and d[1] > 0
+            and all(abs(d[0] - c[0]) + abs(d[1] - c[1]) >= KHOANGCACHTRANHCONG for c in congs)]
