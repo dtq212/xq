@@ -362,7 +362,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         # trạng thái lần gần nhất cho giao diện; (lúc, id trưởng nhóm) lần đọc shared_data "có ai đang gom mình không"; lúc rời nhóm cũ gần nhất
         self._todoimotlan = None
         self._trangthaitodoimotlan = ""
-        self._bonhotodoimotlan = (0., 0)
+        self._bonhotodoimotlan = (0., (0, False))
         self._thoidiemroinhomtodoimotlan = 0.
         # Đồng đội hạng cao hơn đang được mời vào nhóm (để biết đã mời bao lâu)
         self._idmoihangcaohon = 0

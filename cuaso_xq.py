@@ -63,6 +63,19 @@ def khoidong_loopthongke(thongke, moitruong, stop):
             print(f"[Loop THỐNG KÊ] Lỗi: {e}")
         time.sleep(CHUKYLAYMAU)
 
+def khoidong_looptodoimotlan(tactu, moitruong, stop):
+    # Tổ đội 1 lần (Ctrl+Alt+T) chạy riêng: để trong luồng phụ (~1s/lượt) thì mỗi người vào nhóm chậm 3-4s. Đang gom / được gom thì
+    # 0.25s/lượt, rảnh thì 0.5s/lượt
+    while not stop.is_set() and moitruong.get_is_cuasogametontai():
+        is_dangchay = False
+        try:
+            if moitruong.get_is_nhanvattontai() and not moitruong.get_is_dangmatketnoi():
+                is_dangchay = tactu.action_todoimotlan()
+        except Exception as e:
+            print(f"[Loop TỔ ĐỘI 1 LẦN] Lỗi: {e}")
+            time.sleep(1)
+        time.sleep(0.25 if is_dangchay else 0.5)
+
 def khoidong_loopgiamsat(giamsat, theodoisuco, moitruong, stop):
     while not stop.is_set() and moitruong.get_is_cuasogametontai():
         try:
@@ -111,6 +124,7 @@ class CuaSo:
             threading.Thread(target = khoidong_loopgiuotrong, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopthongke, args = [self.thongke, self.moitruong, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopgiamsat, args = [self.giamsat, self.theodoisuco, self.moitruong, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_looptodoimotlan, args = [self.tactu, self.moitruong, self.main_stop], daemon = True),
         )
 
         for luong in self.luongs:
