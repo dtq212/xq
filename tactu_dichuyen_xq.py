@@ -1114,11 +1114,16 @@ class TacTuDiChuyen:
                 return True
         return False
 
+    def _is_bolotrinhdiemdanh(self):
+        # Sư môn (Thu thập, bắt quái...), Lăng Ly Sơn / Thành Kiều, Sư Gia, Tập Kích đang đánh quái của việc đó: bỏ qua lộ trình điểm đánh
+        # (bản đồ không có điểm đánh / quái ngoài tầm điểm đánh vẫn đánh)
+        return bool(self._sumon and self._sumon["chedo"] == "danhquai") or self.get_is_langlysondanhquai() or self.get_is_sugiadanhquai() \
+            or self.get_is_tapkichdanhquai()
+
     def _kiemtra_tamdiemdanh(self, x, y):
         # Đang chạy theo lộ trình điểm đánh: mục tiêu phải nằm trong bán kính _bankinhdiemdanh quanh ít nhất 1 điểm đánh của bản đồ hiện tại.
         # Không có điểm đánh nào trên bản đồ này (hoặc không bật lộ trình) thì không giới hạn.
-        if not self._is_tudongdichuyendiemdanhxungquanh or not self._diemdanhxungquanhs or (self._sumon and self._sumon["chedo"] == "danhquai") \
-                or self.get_is_langlysondanhquai() or self.get_is_sugiadanhquai() or self.get_is_tapkichdanhquai():
+        if not self._is_tudongdichuyendiemdanhxungquanh or not self._diemdanhxungquanhs or self._is_bolotrinhdiemdanh():
             return True
         idbandohientai = self.moitruong.get_idbandohientai()
         diemcungbandos = [d for d in self._diemdanhxungquanhs if len(d) >= 3 and d[2] == idbandohientai]
@@ -1143,6 +1148,8 @@ class TacTuDiChuyen:
 
         # Tập Kích Môn Phái: menu vào phó bản / hộp mua Lễ Bao hiện ở cả thành viên theo sau, chọn trước mọi việc khác
         self._xulymenutapkich()
+        # Phong Yêu Kính: menu "ta muốn vào" hiện ở mọi người trong nhóm (tactu_langlyson_xq)
+        self._xulymenuphongyeu()
 
         # Đi tới bản đồ do người dùng chọn: thay hẳn lộ trình điểm đánh tới khi tới nơi / bấm dừng
         if self._idbandocandi:

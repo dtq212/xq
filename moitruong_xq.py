@@ -1225,6 +1225,14 @@ class MoiTruong:
         x = self.get_diachicosothongtinvatphamhanhtrang()
         return (read_string(self.tientrinh, x + idvitri * DC.HT_KICHTHUOCMOTA + DC.HT_MOTA, 1024) or "") if x else ""
 
+    def get_motathovatphamhanhtrangcosan(self, idvitri):
+        # Như get_motavatphamhanhtrangcosan nhưng giữ mã màu "\x1b<ký tự>" (read_string bỏ hết): mã đầu mô tả là màu tên món
+        # (\x1bC Lam Kim, \x1bY vàng). "" nếu chưa nạp
+        x = self.get_diachicosothongtinvatphamhanhtrang()
+        if not x:
+            return ""
+        return read_bytes(self.tientrinh, x + idvitri * DC.HT_KICHTHUOCMOTA + DC.HT_MOTA, 1024).split(b"\0")[0].decode("utf-8", "ignore")
+
     def truyvan_motavatphamhanhtrang(self, idvitri):
         x = self.get_diachicosothongtinvatphamhanhtrang()
         if not x:

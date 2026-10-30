@@ -1527,13 +1527,15 @@ class GiaoDienHienThi:
                  fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(560)).grid(row = 2, column = 0, sticky = tk.W, pady = (6, 0))
 
         # Tự động đi Lăng Ly Sơn / Thành Kiều (tactu_langlyson_xq) cho nhân vật đang chọn
-        nhom = self._taonhom(tab, "Phó bản Lăng Ly Sơn / Thành Kiều (nhân vật đang chọn)")
+        nhom = self._taonhom(tab, "Phó bản Lăng Ly Sơn / Thành Kiều / Phong Yêu Kính (nhân vật đang chọn)")
         hangnut = tk.Frame(nhom)
         hangnut.grid(row = 0, column = 0, sticky = tk.W)
         self.btn_langlyson = ttk.Button(hangnut, text = "🏯 Bắt đầu Lăng Ly Sơn", command = lambda: self._battatlanglyson("langlyson"))
         self.btn_langlyson.pack(side = tk.LEFT)
         self.btn_thanhkieu = ttk.Button(hangnut, text = "⚔ Bắt đầu Thành Kiều", command = lambda: self._battatlanglyson("thanhkieu"))
         self.btn_thanhkieu.pack(side = tk.LEFT, padx = (8, 0))
+        self.btn_phongyeukinh = ttk.Button(hangnut, text = "🪞 Bắt đầu Phong Yêu Kính", command = lambda: self._battatlanglyson("phongyeukinh"))
+        self.btn_phongyeukinh.pack(side = tk.LEFT, padx = (8, 0))
         self.lbl_langlyson = tk.Label(nhom, text = "", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(560))
         self.lbl_langlyson.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
         tk.Label(nhom, text = "Bật ở nhân vật trưởng nhóm (bật cả ở thành viên cũng được: thành viên chỉ đi theo), các thành viên bật Theo sau "
@@ -1544,7 +1546,11 @@ class GiaoDienHienThi:
                               "Tổ đội tự động, mọi người rời nhóm cũ, bật lại cho lập nhóm mới rồi đi vòng sau, tới khi bấm dừng. "
                               "Thành Kiều: trưởng nhóm tới Tần Quốc (220, 65) Thảo Nghịch Tướng Quân \"3. Sử dụng [Hạt Mè Khai Môn] tiến vào\" → "
                               "Xác nhận (cả nhóm được đưa vào) → Mã Quỷ, Lương Hưng, Yến Thập Tam, Tư Tà → chờ đủ thành viên đánh Thủ Lĩnh "
-                              "Thành Kiều → Hồi Thành Phù về Tần Quốc \"4. Nhận thưởng\" → \"1. Nhận thưởng\" → đổi tổ đội như trên. Hết Hạt Mè Khai Môn thì dừng.",
+                              "Thành Kiều → Hồi Thành Phù về Tần Quốc \"4. Nhận thưởng\" → \"1. Nhận thưởng\" → đổi tổ đội như trên. Hết Hạt Mè Khai Môn thì dừng. "
+                              "Phong Yêu Kính: trưởng nhóm tới Chu Quốc (252, 160) Tả Khâu Minh, give 1 món Lam Kim (chỉ đồ trong túi, tên màu xanh "
+                              "Lam Kim, Chưa giám định, chưa Phong Ấn, cấp ≥ cấp nhân vật − 25 và ≥ 15; chọn món cấp thấp nhất) → \"1. Đúng vậy, ta muốn đi\" → mọi người "
+                              "\"1. Đúng vậy, ta muốn vào\" → dò khắp bản đồ đánh hết quái, giết 2 boss (tên có Vương / Thần) → Thỏ Yêu về Chu Quốc "
+                              "→ đổi tổ đội như trên. Hết đồ Lam Kim thì dừng.",
                  fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(560)).grid(row = 2, column = 0, sticky = tk.W, pady = (6, 0))
 
         # Tập Kích Môn Phái (tactu_tapkich_xq) cho nhân vật đang chọn
@@ -1594,7 +1600,8 @@ class GiaoDienHienThi:
         info = (self.shared_data.get(hwnd) or {}) if hwnd else {}
         dangdi = info.get("_phobanlanglyson") or ("langlyson" if info.get("_is_danglanglyson") else "")
         for nut, phoban, chubatdau, ten in ((self.btn_langlyson, "langlyson", "🏯 Bắt đầu Lăng Ly Sơn", "Lăng Ly Sơn"),
-                                            (self.btn_thanhkieu, "thanhkieu", "⚔ Bắt đầu Thành Kiều", "Thành Kiều")):
+                                            (self.btn_thanhkieu, "thanhkieu", "⚔ Bắt đầu Thành Kiều", "Thành Kiều"),
+                                            (self.btn_phongyeukinh, "phongyeukinh", "🪞 Bắt đầu Phong Yêu Kính", "Phong Yêu Kính")):
             chunut = f"⏹ Dừng {ten}" if dangdi == phoban else chubatdau
             trangthai = tk.DISABLED if dangdi and dangdi != phoban else tk.NORMAL
             if nut.cget("text") != chunut:

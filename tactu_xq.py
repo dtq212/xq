@@ -150,6 +150,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._thoidiemroinhomlanglyson = 0.
         # Lần đọc gần nhất (lúc, kết quả) "mình là thành viên vòng Lăng Ly Sơn đang đi" từ shared_data
         self._bonhogiunhomlanglyson = (0., False)
+        # Lần chọn menu "ta muốn vào" Phong Yêu Kính gần nhất (tactu_langlyson_xq._xulymenuphongyeu)
+        self._lucchonmenuphongyeu = 0.
         # Nhiệm vụ Sư Gia (tactu_sugia_xq): việc đang làm (None = không), kết quả lần gần nhất cho giao diện; thành viên: việc trả nhiệm vụ
         # đang dở, lần chọn "Nhận" theo trưởng nhóm gần nhất, (lúc, trạng thái) nhiệm vụ của mình báo qua shared_data
         self._sugia = None
@@ -602,9 +604,13 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_is_dangsumon": bool(self._sumon),
             # Sư Gia đang bật: như sư môn, dis / mở lại bot thì tự bật tiếp (bấm Dừng, đủ số lần trong ngày, lỗi dừng thì là False)
             "_is_dangsugia": bool(self._sugia),
+            # Tập Kích đang bật: như sư môn, dis / mở lại bot thì tự bật tiếp với môn phái đã chọn (bấm Dừng, lỗi dừng thì là False)
+            "_is_dangtapkich": bool(self._tapkich),
+            # Phó bản đang đi ("langlyson" / "thanhkieu", "" = không): dis / mở lại bot thì tự bật tiếp
+            "_phobandanglanglyson": self.get_phobanlanglyson(),
         }
         # Sư môn / Sư Gia đang tạm đổi ô nào (Theo sau, Tự động sử dụng kỹ năng...) thì lưu giá trị gốc của người dùng, dis vào lại không mất
-        for s in (self._sumon, self._sugia, self._tapkich):
+        for s in (self._sumon, self._sugia, self._tapkich, self._langlyson):
             thietlap.update({k: v for k, v in ((s or {}).get("tuychoncu") or {}).items() if k in thietlap})
         util_luuthietlap(str(idnguoichoi), thietlap)
         # luuthietlap chạy mỗi giây: vị trí quái thì THOIGIANLUUVITRIQUAI giây mới ghi file một lần (thoát thì luuvitriquai(True))
@@ -691,6 +697,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
                 self.batdau_sumon()
             if thietlap.get("_is_dangsugia") and not self._sugia:
                 self.batdau_sugia()
+            if thietlap.get("_is_dangtapkich") and not self._tapkich:
+                self.batdau_tapkich()
+            if thietlap.get("_phobandanglanglyson") and not self._langlyson:
+                self.batdau_langlyson(thietlap["_phobandanglanglyson"])
 
     def battat_dilotrinhkhacbando(self):
         self._is_dilotrinhkhacbando = not self._is_dilotrinhkhacbando

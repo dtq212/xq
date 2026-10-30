@@ -872,6 +872,7 @@ class TacTuKyNang:
 
     def _get_phantramsinhlucthapnhatthanhviennhomgan(self, khoangcachtoida):
         # % sinh lực thấp nhất của thành viên nhóm (không tính bản thân) còn sống trong khoangcachtoida ô; không có ai thì None
+        # Đào Hoa đang bật Dã Tính Cuồng Lực (tự đốt máu) chỉ tính khi dưới 25%, không thì coi như đầy máu
         if not self.moitruong.get_is_dangnamtrongnhom():
             return None
         idnguoichoithanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms()
@@ -888,6 +889,8 @@ class TacTuKyNang:
             id_nd = self.moitruong.get_idnguoichoi(addr)
             if id_nd in idnguoichoithanhviennhoms and id_nd != idnguoichoi and self.moitruong.get_khoangcach(addr) <= khoangcachtoida:
                 phantram = self.moitruong.get_phantramsinhlucconlai(addr)
+                if phantram >= 25 and self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_DATINCUONGLUC,), macdinh = False, diachicosothongtinnhanvat = addr, is_hieuungcoloi = 1):
+                    phantram = 100
                 if phantramthapnhat is None or phantram < phantramthapnhat:
                     phantramthapnhat = phantram
 

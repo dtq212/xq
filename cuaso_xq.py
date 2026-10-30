@@ -395,6 +395,9 @@ class CuaSo:
                 elif cmd == "thanhkieu":
                     # Tự động đi Thành Kiều Quân Doanh (cùng module tactu_langlyson_xq)
                     self.tactu.batdau_langlyson("thanhkieu")
+                elif cmd == "phongyeukinh":
+                    # Tự động đi Phong Yêu Kính (cùng module tactu_langlyson_xq)
+                    self.tactu.batdau_langlyson("phongyeukinh")
                 elif cmd == "huylanglyson":
                     self.tactu.huy_langlyson()
                 elif cmd == "sugia":

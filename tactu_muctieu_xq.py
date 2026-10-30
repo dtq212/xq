@@ -147,7 +147,8 @@ class TacTuMucTieu:
         if (idbandohientai in BANDOKHONGPKs) and is_muctieupk:
             return False
 
-        if self._diemdanhxungquanhs and self._is_tudongdichuyendiemdanhxungquanh:
+        # Sư môn / phó bản / Sư Gia đang đánh quái của việc đó thì không giới hạn theo bản đồ của lộ trình
+        if self._diemdanhxungquanhs and self._is_tudongdichuyendiemdanhxungquanh and not self._is_bolotrinhdiemdanh():
             danhsachbandohople = [diem[2] for diem in self._diemdanhxungquanhs if len(diem) >= 3]
             if danhsachbandohople and idbandohientai not in danhsachbandohople:
                 self._nhacbandokhongcodiemdanh()
@@ -193,7 +194,8 @@ class TacTuMucTieu:
         # Tắt tự động sử dụng kỹ năng thì tới nơi cũng không đánh: không đi
         if not self._is_timmuctieuchung or not self._is_tudongsudungkynang:
             return None
-        if self._diemdanhxungquanhs and self._is_tudongdichuyendiemdanhxungquanh:
+        # Sư môn / phó bản / Sư Gia đang đánh quái của việc đó thì không giới hạn theo bản đồ của lộ trình
+        if self._diemdanhxungquanhs and self._is_tudongdichuyendiemdanhxungquanh and not self._is_bolotrinhdiemdanh():
             danhsachbandohople = [diem[2] for diem in self._diemdanhxungquanhs if len(diem) >= 3]
             if danhsachbandohople and self.moitruong.get_idbandohientai() not in danhsachbandohople:
                 return None
@@ -686,7 +688,8 @@ class TacTuMucTieu:
         is_bandokhongpk = idbandohientai in BANDOKHONGPKs
         if is_bandokhongpk and is_muctieupk:
             return False
-        if self._diemdanhxungquanhs and self._is_tudongdichuyendiemdanhxungquanh:
+        # Sư môn / phó bản / Sư Gia đang đánh quái của việc đó thì không giới hạn theo bản đồ của lộ trình
+        if self._diemdanhxungquanhs and self._is_tudongdichuyendiemdanhxungquanh and not self._is_bolotrinhdiemdanh():
             danhsachbandohople = [diem[2] for diem in self._diemdanhxungquanhs if len(diem) >= 3]
             if danhsachbandohople and idbandohientai not in danhsachbandohople:
                 return False
@@ -1211,8 +1214,8 @@ class TacTuMucTieu:
 
         idbandohientai = self.moitruong.get_idbandohientai()
 
-        # Đi Tập Kích: phó bản không nằm trong lộ trình điểm đánh của nhân vật mà vẫn phải gom
-        if self._is_tudongvebanrac and self._diemdanhxungquanhs and not self.get_is_tapkichdanhquai():
+        # Sư môn / phó bản / Sư Gia: bản đồ đang đánh không nằm trong lộ trình điểm đánh của nhân vật mà vẫn phải gom
+        if self._is_tudongvebanrac and self._diemdanhxungquanhs and not self._is_bolotrinhdiemdanh():
             danhsachbandohople = [diem[2] for diem in self._diemdanhxungquanhs if len(diem) >= 3]
             if danhsachbandohople and idbandohientai not in danhsachbandohople:
                 self._is_danggomquai = False
@@ -1440,9 +1443,9 @@ class TacTuMucTieu:
             return
 
         if is_gomhetquaithay:
-            # Còn con thấy được chưa gom lần nào (idquaicankeogannhat) thì kéo tiếp, không dừng vì đủ số; quá tải nâng lên 100
+            # Còn con thấy được chưa gom lần nào (idquaicankeogannhat) thì kéo tiếp, không dừng vì đủ số; quá tải nâng lên 50
             is_dusoluongquaigan = idquaicankeogannhat == 0
-            is_quatai = soluongquaidagom >= 100
+            is_quatai = soluongquaidagom >= 20
         else:
             is_dusoluongquaigan = soluongquaigan >= self._soluongquaigomtoithieu
             is_quatai = soluongquaidagom >= 20

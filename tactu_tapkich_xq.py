@@ -12,13 +12,23 @@ import math
 import time
 
 from hangso_xq import *
-from nhiemvu_xq import BANDOMONPHAI
+from nhiemvu_xq import BANDOMONPHAI, chuanhoaten
 from thongbao_xq import baosuco
 from tienich_xq import phatam
 
 TENNPCTAPKICH = "Võ Lâm Bại Hoại"
+# Boss cuối trong phó bản: thấy rồi thì thôi đi dò, đứng đánh; khuất tầm nhìn mà cách chỗ thấy lần cuối quá chừng này ô thì quay lại đó
+TENBOSSTAPKICH = "Thủ Lĩnh Võ Lâm Bại Hoại"
+KHOANGCACHVEBOSSTAPKICH = 6.
 # Menu thứ 2 (mọi thành viên đều hiện): "Muốn vào không ?" 1. Dùng 5 Ngân Bảo gia tăng 50% kinh nghiệm 2. Tiến vào
 LOINPCVAOTAPKICH = "muốn vào không"
+# Thành viên chưa tới gần NPC: "Hãy gọi tất cả thành viên trong đội tới đây rồi muốn vào th..." (không có lựa chọn) -> chờ chừng này giây
+# rồi nói lại
+LOINPCGOITHANHVIEN = "gọi tất cả thành viên"
+GIANCACHCHOTHANHVIENTAPKICH = 5.
+# Đứng cách NPC tối đa chừng này ô mới "look"; look xong chờ menu tối đa THOIGIANCHOMENUTAPKICH giây rồi look lại
+KHOANGCACHNOICHUYENTAPKICH = 3.
+THOIGIANCHOMENUTAPKICH = 3.
 # Chọn xong menu vào chờ được đưa vào phó bản tối đa chừng này giây, không thì nói chuyện lại; quá SOLANTHUVAOTAPKICH lần thì dừng (hết
 # Ngân Bảo / hết lượt trong ngày?)
 THOIGIANCHOVAOTAPKICH = 30.
@@ -165,10 +175,22 @@ class TacTuTapKich:
         is_trongphoban = moitruong.get_is_bandotapkichmonphai()
         if is_trongphoban:
             if not s["davao"]:
-                s.update(davao = True, hoithoai = None, lucchon = 0., solanloi = 0, do = None)
+                s.update(davao = True, hoithoai = None, lucchon = 0., solanloi = 0, do = None, vitriboss = None)
                 self._logtk(f"Đã vào phó bản (vòng {s['sovong'] + 1})")
             s["chedo"] = "danhquai"
             self._batdanhquaitapkich(s)
+            # Thủ Lĩnh là con cuối: thấy rồi thì thôi đi dò, đứng đánh; khuất tầm nhìn thì quay về chỗ thấy lần cuối
+            diachiboss = self._timnpctapkich(tenca = TENBOSSTAPKICH)[0]
+            if diachiboss:
+                if not s.get("vitriboss"):
+                    self._logtk(f"Thấy {TENBOSSTAPKICH}: thôi dò bản đồ, đánh boss")
+                s["vitriboss"] = moitruong.get_toado(diachiboss)
+            if s.get("vitriboss"):
+                s["trangthai"] = f"vòng {s['sovong'] + 1}: đánh {TENBOSSTAPKICH}"
+                xboss, yboss = s["vitriboss"]
+                if not diachiboss and moitruong.get_khoangcachdiem(xboss, yboss) > KHOANGCACHVEBOSSTAPKICH:
+                    return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (xboss, yboss, idbando), "khoangcachtoida": 1.}
+                return None
             return self._ditheodiem(s, idbando, f"vòng {s['sovong'] + 1}: dò khắp bản đồ đánh quái")
         if s["davao"]:
             # Giết boss xong hệ thống tự đưa ra (hoặc chết / rớt ra): xong vòng, vào vòng sau
@@ -207,18 +229,99 @@ class TacTuTapKich:
                 self._ketthuctapkich(f"❌ Dừng: chọn vào {SOLANTHUVAOTAPKICH} lần không vào được phó bản")
                 return None
             self._logtk(f"Chọn vào {THOIGIANCHOVAOTAPKICH:.0f}s chưa được đưa vào phó bản, nói chuyện lại (lần {s['solanloi'] + 1})")
-        diachinpc = moitruong.action_timkiemnhanvat(tennhanvat = TENNPCTAPKICH)
-        if not diachinpc and not s["hoithoai"]:
+        if now < s.get("lucthulai", 0.):
+            s["trangthai"] = f"chờ thành viên tới gần {TENNPCTAPKICH} ({int(s['lucthulai'] - now)}s)"
+            return None
+        h = s["hoithoai"]
+        diachinpc, idnpc = self._timnpctapkich(h["id"] if h else 0)
+        if not diachinpc:
+            s["hoithoai"] = None
             return self._ditheodiem(s, idbando, f"dò {laytenbando(idbando)} tìm {TENNPCTAPKICH}", is_timnpc = True)
-        x, y = moitruong.get_toado(diachinpc) if diachinpc else (s["do"] or {}).get("diemnpc") or moitruong.get_toado()
-        if diachinpc and s["do"] is not None:
-            s["do"]["diemnpc"] = (x, y)
-        s["trangthai"] = f"vào phó bản (vòng {s['sovong'] + 1}): nói chuyện {TENNPCTAPKICH} ({x}, {y})"
-        ketqua, yeucau = self._noichuyenlls(s, TENNPCTAPKICH, x, y, is_chovankhi = False, luachon = (0, 0))
+        # Không ghi toạ độ vào trạng thái: NPC đi lại, mỗi lần đổi là 1 dòng log
+        s["trangthai"] = f"vào phó bản (vòng {s['sovong'] + 1}): nói chuyện {TENNPCTAPKICH} (id {idnpc:x})"
+        ketqua, yeucau = self._noichuyentapkich(s, diachinpc, idnpc)
         if ketqua == "xong":
             s["lucchon"] = self._lucchonvaotapkich = time.time()
             self._logtk("Đã chọn \"Bớt nói nhảm\" -> \"Dùng 5 Ngân Bảo\", chờ được đưa vào phó bản")
+        elif ketqua == "chothanhvien":
+            s["lucthulai"] = time.time() + GIANCACHCHOTHANHVIENTAPKICH
+            self._logtk(f"NPC bảo gọi đủ thành viên tới: chờ {GIANCACHCHOTHANHVIENTAPKICH:.0f}s rồi nói lại")
         return yeucau
+
+    def _noichuyentapkich(self, s, diachinpc, idnpc):
+        # Tới cạnh đúng con NPC idnpc, "look" -> menu 1 chọn lựa chọn 1 "Bớt nói nhảm đi, ta oánh nè !" -> menu "Muốn vào không ?" chọn lựa
+        # chọn 1 "Dùng 5 Ngân Bảo". NPC bảo "Hãy gọi tất cả thành viên trong đội tới đây..." (không có lựa chọn) thì chờ thành viên.
+        # -> (None | "xong" | "chothanhvien", yêu cầu di chuyển)
+        moitruong = self.moitruong
+        now = time.time()
+        h = s["hoithoai"]
+        if not h or h["id"] != idnpc:
+            h = s["hoithoai"] = {"id": idnpc, "buoc": "look", "luc": 0., "cap": 0}
+        if moitruong.get_khoangcach(diachinpc) > KHOANGCACHNOICHUYENTAPKICH:
+            h["buoc"] = "look"
+            x, y = moitruong.get_toado(diachinpc)
+            # Đi thẳng theo ô (tìm đường của game trong môn phái hay chạy vòng)
+            return None, {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x, y, moitruong.get_idbandohientai()), "khoangcachtoida": 1.,
+                          "is_dioo": True}
+        if h["buoc"] == "look":
+            moitruong.action_ngatdichuyen()
+            moitruong.xoa_noidungcuasotuychon()
+            moitruong.action_thucthicaulenh(f"look {idnpc:x}#")
+            h.update(buoc = "chon", luc = now, cap = 0)
+            return None, None
+        noidung = moitruong.get_noidungcuasotuychon()
+        if not noidung:
+            if now - h["luc"] > THOIGIANCHOMENUTAPKICH:
+                h["buoc"] = "look"
+            return None, None
+        lenhs = [l for l in moitruong.get_lenhcuasotuychons() if l.strip() and l.upper() != "CLOSE"]
+        self._logtk(f"Menu {TENNPCTAPKICH}: {noidung[:80]!r} {lenhs}")
+        thuong = noidung.lower()
+        if LOINPCGOITHANHVIEN in thuong:
+            s["hoithoai"] = None
+            if moitruong.get_is_danghiencuasotuychon():
+                moitruong.set_is_danghiencuasotuychon(False)
+            return "chothanhvien", None
+        if not lenhs:
+            moitruong.xoa_noidungcuasotuychon()
+            h.update(buoc = "look", luc = now)
+            return None, None
+        moitruong.action_ngatdichuyen()
+        moitruong.xoa_noidungcuasotuychon()
+        moitruong.action_thucthicaulenh(lenhs[0])
+        self._logtk(f"{TENNPCTAPKICH}: chọn lựa chọn 1 ({lenhs[0]!r})")
+        if LOINPCVAOTAPKICH in thuong:
+            s["hoithoai"] = None
+            return "xong", None
+        # Menu 1 xong: chờ menu "Muốn vào không ?"
+        h.update(buoc = "chon", luc = now, cap = 1)
+        return None, None
+
+    def _timnpctapkich(self, idgiu = 0, tenca = None):
+        # NPC Võ Lâm Bại Hoại trong tầm nhìn -> (địa chỉ, id đối tượng) hoặc (0, 0). Môn phái có nhiều con cùng lúc: lấy con idgiu (đang
+        # tới) nếu còn thấy, không thì con gần nhất (trước lấy con đầu danh sách, thứ tự đổi liên tục nên chạy qua chạy lại giữa các con).
+        # tenca: tìm con có đúng tên này (đã chuẩn hoá) còn sống thay vì tên chứa "Võ Lâm Bại Hoại" (boss Thủ Lĩnh cũng chứa)
+        moitruong = self.moitruong
+        canten = chuanhoaten(tenca or TENNPCTAPKICH)
+        toado = moitruong.get_toado()
+        tot = None
+        for diachi in moitruong._get_diachidoituongxungquanhs():
+            if not moitruong.get_is_nhanvattontai(diachi) or moitruong.get_is_nguoichoi(diachi):
+                continue
+            tenxet = chuanhoaten(moitruong.get_tendoituong(diachi) or "")
+            if (tenxet != canten if tenca else canten not in tenxet):
+                continue
+            if tenca and moitruong.get_is_nhanvatdachet(diachi):
+                continue
+            khoangcach = math.dist(toado, moitruong.get_toado(diachi))
+            iddoituong = moitruong.get_iddoituong(diachi)
+            if khoangcach > KHOANGCACHTOANMANHINH:
+                continue
+            if idgiu and iddoituong == idgiu:
+                return diachi, iddoituong
+            if not tot or khoangcach < tot[0]:
+                tot = (khoangcach, diachi, iddoituong)
+        return tot[1:] if tot else (0, 0)
 
     def _ditheodiem(self, s, idbando, nhan, is_timnpc = False):
         # Đi lần lượt các điểm dò phủ vùng đi được (lưới vật cản, _taodiemdo), hết thì đi lại từ đầu. Tìm NPC thì chỗ từng thấy NPC đi trước
@@ -244,4 +347,5 @@ class TacTuTapKich:
             x, y = do["diems"][do["i"]]
         s["trangthai"] = f"{nhan} (điểm {do['i'] + 1}/{len(do['diems'])})"
         self._capnhatbuocdichuyen(f"Tập Kích: {nhan} (điểm {do['i'] + 1}/{len(do['diems'])})")
-        return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x, y, idbando), "khoangcachtoida": 1.}
+        # Dò môn phái tìm NPC: đi theo ô (tìm đường của game chạy vòng); trong phó bản giữ như cũ
+        return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x, y, idbando), "khoangcachtoida": 1., "is_dioo": is_timnpc}
