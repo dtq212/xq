@@ -50,7 +50,7 @@ class TacTuMucTieu:
         if self._idnguoichoiviquai and time.time() - self._thoidiemghiviquaigannhat >= THOIGIANGHIVITRIQUAI:
             self._thoidiemghiviquaigannhat = time.time()
             ghinhanvitriquai(self._bangviquai, self.moitruong.get_idbandohientai(),
-                             [(d[1], d[2]) for _, d in doituongs if not d[5] and d[6] not in self._tenmuctieukhongtancongs])
+                             [(d[1], d[2]) for _, d in doituongs if not d[5] and not self._is_tenbiboqua(d[6])])
         return {
             "thoidiem": time.time(),
             "bando": self.moitruong.get_idbandohientai(),
@@ -98,6 +98,21 @@ class TacTuMucTieu:
         self._thoidiemthaymuctieu_map[iddoituong] = (thoidiemthaylandau, thoidiemhientai)
         return thoidiemhientai - thoidiemthaylandau < THOIGIANCHOCHONMUCTIEUMOI
 
+    def _is_tenbiboqua(self, ten):
+        # Danh sách bỏ qua: tên thường khớp đúng, tên bắt đầu bằng "~" là "tên chứa" (vd "~Hổ" bỏ mọi con có chữ Hổ).
+        # Quái cùng loại trùng tên nhiều nên nhớ kết quả theo tên; danh sách bị thay set hoặc thêm tên thì tính lại
+        danhsach = self._tenmuctieukhongtancongs
+        khoa = (id(danhsach), len(danhsach))
+        if getattr(self, "_khoatenbiboqua", None) != khoa:
+            self._khoatenbiboqua = khoa
+            self._mautenchuaboquas = [t[1:].strip() for t in danhsach if t.startswith("~") and t[1:].strip()]
+            self._tenbiboqua_map = {}
+        ketqua = self._tenbiboqua_map.get(ten)
+        if ketqua is None:
+            ketqua = ten in danhsach or any(mau in ten for mau in self._mautenchuaboquas)
+            self._tenbiboqua_map[ten] = ketqua
+        return ketqua
+
     def _kiemtramuctieuhople(self, diachidoituong, is_dongdoi = False):
         # Trả về False nếu không hợp lệ, ngược lại trả về dict thông tin mục tiêu để tái sử dụng
         # Ghi nhận lần thấy trước mọi kiểm tra khác (kể cả đồng đội) để đếm đúng thời gian đã nhìn thấy
@@ -117,7 +132,7 @@ class TacTuMucTieu:
             return False
         if self._laytenmuctieutancongs() and tendoituong not in self._laytenmuctieutancongs():
             return False
-        if self._tenmuctieukhongtancongs and tendoituong in self._tenmuctieukhongtancongs:
+        if self._is_tenbiboqua(tendoituong):
             return False
 
         is_nguoichoi = self.moitruong.get_is_nguoichoi(diachidoituong)
@@ -193,7 +208,7 @@ class TacTuMucTieu:
                 continue
             if ten in TENMUCTIEUKHONGTANCONGs or self.moitruong.get_is_quairiengnguoikhac(ten) \
                     or (self._laytenmuctieutancongs() and ten not in self._laytenmuctieutancongs()) \
-                    or (self._tenmuctieukhongtancongs and ten in self._tenmuctieukhongtancongs):
+                    or self._is_tenbiboqua(ten):
                 continue
             if (self._is_chidanhnguoichoi and not is_muctieupk) or (is_muctieupk and is_hoabinh):
                 continue
@@ -621,6 +636,22 @@ class TacTuMucTieu:
         self._is_nhieumuctieuganbanthan7 = demmuctieuganbanthan7 >= self._soluongnhieumuctieu
         self._is_nhieumuctieuganbanthan9 = demmuctieuganbanthan9 >= self._soluongnhieumuctieu
 
+    def _is_baothudongdoi(self, diachibaothu, idnguoichoi, idnguoichoithanhviennhoms):
+        # Bảo thú (tên có chủ nhân trong ngoặc) của mình, thành viên nhóm hoặc nhân vật tổ đội tự động; chủ không ở gần thì không biết => False
+        if not (self.moitruong.get_is_baothukynangtrieuhoi(diachibaothu) or self.moitruong.get_is_baothugiangho(diachibaothu)):
+            return False
+        tenchunhan = self.moitruong.get_tenchunhan(diachibaothu)
+        if not tenchunhan:
+            return False
+        if tenchunhan == self.moitruong.get_tendoituong():
+            return True
+        diachichunhan = self.moitruong.action_timkiemnhanvat(tennhanvat = tenchunhan)
+        if not diachichunhan:
+            return False
+        idchunhan = self.moitruong.get_idnguoichoi(diachichunhan)
+        return idchunhan == idnguoichoi or bool(idnguoichoithanhviennhoms and idchunhan in idnguoichoithanhviennhoms) \
+            or idchunhan in laynhanvattodoitudongs()
+
     def _kiemtramuctieuhoplemonphai(self, diachidoituong, is_dongdoi = False):
         # Vừa xuất hiện thì chờ đủ THOIGIANCHOCHONMUCTIEUMOI, kể cả đồng đội (buff / hồi máu / hồi sinh)
         if self._is_doituongmoixuathien(diachidoituong):
@@ -635,7 +666,7 @@ class TacTuMucTieu:
             return False
         if self._laytenmuctieutancongs() and tendoituong not in self._laytenmuctieutancongs():
             return False
-        if self._tenmuctieukhongtancongs and tendoituong in self._tenmuctieukhongtancongs:
+        if self._is_tenbiboqua(tendoituong):
             return False
         is_nguoichoi = self.moitruong.get_is_nguoichoi(diachidoituong)
         is_baothu = self.moitruong.get_is_baothukynangtrieuhoi(diachidoituong) or self.moitruong.get_is_baothugiangho(diachidoituong)
@@ -862,6 +893,9 @@ class TacTuMucTieu:
                 if is_muctieudangxemxetlanguoichoi:
                     idnguoichoidangxemxet = self.moitruong.get_idnguoichoi(diachidoituongdangxemxet)
                     is_dongdoi = (idnguoichoi == idnguoichoidangxemxet) or (idnguoichoithanhviennhoms and idnguoichoidangxemxet in idnguoichoithanhviennhoms) or (idnguoichoidangxemxet in laynhanvattodoitudongs())
+                else:
+                    # Bảo thú của mình / đồng đội xét theo chủ nhân: không thì bị lọc như quái (ngoài danh sách tấn công, bản đồ không PK...)
+                    is_dongdoi = self._is_baothudongdoi(diachidoituongdangxemxet, idnguoichoi, idnguoichoithanhviennhoms)
 
                 if not self._kiemtramuctieuhoplemonphai(diachidoituongdangxemxet, is_dongdoi = is_dongdoi):
                     continue
@@ -999,12 +1033,15 @@ class TacTuMucTieu:
 
                 if phantramsinhlucconlai >= 25. or idbandohientai in BANDOKHONGPKs:
                     monphaidangxemxet = monphaicungmay_map.get(self.moitruong.get_idnguoichoi(diachidoituongdangxemxet)) if is_nguoichoi_hientai else None
-                    if not diachidoituongcanbuffngancham and monphaidangxemxet not in MONPHAICHIBUFFKIMCHAMs:
+                    tenbaothu = "" if is_nguoichoi_hientai else (self.moitruong.get_tendoituong(diachidoituongdangxemxet) or "")
+                    if not diachidoituongcanbuffngancham and monphaidangxemxet not in MONPHAICHIBUFFKIMCHAMs \
+                            and not tenbaothu.startswith(BAOTHUCHIBUFFKIMCHAMs):
                         is_thieuhieuung = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NGANCHAMDOACH,), macdinh = True, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 1)
                         if is_thieuhieuung:
                             diachidoituongcanbuffngancham = diachidoituongdangxemxet
 
-                    if not diachidoituongcanbuffkimcham and monphaidangxemxet not in MONPHAICHIBUFFNGANCHAMs:
+                    if not diachidoituongcanbuffkimcham and monphaidangxemxet not in MONPHAICHIBUFFNGANCHAMs \
+                            and not tenbaothu.startswith(BAOTHUCHIBUFFNGANCHAMs):
                         is_thieuhieuung = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KIMCHAMDOACH,), macdinh = True, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 1)
                         if is_thieuhieuung:
                             diachidoituongcanbuffkimcham = diachidoituongdangxemxet
@@ -1279,7 +1316,7 @@ class TacTuMucTieu:
             if self.moitruong.get_idloainhanvat(diachidoituongxemxet) != LOAIMUCTIEU_QUAIVATHOACNPC: continue
 
             tendoituongxemxet = self.moitruong.get_tendoituong(diachidoituongxemxet)
-            if tendoituongxemxet in self._tenmuctieukhongtancongs or self.moitruong.get_is_quairiengnguoikhac(tendoituongxemxet):
+            if self._is_tenbiboqua(tendoituongxemxet) or self.moitruong.get_is_quairiengnguoikhac(tendoituongxemxet):
                 continue
             if self._laytenmuctieutancongs() and tendoituongxemxet not in self._laytenmuctieutancongs():
                 continue

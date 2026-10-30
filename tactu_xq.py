@@ -221,6 +221,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._iddiemdanhxungquanhhientai = -1
         # Lộ trình mẫu đang dùng dạng "<id bản đồ>|<tên mẫu>|<1 nếu đi ngược chiều>", rỗng nếu tự đặt điểm
         self._lotrinhmaudangdung = ""
+        # Số điểm đã đi qua của lộ trình dò (mẫu TENMAUDO) kể từ lúc nạp / lần xét trước: đủ 1 vòng thì xét chuyển sang lộ trình thật
+        self._sodiemdadilotrinhdo = 0
         # Ô "Đi ngược chiều" trên giao diện: chiều ưu tiên khi tự chọn lộ trình mẫu (tuchon_lotrinhmau), lưu theo nhân vật
         self._is_nguocchieulotrinh = False
         self._is_lotrinhtuchon = False
@@ -551,7 +553,11 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_bodotrieuhoi": self._bodotrieuhoi,
             "_baothutrieuhoimaoson": self._baothutrieuhoimaoson,
             "_sumon_npcgiao": self._sumon_npcgiao,
+            # Sư môn đang bật: dis / mở lại bot vào lại thì tự bật tiếp (bấm Dừng, xong 20 lần, lỗi dừng thì là False)
+            "_is_dangsumon": bool(self._sumon),
         }
+        # Sư môn đang tạm đổi ô nào (Theo sau, Tự động sử dụng kỹ năng...) thì lưu giá trị gốc của người dùng, dis vào lại không mất
+        thietlap.update({k: v for k, v in ((self._sumon or {}).get("tuychoncu") or {}).items() if k in thietlap})
         util_luuthietlap(str(idnguoichoi), thietlap)
         # luuthietlap chạy mỗi giây: vị trí quái thì THOIGIANLUUVITRIQUAI giây mới ghi file một lần (thoát thì luuvitriquai(True))
         self.luuvitriquai()
@@ -629,6 +635,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if "_bodotrieuhoi" in thietlap: self._bodotrieuhoi = list(thietlap["_bodotrieuhoi"])
             if thietlap.get("_baothutrieuhoimaoson") in BAOTHUTRIEUHOIMAOSONs: self._baothutrieuhoimaoson = thietlap["_baothutrieuhoimaoson"]
             if "_sumon_npcgiao" in thietlap: self._sumon_npcgiao = thietlap["_sumon_npcgiao"] or ""
+            if thietlap.get("_is_dangsumon") and not self._sumon:
+                self.batdau_sumon()
 
     def battat_tranhvungcam(self):
         self._is_tranhvungcam = not self._is_tranhvungcam

@@ -278,6 +278,7 @@ class CuaSo:
                     "_npcgiaosumon": self.tactu._laynpcgiaosumon(),
                     "_trangthailanglyson": self.tactu.get_trangthailanglyson(),
                     "_is_danglanglyson": self.tactu.get_is_danglanglyson(),
+                    "_phobanlanglyson": self.tactu.get_phobanlanglyson(),
                     # Lăng Ly Sơn: trưởng nhóm báo mã thưởng vòng vừa xong, thành viên báo mã đã tự lĩnh (tactu_langlyson_xq)
                     "_khoathuonglanglyson": self.tactu.get_khoathuonglanglyson(),
                     "_khoathuonglanglysondalanh": self.tactu._khoathuonglanglysondalanh,
@@ -359,6 +360,9 @@ class CuaSo:
                 elif cmd == "langlyson":
                     # Tự động đi Lăng Ly Sơn (tactu_langlyson_xq) bật / tắt từ giao diện
                     self.tactu.batdau_langlyson()
+                elif cmd == "thanhkieu":
+                    # Tự động đi Thành Kiều Quân Doanh (cùng module tactu_langlyson_xq)
+                    self.tactu.batdau_langlyson("thanhkieu")
                 elif cmd == "huylanglyson":
                     self.tactu.huy_langlyson()
                 elif isinstance(cmd, str) and cmd.startswith("set_sumon_npcgiao:"):

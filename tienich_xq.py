@@ -351,17 +351,24 @@ def laythunghiem(khoa, macdinh = None):
     return _thunghiem_cache["dulieu"].get(khoa, macdinh)
 
 
-def duongdantaikhoan():
-    # Tài khoản tự đăng nhập của riêng máy này (có mật khẩu, không đưa lên git): taikhoan_<tên máy tính>.json, để chép cả thư mục bot
-    # sang máy khác (vd máy ảo) không đè mất tài khoản của máy đó (trước đây cùng tên taikhoan.json, đã mất 1 lần 2026-10-29)
+def tenmaynay():
     import socket
-    tenmay = re.sub(r"[^\w.-]", "_", socket.gethostname()) or "maynay"
-    return os.path.join(os.path.dirname(_thumucthietlap()), f"taikhoan_{tenmay}.json")
+    return re.sub(r"[^\w.-]", "_", socket.gethostname()) or "maynay"
 
 
-def duongdantaikhoancu():
-    # File chung tên cũ: máy chưa có file riêng thì chép từ đây sang (dangnhap_xq.taicauhinhdangnhap)
-    return os.path.join(os.path.dirname(_thumucthietlap()), "taikhoan.json")
+def duongdantaikhoan():
+    # Tài khoản tự đăng nhập chung mọi máy (đồng bộ qua git): mỗi dòng ghi "maydangnhap" = tên máy được tự đăng nhập tài khoản đó,
+    # nên chép cả thư mục bot sang máy khác cũng không thành hai máy giành nhau một tài khoản (2026-10-29 đã bị). Không dùng lại tên
+    # taikhoan.json: bot bản cũ tự tạo lại file mẫu rỗng với tên đó (đang bị .gitignore)
+    return os.path.join(os.path.dirname(_thumucthietlap()), "taikhoan_chung.json")
+
+
+def duongdantaikhoantheomay():
+    # Các file riêng từng máy trước đây (taikhoan_<tên máy>.json): chưa có file chung thì gộp lại (dangnhap_xq.taicauhinhdangnhap)
+    import glob
+    return {os.path.basename(duongdan)[len("taikhoan_"):-len(".json")]: duongdan
+            for duongdan in sorted(glob.glob(os.path.join(os.path.dirname(_thumucthietlap()), "taikhoan_*.json")))
+            if os.path.basename(duongdan) != "taikhoan_chung.json"}
 
 
 # Trạng thái tạm ngưng (ẩn thân / người lạ) ghi ra file, mỗi nhân vật 1 file theo ID, để luồng tự đăng nhập

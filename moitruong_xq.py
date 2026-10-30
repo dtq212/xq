@@ -10,6 +10,7 @@ import pymem
 from keystone import Ks, KS_ARCH_X86, KS_MODE_32
 
 import diachi_xq
+from dexuatlotrinh_xq import HUONGTIMDUONG_MAP
 from dieuphoi_xq import is_lenhxoayvong
 from diachi_xq import DC
 from hangso_xq import *
@@ -22,6 +23,12 @@ OFFSET_DUNGLUONGTUIHANHTRANG = 0xD4
 OFFSET_KYNANGDAHOC = 0x1C
 # Bảng vị trí kỹ năng đã học đọc lại sau chừng này giây
 THOIGIANNHOBANGKYNANG = 2.
+# Lưới vật cản của bản đồ hiện tại trong [thông tin game] (client tra ở xq + 0x4998F0, hàm tìm đường cục bộ gọi cho từng ô):
+# rộng / cao là 2 int32 tại + 0x56D8B8, ô (x, y) là dword tại + 0xBE3C8 + 4 * (501 * x + y + 701400), & 3: 0 đi được, khác 0 vật cản
+# (thử 2026-10-30 trên bản đồ 54: 1 đá / tường, 2 nước)
+OFFSET_KICHTHUOCBANDO = 0x56D8B8
+OFFSET_LUOIVATCAN = 0xBE3C8 + 4 * 701400
+SOCOTLUOIVATCAN = 501
 # Bảng địa chỉ đối tượng xung quanh: các vòng quét đều chạy từ ô 0 tới ô 512 (hoặc gặp ô trống)
 SOLUONGDOITUONGXUNGQUANHTOIDA = 513
 # Tên đối tượng đọc lại trong khoảng này thì dùng bản vừa đọc (1 vòng chọn mục tiêu đọc tên cùng 1 đối tượng 5-6 lần)
@@ -110,8 +117,17 @@ class MoiTruong:
         self._tiendodioo = None
         self._dulieutimduongcucbo = None
         self._buftimduongcucbo = None
+        self._doituongtimduongcucbo = None
+        # (bản đồ, x, y) -> ô đi được đã kéo về (get_oditduocganhat): giữ cố định để đích không nhảy theo vị trí mình
+        self._oditduoc_cache = {}
+        # (bản đồ, từ x, từ y, tới x, tới y) -> lúc thấy đoạn cụt (action_dichuyenoo): khỏi tìm đường lại liên tục cùng 1 đoạn
+        self._doancut_cache = {}
+        # (bản đồ, x, y, tầm) -> (lúc chọn, ô tới được trong tầm hoặc None) (_chondichtoiduoc)
+        self._dichtoiduoc_cache = {}
         self._is_dasetupautoassemblenhatvatpham = False
         self._is_dasetupautoassemblekhoitaothongtinbando = False
+        # (vị trí con trỏ cửa sổ trong thông tin game, hiện?) -> đoạn mã gọi vtable[1] ẩn / hiện cửa sổ (_goivtableanhien)
+        self._diachivtableanhien_map = {}
         self._is_dasetupactionthietlaphooknoidungtrochuyen = False
 
         self._thoidiemdichuyengannhat = 0.
@@ -292,6 +308,8 @@ class MoiTruong:
             safe_free(self.diachihamthucthicaulenh)
         if getattr(self, "_diachitimduongcucbo", None):
             safe_free(self._diachitimduongcucbo)
+        if getattr(self, "_doituongtimduongcucbo", None):
+            safe_free(self._doituongtimduongcucbo)
 
     def _ghilenhvaobonho(self, lenh):
         if not self.diachihamthucthicaulenh:
@@ -1280,6 +1298,23 @@ class MoiTruong:
         if not x: return ""
         x = read_int(self.tientrinh, x + DC.TG_CUASOXACNHAN)
         return read_string(self.tientrinh, x + 0xBC) if x else ""
+
+    def get_hopxacnhannpc(self):
+        # Hộp yes / no (TG_CUASOYESNO, khác cửa sổ xác nhận TG_CUASOXACNHAN) máy chủ gửi về: Thảo Nghịch Tướng Quân "Bạn sẽ sử dụng Hạt Mè
+        # Khai Môn để tiến vào Thành Kiều", "Đội ngũ Thọ muốn cùng bạn kết thành nhóm...". 1 hộp dùng lại; + 0x34 đang hiện, + 0x7C lệnh
+        # nút Xác Nhận (vd "tallk 15e6# welcome.4", "team g@+ 29"), + 0x176 lệnh nút Hủy Bỏ. Nút Xác Nhận của game (xq + 0x131960) gửi
+        # lệnh + 0x7C rồi đóng hộp (vtable[1](0), xq + 0x131840: tắt + 0x34, gỡ khỏi danh sách cửa sổ, xoá lệnh). Hộp ẩn mà lệnh chưa xoá
+        # (ẩn kiểu chỉ ghi + 0x34, vẫn kẹt trong danh sách cửa sổ) cũng coi là còn.
+        # -> (địa chỉ hộp, lệnh Xác Nhận) khi hộp còn, không thì (0, "")
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        x = read_int(self.tientrinh, x + DC.TG_CUASOYESNO) if x else 0
+        lenh = read_bytes(self.tientrinh, x + 0x7C, 0x80).split(b"\0")[0].decode("utf-8", "ignore").strip() if x else ""
+        return (x, lenh) if lenh else (0, "")
+
+    def action_donghopxacnhannpc(self):
+        # Đóng hộp get_hopxacnhannpc như game tự đóng sau khi bấm nút, không gửi lệnh nào. Hộp đã đóng thì không làm gì
+        if self.get_hopxacnhannpc()[0]:
+            self._goivtableanhien(DC.TG_CUASOYESNO, False)
 
     def get_danhsachidnguoichoixungquanhs(self):
         danhsachidnguoichoixungquanhs = []
@@ -2360,8 +2395,9 @@ class MoiTruong:
         if self.get_is_danghiencuasoyesno() != is_danghiencuasoyesno:
             x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
             if x:
-                x = read_int(self.tientrinh, x + DC.TG_CUASOYESNO)
-                if x: write_boolean(self.tientrinh, x + 0x34, is_danghiencuasoyesno)
+                # Bằng hàm của game (vtable[1]): chỉ ghi + 0x34 thì hộp ẩn mà vẫn kẹt trong danh sách cửa sổ, chặn chuột
+                if read_int(self.tientrinh, x + DC.TG_CUASOYESNO):
+                    self._goivtableanhien(DC.TG_CUASOYESNO, is_danghiencuasoyesno)
 
     def get_is_danghiencuasotuychon(self):
         x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
@@ -2425,11 +2461,10 @@ class MoiTruong:
         m = re.search(r"\((\d+)\)", ten or "")
         return bool(m) and int(m.group(1)) != self.get_idnguoichoi()
 
-    def get_lenhhuynhiemvu(self, tenmuccha):
-        # Lệnh huỷ mục con đầu tiên dưới mục cha tenmuccha ("Nhiệm Vụ Sư Môn") như nút "Hủy Bỏ" của cửa sổ nhiệm vụ (xq.exe 0x4BADBB):
-        # "quest giveup <[Q+0x1854]> <word [Q+dòng*4+0x1858]> <word [Q+dòng*4+0x185A]>", dòng tính như danh sách tên +0x90
-        # (sư môn: "quest giveup 1 1000 <loại>", Thu Thập 5, Truy Bắt Thích Khách 13). Nút trong game chỉ mở hộp xác nhận, lệnh này gửi
-        # thẳng. -> chuỗi lệnh hoặc None (chưa đọc được / không có mục)
+    def get_manhiemvu(self, tenmuccha):
+        # Mã của mục con đầu tiên dưới mục cha tenmuccha ("Nhiệm Vụ Sư Môn") để gửi "quest intro <a> <b> <c>" (xin mô tả, như bấm vào dòng
+        # đó; mẫu lệnh trong xq.exe, cùng mã với nút "Hủy Bỏ" ở 0x4BADBB): a = [Q+0x1854], b / c = word [Q+dòng*4+0x1858] / [+0x185A],
+        # dòng tính như danh sách tên +0x90 (sư môn: 1 1000 <loại>, Thu Thập 5, Truy Bắt Thích Khách 13). -> (a, b, c) hoặc None
         x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         x = read_int(self.tientrinh, x + DC.TG_NHIEMVU) if x else 0
         if not x:
@@ -2445,7 +2480,7 @@ class MoiTruong:
                 continue
             if is_trongmuc:
                 nhom, loai = struct.unpack("<hh", read_bytes(self.tientrinh, x + 0x1858 + dong * 4, 4))
-                return f"quest giveup {read_int(self.tientrinh, x + 0x1854)} {nhom} {loai}"
+                return read_int(self.tientrinh, x + 0x1854), nhom, loai
         return None
 
     def get_cuahangdangmo(self):
@@ -2475,11 +2510,39 @@ class MoiTruong:
             write_boolean(self.tientrinh, cuahang + 0x108, False)
 
     def set_is_danghiencuasotuychon(self, is_danghiencuasotuychon):
+        # Ẩn / hiện bằng hàm của game vtable[1](cờ) (xq + 0xCB170): ghi + 0x1E38 rồi cập nhật danh sách cửa sổ (xq + 0x90FA0). Chỉ ghi
+        # + 0x1E38 thì menu ẩn mà vẫn đứng đầu danh sách cửa sổ, chặn chuột (không cuộn được khung trò chuyện)
         if self.get_is_danghiencuasotuychon() != is_danghiencuasotuychon:
             x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
-            if x:
-                x = read_int(self.tientrinh, x + DC.TG_CUASOTUYCHON)
-                if x: write_boolean(self.tientrinh, x + 0x1E38, is_danghiencuasotuychon)
+            if x and read_int(self.tientrinh, x + DC.TG_CUASOTUYCHON):
+                self._goivtableanhien(DC.TG_CUASOTUYCHON, is_danghiencuasotuychon)
+
+    def _goivtableanhien(self, vitritg, is_hien):
+        # Gọi vtable[1](is_hien) (ẩn / hiện + cập nhật danh sách cửa sổ) của cửa sổ có con trỏ ở [thông tin game] + vitritg, bằng luồng
+        # trong game. Đoạn mã mỗi (vitritg, is_hien) cấp phát 1 lần
+        khoa = (vitritg, bool(is_hien))
+        diachi = self._diachivtableanhien_map.get(khoa)
+        if not diachi:
+            asm_script = f"""
+                mov eax, dword ptr [{hex(self.diachixq + DC.THONGTINGAME)}]
+                test eax, eax
+                je ketthuc
+                mov ecx, dword ptr [eax + {hex(vitritg)}]
+                test ecx, ecx
+                je ketthuc
+                push {1 if is_hien else 0}
+                mov eax, dword ptr [ecx]
+                call dword ptr [eax + 4]
+            ketthuc:
+                ret
+            """
+            encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+            if not encoding:
+                return
+            diachi = self.tientrinh.allocate(64)
+            write_bytes(self.tientrinh, diachi, bytes(encoding), len(encoding))
+            self._diachivtableanhien_map[khoa] = diachi
+        self.tientrinh.start_thread(diachi)
 
     def get_caulenhmoinhomhientai(self):
         x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
@@ -2499,15 +2562,21 @@ class MoiTruong:
         # Gọi hàm tìm đường cục bộ của client xq + 0x4B0D60 (hàm dùng khi click chuột: thiscall, ecx = [thông tin game] + 0xAE1178,
         # tham số x1, y1, x2, y2, buf, 100) => chuỗi hướng '1'..'8' né vật cản ('1' (+1, 0), '2' (+1, -1), '3' (0, -1), '4' (-1, -1),
         # '5' (-1, 0), '6' (-1, +1), '7' (0, +1), '8' (+1, +1)). Chưa có đối tượng tìm đường (client chưa click lần nào) thì None
+        # Hàm giữ toàn bộ trạng thái A* trong đối tượng (bộ đếm nút + 0x1E000, danh sách mở + 0x40FBC, lưới chi phí + 0x3C008, gốc
+        # + 0x54FC8...), vật cản đọc từ lưới bản đồ trong [thông tin game]. Game tự gọi hàm này ở 12 chỗ trên luồng chính (click, tiếp
+        # cận, tự động tìm đường) => gọi từ luồng ngoài trên đối tượng của game là 2 luồng cùng sửa 1 danh sách mở, danh sách thành
+        # vòng và luồng chính lặp mãi (cửa sổ đơ, hay gặp ở chỗ vật cản vì tìm lâu, lại xen kẽ với tự động tìm đường). Nên dùng đối
+        # tượng riêng cấp trong tiến trình game, hàm tự khởi tạo lại mỗi lần gọi
         if not self._diachitimduongcucbo:
+            self._doituongtimduongcucbo = self.tientrinh.allocate(KICHTHUOCDOITUONGTIMDUONGCUCBO)
             vung = self.tientrinh.allocate(512)
             self._dulieutimduongcucbo, self._buftimduongcucbo = vung + 0x80, vung + 0x100
             dulieu = self._dulieutimduongcucbo
             ma = f"""
                 mov eax, dword ptr [{hex(self.diachixq + DC.THONGTINGAME)}]
-                mov ecx, dword ptr [eax + {hex(DC.TG_TIMDUONGCUCBO)}]
-                test ecx, ecx
+                test eax, eax
                 je ketthuc
+                mov ecx, {hex(self._doituongtimduongcucbo)}
                 push 0x64
                 push {hex(self._buftimduongcucbo)}
                 push dword ptr [{hex(dulieu + 12)}]
@@ -2527,13 +2596,84 @@ class MoiTruong:
         with self._khoatimduongcucbo:
             write_bytes(self.tientrinh, self._dulieutimduongcucbo, struct.pack("<iiii", x1, y1, x2, y2), 16)
             write_bytes(self.tientrinh, self._buftimduongcucbo, bytes(100), 100)
-            self.tientrinh.start_thread(self._diachitimduongcucbo)
+            # pymem không đóng handle luồng, gọi rất nhiều lần (đứng ở vật cản gọi liên tục) thì rò handle
+            ctypes.windll.kernel32.CloseHandle(self.tientrinh.start_thread(self._diachitimduongcucbo))
             return read_bytes(self.tientrinh, self._buftimduongcucbo, 100).split(b"\0")[0] or None
 
     def get_is_cotimduongcucbo(self):
         # Client đã tạo đối tượng tìm đường cục bộ chưa (tạo khi click di chuyển lần đầu)
         thongtingame = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         return bool(thongtingame and read_int(self.tientrinh, thongtingame + DC.TG_TIMDUONGCUCBO))
+
+    def _get_luoivatcan(self, x1, y1, x2, y2):
+        # Lưới vật cản vùng [x1, x2] x [y1, y2] của bản đồ hiện tại: luoi[x - x1][y - y1], 0 đi được, khác 0 vật cản (ngoài bản đồ = 1).
+        # Cùng x thì các y nằm liền nhau => mỗi x 1 lần đọc. None: chưa có thông tin game / đang tải bản đồ
+        thongtingame = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        if not thongtingame:
+            return None
+        rong, cao = struct.unpack("<ii", read_bytes(self.tientrinh, thongtingame + OFFSET_KICHTHUOCBANDO, 8))
+        if not (0 < rong <= SOCOTLUOIVATCAN and 0 < cao <= SOCOTLUOIVATCAN):
+            return None
+        ya, yb = max(y1, 0), min(y2, cao - 1)
+        luoi = []
+        for x in range(x1, x2 + 1):
+            hang = [1] * (y2 - y1 + 1)
+            if 0 <= x < rong and ya <= yb:
+                dulieu = read_bytes(self.tientrinh, thongtingame + OFFSET_LUOIVATCAN + 4 * (SOCOTLUOIVATCAN * x + ya), 4 * (yb - ya + 1))
+                hang[ya - y1:yb - y1 + 1] = [o & 3 for o in struct.unpack(f"<{yb - ya + 1}I", dulieu)]
+            luoi.append(hang)
+        return luoi
+
+    def get_luoivatcanbando(self):
+        # Cả lưới vật cản của bản đồ hiện tại: luoi[x][y] (mỗi cột x 1 lần đọc, bản đồ 304 x 228 là 304 lần)
+        thongtingame = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        if not thongtingame:
+            return None
+        rong, cao = struct.unpack("<ii", read_bytes(self.tientrinh, thongtingame + OFFSET_KICHTHUOCBANDO, 8))
+        return self._get_luoivatcan(0, 0, rong - 1, cao - 1)
+
+    def get_is_vatcan(self, x, y):
+        luoi = self._get_luoivatcan(round(x), round(y), round(x), round(y))
+        return bool(luoi and luoi[0][0])
+
+    def get_oditduocganhat(self, x, y, bankinhtoida = BANKINHKEODICH):
+        # Đích (x, y) của bản đồ hiện tại rơi vào vật cản (toạ độ nhiệm vụ / NPC lệch vào tường, nước...) thì trả ô đi được gần nhất trong
+        # bankinhtoida ô (cùng khoảng cách thì ô gần mình hơn, kẻo lấy ô bên kia tường); đi được / không thấy ô nào thì giữ nguyên.
+        # Kết quả giữ cố định theo (bản đồ, x, y): đích không nhảy qua lại khi mình di chuyển
+        x, y = round(x), round(y)
+        luoi = self._get_luoivatcan(x, y, x, y)
+        if not luoi or not luoi[0][0]:
+            return x, y
+        khoa = (self.get_idbandohientai(), x, y)
+        if khoa in self._oditduoc_cache:
+            return self._oditduoc_cache[khoa]
+        r = bankinhtoida
+        luoi = self._get_luoivatcan(x - r, y - r, x + r, y + r)
+        if not luoi:
+            return x, y
+        toado = self.get_toado()
+        tot = None
+        for dx in range(-r, r + 1):
+            for dy in range(-r, r + 1):
+                if luoi[dx + r][dy + r]:
+                    continue
+                diem = (round(math.hypot(dx, dy)), math.dist((x + dx, y + dy), toado))
+                if tot is None or diem < tot[0]:
+                    tot = (diem, (x + dx, y + dy))
+        ketqua = tot[1] if tot else (x, y)
+        if len(self._oditduoc_cache) > 512:
+            self._oditduoc_cache.clear()
+        self._oditduoc_cache[khoa] = ketqua
+        if IS_LOGDICHUYEN and ketqua != (x, y):
+            self._inlog(f"[KÉO ĐÍCH] {(x, y)} là vật cản -> ô đi được {ketqua}")
+        return ketqua
+
+    @staticmethod
+    def _get_diemcuoichuoihuong(x, y, chuoihuong):
+        for kytu in chuoihuong.decode("latin1"):
+            dx, dy = HUONGTIMDUONG_MAP.get(kytu, (0, 0))
+            x, y = x + dx, y + dy
+        return x, y
 
     def action_dichuyenoo(self, x, y, delay = 0.05, sobuoctoida = None, is_dungkedich = False, thoigiantinhlai = 0.):
         # sobuoctoida: chỉ ghi chừng này bước đầu của chuỗi (hết bước thì lần gọi sau tìm đường lại). is_dungkedich: bỏ bước cuối, dừng ở
@@ -2554,7 +2694,7 @@ class MoiTruong:
         dichtrongtran = self._kepdichtrongtrando(x, y)
         if dichtrongtran is None:
             return False
-        x, y = round(dichtrongtran[0]), round(dichtrongtran[1])
+        x, y = self.get_oditduocganhat(dichtrongtran[0], dichtrongtran[1])
         diachinhanvat = self.get_diachicosothongtinnhanvat1()
         if not diachinhanvat:
             return None
@@ -2567,8 +2707,21 @@ class MoiTruong:
                 return True
         elif self._dichdioogannhat == (x, y) and self.get_idlenhdichuyen():
             return True
+        # Đoạn cụt: không tới được đích thì hàm tìm đường vẫn trả chuỗi tới ô gần đích nhất (xq + 0x4B0C40) => chuỗi chưa đủ 100 bước
+        # mà dừng ở ô khác đích thì coi như không ra đường: nơi gọi chuyển ngay sang tự động tìm đường của game thay vì đi tới chân
+        # tường rồi đứng chờ kẹt. Nhớ đoạn cụt một lúc, kẻo mỗi lượt lại tìm đường hỏng (tốn tới 0x2800 nút) cho đúng đoạn đó
+        khoadoan = (self.get_idbandohientai(), xsaptoi, ysaptoi, x, y)
+        if time.time() - self._doancut_cache.get(khoadoan, 0.) < THOIGIANNHODOANCUT:
+            return None
         chuoihuong = self._get_chuoihuongtimduongcucbo(xsaptoi, ysaptoi, x, y)
         if not chuoihuong:
+            return None
+        if len(chuoihuong) < 100 and self._get_diemcuoichuoihuong(xsaptoi, ysaptoi, chuoihuong) != (x, y):
+            if len(self._doancut_cache) > 256:
+                self._doancut_cache.clear()
+            self._doancut_cache[khoadoan] = time.time()
+            if IS_LOGDICHUYEN:
+                self._inlog(f"[ĐOẠN CỤT] {(xsaptoi, ysaptoi)} -> {(x, y)} chỉ tới {self._get_diemcuoichuoihuong(xsaptoi, ysaptoi, chuoihuong)}")
             return None
         if is_dungkedich:
             chuoihuong = chuoihuong[:-1]
@@ -2718,6 +2871,11 @@ class MoiTruong:
         # Đi tới (x2, y2) trong cùng bản đồ bằng đi theo ô (tìm đường cục bộ của client, đi gần thẳng) thay vì tự động tìm đường của game
         # (vào thành / vào môn phái nó hay chạy vòng ra xa rồi mới vòng vào). Tìm đường cục bộ chỉ tính tối đa ~100 bước: xa thì đi từng
         # chặng trên đường thẳng tới đích (thử chặng dài trước), không chặng nào ra đường thì mới dùng tự động tìm đường
+        # Đích là vật cản thì nhắm ô đi được gần nhất (tới đó là xong, không đứng chân tường chờ kẹt). Có khoangcachtoida thì vẫn đo
+        # theo đích thật (NPC hay đứng trên ô vật cản: kéo đích rồi mới lùi khoangcachtoida là lệch cộng dồn, vd Văn Xương (111, 137)
+        # kéo về (110, 136), dừng cách đó 2 ô thành đứng ở (109, 134) cách NPC 3.6 ô); ô dừng chọn trong tầm ở dưới (_chondichtoiduoc)
+        if khoangcachtoida < 1:
+            x2, y2 = self.get_oditduocganhat(x2, y2)
         x1, y1 = self.get_toado()
         khoangcach = math.dist((x1, y1), (x2, y2))
         if khoangcach <= max(1., khoangcachtoida):
@@ -2726,6 +2884,11 @@ class MoiTruong:
         if khoangcachtoida > 0:
             tyle = khoangcachtoida / khoangcach
             xdich, ydich = round(x2 + (x1 - x2) * tyle), round(y2 + (y1 - y2) * tyle)
+            # Gần rồi: điểm trên đường thẳng có khi ở sau tường thấp (vd NPC đứng sau quầy / bậc thềm) => lấy ô trong tầm tới được thật
+            if khoangcach <= KHOANGCACHCHONDICHTOIDUOC:
+                dichtoiduoc = self._chondichtoiduoc(x2, y2, khoangcachtoida)
+                if dichtoiduoc:
+                    xdich, ydich = dichtoiduoc
         # Theo dõi theo đích cuối (x2, y2): điểm dừng (xdich, ydich) lùi lại theo khoangcachtoida nên đổi theo vị trí hiện tại.
         # Kẹt (đi theo ô THOIGIANKETDIOO giây không gần đích hơn, vd tường / cọc gỗ trong thành chắn mà tìm đường cục bộ chỉ ra đoạn
         # cụt): đích này dùng tự động tìm đường của game. Đích nhích ít (đuổi quái đang chạy) vẫn coi là cùng đích, kẻo đếm lại mãi
@@ -2756,6 +2919,37 @@ class MoiTruong:
                 return is_ok
         self._changdioo = None
         return self.action_tudongtimduong(xdich, ydich, self.get_idbandohientai(), is_lotrinh = False)
+
+    def _chondichtoiduoc(self, x2, y2, khoangcachtoida):
+        # Ô đi được cách (x2, y2) không quá khoangcachtoida mà tìm đường cục bộ tới được đúng ô đó (không phải đoạn cụt): thử các ô
+        # gần mình trước, tối đa SOOTHUDICHTOIDUOC ô. Nhớ kết quả THOIGIANNHODICHTOIDUOC giây theo đích (mỗi lần thử tốn vài lần tìm
+        # đường). None: không ô nào tới được (nơi gọi đi như cũ, kẹt thì tự động tìm đường của game)
+        khoa = (self.get_idbandohientai(), x2, y2, khoangcachtoida)
+        nho = self._dichtoiduoc_cache.get(khoa)
+        if nho and time.time() - nho[0] < THOIGIANNHODICHTOIDUOC:
+            return nho[1]
+        diachinhanvat = self.get_diachicosothongtinnhanvat1()
+        r = math.floor(khoangcachtoida)
+        luoi = self._get_luoivatcan(x2 - r, y2 - r, x2 + r, y2 + r)
+        if not diachinhanvat or not luoi:
+            return None
+        x1, y1 = struct.unpack("<ii", read_bytes(self.tientrinh, diachinhanvat + 0x18, 8))
+        ungviens = sorted(((x2 + dx, y2 + dy) for dx in range(-r, r + 1) for dy in range(-r, r + 1)
+                           if not luoi[dx + r][dy + r] and math.hypot(dx, dy) <= khoangcachtoida),
+                          key = lambda o: math.dist(o, (x1, y1)))
+        ketqua = None
+        for o in ungviens[:SOOTHUDICHTOIDUOC]:
+            if o == (x1, y1):
+                ketqua = o
+                break
+            chuoihuong = self._get_chuoihuongtimduongcucbo(x1, y1, *o)
+            if chuoihuong and (len(chuoihuong) >= 100 or self._get_diemcuoichuoihuong(x1, y1, chuoihuong) == o):
+                ketqua = o
+                break
+        if len(self._dichtoiduoc_cache) > 64:
+            self._dichtoiduoc_cache.clear()
+        self._dichtoiduoc_cache[khoa] = (time.time(), ketqua)
+        return ketqua
 
     def action_dichuyengiukhoangcachtoidadiembangtimduong(self, x2, y2, khoangcachtoida):
         if x2 <= 0 or y2 <= 0:
@@ -2881,6 +3075,11 @@ class MoiTruong:
         if khoangcach > 0.:
             deltax = -khoangcachdichuyen * (x2 - x1) / khoangcach
             deltay = -khoangcachdichuyen * (y1 - y2) / khoangcach
+            # Sau lưng là vật cản thì lùi chéo / ngang (hướng lệch ít nhất mà đường thẳng không vướng vật cản), kẻo lùi vào tường
+            # (kéo đích về ô đi được gần nhất có khi lại sát mục tiêu hơn)
+            huong = self._chonhuonglui(x1, y1, x2, y2, khoangcachtoithieu, khoangcachdichuyen, bool(khoangcachdichuyentoida))
+            if huong:
+                deltax, deltay = huong
         else:
             # Đứng trùng vị trí mục tiêu: chọn hướng ngẫu nhiên để thoát ra
             goc = random.uniform(0, 2 * math.pi)
@@ -2888,7 +3087,55 @@ class MoiTruong:
 
         return self._action_dichuyentheovector(x1, y1, deltax, deltay, delay = delay)
 
-    def action_dichuyentiepcan(self, diachi2, khoangcachdichuyentoida = 0, delay = 0.05):
+    def _chonhuonglui(self, x1, y1, x2, y2, khoangcachtoithieu, khoangcachdichuyen, is_gioihanquang):
+        # Hướng lùi khỏi (x2, y2): thử ngược hướng mục tiêu trước rồi lệch dần 2 bên (GOCLECHLUIs). Hướng được nhận khi ô tới đi được,
+        # mọi ô trên đường thẳng tới đó đi được, không cắt vùng cấm và tới đó cách mục tiêu đủ khoangcachtoithieu (lệch hướng thì quãng
+        # lùi dài thêm tối đa QUANGLUITHEMTOIDA ô cho đủ; is_gioihanquang: không được dài thêm, chỉ cần xa mục tiêu hơn bây giờ).
+        # -> (deltax, deltay) theo quy ước _action_dichuyentheovector (deltay = y1 - y2); None: sau lưng trống (lùi thẳng như cũ).
+        # Bị dồn góc (không hướng nào đủ xa): tới ô xa mục tiêu nhất trong các hướng đi được, không ô nào xa hơn bây giờ thì (0, 0) =
+        # đứng yên (lùi thẳng vào nước / tường thì đích kéo về có khi ở bên kia, tự động tìm đường chạy vòng)
+        khoangcach = math.dist((x1, y1), (x2, y2))
+        quangtoida = khoangcachdichuyen if is_gioihanquang else khoangcachdichuyen + QUANGLUITHEMTOIDA
+        r = math.ceil(quangtoida) + 1
+        luoi = self._get_luoivatcan(x1 - r, y1 - r, x1 + r, y1 + r)
+        if not luoi:
+            return None
+
+        def is_vatcan(x, y):
+            return luoi[x - x1 + r][y - y1 + r] if abs(x - x1) <= r and abs(y - y1) <= r else 1
+
+        if not any(is_vatcan(round(x1 - (x2 - x1) / khoangcach * t), round(y1 - (y2 - y1) / khoangcach * t))
+                   for t in [i / 2 for i in range(1, math.ceil(khoangcachdichuyen * 2) + 1)]):
+            return None  # Sau lưng trống: lùi thẳng như cũ
+        def is_diduoc(xd, yd):
+            if (xd, yd) == (x1, y1) or is_vatcan(xd, yd):
+                return False
+            sobuoc = max(1, math.ceil(math.dist((x1, y1), (xd, yd)) * 2))
+            if any(is_vatcan(round(x1 + (xd - x1) * i / sobuoc), round(y1 + (yd - y1) * i / sobuoc)) for i in range(1, sobuoc)):
+                return False
+            return not (self.is_tranhvungcam and self.get_is_duongdicatvungcam(x1, y1, xd, yd))
+
+        gocgoc = math.atan2(y1 - y2, x1 - x2)
+        xanhat = None
+        for goclech in GOCLECHLUIs:
+            for dau in ((1, -1) if goclech else (1,)):
+                goc = gocgoc + dau * math.radians(goclech)
+                quang = khoangcachdichuyen
+                while quang <= quangtoida + 1e-6:
+                    xd, yd = round(x1 + quang * math.cos(goc)), round(y1 + quang * math.sin(goc))
+                    kc = math.dist((xd, yd), (x2, y2))
+                    if not is_diduoc(xd, yd):
+                        break
+                    if xanhat is None or kc > xanhat[0]:
+                        xanhat = (kc, xd, yd)
+                    if kc >= khoangcachtoithieu or (is_gioihanquang and kc > khoangcach + 0.5):
+                        return xd - x1, y1 - yd
+                    quang += 0.5
+        if xanhat and xanhat[0] > khoangcach + 0.5:
+            return xanhat[1] - x1, y1 - xanhat[2]
+        return 0, 0
+
+    def action_dichuyentiepcan(self, diachi2,khoangcachdichuyentoida = 0, delay = 0.05):
         return self.action_dichuyengiukhoangcachtoida(diachi2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
 
     def action_dichuyentiepcandiem(self, x2, y2, khoangcachdichuyentoida = 0, delay = 0.05):
@@ -3078,6 +3325,9 @@ class MoiTruong:
             if dichtrongtran is None:
                 return False
             x, y = round(dichtrongtran[0]), round(dichtrongtran[1])
+            # Lưới vật cản chỉ có của bản đồ đang đứng
+            if idbando == self.get_idbandohientai():
+                x, y = self.get_oditduocganhat(x, y)
         a = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         if not a: return False
         a = read_int(self.tientrinh, a + DC.TG_TIMDUONG)

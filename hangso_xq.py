@@ -180,6 +180,21 @@ BUKHOANGCACHTAMXA = 1.
 # Tiếp cận cận chiến như client khi bấm chiêu trên phím tắt (xq + 0x1873A, đọc 2026-10-28): tìm đường tới ô mục tiêu, mỗi lần chỉ
 # ghi chừng này bước (client: KDK + 0x1620 = 2), đích đổi thì chừng này giây sau lần ghi trước mới tìm lại (client: mốc +500ms)
 SOBUOCTIEPCANCANCHIEN = 2
+# Đối tượng tìm đường cục bộ riêng của bot (xq + 0x4B0D60 dùng tới + 0x54FD0: lưới 101x101, 0x2800 nút, mảng ô đường đi)
+KICHTHUOCDOITUONGTIMDUONGCUCBO = 0x56000
+# Đích rơi vào vật cản (toạ độ nhiệm vụ / NPC lệch vào tường, nước...) thì kéo về ô đi được gần nhất trong bán kính chừng này ô
+BANKINHKEODICH = 15
+# Đoạn tìm đường cục bộ ra đoạn cụt (không tới được đích) thì chừng này giây sau mới thử lại đúng đoạn đó
+THOIGIANNHODOANCUT = 1.
+# Giữ khoảng cách tối thiểu mà sau lưng là vật cản: thử lùi lệch khỏi hướng thẳng chừng này độ (cả 2 bên, lệch ít trước), lệch hướng
+# thì quãng lùi được dài thêm tối đa chừng này ô cho đủ xa mục tiêu
+# Đi theo ô tới gần đích (NPC...) còn trong chừng này ô thì chọn ô trong tầm mà tìm đường cục bộ tới được thật (thử tối đa SOOTHU ô
+# gần mình trước, nhớ kết quả THOIGIANNHO giây) thay vì điểm trên đường thẳng (hay ở sau tường thấp / quầy hàng)
+KHOANGCACHCHONDICHTOIDUOC = 40.
+SOOTHUDICHTOIDUOC = 8
+THOIGIANNHODICHTOIDUOC = 3.
+GOCLECHLUIs =(0, 25, 50, 75, 100, 125)
+QUANGLUITHEMTOIDA = 3.
 # Bot tìm đường lại và ghi đoạn mới mỗi chừng này giây kể cả khi đích không đổi (client 0.5s; ngắn hơn để chuỗi không cạn giữa đường)
 THOIGIANTINHLAITIEPCANCANCHIEN = 0.25
 # Mục tiêu đang đi về phía mình, bước tới của nó cách mình không quá chừng này ô (theo ô, max |dx| |dy|) thì đứng chờ
@@ -661,6 +676,9 @@ MONPHAIPHEPTHUATs = ("vanmongcoc", "maoson", "conluan")
 
 MONPHAICHIBUFFNGANCHAMs = ("daohoanguyen", "camvequan", "duongmon")
 MONPHAICHIBUFFKIMCHAMs = ("vanmongcoc", "maoson", "conluan")
+# Bảo thú triệu hồi (tên bắt đầu bằng): Cương Thi / Thiên Binh / Thiên Tướng không cần Kim Châm, Quỷ Tốt không cần Ngân Châm
+BAOTHUCHIBUFFNGANCHAMs = (CUONGTHI, THIENBINH, THIENTUONG)
+BAOTHUCHIBUFFKIMCHAMs = (QUYTOT,)
 
 BANDO_TANTHUTHON = 1
 BANDO_BACHMATRANG = 142

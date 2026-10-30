@@ -3,8 +3,8 @@
 #   không có nhiệm vụ   : tới NPC giao nhiệm vụ (Côn Luân dưới 60: Văn Xương Chân Quân), "2. Tiếp nhận nhiệm vụ" -> "1. Tiếp nhận"
 #                         (tallk <id># quest -> tallk <id># accept_quest)
 #   đã xong (Xong) / đủ tiến độ: về NPC giao, "Hoàn thành nhiệm vụ" (tallk <id># task_info)
-#   Đi tìm Thạch Sư     : tới Thạch Sư nhận việc (accept_task.1 -> accept_task.11)
-#   Thu thập            : tới bản đồ trong mô tả đánh đúng quái đó, nhặt vật phẩm; đủ số thì Hồi môn phái, tới Thạch Sư "Hoàn thành"
+#   Đi tìm Thạch Sư     : tới Thạch Sư nhận việc theo menu: Thu mua accept_task.1 -> .11, Thu thập accept_task.2 -> .21
+#   Thu thập            : tới bản đồ trong mô tả đánh mọi quái (quái có hạn, giết con khác thì con cần mới ra), nhặt vật phẩm; đủ số thì Hồi môn phái, tới Thạch Sư chọn "Hoàn thành" theo menu
 #   Mua sắm             : tới cửa hàng trong mô tả (NPC các nước có tên riêng, tên cửa hàng là danh hiệu), tra ô / giá theo tên món
 #                         (chưa biết thì mở cửa hàng đọc 1 lần rồi đóng), mua bằng lệnh buy; đủ thì đưa lên hành trang 1, give Thạch Sư
 #   Thăm viếng          : tới NPC (chưởng môn / quân vương, bảng BANDOTHAMVIENG), "Hoàn thành nhiệm vụ"
@@ -21,12 +21,12 @@ import time
 
 from hangso_xq import *
 from bando_xq import timduongbando, CAPQUAI_MAP, BANDOCONG_MAP
-from dexuatlotrinh_xq import taiviquaibando, dexuatlotrinh, SOLANTHAYQUAITOITHIEU
+from dexuatlotrinh_xq import taiviquaibando, dexuatlotrinh, dexuatlotrinhdo, SOLANTHAYQUAITOITHIEU, TENMAUDO
 from giaodo_xq import taolenhgiao
 from nhiemvu_xq import *
 from nhiemvu_xq import _laynpcbandonho as nhiemvu_layvitri_soluong
 from thongbao_xq import baosuco
-from tienich_xq import phatam, tailotrinhmau as util_tailotrinhmau
+from tienich_xq import phatam, tailotrinhmau as util_tailotrinhmau, luulotrinhmau as util_luulotrinhmau
 
 DAYCANKHON = "Dây Càn Khôn"
 # Hết Dây Càn Khôn thì về Chủ Tiệm Tạp Hóa ở Tân Thủ Thôn mua chừng này (ô / giá tra theo tên trong cửa hàng)
@@ -44,18 +44,15 @@ NGUONGMAUDUNGDANH = 40
 NGUONGMAUANTOAN = 15
 THOIGIANCHODANH = 3.
 KHOANGCACHNOICHUYEN = 3.
+# Gần NPC dưới chừng này ô mà không đi lại gần hơn được (vật cản) thì vẫn thử nói chuyện
+KHOANGCACHNOICHUYENKET = 6.
 # Gửi xong hội thoại chừng này giây mà nhiệm vụ chưa đổi thì thử lại, quá SOLANTHUSUMON lần thì dừng
 THOIGIANCHONHIEMVUDOI = 4.
 # Nhận nhiệm vụ: cửa sổ nhiệm vụ có lúc cập nhật chậm (Luyện tập), chờ lâu hơn trước khi gửi lại
 THOIGIANCHONHANNHIEMVU = 12.
 # Cửa sổ nhiệm vụ có tên mà mô tả còn trống (máy chủ chưa gửi xong): chờ tối đa chừng này giây rồi mới coi là nhiệm vụ chưa biết
-THOIGIANCHOMOTANHIEMVU = 20.
+THOIGIANCHOMOTANHIEMVU = 30.
 GIANCACHXINNHIEMVU = 10.
-# Truy Bắt Thích Khách đuổi đánh quá chừng này giây chưa xong thì huỷ; lệnh huỷ gửi cách nhau GIANCACHHUYNHIEMVU giây (game giãn cách
-# giữa 2 lần huỷ), Thu Thập không làm được thì thử huỷ tối đa SOLANHUYTOIDA lần rồi mới dừng
-THOIGIANHUYTRUYBAT = 300.
-GIANCACHHUYNHIEMVU = 60.
-SOLANHUYTOIDA = 10
 # Luyện tập / Du lịch tự chọn bãi: quái cấp thấp nhất >= cấp - CAPTHAPHONTOIDA, cấp cao nhất <= cấp + CAPCAOHONTOIDA
 CAPTHAPHONTOIDA = 12
 CAPCAOHONTOIDA = 3
@@ -100,6 +97,9 @@ class TacTuSuMon:
                        "solanmonphai": 0, "khampha": None, "lucbat": 0., "luotdangnhan": 0, "soluotxong": 0, "tenquai": set(),
                        "vatphamnhat": set(), "dabao": set(), "kinhnghiem": {}}
         self.moitruong._inlog("[SƯ MÔN] Bắt đầu làm nhiệm vụ sư môn")
+        # Sư môn tự đi một mình: Theo sau đang bật thì bot chỉ chọn quái quanh người được theo sau và bị kéo về phía họ (Kim Tinh
+        # trước mặt không đánh); tạm tắt, dừng sư môn thì trả lại
+        self._doituychonsumon(self._sumon, "_is_tudongtheosau", False, "Theo sau")
         phatam("Bắt đầu nhiệm vụ sư môn")
 
     def huy_sumon(self):
@@ -131,8 +131,8 @@ class TacTuSuMon:
         return self._sumon_npcgiao or NPCSUMONMACDINH.get(self.moitruong.get_tenmonphai(), ("", ""))[0]
 
     def _laytenmuctieutancongs(self):
-        # Danh sách tên được đánh: lúc Thu thập thì chỉ đánh quái ra vật phẩm cần, ở bãi train tự chọn thì đánh mọi quái (rỗng), còn lại là
-        # danh sách của người dùng
+        # Danh sách tên được đánh: Thu thập / bãi train tự chọn thì đánh mọi quái (rỗng, is_train), Hiệp Trợ / Truy Bắt... thì chỉ con
+        # nhiệm vụ, còn lại là danh sách của người dùng
         if self._sumon and self._sumon["chedo"] == "danhquai" and (self._sumon["tenquai"] or self._sumon.get("is_train")):
             return self._sumon["tenquai"]
         # Lăng Ly Sơn ở chỗ boss: đánh mọi quái (boss và quái quanh nó)
@@ -151,10 +151,14 @@ class TacTuSuMon:
         # Bước cần đánh quái (Luyện tập, Du lịch, Thu thập): ô nào người dùng quên bật (hoặc đang "Chỉ đánh người chơi") thì đổi giúp,
         # nhớ giá trị cũ để trả lại khi dừng sư môn
         for thuoctinh, giatri, ten in self._TUYCHONDANHQUAI:
-            if getattr(self, thuoctinh) != giatri:
-                s.setdefault("tuychoncu", {}).setdefault(thuoctinh, getattr(self, thuoctinh))
-                setattr(self, thuoctinh, giatri)
-                self.moitruong._inlog(f"[SƯ MÔN] {'Bật' if giatri else 'Tắt'} \"{ten}\" để đánh quái (dừng sư môn thì trả lại)")
+            self._doituychonsumon(s, thuoctinh, giatri, ten)
+
+    def _doituychonsumon(self, s, thuoctinh, giatri, ten):
+        # Đổi 1 ô thiết lập cho sư môn, nhớ giá trị cũ (s["tuychoncu"]) để trả lại khi dừng; luuthietlap lưu giá trị cũ này
+        if getattr(self, thuoctinh) != giatri:
+            s.setdefault("tuychoncu", {}).setdefault(thuoctinh, getattr(self, thuoctinh))
+            setattr(self, thuoctinh, giatri)
+            self.moitruong._inlog(f"[SƯ MÔN] {'Bật' if giatri else 'Tắt'} \"{ten}\" (dừng sư môn thì trả lại)")
 
     def _ketthucsumon(self, loi = None, thongbao = None):
         s = self._sumon
@@ -408,7 +412,8 @@ class TacTuSuMon:
         if not kp or kp["khoa"] != khoa:
             kp = s["khampha"] = {"khoa": khoa, "i": 0, "luc": time.time()}
         if self.moitruong.get_idbandohientai() == idbando:
-            x, y = diems[kp["i"] % len(diems)]
+            # Điểm rơi vào vật cản thì đo theo ô đi được gần nhất (nơi đi cũng nhắm ô đó), tới đó là tới
+            x, y = self.moitruong.get_oditduocganhat(*diems[kp["i"] % len(diems)])
             # Điểm không tới được (toạ độ trong nhiệm vụ có khi lệch vào chỗ không đi được, nhất là Tuần Sơn): THOIGIANKHONGNHICH giây không
             # gần thêm thì thôi, đã cách dưới KHOANGCACHGANDUOC ô thì coi như tới (vẫn đứng chờ điểm đầu), xa hơn thì sang điểm kế
             khoangcach = self.moitruong.get_khoangcachdiem(x, y)
@@ -434,16 +439,29 @@ class TacTuSuMon:
                             is_dioo = self._is_dioo(idbando, khoa))
 
     def _laydiemtimquai(self, tenquai, idbando):
-        # Chỗ từng thấy quái này, rồi lộ trình mẫu của bản đồ, rồi các cổng / điểm xuất hiện
-        diems = []
+        # Chỗ từng thấy quái này, rồi điểm đi tuần của bản đồ (_laydiemtrain: lộ trình mẫu / tự đề xuất / lộ trình dò theo lưới vật cản)
         vitri = self._sovitri.timquai(tenquai, idbando)
-        if vitri:
-            diems.append(tuple(vitri))
-        for mau in util_tailotrinhmau().get(str(idbando), []):
-            for d in mau.get("diem") or []:
-                if len(d) < 3 or int(d[2]) == idbando:
-                    diems.append((int(d[0]), int(d[1])))
-        return diems or laydiemkhampha(idbando)
+        return ([tuple(vitri)] if vitri else []) + self._laydiemtrain(idbando)
+
+    def _laylotrinhdo(self, idbando):
+        # Chưa có lộ trình mẫu / đủ vị trí quái: lộ trình dò phủ vùng đi được nối với chỗ đứng (lưới vật cản của client, tránh cổng / vùng
+        # cấm) như nút "Lộ trình dò", lưu thành mẫu TENMAUDO (lần sau dùng lại, hiện trên bảng Lộ trình mẫu) nhưng không nạp vào lộ trình
+        # của nhân vật. Chỉ tính được khi đang ở bản đồ đó. -> [(x, y), ...] hoặc []
+        if self.moitruong.get_idbandohientai() != idbando:
+            return []
+        luoi = self.moitruong.get_luoivatcanbando()
+        if not luoi:
+            return []
+        congs = [(x, y) for _, x, y, _, _ in (BANDOCONG_MAP.get(idbando) or ("", ()))[1]]
+        diems = dexuatlotrinhdo(luoi, self.moitruong.get_toado(),
+                                lambda x, y: any(math.dist((x, y), c) < 12 for c in congs) or self._kiemtra_vungcam(x, y))
+        if len(diems) < 2:
+            return []
+        lotrinhmau = util_tailotrinhmau()
+        lotrinhmau[str(idbando)] = [m for m in lotrinhmau.get(str(idbando), []) if m.get("ten") != TENMAUDO]             + [{"ten": TENMAUDO, "diem": [[x, y] for x, y in diems]}]
+        util_luulotrinhmau(lotrinhmau)
+        self.moitruong._inlog(f"[SƯ MÔN] {laytenbando(idbando)} chưa có lộ trình mẫu: tạo lộ trình dò {len(diems)} điểm")
+        return [tuple(d) for d in diems]
 
     def _tinpc(self, s, tennpc, idbandogoiy = None, is_chibandogoiy = False):
         # Đi tìm NPC: thấy rồi -> địa chỉ; chưa thấy -> yêu cầu di chuyển tới chỗ đã biết / đi khắp bản đồ gợi ý. -> (địa chỉ, yêu cầu).
@@ -491,10 +509,19 @@ class TacTuSuMon:
             if yeucau is None and not idbandogoiy:
                 self._ketthucsumon(f"không biết {tennpc} ở đâu ({viec}): đứng gần NPC đó 1 lần cho bot ghi lại vị trí")
             return yeucau
-        if moitruong.get_khoangcach(diachi) > KHOANGCACHNOICHUYEN:
-            x, y = moitruong.get_toado(diachi)
-            return self._dentoi(s, moitruong.get_idbandohientai(), x, y, tennpc)
-        khoa = f"{nv['luot'] if nv else 0}|{nv['loai'] if nv else ''}|{viec}"
+        khoangcach = moitruong.get_khoangcach(diachi)
+        if khoangcach > KHOANGCACHNOICHUYEN:
+            # NPC đứng sau tường / vật cản (Văn Xương Chân Quân): đã gần dưới KHOANGCACHNOICHUYENKET ô mà THOIGIANKHONGNHICH giây không
+            # nhích lại gần được thì thử nói chuyện luôn, không đứng đơ
+            gan = s.get("gannpc")
+            if not gan or gan[0] != tennpc or khoangcach < gan[1] - 0.5:
+                gan = s["gannpc"] = (tennpc, khoangcach, time.time())
+            if khoangcach > KHOANGCACHNOICHUYENKET or time.time() - gan[2] < THOIGIANKHONGNHICH:
+                x, y = moitruong.get_toado(diachi)
+                return self._dentoi(s, moitruong.get_idbandohientai(), x, y, tennpc)
+        # Khoá theo cả số lượt đã trả trong phiên: nhận nhiệm vụ (chưa có nhiệm vụ, lượt 0) mỗi lượt là 1 việc mới, không cộng dồn số lần thử
+        # từ các lượt trước (từng dừng "nhận ... 3 lần mà không đổi" ngay lần nhận thứ 4 trong phiên dù chưa thử lần nào)
+        khoa = f"{s['soluotxong']}|{nv['luot'] if nv else 0}|{nv['loai'] if nv else ''}|{viec}"
         solan, luc = s["thu"].get(khoa, (0, 0.))
         if time.time() - luc < (THOIGIANCHONHIEMVUDOI if nv else THOIGIANCHONHANNHIEMVU):
             s["trangthai"] = f"chờ {tennpc} ({viec})"
@@ -546,6 +573,37 @@ class TacTuSuMon:
             hoithoai["buocs"][0] = "chon1"
             hoithoai["luc"] = now
             return
+        elif buoc == "hoanthanh":
+            # Trả ở Thạch Sư: menu có task_info thì chọn, không thì lựa chọn đầu không phải CLOSE (menu Thạch Sư chỉ 1 lựa chọn); ghi menu
+            if not moitruong.get_noidungcuasotuychon() and now - hoithoai["luc"] < THOIGIANCHOMENU:
+                return
+            lenhs = [l for l in moitruong.get_lenhcuasotuychons() if l.strip() and l.upper() != "CLOSE"] \
+                if moitruong.get_noidungcuasotuychon() else []
+            lenh = next((l for l in lenhs if l.split("# ", 1)[-1].strip() == "task_info"), None) or (lenhs[0] if lenhs else None)
+            self.moitruong._inlog(f"[SƯ MÔN] Menu {manpc}: {lenhs} -> {lenh or 'không có lựa chọn'}")
+            if lenh:
+                moitruong.xoa_noidungcuasotuychon()
+                moitruong.action_thucthicaulenh(lenh)
+            hoithoai["buocs"].pop(0)
+            hoithoai["luc"] = now
+            return
+        elif buoc == "nhanviec":
+            # Thạch Sư / Thôn Dân / Dược Đồng chỉ có 1 lựa chọn tuỳ máy chủ giao: "1. Thu mua" (accept_task.1) hoặc "1. Thu thập"
+            # (accept_task.2); chọn đúng lệnh trong menu rồi "1. Nhận" = accept_task.<n>1. Gửi nhầm loại thì ra nhiệm vụ hỏng ("Nghe nói ở 0")
+            if not moitruong.get_noidungcuasotuychon() and now - hoithoai["luc"] < THOIGIANCHOMENU:
+                return
+            lenhs = moitruong.get_lenhcuasotuychons() if moitruong.get_noidungcuasotuychon() else []
+            lenh = next((l for l in lenhs if re.fullmatch(r"accept_task\.\d", l.split("# ", 1)[-1].strip())), None)
+            self.moitruong._inlog(f"[SƯ MÔN] Menu {manpc}: {lenhs} -> {lenh or 'không có lựa chọn nhận việc'}")
+            if not lenh:
+                hoithoai["buocs"] = []
+                return
+            moitruong.xoa_noidungcuasotuychon()
+            moitruong.action_thucthicaulenh(lenh)
+            hoithoai["buocs"] = [lenh.split("# ", 1)[-1].strip() + "1"] + hoithoai["buocs"][1:]
+            hoithoai["dangchomenu"] = True
+            hoithoai["luc"] = now
+            return
         elif buoc == "ghimenu":
             if not moitruong.get_noidungcuasotuychon() and now - hoithoai["luc"] < THOIGIANCHOMENU:
                 return
@@ -566,17 +624,20 @@ class TacTuSuMon:
             hoithoai["luc"] = now
             return
         elif buoc == "thamvieng":
-            # Thăm viếng: menu có "Hoàn thành nhiệm vụ" (task_info) thì chọn; không có (quân vương: "1. Đối thoại" welcome.99 -> trả lời
-            # có "1. Hoàn thành nhiệm vụ") thì chọn Đối thoại rồi chọn lựa chọn đầu của menu sau
+            # Thăm viếng: "Hoàn thành nhiệm vụ" là lệnh "look <id>#" trong menu (log Sở Vương / Chu Vương / Triệu Vương; gửi task_info
+            # thì không ăn), có thì chọn, không thì task_info nếu có; quân vương có khi menu gốc là "1. Đối thoại" (welcome.99) -> menu sau
+            # mới có "1. Hoàn thành nhiệm vụ" (look <id>#): chọn Đối thoại rồi chọn lựa chọn đầu của menu sau
             if not moitruong.get_noidungcuasotuychon() and now - hoithoai["luc"] < THOIGIANCHOMENU:
                 return
             lenhs = moitruong.get_lenhcuasotuychons() if moitruong.get_noidungcuasotuychon() else []
-            lenh = next((l for l in lenhs if l.split("# ", 1)[-1].strip() == "task_info"), None)
+            lenh = next((l for l in lenhs if l.strip().startswith("look ")), None) \
+                or next((l for l in lenhs if l.split("# ", 1)[-1].strip() == "task_info"), None)
             buocsau = []
             if not lenh:
                 lenh = next((l for l in lenhs if l.split("# ", 1)[-1].strip() == "welcome.99"), None)
                 buocsau = ["chon1"] if lenh else []
-            lenh = lenh or f"tallk {manpc} task_info"
+            # Menu chưa đọc được (trống): gửi lệnh "Hoàn thành nhiệm vụ" quen thuộc là look <id>#
+            lenh = lenh or f"look {manpc}"
             self.moitruong._inlog(f"[SƯ MÔN] Menu {manpc}: {lenhs} -> {lenh}")
             moitruong.xoa_noidungcuasotuychon()
             moitruong.action_thucthicaulenh(lenh)
@@ -662,9 +723,15 @@ class TacTuSuMon:
             self._baomotlan(s, "chuadocnhiemvu", "⚠️ Sư môn: chưa đọc được cửa sổ nhiệm vụ, mở bảng nhiệm vụ trong game 1 lần")
             return None
         nv = laynhiemvusumon(mucs)
-        # Máy chủ gửi tên nhiệm vụ trước, mô tả sau (vừa nhận / vừa mở bot): mô tả còn trống thì chờ, không coi là nhiệm vụ lạ mà dừng
+        # Có tên mà mô tả còn trống (sau "quest list" máy chủ chỉ gửi tên; mô tả gửi khi bấm vào dòng đó = "quest intro <mã>"): xin mô tả,
+        # cách nhau GIANCACHXINNHIEMVU giây, chờ tối đa THOIGIANCHOMOTANHIEMVU giây, không coi là nhiệm vụ lạ mà dừng
         if nv and not nv["mucdich"] and not nv["mota"] and not nv["is_xong"]:
             s.setdefault("luctrongmota", time.time())
+            ma = moitruong.get_manhiemvu(MUCSUMON)
+            if ma and time.time() - s.get("lucxinmota", 0.) > GIANCACHXINNHIEMVU:
+                s["lucxinmota"] = time.time()
+                moitruong._inlog(f"[SƯ MÔN] Mô tả {nv['ten']} còn trống: gửi \"quest intro {ma[0]} {ma[1]} {ma[2]}\"")
+                moitruong.action_thucthicaulenh(f"quest intro {ma[0]} {ma[1]} {ma[2]}")
             if time.time() - s["luctrongmota"] < THOIGIANCHOMOTANHIEMVU:
                 s["trangthai"] = f"chờ mô tả nhiệm vụ {nv['ten']}"
                 return None
@@ -694,13 +761,6 @@ class TacTuSuMon:
         if loai == LOAI_HIEPTRO:
             return self._buochieptro(s, nv)
         if loai == LOAI_TRUYBAT:
-            # Truy Bắt Thích Khách đuổi đánh quá THOIGIANHUYTRUYBAT giây chưa xong thì huỷ (người dùng: lâu quá không đáng); huỷ chưa được
-            # (game giãn cách giữa 2 lần huỷ) thì vẫn làm tiếp, lát thử lại
-            if chuanhoaten(nv["ten"]) == chuanhoaten("Truy Bắt Thích Khách") and nv.get("buoc") == "diet" \
-                    and not nv["is_xong"] and not is_dutiendo(nv):
-                lucbatdau = s.setdefault("lucdiet", {}).setdefault(f"{nv['luot']}|{nv['ten']}", time.time())
-                if time.time() - lucbatdau > THOIGIANHUYTRUYBAT:
-                    self._huynhiemvu(s, nv, f"quá {int(THOIGIANHUYTRUYBAT // 60)} phút chưa xong")
             return self._buoctruybat(s, nv)
         # Tỷ thí thắng rồi mà còn ở đấu trường riêng (không có trong dữ liệu cổng, không chạy về được): nói chuyện với đối thủ chọn
         # "1. Rời khỏi đấu trường" trước
@@ -710,7 +770,7 @@ class TacTuSuMon:
                 or (loai == LOAI_TUANSON and is_dutiendo(nv)):
             return self._noichuyen(s, nv, npcgiao, ["look", "task_info"], "trả nhiệm vụ", bandomonphai)
         if loai == LOAI_DENTIM:
-            return self._noichuyen(s, nv, nv["npc"], ["look", "accept_task.1", "accept_task.11"], "nhận việc", bandomonphai)
+            return self._noichuyen(s, nv, nv["npc"], ["look", "nhanviec"], "nhận việc", bandomonphai)
         if loai == LOAI_THUTHAP:
             return self._buocthuthap(s, nv, bandomonphai)
         if loai == LOAI_THUMUA:
@@ -765,7 +825,8 @@ class TacTuSuMon:
         return min(ungviens)[1] if ungviens else None
 
     def _laydiemtrain(self, idbando):
-        # Điểm đi tuần ở bãi train: lộ trình mẫu, không có thì đề xuất từ vị trí quái đã thấy, không nữa thì quanh tâm bản đồ (tránh cổng)
+        # Điểm đi tuần ở bãi train / bản đồ Thu thập: lộ trình mẫu, không có thì đề xuất từ vị trí quái đã thấy, không nữa thì lộ trình
+        # dò theo lưới vật cản (_laylotrinhdo), cuối cùng mới đi vòng quanh tâm bản đồ (tránh cổng; hay lọt chỗ không đi được)
         for mau in util_tailotrinhmau().get(str(idbando), []):
             diems = [(int(d[0]), int(d[1])) for d in mau.get("diem") or [] if len(d) < 3 or int(d[2]) == idbando]
             if diems:
@@ -775,7 +836,7 @@ class TacTuSuMon:
             diems, _ = dexuatlotrinh(demo)
             if diems:
                 return [tuple(d) for d in diems]
-        return laydiemkhampha(idbando)
+        return self._laylotrinhdo(idbando) or laydiemkhampha(idbando)
 
     def _buoctrain(self, s, nhan):
         # Luyện tập / Du lịch khi nhân vật chưa có lộ trình điểm đánh: tự chọn bãi hợp cấp (giữ nguyên bãi trong cả phiên sư môn, lên cấp
@@ -969,26 +1030,6 @@ class TacTuSuMon:
             return None
         return self._noichuyen(s, nv, moitruong.get_tendoituong(diachi), ["look", "chon1"], "rời đấu trường", moitruong.get_idbandohientai())
 
-    def _huynhiemvu(self, s, nv, lydo, solantoida = None):
-        # Gửi lệnh huỷ nhiệm vụ sư môn đang nhận (moitruong.get_lenhhuynhiemvu, như nút "Hủy Bỏ"), cách nhau GIANCACHHUYNHIEMVU giây
-        # (game giãn cách giữa 2 lần huỷ: gửi sớm thì không ăn). -> False khi không huỷ được (không đọc được mã / quá solantoida lần)
-        moitruong = self.moitruong
-        khoa = f"huy|{nv['luot']}|{nv['ten']}"
-        solan, luc = s["thu"].get(khoa, (0, 0.))
-        if time.time() - luc < GIANCACHHUYNHIEMVU:
-            return True
-        if solantoida is not None and solan >= solantoida:
-            return False
-        lenh = moitruong.get_lenhhuynhiemvu(MUCSUMON)
-        if not lenh:
-            moitruong._inlog(f"[SƯ MÔN] Không đọc được mã để huỷ {nv['ten']} ({lydo})")
-            return False
-        s["thu"][khoa] = (solan + 1, time.time())
-        s["trangthai"] = f"huỷ {nv['ten']} ({lydo}), lần {solan + 1}"
-        moitruong._inlog(f"[SƯ MÔN] Huỷ {nv['ten']} lượt {nv['luot']} ({lydo}), lần {solan + 1}: {lenh}")
-        moitruong.action_thucthicaulenh(lenh)
-        return True
-
     def _is_dukinhnghiem(self, s, nv):
         # Luyện tập mà máy chủ không gửi tiến độ: tự đếm kinh nghiệm tăng từ lúc thấy lượt này
         if nv["loai"] != LOAI_LUYENTAP or not nv.get("can"):
@@ -1002,20 +1043,22 @@ class TacTuSuMon:
     def _buocthuthap(self, s, nv, bandomonphai):
         soluong = (self.moitruong.get_soluongvatphamhanhtrangtheoten() or {}).get(nv["vatpham"], 0)
         if soluong >= nv["soluong"]:
-            return self._noichuyen(s, nv, nv["npc"], ["look", "task_info"], f"giao {nv['soluong']} {nv['vatpham']}", bandomonphai)
+            # Đủ thì tới Thạch Sư chọn "Hoàn thành": lệnh trong menu (gửi thẳng task_info không có trong menu thì NPC không nhận)
+            return self._noichuyen(s, nv, nv["npc"], ["look", "hoanthanh"], f"giao {nv['soluong']} {nv['vatpham']}", bandomonphai)
         idbando = timbandotheoten(nv.get("bando"))
         if not idbando or not nv.get("quai"):
-            # Game không ghi chỗ ("Nghe nói ở 0"): huỷ ngay để nhận cái khác (người dùng dặn, không thử mua: cửa hàng thường không bán),
-            # huỷ mãi không được mới dừng
-            if not self._huynhiemvu(s, nv, f"Thu Thập {nv['vatpham']} không ghi chỗ (Nghe nói ở 0)", solantoida = SOLANHUYTOIDA):
-                self._ketthucsumon(f"Thu Thập {nv['vatpham']} không ghi chỗ (Nghe nói ở 0), huỷ không được: {nv['mota']}")
+            # Game không ghi chỗ ("Nghe nói ở 0"): do nhận việc nhầm loại (gửi lệnh Thu mua khi Thạch Sư giao Thu thập); bước "nhanviec"
+            # đã chọn đúng lệnh trong menu nên không còn gặp, gặp thì dừng báo
+            self._ketthucsumon(f"không rõ đánh quái gì / ở đâu để thu thập {nv['vatpham']}: {nv['mota']}")
             return None
         nhan = f"thu thập {nv['vatpham']} {soluong}/{nv['soluong']} (đánh {nv['quai']})"
         if self.moitruong.get_idbandohientai() != idbando:
             return self._dentoi(s, idbando, None, None, nhan)
         s["chedo"] = "danhquai"
         self._batdanhquai(s)
-        s["tenquai"], s["vatphamnhat"] = {nv["quai"]}, {nv["vatpham"]}
+        # Đánh mọi quái trong bãi (như bãi train), không chỉ con ra vật phẩm: quái trong bãi có hạn, không giết các con khác thì con cần
+        # đánh không ra thêm (người dùng). Chỉ nhặt món nhiệm vụ
+        s["tenquai"], s["is_train"], s["vatphamnhat"] = set(), True, {nv["vatpham"]}
         s["trangthai"] = nhan
         return self._diquadiem(s, f"quai|{nv['quai']}|{idbando}", idbando, self._laydiemtimquai(nv["quai"], idbando), nhan)
 

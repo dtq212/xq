@@ -10,7 +10,8 @@ from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util
 from tienich_xq import tailotrinhmau as util_tailotrinhmau, luulotrinhmau as util_luulotrinhmau
 from dexuatlotrinh_xq import taiviquai as util_taiviquai, luuviquai as util_luuviquai, taiviquaibando, ghinhanvitriquai, dexuatlotrinh
 from bando_xq import timduongbando, laynpcloidi
-from dexuatlotrinh_xq import THOIGIANGHIVITRIQUAI, THOIGIANLUUVITRIQUAI, SOLANTHAYQUAITOITHIEU, TENMAUDEXUAT
+from dexuatlotrinh_xq import THOIGIANGHIVITRIQUAI, THOIGIANLUUVITRIQUAI, SOLANTHAYQUAITOITHIEU, TENMAUDEXUAT, TENMAUDO, dexuatlotrinhdo
+from nhiemvu_xq import _laydiemcong as nhiemvu_laydiemcong, KHOANGCACHTRANHCONG
 from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, donbangthoidiem
 
 
@@ -1255,6 +1256,11 @@ class TacTuDiChuyen:
                     canchuyendendiemtieptheo = True
 
             if canchuyendendiemtieptheo:
+                # Lộ trình dò: đi hết 1 vòng mà đủ vị trí quái thì tự đề xuất lộ trình thật và nạp luôn (lượt sau đi theo lộ trình mới)
+                if self._lotrinhmaudangdung.split("|")[1:2] == [TENMAUDO]:
+                    self._sodiemdadilotrinhdo += 1
+                    if self._sodiemdadilotrinhdo >= len(diemdanhxungquanhs) and self._chuyensanglotrinhdexuat():
+                        break
                 next_index = (self._iddiemdanhxungquanhhientai + 1) % len(diemdanhxungquanhs)
 
                 self._iddiemdanhxungquanhhientai = next_index
@@ -1321,6 +1327,7 @@ class TacTuDiChuyen:
         self._diemdanhxungquanhs = diemdanhs
         self._iddiemdanhxungquanhhientai = -1
         self._diemdanhxungquanhhientai = None
+        self._sodiemdadilotrinhdo = 0
         self._lotrinhmaudangdung = f"{idbando}|{tenmau}|{1 if is_nguocchieu else 0}"
         self._is_lotrinhtuchon = is_tuchon
         print(f"[LỘ TRÌNH] Nạp mẫu '{tenmau}' bản đồ {idbando}{' (ngược chiều)' if is_nguocchieu else ''}: {len(diemdanhs)} điểm")
@@ -1394,8 +1401,7 @@ class TacTuDiChuyen:
         solanthay = sum(demo.values())
         if solanthay < SOLANTHAYQUAITOITHIEU:
             print(f"[LỘ TRÌNH] Mới thấy quái {solanthay} lần trên bản đồ {idbando}, cần ít nhất {SOLANTHAYQUAITOITHIEU} lần để đề xuất")
-            phatam("Chưa đủ dữ liệu vị trí quái để đề xuất lộ trình")
-            return False
+            return self.dexuat_lotrinhdo()
         # Client chưa có đối tượng tìm đường (chưa click di chuyển lần nào) thì không kiểm tra được đường đi, vẫn đề xuất
         is_kiemtraduong = self.moitruong.get_is_cotimduongcucbo()
         timduong = self.moitruong._get_chuoihuongtimduongcucbo if is_kiemtraduong else None
@@ -1405,7 +1411,8 @@ class TacTuDiChuyen:
             phatam("Không đề xuất được lộ trình")
             return False
         lotrinhmau = util_tailotrinhmau()
-        dsmau = [m for m in lotrinhmau.get(str(idbando), []) if m.get("ten") != TENMAUDEXUAT]
+        # Có lộ trình thật thì bỏ lộ trình dò (kẻo tự chọn mẫu lại chọn trúng nó)
+        dsmau = [m for m in lotrinhmau.get(str(idbando), []) if m.get("ten") not in (TENMAUDEXUAT, TENMAUDO)]
         dsmau.append({"ten": TENMAUDEXUAT, "diem": [[x, y] for x, y in diems]})
         lotrinhmau[str(idbando)] = dsmau
         util_luulotrinhmau(lotrinhmau)
@@ -1413,6 +1420,51 @@ class TacTuDiChuyen:
               f"{f' (bỏ {sobo} điểm không đi được)' if sobo else ''}{'' if is_kiemtraduong else ' (chưa kiểm tra đường đi: client chưa có đối tượng tìm đường)'}")
         phatam(f"Đã đề xuất lộ trình {len(diems)} điểm")
         return True
+
+    def dexuat_lotrinhdo(self):
+        # Bản đồ chưa đủ vị trí quái: đề xuất lộ trình dò phủ vùng đi được nối liền với chỗ đứng (lưới vật cản của client), tránh cổng /
+        # điểm xuất hiện và vùng cấm, lưu thành mẫu TENMAUDO và nạp luôn. Bot chạy lộ trình này thấy quái thì ghi vị trí, đủ dữ liệu
+        # bấm Tự đề xuất lần nữa là ra lộ trình thật (mẫu dò bị bỏ)
+        idbando = self.moitruong.get_idbandohientai()
+        luoi = self.moitruong.get_luoivatcanbando()
+        if not luoi:
+            phatam("Chưa đọc được bản đồ")
+            return False
+        congs = nhiemvu_laydiemcong(idbando)
+
+        def is_tranh(x, y):
+            return any(math.dist((x, y), c) < KHOANGCACHTRANHCONG for c in congs) or self._kiemtra_vungcam(x, y)
+
+        batdau = time.time()
+        diems = dexuatlotrinhdo(luoi, self.moitruong.get_toado(), is_tranh)
+        if len(diems) < 2:
+            print(f"[LỘ TRÌNH] Không đề xuất được lộ trình dò cho bản đồ {idbando} ({len(diems)} điểm)")
+            phatam("Không đề xuất được lộ trình dò")
+            return False
+        lotrinhmau = util_tailotrinhmau()
+        dsmau = [m for m in lotrinhmau.get(str(idbando), []) if m.get("ten") != TENMAUDO]
+        dsmau.append({"ten": TENMAUDO, "diem": [[x, y] for x, y in diems]})
+        lotrinhmau[str(idbando)] = dsmau
+        util_luulotrinhmau(lotrinhmau)
+        print(f"[LỘ TRÌNH] Chưa đủ vị trí quái: đề xuất mẫu '{TENMAUDO}' bản đồ {idbando} {len(diems)} điểm "
+              f"({time.time() - batdau:.1f}s): {diems}")
+        self.nap_lotrinhmau(idbando, TENMAUDO)
+        phatam(f"Chưa có vị trí quái, đã tạo lộ trình dò {len(diems)} điểm")
+        return True
+
+    def _chuyensanglotrinhdexuat(self):
+        # Hết 1 vòng lộ trình dò: đủ vị trí quái thì đề xuất lộ trình thật (mẫu dò bị bỏ) và nạp, chưa đủ thì đếm lại, đi thêm vòng nữa
+        self._sodiemdadilotrinhdo = 0
+        idbando = self.moitruong.get_idbandohientai()
+        self.luuvitriquai(True)
+        solanthay = sum(taiviquaibando(idbando).values())
+        if solanthay < SOLANTHAYQUAITOITHIEU:
+            print(f"[LỘ TRÌNH] Dò hết 1 vòng bản đồ {idbando} mới thấy quái {solanthay} lần (cần {SOLANTHAYQUAITOITHIEU}): dò thêm vòng nữa")
+            return False
+        if not self.dexuat_lotrinhmau():
+            return False
+        print(f"[LỘ TRÌNH] Dò xong bản đồ {idbando}: chuyển sang lộ trình '{TENMAUDEXUAT}'")
+        return self.nap_lotrinhmau(idbando, TENMAUDEXUAT)
 
     def them_diemdanhxungquanh(self, diemdanhxungquanh):
         if diemdanhxungquanh and diemdanhxungquanh not in self._diemdanhxungquanhs:

@@ -1009,8 +1009,8 @@ class DieuKhienTelegram:
 
     def _molaiclient(self, hwnd, ten, tenmay):
         # Đóng game của nhân vật để tự đăng nhập (dangnhap_xq) mở lại; đang tắt tự đăng nhập thì không đóng (sẽ mất nhân vật luôn)
-        from dangnhap_xq import taicauhinhdangnhap
-        if not taicauhinhdangnhap().get("is_tudongdangnhap"):
+        from dangnhap_xq import taicauhinhdangnhap, taikhoanbatchomaynay
+        if not taikhoanbatchomaynay(taicauhinhdangnhap()):
             return f"⚠️ Không mở lại <b>{ten}</b>: đang tắt tự động đăng nhập\n🖥 {tenmay}"
         import subprocess
         import win32process

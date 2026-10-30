@@ -476,7 +476,9 @@ class TacTuVatPham:
 
         if self._diachicosovatphamdangnhat:
             khoangcach = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat)
-            is_vatphamuutien = self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat) in VATPHAMUUTIENNHATs
+            # Món Thu thập của sư môn cũng ưu tiên: không thì còn quái quanh đó là cứ đánh tiếp (tấn công xếp trước nhặt đồ), không nhặt
+            tenvatphamdangnhat = self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat)
+            is_vatphamuutien = tenvatphamdangnhat in VATPHAMUUTIENNHATs or tenvatphamdangnhat in self._layvatphamnhatsumon()
             if khoangcach > 1.5:
                 yeucaunhatvatphammoi = {
                     "yeucau": YEUCAUDICHUYENNHATDO,
