@@ -152,6 +152,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._bonhogiunhomlanglyson = (0., False)
         # Lần chọn menu "ta muốn vào" Phong Yêu Kính gần nhất (tactu_langlyson_xq._xulymenuphongyeu)
         self._lucchonmenuphongyeu = 0.
+        # Lần đọc gần nhất (lúc, (ID người give, [ID thành viên online])) nhóm todoi đi Phong Yêu Kính (_laynhompy)
+        self._bonhonhompy = (0., None)
         # Nhiệm vụ Sư Gia (tactu_sugia_xq): việc đang làm (None = không), kết quả lần gần nhất cho giao diện; thành viên: việc trả nhiệm vụ
         # đang dở, lần chọn "Nhận" theo trưởng nhóm gần nhất, (lúc, trạng thái) nhiệm vụ của mình báo qua shared_data
         self._sugia = None

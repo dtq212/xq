@@ -308,6 +308,8 @@ class CuaSo:
                     "_langlysonchothanhvien": self.tactu.get_is_langlysonchothanhvien(),
                     "_langlysontattodoi": self.tactu.get_dsidtattodoilanglyson(),
                     "_langlysongiunhom": self.tactu.get_dsidgiunhomlanglyson(),
+                    # Phong Yêu Kính: ID boss mình đã giết vòng này, người cùng nhóm cộng vào (boss chết xa họ vẫn được tính)
+                    "_bossdagietphongyeu": self.tactu.get_bossdagietphongyeu(),
                     # Sư Gia (tactu_sugia_xq): trạng thái cho giao diện; nhiệm vụ của mình ("" / "dang" / "xong") cho trưởng nhóm cùng máy chờ
                     "_trangthaisugia": self.tactu.get_trangthaisugia(),
                     "_is_dangsugia": self.tactu.get_is_dangsugia(),
