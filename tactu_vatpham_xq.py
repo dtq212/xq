@@ -12,6 +12,9 @@ from moitruong_xq import MoiTruong, DOUUTIEN_THAP, DOUUTIEN_KHANCAP, DOUUTIEN_CA
 from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam
 from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, donbangthoidiem
 
+# Mua bù: cửa hàng chưa biết hàng thì mở để đọc (tactu_sumon_xq.batdau_mocuahang), mở hỏng thì chừng này giây sau mới thử lại
+GIANCACHMOCUAHANGMUABU = 120.
+
 
 class TacTuVatPham:
     def _get_baothuvatphamocuoi(self):
@@ -376,6 +379,9 @@ class TacTuVatPham:
                 return False
             if tenvatphamkiemtra in VATPHAMUUTIENNHATs:
                 return True
+            # Vật phẩm nhiệm vụ Thu thập của sư môn
+            if tenvatphamkiemtra in self._layvatphamnhatsumon():
+                return True
             if is_chinhatvatphamuutien:
                 return False
             if tenvatphamkiemtra in vatphamtudongnhats:
@@ -470,7 +476,9 @@ class TacTuVatPham:
 
         if self._diachicosovatphamdangnhat:
             khoangcach = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat)
-            is_vatphamuutien = self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat) in VATPHAMUUTIENNHATs
+            # Món Thu thập của sư môn cũng ưu tiên: không thì còn quái quanh đó là cứ đánh tiếp (tấn công xếp trước nhặt đồ), không nhặt
+            tenvatphamdangnhat = self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat)
+            is_vatphamuutien = tenvatphamdangnhat in VATPHAMUUTIENNHATs or tenvatphamdangnhat in self._layvatphamnhatsumon()
             if khoangcach > 1.5:
                 yeucaunhatvatphammoi = {
                     "yeucau": YEUCAUDICHUYENNHATDO,
@@ -513,9 +521,11 @@ class TacTuVatPham:
 
     def _muabutheoluat(self, nganquy):
         # Mua bù theo luật túi đồ (luattuido_xq "muabu", lần lượt từ trên xuống): còn ít hơn "duoi" món thì mua cho đủ "muatoi", ở NPC cách
-        # không quá 12 ô.
+        # không quá 12 ô (NPC tìm theo tên riêng hoặc danh hiệu).
+        # Ô / giá tra theo tên món ("tencuahang" nếu có) trong hàng đã đọc của cửa hàng đó (nhiemvu_xq.SoVitri); chưa đọc thì đứng gần
+        # mở cửa hàng đọc 1 lần (đóng ngay).
         # Đếm cả các chồng của món đó; vừa mua món nào thì 10s sau mới xét lại món đó (chờ hành trang cập nhật, khỏi mua trùng)
-        mucs = [m for m in tailuat()["muabu"] if m["bat"] and m["vatpham"] and m["npc"] and m["o"] and m["dongia"] and m["muatoi"]]
+        mucs = [m for m in tailuat()["muabu"] if m["bat"] and m["vatpham"] and m["npc"] and m["muatoi"]]
         if not mucs:
             return
         soluongtheoten = self.moitruong.get_soluongvatphamhanhtrangtheoten()
@@ -532,17 +542,43 @@ class TacTuVatPham:
             soluong = soluongtheoten.get(muc["vatpham"], 0)
             if soluong >= muc["duoi"] or soluong >= muc["muatoi"]:
                 continue
-            diachinpc = self.moitruong.action_timkiemnhanvat(muc["npc"])
+            diachinpc = self._timdoituongxungquanh(muc["npc"])
             if not diachinpc or self.moitruong.get_khoangcach(diachinpc) > 12.0:
                 continue
             idnpc = self.moitruong.get_iddoituong(diachinpc)
             if not idnpc:
                 continue
-            dadung = self._muavatpham(idnpc, muc["o"], muc["muatoi"] - soluong, muc["dongia"], muc["vatpham"], nganquy)
+            ogia = self._layogiamuabu(muc, diachinpc)
+            if not ogia:
+                continue
+            dadung = self._muavatpham(idnpc, ogia[0], muc["muatoi"] - soluong, ogia[1], muc["vatpham"], nganquy)
             if dadung:
                 self._thoidiemmuabu_map[muc["vatpham"]] = time.time()
                 print(f"[MUA BÙ] {self.moitruong.get_tendoituong()}: mua {muc['muatoi'] - soluong} {muc['vatpham']} (còn {soluong})")
             nganquy -= dadung
+
+    def _layogiamuabu(self, muc, diachinpc):
+        # (ô, giá) để mua món của luật mua bù ở NPC này, None khi chưa biết (đã cho mở cửa hàng đọc nếu được)
+        moitruong = self.moitruong
+        idbando = moitruong.get_idbandohientai()
+        tenmon = muc["tencuahang"] or muc["vatpham"]
+        tra = self._sovitri.timhang(idbando, muc["npc"], tenmon)
+        if tra:
+            return tra
+        ketqua = self.get_ketquamocuahang(idbando, muc["npc"])
+        if ketqua and ketqua[0]:
+            khoa = (idbando, muc["npc"], tenmon)
+            if khoa not in self._lechmuabudabao:
+                self._lechmuabudabao.add(khoa)
+                print(f"[MUA BÙ] {muc['npc']} không bán \"{tenmon}\": sửa tên món / \"Tên ở cửa hàng\" trong luật mua bù")
+            return None
+        # Chưa đọc cửa hàng này: đứng gần thì mở đọc (mở hỏng thì GIANCACHMOCUAHANGMUABU giây sau mới thử lại)
+        khoa = (idbando, muc["npc"])
+        if moitruong.get_khoangcach(diachinpc) <= 3. and not self._mocuahang \
+                and time.time() - self._lucmocuahangmuabu_map.get(khoa, 0.) > GIANCACHMOCUAHANGMUABU:
+            self._lucmocuahangmuabu_map[khoa] = time.time()
+            self.batdau_mocuahang(diachinpc)
+        return None
 
     def _layhanhdongluat(self, ten, vitri):
         # Hành động theo luật túi đồ của người dùng (luattuido_xq) cho món ở ô vitri: None = không luật nào khớp (làm như cũ),

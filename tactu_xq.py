@@ -16,10 +16,14 @@ from tactu_baothu_xq import TacTuBaoThu
 from tactu_hoatdong_xq import TacTuHoatDong
 from tactu_giaodo_xq import TacTuGiaoDo
 from tactu_catkho_xq import TacTuCatKho
+from tactu_sumon_xq import TacTuSuMon
+from tactu_langlyson_xq import TacTuLangLySon
+from nhiemvu_xq import SoVitri
 
 
 # Các nhóm việc nằm ở các file tactu_*_xq.py (mixin), TacTu giữ trạng thái (__init__), lưu / nạp thiết lập và các lệnh bật / tắt
-class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu, TacTuHoatDong, TacTuGiaoDo, TacTuCatKho):
+class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu, TacTuHoatDong, TacTuGiaoDo, TacTuCatKho, TacTuSuMon,
+            TacTuLangLySon):
     def __init__(self, moitruong: MoiTruong):
         self._thoidiemhettangbaodogannhat = 0.
         self._thoidiemmuaautogannhat = 0.
@@ -99,6 +103,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._khoangcachsudungkynangtamxa = KHOANGCACHSUDUNGKYNANGTAMXA
         # Thục Sơn: % nội lực tối thiểu để dùng Khai Thiên Tịch Địa lướt khi di chuyển (chỉnh ở giao diện, lưu theo nhân vật)
         self._phantramnoiluckhaithientichdia = PHANTRAMNOILUCKHAITHIENTICHDIA
+        # Côn Luân: hết mốc này mới gửi chiêu sau khi lướt Đằng Vân Giá Vũ (xem THOIGIANKHOACHIEUSAULUOT)
+        self._thoidiemhetkhoachieusauluot = 0.
         # Tầm đánh thực tế của nhân vật (học từ lần tiếp cận mục tiêu gần nhất), mặc định tầm xa đã trừ hao
         self._khoangcachvoitoimuctieu = self._khoangcachsudungkynangtamxa - TRUHAOTAMXACHONMUCTIEU
         # Đang trên đường về chỗ đứng riêng quanh trưởng nhóm
@@ -108,6 +114,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._idbandotheosaugannhat = None
         self._thoidiemdoibandotheosau = 0.
         self._thoidiemphutoibandogannhat = 0.
+        # Đang nói chuyện NPC để sang bản đồ khác (bando_xq.LOIDINPC_MAP, vd. vào Lăng Ly Sơn): {"idbando", "manpc", "luc", "dachon"} hoặc None
+        self._hoithoailoidinpc = None
         # Đi tới bản đồ (thietlap_ditoibando): id bản đồ đích, 0 = không đi. Bước di chuyển tiếp theo (mô tả, lúc cập nhật) cho giao diện
         self._idbandocandi = 0
         # Hàng chờ giao tiền / đồ (tactu_giaodo_xq): [yêu cầu giaodo_xq kèm trạng thái]
@@ -117,6 +125,33 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._ketquacatkho = ""
         # Các lần cất kho trong THOIGIANGIULICHSUCATKHO giây gần nhất: [[thời điểm, {tên món: số lượng}]] cho báo cáo định kỳ Telegram
         self._lichsucatkho = []
+        # Nhiệm vụ sư môn (tactu_sumon_xq): việc đang làm (None = không), kết quả lần gần nhất cho giao diện, NPC giao nhiệm vụ người dùng
+        # đặt (rỗng = mặc định theo môn phái, lưu theo nhân vật); vị trí NPC / quái đã thấy (nhiemvu_xq.SoVitri) và lần ghi gần nhất
+        self._sumon = None
+        # Điểm dò quanh toạ độ nhiệm vụ {(bản đồ, toạ độ): [điểm]} và vùng tới được từ chỗ đứng (bản đồ, {ô: số bước}) (_laydiemdoquanh,
+        # _layvungtoiduoc)
+        self._diemdoquanh_cache = {}
+        self._vungtoiduoc_cache = None
+        self._ketquasumon = ""
+        self._sumon_npcgiao = ""
+        self._sovitri = SoVitri()
+        self._thoidiemghivitridoituong = 0.
+        # Tự động đi Lăng Ly Sơn (tactu_langlyson_xq): việc đang làm (None = không), kết quả lần gần nhất cho giao diện
+        self._langlyson = None
+        self._ketqualanglyson = ""
+        # Thành viên theo sau: mã thưởng Lăng Ly Sơn đã tự lĩnh (báo trưởng nhóm qua shared_data), việc đang lĩnh dở (None = không)
+        self._khoathuonglanglysondalanh = ""
+        self._lanhthuonglanglyson = None
+        # Lần rời nhóm gần nhất khi giải tán tổ đội cũ (Tổ đội tự động tạm nghỉ)
+        self._thoidiemroinhomlanglyson = 0.
+        # Lần đọc gần nhất (lúc, kết quả) "mình là thành viên vòng Lăng Ly Sơn đang đi" từ shared_data
+        self._bonhogiunhomlanglyson = (0., False)
+        # Mở cửa hàng để đọc hàng (tactu_sumon_xq.batdau_mocuahang): việc đang làm (None = không), kết quả theo (bản đồ, tên NPC);
+        # Mua bù: lần mở cửa hàng gần nhất theo NPC, các lệch ô / giá giữa luật và cửa hàng đã báo
+        self._mocuahang = None
+        self._ketquamocuahang = {}
+        self._lucmocuahangmuabu_map = {}
+        self._lechmuabudabao = set()
         self._buocdichuyen = ("", 0.)
         # Các lần Hồi Thành Phù gần đây (chặn lặp tốn tiền, get_lydokhonghoithanhphu)
         self._thoidiemhoithanhphus = []
@@ -192,6 +227,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._iddiemdanhxungquanhhientai = -1
         # Lộ trình mẫu đang dùng dạng "<id bản đồ>|<tên mẫu>|<1 nếu đi ngược chiều>", rỗng nếu tự đặt điểm
         self._lotrinhmaudangdung = ""
+        # Số điểm đã đi qua của lộ trình dò (mẫu TENMAUDO) kể từ lúc nạp / lần xét trước: đủ 1 vòng thì xét chuyển sang lộ trình thật
+        self._sodiemdadilotrinhdo = 0
         # Ô "Đi ngược chiều" trên giao diện: chiều ưu tiên khi tự chọn lộ trình mẫu (tuchon_lotrinhmau), lưu theo nhân vật
         self._is_nguocchieulotrinh = False
         self._is_lotrinhtuchon = False
@@ -211,6 +248,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._thoidiemloggomquai = 0.
 
         self._idmuctieubiloi_map = {}
+        # id -> (tên, lý do) mục tiêu đang bị bỏ qua, để giao diện hiện danh sách (get_danhsachmuctieuboqua)
+        self._thongtinmuctieuboqua_map = {}
         self._thoidiemthaymuctieu_map = {}
         # Theo dõi đòn có trúng mục tiêu đang đánh không (xem _kiemtramuctieukhongtrungchieu)
         self._theodoitrungchieu = None
@@ -247,7 +286,6 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
 
         self._idquaidangkeo = 0
         self._thoidiembatdaukeo = 0.
-        self._thoidiemtrieuhoibaothugannhat = 0.
         self._thoidiemraidauthanhbinhgannhat = 0.
         # ID đối tượng mục tiêu -> lần dùng Phong Vũ Kinh Thiên gần nhất lên nó
         self._thoidiemphongvukinhthien_map = {}
@@ -520,7 +558,12 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_is_doidokhitrieuhoi": self._is_doidokhitrieuhoi,
             "_bodotrieuhoi": self._bodotrieuhoi,
             "_baothutrieuhoimaoson": self._baothutrieuhoimaoson,
+            "_sumon_npcgiao": self._sumon_npcgiao,
+            # Sư môn đang bật: dis / mở lại bot vào lại thì tự bật tiếp (bấm Dừng, xong 20 lần, lỗi dừng thì là False)
+            "_is_dangsumon": bool(self._sumon),
         }
+        # Sư môn đang tạm đổi ô nào (Theo sau, Tự động sử dụng kỹ năng...) thì lưu giá trị gốc của người dùng, dis vào lại không mất
+        thietlap.update({k: v for k, v in ((self._sumon or {}).get("tuychoncu") or {}).items() if k in thietlap})
         util_luuthietlap(str(idnguoichoi), thietlap)
         # luuthietlap chạy mỗi giây: vị trí quái thì THOIGIANLUUVITRIQUAI giây mới ghi file một lần (thoát thì luuvitriquai(True))
         self.luuvitriquai()
@@ -597,6 +640,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if "_is_doidokhitrieuhoi" in thietlap: self._is_doidokhitrieuhoi = thietlap["_is_doidokhitrieuhoi"]
             if "_bodotrieuhoi" in thietlap: self._bodotrieuhoi = list(thietlap["_bodotrieuhoi"])
             if thietlap.get("_baothutrieuhoimaoson") in BAOTHUTRIEUHOIMAOSONs: self._baothutrieuhoimaoson = thietlap["_baothutrieuhoimaoson"]
+            if "_sumon_npcgiao" in thietlap: self._sumon_npcgiao = thietlap["_sumon_npcgiao"] or ""
+            if thietlap.get("_is_dangsumon") and not self._sumon:
+                self.batdau_sumon()
 
     def battat_tranhvungcam(self):
         self._is_tranhvungcam = not self._is_tranhvungcam

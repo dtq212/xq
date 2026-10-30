@@ -128,6 +128,7 @@ class CuaSo:
         if self.idnguoichoi:
             self.tactu.luuthietlap(self.idnguoichoi)
             self.tactu.luuvitriquai(True)
+            self.tactu._sovitri.luu(is_ngay = True)
         self.thongke.luu(is_tatca = True)
 
         self.main_stop.set()
@@ -232,6 +233,8 @@ class CuaSo:
                     # Danh sách (không nối chuỗi) để giao diện sửa được từng tên
                     "_tenmuctieutancongs": sorted(self.tactu._tenmuctieutancongs),
                     "_tenmuctieukhongtancongs": sorted(self.tactu._tenmuctieukhongtancongs),
+                    # Mục tiêu bot tự bỏ qua theo id (bị chặn, đánh không trúng...), giao diện xoá được khi bỏ nhầm
+                    "_muctieuboquas": self.tactu.get_danhsachmuctieuboqua(),
                     "_khoangcachtoidatheosau": self.tactu._khoangcachtoidatheosau,
                     "_bankinhdiemdanh": self.tactu._bankinhdiemdanh,
                     "_khoangcachsudungkynangtamxa": self.tactu._khoangcachsudungkynangtamxa,
@@ -269,6 +272,19 @@ class CuaSo:
                     "_trangthaicatkho": self.tactu.get_trangthaicatkho(),
                     "_is_dangcatkho": bool(self.tactu._catkho),
                     "_lichsucatkho": self.tactu._lichsucatkho,
+                    "_trangthaisumon": self.tactu.get_trangthaisumon(),
+                    "_is_dangsumon": self.tactu.get_is_dangsumon(),
+                    "_sumon_npcgiao": self.tactu._sumon_npcgiao,
+                    "_npcgiaosumon": self.tactu._laynpcgiaosumon(),
+                    "_trangthailanglyson": self.tactu.get_trangthailanglyson(),
+                    "_is_danglanglyson": self.tactu.get_is_danglanglyson(),
+                    "_phobanlanglyson": self.tactu.get_phobanlanglyson(),
+                    # Lăng Ly Sơn: trưởng nhóm báo mã thưởng vòng vừa xong, thành viên báo mã đã tự lĩnh (tactu_langlyson_xq)
+                    "_khoathuonglanglyson": self.tactu.get_khoathuonglanglyson(),
+                    "_khoathuonglanglysondalanh": self.tactu._khoathuonglanglysondalanh,
+                    "_langlysonchothanhvien": self.tactu.get_is_langlysonchothanhvien(),
+                    "_langlysontattodoi": self.tactu.get_dsidtattodoilanglyson(),
+                    "_langlysongiunhom": self.tactu.get_dsidgiunhomlanglyson(),
                     "_thongkephien": self.thongke.get_tomtatphien(),
                     # Ngân lượng mang theo hiện tại (báo cáo Telegram)
                     "nganluong": self.moitruong.get_nganluong(),
@@ -336,6 +352,21 @@ class CuaSo:
                     self.tactu.yeucau_catkho()
                 elif cmd == "huycatkho":
                     self.tactu.huy_catkho()
+                elif cmd == "sumon":
+                    # Nhiệm vụ sư môn (tactu_sumon_xq) bật / tắt từ giao diện
+                    self.tactu.batdau_sumon()
+                elif cmd == "huysumon":
+                    self.tactu.huy_sumon()
+                elif cmd == "langlyson":
+                    # Tự động đi Lăng Ly Sơn (tactu_langlyson_xq) bật / tắt từ giao diện
+                    self.tactu.batdau_langlyson()
+                elif cmd == "thanhkieu":
+                    # Tự động đi Thành Kiều Quân Doanh (cùng module tactu_langlyson_xq)
+                    self.tactu.batdau_langlyson("thanhkieu")
+                elif cmd == "huylanglyson":
+                    self.tactu.huy_langlyson()
+                elif isinstance(cmd, str) and cmd.startswith("set_sumon_npcgiao:"):
+                    self.tactu.thietlap_npcgiaosumon(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("tamngungtuxa:"):
                     # Lệnh /tamdung từ Telegram: tạm ngưng như khi phát hiện ẩn thân (cả tự động đăng nhập cũng chờ), số giây sau dấu ":"
                     self.tactu._batdautamngung(LYDOTAMNGUNGTUXA, float(cmd.split(":", 1)[1]))
@@ -395,6 +426,13 @@ class CuaSo:
                         self.tactu.thietlap_danhsachmuctieu(danhsach.get("tancong", []), danhsach.get("boqua", []))
                     except Exception as e:
                         print(f"Lỗi khi đọc danh sách mục tiêu: {e}")
+                elif isinstance(cmd, str) and cmd.startswith("xoa_muctieuboqua:"):
+                    # xoa_muctieuboqua:[id, ...] hoặc xoa_muctieuboqua:all
+                    try:
+                        thamso = cmd.split(":", 1)[1]
+                        self.tactu.xoa_muctieuboqua(None if thamso == "all" else [int(i) for i in json.loads(thamso)])
+                    except Exception as e:
+                        print(f"Lỗi khi xoá mục tiêu bỏ qua: {e}")
                 elif cmd == "battat_tranhvungcam":
                     self.tactu.battat_tranhvungcam()
                 elif cmd == "battat_giukhoangcachketancong":

@@ -32,11 +32,11 @@ CAUHINHMAU = {
     "tenmay": "",
     "phutbaocao": 120,
     "loaisuco": {"chet": True, "bipk": True, "tamngung": True, "giamsat": True, "vatpham": True, "dohiem": True, "dangnhap": True, "giaodo": True,
-                 "catkho": True},
+                 "catkho": True, "sumon": True},
 }
 TENLOAISUCO = {"chet": "chết", "bipk": "bị người chơi đánh", "tamngung": "tạm ngưng", "giamsat": "kẹt / mở lại client", "vatpham": "vật phẩm",
                "dohiem": "nhặt được đồ hiếm (luật túi đồ có 📣)", "dangnhap": "rớt khỏi game / bị đá liên tục (giành tài khoản)",
-               "giaodo": "kết quả giao tiền / đồ", "catkho": "kết quả cất kho"}
+               "giaodo": "kết quả giao tiền / đồ", "catkho": "kết quả cất kho", "sumon": "nhiệm vụ sư môn (xong / kẹt / cần mua tay)"}
 
 # Cùng một tin (khoá) của một tiến trình không gửi lại trong chừng này giây
 GIANCACHTINMACDINH = 120.
@@ -192,7 +192,8 @@ def guitin(noidung, khoa = None, giancach = GIANCACHTINMACDINH, is_html = False)
     return True
 
 
-BIEUTUONGSUCO = {"chet": "💀", "bipk": "⚔️", "tamngung": "🕵️", "giamsat": "🛠", "vatpham": "🎒", "dohiem": "🎁", "giaodo": "📦", "catkho": "🗄"}
+BIEUTUONGSUCO = {"chet": "💀", "bipk": "⚔️", "tamngung": "🕵️", "giamsat": "🛠", "vatpham": "🎒", "dohiem": "🎁", "giaodo": "📦", "catkho": "🗄",
+                 "sumon": "📜"}
 
 
 def guitinmay(loai, noidung, khoa = None, giancach = GIANCACHTINMACDINH):
@@ -1008,8 +1009,8 @@ class DieuKhienTelegram:
 
     def _molaiclient(self, hwnd, ten, tenmay):
         # Đóng game của nhân vật để tự đăng nhập (dangnhap_xq) mở lại; đang tắt tự đăng nhập thì không đóng (sẽ mất nhân vật luôn)
-        from dangnhap_xq import taicauhinhdangnhap
-        if not taicauhinhdangnhap().get("is_tudongdangnhap"):
+        from dangnhap_xq import taicauhinhdangnhap, taikhoanbatchomaynay
+        if not taikhoanbatchomaynay(taicauhinhdangnhap()):
             return f"⚠️ Không mở lại <b>{ten}</b>: đang tắt tự động đăng nhập\n🖥 {tenmay}"
         import subprocess
         import win32process

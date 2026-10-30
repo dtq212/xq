@@ -13,7 +13,7 @@ import sys
 import threading
 import time
 
-from dangnhap_xq import taicauhinhdangnhap
+from dangnhap_xq import taicauhinhdangnhap, taikhoanbatchomaynay
 from hangso_xq import BANDO_CHIENTRUONG
 from thongbao_xq import baosuco
 from tienich_xq import phatam, laytamngungdanghieuluc
@@ -125,10 +125,10 @@ class GiamSat:
         idnguoichoi = moitruong.get_idnguoichoi()
         cauhinh = taicauhinhdangnhap()
         lydo = None
-        if not cauhinh.get("is_tudongdangnhap"):
-            lydo = "đang tắt tự động đăng nhập"
-        elif not any(str(tk.get("idnguoichoi") or "") == str(idnguoichoi) for tk in cauhinh.get("taikhoans", [])):
+        if not any(str(tk.get("idnguoichoi") or "") == str(idnguoichoi) for tk in cauhinh.get("taikhoans", [])):
             lydo = "nhân vật không có trong file tài khoản"
+        elif not any(str(tk.get("idnguoichoi") or "") == str(idnguoichoi) for tk in taikhoanbatchomaynay(cauhinh)):
+            lydo = "tài khoản đang tắt tự đăng nhập trên máy này"
         elif laytamngungdanghieuluc():
             lydo = "đang có nhân vật tạm ngưng"
         elif _solankillgiogannhat(idnguoichoi) >= SOLANKILLTOIDA:

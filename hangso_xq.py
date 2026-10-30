@@ -98,7 +98,8 @@ THUOCSAPXEPs = (NGANHANHTU, TUTAMDON, KHIMACHDON, TIEUDAOTAN, LONGTIENTHAO, THIL
 # Đá không được "move" đè lên ô có món khác: game tưởng là muốn đập / tinh luyện đá vào đồ đó. Đá = loại ［Tinh luyện］ (Kim / Thổ /
 # Ám Tinh Thạch...), tên có chữ trong DAKHONGDEDOs, hoặc tên có "Thạch" mà mô tả không ghi loại (cho chắc). Món có loại khác như
 # Đại Huyết Thạch ［Có thể sử dụng］, Hồng Bảo Thạch Hạng Liên ［Hạng Liên］ thì không phải đá. Đổi chỗ thì chuyển món kia sang ô của đá
-DAKHONGDEDOs = ("Đoạn Thạch", "Linh Thạch", "Tinh Thạch")
+# Ngự Thạch (Thổ Ngự Thạch cấp 1...) cũng đập vào đồ như Linh Thạch dù mô tả ghi loại khác
+DAKHONGDEDOs = ("Đoạn Thạch", "Linh Thạch", "Tinh Thạch", "Ngự Thạch")
 # Loại vật phẩm = chữ trong cặp ［］ đầu tiên của mô tả (sau dòng tên), vd ［Vũ Khí］［Nón］［Tinh luyện］［Có thể sử dụng］[Pháp Bảo]
 LOAIVATPHAM_COTHESUDUNG = "Có thể sử dụng"
 LOAIVATPHAMDAs = ("Tinh luyện",)
@@ -160,7 +161,8 @@ KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN = 3
 THOIGIANCHOVAOVANKHI = 2.5
 # Khoá vận khí triệu hồi bảo thú giữ tối đa chừng này (phòng đọc trạng thái vận khí sai mà khoá mãi)
 THOIGIANKHOAVANKHITRIEUHOITOIDA = 15.
-# Lôi Động Cửu Thiên vận khí 6s (phạm vi 7x7 ô quanh bản thân)
+# Lôi Động Cửu Thiên (Mao Sơn) vận khí 6s (phạm vi 7x7 ô quanh bản thân); Lôi Long Quyết (Côn Luân, 9x9 ô liên tục 6s) cùng cơ chế,
+# dùng chung các hằng / cách ngắt vận khí này
 THOIGIANVANKHILOIDONGCUUTHIEN = 6.
 # Phong Vũ Kinh Thiên (Vân Mộng Cốc) gọi cuồng phong đánh mục tiêu liên tục 8s: trong khoảng này không dùng lại lên cùng mục tiêu
 THOIGIANPHONGVUKINHTHIEN = 8.
@@ -178,6 +180,21 @@ BUKHOANGCACHTAMXA = 1.
 # Tiếp cận cận chiến như client khi bấm chiêu trên phím tắt (xq + 0x1873A, đọc 2026-10-28): tìm đường tới ô mục tiêu, mỗi lần chỉ
 # ghi chừng này bước (client: KDK + 0x1620 = 2), đích đổi thì chừng này giây sau lần ghi trước mới tìm lại (client: mốc +500ms)
 SOBUOCTIEPCANCANCHIEN = 2
+# Đối tượng tìm đường cục bộ riêng của bot (xq + 0x4B0D60 dùng tới + 0x54FD0: lưới 101x101, 0x2800 nút, mảng ô đường đi)
+KICHTHUOCDOITUONGTIMDUONGCUCBO = 0x56000
+# Đích rơi vào vật cản (toạ độ nhiệm vụ / NPC lệch vào tường, nước...) thì kéo về ô đi được gần nhất trong bán kính chừng này ô
+BANKINHKEODICH = 15
+# Đoạn tìm đường cục bộ ra đoạn cụt (không tới được đích) thì chừng này giây sau mới thử lại đúng đoạn đó
+THOIGIANNHODOANCUT = 1.
+# Giữ khoảng cách tối thiểu mà sau lưng là vật cản: thử lùi lệch khỏi hướng thẳng chừng này độ (cả 2 bên, lệch ít trước), lệch hướng
+# thì quãng lùi được dài thêm tối đa chừng này ô cho đủ xa mục tiêu
+# Đi theo ô tới gần đích (NPC...) còn trong chừng này ô thì chọn ô trong tầm mà tìm đường cục bộ tới được thật (thử tối đa SOOTHU ô
+# gần mình trước, nhớ kết quả THOIGIANNHO giây) thay vì điểm trên đường thẳng (hay ở sau tường thấp / quầy hàng)
+KHOANGCACHCHONDICHTOIDUOC = 40.
+SOOTHUDICHTOIDUOC = 8
+THOIGIANNHODICHTOIDUOC = 3.
+GOCLECHLUIs =(0, 25, 50, 75, 100, 125)
+QUANGLUITHEMTOIDA = 3.
 # Bot tìm đường lại và ghi đoạn mới mỗi chừng này giây kể cả khi đích không đổi (client 0.5s; ngắn hơn để chuỗi không cạn giữa đường)
 THOIGIANTINHLAITIEPCANCANCHIEN = 0.25
 # Mục tiêu đang đi về phía mình, bước tới của nó cách mình không quá chừng này ô (theo ô, max |dx| |dy|) thì đứng chờ
@@ -258,7 +275,15 @@ VITRIPHIMTATKYNANG_THUCANBAOTHU = VITRIPHIMTATKYNANG_X
 # Bộ đệm vòng hook trò chuyện (MoiTruong.action_thietlaphooknoidungtrochuyen): số ô (lũy thừa của 2, asm lấy dư bằng and) và số
 # byte mỗi ô (dòng dài hơn bị cắt)
 SOLUONGDONGTROCHUYEN = 64
-KICHTHUOCDONGTROCHUYEN = 128
+# Bang phái người chơi khác hỏi bằng "desc user <ID>" (máy chủ trả các dòng " Danh tính: ...", " Bang phái: ..." vào khung tin hệ thống):
+# mỗi lần hỏi cách nhau GIANCACHHOIBANGPHAI giây, chờ trả lời tối đa THOIGIANCHOTRALOIBANGPHAI giây, đã biết thì hỏi lại sau THOIGIANLAMMOIBANGPHAI giây
+GIANCACHHOIBANGPHAI = 1.5
+THOIGIANCHOTRALOIBANGPHAI = 3.
+THOIGIANLAMMOIBANGPHAI = 600.
+# Máy chủ chỉ trả lời "desc user" khi người đó cách mình trong chừng này ô (người dùng thấy), xa hơn thì chờ lại gần mới hỏi
+KHOANGCACHHOIBANGPHAI = 12.
+# Game gửi cả khối nhiều dòng (nối "\n", tới 0x640 byte) vào 1 tin, vd trả lời "desc user": ô 128 byte cắt mất dòng Bang phái
+KICHTHUOCDONGTROCHUYEN = 512
 
 VITRIKYNANG_DONDAOTRUCNHAP = 2210
 VITRIKYNANG_NGHENHPHONGTRAM = 2211
@@ -331,10 +356,13 @@ VITRIKYNANG_KIMTRUNGCHAO = 3161
 VITRIKYNANG_DATINCUONGLUC = 3191
 VITRIKYNANG_KIMCUONGTHANPHAP = 3192
 
-# Côn Luân (đọc bảng kỹ năng + "desc pf" trên ThiênĐạo 2026-10-29): Phong Hỏa Quyết đánh từ xa (10 pháp lực, hồi 1s); Ngự Lôi Thuật
-# đánh + choáng 1s (20 pháp lực + 1 Bùa Giấy, hồi 2s); Hỏa Long Quyết đánh + Thiêu Đốt 12s (40 pháp lực + 3 Bùa Giấy, hồi 2s); Càn Khôn Na Di tâm pháp hộ thể 5 phút (đổi sát thương thành pháp lực, 20 pháp
-# lực, hồi 15s, bấm lại là tắt; hiệu ứng trùng id kỹ năng); Phá Chú giải 1 bùa chú nguyền rủa cho đồng đội (chưa dùng). Chiêu khác chưa
-# rõ công dụng thì chưa đưa vào danh sách ưu tiên (action_sudungkynangmonphaiconluan)
+# Côn Luân (đọc bảng kỹ năng + "desc pf" trên ThiênĐạo 2026-10-29), cách dùng ở action_sudungkynangmonphaiconluan:
+#   Lôi Long Quyết 9x9 quanh bản thân liên tục 6s, vận khí (6 bùa, 250 pháp lực, hồi 4s) - như Lôi Động Cửu Thiên của Mao Sơn;
+#   Hàn Băng Trận 7x7 quanh bản thân, Đóng Băng 6s (5 bùa); Kim Quang Trận 5x5 quanh mục tiêu (3 bùa); Huyền Long Chân Khí (4 bùa);
+#   Hỏa Long Quyết Thiêu Đốt 12s (3 bùa); Thương Long Quyết Đóng Băng 6s (3 bùa); Hàn Băng Thuật Chậm Chạp 6s (1 bùa); Ngự Lôi Thuật
+#   choáng 1s (1 bùa); Phong Hỏa Quyết (không bùa); Phong Ma Chú Trầm Mặc 6s; Càn Khôn Na Di tâm pháp hộ thể 5 phút (bấm lại không tắt
+#   được, hiệu ứng trùng id kỹ năng); Đằng Vân Giá Vũ dịch chuyển (chiêu lướt như Khai Thiên Tịch Địa). Chưa dùng: Biến Thân Thuật, Khốn Ma
+#   Thuật / Trận (không tác dụng lên người chơi), Phá Chú (giải bùa cho đồng đội), Long Du Tứ Hải (tới người chơi theo ID)
 VITRIKYNANG_BIENTHANTHUAT = 4211
 
 VITRIKYNANG_PHACHU = 4221
@@ -648,6 +676,9 @@ MONPHAIPHEPTHUATs = ("vanmongcoc", "maoson", "conluan")
 
 MONPHAICHIBUFFNGANCHAMs = ("daohoanguyen", "camvequan", "duongmon")
 MONPHAICHIBUFFKIMCHAMs = ("vanmongcoc", "maoson", "conluan")
+# Bảo thú triệu hồi (tên bắt đầu bằng): Cương Thi / Thiên Binh / Thiên Tướng không cần Kim Châm, Quỷ Tốt không cần Ngân Châm
+BAOTHUCHIBUFFNGANCHAMs = (CUONGTHI, THIENBINH, THIENTUONG)
+BAOTHUCHIBUFFKIMCHAMs = (QUYTOT,)
 
 BANDO_TANTHUTHON = 1
 BANDO_BACHMATRANG = 142
@@ -824,6 +855,10 @@ TANQUOC = [(136, 81, 50), (161, 92, 50), (185, 53, 50), (206, 71, 50), (169, 92,
 SOQUOC = [(105, 167, 60), (116, 130, 60), (141, 158, 60), (140, 118, 60), (168, 128, 60), (159, 96, 60), (193, 107, 60), (176, 67, 60), (217, 58, 60), (214, 92, 60), (213, 113, 60), (236, 134, 60), (259, 156, 60), (299, 172, 60), (324, 156, 60), (312, 125, 60), (296, 105, 60), (275, 90, 60), (229, 92, 60), (220, 61, 60), (203, 100, 60), (175, 70, 60), (180, 108, 60), (182, 127, 60), (155, 98, 60), (158, 143, 60), (136, 120, 60), (116, 122, 60), (85, 153, 60), (109, 162, 60), (133, 163, 60)]
 
 YENQUOC = [(355, 147, 70), (331, 129, 70), (327, 165, 70), (307, 148, 70), (291, 178, 70), (293, 197, 70), (270, 180, 70), (240, 158, 70), (221, 137, 70), (224, 78, 70), (205, 53, 70), (184, 92, 70), (187, 133, 70), (160, 146, 70), (129, 173, 70), (105, 193, 70), (111, 163, 70), (139, 145, 70), (128, 144, 70), (110, 141, 70), (88, 133, 70), (74, 127, 70), (69, 130, 70), (50, 151, 70), (84, 115, 70), (106, 102, 70), (129, 98, 70), (142, 88, 70), (139, 89, 70), (133, 98, 70), (102, 98, 70), (82, 119, 70)]
+# Điểm đi vòng ngoài thành 7 nước (đi được hết, không lọt vào chỗ kẹt): dùng khi đi khắp bản đồ tìm đối thủ (Truy Bắt Thích Khách /
+# Truy Sát Phản Đồ). id bản đồ -> [(x, y), ...]
+DIEMNGOAITHANH_MAP = {idbando: [(x, y) for x, y, _ in diems] for idbando, diems in ((BANDO_TEQUOC, TEQUOC), (BANDO_HANQUOC, HANQUOC),
+    (BANDO_TRIEUQUOC, TRIEUQUOC), (BANDO_NGUYQUOC, NGUYQUOC), (BANDO_TANQUOC, TANQUOC), (BANDO_SOQUOC, SOQUOC), (BANDO_YENQUOC, YENQUOC))}
 
 TRIEUTRUONGTHANH2 = [(52, 82, 32), (63, 92, 32), (76, 104, 32), (90, 112, 32), (104, 122, 32), (116, 133, 32), (129, 142, 32), (144, 150, 32), (162, 164, 32), (176, 156, 32), (191, 145, 32), (206, 136, 32), (218, 126, 32), (230, 118, 32)]
 TANTRUONGTHANH2 = [(232, 111, 52), (219, 102, 52), (205, 90, 52), (192, 80, 52), (176, 81, 52), (162, 94, 52), (149, 106, 52), (134, 116, 52), (118, 128, 52), (98, 141, 52), (84, 131, 52), (67, 121, 52), (51, 106, 52), (29, 92, 52)]
@@ -958,7 +993,7 @@ THOIGIANNHUONGLUOTKHIRANH = 0.5
 # vận khí cả lúc, ít lộ), lệnh chiêu đặc biệt dạng "pf <id>.<x>" (triệu hồi khẩn cấp, Xuyên Không Hành), kỹ năng bảo thú (pf5),
 # đánh thường (kill) và mọi lệnh khác (get, desc, use, move đồ, tallk NPC, pet, team, bán, vứt...) gửi ngay không chờ lượt
 IDKYNANGVANKHIs = {VITRIKYNANG_LOIDONGCUUTHIEN, VITRIKYNANG_TRIEUHOIQUYTOT, VITRIKYNANG_TRIEUHOITHIENBINH, VITRIKYNANG_TRIEUHOICUONGTHI,
-                   VITRIKYNANG_RAIDAUTHANHBINH, VITRIKYNANG_TOANPHONGQUYET}
+                   VITRIKYNANG_RAIDAUTHANHBINH, VITRIKYNANG_TOANPHONGQUYET, VITRIKYNANG_LOILONGQUYET}
 # Bắt đầu di chuyển (nhân vật đang đứng mà bắt đầu chạy) cũng chia lượt như vậy nhưng trên kênh riêng (không làm chậm lệnh),
 # để 3-4 nhân vật không cùng lúc nhấc chân. Đang chạy rồi thì các lần click chỉnh hướng đi ngay. Cũng chỉnh được trên giao diện
 IS_XOAYVONGBATDAUDICHUYEN = True
@@ -1003,6 +1038,13 @@ THOIGIANGOIBAOTHUVE = 0.5
 # cho game kịp chuyển tư thế (nếu không sẽ gửi tiếp chiêu khác, cắt ngang chiêu vừa gửi). Phải ngắn hơn 1 vòng bot (~0.123s):
 # 0.15 làm cứ gửi 1 vòng lại bỏ 1 vòng => spam chiêu thực tế 0.25s/lần (đo log 2026-10-28), lúc server nhận bị làm tròn theo 0.25s
 THOIGIANCHOPHANUNGLENH = 0.1
+# Côn Luân Đằng Vân Giá Vũ: lướt xong máy chủ không nhận chiêu ~2s (log 273 2026-10-30: <1s sau lướt 64% chiêu không ra, 1-2s 53%,
+# >3s 16%) => trong ngần này giây không gửi chiêu (tránh khoá chống spam oan), đi bộ vào gần hơn tầm xa KHOANGCACHGANTHEMSAULUOT ô.
+# Khi đánh chỉ lướt lúc mục tiêu xa hơn tầm xa + KHOANGCACHLUOTTHEMKHITANCONG ô (đi bộ ngần đó ô ~ bằng thời gian chờ sau lướt),
+# gần hơn thì đi bộ cho nhanh; lùi giữ khoảng cách / đi đường vẫn lướt như cũ
+THOIGIANKHOACHIEUSAULUOT = 2.
+KHOANGCACHGANTHEMSAULUOT = 3.
+KHOANGCACHLUOTTHEMKHITANCONG = 5.
 # Chọn mục tiêu khi đang chạy: con nằm sau lưng (ngược hướng đang chạy) bị tính xa thêm ngần này ô, để không quay đầu đổi qua lại
 PHATMUCTIEUSAULUNG = 3.
 # Mục tiêu đang đánh chỉ bị thay bằng con khác chỉ vì gần hơn khi con đó gần hơn ít nhất ngần này ô (giữa các ứng viên khác chỉ cần 0.5):
@@ -1079,7 +1121,8 @@ DIEMDENCHUDICHTRAM_MAP = {
     BANDO_TEQUOC: laytenbandogame(BANDO_TEQUOC),
     BANDO_HANQUOC: laytenbandogame(BANDO_HANQUOC),
     BANDO_TRIEUQUOC: laytenbandogame(BANDO_TRIEUQUOC),
-    BANDO_NGUYQUOC: laytenbandogame(BANDO_NGUYQUOC),
+    # Menu / dữ liệu game viết "Nguỵ" (dấu kiểu cũ), gửi "Ngụy" thì Dịch Trạm không nhận
+    BANDO_NGUYQUOC: "Nguỵ Quốc",
     BANDO_TANQUOC: laytenbandogame(BANDO_TANQUOC),
     BANDO_SOQUOC: laytenbandogame(BANDO_SOQUOC),
     BANDO_YENQUOC: laytenbandogame(BANDO_YENQUOC),
@@ -1116,6 +1159,24 @@ def layphuongandichuyen(idbando):
     return _phuongandichuyen_cache[idbando]
 
 
+# Đường người dùng chỉ là nhanh nhất (đếm cổng không ra): (bản đồ đích, vùng đích (x, y) -> bool, bản đồ phù Tân Thủ Tiên Cô tới).
+# Cấm Vệ Quân (phía tây Chu Quốc, Thân Binh (165, 79)): Tân Thủ Tiên Cô phù Thủ Dương Sơn (81) rồi chạy 1 cổng vào Chu (ra ở (46, 144)),
+# không chạy bộ từ môn phái khác qua Triều Dương Phong, không phù Dịch Trạm tới Chu (ra ở tận phía đông (330, 122))
+DUONGUUTIENs = (
+    (BANDO_CHUQUOC, lambda x, y: x < 200, 81),
+)
+
+
+def layduonguutien(idbandodich, toadodich):
+    # -> phương án dạng layphuongandichuyen (Tân Thủ Tiên Cô, bước, bản đồ phù tới, số cổng chạy tiếp) hoặc None
+    if not toadodich:
+        return None
+    for idbando, is_trongvung, idphutoi in DUONGUUTIENs:
+        if idbando == idbandodich and is_trongvung(*toadodich) and idphutoi in DICHUYENTANTHUTIENCO_MAP:
+            return TANTHUTIENCO, DICHUYENTANTHUTIENCO_MAP[idphutoi], idphutoi, 1
+    return None
+
+
 def laynpcphu(loainpc, idbando):
     # Loại NPC phù (TANTHUTIENCO / CHUDICHTRAM) -> (tên NPC trên bản đồ idbando, chỗ đứng của NPC hoặc None)
     if loainpc == TANTHUTIENCO:
@@ -1125,6 +1186,11 @@ def laynpcphu(loainpc, idbando):
 
 # Trưởng nhóm phải ở yên bản đồ mới bấy nhiêu giây mới phù theo (tránh chạy theo khi trưởng nhóm chỉ đi ngang qua)
 THOIGIANCHOBANDOTHEOSAUONDINH = 5.
+# Sang bản đồ bằng nói chuyện NPC (bando_xq.LOIDINPC_MAP): đứng cách NPC tối đa chừng này ô mới nói chuyện, chờ menu hiện tối đa
+# THOIGIANCHOMENULOIDINPC giây, chọn rồi quá THOIGIANTHULAILOIDINPC giây vẫn chưa sang (NPC không cho qua, vận khí bị ngắt) thì nói chuyện lại
+KHOANGCACHNOICHUYENLOIDINPC = 4.
+THOIGIANCHOMENULOIDINPC = 3.
+THOIGIANTHULAILOIDINPC = 15.
 
 IDLOAIVUKHI_TAYKHONG = 60
 IDLOAIVUKHI_DAO = 61
@@ -1206,7 +1272,6 @@ NHANVATTODOITUDONGs_LIST = [
 ]
 
 TENMUCTIEUKHONGTANCONGs = (*BAOTHUVATPHAMs, "Tần QuốcBinh Sĩ", "Triệu QuốcBinh Sĩ", QUYTOT, THIENBINH, DAUBINH, "CAVE1", "CAVE.2", 'Đỗ Độc', 'Ôn Thần', "Liễu Vọng Tháp")
-TENNGUOICHOICUNGBANGs = tuple()
 TENBOSSBUFFMAOSONs = ("Mã Quỷ", "Lương Hưng", "Yến Thập Tam", "Tư Tà", "Thủ Lĩnh Thành Kiều", TROMBAOPHITAC, "Bảo Hộp Phi Tặc",
                       "Tướng Quân Dũng", "Lăng Mộ Tà Linh", "Đường Truy", "Thế Công Minh", "Thạch Tướng Quân", "Cơ Quan Tướng Quân",
                       "Hào Quật")

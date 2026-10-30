@@ -13,7 +13,7 @@ class TacTuMucTieu:
     def _is_doituongthudich(self, diachidoituong, tenchunhanphe_map):
         # Đối tượng có thể đang đánh mình: quái hoặc người chơi / bảo thú không cùng phe.
         # Khác get_is_cothetancong (mình đánh được nó không): đang hoà bình thì người chơi PK vẫn đánh được mình
-        if self.moitruong.get_is_nhanvatdachet(diachidoituong) or self.moitruong.get_is_npc(diachidoituong):
+        if self.moitruong.get_is_nhanvatdachet(diachidoituong) or self.moitruong.get_is_npc(diachidoituong)                 or self.moitruong.get_is_baothuvatpham(diachidoituong):
             return False
         if self.moitruong.get_idloainhanvat(diachidoituong) == LOAIMUCTIEU_NGUOICHOICUNGNHOM:
             return False
@@ -50,7 +50,7 @@ class TacTuMucTieu:
         if self._idnguoichoiviquai and time.time() - self._thoidiemghiviquaigannhat >= THOIGIANGHIVITRIQUAI:
             self._thoidiemghiviquaigannhat = time.time()
             ghinhanvitriquai(self._bangviquai, self.moitruong.get_idbandohientai(),
-                             [(d[1], d[2]) for _, d in doituongs if not d[5] and d[6] not in self._tenmuctieukhongtancongs])
+                             [(d[1], d[2]) for _, d in doituongs if not d[5] and not self._is_tenbiboqua(d[6])])
         return {
             "thoidiem": time.time(),
             "bando": self.moitruong.get_idbandohientai(),
@@ -98,6 +98,21 @@ class TacTuMucTieu:
         self._thoidiemthaymuctieu_map[iddoituong] = (thoidiemthaylandau, thoidiemhientai)
         return thoidiemhientai - thoidiemthaylandau < THOIGIANCHOCHONMUCTIEUMOI
 
+    def _is_tenbiboqua(self, ten):
+        # Danh sách bỏ qua: tên thường khớp đúng, tên bắt đầu bằng "~" là "tên chứa" (vd "~Hổ" bỏ mọi con có chữ Hổ).
+        # Quái cùng loại trùng tên nhiều nên nhớ kết quả theo tên; danh sách bị thay set hoặc thêm tên thì tính lại
+        danhsach = self._tenmuctieukhongtancongs
+        khoa = (id(danhsach), len(danhsach))
+        if getattr(self, "_khoatenbiboqua", None) != khoa:
+            self._khoatenbiboqua = khoa
+            self._mautenchuaboquas = [t[1:].strip() for t in danhsach if t.startswith("~") and t[1:].strip()]
+            self._tenbiboqua_map = {}
+        ketqua = self._tenbiboqua_map.get(ten)
+        if ketqua is None:
+            ketqua = ten in danhsach or any(mau in ten for mau in self._mautenchuaboquas)
+            self._tenbiboqua_map[ten] = ketqua
+        return ketqua
+
     def _kiemtramuctieuhople(self, diachidoituong, is_dongdoi = False):
         # Trả về False nếu không hợp lệ, ngược lại trả về dict thông tin mục tiêu để tái sử dụng
         # Ghi nhận lần thấy trước mọi kiểm tra khác (kể cả đồng đội) để đếm đúng thời gian đã nhìn thấy
@@ -113,11 +128,11 @@ class TacTuMucTieu:
             return False
 
         tendoituong = self.moitruong.get_tendoituong(diachidoituong)
-        if tendoituong in TENMUCTIEUKHONGTANCONGs:
+        if tendoituong in TENMUCTIEUKHONGTANCONGs or self.moitruong.get_is_quairiengnguoikhac(tendoituong):
             return False
-        if self._tenmuctieutancongs and tendoituong not in self._tenmuctieutancongs:
+        if self._laytenmuctieutancongs() and tendoituong not in self._laytenmuctieutancongs():
             return False
-        if self._tenmuctieukhongtancongs and tendoituong in self._tenmuctieukhongtancongs:
+        if self._is_tenbiboqua(tendoituong):
             return False
 
         is_nguoichoi = self.moitruong.get_is_nguoichoi(diachidoituong)
@@ -191,8 +206,9 @@ class TacTuMucTieu:
                 continue
             if thoidiemhientai < self._thoidiemhetboquamuctieuchung_map.get(iddoituong, 0.):
                 continue
-            if ten in TENMUCTIEUKHONGTANCONGs or (self._tenmuctieutancongs and ten not in self._tenmuctieutancongs) \
-                    or (self._tenmuctieukhongtancongs and ten in self._tenmuctieukhongtancongs):
+            if ten in TENMUCTIEUKHONGTANCONGs or self.moitruong.get_is_quairiengnguoikhac(ten) \
+                    or (self._laytenmuctieutancongs() and ten not in self._laytenmuctieutancongs()) \
+                    or self._is_tenbiboqua(ten):
                 continue
             if (self._is_chidanhnguoichoi and not is_muctieupk) or (is_muctieupk and is_hoabinh):
                 continue
@@ -217,6 +233,7 @@ class TacTuMucTieu:
             self._muctieuchungdangtim = (iddoituong, thoidiemhientai)
         elif thoidiemhientai - self._muctieuchungdangtim[1] > THOIGIANTOIDATIMMUCTIEUCHUNG:
             self._thoidiemhetboquamuctieuchung_map[iddoituong] = thoidiemhientai + THOIGIANBOQUAMUCTIEUCHUNG
+            self._ghimuctieuboqua(iddoituong, "Đi tới mãi không thấy", self._laytamnhinchung().get(iddoituong, ("",) * 6)[5])
             self._thoidiemhetboquamuctieuchung_map = {k: v for k, v in self._thoidiemhetboquamuctieuchung_map.items() if v > thoidiemhientai}
             self._muctieuchungdangtim = None
             return None
@@ -277,8 +294,44 @@ class TacTuMucTieu:
               f"{self.moitruong.get_tendoituong(diachimuctieu)} ({hex(iddoituong)}) mà không thấy số bay -> bỏ qua {THOIGIANBOQUAMUCTIEUKHONGTRUNG:.0f}s")
         # _idmuctieubiloi_map tự xoá sau 120s: lùi mốc để hết bỏ qua sau đúng THOIGIANBOQUAMUCTIEUKHONGTRUNG giây
         self._idmuctieubiloi_map[iddoituong] = thoidiemhientai - (120. - THOIGIANBOQUAMUCTIEUKHONGTRUNG)
+        self._ghimuctieuboqua(iddoituong, "Đánh không trúng", self.moitruong.get_tendoituong(diachimuctieu))
         self._theodoitrungchieu = None
         return True
+
+    def _ghimuctieuboqua(self, iddoituong, lydo, ten = None):
+        # Ghi tên / lý do mục tiêu vừa bị bỏ qua cho giao diện; không biết tên thì tìm trong đối tượng xung quanh
+        if ten is None:
+            ten = next((self.moitruong.get_tendoituong(diachi) for diachi in self.moitruong._get_diachidoituongxungquanhs()
+                        if self.moitruong.get_iddoituong(diachi) == iddoituong), "")
+        self._thongtinmuctieuboqua_map[iddoituong] = (ten or "", lydo)
+
+    def get_danhsachmuctieuboqua(self):
+        # [{id, ten, lydo, conlai}] mục tiêu bot đang tự bỏ qua theo id (_idmuctieubiloi_map hết sau 120s, _thoidiemhetboquamuctieuchung_map theo mốc hết).
+        # Chép dict trước khi duyệt: luồng khác đang thêm / xoá
+        thoidiemhientai = time.time()
+        conlais = {}
+        for iddoituong, thoidiem in self._idmuctieubiloi_map.copy().items():
+            if 120. - (thoidiemhientai - thoidiem) > 0:
+                conlais[iddoituong] = 120. - (thoidiemhientai - thoidiem)
+        for iddoituong, thoidiemhet in self._thoidiemhetboquamuctieuchung_map.copy().items():
+            if thoidiemhet > thoidiemhientai:
+                conlais[iddoituong] = max(conlais.get(iddoituong, 0.), thoidiemhet - thoidiemhientai)
+        thongtins = self._thongtinmuctieuboqua_map.copy()
+        self._thongtinmuctieuboqua_map = {k: v for k, v in thongtins.items() if k in conlais}
+        danhsach = []
+        for iddoituong, conlai in conlais.items():
+            ten, lydo = thongtins.get(iddoituong, ("", "Bị chặn / kẹt"))
+            danhsach.append({"id": iddoituong, "ten": ten, "lydo": lydo, "conlai": round(conlai)})
+        return sorted(danhsach, key = lambda muc: (muc["ten"], muc["id"]))
+
+    def xoa_muctieuboqua(self, iddoituongs = None):
+        # Giao diện bấm Xoá: thôi bỏ qua các id này (None: xoá hết) để bot đánh lại ngay
+        idxoas = set(self._idmuctieubiloi_map) | set(self._thoidiemhetboquamuctieuchung_map) if iddoituongs is None else set(iddoituongs)
+        for iddoituong in idxoas:
+            self._idmuctieubiloi_map.pop(iddoituong, None)
+            self._thoidiemhetboquamuctieuchung_map.pop(iddoituong, None)
+            self._thongtinmuctieuboqua_map.pop(iddoituong, None)
+        print("Thôi bỏ qua mục tiêu: {}".format(", ".join(hex(i) for i in idxoas) or "không có"))
 
     def action_tudongtimkiemmuctieu(self):
         # Yêu cầu đi tới mục tiêu nhân vật khác thấy chỉ tạo lại ở cuối hàm khi mình không có mục tiêu nào
@@ -296,8 +349,14 @@ class TacTuMucTieu:
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             return
 
-        # Đang Đi tới bản đồ người dùng chọn / đi giao đồ / cất kho: không chọn quái dọc đường (trước đây gặp quái là đứng lại đánh), tới nơi mới đánh
-        if self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangcatkho():
+        # Lăng Ly Sơn: trưởng nhóm đang chờ đủ thành viên trước boss cuối (người vắng lúc boss chết không được thưởng): không đánh
+        if self.get_is_camdanhlanglyson():
+            self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
+            return
+
+        # Đang Đi tới bản đồ người dùng chọn / đi giao đồ / cất kho / đi làm sư môn: không chọn quái dọc đường (trước đây gặp quái là đứng
+        # lại đánh), tới nơi mới đánh
+        if self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangcatkho() or self.get_is_sumondichuyen() or self.get_is_langlysondichuyen():
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             return
 
@@ -577,6 +636,22 @@ class TacTuMucTieu:
         self._is_nhieumuctieuganbanthan7 = demmuctieuganbanthan7 >= self._soluongnhieumuctieu
         self._is_nhieumuctieuganbanthan9 = demmuctieuganbanthan9 >= self._soluongnhieumuctieu
 
+    def _is_baothudongdoi(self, diachibaothu, idnguoichoi, idnguoichoithanhviennhoms):
+        # Bảo thú (tên có chủ nhân trong ngoặc) của mình, thành viên nhóm hoặc nhân vật tổ đội tự động; chủ không ở gần thì không biết => False
+        if not (self.moitruong.get_is_baothukynangtrieuhoi(diachibaothu) or self.moitruong.get_is_baothugiangho(diachibaothu)):
+            return False
+        tenchunhan = self.moitruong.get_tenchunhan(diachibaothu)
+        if not tenchunhan:
+            return False
+        if tenchunhan == self.moitruong.get_tendoituong():
+            return True
+        diachichunhan = self.moitruong.action_timkiemnhanvat(tennhanvat = tenchunhan)
+        if not diachichunhan:
+            return False
+        idchunhan = self.moitruong.get_idnguoichoi(diachichunhan)
+        return idchunhan == idnguoichoi or bool(idnguoichoithanhviennhoms and idchunhan in idnguoichoithanhviennhoms) \
+            or idchunhan in laynhanvattodoitudongs()
+
     def _kiemtramuctieuhoplemonphai(self, diachidoituong, is_dongdoi = False):
         # Vừa xuất hiện thì chờ đủ THOIGIANCHOCHONMUCTIEUMOI, kể cả đồng đội (buff / hồi máu / hồi sinh)
         if self._is_doituongmoixuathien(diachidoituong):
@@ -587,11 +662,11 @@ class TacTuMucTieu:
         if iddoituong in self._idmuctieubiloi_map:
             return False
         tendoituong = self.moitruong.get_tendoituong(diachidoituong)
-        if tendoituong in TENMUCTIEUKHONGTANCONGs:
+        if tendoituong in TENMUCTIEUKHONGTANCONGs or self.moitruong.get_is_quairiengnguoikhac(tendoituong):
             return False
-        if self._tenmuctieutancongs and tendoituong not in self._tenmuctieutancongs:
+        if self._laytenmuctieutancongs() and tendoituong not in self._laytenmuctieutancongs():
             return False
-        if self._tenmuctieukhongtancongs and tendoituong in self._tenmuctieukhongtancongs:
+        if self._is_tenbiboqua(tendoituong):
             return False
         is_nguoichoi = self.moitruong.get_is_nguoichoi(diachidoituong)
         is_baothu = self.moitruong.get_is_baothukynangtrieuhoi(diachidoituong) or self.moitruong.get_is_baothugiangho(diachidoituong)
@@ -698,6 +773,7 @@ class TacTuMucTieu:
 
             # Bản đồ không PK (thành Ngụy Quốc...) vẫn xét nhưng chỉ dùng lên boss trong TENBOSSBUFFMAOSONs (Trộm Bảo / Bảo Hộp Phi Tặc xuất hiện trong thành)
             is_bandokhongpk = idbandohientai in BANDOKHONGPKs
+            diachimuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
             i = -1
             while True:
                 i += 1
@@ -728,8 +804,9 @@ class TacTuMucTieu:
                     continue
                 if is_bandokhongpk and not is_boss:
                     continue
-                # Phá Thiên Yêu chỉ buff Thực Cốt
-                is_chibuffthuccot = not is_nguoichoi and not is_baothu and tendoituong == "Phá Thiên Yêu"
+                # Phá Thiên Yêu: Thực Giáp / Thực Tâm chỉ dùng khi nó là mục tiêu đang chọn, con khác chỉ buff Thực Cốt
+                is_chibuffthuccot = not is_nguoichoi and not is_baothu and tendoituong == "Phá Thiên Yêu" \
+                    and diachicosothongtindoituongmuctieuxemxet != diachimuctieudangchon
 
                 if khoangcach < khoangcachthuccotgannhat and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCCOT,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtindoituongmuctieuxemxet, is_hieuungcoloi = 0):
                     diachidoituongcanbuffthuccot = diachicosothongtindoituongmuctieuxemxet
@@ -816,6 +893,9 @@ class TacTuMucTieu:
                 if is_muctieudangxemxetlanguoichoi:
                     idnguoichoidangxemxet = self.moitruong.get_idnguoichoi(diachidoituongdangxemxet)
                     is_dongdoi = (idnguoichoi == idnguoichoidangxemxet) or (idnguoichoithanhviennhoms and idnguoichoidangxemxet in idnguoichoithanhviennhoms) or (idnguoichoidangxemxet in laynhanvattodoitudongs())
+                else:
+                    # Bảo thú của mình / đồng đội xét theo chủ nhân: không thì bị lọc như quái (ngoài danh sách tấn công, bản đồ không PK...)
+                    is_dongdoi = self._is_baothudongdoi(diachidoituongdangxemxet, idnguoichoi, idnguoichoithanhviennhoms)
 
                 if not self._kiemtramuctieuhoplemonphai(diachidoituongdangxemxet, is_dongdoi = is_dongdoi):
                     continue
@@ -953,12 +1033,15 @@ class TacTuMucTieu:
 
                 if phantramsinhlucconlai >= 25. or idbandohientai in BANDOKHONGPKs:
                     monphaidangxemxet = monphaicungmay_map.get(self.moitruong.get_idnguoichoi(diachidoituongdangxemxet)) if is_nguoichoi_hientai else None
-                    if not diachidoituongcanbuffngancham and monphaidangxemxet not in MONPHAICHIBUFFKIMCHAMs:
+                    tenbaothu = "" if is_nguoichoi_hientai else (self.moitruong.get_tendoituong(diachidoituongdangxemxet) or "")
+                    if not diachidoituongcanbuffngancham and monphaidangxemxet not in MONPHAICHIBUFFKIMCHAMs \
+                            and not tenbaothu.startswith(BAOTHUCHIBUFFKIMCHAMs):
                         is_thieuhieuung = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NGANCHAMDOACH,), macdinh = True, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 1)
                         if is_thieuhieuung:
                             diachidoituongcanbuffngancham = diachidoituongdangxemxet
 
-                    if not diachidoituongcanbuffkimcham and monphaidangxemxet not in MONPHAICHIBUFFNGANCHAMs:
+                    if not diachidoituongcanbuffkimcham and monphaidangxemxet not in MONPHAICHIBUFFNGANCHAMs \
+                            and not tenbaothu.startswith(BAOTHUCHIBUFFNGANCHAMs):
                         is_thieuhieuung = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KIMCHAMDOACH,), macdinh = True, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 1)
                         if is_thieuhieuung:
                             diachidoituongcanbuffkimcham = diachidoituongdangxemxet
@@ -1042,6 +1125,7 @@ class TacTuMucTieu:
     def _boquaquaibichan(self, idquai):
         print(f"[GOM] Quái {hex(idquai)} bị chặn (tường/vật cản) -> Bỏ qua 120s")
         self._idmuctieubiloi_map[idquai] = time.time()
+        self._ghimuctieuboqua(idquai, "Gom: bị chặn")
         self._danhsachidquaidagom.discard(idquai)
         if self._idquaidautien == idquai:
             self._idquaidautien = 0
@@ -1232,9 +1316,9 @@ class TacTuMucTieu:
             if self.moitruong.get_idloainhanvat(diachidoituongxemxet) != LOAIMUCTIEU_QUAIVATHOACNPC: continue
 
             tendoituongxemxet = self.moitruong.get_tendoituong(diachidoituongxemxet)
-            if tendoituongxemxet in self._tenmuctieukhongtancongs:
+            if self._is_tenbiboqua(tendoituongxemxet) or self.moitruong.get_is_quairiengnguoikhac(tendoituongxemxet):
                 continue
-            if self._tenmuctieutancongs and tendoituongxemxet not in self._tenmuctieutancongs:
+            if self._laytenmuctieutancongs() and tendoituongxemxet not in self._laytenmuctieutancongs():
                 continue
 
             toadoquai = self.moitruong.get_toado(diachidoituongxemxet)

@@ -187,76 +187,69 @@
     {
       "vatpham": "Trận Kì",
       "npc": "Chủ Tiệm Tạp Hóa",
-      "o": 6,
-      "dongia": 60,
       "duoi": 1999,
       "muatoi": 1999,
       "monphai": "vanmongcoc",
       "bat": true,
-      "chikhi": ""
+      "chikhi": "",
+      "tencuahang": ""
     },
     {
       "vatpham": "Đậu Nành",
       "npc": "Chủ Tiệm Tạp Hóa",
-      "o": 7,
-      "dongia": 400,
       "duoi": 30,
       "muatoi": 30,
       "monphai": "vanmongcoc",
       "bat": true,
-      "chikhi": ""
+      "chikhi": "",
+      "tencuahang": ""
     },
     {
       "vatpham": "Bùa Giấy",
       "npc": "Chủ Tiệm Tạp Hóa",
-      "o": 1,
-      "dongia": 10,
       "duoi": 999,
       "muatoi": 999,
       "monphai": "maoson",
       "bat": true,
-      "chikhi": ""
+      "chikhi": "",
+      "tencuahang": ""
     },
     {
       "vatpham": "Cao Cấp Bảo Thú Thực Ph",
       "npc": "Chủ Tiệm Tạp Hóa",
-      "o": 18,
-      "dongia": 400,
       "duoi": 30,
       "muatoi": 30,
       "chikhi": "trieuhoibaothu",
       "bat": true,
-      "monphai": ""
+      "monphai": "",
+      "tencuahang": "Thức Ăn Bảo Thú Cao Cấp"
     },
     {
       "vatpham": "Lão Tửu",
       "npc": "Chủ Tửu Lâu",
-      "o": 3,
-      "dongia": 1150,
       "duoi": 30,
       "muatoi": 30,
       "chikhi": "trieuhoibaothu",
       "bat": true,
-      "monphai": ""
+      "monphai": "",
+      "tencuahang": ""
     },
     {
       "vatpham": "Dưa hấu",
       "npc": "Chủ Tửu Lâu",
-      "o": 4,
-      "dongia": 1100,
       "duoi": 30,
       "muatoi": 30,
       "chikhi": "trieuhoibaothu",
       "bat": true,
-      "monphai": ""
+      "monphai": "",
+      "tencuahang": ""
     },
     {
       "vatpham": "Bùa Giấy",
+      "tencuahang": "",
       "npc": "Chủ Tiệm Tạp Hóa",
-      "o": 1,
-      "dongia": 10,
-      "duoi": 5000,
-      "muatoi": 5000,
+      "duoi": 10000,
+      "muatoi": 10000,
       "monphai": "conluan",
       "chikhi": "",
       "bat": true
@@ -299,6 +292,23 @@
       "loai": [
         "Tinh luyện"
       ],
+      "mota": [],
+      "ruong": 0,
+      "giulai": 0,
+      "ghichu": ""
+    },
+    {
+      "bat": true,
+      "ten": [
+        "Cam Thảo",
+        "Bạch Kỳ",
+        "Đông Trùng Thảo",
+        "Thục Địa",
+        "Bột Sơn Sâm",
+        "Tử Sâm Đơn"
+      ],
+      "tenchua": [],
+      "loai": [],
       "mota": [],
       "ruong": 0,
       "giulai": 0,

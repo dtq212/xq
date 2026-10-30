@@ -5,11 +5,14 @@
 #   3. Nối thành vòng ngắn (láng giềng gần nhất + 2-opt), kiểm tra từng đoạn đi được bằng hàm tìm đường cục bộ của client và đường đi
 #      không lọt vào vùng cấm; đoạn nào hỏng thì bỏ điểm ít quái hơn của đoạn đó rồi nối lại
 # Hàm tìm đường của client chỉ dùng được cho bản đồ đang đứng nên chỉ đề xuất cho bản đồ hiện tại
+# Bản đồ chưa có vị trí quái thì đề xuất lộ trình dò (dexuatlotrinhdo): đi phủ vùng đi được nối liền với chỗ đứng (đọc lưới vật cản của
+# client) để bot thấy quái và ghi vị trí, đủ dữ liệu thì đề xuất lộ trình thật
 import itertools
 import json
 import math
 import os
 import sys
+from collections import deque
 
 OVITRIQUAI = 2
 THOIGIANGHIVITRIQUAI = 2.
@@ -32,6 +35,13 @@ SAISODIEMDEN = 3.
 
 # Chuỗi hướng của hàm tìm đường cục bộ: ký tự -> (dx, dy) (xem MoiTruong._get_chuoihuongtimduongcucbo)
 HUONGTIMDUONG_MAP = {"1": (1, 0), "2": (1, -1), "3": (0, -1), "4": (-1, -1), "5": (-1, 0), "6": (-1, 1), "7": (0, 1), "8": (1, 1)}
+
+TENMAUDO = "Dò quái"
+# Lộ trình dò: chia bản đồ thành khối cạnh chừng này ô (~ một tầm màn hình), khối có ít nhất TYLEKHOIDO ô tới được thì đặt 1 điểm
+CANHKHOIDO = 22
+TYLEKHOIDO = 0.15
+# Thứ tự đi tính theo quãng đi bộ trên lưới thô (gộp HESOLUOITHO x HESOLUOITHO ô) cho nhanh: không nối 2 điểm gần nhau qua sông / vách
+HESOLUOITHO = 3
 
 
 def _thumucviquai():
@@ -160,7 +170,100 @@ def kiemtradoan(x1, y1, x2, y2, timduong, is_vungcam = None, solan = SOLANCHIADO
     return False
 
 
-def dexuatlotrinh(demo, bankinh = KHOANGCACHDIEMDEXUAT, timduong = None, is_vungcam = None, sodiemtoida = SODIEMDEXUATTOIDA):
+_LANGGIENG8 = [(dx, dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy]
+
+
+def _loang(rong, cao, is_diduoc, batdau):
+    # Loang 8 hướng (hàm tìm đường của client cũng đi chéo qua góc vật cản) -> {ô: số bước}
+    khoangcach = {batdau: 0}
+    hang = deque([batdau])
+    while hang:
+        x, y = hang.popleft()
+        k = khoangcach[(x, y)] + 1
+        for dx, dy in _LANGGIENG8:
+            o = (x + dx, y + dy)
+            if 0 <= o[0] < rong and 0 <= o[1] < cao and o not in khoangcach and is_diduoc(*o):
+                khoangcach[o] = k
+                hang.append(o)
+    return khoangcach
+
+
+def layvungtoiduoc(luoi, batdau):
+    # Các ô đi tới được từ batdau (ô đang đứng; là vật cản thì từ ô trống gần nhất trong 5 ô) -> {ô: số bước}, rỗng nếu không có
+    rong, cao = len(luoi), len(luoi[0]) if luoi else 0
+    if not rong or not cao:
+        return {}
+    bx, by = batdau
+    if not (0 <= bx < rong and 0 <= by < cao) or luoi[bx][by]:
+        trongs = [(x, y) for x in range(max(0, bx - 5), min(rong, bx + 6)) for y in range(max(0, by - 5), min(cao, by + 6)) if not luoi[x][y]]
+        if not trongs:
+            return {}
+        bx, by = min(trongs, key = lambda o: math.dist(o, batdau))
+    return _loang(rong, cao, lambda x, y: not luoi[x][y], (bx, by))
+
+
+def dexuatlotrinhdo(luoi, batdau, is_tranh = None, canh = CANHKHOIDO, tam = None, bankinh = None):
+    # luoi[x][y]: 0 đi được (MoiTruong.get_luoivatcanbando); batdau: ô đang đứng; is_tranh(x, y): không đặt điểm ở đó (gần cổng, vùng cấm).
+    # tam, bankinh: chỉ dò vùng trong bankinh ô quanh tam (toạ độ trong nhiệm vụ), khối xếp để tam nằm giữa 1 khối, vòng bắt đầu từ
+    # điểm gần tam nhất. -> [(x, y), ...] theo thứ tự đi (vòng, bắt đầu ở điểm gần mình / gần tam nhất)
+    rong, cao = len(luoi), len(luoi[0]) if luoi else 0
+    toiduoc = layvungtoiduoc(luoi, batdau)
+    if not toiduoc:
+        return []
+    bx, by = tam or batdau
+
+    # Mỗi khối: điểm là ô tới được gần trọng tâm các ô tới được của khối nhất (khối hình chữ L / vành hồ thì trọng tâm rơi ra ngoài)
+    lechx, lechy = (tam[0] - canh // 2, tam[1] - canh // 2) if tam else (0, 0)
+    khois = {}
+    for x, y in toiduoc:
+        if bankinh and math.dist((x, y), tam) > bankinh:
+            continue
+        khois.setdefault(((x - lechx) // canh, (y - lechy) // canh), []).append((x, y))
+    diems = []
+    for os_ in khois.values():
+        if len(os_) < canh * canh * TYLEKHOIDO:
+            continue
+        hople = [o for o in os_ if not (is_tranh and is_tranh(*o))]
+        if not hople:
+            continue
+        xtam, ytam = sum(o[0] for o in os_) / len(os_), sum(o[1] for o in os_) / len(os_)
+        diems.append(min(hople, key = lambda o: math.dist(o, (xtam, ytam))))
+    if len(diems) <= 1:
+        return diems
+
+    # Quãng đi bộ giữa các điểm trên lưới thô
+    h = HESOLUOITHO
+    tho = {(x // h, y // h) for x, y in toiduoc}
+    rongtho, caotho = (rong + h - 1) // h, (cao + h - 1) // h
+    quang = []
+    for x, y in diems:
+        k = _loang(rongtho, caotho, lambda a, b: (a, b) in tho, (x // h, y // h))
+        quang.append([k.get((x2 // h, y2 // h), 10 ** 6) * h for x2, y2 in diems])
+
+    def d(i, j):
+        return (quang[i][j] + quang[j][i]) / 2
+
+    # Láng giềng gần nhất từ điểm gần mình, rồi 2-opt
+    dau = min(range(len(diems)), key = lambda i: math.dist(diems[i], (bx, by)))
+    vong, conlai = [dau], set(range(len(diems))) - {dau}
+    while conlai:
+        j = min(conlai, key = lambda k: d(vong[-1], k))
+        vong.append(j)
+        conlai.remove(j)
+    n = len(vong)
+    is_doi = True
+    while is_doi:
+        is_doi = False
+        for i in range(1, n - 1):
+            for j in range(i + 1, n):
+                a, b, c, e = vong[i - 1], vong[i], vong[j], vong[(j + 1) % n]
+                if d(a, c) + d(b, e) < d(a, b) + d(c, e) - 1e-6:
+                    vong[i:j + 1] = vong[i:j + 1][::-1]
+                    is_doi = True
+    return [diems[i] for i in vong]
+
+
+def dexuatlotrinh(demo,bankinh = KHOANGCACHDIEMDEXUAT, timduong = None, is_vungcam = None, sodiemtoida = SODIEMDEXUATTOIDA):
     # -> (danh sách điểm [(x, y), ...] theo thứ tự đi, số điểm bị bỏ vì không đi được); timduong None thì không kiểm tra đường đi
     diems = gomcum(demo, bankinh, is_vungcam, sodiemtoida)
     # Kiểm tra trước mọi cặp điểm (8 điểm: 28 cặp), coi như đi 2 chiều như nhau

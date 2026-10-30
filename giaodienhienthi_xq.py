@@ -12,8 +12,8 @@ from hangso_xq import laytenbando, KHOANGCACHSUDUNGKYNANGTAMXA, PHANTRAMNOILUCKH
 import re
 
 from tienich_xq import tailotrinhmau, duongdanlotrinhmau, tainhomtodoitudongs, luunhomtodoitudongs, duongdantodoitudong, laynhomtodoitudongs
-from tienich_xq import duongdantaikhoan, phatam
-from dangnhap_xq import taicauhinhdangnhap, luucauhinhdangnhap
+from tienich_xq import duongdantaikhoan, phatam, tenmaynay
+from dangnhap_xq import duongdangamemaynay, is_batchomaynay, luucauhinhdangnhap, taicauhinhdangnhap, taikhoanbatchomaynay
 from thongke_xq import duongdanthongke, taithongke, gopthongke
 from luattuido_xq import tailuat, luuluat, motaluat, TENHANHDONG, DIEUKIENs, TENDIEUKIEN, TRUONGMUABU, TENTRUONGMUABU, TENCHIKHI, CHIKHI_LUON
 from hangso_xq import CHUTIEMTAPHOA, CHUTUULAU, TENMONPHAI
@@ -124,6 +124,7 @@ class GiaoDienHienThi:
         self._taotabmuctieutodoi(self._taotab(notebook, "Mục tiêu & Tổ đội"))
         self._taotabthongke(self._taotab(notebook, "Thống kê"))
         self._taotabtuido(self._taotab(notebook, "Túi đồ"))
+        self._taotabnhiemvu(self._taotab(notebook, "Nhiệm vụ"))
         if self.dangnhap is not None:
             self._taotabdangnhap(self._taotab(notebook, "Đăng nhập"))
         if HIEN_TUYCHON_CHUADUNG:
@@ -411,7 +412,7 @@ class GiaoDienHienThi:
         nhom.columnconfigure(1, weight = 1, uniform = "muctieu")
         self.tree_muctieus = {}
         for cot, (khoa, tieude, mau, phimtat) in enumerate((("tancong", "⚔️ Tấn công (trống = đánh hết)", MAUCHU_XANH, "Ctrl+C thêm · Ctrl+Alt+C xoá"),
-                                                            ("boqua", "🚫 Bỏ qua", MAUCHU_LUC, "Ctrl+X thêm · Ctrl+Alt+X xoá"))):
+                                                            ("boqua", "🚫 Bỏ qua", MAUCHU_LUC, "Ctrl+X thêm · Ctrl+Alt+X xoá · ~tên = tên chứa"))):
             o_ = ttk.Frame(nhom)
             o_.grid(row = 0, column = cot, sticky = tk.NSEW, padx = (0, 8) if cot == 0 else (0, 0))
             khung = ttk.Frame(o_)
@@ -439,6 +440,26 @@ class GiaoDienHienThi:
         ttk.Button(hang, text = "Áp dụng 2 danh sách này cho tất cả nhân vật", command = lambda: self._guidanhsachmuctieu(is_tatca = True)).pack(side = tk.RIGHT)
         # (hwnd, {"tancong": [...], "boqua": [...]}) đang hiện
         self._muctieudanghien = (None, {"tancong": [], "boqua": []})
+
+        # Mục tiêu bot tự bỏ qua theo id (bị chặn, kẹt tường, đánh không trúng, đi tới mãi không thấy): xoá khi bỏ nhầm để đánh lại ngay
+        nhom = self._taonhom(tab, "Đang tự bỏ qua (của nhân vật đang chọn)")
+        nhom.columnconfigure(0, weight = 1)
+        khung = ttk.Frame(nhom)
+        khung.grid(row = 0, column = 0, columnspan = 2, sticky = tk.NSEW)
+        self.tree_muctieuboqua = ttk.Treeview(khung, columns = ("ten", "id", "lydo", "conlai"), show = "headings", height = 5, selectmode = "extended")
+        for cot, tieude, rong, canh in (("ten", "Tên", 180, tk.W), ("id", "ID", 90, tk.W), ("lydo", "Lý do", 170, tk.W), ("conlai", "Còn lại", 70, tk.E)):
+            self.tree_muctieuboqua.heading(cot, text = tieude)
+            self.tree_muctieuboqua.column(cot, width = self._px(rong), anchor = canh)
+        thanhcuon = ttk.Scrollbar(khung, orient = tk.VERTICAL, command = self.tree_muctieuboqua.yview)
+        self.tree_muctieuboqua.configure(yscrollcommand = thanhcuon.set)
+        self.tree_muctieuboqua.pack(side = tk.LEFT, fill = tk.BOTH, expand = True)
+        thanhcuon.pack(side = tk.RIGHT, fill = tk.Y)
+        self.tree_muctieuboqua.bind("<Delete>", lambda e: self._xoamuctieuboqua())
+        hangnut = ttk.Frame(nhom)
+        hangnut.grid(row = 1, column = 0, columnspan = 2, sticky = tk.W, pady = (4, 0))
+        ttk.Button(hangnut, text = "Xoá", command = self._xoamuctieuboqua).pack(side = tk.LEFT, padx = (0, 4))
+        ttk.Button(hangnut, text = "Xoá hết", command = lambda: self._xoamuctieuboqua(is_tatca = True)).pack(side = tk.LEFT)
+        ttk.Label(hangnut, text = "Xoá = bot thôi bỏ qua, đánh lại ngay", style = "Phu.TLabel").pack(side = tk.LEFT, padx = (8, 0))
 
         nhom = self._taonhom(tab, "Tầm đánh")
         hangtamxa = ttk.Frame(nhom)
@@ -524,6 +545,38 @@ class GiaoDienHienThi:
         danhsachs = {k: list(v) for k, v in self._muctieudanghien[1].items()}
         danhsachs[khoa] = [t for t in danhsachs[khoa] if t not in chon]
         self._guidanhsachmuctieu(danhsachs)
+
+    def _xoamuctieuboqua(self, is_tatca = False):
+        hwnd = self.get_selected_hwnd()
+        if not hwnd:
+            return
+        if is_tatca:
+            self.command_dict[hwnd] = "xoa_muctieuboqua:all"
+            self.tree_muctieuboqua.delete(*self.tree_muctieuboqua.get_children())
+            return
+        chon = self.tree_muctieuboqua.selection()
+        if not chon:
+            return
+        self.command_dict[hwnd] = "xoa_muctieuboqua:" + json.dumps([int(iid) for iid in chon])
+        self.tree_muctieuboqua.delete(*chon)
+
+    def _capnhatmuctieuboqua(self, info):
+        # Giữ dòng đang chọn khi làm mới (iid = id đối tượng)
+        tree = self.tree_muctieuboqua
+        muctieus = info.get("_muctieuboquas") or []
+        dangchon = set(tree.selection())
+        idmois = {str(muc["id"]) for muc in muctieus}
+        for iid in tree.get_children():
+            if iid not in idmois:
+                tree.delete(iid)
+        for muc in muctieus:
+            iid = str(muc["id"])
+            giatri = (muc["ten"] or "?", hex(muc["id"]), muc["lydo"], f"{muc['conlai']}s")
+            if tree.exists(iid):
+                tree.item(iid, values = giatri)
+            else:
+                tree.insert("", tk.END, iid = iid, values = giatri)
+        tree.selection_set([t for t in dangchon if tree.exists(t)])
 
     def _capnhatdanhsachmuctieu(self, hwnd, info):
         tancongs = list(info.get("_tenmuctieutancongs") or [])
@@ -1028,26 +1081,25 @@ class GiaoDienHienThi:
         self._luutodoi([n for _, n in conlai], chon = vitri)
 
     def _taotabdangnhap(self, tab):
-        # Chung cả máy (không theo nhân vật đang chọn): tài khoản trong _internal/taikhoan_<tên máy tính>.json
-        nhom = self._taonhom(tab, "Tự động đăng nhập (chung cả máy)")
-        self.var_tudongdangnhap = tk.BooleanVar(value = self.dangnhap.is_bat)
-
-        def on_click_dangnhap():
-            self.dangnhap.set_is_bat(self.var_tudongdangnhap.get())
-
-        ttk.Checkbutton(nhom, text = "Tự đăng nhập lại nhân vật vắng mặt", variable = self.var_tudongdangnhap,
-                        command = on_click_dangnhap).grid(row = 0, column = 0, sticky = tk.W, pady = 1)
+        # Chung mọi máy (không theo nhân vật đang chọn): tài khoản trong _internal/taikhoan_chung.json, mỗi dòng bật cho một máy
+        nhom = self._taonhom(tab, f"Tự động đăng nhập (máy này: {tenmaynay()})")
+        ttk.Label(nhom, text = "Tự đăng nhập lại nhân vật vắng mặt: tick cột ☑ ở dòng tài khoản để máy này tự đăng nhập tài khoản đó.",
+                  justify = tk.LEFT, wraplength = self._px(390)).grid(row = 0, column = 0, sticky = tk.W, pady = 1)
         self.lbl_trangthaidangnhap = tk.Label(nhom, text = "", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(390))
         self.lbl_trangthaidangnhap.grid(row = 1, column = 0, columnspan = 2, sticky = tk.W, pady = (2, 4))
-        ttk.Label(nhom, text = "Đang tạm ngưng (ẩn thân / người lạ) thì không đăng nhập ai cho tới khi hết hạn.",
+        # Chỉ hiện khi đang tạm ngưng / tạm hoãn (_capnhatdangnhap)
+        self.btn_tieptucdangnhap = ttk.Button(nhom, text = "Tiếp tục đăng nhập ngay", command = self._tieptucdangnhap)
+        ttk.Label(nhom, text = "Đang tạm ngưng (ẩn thân / người lạ) hoặc tạm hoãn (bị đá liên tục) thì không đăng nhập cho tới khi hết hạn, "
+                               "bấm \"Tiếp tục đăng nhập ngay\" để bỏ chờ.",
                   style = "Phu.TLabel", justify = tk.LEFT, wraplength = self._px(390)).grid(row = 2, column = 0, columnspan = 2, sticky = tk.W)
 
         # Bảng tài khoản (thứ tự = thứ tự đăng nhập), sửa bằng form; vẫn mở được file JSON để sửa tay
         nhom = self._taonhom(tab, "Tài khoản (đăng nhập lần lượt từ trên xuống)")
-        self.tree_taikhoan = ttk.Treeview(nhom, columns = ("tinhtrang", "ten", "id", "user", "maychu", "nhanvat", "cuaso"), show = "headings",
-                                          height = 8, selectmode = "browse")
+        self.tree_taikhoan = ttk.Treeview(nhom, columns = ("bat", "tinhtrang", "ten", "id", "user", "maychu", "nhanvat", "cuaso"), show = "headings",
+                                          height = 10, selectmode = "browse")
         for col, text, width, anchor in (
-                ("tinhtrang", "Trạng thái", 105, tk.W),
+                ("bat", "Bật", 35, tk.CENTER),
+                ("tinhtrang", "Trạng thái", 120, tk.W),
                 ("ten", "Nhân vật", 110, tk.W),
                 ("id", "ID", 45, tk.CENTER),
                 ("user", "Tài khoản", 100, tk.W),
@@ -1056,10 +1108,22 @@ class GiaoDienHienThi:
                 ("cuaso", "Cửa sổ", 55, tk.CENTER)):
             self.tree_taikhoan.heading(col, text = text)
             self.tree_taikhoan.column(col, width = self._px(width), anchor = anchor, stretch = col in ("ten", "user"))
-        for tinhtrang, mau in (("online", MAUCHU_LUC), ("đang đăng nhập", MAUCHU_XANH), ("vắng", MAUCHU_PHU), ("thiếu ID/tên", MAUCHU_DO)):
+        for tinhtrang, mau in (("online", MAUCHU_LUC), ("đang đăng nhập", MAUCHU_XANH), ("vắng", MAUCHU_PHU), ("thiếu ID/tên", MAUCHU_DO),
+                               ("tắt", MAUCHU_PHU)):
             self.tree_taikhoan.tag_configure(tinhtrang, foreground = mau)
         self.tree_taikhoan.grid(row = 0, column = 0, sticky = tk.EW)
-        self.tree_taikhoan.bind("<Double-1>", lambda e: self._suataikhoan(is_moi = False))
+
+        def on_click_taikhoan(event):
+            # Bấm vào cột "Bật": bật/tắt tự đăng nhập tài khoản đó cho máy này
+            if self.tree_taikhoan.identify_column(event.x) != "#1" or self.tree_taikhoan.identify_region(event.x, event.y) != "cell":
+                return None
+            dong = self.tree_taikhoan.identify_row(event.y)
+            if dong and dong != "loi":
+                self._battattaikhoan(int(dong))
+            return "break"
+
+        self.tree_taikhoan.bind("<Button-1>", on_click_taikhoan)
+        self.tree_taikhoan.bind("<Double-1>", lambda e: None if self.tree_taikhoan.identify_column(e.x) == "#1" else self._suataikhoan(is_moi = False))
         hangnut = ttk.Frame(nhom)
         hangnut.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
 
@@ -1076,18 +1140,19 @@ class GiaoDienHienThi:
         hangduongdan = ttk.Frame(nhom)
         hangduongdan.grid(row = 2, column = 0, sticky = tk.EW, pady = (8, 0))
         ttk.Label(hangduongdan, text = "Đường dẫn game:").pack(side = tk.LEFT)
-        self.str_duongdangame = tk.StringVar(value = taicauhinhdangnhap().get("duongdangame", ""))
+        self.str_duongdangame = tk.StringVar(value = duongdangamemaynay(taicauhinhdangnhap()))
         ttk.Entry(hangduongdan, textvariable = self.str_duongdangame).pack(side = tk.LEFT, fill = tk.X, expand = True, padx = (4, 4))
 
         def on_luuduongdan():
+            # Mỗi máy cài game một chỗ: lưu theo tên máy
             cauhinh = taicauhinhdangnhap()
             if not cauhinh.get("loi"):
-                cauhinh["duongdangame"] = self.str_duongdangame.get().strip()
+                cauhinh.setdefault("duongdangames", {})[tenmaynay()] = self.str_duongdangame.get().strip()
                 luucauhinhdangnhap(cauhinh)
 
         ttk.Button(hangduongdan, text = "Lưu", command = on_luuduongdan).pack(side = tk.LEFT)
-        ttk.Label(nhom, text = f"{duongdantaikhoan()} · mỗi máy một file riêng (có mật khẩu, không đưa lên git). Thêm khi đang chọn nhân vật "
-                               "trong game thì tên và ID tự điền sẵn.",
+        ttk.Label(nhom, text = f"{duongdantaikhoan()} · một file chung mọi máy (đồng bộ qua git), mỗi tài khoản chỉ bật được cho một máy "
+                               "nên hai máy không giành nhau. Thêm khi đang chọn nhân vật trong game thì tên và ID tự điền sẵn, bật luôn cho máy này.",
                   style = "Phu.TLabel", justify = tk.LEFT, wraplength = self._px(560)).grid(row = 3, column = 0, sticky = tk.W, pady = (6, 0))
         self._taikhoandanghien = None
 
@@ -1098,7 +1163,18 @@ class GiaoDienHienThi:
         if self.lbl_trangthaidangnhap.cget("text") != trangthai:
             mau = MAUCHU_DO if trangthai.startswith(("Tạm ngưng", "Lỗi", "File tài khoản bị lỗi")) else (MAUCHU_XANH if trangthai.startswith("Đang đăng nhập") else MAUCHU_PHU)
             self.lbl_trangthaidangnhap.config(text = trangthai, fg = mau)
+        is_dangtamngung = self.dangnhap.is_dangtamngung()
+        if is_dangtamngung != bool(self.btn_tieptucdangnhap.winfo_manager()):
+            if is_dangtamngung:
+                self.btn_tieptucdangnhap.grid(row = 3, column = 0, sticky = tk.W, pady = (4, 0))
+            else:
+                self.btn_tieptucdangnhap.grid_remove()
         self._hientaikhoan()
+
+    def _tieptucdangnhap(self):
+        self.dangnhap.tieptuc()
+        self.btn_tieptucdangnhap.grid_remove()
+        self.lbl_trangthaidangnhap.config(text = "Đã bỏ tạm ngưng, đăng nhập lại ở lượt quét kế tiếp...", fg = MAUCHU_XANH)
 
     def _hientaikhoan(self, is_batbuoc = False, chon = None):
         # Vẽ lại bảng khi file tài khoản hoặc tình trạng (online / vắng...) đổi; tình trạng lấy từ luồng đăng nhập (cùng thứ tự file)
@@ -1113,11 +1189,12 @@ class GiaoDienHienThi:
         bieutuong = {"online": "🟢 online", "vắng": "⚪ vắng", "đang đăng nhập": "⏳ đang vào", "thiếu ID/tên": "⚠ thiếu ID/tên"}
         for i, tk_ in enumerate(cauhinh.get("taikhoans", [])):
             tinhtrang = tinhtrangs[i] if i < len(tinhtrangs) and len(tinhtrangs) == len(cauhinh.get("taikhoans", [])) else ""
-            self.tree_taikhoan.insert("", tk.END, iid = str(i), tags = (tinhtrang,), values = (
-                bieutuong.get(tinhtrang, tinhtrang or "-"), tk_.get("tennhanvat") or "", tk_.get("idnguoichoi") or "", tk_.get("user") or "",
+            the = "tắt" if tinhtrang.startswith("máy ") else tinhtrang
+            self.tree_taikhoan.insert("", tk.END, iid = str(i), tags = (the,), values = (
+                "☑" if is_batchomaynay(tk_) else "☐", bieutuong.get(tinhtrang, tinhtrang or "-"), tk_.get("tennhanvat") or "", tk_.get("idnguoichoi") or "", tk_.get("user") or "",
                 f"{tk_.get('group', 1)} · {tk_.get('server', 1)}", tk_.get("char_index", 1), tk_.get("vitricuaso", "")))
         if cauhinh.get("loi"):
-            self.tree_taikhoan.insert("", tk.END, iid = "loi", tags = ("thiếu ID/tên",), values = ("⚠ " + cauhinh["loi"], "", "", "", "", "", ""))
+            self.tree_taikhoan.insert("", tk.END, iid = "loi", tags = ("thiếu ID/tên",), values = ("", "⚠ " + cauhinh["loi"], "", "", "", "", "", ""))
         if dangchon is not None and self.tree_taikhoan.exists(str(dangchon)):
             self.tree_taikhoan.selection_set(str(dangchon))
 
@@ -1134,6 +1211,22 @@ class GiaoDienHienThi:
         luucauhinhdangnhap(cauhinh)
         self._hientaikhoan(is_batbuoc = True, chon = chon)
 
+    def _battattaikhoan(self, vitri):
+        from tkinter import messagebox
+        cauhinh = self._laycauhinhtaikhoan()
+        if cauhinh is None or not 0 <= vitri < len(cauhinh.get("taikhoans", [])):
+            return
+        taikhoan = cauhinh["taikhoans"][vitri]
+        is_bat = not is_batchomaynay(taikhoan)
+        maykhac = taikhoan.get("maydangnhap")
+        if is_bat and maykhac and not messagebox.askyesno(
+                "Bật tự đăng nhập", f"{taikhoan.get('tennhanvat') or taikhoan.get('user')} đang bật tự đăng nhập ở máy {maykhac}.\n"
+                                    f"Chuyển sang máy này ({tenmaynay()})? Máy {maykhac} sẽ thôi đăng nhập tài khoản này sau khi đồng bộ file.",
+                parent = self.root):
+            return
+        self.dangnhap.set_is_battaikhoan(cauhinh, vitri, is_bat)
+        self._hientaikhoan(is_batbuoc = True, chon = vitri)
+
     def _suataikhoan(self, is_moi):
         cauhinh = self._laycauhinhtaikhoan()
         if cauhinh is None:
@@ -1146,9 +1239,9 @@ class GiaoDienHienThi:
         if is_moi:
             # Đang chọn nhân vật nào trên bảng trên cùng thì điền sẵn tên + ID của nó, cửa sổ kế tiếp còn trống
             info = self.shared_data.get(self.get_selected_hwnd()) if self.get_selected_hwnd() else None
-            dadung = {t.get("vitricuaso") for t in taikhoans}
             taikhoan = {"tennhanvat": (info or {}).get("tennhanvat") or "", "idnguoichoi": (info or {}).get("idnguoichoi") or "", "group": 1,
-                        "server": 1, "char_index": 1, "vitricuaso": next((v for v in range(1, 5) if v not in dadung), 1)}
+                        "server": 1, "char_index": 1, "maydangnhap": tenmaynay(),
+                        "vitricuaso": next((v for v in range(1, 5) if v not in {t.get("vitricuaso") for t in taikhoanbatchomaynay(cauhinh)}), 1)}
         else:
             taikhoan = dict(taikhoans[vitri])
         giatris = {k: ("" if taikhoan.get(k) is None else str(taikhoan.get(k))) for k in ("tennhanvat", "idnguoichoi", "user", "pass", "group", "server",
@@ -1276,14 +1369,12 @@ class GiaoDienHienThi:
                  fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(560)).grid(row = 3, column = 0, sticky = tk.W, pady = (4, 0))
 
         nhom = self._taonhom(tab, "Mua bù ở Tân Thủ Thôn (còn ít hơn \"Mua khi dưới\" thì mua cho đủ)")
-        self.tree_muabu = ttk.Treeview(nhom, columns = ("bat", "vatpham", "npc", "o", "dongia", "duoi", "muatoi", "monphai", "chikhi"),
+        self.tree_muabu = ttk.Treeview(nhom, columns = ("bat", "vatpham", "npc", "duoi", "muatoi", "monphai", "chikhi"),
                                        show = "headings", height = 6, selectmode = "browse")
         for col, text, width, anchor in (
                 ("bat", "Bật", 35, tk.CENTER),
                 ("vatpham", "Vật phẩm", 105, tk.W),
                 ("npc", "NPC", 95, tk.W),
-                ("o", "Ô", 30, tk.CENTER),
-                ("dongia", "Đơn giá", 55, tk.E),
                 ("duoi", "Khi dưới", 55, tk.E),
                 ("muatoi", "Cho đủ", 50, tk.E),
                 ("monphai", "Môn phái", 75, tk.W),
@@ -1297,7 +1388,10 @@ class GiaoDienHienThi:
         for chu, lenh in (("Thêm", lambda: self._suamuabu(is_moi = True)), ("Sửa", lambda: self._suamuabu(is_moi = False)),
                           ("Xoá", lambda: self._xoamuctuido("muabu", self.tree_muabu))):
             ttk.Button(hangnut, text = chu, command = lenh).pack(side = tk.LEFT, padx = (0, 4))
-        tk.Label(nhom, text = "Ô: số thứ tự món trong cửa hàng NPC (đếm từ 1). Mua lần lượt từ trên xuống trong số ngân lượng đang có.",
+        tk.Label(nhom, text = "Ô và giá bot tự tra theo tên món trong cửa hàng (đứng gần NPC thì mở cửa hàng đọc 1 lần rồi đóng, nhớ cho các "
+                              "lần sau). Tên trong cửa hàng khác tên trong túi (vd Thức Ăn Bảo Thú Cao Cấp / Cao Cấp Bảo Thú Thực Phẩm) thì "
+                              "ghi thêm \"Tên ở cửa hàng\". NPC tìm theo tên hoặc danh hiệu (cửa hàng các nước). Mua lần lượt từ trên xuống "
+                              "trong số ngân lượng đang có.",
                  fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(540)).grid(row = 2, column = 0, sticky = tk.W, pady = (4, 0))
         self._hienluattuido()
 
@@ -1329,6 +1423,115 @@ class GiaoDienHienThi:
                               "mới giao; giao xong kiểm tra ngân lượng / túi đồ đã giảm rồi báo Telegram.",
                  fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(560)).grid(row = 2, column = 0, sticky = tk.W, pady = (4, 0))
         self._giaododanghien = None
+
+    def _taotabnhiemvu(self, tab):
+        # Nhiệm vụ sư môn (tactu_sumon_xq) cho nhân vật đang chọn: bấm bắt đầu / dừng, NPC giao nhiệm vụ lưu theo nhân vật
+        nhom = self._taonhom(tab, "Nhiệm vụ sư môn (nhân vật đang chọn)")
+        hangnut = ttk.Frame(nhom)
+        hangnut.grid(row = 0, column = 0, sticky = tk.W)
+        self.btn_sumon = ttk.Button(hangnut, text = "📜 Bắt đầu sư môn", command = self._battatsumon)
+        self.btn_sumon.pack(side = tk.LEFT)
+        self.lbl_sumon = tk.Label(nhom, text = "", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(560))
+        self.lbl_sumon.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
+
+        hangnpc = ttk.Frame(nhom)
+        hangnpc.grid(row = 2, column = 0, sticky = tk.W, pady = (6, 0))
+        ttk.Label(hangnpc, text = "NPC giao nhiệm vụ:").pack(side = tk.LEFT)
+        self.str_sumonnpcgiao = tk.StringVar()
+        self.ent_sumonnpcgiao = ttk.Entry(hangnpc, textvariable = self.str_sumonnpcgiao, width = 26)
+        self.ent_sumonnpcgiao.pack(side = tk.LEFT, padx = 4)
+
+        def on_luunpcgiao(event = None):
+            hwnd = self.get_selected_hwnd()
+            if hwnd:
+                self.command_dict[hwnd] = f"set_sumon_npcgiao:{self.str_sumonnpcgiao.get().strip()}"
+            self.root.focus_set()
+
+        self.ent_sumonnpcgiao.bind("<Return>", on_luunpcgiao)
+        ttk.Button(hangnpc, text = "Lưu", width = 6, command = on_luunpcgiao).pack(side = tk.LEFT)
+        self.lbl_sumonnpcmacdinh = ttk.Label(nhom, text = "", style = "Phu.TLabel")
+        self.lbl_sumonnpcmacdinh.grid(row = 3, column = 0, sticky = tk.W)
+        tk.Label(nhom, text = "Bot đọc nhiệm vụ trong cửa sổ nhiệm vụ của game rồi tự làm tới khi NPC giao báo hôm nay đã làm đủ 20 lần (làm thêm không có thưởng): nhận / trả ở NPC giao nhiệm vụ, "
+                              "Đi tìm Thạch Sư, Thu thập (đánh đúng quái trong mô tả, nhặt đồ, đủ thì Hồi môn phái về giao), Thăm viếng, "
+                              "Luyện tập / Du lịch (farm theo lộ trình điểm đánh của nhân vật), Bắt yêu quái (hết Dây Càn Khôn thì tự về "
+                              "Chủ Tiệm Tạp Hóa mua), Mua sắm (tự sang nước trong mô tả tìm cửa hàng theo danh hiệu, mua rồi về giao). "
+                              "Để trống NPC giao = mặc định theo môn phái (Côn Luân: Văn Xương Chân Quân). Vị trí NPC / quái bot thấy được tự ghi "
+                              "lại để lần sau tìm.",
+                 fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(560)).grid(row = 4, column = 0, sticky = tk.W, pady = (6, 0))
+        self._hwndsumonhienthi = None
+
+        # Tự động đi Lăng Ly Sơn / Thành Kiều (tactu_langlyson_xq) cho nhân vật đang chọn
+        nhom = self._taonhom(tab, "Phó bản Lăng Ly Sơn / Thành Kiều (nhân vật đang chọn)")
+        hangnut = tk.Frame(nhom)
+        hangnut.grid(row = 0, column = 0, sticky = tk.W)
+        self.btn_langlyson = ttk.Button(hangnut, text = "🏯 Bắt đầu Lăng Ly Sơn", command = lambda: self._battatlanglyson("langlyson"))
+        self.btn_langlyson.pack(side = tk.LEFT)
+        self.btn_thanhkieu = ttk.Button(hangnut, text = "⚔ Bắt đầu Thành Kiều", command = lambda: self._battatlanglyson("thanhkieu"))
+        self.btn_thanhkieu.pack(side = tk.LEFT, padx = (8, 0))
+        self.lbl_langlyson = tk.Label(nhom, text = "", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(560))
+        self.lbl_langlyson.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
+        tk.Label(nhom, text = "Bật ở nhân vật trưởng nhóm (bật cả ở thành viên cũng được: thành viên chỉ đi theo), các thành viên bật Theo sau "
+                              "(tự nói chuyện NPC vào / qua tầng, tự lĩnh thưởng). Mỗi vòng: "
+                              "Thuý Hoa Sơn → Đào Vong Khổ Dịch vào Tầng Trên (đánh Tướng Quân Dũng, khởi động Cơ Quan Thạch, Cơ Quan Thạch Sư "
+                              "sang tầng) → Tầng Dưới (Đường Truy, Thế Công Minh, Thạch Tướng Quân, Hào Quật, Lăng Mộ Thạch Sư) → Thư Phòng "
+                              "(chờ đủ thành viên rồi mới đánh Cơ Quan Tướng Quân) → Hồi Thành Phù ra, Đào Vong Khổ Dịch lĩnh thưởng → tạm tắt "
+                              "Tổ đội tự động, mọi người rời nhóm cũ, bật lại cho lập nhóm mới rồi đi vòng sau, tới khi bấm dừng. "
+                              "Thành Kiều: trưởng nhóm tới Tần Quốc (220, 65) Thảo Nghịch Tướng Quân \"3. Sử dụng [Hạt Mè Khai Môn] tiến vào\" → "
+                              "Xác nhận (cả nhóm được đưa vào) → Mã Quỷ, Lương Hưng, Yến Thập Tam, Tư Tà → chờ đủ thành viên đánh Thủ Lĩnh "
+                              "Thành Kiều → Hồi Thành Phù về Tần Quốc \"4. Nhận thưởng\" → \"1. Nhận thưởng\" → đổi tổ đội như trên. Hết Hạt Mè Khai Môn thì dừng.",
+                 fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(560)).grid(row = 2, column = 0, sticky = tk.W, pady = (6, 0))
+
+    def _battatlanglyson(self, phoban):
+        # Đang đi phó bản nào thì nút nào cũng là dừng phó bản đó (mỗi nhân vật chỉ đi 1 phó bản 1 lúc)
+        hwnd = self.get_selected_hwnd()
+        if not hwnd:
+            from tkinter import messagebox
+            messagebox.showwarning("Phó bản", "Chọn một nhân vật trong danh sách trước", parent = self.root)
+            return
+        info = self.shared_data.get(hwnd) or {}
+        self.command_dict[int(hwnd)] = "huylanglyson" if info.get("_is_danglanglyson") else phoban
+
+    def _capnhatlanglyson(self):
+        hwnd = self.get_selected_hwnd()
+        info = (self.shared_data.get(hwnd) or {}) if hwnd else {}
+        dangdi = info.get("_phobanlanglyson") or ("langlyson" if info.get("_is_danglanglyson") else "")
+        for nut, phoban, chubatdau, ten in ((self.btn_langlyson, "langlyson", "🏯 Bắt đầu Lăng Ly Sơn", "Lăng Ly Sơn"),
+                                            (self.btn_thanhkieu, "thanhkieu", "⚔ Bắt đầu Thành Kiều", "Thành Kiều")):
+            chunut = f"⏹ Dừng {ten}" if dangdi == phoban else chubatdau
+            trangthai = tk.DISABLED if dangdi and dangdi != phoban else tk.NORMAL
+            if nut.cget("text") != chunut:
+                nut.config(text = chunut)
+            if str(nut.cget("state")) != trangthai:
+                nut.config(state = trangthai)
+        chu = info.get("_trangthailanglyson") or ""
+        if self.lbl_langlyson.cget("text") != chu:
+            self.lbl_langlyson.config(text = chu)
+
+    def _battatsumon(self):
+        hwnd = self.get_selected_hwnd()
+        if not hwnd:
+            from tkinter import messagebox
+            messagebox.showwarning("Sư môn", "Chọn một nhân vật trong danh sách trước", parent = self.root)
+            return
+        info = self.shared_data.get(hwnd) or {}
+        self.command_dict[int(hwnd)] = "huysumon" if info.get("_is_dangsumon") else "sumon"
+
+    def _capnhatsumon(self):
+        hwnd = self.get_selected_hwnd()
+        info = (self.shared_data.get(hwnd) or {}) if hwnd else {}
+        chunut = "⏹ Dừng sư môn" if info.get("_is_dangsumon") else "📜 Bắt đầu sư môn"
+        if self.btn_sumon.cget("text") != chunut:
+            self.btn_sumon.config(text = chunut)
+        chu = info.get("_trangthaisumon") or ""
+        if self.lbl_sumon.cget("text") != chu:
+            self.lbl_sumon.config(text = chu)
+        macdinh = f"Đang dùng: {info.get('_npcgiaosumon') or '(chưa biết, nhập tên NPC)'}"
+        if self.lbl_sumonnpcmacdinh.cget("text") != macdinh:
+            self.lbl_sumonnpcmacdinh.config(text = macdinh)
+        # Đổi nhân vật thì nạp lại ô NPC giao (đang gõ thì thôi)
+        if info and hwnd != self._hwndsumonhienthi and self.root.focus_get() is not self.ent_sumonnpcgiao:
+            self._hwndsumonhienthi = hwnd
+            self.str_sumonnpcgiao.set(info.get("_sumon_npcgiao") or "")
 
     def _catkhongay(self):
         hwnd = self.get_selected_hwnd()
@@ -1442,7 +1645,8 @@ class GiaoDienHienThi:
             self.tree_catkho.selection_set(str(choncatkho))
         self.tree_muabu.delete(*self.tree_muabu.get_children())
         for i, muc in enumerate(dulieu["muabu"]):
-            self.tree_muabu.insert("", tk.END, iid = str(i), values = ("✔" if muc["bat"] else "", muc["vatpham"], muc["npc"], muc["o"], self._sogon(muc["dongia"]),
+            self.tree_muabu.insert("", tk.END, iid = str(i), values = ("✔" if muc["bat"] else "",
+                                                                       muc["vatpham"] + (f" ({muc['tencuahang']})" if muc["tencuahang"] else ""), muc["npc"],
                                                                        muc["duoi"], muc["muatoi"], TENMONPHAI.get(muc["monphai"], muc["monphai"]) or "Tất cả",
                                                                        "Luôn" if muc["chikhi"] == CHIKHI_LUON else "Triệu hồi bảo thú"))
         for tree, chon in ((self.tree_luattuido, chonluat), (self.tree_muabu, chonmuabu)):
@@ -1631,7 +1835,7 @@ class GiaoDienHienThi:
         mamonphai = {"Tất cả": "", **{ten: ma for ma, ten in TENMONPHAI.items()}}
         muc["monphai"] = TENMONPHAI.get(muc.get("monphai"), muc.get("monphai")) or "Tất cả"
         goiys = {"npc": [CHUTIEMTAPHOA, CHUTUULAU], "monphai": list(mamonphai), "chikhi": list(TENCHIKHI.values())}
-        # Form 2 cột, xếp theo cặp: Vật phẩm | NPC, Ô | Đơn giá, Mua khi dưới | Mua cho đủ, Môn phái | Chỉ mua khi, Bật
+        # Form 2 cột, xếp theo cặp: Vật phẩm | Tên ở cửa hàng, NPC | Mua khi dưới, Mua cho đủ | Môn phái, Chỉ mua khi | Bật
         truongs = [(t, TENTRUONGMUABU[t], goiys.get(t)) for t in TRUONGMUABU] + [("bat", "Bật", None)]
 
         def kiemtra(kq):
@@ -1641,7 +1845,7 @@ class GiaoDienHienThi:
                 return "Chọn môn phái trong danh sách (hoặc Tất cả)"
             if not kq["vatpham"].strip() or not kq["npc"].strip():
                 return "Cần tên vật phẩm và tên NPC bán"
-            for t in ("o", "dongia", "duoi", "muatoi"):
+            for t in ("duoi", "muatoi"):
                 if not kq[t].strip().isdigit() or int(kq[t]) <= 0:
                     return f"\"{TENTRUONGMUABU[t]}\" phải là số lớn hơn 0"
             if int(kq["duoi"]) > int(kq["muatoi"]):
@@ -1811,6 +2015,8 @@ class GiaoDienHienThi:
             self._capnhatbangdieukhien()
             self._capnhatthongke()
             self._capnhatgiaodo()
+            self._capnhatsumon()
+            self._capnhatlanglyson()
             # Nội dung có thể cao lên/thấp xuống (dòng tạm ngưng, danh sách tài khoản...) mà Canvas không tự biết
             for tabcuon in self._tabcuons:
                 self._capnhatcuontab(*tabcuon)
@@ -1973,6 +2179,7 @@ class GiaoDienHienThi:
                 pass
 
         self._capnhatdanhsachmuctieu(hwnd_to_show, info)
+        self._capnhatmuctieuboqua(info)
         self._capnhatmuctieutheosau(hwnd_to_show, info)
 
         self._capnhatlotrinhmau(hwnd_to_show, info, idbando, tenbando)
