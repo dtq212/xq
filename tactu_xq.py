@@ -103,6 +103,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._khoangcachsudungkynangtamxa = KHOANGCACHSUDUNGKYNANGTAMXA
         # Thục Sơn: % nội lực tối thiểu để dùng Khai Thiên Tịch Địa lướt khi di chuyển (chỉnh ở giao diện, lưu theo nhân vật)
         self._phantramnoiluckhaithientichdia = PHANTRAMNOILUCKHAITHIENTICHDIA
+        # Côn Luân: hết mốc này mới gửi chiêu sau khi lướt Đằng Vân Giá Vũ (xem THOIGIANKHOACHIEUSAULUOT)
+        self._thoidiemhetkhoachieusauluot = 0.
         # Tầm đánh thực tế của nhân vật (học từ lần tiếp cận mục tiêu gần nhất), mặc định tầm xa đã trừ hao
         self._khoangcachvoitoimuctieu = self._khoangcachsudungkynangtamxa - TRUHAOTAMXACHONMUCTIEU
         # Đang trên đường về chỗ đứng riêng quanh trưởng nhóm

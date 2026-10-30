@@ -1087,7 +1087,10 @@ class GiaoDienHienThi:
                   justify = tk.LEFT, wraplength = self._px(390)).grid(row = 0, column = 0, sticky = tk.W, pady = 1)
         self.lbl_trangthaidangnhap = tk.Label(nhom, text = "", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(390))
         self.lbl_trangthaidangnhap.grid(row = 1, column = 0, columnspan = 2, sticky = tk.W, pady = (2, 4))
-        ttk.Label(nhom, text = "Đang tạm ngưng (ẩn thân / người lạ) thì không đăng nhập ai cho tới khi hết hạn.",
+        # Chỉ hiện khi đang tạm ngưng / tạm hoãn (_capnhatdangnhap)
+        self.btn_tieptucdangnhap = ttk.Button(nhom, text = "Tiếp tục đăng nhập ngay", command = self._tieptucdangnhap)
+        ttk.Label(nhom, text = "Đang tạm ngưng (ẩn thân / người lạ) hoặc tạm hoãn (bị đá liên tục) thì không đăng nhập cho tới khi hết hạn, "
+                               "bấm \"Tiếp tục đăng nhập ngay\" để bỏ chờ.",
                   style = "Phu.TLabel", justify = tk.LEFT, wraplength = self._px(390)).grid(row = 2, column = 0, columnspan = 2, sticky = tk.W)
 
         # Bảng tài khoản (thứ tự = thứ tự đăng nhập), sửa bằng form; vẫn mở được file JSON để sửa tay
@@ -1160,7 +1163,18 @@ class GiaoDienHienThi:
         if self.lbl_trangthaidangnhap.cget("text") != trangthai:
             mau = MAUCHU_DO if trangthai.startswith(("Tạm ngưng", "Lỗi", "File tài khoản bị lỗi")) else (MAUCHU_XANH if trangthai.startswith("Đang đăng nhập") else MAUCHU_PHU)
             self.lbl_trangthaidangnhap.config(text = trangthai, fg = mau)
+        is_dangtamngung = self.dangnhap.is_dangtamngung()
+        if is_dangtamngung != bool(self.btn_tieptucdangnhap.winfo_manager()):
+            if is_dangtamngung:
+                self.btn_tieptucdangnhap.grid(row = 3, column = 0, sticky = tk.W, pady = (4, 0))
+            else:
+                self.btn_tieptucdangnhap.grid_remove()
         self._hientaikhoan()
+
+    def _tieptucdangnhap(self):
+        self.dangnhap.tieptuc()
+        self.btn_tieptucdangnhap.grid_remove()
+        self.lbl_trangthaidangnhap.config(text = "Đã bỏ tạm ngưng, đăng nhập lại ở lượt quét kế tiếp...", fg = MAUCHU_XANH)
 
     def _hientaikhoan(self, is_batbuoc = False, chon = None):
         # Vẽ lại bảng khi file tài khoản hoặc tình trạng (online / vắng...) đổi; tình trạng lấy từ luồng đăng nhập (cùng thứ tự file)

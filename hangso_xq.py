@@ -1038,6 +1038,13 @@ THOIGIANGOIBAOTHUVE = 0.5
 # cho game kịp chuyển tư thế (nếu không sẽ gửi tiếp chiêu khác, cắt ngang chiêu vừa gửi). Phải ngắn hơn 1 vòng bot (~0.123s):
 # 0.15 làm cứ gửi 1 vòng lại bỏ 1 vòng => spam chiêu thực tế 0.25s/lần (đo log 2026-10-28), lúc server nhận bị làm tròn theo 0.25s
 THOIGIANCHOPHANUNGLENH = 0.1
+# Côn Luân Đằng Vân Giá Vũ: lướt xong máy chủ không nhận chiêu ~2s (log 273 2026-10-30: <1s sau lướt 64% chiêu không ra, 1-2s 53%,
+# >3s 16%) => trong ngần này giây không gửi chiêu (tránh khoá chống spam oan), đi bộ vào gần hơn tầm xa KHOANGCACHGANTHEMSAULUOT ô.
+# Khi đánh chỉ lướt lúc mục tiêu xa hơn tầm xa + KHOANGCACHLUOTTHEMKHITANCONG ô (đi bộ ngần đó ô ~ bằng thời gian chờ sau lướt),
+# gần hơn thì đi bộ cho nhanh; lùi giữ khoảng cách / đi đường vẫn lướt như cũ
+THOIGIANKHOACHIEUSAULUOT = 2.
+KHOANGCACHGANTHEMSAULUOT = 3.
+KHOANGCACHLUOTTHEMKHITANCONG = 5.
 # Chọn mục tiêu khi đang chạy: con nằm sau lưng (ngược hướng đang chạy) bị tính xa thêm ngần này ô, để không quay đầu đổi qua lại
 PHATMUCTIEUSAULUNG = 3.
 # Mục tiêu đang đánh chỉ bị thay bằng con khác chỉ vì gần hơn khi con đó gần hơn ít nhất ngần này ô (giữa các ứng viên khác chỉ cần 0.5):

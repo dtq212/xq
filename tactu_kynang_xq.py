@@ -133,10 +133,11 @@ class TacTuKyNang:
         self._bonhonhuongbuffdaohoanguyen = (time.time(), is_nhuong)
         return is_nhuong
 
-    def _thusudungkhaithientichdia(self, idtuthenhanvat, x_dich, y_dich):
+    def _thusudungkhaithientichdia(self, idtuthenhanvat, x_dich, y_dich, khoangcachtoithieu = 3.):
         # Đang di chuyển xa đích > 3 ô và nội lực trên mức % đặt ở giao diện thì dùng chiêu lướt về phía đích: Thục Sơn Khai Thiên Tịch
         # Địa (nhắm thẳng đích), Côn Luân Đằng Vân Giá Vũ (dịch chuyển tới điểm chọn trong tầm đánh xa: đích xa hơn thì nhắm điểm trên
         # đường thẳng tới đích, cách bản thân tầm xa - 0.5 ô). Trả về True khi đã dùng
+        return False
         tenmonphai = self.moitruong.get_tenmonphai()
         chieuluot = {"thucson": VITRIKYNANG_KHAITHIENTICHDIA, "conluan": VITRIKYNANG_DANGVANGIAVU}.get(tenmonphai)
         if idtuthenhanvat != TUTHENHANVAT_DICHUYEN or not chieuluot or self.moitruong.get_phantramnoilucconlai() <= self._phantramnoiluckhaithientichdia:
@@ -145,7 +146,7 @@ class TacTuKyNang:
             return False
         toado = self.moitruong.get_toado()
         khoangcach = math.dist(toado, (x_dich, y_dich))
-        if khoangcach <= 3.:
+        if khoangcach <= khoangcachtoithieu:
             return False
         if tenmonphai == "conluan" and khoangcach > self._khoangcachsudungkynangtamxa - 0.5:
             tile = (self._khoangcachsudungkynangtamxa - 0.5) / khoangcach
@@ -182,6 +183,8 @@ class TacTuKyNang:
                 self.moitruong.action_chandichuyen()
                 self._thoidiemtamngungkhaithientichdia = time.time()
                 self._solansudungkhaithientichdia += 1
+                if tenmonphai == "conluan":
+                    self._thoidiemhetkhoachieusauluot = time.time() + THOIGIANKHOACHIEUSAULUOT
                 return True
         return False
 
@@ -768,6 +771,12 @@ class TacTuKyNang:
         khoangcach = self.moitruong.get_khoangcach(diachimuctieu) if diachimuctieu else 0
         tamxa = self._khoangcachsudungkynangtamxa
         is_muctieulanguoichoi = bool(diachimuctieu) and self.moitruong.get_is_nguoichoi(diachimuctieu)
+        # Vừa lướt Đằng Vân Giá Vũ: máy chủ chưa nhận chiêu, không gửi (gửi là bị khoá chống spam 3s), đi bộ vào gần hơn để hết chờ là
+        # mục tiêu chắc chắn trong tầm (kể cả khi nó chạy). Đang lùi giữ khoảng cách thì action_xulyuutiensudungkynang bỏ qua bước tiếp cận
+        if time.time() < self._thoidiemhetkhoachieusauluot:
+            if diachimuctieu and khoangcach > tamxa - KHOANGCACHGANTHEMSAULUOT:
+                self.action_xulyuutiensudungkynang("dichuyentiepcandenkhoangcach", None, diachimuctieu, tamxa - KHOANGCACHGANTHEMSAULUOT + 1.)
+            return
         # Bùa Giấy: đọc túi 1 lần mỗi lượt, chỉ khi có mục tiêu (chiêu đánh nào cũng tốn bùa trừ Phong Hỏa Quyết / Phong Ma Chú)
         sobuagiay = (self.moitruong.get_soluongvatphamhanhtrangtheoten() or {}).get(BUAGIAY, 0) if diachimuctieu else 0
 
@@ -801,9 +810,13 @@ class TacTuKyNang:
             (VITRIKYNANG_HOALONGQUYET, "sudungkynangmuctieu", lambda: diachimuctieu and sobuagiay >= 3 and not muctieuco(HIEUUNGKYNANG_THIEUDOT), tamxa, None, True),
             # Thương Long Quyết (3 bùa, Đóng Băng 6s) khi mục tiêu chưa bị Đóng Băng
             (VITRIKYNANG_THUONGLONGQUYET, "sudungkynangmuctieu", lambda: diachimuctieu and sobuagiay >= 3 and not muctieuco(HIEUUNGKYNANG_DONGBANG), tamxa, None, True),
-            # Hàn Băng Thuật (1 bùa, +60 nội công, Chậm Chạp 6s)
-            (VITRIKYNANG_HANBANGTHUAT, "sudungkynangmuctieu", lambda: diachimuctieu and sobuagiay >= 1, tamxa, None, True),
-            (VITRIKYNANG_NGULOITHUAT, "sudungkynangmuctieu", lambda: diachimuctieu and sobuagiay >= 1, tamxa, None, True),
+            # Combo duy trì: đánh qua lại Ngự Lôi Thuật / Hỏa Long Quyết (không xét Thiêu Đốt), chiêu dùng lâu hơn đi trước.
+            # Bỏ Hàn Băng Thuật (người dùng 2026-10-30)
+            *sorted([
+                (VITRIKYNANG_NGULOITHUAT, "sudungkynangmuctieu", lambda: diachimuctieu and sobuagiay >= 1, tamxa, None, True),
+                (VITRIKYNANG_HOALONGQUYET, "sudungkynangmuctieu", lambda: diachimuctieu and sobuagiay >= 3, tamxa, None, True),
+            ], key = lambda item: self.moitruong.get_thoidiemsudungkynangvitrigannhat(item[0], macdinh = 0.)),
+            # Hết bùa / cả hai đang hồi: Phong Hỏa Quyết (không tốn bùa)
             (VITRIKYNANG_PHONGHOAQUYET, "sudungkynangmuctieu", lambda: diachimuctieu, tamxa, None, True),
             (None, "dichuyentiepcantamxa", lambda: diachimuctieu and khoangcach > tamxa, tamxa, None, False),
         ]

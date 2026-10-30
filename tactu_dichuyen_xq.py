@@ -484,7 +484,11 @@ class TacTuDiChuyen:
                 x_dich, y_dich = toadodich[0], toadodich[1]
             elif diachimuctieu:
                 x_dich, y_dich = self.moitruong.get_toado(diachimuctieu)
-            if self._thusudungkhaithientichdia(idtuthenhanvat, x_dich, y_dich):
+            # Côn Luân đang đánh: chỉ lướt khi mục tiêu đủ xa (lướt xong ~2s không ra chiêu được, gần thì đi bộ nhanh hơn)
+            khoangcachtoithieuluot = 3.
+            if self.moitruong.get_tenmonphai() == "conluan" and yeucauduocchon.get("yeucau") in (YEUCAUDICHUYENTANCONG, YEUCAUDICHUYENTIMMUCTIEUCHUNG):
+                khoangcachtoithieuluot = self._khoangcachsudungkynangtamxa + KHOANGCACHLUOTTHEMKHITANCONG
+            if self._thusudungkhaithientichdia(idtuthenhanvat, x_dich, y_dich, khoangcachtoithieu = khoangcachtoithieuluot):
                 return
 
             kieudichuyen = yeucauduocchon.get("kieudichuyen", KIEUDICHUYEN_GIUKHOANGCACHTOIDA)

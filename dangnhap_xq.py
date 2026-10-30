@@ -15,7 +15,7 @@ import win32gui
 import win32process
 
 from moitruong_xq import MoiTruong
-from tienich_xq import duongdantaikhoan, duongdantaikhoantheomay, laytamngungdanghieuluc, tenmaynay
+from tienich_xq import duongdantaikhoan, duongdantaikhoantheomay, laytamngungdanghieuluc, tenmaynay, xoatamngung
 
 LAUNCHER_TITLE = "client 2.01.07"
 GAME_TITLE_LOGIN_SCREEN = "Chien Quoc 2D --ooo2026ooo-- v.2.01.07"
@@ -37,6 +37,13 @@ THOIGIANDEMBIDA = 1800
 THOIGIANTAMHOAN = 1800
 # Nhân vật vắng chừng này giây mà tự đăng nhập vẫn chưa đưa vào lại được thì báo Telegram (kẹt quy trình đăng nhập...)
 THOIGIANBAOVANG = 600
+# Cửa sổ không trả lời tin nhắn liên tục chừng này giây mới coi là đơ mà kill. Vừa chọn nhân vật xong game load bản đồ, luồng giao
+# diện bận vài giây không trả lời: trước đây chỉ chờ 1s là kill luôn => vừa vào game đã bị kill
+THOIGIANTREOTOIDA = 60.
+# Vừa bấm vào game xong, chừng này giây chưa thấy nhân vật thì vẫn coi là đang load: không đóng / kill cửa sổ đó, không đăng nhập ai khác
+THOIGIANCHOVAOGAME = 90.
+# xq.exe không có cửa sổ game: chỉ kill khi đã chạy chừng này giây (lúc chuyển từ màn chọn nhân vật vào game có thể thoáng không có cửa sổ)
+TUOIXQAOTOITHIEU = 60.
 
 TOADO_LAUNCHER = {
     "BTN_VAO_GAME": (530, 495)
@@ -237,7 +244,21 @@ def type_text(hwnd, text, delay = 0.05):
         time.sleep(delay)
 
 
+# hwnd -> lúc bắt đầu không trả lời tin nhắn (đang đơ / đang load)
+_thoidiembatdautreo = {}
+# hwnd -> lúc vừa bấm vào game (dangnhaptrongcuaso), xem THOIGIANCHOVAOGAME
+_thoidiemvaogame = {}
+
+
+def laycuasodangvaogame():
+    now = time.time()
+    for hwnd in [h for h, t in _thoidiemvaogame.items() if now - t >= THOIGIANCHOVAOGAME or not win32gui.IsWindow(h) or _is_cuasodadangnhap(h)]:
+        _thoidiemvaogame.pop(hwnd, None)
+    return set(_thoidiemvaogame)
+
+
 def kiemtravadongcuasotreo(hwnd):
+    # Chỉ trả về True (đã kill) khi cửa sổ không trả lời liên tục THOIGIANTREOTOIDA giây; đơ ngắn (load bản đồ) thì bỏ qua
     try:
         win32gui.PostMessage(hwnd, win32con.WM_NCMOUSEMOVE, 0, 0)
         time.sleep(0.2)
@@ -247,13 +268,19 @@ def kiemtravadongcuasotreo(hwnd):
             win32con.WM_GETTEXTLENGTH,
             0,
             0,
-            win32con.SMTO_NORMAL,
-            1000
+            win32con.SMTO_NORMAL | win32con.SMTO_ABORTIFHUNG,
+            3000
         )
+        _thoidiembatdautreo.pop(hwnd, None)
         return False
 
     except Exception:
-        print(f"⚠️ Phát hiện cửa sổ bị đơ ngầm (HWND: {hwnd}). Đang thực hiện dọn dẹp...")
+        thoigiantreo = time.time() - _thoidiembatdautreo.setdefault(hwnd, time.time())
+        if thoigiantreo < THOIGIANTREOTOIDA or hwnd in laycuasodangvaogame():
+            print(f"   -> Cửa sổ không trả lời {int(thoigiantreo)}s (HWND: {hwnd}), có thể đang load, chờ thêm")
+            return False
+        _thoidiembatdautreo.pop(hwnd, None)
+        print(f"⚠️ Phát hiện cửa sổ bị đơ ngầm {int(thoigiantreo)}s (HWND: {hwnd}). Đang thực hiện dọn dẹp...")
         try:
             _, pid = win32process.GetWindowThreadProcessId(hwnd)
             if _killtientrinh(pid):
@@ -374,6 +401,8 @@ def timcuasogamedangbiket(boquas = ()):
 def mogamevadangnhap(char_name, config, duongdangame, cuasogiuchos = ()):
     # cuasogiuchos: cửa sổ bị dis của nhân vật khác, không đóng / không nhận nhầm là cửa sổ mới mở
     print(f"\n[ĐĂNG NHẬP] >>> BẮT ĐẦU QUY TRÌNH CHO: {char_name}")
+    # Cửa sổ vừa bấm vào game, đang load: cũng không đóng / kill
+    cuasogiuchos = set(cuasogiuchos) | laycuasodangvaogame()
     try:
         hwnd_game_stuck = timcuasogamedangbiket(cuasogiuchos)
         if hwnd_game_stuck:
@@ -426,7 +455,7 @@ def mogamevadangnhap(char_name, config, duongdangame, cuasogiuchos = ()):
                         except Exception as e:
                             print(f"      -> Lỗi khi đóng: {e}")
 
-                        dondeptientrinhaovuabithoatgame()
+                        dondeptientrinhaovuabithoatgame(tuoitoithieu = 0.)
                         dondepclientkhongdangnhap(tuoitoithieu = 0., cuasogiuchos = cuasogiuchos)
 
                         break
@@ -534,6 +563,7 @@ def dangnhaptrongcuaso(hwnd_game, char_name, config):
         press_key(hwnd_game, win32con.VK_RETURN)
         time.sleep(1)
         press_key(hwnd_game, win32con.VK_RETURN)
+        _thoidiemvaogame[hwnd_game] = time.time()
 
         print(f"✅ Hoàn tất cho {char_name}. Nghỉ 15s...")
 
@@ -543,7 +573,7 @@ def dangnhaptrongcuaso(hwnd_game, char_name, config):
         print(f"❌ Exception: {e}")
 
 
-def dondeptientrinhaovuabithoatgame():
+def dondeptientrinhaovuabithoatgame(tuoitoithieu = TUOIXQAOTOITHIEU):
     valid_pids = set()
 
     def callback(hwnd, _):
@@ -555,7 +585,7 @@ def dondeptientrinhaovuabithoatgame():
 
     win32gui.EnumWindows(callback, None)
 
-    ghost_pids = _laypidxq() - valid_pids
+    ghost_pids = {pid for pid in _laypidxq() - valid_pids if _laytuoitientrinh(pid) >= tuoitoithieu}
 
     if ghost_pids:
         print(f"[CLEANUP] Đang kiểm tra các tiến trình xq.exe bị treo ngầm...")
@@ -802,6 +832,19 @@ class TuDongDangNhap:
                              khoa = ("roigame", khoa), giancach = 120.)
             self._onlinetruoc[khoa] = is_online
 
+    def is_dangtamngung(self):
+        # Đang tạm ngưng chung (ẩn thân / người lạ) hoặc có tài khoản đang tạm hoãn (bị đá liên tục): giao diện hiện nút "Tiếp tục"
+        return bool(laytamngungdanghieuluc()) or any(t > time.time() for t in self._tamhoanden.values())
+
+    def tieptuc(self):
+        # Người dùng bấm "Tiếp tục": bỏ mọi tạm ngưng / tạm hoãn, đăng nhập lại ngay ở lượt quét sau. Đếm rớt game cũng tính lại từ đầu,
+        # không thì rớt thêm một lần là tạm hoãn lại ngay
+        for idnguoichoi, _, _ in laytamngungdanghieuluc():
+            xoatamngung(idnguoichoi)
+        self._tamhoanden.clear()
+        self._lanroigames.clear()
+        print("[ĐĂNG NHẬP] Người dùng bấm Tiếp tục: bỏ tạm ngưng / tạm hoãn, đăng nhập lại ngay")
+
     def _capnhatisbat(self, cauhinh):
         global is_chophepdong
         self.is_bat = bool(taikhoanbatchomaynay(cauhinh))
@@ -906,6 +949,10 @@ class TuDongDangNhap:
 
         if canhdangnhap is None:
             self.trangthai = f"Đủ {sum(1 for taikhoan in taikhoans if _is_taikhoanonline(taikhoan, online))}/{len(taikhoans)} nhân vật online"
+            return
+        if laycuasodangvaogame():
+            # Vừa bấm vào game, nhân vật chưa hiện (đang load bản đồ): chờ, không thì tưởng vắng mà đóng chính cửa sổ đó để đăng nhập lại
+            self.trangthai = "Đang chờ nhân vật vừa đăng nhập vào game..."
             return
 
         ten = canhdangnhap.get("tennhanvat") or str(canhdangnhap.get("idnguoichoi"))
