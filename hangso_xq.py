@@ -242,6 +242,10 @@ LOAIDOITUONG_NHANVAT1 = 1
 LOAIDOITUONG_NHANVATKHAC1 = 2
 LOAIDOITUONG_VATPHAMDUOIDAT = 3
 
+# Phẩm chất vật phẩm dưới đất = byte +0x29 (gói tin xuất hiện vật phẩm), game tô màu tên theo nó (xq + 0x9C19B): 0 trắng (thường),
+# 1 xanh lam 0x00FFFF, 2 vàng 0xFFFF00, 3 tím 0xF076FC, 4 xanh lục 0x00FF00
+PHAMCHATVATPHAM_MAP = {1: "Xanh lam", 2: "Vàng", 3: "Tím", 4: "Xanh lục"}
+
 KETQUA_HANHDONG_THATBAI = 0
 KETQUA_HANHDONG_THANHCONG = 1
 KETQUA_HANHDONG_DICHUYEN = 2
@@ -1265,7 +1269,7 @@ KIEUDICHUYEN_GIUKHOANGCACHTOIDA = 1
 KIEUDICHUYEN_GIUKHOANGCACHTOITHIEU = 2
 KIEUDICHUYEN_TOADOCHUAN = 3
 
-# Chỉ là mặc định khi chưa có file _internal/todoi.json; cấu hình thật ở giao diện (tab Chiến đấu > Tổ đội tự động)
+# Chỉ là mặc định khi chưa có file _internal/todoi.json; cấu hình thật ở giao diện (tab Mục tiêu & Tổ đội > Tổ đội tự động)
 NHANVATTODOITUDONGs_LIST = [
     [29, 30, 32, 31],
     [132, 133, 134, 135]

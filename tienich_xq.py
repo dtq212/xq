@@ -204,6 +204,54 @@ def luulotrinhmau(lotrinhmau):
         print(err)
 
 
+def duongdanvatcanhoc():
+    return os.path.join(os.path.dirname(_thumucthietlap()), "vatcanhoc.json")
+
+
+# Ô máy chủ không cho đi mà lưới vật cản của client ghi là đi được (rào chắn cố ý làm kẹt ở Chu Quốc), bot tự học khi đi mãi bị kéo về
+# (moitruong.action_dikhongcatgoc): {"<id bản đồ>": [[x, y], ...]}. Dùng chung mọi cửa sổ (mỗi cửa sổ 1 tiến trình): đọc lại khi file đổi
+_vatcanhoc_cache = {"dulieu": {}, "thoidiemsua": None, "thoidiemkiemtra": 0.}
+
+
+def taivatcanhoc(idbando):
+    # -> set {(x, y)} ô học được là vật cản của bản đồ idbando
+    nho = _vatcanhoc_cache
+    if time.time() - nho["thoidiemkiemtra"] > 1.:
+        nho["thoidiemkiemtra"] = time.time()
+        try:
+            thoidiemsua = os.path.getmtime(duongdanvatcanhoc())
+        except OSError:
+            thoidiemsua = None
+        if thoidiemsua != nho["thoidiemsua"]:
+            nho["thoidiemsua"] = thoidiemsua
+            try:
+                with open(duongdanvatcanhoc(), "r", encoding = "utf-8") as file:
+                    nho["dulieu"] = {k: {tuple(o) for o in v} for k, v in json.load(file).items()}
+            except Exception:
+                nho["dulieu"] = {}
+    return nho["dulieu"].get(str(idbando), set())
+
+
+def themvatcanhoc(idbando, x, y):
+    filepath = duongdanvatcanhoc()
+    try:
+        try:
+            with open(filepath, "r", encoding = "utf-8") as file:
+                dulieu = json.load(file)
+        except FileNotFoundError:
+            dulieu = {}
+        os_ = dulieu.setdefault(str(idbando), [])
+        if [x, y] not in os_:
+            os_.append([x, y])
+        filetam = filepath + ".tmp"
+        with open(filetam, "w", encoding = "utf-8") as file:
+            json.dump(dulieu, file, ensure_ascii = False)
+        thaythefile(filetam, filepath)
+        _vatcanhoc_cache["dulieu"].setdefault(str(idbando), set()).add((x, y))
+    except Exception as err:
+        print(err)
+
+
 def duongdantodoitudong():
     return os.path.join(os.path.dirname(_thumucthietlap()), "todoi.json")
 

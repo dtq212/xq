@@ -237,6 +237,7 @@ class CuaSo:
                     "_muctieuboquas": self.tactu.get_danhsachmuctieuboqua(),
                     "_khoangcachtoidatheosau": self.tactu._khoangcachtoidatheosau,
                     "_bankinhdiemdanh": self.tactu._bankinhdiemdanh,
+                    "_phamchatnhats": sorted(self.tactu._phamchatnhats),
                     "_khoangcachsudungkynangtamxa": self.tactu._khoangcachsudungkynangtamxa,
                     "_phantramnoiluckhaithientichdia": self.tactu._phantramnoiluckhaithientichdia,
 
@@ -252,6 +253,7 @@ class CuaSo:
 
                     "_is_tudongsudungkynangbaothu": self.tactu._is_tudongsudungkynangbaothu,
                     "_is_tranhvungcam": self.tactu._is_tranhvungcam,
+                    "_is_dilotrinhkhacbando": self.tactu._is_dilotrinhkhacbando,
                     "_is_giukhoangcachketancong": self.tactu._is_giukhoangcachketancong,
                     "_khoangcachgiuketancong": self.tactu._khoangcachgiuketancong,
                     "_is_giukhoangcachchimuctieupk": self.tactu._is_giukhoangcachchimuctieupk,
@@ -285,6 +287,11 @@ class CuaSo:
                     "_langlysonchothanhvien": self.tactu.get_is_langlysonchothanhvien(),
                     "_langlysontattodoi": self.tactu.get_dsidtattodoilanglyson(),
                     "_langlysongiunhom": self.tactu.get_dsidgiunhomlanglyson(),
+                    # Sư Gia (tactu_sugia_xq): trạng thái cho giao diện; nhiệm vụ của mình ("" / "dang" / "xong") cho trưởng nhóm cùng máy chờ
+                    "_trangthaisugia": self.tactu.get_trangthaisugia(),
+                    "_is_dangsugia": self.tactu.get_is_dangsugia(),
+                    "_sugianhiemvu": self.tactu.get_nhiemvusugiashare(),
+                    "_sugiachothanhvien": self.tactu.get_is_sugiachothanhvien(),
                     "_thongkephien": self.thongke.get_tomtatphien(),
                     # Ngân lượng mang theo hiện tại (báo cáo Telegram)
                     "nganluong": self.moitruong.get_nganluong(),
@@ -365,6 +372,11 @@ class CuaSo:
                     self.tactu.batdau_langlyson("thanhkieu")
                 elif cmd == "huylanglyson":
                     self.tactu.huy_langlyson()
+                elif cmd == "sugia":
+                    # Nhiệm vụ Sư Gia (tactu_sugia_xq) bật / tắt từ giao diện
+                    self.tactu.batdau_sugia()
+                elif cmd == "huysugia":
+                    self.tactu.huy_sugia()
                 elif isinstance(cmd, str) and cmd.startswith("set_sumon_npcgiao:"):
                     self.tactu.thietlap_npcgiaosumon(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("tamngungtuxa:"):
@@ -393,6 +405,11 @@ class CuaSo:
                 elif isinstance(cmd, str) and cmd.startswith("set_phantramnoiluckhaithientichdia:"):
                     try:
                         self.tactu.thietlap_phantramnoiluckhaithientichdia(float(cmd.split(":")[1]))
+                    except Exception:
+                        pass
+                elif isinstance(cmd, str) and cmd.startswith("set_phamchatnhat:"):
+                    try:
+                        self.tactu.thietlap_phamchatnhat([x for x in cmd.split(":", 1)[1].split(",") if x])
                     except Exception:
                         pass
                 elif isinstance(cmd, str) and cmd.startswith("set_bankinhdiemdanh:"):
@@ -435,6 +452,8 @@ class CuaSo:
                         print(f"Lỗi khi xoá mục tiêu bỏ qua: {e}")
                 elif cmd == "battat_tranhvungcam":
                     self.tactu.battat_tranhvungcam()
+                elif cmd == "battat_dilotrinhkhacbando":
+                    self.tactu.battat_dilotrinhkhacbando()
                 elif cmd == "battat_giukhoangcachketancong":
                     self.tactu.battat_giukhoangcachketancong()
                 elif cmd == "battat_giukhoangcachchimuctieupk":

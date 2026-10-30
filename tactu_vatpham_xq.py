@@ -374,7 +374,7 @@ class TacTuVatPham:
                                   TIENTE, "Tơ Nhện", "Kịch Độc Châm", "Đuôi Bọ Cạp", "Ly Hồn", "Ly Phách", "Ma Tinh thạch", "Trái Táo", "Trái lê", "Phá Bố Y", "Toái Lăng", "Tơ Tằm", "Da Rắn", "Ống Tên", "Bao Kiếm", "Cán Đao", "Toái Sa", "Hồng Sắc Tiểu Thạch", "Mạng Nhện", "Tử Giả Di Vật", "Phi Hành Phiến", "Núm Vú", "Hành Quân Tán"
                                   )
 
-        def kiemtradieukiennhat(tenvatphamkiemtra):
+        def kiemtradieukiennhat(tenvatphamkiemtra, diachikiemtra):
             if tenvatphamkiemtra in VATPHAMKHONGNHATs:
                 return False
             if tenvatphamkiemtra in VATPHAMUUTIENNHATs:
@@ -390,6 +390,9 @@ class TacTuVatPham:
                 return True
             if self._tenvatphamnhats and tenvatphamkiemtra in self._tenvatphamnhats:
                 return True
+            # Món có màu (xanh lam, vàng...) theo cài đặt Phẩm chất
+            if self._phamchatnhats and self.moitruong.get_phamchatvatpham(diachikiemtra) in self._phamchatnhats:
+                return True
             return False
 
         is_vatphamdangnhathople = True
@@ -401,7 +404,7 @@ class TacTuVatPham:
                 is_vatphamdangnhathople = False
             elif self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat) >= KHOANGCACHNHATDO:
                 is_vatphamdangnhathople = False
-            elif not kiemtradieukiennhat(tenvatphamhientai):
+            elif not kiemtradieukiennhat(tenvatphamhientai, self._diachicosovatphamdangnhat):
                 is_vatphamdangnhathople = False
             elif self._kiemtra_divaovungcam(*self.moitruong.get_toado(self._diachicosovatphamdangnhat)):
                 is_vatphamdangnhathople = False
@@ -419,7 +422,7 @@ class TacTuVatPham:
             if diachiduphong:
                 if self.moitruong.get_is_vatphamtontai(diachiduphong):
                     tenvatphamduphong = self.moitruong.get_tendoituong(diachiduphong)
-                    if self.moitruong.get_khoangcach(diachiduphong) < KHOANGCACHNHATDO and kiemtradieukiennhat(tenvatphamduphong) and not self._kiemtra_divaovungcam(*self.moitruong.get_toado(diachiduphong)):
+                    if self.moitruong.get_khoangcach(diachiduphong) < KHOANGCACHNHATDO and kiemtradieukiennhat(tenvatphamduphong, diachiduphong) and not self._kiemtra_divaovungcam(*self.moitruong.get_toado(diachiduphong)):
                         self._diachicosovatphamdangnhat = diachiduphong
                         self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
                 self._diachicosovatphamnhatduphong = False
@@ -454,7 +457,7 @@ class TacTuVatPham:
                     is_covatphamvungcamgan = True
                 continue
 
-            if kiemtradieukiennhat(tenvatpham) and khoangcach < KHOANGCACHNHATDO:
+            if kiemtradieukiennhat(tenvatpham, diachivatpham) and khoangcach < KHOANGCACHNHATDO:
                 danhsachvatpham.append((tenvatpham not in VATPHAMUUTIENNHATs, khoangcach, diachivatpham))
 
         if danhsachvatpham:

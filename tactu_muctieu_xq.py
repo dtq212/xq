@@ -354,9 +354,15 @@ class TacTuMucTieu:
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             return
 
+        # Sư Gia: trưởng nhóm thấy tội phạm mà chưa đủ thành viên (mình hoặc trưởng nhóm cùng máy đang chờ): không đánh
+        if self.get_is_camdanhsugia():
+            self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
+            return
+
         # Đang Đi tới bản đồ người dùng chọn / đi giao đồ / cất kho / đi làm sư môn: không chọn quái dọc đường (trước đây gặp quái là đứng
         # lại đánh), tới nơi mới đánh
-        if self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangcatkho() or self.get_is_sumondichuyen() or self.get_is_langlysondichuyen():
+        if self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangcatkho() or self.get_is_sumondichuyen() or self.get_is_langlysondichuyen() \
+                or self.get_is_sugiadichuyen():
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             return
 

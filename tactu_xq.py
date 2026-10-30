@@ -18,12 +18,13 @@ from tactu_giaodo_xq import TacTuGiaoDo
 from tactu_catkho_xq import TacTuCatKho
 from tactu_sumon_xq import TacTuSuMon
 from tactu_langlyson_xq import TacTuLangLySon
+from tactu_sugia_xq import TacTuSuGia
 from nhiemvu_xq import SoVitri
 
 
 # Các nhóm việc nằm ở các file tactu_*_xq.py (mixin), TacTu giữ trạng thái (__init__), lưu / nạp thiết lập và các lệnh bật / tắt
 class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu, TacTuHoatDong, TacTuGiaoDo, TacTuCatKho, TacTuSuMon,
-            TacTuLangLySon):
+            TacTuLangLySon, TacTuSuGia):
     def __init__(self, moitruong: MoiTruong):
         self._thoidiemhettangbaodogannhat = 0.
         self._thoidiemmuaautogannhat = 0.
@@ -146,6 +147,14 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._thoidiemroinhomlanglyson = 0.
         # Lần đọc gần nhất (lúc, kết quả) "mình là thành viên vòng Lăng Ly Sơn đang đi" từ shared_data
         self._bonhogiunhomlanglyson = (0., False)
+        # Nhiệm vụ Sư Gia (tactu_sugia_xq): việc đang làm (None = không), kết quả lần gần nhất cho giao diện; thành viên: việc trả nhiệm vụ
+        # đang dở, lần chọn "Nhận" theo trưởng nhóm gần nhất, (lúc, trạng thái) nhiệm vụ của mình báo qua shared_data
+        self._sugia = None
+        self._ketquasugia = ""
+        self._sugiathanhvien = None
+        self._lucnhanmoisugia = 0.
+        self._lucxinmotasugia = 0.
+        self._bonhonhiemvusugia = (0., "")
         # Mở cửa hàng để đọc hàng (tactu_sumon_xq.batdau_mocuahang): việc đang làm (None = không), kết quả theo (bản đồ, tên NPC);
         # Mua bù: lần mở cửa hàng gần nhất theo NPC, các lệch ô / giá giữa luật và cửa hàng đã báo
         self._mocuahang = None
@@ -170,6 +179,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._tenmuctieutancongs = set()
         self._tenmuctieukhongtancongs = set(TENMUCTIEUKHONGTANCONGs)
         self._tenvatphamnhats = set()
+        # Phẩm chất (màu tên, PHAMCHATVATPHAM_MAP) vật phẩm dưới đất được nhặt dù tên không nằm trong danh sách nhặt
+        self._phamchatnhats = set()
 
         self._thoidiemtamngungkhaithientichdia = time.time()
         self._thoidiemkiemtrahieuunggannhat = time.time()
@@ -225,6 +236,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
         self._diemdanhxungquanhs = []
         self._iddiemdanhxungquanhhientai = -1
+        # Điểm đánh đặt / nạp trong phó bản mượn ID bản đồ ngoài (Phong Yêu Kính): ra khỏi phó bản thì tự bỏ hết, kẻo chạy lên bản đồ thật
+        self._is_lotrinhphobanmuonbando = False
+        # Tắt thì lộ trình chỉ đi các điểm cùng bản đồ đang đứng, không chạy sang bản đồ khác
+        self._is_dilotrinhkhacbando = True
         # Lộ trình mẫu đang dùng dạng "<id bản đồ>|<tên mẫu>|<1 nếu đi ngược chiều>", rỗng nếu tự đặt điểm
         self._lotrinhmaudangdung = ""
         # Số điểm đã đi qua của lộ trình dò (mẫu TENMAUDO) kể từ lúc nạp / lần xét trước: đủ 1 vòng thì xét chuyển sang lộ trình thật
@@ -529,6 +544,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_is_chantangcapdo": self._is_chantangcapdo,
             "_is_tudongdichuyendiemdanhxungquanh": self._is_tudongdichuyendiemdanhxungquanh,
             "_diemdanhxungquanhs": self._diemdanhxungquanhs,
+            "_is_lotrinhphobanmuonbando": self._is_lotrinhphobanmuonbando,
+            "_is_dilotrinhkhacbando": self._is_dilotrinhkhacbando,
             "_lotrinhmaudangdung": self._lotrinhmaudangdung,
             "_is_nguocchieulotrinh": self._is_nguocchieulotrinh,
             "_is_tudonggomquai": self._is_tudonggomquai,
@@ -542,6 +559,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_is_uutienbaothukynangtrieuhoi": self._is_uutienbaothukynangtrieuhoi,
             "_tenmuctieukhongtancongs": self._tenmuctieukhongtancongs,
             "_tenvatphamnhats": self._tenvatphamnhats,
+            "_phamchatnhats": self._phamchatnhats,
             "_khoangcachtoidatheosau": self._khoangcachtoidatheosau,
             "_bankinhdiemdanh": self._bankinhdiemdanh,
             "_khoangcachsudungkynangtamxa": self._khoangcachsudungkynangtamxa,
@@ -561,9 +579,12 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_sumon_npcgiao": self._sumon_npcgiao,
             # Sư môn đang bật: dis / mở lại bot vào lại thì tự bật tiếp (bấm Dừng, xong 20 lần, lỗi dừng thì là False)
             "_is_dangsumon": bool(self._sumon),
+            # Sư Gia đang bật: như sư môn, dis / mở lại bot thì tự bật tiếp (bấm Dừng, đủ số lần trong ngày, lỗi dừng thì là False)
+            "_is_dangsugia": bool(self._sugia),
         }
-        # Sư môn đang tạm đổi ô nào (Theo sau, Tự động sử dụng kỹ năng...) thì lưu giá trị gốc của người dùng, dis vào lại không mất
-        thietlap.update({k: v for k, v in ((self._sumon or {}).get("tuychoncu") or {}).items() if k in thietlap})
+        # Sư môn / Sư Gia đang tạm đổi ô nào (Theo sau, Tự động sử dụng kỹ năng...) thì lưu giá trị gốc của người dùng, dis vào lại không mất
+        for s in (self._sumon, self._sugia):
+            thietlap.update({k: v for k, v in ((s or {}).get("tuychoncu") or {}).items() if k in thietlap})
         util_luuthietlap(str(idnguoichoi), thietlap)
         # luuthietlap chạy mỗi giây: vị trí quái thì THOIGIANLUUVITRIQUAI giây mới ghi file một lần (thoát thì luuvitriquai(True))
         self.luuvitriquai()
@@ -611,6 +632,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if "_is_chantangcapdo" in thietlap: self._is_chantangcapdo = thietlap["_is_chantangcapdo"]
             if "_is_tudongdichuyendiemdanhxungquanh" in thietlap: self._is_tudongdichuyendiemdanhxungquanh = thietlap["_is_tudongdichuyendiemdanhxungquanh"]
             if "_diemdanhxungquanhs" in thietlap: self._diemdanhxungquanhs = thietlap["_diemdanhxungquanhs"]
+            if "_is_lotrinhphobanmuonbando" in thietlap: self._is_lotrinhphobanmuonbando = thietlap["_is_lotrinhphobanmuonbando"]
+            if "_is_dilotrinhkhacbando" in thietlap: self._is_dilotrinhkhacbando = thietlap["_is_dilotrinhkhacbando"]
             if "_lotrinhmaudangdung" in thietlap: self._lotrinhmaudangdung = thietlap["_lotrinhmaudangdung"]
             if "_is_nguocchieulotrinh" in thietlap: self._is_nguocchieulotrinh = thietlap["_is_nguocchieulotrinh"]
             if "_is_tudonggomquai" in thietlap: self._is_tudonggomquai = thietlap["_is_tudonggomquai"]
@@ -624,6 +647,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if "_is_uutienbaothukynangtrieuhoi" in thietlap: self._is_uutienbaothukynangtrieuhoi = thietlap["_is_uutienbaothukynangtrieuhoi"]
             if "_tenmuctieukhongtancongs" in thietlap: self._tenmuctieukhongtancongs = thietlap["_tenmuctieukhongtancongs"]
             if "_tenvatphamnhats" in thietlap: self._tenvatphamnhats = thietlap["_tenvatphamnhats"]
+            if "_phamchatnhats" in thietlap: self.thietlap_phamchatnhat(thietlap["_phamchatnhats"])
             if "_khoangcachtoidatheosau" in thietlap: self._khoangcachtoidatheosau = float(thietlap["_khoangcachtoidatheosau"])
             if "_bankinhdiemdanh" in thietlap: self._bankinhdiemdanh = float(thietlap["_bankinhdiemdanh"])
             if "_khoangcachsudungkynangtamxa" in thietlap: self.thietlap_khoangcachsudungkynangtamxa(thietlap["_khoangcachsudungkynangtamxa"])
@@ -643,6 +667,12 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if "_sumon_npcgiao" in thietlap: self._sumon_npcgiao = thietlap["_sumon_npcgiao"] or ""
             if thietlap.get("_is_dangsumon") and not self._sumon:
                 self.batdau_sumon()
+            if thietlap.get("_is_dangsugia") and not self._sugia:
+                self.batdau_sugia()
+
+    def battat_dilotrinhkhacbando(self):
+        self._is_dilotrinhkhacbando = not self._is_dilotrinhkhacbando
+        phatam("Bật đi lộ trình khác bản đồ" if self._is_dilotrinhkhacbando else "Chỉ đi điểm đánh cùng bản đồ")
 
     def battat_tranhvungcam(self):
         self._is_tranhvungcam = not self._is_tranhvungcam
@@ -729,6 +759,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
 
     def thietlap_bankinhdiemdanh(self, bankinh):
         self._bankinhdiemdanh = max(1., float(bankinh))
+
+    def thietlap_phamchatnhat(self, phamchats):
+        # Thay hẳn bằng set mới (luồng khác đang duyệt)
+        self._phamchatnhats = {int(x) for x in phamchats if int(x) in PHAMCHATVATPHAM_MAP}
 
     def thietlap_khoangcachsudungkynangtamxa(self, khoangcach):
         # Các chỗ trừ hao (-3) cần tầm đủ lớn

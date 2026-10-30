@@ -126,8 +126,11 @@
       "mota": []
     },
     {
+      "bat": true,
+      "is_bao": false,
       "hanhdong": "giu",
       "ghichu": "Tên có chữ không bán (cũ)",
+      "ten": [],
       "tenchua": [
         "Bí kíp",
         "Nhập môn",
@@ -135,12 +138,10 @@
         "Ngọc Thạch",
         "cấp",
         "Tàng Đồ",
+        "Túi Hoàng Kim",
         "Phục Dược",
         "Trị Dược"
       ],
-      "bat": true,
-      "is_bao": false,
-      "ten": [],
       "loai": [],
       "mota": []
     },
