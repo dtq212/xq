@@ -137,8 +137,9 @@ class TacTuVatPham:
                     if co(TIEUPHAPLUCTHACH):
                         self.action_sudungvatphamhanhtrang(TIEUPHAPLUCTHACH)
 
-                # Máu dưới 25% thì dùng Tiểu Huyết Thạch ở mọi bản đồ, mọi môn phái, không cần bật PK hay tự động khai khoáng
-                if ((is_bandopk and (is_dangbatpk or self._is_tudongkhaikhoang) and phantramsinhlucconlai < 75.) or phantramsinhlucconlai < 25.) \
+                # Máu dưới 25% (Mao Sơn 50%) thì dùng Tiểu Huyết Thạch ở mọi bản đồ, mọi môn phái, không cần bật PK hay tự động khai khoáng
+                nguongmauhuyetthach = 50. if tenmonphai == "maoson" else 25.
+                if ((is_bandopk and (is_dangbatpk or self._is_tudongkhaikhoang) and phantramsinhlucconlai < 75.) or phantramsinhlucconlai < nguongmauhuyetthach) \
                         and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_HUYETTHACH,), True, is_hieuungcoloi = 1):
                     # Khai khoáng ở Hư Lăng Động: Đại Huyết Thạch trước, hết mới Tiểu Huyết Thạch
                     huyetthachs = [DAIHUYETTHACH, TIEUHUYETTHACH] if self._is_tudongkhaikhoang and idbandohientai == BANDO_HULANGDONG else [TIEUHUYETTHACH]
@@ -554,11 +555,24 @@ class TacTuVatPham:
             ogia = self._layogiamuabu(muc, diachinpc)
             if not ogia:
                 continue
-            dadung = self._muavatpham(idnpc, ogia[0], muc["muatoi"] - soluong, ogia[1], muc["vatpham"], nganquy)
-            if dadung:
+            # Mỗi lệnh buy không quá 1 chồng (game không mua quá số xếp chồng của món trong 1 lệnh): thiếu nhiều thì chia nhiều lệnh,
+            # mỗi lượt tối đa 10 lệnh (xếp chồng đặt nhỏ thì khỏi gửi cả trăm lệnh 1 lúc), còn thiếu thì lượt sau (10s) mua tiếp
+            conthieu, damua = muc["muatoi"] - soluong, 0
+            for _ in range(10):
+                if conthieu <= 0:
+                    break
+                lan = min(conthieu, muc["xepchong"])
+                dadung = self._muavatpham(idnpc, ogia[0], lan, ogia[1], muc["vatpham"], nganquy)
+                if not dadung:
+                    break
+                nganquy -= dadung
+                damua += dadung // ogia[1]
+                conthieu -= lan
+                if dadung < lan * ogia[1]:
+                    break
+            if damua:
                 self._thoidiemmuabu_map[muc["vatpham"]] = time.time()
-                print(f"[MUA BÙ] {self.moitruong.get_tendoituong()}: mua {muc['muatoi'] - soluong} {muc['vatpham']} (còn {soluong})")
-            nganquy -= dadung
+                print(f"[MUA BÙ] {self.moitruong.get_tendoituong()}: mua {damua} {muc['vatpham']} (còn {soluong}, chồng {muc['xepchong']}/ô)")
 
     def _layogiamuabu(self, muc, diachinpc):
         # (ô, giá) để mua món của luật mua bù ở NPC này, None khi chưa biết (đã cho mở cửa hàng đọc nếu được)

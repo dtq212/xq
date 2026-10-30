@@ -19,12 +19,13 @@ from tactu_catkho_xq import TacTuCatKho
 from tactu_sumon_xq import TacTuSuMon
 from tactu_langlyson_xq import TacTuLangLySon
 from tactu_sugia_xq import TacTuSuGia
+from tactu_tapkich_xq import TacTuTapKich
 from nhiemvu_xq import SoVitri
 
 
 # Các nhóm việc nằm ở các file tactu_*_xq.py (mixin), TacTu giữ trạng thái (__init__), lưu / nạp thiết lập và các lệnh bật / tắt
 class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu, TacTuHoatDong, TacTuGiaoDo, TacTuCatKho, TacTuSuMon,
-            TacTuLangLySon, TacTuSuGia):
+            TacTuLangLySon, TacTuSuGia, TacTuTapKich):
     def __init__(self, moitruong: MoiTruong):
         self._thoidiemhettangbaodogannhat = 0.
         self._thoidiemmuaautogannhat = 0.
@@ -96,6 +97,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._is_tudonggomquai = False
         self._is_danggomquai = False
         self._danhsachidquaidagom = set()
+        # Tập Kích Môn Phái: quái đã gom ít nhất 1 lần trong lượt gom này (rớt lại vẫn giữ, không kéo lại)
+        self._danhsachidquaidagommotlan = set()
         self._yeucaugomquai = None
 
         self._is_uutienmuctieupk = True
@@ -155,6 +158,13 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._lucnhanmoisugia = 0.
         self._lucxinmotasugia = 0.
         self._bonhonhiemvusugia = (0., "")
+        # Tập Kích Môn Phái (tactu_tapkich_xq): việc đang làm (None = không), kết quả lần gần nhất cho giao diện, môn phái chọn (lưu theo
+        # nhân vật, rỗng = môn phái của nhân vật); lần chọn menu vào / bấm hộp Xác Nhận gần nhất, lần chọn "Dùng 5 Ngân Bảo" gần nhất
+        self._tapkich = None
+        self._ketquatapkich = ""
+        self._tapkich_phai = ""
+        self._lucchonmenutapkich = 0.
+        self._lucchonvaotapkich = 0.
         # Mở cửa hàng để đọc hàng (tactu_sumon_xq.batdau_mocuahang): việc đang làm (None = không), kết quả theo (bản đồ, tên NPC);
         # Mua bù: lần mở cửa hàng gần nhất theo NPC, các lệch ô / giá giữa luật và cửa hàng đã báo
         self._mocuahang = None
@@ -587,13 +597,14 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_bodotrieuhoi": self._bodotrieuhoi,
             "_baothutrieuhoimaoson": self._baothutrieuhoimaoson,
             "_sumon_npcgiao": self._sumon_npcgiao,
+            "_tapkich_phai": self._tapkich_phai,
             # Sư môn đang bật: dis / mở lại bot vào lại thì tự bật tiếp (bấm Dừng, xong 20 lần, lỗi dừng thì là False)
             "_is_dangsumon": bool(self._sumon),
             # Sư Gia đang bật: như sư môn, dis / mở lại bot thì tự bật tiếp (bấm Dừng, đủ số lần trong ngày, lỗi dừng thì là False)
             "_is_dangsugia": bool(self._sugia),
         }
         # Sư môn / Sư Gia đang tạm đổi ô nào (Theo sau, Tự động sử dụng kỹ năng...) thì lưu giá trị gốc của người dùng, dis vào lại không mất
-        for s in (self._sumon, self._sugia):
+        for s in (self._sumon, self._sugia, self._tapkich):
             thietlap.update({k: v for k, v in ((s or {}).get("tuychoncu") or {}).items() if k in thietlap})
         util_luuthietlap(str(idnguoichoi), thietlap)
         # luuthietlap chạy mỗi giây: vị trí quái thì THOIGIANLUUVITRIQUAI giây mới ghi file một lần (thoát thì luuvitriquai(True))
@@ -675,6 +686,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if "_bodotrieuhoi" in thietlap: self._bodotrieuhoi = list(thietlap["_bodotrieuhoi"])
             if thietlap.get("_baothutrieuhoimaoson") in BAOTHUTRIEUHOIMAOSONs: self._baothutrieuhoimaoson = thietlap["_baothutrieuhoimaoson"]
             if "_sumon_npcgiao" in thietlap: self._sumon_npcgiao = thietlap["_sumon_npcgiao"] or ""
+            if "_tapkich_phai" in thietlap: self._tapkich_phai = thietlap["_tapkich_phai"] or ""
             if thietlap.get("_is_dangsumon") and not self._sumon:
                 self.batdau_sumon()
             if thietlap.get("_is_dangsugia") and not self._sugia:

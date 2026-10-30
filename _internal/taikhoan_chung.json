@@ -1,0 +1,152 @@
+{
+    "duongdangames": {
+        "Admin-PC": "E:\\Games\\ChienQuoc2D_Aegis\\xq.exe",
+        "LAPTOP-HAOPCFT6": "D:\\Games\\ChienQuoc2D_Aegis\\xq.exe",
+        "Ngoc-PC": "E:\\Games\\ChienQuoc2D_Aegis\\xq.exe"
+    },
+    "taikhoans": [
+        {
+            "tennhanvat": "ThiênĐạo",
+            "idnguoichoi": 273,
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "maydangnhap": "",
+            "vitricuaso": 1,
+            "user": "thiendao",
+            "pass": "hateva"
+        },
+        {
+            "tennhanvat": "Thọ",
+            "idnguoichoi": 29,
+            "user": "tholuumanh",
+            "pass": "hateva",
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "vitricuaso": 1,
+            "maydangnhap": "Admin-PC"
+        },
+        {
+            "tennhanvat": "Ngọc",
+            "idnguoichoi": 30,
+            "user": "ngoclasat",
+            "pass": "hateva",
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "vitricuaso": 2,
+            "maydangnhap": "Admin-PC"
+        },
+        {
+            "tennhanvat": "ThichVaCham",
+            "idnguoichoi": 31,
+            "user": "thichvacham",
+            "pass": "hateva",
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "vitricuaso": 3,
+            "maydangnhap": "Admin-PC"
+        },
+        {
+            "tennhanvat": "KNgaiVaCham",
+            "idnguoichoi": 32,
+            "user": "kngaivacham",
+            "pass": "hateva",
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "vitricuaso": 4,
+            "maydangnhap": "Admin-PC"
+        },
+        {
+            "tennhanvat": "Mộc Lan",
+            "idnguoichoi": 132,
+            "user": "moclan",
+            "pass": "hateva",
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "vitricuaso": 1,
+            "maydangnhap": "LAPTOP-HAOPCFT6"
+        },
+        {
+            "tennhanvat": "tieuhac",
+            "idnguoichoi": 133,
+            "user": "tieuhac",
+            "pass": "hateva",
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "vitricuaso": 2,
+            "maydangnhap": "LAPTOP-HAOPCFT6"
+        },
+        {
+            "tennhanvat": "Suong Chieu",
+            "idnguoichoi": 134,
+            "user": "suongchieu",
+            "pass": "hateva",
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "vitricuaso": 3,
+            "maydangnhap": "LAPTOP-HAOPCFT6"
+        },
+        {
+            "tennhanvat": "BốBánhBao",
+            "idnguoichoi": 135,
+            "user": "bobanhbao",
+            "pass": "hateva",
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "vitricuaso": 4,
+            "maydangnhap": "LAPTOP-HAOPCFT6"
+        },
+        {
+            "tennhanvat": "Hắc Phong",
+            "idnguoichoi": null,
+            "user": "hacphong",
+            "pass": "hateva",
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "vitricuaso": 1,
+            "maydangnhap": "Ngoc-PC"
+        },
+        {
+            "tennhanvat": "Lão Ngư",
+            "idnguoichoi": null,
+            "user": "laongu",
+            "pass": "hateva",
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "vitricuaso": 2,
+            "maydangnhap": "Ngoc-PC"
+        },
+        {
+            "tennhanvat": "TrangKhuyet",
+            "idnguoichoi": null,
+            "user": "trangkhuyet",
+            "pass": "hateva",
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "vitricuaso": 3,
+            "maydangnhap": "Ngoc-PC"
+        },
+        {
+            "tennhanvat": "Rùa Thần",
+            "idnguoichoi": null,
+            "user": "ruathan",
+            "pass": "hateva",
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "vitricuaso": 4,
+            "maydangnhap": "Ngoc-PC"
+        }
+    ]
+}

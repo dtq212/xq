@@ -141,6 +141,9 @@ class TacTuSuMon:
         # Lăng Ly Sơn ở chỗ boss: đánh mọi quái (boss và quái quanh nó)
         if self.get_is_langlysondanhquai():
             return ()
+        # Tập Kích Môn Phái trong phó bản: đánh mọi quái (500 con + boss)
+        if self.get_is_tapkichdanhquai():
+            return ()
         # Sư Gia: chỉ đánh tội phạm của nhiệm vụ
         if self.get_is_sugiadanhquai() and self._sugia["tenquai"]:
             return self._sugia["tenquai"]

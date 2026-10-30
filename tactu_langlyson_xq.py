@@ -212,9 +212,10 @@ class TacTuLangLySon:
             baosuco(self.moitruong, "langlyson", noidung, khoa = f"{s['batdau']}|{khoa}", giancach = 0.)
 
     def _batdanhquailanglyson(self, s):
-        # Ô cần cho đánh quái (cùng bộ với sư môn) người dùng quên bật thì đổi giúp, dừng thì trả lại
+        # Ô cần cho đánh quái (cùng bộ với sư môn) người dùng quên bật thì đổi giúp, dừng thì trả lại. "Chỉ đánh người chơi" của người
+        # dùng giữ nguyên trong phó bản
         for thuoctinh, giatri, ten in self._TUYCHONDANHQUAI:
-            if getattr(self, thuoctinh) != giatri:
+            if thuoctinh != "_is_chidanhnguoichoi" and getattr(self, thuoctinh) != giatri:
                 s.setdefault("tuychoncu", {}).setdefault(thuoctinh, getattr(self, thuoctinh))
                 setattr(self, thuoctinh, giatri)
                 self._logpb(s, f"{'Bật' if giatri else 'Tắt'} \"{ten}\" để đánh boss (dừng thì trả lại)")

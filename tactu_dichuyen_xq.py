@@ -6,7 +6,7 @@ import time
 
 from hangso_xq import *
 from moitruong_xq import MoiTruong, DOUUTIEN_THAP, DOUUTIEN_KHANCAP, DOUUTIEN_CAO, SOLUONGDOITUONGXUNGQUANHTOIDA, tinh_is_huongmatvediem
-from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam
+from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam, taivatcanhoc as util_taivatcanhoc
 from tienich_xq import tailotrinhmau as util_tailotrinhmau, luulotrinhmau as util_luulotrinhmau
 from dexuatlotrinh_xq import taiviquai as util_taiviquai, luuviquai as util_luuviquai, taiviquaibando, ghinhanvitriquai, dexuatlotrinh
 from bando_xq import timduongbando, laynpcloidi
@@ -315,7 +315,7 @@ class TacTuDiChuyen:
             yeucauduocchon = self._yeucautheosau
             lydochon = "THEO SAU SANG BẢN ĐỒ KHÁC"
         elif (self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangcatkho() or self.get_is_sumondichuyen()
-              or self.get_is_langlysondichuyen() or self.get_is_sugiadichuyen()) and self._yeucautudo:
+              or self.get_is_langlysondichuyen() or self.get_is_sugiadichuyen() or self.get_is_tapkichdichuyen()) and self._yeucautudo:
             # Đang Đi tới bản đồ / đi giao đồ / cất kho / đi làm sư môn: đi tiếp trước tấn công / gom quái / nhặt đồ
             yeucauduocchon = self._yeucautudo
             lydochon = "ĐI TỚI BẢN ĐỒ"
@@ -467,8 +467,9 @@ class TacTuDiChuyen:
                     if len(toadodich) < 3 or toadodich[2] == self.moitruong.get_idbandohientai():
                         if self._thusudungkhaithientichdia(idtuthenhanvat, toadodich[0], toadodich[1]):
                             return
-                        # Rào chéo chạm góc (Chu Quốc): bot tự tìm đường không lách chéo qua khe góc
-                        if yeucauduocchon.get("is_khongcatgoc"):
+                        # Rào chéo chạm góc (Chu Quốc), bản đồ có chỗ kẹt khai trong KHUVUCCAM_MAP (Tập Kích Môn Phái / Kênh Trịnh Quốc 1): bot
+                        # tự tìm đường không lách chéo qua khe góc, né khu vực cấm và ô học được là máy chủ chặn
+                        if yeucauduocchon.get("is_khongcatgoc") or self._is_bandocochoket():
                             self.moitruong.action_dikhongcatgoc(toadodich[0], toadodich[1], yeucauduocchon.get("khoangcachtoida", 0.))
                             return
                         # Sư môn: đi theo ô (gần thẳng), không để tự động tìm đường của game chạy vòng khi vào thành / môn phái
@@ -499,7 +500,11 @@ class TacTuDiChuyen:
 
             if kieudichuyen == KIEUDICHUYEN_GIUKHOANGCACHTOIDA:
                 khoangcachtoida = yeucauduocchon.get("khoangcachtoida", 0.0)
-                if toadodich and yeucauduocchon.get("yeucau") in (YEUCAUDICHUYENTANCONG, YEUCAUDICHUYENTIMMUCTIEUCHUNG):
+                if x_dich is not None and self._is_bandocochoket():
+                    # Bản đồ có chỗ máy chủ giật lại (Tập Kích Môn Phái (103, 54)...): gom quái / tấn công / nhặt đồ / theo sau cũng đi đường bot
+                    # tự tìm (né khu vực cấm, ô học được là chặn), không click thẳng / tìm đường của client chui vào đó
+                    self.moitruong.action_dikhongcatgoc(round(x_dich), round(y_dich), khoangcachtoida)
+                elif toadodich and yeucauduocchon.get("yeucau") in (YEUCAUDICHUYENTANCONG, YEUCAUDICHUYENTIMMUCTIEUCHUNG):
                     # Tấn công bị kẹp quanh trưởng nhóm (đích đã cắt thành tọa độ) vẫn là tiếp cận: dùng tìm đường như tiếp cận đối tượng
                     self.moitruong.action_dichuyengiukhoangcachtoidadiembangtimduong(toadodich[0], toadodich[1], khoangcachtoida)
                 elif toadodich and yeucauduocchon.get("is_khongcatgoc"):
@@ -536,6 +541,12 @@ class TacTuDiChuyen:
                     diachimuctieu,
                     khoangcachphudau = 0
                 )
+
+    def _is_bandocochoket(self):
+        # Bản đồ hiện tại có chỗ đi vào là bị máy chủ giật lại: khu vực cấm khai tay (KHUVUCCAM_MAP) hoặc ô bot đã học là chặn
+        # (moitruong.action_dikhongcatgoc). Ở đó mọi kiểu đi tới điểm đều dùng đường bot tự tìm
+        idbando = self.moitruong.get_idbandohientai()
+        return idbando in KHUVUCCAM_MAP or bool(util_taivatcanhoc(idbando))
 
     def action_tudongtheosau(self):
         self._yeucautheosau = None
@@ -607,7 +618,7 @@ class TacTuDiChuyen:
                 "yeucau": YEUCAUDICHUYENTHEOSAU,
                 "toadodich": (xvitri, yvitri),
                 "khoangcachtoida": 0.5,
-                "is_khongcatgoc": self.moitruong.get_idbandohientai() in BANDOKHONGPKs,
+                "is_khongcatgoc": self.moitruong.get_idbandohientai() in BANDOKHONGPKs or self._is_bandocochoket(),
             }
             break
 
@@ -1107,7 +1118,7 @@ class TacTuDiChuyen:
         # Đang chạy theo lộ trình điểm đánh: mục tiêu phải nằm trong bán kính _bankinhdiemdanh quanh ít nhất 1 điểm đánh của bản đồ hiện tại.
         # Không có điểm đánh nào trên bản đồ này (hoặc không bật lộ trình) thì không giới hạn.
         if not self._is_tudongdichuyendiemdanhxungquanh or not self._diemdanhxungquanhs or (self._sumon and self._sumon["chedo"] == "danhquai") \
-                or self.get_is_langlysondanhquai() or self.get_is_sugiadanhquai():
+                or self.get_is_langlysondanhquai() or self.get_is_sugiadanhquai() or self.get_is_tapkichdanhquai():
             return True
         idbandohientai = self.moitruong.get_idbandohientai()
         diemcungbandos = [d for d in self._diemdanhxungquanhs if len(d) >= 3 and d[2] == idbandohientai]
@@ -1129,6 +1140,9 @@ class TacTuDiChuyen:
         if self._thoidiemngatdichuyenroiphobans and time.time() >= self._thoidiemngatdichuyenroiphobans[0]:
             self._thoidiemngatdichuyenroiphobans.pop(0)
             self.moitruong.action_ngatdichuyen()
+
+        # Tập Kích Môn Phái: menu vào phó bản / hộp mua Lễ Bao hiện ở cả thành viên theo sau, chọn trước mọi việc khác
+        self._xulymenutapkich()
 
         # Đi tới bản đồ do người dùng chọn: thay hẳn lộ trình điểm đánh tới khi tới nơi / bấm dừng
         if self._idbandocandi:
@@ -1169,6 +1183,12 @@ class TacTuDiChuyen:
         if self.get_is_dangsugia():
             self._yeucautudo = self._xulysugia()
             return
+
+        # Tập Kích Môn Phái (tactu_tapkich_xq): tìm Võ Lâm Bại Hoại vào phó bản / dò khắp phó bản đánh quái, thay lộ trình điểm đánh
+        if self.get_is_dangtapkich():
+            self._yeucautudo = self._xulytapkich()
+            if self._tapkich and self._tapkich["chedo"] != "thanhvien":
+                return
 
         if not self._is_tudongdichuyendiemdanhxungquanh and not self.get_is_sumonfarm():
             self._yeucautudo = None

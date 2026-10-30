@@ -16,6 +16,8 @@
 #   "muabu": đứng gần NPC ở Tân Thủ Thôn mà còn ít hơn "duoi" món (đếm cả các chồng) thì mua cho đủ "muatoi". Mỗi mục: {"bat": true,
 #           "vatpham": tên (trong túi), "tencuahang": tên trong cửa hàng nếu khác ("" = như "vatpham"), "npc": tên / danh hiệu NPC bán,
 #           "duoi": N, "muatoi": M, (ô / giá bot tự tra theo tên trong cửa hàng; "o" / "dongia" của bản cũ bỏ đi)
+#           "xepchong": số món tối đa 1 ô chồng được (mặc định XEPCHONGMACDINH): mỗi lệnh buy mua không quá chừng này,
+#           thiếu nhiều hơn thì gửi nhiều lệnh (vd Bùa Giấy chồng 5000, mua cho đủ 10000 thì 2 lệnh 5000)
 #           "monphai": "" = mọi môn phái hoặc "maoson", "vanmongcoc"..., "chikhi": "" = luôn, "trieuhoibaothu" = chỉ khi bật triệu hồi
 #           bảo thú giang hồ}. Mua lần lượt từ trên xuống trong số ngân lượng đang có, chừa NGANLUONGGIULAI
 import copy
@@ -42,9 +44,10 @@ RUONGTUDONG = 0
 TENHANHDONG = {HANHDONG_GIU: "Giữ", HANHDONG_BAN: "Bán", HANHDONG_VUT: "Vứt"}
 DIEUKIENs = ("ten", "tenchua", "loai", "mota")
 TENDIEUKIEN = {"ten": "Tên đúng", "tenchua": "Tên chứa", "loai": "Loại chứa", "mota": "Mô tả chứa"}
-TRUONGMUABU = ("vatpham", "tencuahang", "npc", "duoi", "muatoi", "monphai", "chikhi")
-TENTRUONGMUABU = {"vatpham": "Vật phẩm", "tencuahang": "Tên ở cửa hàng (nếu khác)", "npc": "NPC bán", "duoi": "Mua khi dưới",
-                  "muatoi": "Mua cho đủ", "monphai": "Môn phái (trống = tất cả)", "chikhi": "Chỉ mua khi"}
+TRUONGMUABU = ("vatpham", "tencuahang", "npc", "xepchong", "duoi", "muatoi", "monphai", "chikhi")
+TENTRUONGMUABU = {"vatpham": "Vật phẩm", "tencuahang": "Tên ở cửa hàng (nếu khác)", "npc": "NPC bán", "xepchong": "Xếp chồng tối đa / ô",
+                  "duoi": "Mua khi dưới", "muatoi": "Mua cho đủ", "monphai": "Môn phái (trống = tất cả)", "chikhi": "Chỉ mua khi"}
+XEPCHONGMACDINH = 100
 CHIKHI_LUON = ""
 CHIKHI_TRIEUHOIBAOTHU = "trieuhoibaothu"
 TENCHIKHI = {CHIKHI_LUON: "Luôn", CHIKHI_TRIEUHOIBAOTHU: "Bật triệu hồi bảo thú giang hồ"}
@@ -133,6 +136,10 @@ def _chuanhoamuabu(muc):
             muc[truong] = max(0, int(muc.get(truong) or 0))
         except (TypeError, ValueError):
             muc[truong] = 0
+    try:
+        muc["xepchong"] = max(1, int(muc.get("xepchong") or XEPCHONGMACDINH))
+    except (TypeError, ValueError):
+        muc["xepchong"] = XEPCHONGMACDINH
     return muc
 
 

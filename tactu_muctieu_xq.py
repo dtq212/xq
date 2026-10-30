@@ -362,7 +362,7 @@ class TacTuMucTieu:
         # Đang Đi tới bản đồ người dùng chọn / đi giao đồ / cất kho / đi làm sư môn: không chọn quái dọc đường (trước đây gặp quái là đứng
         # lại đánh), tới nơi mới đánh
         if self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangcatkho() or self.get_is_sumondichuyen() or self.get_is_langlysondichuyen() \
-                or self.get_is_sugiadichuyen():
+                or self.get_is_sugiadichuyen() or self.get_is_tapkichdichuyen():
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             return
 
@@ -1211,7 +1211,8 @@ class TacTuMucTieu:
 
         idbandohientai = self.moitruong.get_idbandohientai()
 
-        if self._is_tudongvebanrac and self._diemdanhxungquanhs:
+        # Đi Tập Kích: phó bản không nằm trong lộ trình điểm đánh của nhân vật mà vẫn phải gom
+        if self._is_tudongvebanrac and self._diemdanhxungquanhs and not self.get_is_tapkichdanhquai():
             danhsachbandohople = [diem[2] for diem in self._diemdanhxungquanhs if len(diem) >= 3]
             if danhsachbandohople and idbandohientai not in danhsachbandohople:
                 self._is_danggomquai = False
@@ -1236,6 +1237,12 @@ class TacTuMucTieu:
 
         if len(self._danhsachidquaidagom) == 0:
             self._idquaidautien = 0
+            # Đánh xong đám (hoặc chưa gom gì) thì lượt gom sau đánh dấu lại từ đầu
+            if not self._is_danggomquai:
+                self._danhsachidquaidagommotlan.clear()
+
+        # Tập Kích Môn Phái: không theo số tối thiểu, gom tới khi mọi quái thấy được đều đã gom 1 lần (con rớt lại không kéo lại)
+        is_gomhetquaithay = self.moitruong.get_is_bandotapkichmonphai()
 
         diachimuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
         if diachimuctieudangchon:
@@ -1306,7 +1313,8 @@ class TacTuMucTieu:
         for k in idcanxoas:
             del self._idmuctieubiloi_map[k]
 
-        is_neobirotlai = (diachiquaidautien and khoangcachneohientai > 12.0)
+        # Tập Kích: neo rớt lại cũng không quay về đón, kéo tiếp cho đỡ chạy qua chạy lại (xong mới tụ về neo)
+        is_neobirotlai = (diachiquaidautien and khoangcachneohientai > 12.0 and not is_gomhetquaithay)
 
         # Chỉ khi bật farm & bán rác: quái gần nhân vật khác trong danh sách tổ đội tự động hơn mình thì nhường.
         # Không bật farm & bán rác thì không nhường gì cả.
@@ -1365,6 +1373,7 @@ class TacTuMucTieu:
 
             if khoangcach <= 4.5:
                 self._danhsachidquaidagom.add(iddoituongquai)
+                self._danhsachidquaidagommotlan.add(iddoituongquai)
                 if self._idquaidautien == 0:
                     self._idquaidautien = iddoituongquai
                     diachiquaidautien = diachidoituongxemxet
@@ -1372,12 +1381,16 @@ class TacTuMucTieu:
                 soluongquaigan += 1
                 continue
 
-            if not is_neobirotlai and khoangcach <= 15.0 and iddoituongquai not in self._danhsachidquaidagom:
+            if is_gomhetquaithay and iddoituongquai in self._danhsachidquaidagommotlan:
+                continue
+
+            # Tập Kích: mọi con thấy được (chưa gom lần nào) đều phải kéo, không giới hạn 15m / cách neo 18m
+            if not is_neobirotlai and (khoangcach <= 15.0 or (is_gomhetquaithay and khoangcach < KHOANGCACHTOANMANHINH)) and iddoituongquai not in self._danhsachidquaidagom:
                 is_thoamandieukienneo = True
                 khoangcachneo = khoangcach
                 if diachiquaidautien:
                     khoangcachneo = self.moitruong.get_khoangcach(diachidoituongxemxet, diachiquaidautien)
-                    if khoangcachneo > 18.0: is_thoamandieukienneo = False
+                    if khoangcachneo > 18.0 and not is_gomhetquaithay: is_thoamandieukienneo = False
 
                 if is_thoamandieukienneo:
                     if khoangcach < khoangcachquaicankeo:
@@ -1403,7 +1416,8 @@ class TacTuMucTieu:
                     kc_target = self.moitruong.get_khoangcach(diachinhanvatmuctieudangchon)
                     toadotarget = self.moitruong.get_toado(diachinhanvatmuctieudangchon)
                     is_dongdoigannhuong = self._is_nhuongquaichodongdoi(toadotarget, kc_target, toadodongdois)
-                    if id_target not in self._danhsachidquaidagom and id_target not in self._idmuctieubiloi_map and 12.0 < kc_target < KHOANGCACHTOANMANHINH and not is_dongdoigannhuong:
+                    is_dagommotlan = is_gomhetquaithay and id_target in self._danhsachidquaidagommotlan
+                    if id_target not in self._danhsachidquaidagom and not is_dagommotlan and id_target not in self._idmuctieubiloi_map and 12.0 < kc_target < KHOANGCACHTOANMANHINH and not is_dongdoigannhuong:
                         idquaicankeogannhat = id_target
                         diachicosoquaicankeo = diachinhanvatmuctieudangchon
                         khoangcachquaicankeo = kc_target
@@ -1411,6 +1425,7 @@ class TacTuMucTieu:
 
         if not is_coquaixungquanh:
             self._danhsachidquaidagom.clear()
+            self._danhsachidquaidagommotlan.clear()
             self._idquaidautien = 0
 
         if is_canghilog:
@@ -1424,8 +1439,13 @@ class TacTuMucTieu:
             self._idquaidangkeo = 0
             return
 
-        is_dusoluongquaigan = soluongquaigan >= self._soluongquaigomtoithieu
-        is_quatai = soluongquaidagom >= 20
+        if is_gomhetquaithay:
+            # Còn con thấy được chưa gom lần nào (idquaicankeogannhat) thì kéo tiếp, không dừng vì đủ số; quá tải nâng lên 100
+            is_dusoluongquaigan = idquaicankeogannhat == 0
+            is_quatai = soluongquaidagom >= 100
+        else:
+            is_dusoluongquaigan = soluongquaigan >= self._soluongquaigomtoithieu
+            is_quatai = soluongquaidagom >= 20
 
         # Số tối thiểu chỉ là ngưỡng dưới: đang chạy gom, đủ số mà sát đám đang gom vẫn còn quái chưa kéo thì kéo nốt, chưa dừng lại đánh.
         # Đã dừng lại đánh thì giữ như cũ (quái tự lại gần <= 4.5m vẫn được tính vào đám)
@@ -1503,6 +1523,7 @@ class TacTuMucTieu:
 
             if khoangcachquaicankeo <= 1.5:
                 self._danhsachidquaidagom.add(idquaicankeogannhat)
+                self._danhsachidquaidagommotlan.add(idquaicankeogannhat)
                 if self._idquaidautien == 0:
                     self._idquaidautien = idquaicankeogannhat
                 yeucaugomquaimoi = None

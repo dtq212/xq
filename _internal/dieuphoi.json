@@ -1,8 +1,8 @@
 {
   "lenh": {
-    "is_xoayvong": false,
-    "nghitoithieu": 4.0,
-    "nghitoida": 4.0,
+    "is_xoayvong": true,
+    "nghitoithieu": 0.05,
+    "nghitoida": 0.1,
     "nhuongkhiranh": 0.5
   },
   "dichuyen": {

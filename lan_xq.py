@@ -24,7 +24,7 @@ KHOACHIASELANS = (
     "_is_tudongtheosau", "_is_tudongsudungkynang", "_lotrinhmaudangdung",
     "_thoidiemphathienanthan", "_thoigiantamngungphathien", "_tenanthanphathien",
     "_is_danglanglyson", "_khoathuonglanglyson", "_khoathuonglanglysondalanh", "_langlysonchothanhvien", "_langlysontattodoi", "_langlysongiunhom",
-    "_is_dangsugia", "_sugianhiemvu", "_sugiachothanhvien", "_todoimotlan",
+    "_is_dangsugia", "_sugianhiemvu", "_sugiachothanhvien", "_todoimotlan", "_is_dangtapkich",
     "tamnhin", "iddoituongmuctieu", "_biendongtainguyen",
 )
 

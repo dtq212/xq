@@ -731,6 +731,11 @@ BANDO_LANGLYSON3 = 704
 # Phó bản: rời nhóm khi đang là trưởng nhóm sẽ giải tán, đá cả đội ra ngoài => tổ đội tự động không tự rời nhóm ở đây.
 # Hồi Thành Phù là ra khỏi phó bản => tuyệt đối không dùng ở đây (get_lydokhonghoithanhphu)
 BANDOPHOBANs = (BANDO_BATQUAITRAN, BANDO_THANHKIEU, BANDO_LANGLYSON1, BANDO_LANGLYSON2, BANDO_LANGLYSON3, 891, 892, 893, 894, 895, 896, 897, 898, 899)
+# Phó bản mượn ID bản đồ ngoài, nhận ra qua đầu tên bản đồ game (tên chỉ 20 byte nên bị cắt): Phong Yêu Kính "Phó Bản Phong Y" (ID 133
+# như Thần Bí Động 1), Tập Kích Môn Phái "Tập Kích Môn Ph" (ID 151 như Kênh Trịnh Quốc 1). Lộ trình nạp trong đó ra ngoài là tự bỏ
+TIENTOTENPHOBANMUONBANDOs = ("Phó Bản", "Tập Kích Môn")
+# Đầu tên bản đồ Tập Kích Môn Phái: gom quái tới khi mọi con thấy được đều đã gom 1 lần mới dừng đánh
+TIENTOTENBANDOTAPKICHMONPHAI = "Tập Kích Môn"
 # Vừa ra khỏi phó bản mượn ID bản đồ ngoài (Phong Yêu Kính): chờ chừng này giây mới tự chọn lộ trình mẫu (ID bản đồ đổi sau tên)
 THOIGIANCHONAPLOTRINHROIPHOBAN = 1.5
 
@@ -956,7 +961,7 @@ KHUVUCCAM_MAP = {
     BANDO_KENHTRINHQUOC1: [
         {"type": "circle", "x": 108, "y": 57, "r": 6.0},
         # Phó bản Tập Kích Môn Phái dùng chung bản đồ (id vẫn là 151): đi vào 2 chỗ này bị kẹt không đi tiếp được, phải lùi tay
-        {"type": "circle", "x": 103, "y": 53, "r": 3.0},
+        {"type": "circle", "x": 103, "y": 54, "r": 3.0},
         {"type": "circle", "x": 96, "y": 96, "r": 3.0},
     ],
 }

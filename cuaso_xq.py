@@ -313,6 +313,10 @@ class CuaSo:
                     "_is_dangsugia": self.tactu.get_is_dangsugia(),
                     "_sugianhiemvu": self.tactu.get_nhiemvusugiashare(),
                     "_sugiachothanhvien": self.tactu.get_is_sugiachothanhvien(),
+                    # Tập Kích Môn Phái (tactu_tapkich_xq): trạng thái cho giao diện; đang đi thì thành viên theo sau tự chọn menu vào / Lễ Bao
+                    "_trangthaitapkich": self.tactu.get_trangthaitapkich(),
+                    "_is_dangtapkich": self.tactu.get_is_dangtapkich(),
+                    "_tapkich_phai": self.tactu._tapkich_phai or self.moitruong.get_tenmonphai() or "",
                     "_thongkephien": self.thongke.get_tomtatphien(),
                     # Ngân lượng mang theo hiện tại (báo cáo Telegram)
                     "nganluong": self.moitruong.get_nganluong(),
@@ -398,6 +402,13 @@ class CuaSo:
                     self.tactu.batdau_sugia()
                 elif cmd == "huysugia":
                     self.tactu.huy_sugia()
+                elif isinstance(cmd, str) and cmd.startswith("tapkich:"):
+                    # Tập Kích Môn Phái (tactu_tapkich_xq) bật từ giao diện, kèm môn phái chọn
+                    self.tactu.batdau_tapkich(cmd.split(":", 1)[1])
+                elif cmd == "huytapkich":
+                    self.tactu.huy_tapkich()
+                elif isinstance(cmd, str) and cmd.startswith("set_tapkich_phai:"):
+                    self.tactu.thietlap_phaitapkich(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_sumon_npcgiao:"):
                     self.tactu.thietlap_npcgiaosumon(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("tamngungtuxa:"):

@@ -67,6 +67,11 @@ THOIGIANKETDIOO = 8.
 KHOANGCACHCUNGDICHDIOO = 8.
 # action_dikhongcatgoc: đang đi mà ô thật đứng yên chừng này giây (bị máy chủ kéo về) thì ô kế tiếp là vật cản học được
 THOIGIANKETKHONGCATGOC = 1.5
+GIANCACHGOIKHONGCATGOC = 1.
+THOIGIANGIATKHONGCATGOC = 4.
+SOLANGIATKHONGCATGOC = 2
+# Mỗi ô trong khu vực cấm khai tay tính thêm chừng này bước khi tìm đường không cắt góc
+PHATKHUVUCCAMKHONGCATGOC = 20.
 
 
 class MoiTruong:
@@ -124,6 +129,10 @@ class MoiTruong:
         self._duongkhongcatgoc = []
         self._kettiendokhongcatgoc = None
         self._lucvuahockhongcatgoc = 0.
+        self._lucgoikhongcatgoc = 0.
+        # Các ô thật gần đây [(lúc, ô)] và lần bị giật về theo (ô mốc, bước đầu) để bắt kiểu giật về ô mốc
+        self._lichsukhongcatgoc = []
+        self._giatkhongcatgoc = {}
         self._dulieutimduongcucbo = None
         self._buftimduongcucbo = None
         self._doituongtimduongcucbo = None
@@ -1008,11 +1017,17 @@ class MoiTruong:
         return read_string(self.tientrinh, x + 0x2C, 20) if x else ""
 
     def get_is_phobanmuonbando(self, tenbandogame = None):
-        # Phó bản mượn ID bản đồ ngoài (Phong Yêu Kính: ID 133 như Thần Bí Động 1), chỉ khác tên "Phó Bản ...". None nếu chưa đọc được tên
+        # Phó bản mượn ID bản đồ ngoài (Phong Yêu Kính, Tập Kích Môn Phái: TIENTOTENPHOBANMUONBANDOs), chỉ khác tên. None nếu chưa đọc được tên
         tenbandogame = self.get_tenbandogame() if tenbandogame is None else tenbandogame
         if not tenbandogame:
             return None
-        return tenbandogame.startswith("Phó Bản") and self.get_idbandohientai() not in BANDOPHOBANs
+        tenbandogame = unicodedata.normalize("NFC", tenbandogame)
+        return tenbandogame.startswith(TIENTOTENPHOBANMUONBANDOs) and self.get_idbandohientai() not in BANDOPHOBANs
+
+    def get_is_bandotapkichmonphai(self):
+        # Tập Kích Môn Phái mượn ID 151 (Kênh Trịnh Quốc 1) nên chỉ nhận ra qua tên bản đồ game
+        tenbandogame = self.get_tenbandogame()
+        return bool(tenbandogame) and unicodedata.normalize("NFC", tenbandogame).startswith(TIENTOTENBANDOTAPKICHMONPHAI)
 
     def get_diempk(self):
         x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
@@ -2849,35 +2864,87 @@ class MoiTruong:
             self._inlog(f"[ĐI KHÔNG CẮT GÓC] {(x1, y1)} -> {(x2, y2)}: {len(chuoihuong)} bước")
         return True
 
+    def _layokhuvuccam(self, xa, ya, xb, yb):
+        # Các ô trong vùng [xa, xb] x [ya, yb] thuộc khu vực cấm khai tay của bản đồ hiện tại (KHUVUCCAM_MAP, không tính vòng quanh cổng)
+        os_ = set()
+        for vung in KHUVUCCAM_MAP.get(self.get_idbandohientai(), ()):
+            if vung["type"] == "circle":
+                r = vung["r"]
+                for x in range(max(xa, math.floor(vung["x"] - r)), min(xb, math.ceil(vung["x"] + r)) + 1):
+                    for y in range(max(ya, math.floor(vung["y"] - r)), min(yb, math.ceil(vung["y"] + r)) + 1):
+                        if math.dist((x, y), (vung["x"], vung["y"])) <= r:
+                            os_.add((x, y))
+            elif vung["type"] == "line":
+                ax, ay, bx, by, r = vung["x1"], vung["y1"], vung["x2"], vung["y2"], vung["r"]
+                vx, vy = bx - ax, by - ay
+                v2 = vx * vx + vy * vy
+                for x in range(max(xa, math.floor(min(ax, bx) - r)), min(xb, math.ceil(max(ax, bx) + r)) + 1):
+                    for y in range(max(ya, math.floor(min(ay, by) - r)), min(yb, math.ceil(max(ay, by) + r)) + 1):
+                        u = max(0., min(1., ((x - ax) * vx + (y - ay) * vy) / v2)) if v2 else 0.
+                        if math.dist((x, y), (ax + u * vx, ay + u * vy)) <= r:
+                            os_.add((x, y))
+        return os_
+
     def _hockhongcatgoc(self, sap, now):
-        # Máy chủ chặn ô mà lưới client ghi đi được (rào cố ý làm kẹt): đang đi chuỗi mà ô thật (get_toado) đứng yên quá
-        # THOIGIANKETKHONGCATGOC giây (client bước đi rồi bị kéo về, giật giật) thì ghi ô kế tiếp là vật cản học được (tienich.themvatcanhoc,
-        # lưu theo bản đồ, mọi cửa sổ dùng chung), tìm đường lại né nó. Ô kế tiếp: hướng về ô "sắp tới" của client (+ 0x18, đang bị kéo về
-        # thì khác ô thật), không thì ô sau ô thật trên đường đã tính. -> True: vừa học / đang chờ client về đúng ô thật (lượt này không ghi chuỗi)
+        # Máy chủ chặn ô mà lưới client ghi đi được (rào cố ý làm kẹt): đang đi liên tục bằng action_dikhongcatgoc (lần gọi trước cách chưa
+        # tới GIANCACHGOIKHONGCATGOC giây: không bị đánh quái / nhặt đồ chen giữa) mà ô thật (get_toado) đứng yên quá THOIGIANKETKHONGCATGOC
+        # giây, VÀ trong lúc đó ô "sắp tới" của client (+ 0x18) lệch khỏi ô thật (client bước rồi bị máy chủ kéo về, giật giật) thì ghi ô kế
+        # tiếp theo hướng lệch là vật cản học được (tienich.themvatcanhoc, lưu theo bản đồ, mọi cửa sổ dùng chung), tìm đường lại né nó.
+        # Chỉ đứng yên mà không lệch (đang ra chiêu / đánh quái) thì không học: từng học nhầm gần 50 ô ở Kênh Trịnh Quốc 1 lúc gom quái.
+        # -> True: vừa học / đang chờ client về đúng ô thật (lượt này không ghi chuỗi)
         that = tuple(round(v) for v in self.get_toado())
         tiendo = self._kettiendokhongcatgoc
-        if not tiendo or tiendo[0] != that:
-            self._kettiendokhongcatgoc = [that, now]
+        is_lientuc = now - self._lucgoikhongcatgoc <= GIANCACHGOIKHONGCATGOC
+        self._lucgoikhongcatgoc = now
+        # Giật về ô mốc: máy chủ chỉ nhận tới ô mốc, từ chối bước kế, nhưng client kịp đi 1-2 bước rồi mới bị kéo về đúng ô mốc (người dùng tả
+        # "toạ độ thay đổi, đi được 1 2 bước lại giật lại đúng vị trí đó"; ô thật có đổi nên cách đứng yên ở dưới không bắt được). Quay về 1 ô
+        # từng đứng trong THOIGIANGIATKHONGCATGOC giây (sau khi đã đi khỏi) là 1 lần giật, SOLANGIATKHONGCATGOC lần cùng (ô mốc, bước đầu ra
+        # khỏi mốc) trong 10s thì ghi bước đầu đó là vật cản
+        lichsu = self._lichsukhongcatgoc
+        if not is_lientuc:
+            lichsu.clear()
+        if not lichsu or lichsu[-1][1] != that:
+            buocdau = None
+            for i in range(len(lichsu) - 2, -1, -1):
+                if now - lichsu[i][0] > THOIGIANGIATKHONGCATGOC:
+                    break
+                if lichsu[i][1] == that:
+                    buocdau = lichsu[i + 1][1]
+                    break
+            lichsu.append((now, that))
+            del lichsu[:-20]
+            if buocdau and max(abs(buocdau[0] - that[0]), abs(buocdau[1] - that[1])) == 1 and now - self._lucvuahockhongcatgoc >= 1.:
+                khoa = (that, buocdau)
+                lans = [l for l in self._giatkhongcatgoc.get(khoa, []) if now - l <= 10.] + [now]
+                self._giatkhongcatgoc[khoa] = lans
+                if len(self._giatkhongcatgoc) > 64:
+                    self._giatkhongcatgoc = {khoa: lans}
+                if len(lans) >= SOLANGIATKHONGCATGOC:
+                    self._giatkhongcatgoc.pop(khoa, None)
+                    lichsu[:] = [(now, that)]
+                    self._kettiendokhongcatgoc = [that, now, None]
+                    return self._ghivatcanhoc(that, buocdau, f"bị giật về {that} {len(lans)} lần khi bước sang")
+        if not tiendo or tiendo[0] != that or not is_lientuc:
+            self._kettiendokhongcatgoc = [that, now, None]
             return False
         if now - self._lucvuahockhongcatgoc < 1.:
             # Vừa học: chờ client nhận lại ô thật rồi mới tìm đường từ đó
             return sap != that
-        if now - tiendo[1] < THOIGIANKETKHONGCATGOC or not self._dichkhongcatgoc:
-            return False
-        ke = None
         if sap != that and max(abs(sap[0] - that[0]), abs(sap[1] - that[1])) <= 3:
-            ke = (that[0] + (sap[0] > that[0]) - (sap[0] < that[0]), that[1] + (sap[1] > that[1]) - (sap[1] < that[1]))
-        elif that in self._duongkhongcatgoc[:-1]:
-            ke = self._duongkhongcatgoc[self._duongkhongcatgoc.index(that) + 1]
-        tiendo[1] = now
-        self._dichkhongcatgoc = None
-        if not ke or ke == that:
+            tiendo[2] = (that[0] + (sap[0] > that[0]) - (sap[0] < that[0]), that[1] + (sap[1] > that[1]) - (sap[1] < that[1]))
+        if now - tiendo[1] < THOIGIANKETKHONGCATGOC or not self._dichkhongcatgoc or not tiendo[2]:
             return False
+        ke = tiendo[2]
+        tiendo[1], tiendo[2] = now, None
+        return self._ghivatcanhoc(that, ke, f"đứng {THOIGIANKETKHONGCATGOC:.1f}s không qua được")
+
+    def _ghivatcanhoc(self, that, ke, lydo):
+        self._dichkhongcatgoc = None
         idbando = self.get_idbandohientai()
         themvatcanhoc(idbando, *ke)
-        self._lucvuahockhongcatgoc = now
-        self._inlog(f"[ĐI KHÔNG CẮT GÓC] Đứng ở {that} {THOIGIANKETKHONGCATGOC:.1f}s không qua được {ke} (máy chủ chặn, lưới client ghi đi được): "
-                    f"ghi {ke} là vật cản ở bản đồ {idbando}, tìm đường khác")
+        self._lucvuahockhongcatgoc = time.time()
+        self._inlog(f"[ĐI KHÔNG CẮT GÓC] Ở {that} {lydo} {ke} (máy chủ chặn, lưới client ghi đi được): ghi {ke} là vật cản ở bản đồ {idbando}, "
+                    f"tìm đường khác")
         return True
 
     def _timduongkhongcatgoc(self, x1, y1, x2, y2, khoangcachtoida = 0., lechtoida = 25):
@@ -2893,6 +2960,10 @@ class MoiTruong:
 
         def trong(x, y):
             return 0 <= x - ox < rong and 0 <= y - oy < cao and not luoi[x - ox][y - oy] and (x, y) not in hocs
+
+        # Khu vực cấm khai tay (KHUVUCCAM_MAP: chỗ đi vào là kẹt, vd Tập Kích Môn Phái (103, 53), (96, 96)): mỗi ô trong đó tính thêm
+        # PHATKHUVUCCAMKHONGCATGOC bước (né được thì né; đang đứng / đích ở trong thì vẫn đi ra / vào được)
+        cams = self._layokhuvuccam(ox, oy, ox + rong - 1, oy + cao - 1)
 
         huongs = [(dx, dy, kytu.encode()) for kytu, (dx, dy) in HUONGTIMDUONG_MAP.items()]
         nguong = max(0., khoangcachtoida)
@@ -2913,7 +2984,7 @@ class MoiTruong:
                 nx, ny = x + dx, y + dy
                 if not trong(nx, ny) or (dx and dy and not (trong(x + dx, y) and trong(x, y + dy))):
                     continue
-                ng = g + (1.4142 if dx and dy else 1.)
+                ng = g + (1.4142 if dx and dy else 1.) + (PHATKHUVUCCAMKHONGCATGOC if (nx, ny) in cams else 0.)
                 if ng < gs.get((nx, ny), float("inf")):
                     gs[(nx, ny)] = ng
                     truoc[(nx, ny)] = (o, kytu)
