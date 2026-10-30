@@ -1547,7 +1547,7 @@ class GiaoDienHienThi:
                               "Thành Kiều: trưởng nhóm tới Tần Quốc (220, 65) Thảo Nghịch Tướng Quân \"3. Sử dụng [Hạt Mè Khai Môn] tiến vào\" → "
                               "Xác nhận (cả nhóm được đưa vào) → Mã Quỷ, Lương Hưng, Yến Thập Tam, Tư Tà → chờ đủ thành viên đánh Thủ Lĩnh "
                               "Thành Kiều → Hồi Thành Phù về Tần Quốc \"4. Nhận thưởng\" → \"1. Nhận thưởng\" → đổi tổ đội như trên. Hết Hạt Mè Khai Môn thì dừng. "
-                              "Phong Yêu Kính: trưởng nhóm tới Chu Quốc (252, 160) Tả Khâu Minh, give 1 món Lam Kim (chỉ đồ trong túi, tên màu xanh "
+                              "Phong Yêu Kính (bật ở mọi nhân vật trong nhóm; thành viên bật Theo sau thì đi theo, không bật thì tự đi lộ trình dò khắp bản đồ đánh quái như trưởng nhóm): trưởng nhóm tới Chu Quốc (252, 160) Tả Khâu Minh, give 1 món Lam Kim (chỉ đồ trong túi, tên màu xanh "
                               "Lam Kim, Chưa giám định, chưa Phong Ấn, cấp ≥ cấp nhân vật − 25 và ≥ 15; chọn món cấp thấp nhất) → \"1. Đúng vậy, ta muốn đi\" → mọi người "
                               "\"1. Đúng vậy, ta muốn vào\" → dò khắp bản đồ đánh hết quái, giết 2 boss (tên có Vương / Thần) → Thỏ Yêu về Chu Quốc "
                               "→ đổi tổ đội như trên. Hết đồ Lam Kim thì dừng.",

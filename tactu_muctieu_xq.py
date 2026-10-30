@@ -47,10 +47,12 @@ class TacTuMucTieu:
                                                              self.moitruong.get_huongmat(diachi), bool(is_muctieupk), self.moitruong.get_tendoituong(diachi))))
         doituongs.sort(key = lambda d: d[0])
         # Ghi vị trí quái (không phải người chơi / bảo thú, không nằm trong danh sách không tấn công) để tự đề xuất lộ trình
+        # Phó bản mượn ID bản đồ ngoài (Phong Yêu Kính, Tập Kích): không ghi, quái trong đó không có ở bản đồ thật cùng ID
         if self._idnguoichoiviquai and time.time() - self._thoidiemghiviquaigannhat >= THOIGIANGHIVITRIQUAI:
             self._thoidiemghiviquaigannhat = time.time()
-            ghinhanvitriquai(self._bangviquai, self.moitruong.get_idbandohientai(),
-                             [(d[1], d[2]) for _, d in doituongs if not d[5] and not self._is_tenbiboqua(d[6])])
+            if self.moitruong.get_is_phobanmuonbando() is False:
+                ghinhanvitriquai(self._bangviquai, self.moitruong.get_idbandohientai(),
+                                 [(d[1], d[2]) for _, d in doituongs if not d[5] and not self._is_tenbiboqua(d[6])])
         return {
             "thoidiem": time.time(),
             "bando": self.moitruong.get_idbandohientai(),

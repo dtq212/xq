@@ -212,6 +212,9 @@ class TacTuSuMon:
         idbando = moitruong.get_idbandohientai()
         if not idnguoichoi or not idbando:
             return
+        # Phó bản mượn ID bản đồ ngoài (Phong Yêu Kính, Tập Kích Môn Phái): quái / NPC trong đó không có ở bản đồ thật cùng ID, không ghi
+        if moitruong.get_is_phobanmuonbando() is not False:
+            return
         self._sovitri.nap(idnguoichoi)
         for diachi in moitruong._get_diachidoituongxungquanhs():
             if not moitruong.get_is_nhanvattontai(diachi) or moitruong.get_is_nguoichoi(diachi):
