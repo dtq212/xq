@@ -188,24 +188,37 @@ def _loang(rong, cao, is_diduoc, batdau):
     return khoangcach
 
 
-def dexuatlotrinhdo(luoi, batdau, is_tranh = None, canh = CANHKHOIDO):
-    # luoi[x][y]: 0 đi được (MoiTruong.get_luoivatcanbando); batdau: ô đang đứng; is_tranh(x, y): không đặt điểm ở đó (gần cổng, vùng cấm)
-    # -> [(x, y), ...] theo thứ tự đi (vòng, bắt đầu ở điểm gần mình nhất)
+def layvungtoiduoc(luoi, batdau):
+    # Các ô đi tới được từ batdau (ô đang đứng; là vật cản thì từ ô trống gần nhất trong 5 ô) -> {ô: số bước}, rỗng nếu không có
     rong, cao = len(luoi), len(luoi[0]) if luoi else 0
     if not rong or not cao:
-        return []
+        return {}
     bx, by = batdau
     if not (0 <= bx < rong and 0 <= by < cao) or luoi[bx][by]:
         trongs = [(x, y) for x in range(max(0, bx - 5), min(rong, bx + 6)) for y in range(max(0, by - 5), min(cao, by + 6)) if not luoi[x][y]]
         if not trongs:
-            return []
+            return {}
         bx, by = min(trongs, key = lambda o: math.dist(o, batdau))
-    toiduoc = _loang(rong, cao, lambda x, y: not luoi[x][y], (bx, by))
+    return _loang(rong, cao, lambda x, y: not luoi[x][y], (bx, by))
+
+
+def dexuatlotrinhdo(luoi, batdau, is_tranh = None, canh = CANHKHOIDO, tam = None, bankinh = None):
+    # luoi[x][y]: 0 đi được (MoiTruong.get_luoivatcanbando); batdau: ô đang đứng; is_tranh(x, y): không đặt điểm ở đó (gần cổng, vùng cấm).
+    # tam, bankinh: chỉ dò vùng trong bankinh ô quanh tam (toạ độ trong nhiệm vụ), khối xếp để tam nằm giữa 1 khối, vòng bắt đầu từ
+    # điểm gần tam nhất. -> [(x, y), ...] theo thứ tự đi (vòng, bắt đầu ở điểm gần mình / gần tam nhất)
+    rong, cao = len(luoi), len(luoi[0]) if luoi else 0
+    toiduoc = layvungtoiduoc(luoi, batdau)
+    if not toiduoc:
+        return []
+    bx, by = tam or batdau
 
     # Mỗi khối: điểm là ô tới được gần trọng tâm các ô tới được của khối nhất (khối hình chữ L / vành hồ thì trọng tâm rơi ra ngoài)
+    lechx, lechy = (tam[0] - canh // 2, tam[1] - canh // 2) if tam else (0, 0)
     khois = {}
     for x, y in toiduoc:
-        khois.setdefault((x // canh, y // canh), []).append((x, y))
+        if bankinh and math.dist((x, y), tam) > bankinh:
+            continue
+        khois.setdefault(((x - lechx) // canh, (y - lechy) // canh), []).append((x, y))
     diems = []
     for os_ in khois.values():
         if len(os_) < canh * canh * TYLEKHOIDO:

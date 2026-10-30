@@ -21,7 +21,7 @@ import time
 
 from hangso_xq import *
 from bando_xq import timduongbando, CAPQUAI_MAP, BANDOCONG_MAP
-from dexuatlotrinh_xq import taiviquaibando, dexuatlotrinh, dexuatlotrinhdo, SOLANTHAYQUAITOITHIEU, TENMAUDO
+from dexuatlotrinh_xq import taiviquaibando, dexuatlotrinh, dexuatlotrinhdo, layvungtoiduoc, SOLANTHAYQUAITOITHIEU, TENMAUDO, CANHKHOIDO
 from giaodo_xq import taolenhgiao
 from nhiemvu_xq import *
 from nhiemvu_xq import _laynpcbandonho as nhiemvu_layvitri_soluong
@@ -78,6 +78,9 @@ THOIGIANKHONGNHICH = 10.
 KHOANGCACHGANDUOC = 12.
 # Truy Sát / Tuần Sơn: tới toạ độ trong nhiệm vụ thì đứng chờ chừng này giây cho đối thủ hiện rồi mới đi dò quanh
 THOIGIANCHODIEMNHIEMVU = 15.
+# Dò quanh toạ độ trong nhiệm vụ theo lưới vật cản (_laydiemdoquanh): trong chừng này ô quanh toạ độ, khối cạnh chừng này ô mỗi khối 1 điểm
+BANKINHDOQUANH = 35
+CANHDOQUANH = 14
 THOIGIANSUMONTOIDA = 4 * 3600.
 GIANCACHGHIVITRI = 3.
 THOIGIANCHOSAUCHUYENBANDO = 3.
@@ -412,6 +415,19 @@ class TacTuSuMon:
         if not kp or kp["khoa"] != khoa:
             kp = s["khampha"] = {"khoa": khoa, "i": 0, "luc": time.time()}
         if self.moitruong.get_idbandohientai() == idbando:
+            # Điểm không thông với chỗ đứng (bên kia sông / vách, ngoài bản đồ; kéo về ô đi được gần nhất vẫn không tới được) thì bỏ luôn,
+            # không đứng kẹt THOIGIANKHONGNHICH giây mỗi điểm. Mọi điểm đều không thông (lưới đọc sai?) thì đi như cũ
+            vung = self._layvungtoiduoc(idbando)
+            if vung:
+                for buoc in range(len(diems)):
+                    if self.moitruong.get_oditduocganhat(*diems[(kp["i"] + buoc) % len(diems)]) in vung:
+                        if buoc:
+                            self.moitruong._inlog(f"[SƯ MÔN] {nhan}: bỏ {buoc} điểm không đi tới được")
+                            kp["i"] += buoc
+                            kp["luc"] = time.time()
+                            for k in ("ganhat", "lucgan", "datoi"):
+                                kp.pop(k, None)
+                        break
             # Điểm rơi vào vật cản thì đo theo ô đi được gần nhất (nơi đi cũng nhắm ô đó), tới đó là tới
             x, y = self.moitruong.get_oditduocganhat(*diems[kp["i"] % len(diems)])
             # Điểm không tới được (toạ độ trong nhiệm vụ có khi lệch vào chỗ không đi được, nhất là Tuần Sơn): THOIGIANKHONGNHICH giây không
@@ -447,14 +463,7 @@ class TacTuSuMon:
         # Chưa có lộ trình mẫu / đủ vị trí quái: lộ trình dò phủ vùng đi được nối với chỗ đứng (lưới vật cản của client, tránh cổng / vùng
         # cấm) như nút "Lộ trình dò", lưu thành mẫu TENMAUDO (lần sau dùng lại, hiện trên bảng Lộ trình mẫu) nhưng không nạp vào lộ trình
         # của nhân vật. Chỉ tính được khi đang ở bản đồ đó. -> [(x, y), ...] hoặc []
-        if self.moitruong.get_idbandohientai() != idbando:
-            return []
-        luoi = self.moitruong.get_luoivatcanbando()
-        if not luoi:
-            return []
-        congs = [(x, y) for _, x, y, _, _ in (BANDOCONG_MAP.get(idbando) or ("", ()))[1]]
-        diems = dexuatlotrinhdo(luoi, self.moitruong.get_toado(),
-                                lambda x, y: any(math.dist((x, y), c) < 12 for c in congs) or self._kiemtra_vungcam(x, y))
+        diems = self._taodiemdo(idbando)
         if len(diems) < 2:
             return []
         lotrinhmau = util_tailotrinhmau()
@@ -462,6 +471,49 @@ class TacTuSuMon:
         util_luulotrinhmau(lotrinhmau)
         self.moitruong._inlog(f"[SƯ MÔN] {laytenbando(idbando)} chưa có lộ trình mẫu: tạo lộ trình dò {len(diems)} điểm")
         return [tuple(d) for d in diems]
+
+    def _taodiemdo(self, idbando, tam = None, bankinh = None, canh = CANHKHOIDO):
+        # Điểm dò theo lưới vật cản (dexuatlotrinhdo): cả vùng đi được nối với chỗ đứng, hoặc trong bankinh ô quanh tam. Tránh cổng / điểm
+        # xuất hiện và vùng cấm. Chỉ tính được khi đang ở bản đồ đó. -> [(x, y), ...] hoặc []
+        if self.moitruong.get_idbandohientai() != idbando:
+            return []
+        luoi = self.moitruong.get_luoivatcanbando()
+        if not luoi:
+            return []
+        congs = [(x, y) for _, x, y, _, _ in (BANDOCONG_MAP.get(idbando) or ("", ()))[1]]
+        return [tuple(d) for d in dexuatlotrinhdo(luoi, self.moitruong.get_toado(),
+                                                  lambda x, y: any(math.dist((x, y), c) < 12 for c in congs) or self._kiemtra_vungcam(x, y),
+                                                  canh = canh, tam = tam, bankinh = bankinh)]
+
+    def _laydiemdoquanh(self, idbando, toado):
+        # Đi dò quanh toạ độ trong nhiệm vụ (Tuần Sơn, Hiệp Trợ Trị An, Truy Bắt có toạ độ): toạ độ trước (chờ quái hiện), rồi điểm dò dày
+        # (khối CANHDOQUANH ô) trong BANKINHDOQUANH ô, chỉ ô thông với chỗ đứng, đi theo quãng đi bộ. Tính 1 lần cho mỗi toạ độ (gọi mỗi
+        # lượt). Không tính được (chưa ở bản đồ đó / không đọc được lưới) -> None, nơi gọi dùng vòng quanh cũ
+        khoa = (idbando, tuple(toado))
+        if khoa not in self._diemdoquanh_cache:
+            diems = self._taodiemdo(idbando, tam = tuple(toado), bankinh = BANKINHDOQUANH, canh = CANHDOQUANH)
+            if not diems:
+                return None
+            if len(self._diemdoquanh_cache) > 32:
+                self._diemdoquanh_cache.clear()
+            self._diemdoquanh_cache[khoa] = [tuple(toado)] + [d for d in diems if d != tuple(toado)]
+            self.moitruong._inlog(f"[SƯ MÔN] Dò quanh {tuple(toado)} ở {laytenbando(idbando)}: {len(diems)} điểm theo lưới vật cản")
+        return self._diemdoquanh_cache[khoa]
+
+    def _layvungtoiduoc(self, idbando):
+        # Các ô đi tới được từ chỗ đứng trên bản đồ hiện tại (lưới vật cản), nhớ theo bản đồ; mình ra ngoài vùng đã nhớ (sang đảo khác /
+        # phù) thì tính lại. Không đọc được lưới -> None (không lọc)
+        if self.moitruong.get_idbandohientai() != idbando:
+            return None
+        nho = self._vungtoiduoc_cache
+        toado = self.moitruong.get_oditduocganhat(*self.moitruong.get_toado())
+        if not nho or nho[0] != idbando or toado not in nho[1]:
+            luoi = self.moitruong.get_luoivatcanbando()
+            vung = layvungtoiduoc(luoi, toado) if luoi else None
+            if not vung:
+                return None
+            nho = self._vungtoiduoc_cache = (idbando, vung)
+        return nho[1]
 
     def _tinpc(self, s, tennpc, idbandogoiy = None, is_chibandogoiy = False):
         # Đi tìm NPC: thấy rồi -> địa chỉ; chưa thấy -> yêu cầu di chuyển tới chỗ đã biết / đi khắp bản đồ gợi ý. -> (địa chỉ, yêu cầu).
@@ -882,7 +934,10 @@ class TacTuSuMon:
         # Tên quái trong game có thể dài hơn tên trong nhiệm vụ ("Lưu Manh ..."), con riêng mang ID người chơi thì chỉ đánh con của mình
         s["tenquai"] = {quai} | self._layquairieng([quai])[0]
         s["trangthai"] = nhan
-        diems = [toado] + laydiemkhampha(idbando, toado) if toado else self._laydiemtimquai(quai, idbando)
+        if toado:
+            diems = self._laydiemdoquanh(idbando, toado) or [toado] + laydiemkhampha(idbando, toado)
+        else:
+            diems = self._laydiemtimquai(quai, idbando)
         return self._diquadiem(s, f"hieptro|{nv['luot']}", idbando, diems, nhan)
 
     def _buoctuanson(self, s, nv, bandomonphai):
@@ -906,10 +961,11 @@ class TacTuSuMon:
             return self._dentoi(s, bandomonphai, x, y, f"{nhan}: đánh {self.moitruong.get_tendoituong(gannhat)}",
                                 khoangcach = self._khoangcachsudungkynangtamxa, is_dioo = self._is_dioo(bandomonphai))
         toado = dirtranhcong(bandomonphai, toado) if toado else None
-        # Toạ độ Tuần Sơn hay lệch (chỗ không đi được): tới gần được tới đâu thì đứng chờ, rồi đi vòng sát quanh đó (8 ô) trước vòng xa
+        # Toạ độ Tuần Sơn hay lệch (chỗ không đi được): tới gần được tới đâu thì đứng chờ, rồi dò quanh đó theo lưới vật cản (đọc
+        # không được thì đi vòng sát quanh đó (8 ô) trước vòng xa như cũ)
         if toado:
             vong8 = [(toado[0] + dx * 8, toado[1] + dy * 8) for dx, dy in ((1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1))]
-            diems = [toado] + vong8 + laydiemkhampha(bandomonphai, toado)
+            diems = self._laydiemdoquanh(bandomonphai, toado) or [toado] + vong8 + laydiemkhampha(bandomonphai, toado)
         else:
             diems = self._laydiemtimquai(quai, bandomonphai)
         return self._diquadiem(s, f"tuanson|{nv['luot']}", bandomonphai, diems, nhan,
@@ -949,7 +1005,8 @@ class TacTuSuMon:
             # Nước có điểm đi vòng ngoài thành (DIEMNGOAITHANH_MAP, đi được hết): đi theo đó, không dùng lưới / vòng tự tính (hay lọt chỗ
             # không đi được, đứng kẹt tới bị đứt kết nối)
             ngoaithanh = DIEMNGOAITHANH_MAP.get(idbando)
-            diems = list(ngoaithanh or laydiemluoi(idbando))
+            # Không có điểm vẽ tay thì lộ trình dò phủ cả vùng đi được (lưới vật cản), không được nữa mới lưới 30 ô theo khung cổng
+            diems = list(ngoaithanh or self._taodiemdo(idbando) or laydiemluoi(idbando))
             if diems:
                 i = min(range(len(diems)), key = lambda k: self.moitruong.get_khoangcachdiem(*diems[k]))
                 diems = diems[i:] + diems[:i]
@@ -961,8 +1018,12 @@ class TacTuSuMon:
                 diems = [nv["toado"]] + diems[i:] + diems[:i]
             elif nv.get("toado"):
                 xt, yt = nv["toado"]
-                vong10 = [(xt + dx * 10, yt + dy * 10) for dx, dy in ((1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1))]
-                diems = [nv["toado"]] + vong10 + laydiemkhampha(idbando, nv["toado"])[1:9] + [nv["toado"]] + diems
+                doquanh = self._laydiemdoquanh(idbando, nv["toado"])
+                if doquanh:
+                    diems = doquanh + [nv["toado"]] + diems
+                else:
+                    vong10 = [(xt + dx * 10, yt + dy * 10) for dx, dy in ((1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1))]
+                    diems = [nv["toado"]] + vong10 + laydiemkhampha(idbando, nv["toado"])[1:9] + [nv["toado"]] + diems
             s["luoi"] = (khoa, diems)
         return self._diquadiem(s, khoa, idbando, s["luoi"][1], nhan, chodiemdau = THOIGIANCHODIEMNHIEMVU if nv.get("toado") else 0.)
 

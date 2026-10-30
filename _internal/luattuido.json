@@ -246,13 +246,13 @@
     },
     {
       "vatpham": "Bùa Giấy",
+      "tencuahang": "",
       "npc": "Chủ Tiệm Tạp Hóa",
-      "duoi": 5000,
-      "muatoi": 5000,
+      "duoi": 10000,
+      "muatoi": 10000,
       "monphai": "conluan",
       "chikhi": "",
-      "bat": true,
-      "tencuahang": ""
+      "bat": true
     }
   ],
   "catkho": [

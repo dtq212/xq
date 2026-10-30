@@ -787,8 +787,10 @@ class TacTuKyNang:
         # Chưa dùng: Biến Thân Thuật, Khốn Ma Thuật / Khốn Ma Trận (không tác dụng lên người chơi), Phá Chú (giải bùa cho đồng đội),
         # Long Du Tứ Hải (dịch chuyển theo ID người chơi)
         danhsachuutien = [
-            # Tâm pháp bật / tắt: chỉ bấm khi chưa có hiệu ứng, gửi 1 lần rồi chờ hiệu ứng hiện (_is_duocguitamphapbattat gọi cuối)
+            # Tâm pháp bật / tắt: chỉ bấm khi chưa có hiệu ứng, gửi 1 lần rồi chờ hiệu ứng hiện (_is_duocguitamphapbattat gọi cuối).
+            # Pháp lực dưới mức chuyển hóa ghi trong mô tả (cấp 4: 700) thì không bật (người dùng 2026-10-30)
             (VITRIKYNANG_CANKHONNADI, "sudungkynangkhongmuctieu", lambda: not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CANKHONNADI,), macdinh = True, is_hieuungcoloi = 1)
+                and self.moitruong.get_noilucconlai() >= self._laytieuhao(VITRIKYNANG_CANKHONNADI, "chuyển hóa")
                 and self._is_duocguitamphapbattat(VITRIKYNANG_CANKHONNADI), 0, None, False),
             # Lôi Long Quyết (6 bùa, 9x9 ô quanh bản thân liên tục 6s, vận khí) như Lôi Động Cửu Thiên của Mao Sơn: cụm quái quanh mình và
             # mục tiêu trong 3 ô thì ra chiêu đứng yên; cụm quái quanh mục tiêu (đánh quái, không PK) thì chạy vào giữa cụm (cách ~2 ô) để

@@ -128,6 +128,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         # Nhiệm vụ sư môn (tactu_sumon_xq): việc đang làm (None = không), kết quả lần gần nhất cho giao diện, NPC giao nhiệm vụ người dùng
         # đặt (rỗng = mặc định theo môn phái, lưu theo nhân vật); vị trí NPC / quái đã thấy (nhiemvu_xq.SoVitri) và lần ghi gần nhất
         self._sumon = None
+        # Điểm dò quanh toạ độ nhiệm vụ {(bản đồ, toạ độ): [điểm]} và vùng tới được từ chỗ đứng (bản đồ, {ô: số bước}) (_laydiemdoquanh,
+        # _layvungtoiduoc)
+        self._diemdoquanh_cache = {}
+        self._vungtoiduoc_cache = None
         self._ketquasumon = ""
         self._sumon_npcgiao = ""
         self._sovitri = SoVitri()

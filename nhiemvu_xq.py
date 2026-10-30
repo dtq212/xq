@@ -77,6 +77,7 @@ VITRINPCCODINH = {
     "Chủ Tiệm Vũ Khí": (BANDO_TANTHUTHON, 101, 146),
     "Chủ Tiệm Giáp Trụ": (BANDO_TANTHUTHON, 120, 166),
     "Chủ Tiệm Y Dược": (BANDO_TANTHUTHON, 135, 170),
+    "Đại Tướng Quân": (BANDO_CHUQUOC, 227, 50),
 }
 
 # Thăm Viếng: NPC (chưởng môn, quân vương) -> bản đồ, khi chưa biết toạ độ thì tới bản đồ đó tìm. So theo tên rút gọn (tên trong
@@ -96,6 +97,7 @@ BANDOTHAMVIENG = {
     "Sở Khảo Liệt Vương": 60,
     "Yên Vương": 70,
     "Chu Vương": 80,
+    "Đại Tướng Quân": BANDO_CHUQUOC,
 }
 
 _DAUTHANHs = frozenset("̣̀́̉̃")

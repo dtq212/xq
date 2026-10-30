@@ -2062,6 +2062,11 @@ class MoiTruong:
         taisudung = re.search(r"Tái sử dụng sau: ([\d.]+) giây", noidung)
         if taisudung:
             ketqua["tái sử dụng"] = float(taisudung.group(1))
+        # Tâm pháp hộ thể chuyển sát thương thành pháp lực (Côn Luân Càn Khôn Na Di "chuyển hóa 700 điểm sát thương thành tiêu hao Pháp
+        # Lực"): lấy số đầu tiên = cấp hiện tại (mô tả cấp tiếp theo nằm sau)
+        chuyenhoa = re.search(r"chuyển hóa\s+(\d+)\s+điểm sát thương", noidung)
+        if chuyenhoa:
+            ketqua["chuyển hóa"] = int(chuyenhoa.group(1))
         # Mô tả đã có (dòng "Võ công yêu cầu" / "Yêu cầu võ công") mà không ghi số tiêu hao (Triệu Hoán Chú, Nguyên Khí Quy Nguyên,
         # "Nguyên khí tiêu hao: Toàn bộ"...) thì trả {} để không gửi "desc pf" mãi
         if ketqua or "yêu cầu" in noidung.lower():
