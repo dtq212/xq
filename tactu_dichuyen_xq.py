@@ -1125,6 +1125,11 @@ class TacTuDiChuyen:
     def action_tudongdichuyentudo(self):
         yeucautudomoi = None
 
+        # Vừa ra khỏi phó bản mượn ID bản đồ: ngắt di chuyển thêm vài lần trễ (lệnh đi điểm kế gửi lúc vừa ra vẫn lọt sau lần ngắt đầu)
+        if self._thoidiemngatdichuyenroiphobans and time.time() >= self._thoidiemngatdichuyenroiphobans[0]:
+            self._thoidiemngatdichuyenroiphobans.pop(0)
+            self.moitruong.action_ngatdichuyen()
+
         # Đi tới bản đồ do người dùng chọn: thay hẳn lộ trình điểm đánh tới khi tới nơi / bấm dừng
         if self._idbandocandi:
             self._yeucautudo = self._xulyditoibando()
@@ -1184,6 +1189,11 @@ class TacTuDiChuyen:
             self._yeucautudo = None
             return
 
+        # Đang bật Theo sau: đi theo người được theo sau là đủ, không đi lộ trình điểm đánh riêng (cũng không kêu "Chưa có điểm đánh")
+        if self._is_tudongtheosau:
+            self._yeucautudo = None
+            return
+
         while True:
             if self.moitruong.get_idtuthenhanvat() in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT, TUTHENHANVAT_DELAYSAUTANCONG):
                 break
@@ -1206,9 +1216,17 @@ class TacTuDiChuyen:
             if self._is_lotrinhphobanmuonbando and self.moitruong.get_is_phobanmuonbando() is False:
                 print(f"[LỘ TRÌNH] Đã ra khỏi phó bản ({self.moitruong.get_tenbandogame()}): bỏ {len(self._diemdanhxungquanhs)} điểm đánh của phó bản")
                 self.botoanbo_diemdanhxungquanh()
+                # Lệnh đi tới điểm kế của lộ trình có thể đã gửi ngay lúc vừa ra (trước khi bỏ điểm): dừng lại kẻo client đi tiếp,
+                # ngắt lại sau 0.5s và 1s
+                self.moitruong.action_ngatdichuyen()
+                self._thoidiemngatdichuyenroiphobans = [time.time() + 0.5, time.time() + 1.]
+                self._thoidiemroiphobanmuonbando = time.time()
 
-            # Chưa đặt điểm đánh mà bản đồ có lộ trình mẫu thì tự chọn mẫu chưa ai dùng (trùng với nhân vật khác cũng không chọn lại)
-            if not self._diemdanhxungquanhs and idbandohientai != BANDO_CHIENTRUONG and time.time() - self._thoidiemkiemtralotrinhgannhat > 5.:
+            # Chưa đặt điểm đánh mà bản đồ có lộ trình mẫu thì tự chọn mẫu chưa ai dùng (trùng với nhân vật khác cũng không chọn lại).
+            # Vừa ra khỏi phó bản mượn ID bản đồ thì chờ THOIGIANCHONAPLOTRINHROIPHOBAN: ID bản đồ đọc được còn là ID của phó bản
+            # (tên đổi trước), chọn ngay là nạp lại mẫu của phó bản rồi chạy lên bản đồ thật cùng ID
+            if not self._diemdanhxungquanhs and idbandohientai != BANDO_CHIENTRUONG and time.time() - self._thoidiemkiemtralotrinhgannhat > 5. \
+                    and time.time() - self._thoidiemroiphobanmuonbando > THOIGIANCHONAPLOTRINHROIPHOBAN:
                 self._thoidiemkiemtralotrinhgannhat = time.time()
                 self.tuchon_lotrinhmau(idbandohientai)
 
@@ -1231,7 +1249,8 @@ class TacTuDiChuyen:
                         self.action_sudunghoithanhphu()
                         self._thoidiemphatamlacmapgannhat = time.time()
                     else:
-                        if not self._is_tudongdichientruong:
+                        # Tân Thủ Thôn / Chu Quốc / 7 quốc gia là nơi đứng chờ, mua bán: không cảnh báo
+                        if not self._is_tudongdichientruong and idbandohientai not in (BANDO_TANTHUTHON, BANDO_CHUQUOC) and idbandohientai not in BANDO7QUOCGIAs:
                             phatam("Chưa có điểm đánh")
                         self._thoidiemphatamlacmapgannhat = time.time()
                 break

@@ -409,10 +409,7 @@ class GiaoDienHienThi:
         phatam("Bật xoay vòng chiêu" if bien.get() else "Tắt xoay vòng chiêu", is_block = False)
 
     def _taotabmuctieutodoi(self, tab):
-        # Trên cùng là các ô cấu hình ngắn (tổ đội trước mục tiêu), các bảng để dưới
-        nhom = self._taonhom(tab, "Tổ đội")
-        self._create_check(nhom, "Bật Tổ đội tự động (theo nhân vật đang chọn)", self.vars["todoitudong"], "battat_tudongtodoi")
-
+        # Trên cùng là các ô cấu hình ngắn (tầm đánh), các bảng để dưới; bật / tắt tổ đội nằm ngay trên bảng nhóm tổ đội
         nhom = self._taonhom(tab, "Tầm đánh")
         hangtamxa = ttk.Frame(nhom)
         hangtamxa.grid(row = 0, column = 0, columnspan = 2, sticky = tk.W)
@@ -909,6 +906,15 @@ class GiaoDienHienThi:
     def _taotabtodoi(self, tab):
         # Danh sách dùng chung cho mọi nhân vật (lưu file todoi.json), bật/tắt thì theo từng nhân vật
         nhom = self._taonhom(tab, "Nhóm tổ đội tự động (dùng chung mọi nhân vật trên máy)")
+        self._create_check(nhom, "Bật Tổ đội tự động (theo nhân vật đang chọn)", self.vars["todoitudong"], "battat_tudongtodoi")
+        # Tổ đội 1 lần: nhân vật đang chọn giữ nhóm hiện tại (vd. nhóm vừa lập để lấy phó bản), mời đồng đội cùng danh sách vào rồi thôi
+        hangmotlan = ttk.Frame(nhom)
+        hangmotlan.grid(row = 1, column = 0, sticky = tk.EW, pady = (2, 6))
+        self.btn_todoimotlan = ttk.Button(hangmotlan, text = "👥 Tổ đội 1 lần", command = self._todoimotlan)
+        self.btn_todoimotlan.pack(side = tk.LEFT)
+        ttk.Label(hangmotlan, text = "Ctrl+Alt+T", style = "Phim.TLabel").pack(side = tk.LEFT, padx = (6, 0))
+        self.lbl_todoimotlan = tk.Label(hangmotlan, text = "", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(420))
+        self.lbl_todoimotlan.pack(side = tk.LEFT, fill = tk.X, expand = True, padx = (8, 0))
         self.tree_todoi = ttk.Treeview(nhom, columns = ("so", "truongnhom", "thanhvien", "online"), show = "headings", height = 5, selectmode = "browse")
         for col, text, width, anchor in (
                 ("so", "Nhóm", 45, tk.CENTER),
@@ -917,20 +923,42 @@ class GiaoDienHienThi:
                 ("online", "Online", 60, tk.CENTER)):
             self.tree_todoi.heading(col, text = text)
             self.tree_todoi.column(col, width = self._px(width), anchor = anchor, stretch = col == "thanhvien")
-        self.tree_todoi.grid(row = 0, column = 0, sticky = tk.EW)
+        self.tree_todoi.grid(row = 2, column = 0, sticky = tk.EW)
         self.tree_todoi.bind("<Double-1>", lambda e: self._suanhomtodoi(is_moi = False))
         hangnut = ttk.Frame(nhom)
-        hangnut.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
+        hangnut.grid(row = 3, column = 0, sticky = tk.W, pady = (4, 0))
         for chu, lenh in (("Thêm nhóm", lambda: self._suanhomtodoi(is_moi = True)), ("Sửa", lambda: self._suanhomtodoi(is_moi = False)),
                           ("Xoá", self._xoanhomtodoi), ("↑ Lên", lambda: self._doichonhomtodoi(-1)), ("↓ Xuống", lambda: self._doichonhomtodoi(1))):
             ttk.Button(hangnut, text = chu, command = lenh).pack(side = tk.LEFT, padx = (0, 4))
         self.lbl_idnhanvatdangchon = tk.Label(nhom, text = "", fg = MAUCHU_XANH, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(560))
-        self.lbl_idnhanvatdangchon.grid(row = 2, column = 0, sticky = tk.W, pady = (6, 0))
+        self.lbl_idnhanvatdangchon.grid(row = 4, column = 0, sticky = tk.W, pady = (6, 0))
         ttk.Label(nhom, text = "Người đứng trước trong nhóm được ưu tiên làm trưởng nhóm. Nhân vật trong danh sách cũng được coi là đồng đội "
-                               "(buff, không đánh). Nhấp đúp một nhóm để sửa.",
-                  style = "Phu.TLabel", justify = tk.LEFT, wraplength = self._px(560)).grid(row = 3, column = 0, sticky = tk.W, pady = (4, 0))
+                               "(buff, không đánh). Nhấp đúp một nhóm để sửa. Tổ đội 1 lần: nhân vật đang chọn giữ nguyên nhóm của mình "
+                               "(không rời, không nhường trưởng nhóm), mời đồng đội cùng nhóm đang online vào; đồng đội đang ở nhóm khác "
+                               "thì tự rời rồi vào, không cần bật Tổ đội tự động.",
+                  style = "Phu.TLabel", justify = tk.LEFT, wraplength = self._px(560)).grid(row = 5, column = 0, sticky = tk.W, pady = (4, 0))
         self._todoidanghien = None
         self._hientodoi(is_batbuoc = True)
+
+    def _todoimotlan(self):
+        hwnd = self.get_selected_hwnd()
+        if not hwnd:
+            from tkinter import messagebox
+            messagebox.showwarning("Tổ đội 1 lần", "Chọn nhân vật làm trưởng nhóm trong danh sách trước", parent = self.root)
+            return
+        # Nút trên giao diện: đang gom thì huỷ việc gom (nhóm giữ nguyên); phím tắt Ctrl+Alt+T thì chỉ bắt đầu
+        info = self.shared_data.get(hwnd) or {}
+        self.command_dict[int(hwnd)] = "huytodoimotlan" if info.get("_is_dangtodoimotlan") else "todoimotlan"
+
+    def _capnhattodoimotlan(self):
+        hwnd = self.get_selected_hwnd()
+        info = (self.shared_data.get(hwnd) or {}) if hwnd else {}
+        chunut = "⏹ Huỷ tổ đội 1 lần" if info.get("_is_dangtodoimotlan") else "👥 Tổ đội 1 lần"
+        if self.btn_todoimotlan.cget("text") != chunut:
+            self.btn_todoimotlan.config(text = chunut)
+        chu = info.get("_trangthaitodoimotlan") or ""
+        if self.lbl_todoimotlan.cget("text") != chu:
+            self.lbl_todoimotlan.config(text = chu)
 
     def _tentheoid(self):
         # {ID người chơi: tên} để hiện tên thay cho ID: nhân vật đang chạy bot (chắc nhất), rồi tới file tài khoản
@@ -2074,6 +2102,7 @@ class GiaoDienHienThi:
             self._capnhatsumon()
             self._capnhatlanglyson()
             self._capnhatsugia()
+            self._capnhattodoimotlan()
             # Nội dung có thể cao lên/thấp xuống (dòng tạm ngưng, danh sách tài khoản...) mà Canvas không tự biết
             for tabcuon in self._tabcuons:
                 self._capnhatcuontab(*tabcuon)

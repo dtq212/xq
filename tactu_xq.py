@@ -238,6 +238,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._iddiemdanhxungquanhhientai = -1
         # Điểm đánh đặt / nạp trong phó bản mượn ID bản đồ ngoài (Phong Yêu Kính): ra khỏi phó bản thì tự bỏ hết, kẻo chạy lên bản đồ thật
         self._is_lotrinhphobanmuonbando = False
+        # Các thời điểm còn phải ngắt di chuyển sau khi vừa bỏ điểm đánh lúc ra khỏi phó bản đó
+        self._thoidiemngatdichuyenroiphobans = []
+        self._thoidiemroiphobanmuonbando = 0.
         # Tắt thì lộ trình chỉ đi các điểm cùng bản đồ đang đứng, không chạy sang bản đồ khác
         self._is_dilotrinhkhacbando = True
         # Lộ trình mẫu đang dùng dạng "<id bản đồ>|<tên mẫu>|<1 nếu đi ngược chiều>", rỗng nếu tự đặt điểm
@@ -354,6 +357,13 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._khoalogdichuyencuoi = None
         self._thoidiemtodoigannhat_map = {}
         self._thoidiemxulytodoigannhat = 0.
+        # Tổ đội 1 lần (Ctrl+Alt+T, tactu_hoatdong_xq): mình là trưởng nhóm đang gom người {"lucbatdau", "thanhviens", "dangmoi": ID đang mời,
+        # "lucmoi"}, None = không;
+        # trạng thái lần gần nhất cho giao diện; (lúc, id trưởng nhóm) lần đọc shared_data "có ai đang gom mình không"; lúc rời nhóm cũ gần nhất
+        self._todoimotlan = None
+        self._trangthaitodoimotlan = ""
+        self._bonhotodoimotlan = (0., 0)
+        self._thoidiemroinhomtodoimotlan = 0.
         # Đồng đội hạng cao hơn đang được mời vào nhóm (để biết đã mời bao lâu)
         self._idmoihangcaohon = 0
         self._thoidiembatdaumoihangcaohon = 0.
@@ -828,6 +838,19 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             phatam("Bật tổ đội tự động")
         else:
             phatam("Tắt tổ đội tự động")
+
+    def batdau_todoimotlan(self):
+        # Ctrl+Alt+T / nút "Tổ đội 1 lần": bắt đầu gom thành viên vào nhóm hiện tại của mình. Phím tắt chỉ bắt đầu (đang gom thì bắt đầu
+        # lại từ đầu), không bao giờ huỷ: bấm nhầm 2 lần không được mất lượt gom. Huỷ chỉ bằng nút trên giao diện (huy_todoimotlan)
+        self._todoimotlan = {"lucbatdau": time.time(), "thanhviens": [], "dangmoi": 0, "lucmoi": 0.}
+        self._trangthaitodoimotlan = "Tổ đội 1 lần: bắt đầu gom thành viên"
+        print("[TỔ ĐỘI 1 LẦN] Bắt đầu gom thành viên vào nhóm hiện tại")
+        phatam("Tổ đội một lần")
+
+    def huy_todoimotlan(self):
+        # Nút "Huỷ tổ đội 1 lần" trên giao diện (phím tắt không huỷ): chỉ thôi mời, nhóm hiện tại giữ nguyên, thành viên thôi rời nhóm / chờ mời
+        if self._todoimotlan:
+            self._ketthuctodoimotlan("Đã huỷ tổ đội 1 lần (nhóm giữ nguyên)")
 
     def battat_is_tudongtheosau(self):
         self._is_tudongtheosau = not self._is_tudongtheosau

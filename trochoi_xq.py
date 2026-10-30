@@ -19,14 +19,15 @@ from dangnhap_xq import TuDongDangNhap
 from dieuphoi_xq import taicauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
 from giaodienhienthi_xq import GiaoDienHienThi
 from hangso_xq import IS_CHIBATAMTHANHCUASOUUTIEN, THOIGIANKIEMTRAAMTHANH
+from lan_xq import DongBoLan, taicauhinhlan
 from thongbao_xq import DieuKhienTelegram
 from tienich_xq import laynhomtodoitudongs
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-def run_bot_process(hwnd, shared_data, command_dict, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos, dieuphoi_giukynangs):
+def run_bot_process(hwnd, shared_data, command_dict, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos, dieuphoi_giukynangs, shared_data_lan = None):
     try:
-        bot = CuaSo(hwnd, shared_data, command_dict, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos, dieuphoi_giukynangs)
+        bot = CuaSo(hwnd, shared_data, command_dict, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos, dieuphoi_giukynangs, shared_data_lan)
         while not bot.main_stop.is_set():
             if not win32gui.IsWindow(hwnd):
                 break
@@ -51,6 +52,9 @@ class TroChoiManager:
         self.dieuphoi_giukynangs = self.manager.dict()
         # Cấu hình nhịp lệnh dùng chung mọi bot, giao diện sửa trực tiếp ở đây (bot đọc lại mỗi giây)
         self.dieuphoi_trangthai["cauhinh"] = taicauhinhdieuphoi()
+        # Cửa sổ ở máy khác trong LAN (lan_xq, có _internal/lan.json mới bật): chỉ bot đọc, giao diện vẫn chỉ thấy máy này
+        self.cauhinhlan = taicauhinhlan()
+        self.shared_data_lan = self.manager.dict() if self.cauhinhlan else None
         self.bot_processes = {}
 
     def _timcuasogame(self):
@@ -78,6 +82,8 @@ class TroChoiManager:
         self.dangnhap.batdau()
         # Lệnh từ Telegram và báo cáo định kỳ (thongbao_xq), 1 luồng cho cả máy
         DieuKhienTelegram(self.shared_data, self.command_dict).batdau()
+        if self.cauhinhlan:
+            DongBoLan(self.cauhinhlan, self.shared_data, self.shared_data_lan).batdau()
 
         root = tk.Tk()
         gui = GiaoDienHienThi(root, self.shared_data, self.command_dict, self.dieuphoi_trangthai, self.dangnhap)
@@ -109,7 +115,7 @@ class TroChoiManager:
             game_hwnds = self._timcuasogame()
             for hwnd in game_hwnds:
                 if hwnd not in self.bot_processes:
-                    p = Process(target = run_bot_process, args = (hwnd, self.shared_data, self.command_dict, self.dieuphoi_khoa, self.dieuphoi_trangthai, self.dieuphoi_dangchos, self.dieuphoi_giukynangs))
+                    p = Process(target = run_bot_process, args = (hwnd, self.shared_data, self.command_dict, self.dieuphoi_khoa, self.dieuphoi_trangthai, self.dieuphoi_dangchos, self.dieuphoi_giukynangs, self.shared_data_lan))
                     p.daemon = True
                     p.start()
                     self.bot_processes[hwnd] = p
@@ -209,6 +215,8 @@ class TroChoiManager:
                     cmd = "botoanbo_tenmuctieutancong"
                 elif keyboard.is_pressed("ctrl+alt+x"):
                     cmd = "botoanbo_tenmuctieukhongtancong"
+                elif keyboard.is_pressed("ctrl+alt+t"):
+                    cmd = "todoimotlan"
                 elif keyboard.is_pressed("ctrl+alt+f"):
                     cmd = "battat_tudongtheosau"
                 elif keyboard.is_pressed("ctrl+alt+p"):

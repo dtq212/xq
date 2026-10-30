@@ -173,9 +173,143 @@ class TacTuHoatDong:
         print("[TẠM NGƯNG] Bật lại hoạt động thủ công")
         phatam("Bật lại hoạt động")
 
+    def get_todoimotlanshare(self):
+        # Đang gom tổ đội 1 lần: báo qua shared_data để cửa sổ thành viên (cả máy khác nối LAN) rời nhóm khác, nhận lời mời của mình
+        s = self._todoimotlan
+        return {"idtruongnhom": self.moitruong.get_idnguoichoi(), "thanhviens": list(s["thanhviens"]), "dangmoi": s["dangmoi"]} if s else None
+
+    def _ketthuctodoimotlan(self, trangthai):
+        self._todoimotlan = None
+        self._trangthaitodoimotlan = trangthai
+        print(f"[TỔ ĐỘI 1 LẦN] {trangthai}")
+        phatam(trangthai)
+
+    def _layidnguoichoionlines(self):
+        # ID nhân vật đang chạy bot (mọi cửa sổ cùng máy / máy khác nối LAN, còn cập nhật)
+        try:
+            danhsach = list(self.shared_data.items()) if self.shared_data is not None else []
+        except Exception:
+            return set()
+        return {info.get("idnguoichoi") for idcuaso, info in danhsach if idcuaso != self.idcuaso and isinstance(info, dict)
+                and time.time() - info.get("thoidiemcapnhat", 0.) <= 5. and info.get("idnguoichoi")}
+
+    def _xulytodoimotlantruongnhom(self):
+        # Mình bấm Tổ đội 1 lần: giữ nguyên nhóm hiện tại (không rời / nhường quyền, nhóm đang giữ phó bản), mời các nhân vật cùng danh sách
+        # tổ đội tự động đang online hoặc ở gần tới khi đủ hoặc quá THOIGIANTODOIMOTLAN giây
+        s = self._todoimotlan
+        moitruong = self.moitruong
+        idnguoichoi = moitruong.get_idnguoichoi()
+        danhsach = next((list(nhom) for nhom in laynhomtodoitudongs() if idnguoichoi in nhom), None)
+        if not danhsach:
+            self._ketthuctodoimotlan("Tổ đội 1 lần: nhân vật này chưa có trong danh sách Tổ đội tự động")
+            return
+        is_dangtrongnhom = moitruong.get_is_dangnamtrongnhom()
+        if is_dangtrongnhom and not moitruong.get_is_truongnhom():
+            self._ketthuctodoimotlan("Tổ đội 1 lần: mình không phải trưởng nhóm, không mời được")
+            return
+        onlines = self._layidnguoichoionlines() | set(moitruong.get_danhsachidnguoichoixungquanhs() or ())
+        s["thanhviens"] = [id_ for id_ in danhsach if id_ != idnguoichoi and id_ in onlines]
+        trongnhoms = set(moitruong.get_danhsachidnguoichoithanhviennhoms() or ()) if is_dangtrongnhom else set()
+        chuavaos = [id_ for id_ in s["thanhviens"] if id_ not in trongnhoms]
+        if not s["thanhviens"]:
+            self._ketthuctodoimotlan("Tổ đội 1 lần: không thấy thành viên nào trong danh sách đang online")
+            return
+        if not chuavaos:
+            self._ketthuctodoimotlan(f"Tổ đội 1 lần: đã đủ {len(s['thanhviens'])} thành viên")
+            return
+        if len(trongnhoms) >= SOLUONGTHANHVIENNHOMTOIDA:
+            self._ketthuctodoimotlan("Tổ đội 1 lần: nhóm đã đầy")
+            return
+        conlai = THOIGIANTODOIMOTLAN - (time.time() - s["lucbatdau"])
+        if conlai <= 0:
+            self._ketthuctodoimotlan(f"Tổ đội 1 lần: hết {int(THOIGIANTODOIMOTLAN)}s, còn thiếu {', '.join(self._tenidnguoichoi(i) for i in chuavaos)}")
+            return
+        # Mời lần lượt từng người: trưởng nhóm có lời mời đang chờ mà mời thêm người khác thì người trước bấm đồng ý lại thành "xin vào nhóm",
+        # chỉ người được mời sau đồng ý mới vào. Người đang mời đã vào / quá THOIGIANCHOMOITHANHVIEN giây chưa vào thì mới mời người kế
+        now = time.time()
+        if s["dangmoi"] and (s["dangmoi"] not in chuavaos or now - s["lucmoi"] > THOIGIANCHOMOITHANHVIEN):
+            s["dangmoi"] = 0
+        if not s["dangmoi"]:
+            # Người đang lẻ (không ở nhóm nào, đồng ý được ngay) trước, rồi tới người lâu chưa được mời nhất
+            idtruongnhoms = self._layidtruongnhomtheoidnguoichoi()
+            idmoi = min(chuavaos, key = lambda i: (bool(idtruongnhoms.get(i)), self._thoidiemtodoigannhat_map.get(i, 0)))
+            if not moitruong.action_moihoacxinvaonhom(idmoi):
+                return
+            self._thoidiemtodoigannhat_map[idmoi] = now
+            s.update(dangmoi = idmoi, lucmoi = now)
+        conthieus = ", ".join(self._tenidnguoichoi(i) for i in chuavaos if i != s["dangmoi"])
+        self._trangthaitodoimotlan = f"Tổ đội 1 lần: đang mời {self._tenidnguoichoi(s['dangmoi'])}" \
+                                     + (f", chờ tới lượt: {conthieus}" if conthieus else "") + f" (còn {int(conlai)}s)"
+
+    def _layidtruongnhomtheoidnguoichoi(self):
+        # {ID người chơi: ID trưởng nhóm (0 = đang lẻ)} của các nhân vật chạy bot (cùng máy / LAN) còn cập nhật
+        try:
+            danhsach = list(self.shared_data.values()) if self.shared_data is not None else []
+        except Exception:
+            return {}
+        return {info.get("idnguoichoi"): info.get("idtruongnhom") or 0 for info in danhsach
+                if isinstance(info, dict) and time.time() - info.get("thoidiemcapnhat", 0.) <= 5.}
+
+    def _tenidnguoichoi(self, idnguoichoi):
+        try:
+            for info in list(self.shared_data.values()) if self.shared_data is not None else ():
+                if isinstance(info, dict) and info.get("idnguoichoi") == idnguoichoi and info.get("tennhanvat"):
+                    return info["tennhanvat"]
+        except Exception:
+            pass
+        return str(idnguoichoi)
+
+    def _layidtruongnhomtodoimotlan(self):
+        # Trưởng nhóm (cửa sổ khác, cùng máy hoặc LAN) đang gom tổ đội 1 lần có mình trong danh sách: (ID trưởng nhóm, có đang mời đúng
+        # mình không), không thì (0, False). Nhớ 0.5s
+        thoidiem, ketqua = self._bonhotodoimotlan
+        if time.time() - thoidiem <= 0.5:
+            return ketqua
+        idtoi = self.moitruong.get_idnguoichoi()
+        ketqua = (0, False)
+        try:
+            danhsach = list(self.shared_data.items()) if self.shared_data is not None else []
+        except Exception:
+            danhsach = []
+        for idcuaso, info in danhsach:
+            if idcuaso == self.idcuaso or not isinstance(info, dict) or time.time() - info.get("thoidiemcapnhat", 0.) > 5.:
+                continue
+            gom = info.get("_todoimotlan")
+            if gom and idtoi in (gom.get("thanhviens") or ()) and gom.get("idtruongnhom"):
+                ketqua = (gom["idtruongnhom"], gom.get("dangmoi") == idtoi)
+                break
+        self._bonhotodoimotlan = (time.time(), ketqua)
+        return ketqua
+
+    def _xulytodoimotlanthanhvien(self, idtruongnhom, is_dangmoitoi):
+        # Trưởng nhóm đang gom mình (tổ đội 1 lần): đang ở nhóm khác thì rời ngay (Lăng Ly Sơn đang đi dở thì không) để sẵn sàng; chỉ đồng ý
+        # lời mời của trưởng nhóm đó khi tới lượt mình. Không tự xin vào (xin vào chen ngang lời mời trưởng nhóm đang gửi người khác).
+        # Chạy cả khi mình tắt Tổ đội tự động
+        moitruong = self.moitruong
+        if moitruong.get_is_dangnamtrongnhom():
+            if moitruong.get_idnguoichoitruongnhom() == idtruongnhom or self.get_is_giunhomlanglyson():
+                return
+            if time.time() - self._thoidiemroinhomtodoimotlan > 3.:
+                self._thoidiemroinhomtodoimotlan = time.time()
+                print(f"[TỔ ĐỘI 1 LẦN] Rời nhóm hiện tại để vào nhóm {self._tenidnguoichoi(idtruongnhom)}")
+                moitruong.action_thoatkhoinhom()
+            return
+        if is_dangmoitoi:
+            moitruong.action_kiemtravadongyloimoinhom([idtruongnhom])
+
     def action_tudongtodoi(self):
         # Lăng Ly Sơn đang giải tán tổ đội cũ (tactu_langlyson_xq): tạm nghỉ, còn trong nhóm thì rời; xong thì lập nhóm mới như thường
         if self.action_roinhomlanglyson():
+            return
+        # Tổ đội 1 lần (Ctrl+Alt+T): đang gom (mình trưởng nhóm) hoặc đang được gom thì bỏ Tổ đội tự động lượt này, khỏi giành nhau
+        if self._todoimotlan:
+            if time.time() - self._thoidiemxulytodoigannhat >= 0.5:
+                self._thoidiemxulytodoigannhat = time.time()
+                self._xulytodoimotlantruongnhom()
+            return
+        idtruongnhommotlan, is_dangmoitoi = self._layidtruongnhomtodoimotlan()
+        if idtruongnhommotlan:
+            self._xulytodoimotlanthanhvien(idtruongnhommotlan, is_dangmoitoi)
             return
         if not self._is_tudongtodoi:
             return

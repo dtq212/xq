@@ -15,6 +15,7 @@ from loop_xq import (
     LoopGiuOTrongHanhTrang
 )
 from dieuphoi_xq import DieuPhoiLuot, GiuKyNangMucTieu, KENH_LENH, KENH_DICHUYEN
+from lan_xq import DuLieuNhieuMay
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
 from thongke_xq import ThongKe, CHUKYLAYMAU
@@ -75,7 +76,8 @@ def khoidong_loopgiamsat(giamsat, theodoisuco, moitruong, stop):
         time.sleep(CHUKYGIAMSAT)
 
 class CuaSo:
-    def __init__(self, idcuaso, shared_data, command_dict, dieuphoi_khoa = None, dieuphoi_trangthai = None, dieuphoi_dangchos = None, dieuphoi_giukynangs = None):
+    def __init__(self, idcuaso, shared_data, command_dict, dieuphoi_khoa = None, dieuphoi_trangthai = None, dieuphoi_dangchos = None, dieuphoi_giukynangs = None,
+                 shared_data_lan = None):
         self.idcuaso = idcuaso
         self.shared_data = shared_data
         self.command_dict = command_dict
@@ -88,7 +90,8 @@ class CuaSo:
                 self.moitruong.giukynang = GiuKyNangMucTieu(idcuaso, dieuphoi_khoa, dieuphoi_giukynangs)
         self.moitruong.action_thietlaphooknoidungtrochuyen()
         self.tactu = TacTu(self.moitruong)
-        self.tactu.shared_data = shared_data
+        # Bot đọc gộp cả cửa sổ máy khác trong LAN (lan_xq), ghi vẫn vào máy này
+        self.tactu.shared_data = DuLieuNhieuMay(shared_data, shared_data_lan) if shared_data_lan is not None else shared_data
         self.tactu.idcuaso = idcuaso
         self.main_stop = threading.Event()
         self.thongke = ThongKe(self.moitruong, self.tactu)
@@ -216,6 +219,10 @@ class CuaSo:
                     "_idmuctieutheosau": self.tactu._idmuctieutheosau,
                     "_tenmuctieutheosau": self.tactu._tenmuctieutheosau,
                     "_is_tudongtodoi": self.tactu._is_tudongtodoi,
+                    # Tổ đội 1 lần: trưởng nhóm đang gom ai (cửa sổ thành viên đọc), trạng thái cho giao diện
+                    "_todoimotlan": self.tactu.get_todoimotlanshare(),
+                    "_is_dangtodoimotlan": bool(self.tactu._todoimotlan),
+                    "_trangthaitodoimotlan": self.tactu._trangthaitodoimotlan,
                     "_is_tudongsudungkynang": self.tactu._is_tudongsudungkynang,
                     "_is_uutienmuctieupk": self.tactu._is_uutienmuctieupk,
                     "_is_tudongtimkiemmuctieu": self.tactu._is_tudongtimkiemmuctieu,
@@ -493,6 +500,10 @@ class CuaSo:
                     self.tactu.botoanbo_diemdanhxungquanh()
                 elif cmd == "battat_tudongtodoi":
                     self.tactu.battat_is_tudongtodoi()
+                elif cmd == "todoimotlan":
+                    self.tactu.batdau_todoimotlan()
+                elif cmd == "huytodoimotlan":
+                    self.tactu.huy_todoimotlan()
                 elif cmd == "battat_thucsondao":
                     self.tactu.battat_is_thucsondao()
                 elif cmd == "battat_tudongsudungkynang":

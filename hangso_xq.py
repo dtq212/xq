@@ -224,6 +224,10 @@ THOIGIANCHIASEANTHAN = 3.
 
 SOLUONGTHANHVIENNHOMTOIDA = 5
 SOLUONGTHANHVIENNHOMTOIDATHUCTE = 5
+# Tổ đội 1 lần (Ctrl+Alt+T): mời thành viên tối đa chừng này giây rồi thôi
+THOIGIANTODOIMOTLAN = 90.
+# Tổ đội 1 lần mời lần lượt từng người: người đang mời quá chừng này giây chưa vào thì mời người kế (lượt sau mời lại)
+THOIGIANCHOMOITHANHVIEN = 8.
 SOLUONGHIEUUNGNHANVATTOIDA = 20
 
 TUTHENHANVAT_DUNGIM = 1
@@ -727,6 +731,8 @@ BANDO_LANGLYSON3 = 704
 # Phó bản: rời nhóm khi đang là trưởng nhóm sẽ giải tán, đá cả đội ra ngoài => tổ đội tự động không tự rời nhóm ở đây.
 # Hồi Thành Phù là ra khỏi phó bản => tuyệt đối không dùng ở đây (get_lydokhonghoithanhphu)
 BANDOPHOBANs = (BANDO_BATQUAITRAN, BANDO_THANHKIEU, BANDO_LANGLYSON1, BANDO_LANGLYSON2, BANDO_LANGLYSON3, 891, 892, 893, 894, 895, 896, 897, 898, 899)
+# Vừa ra khỏi phó bản mượn ID bản đồ ngoài (Phong Yêu Kính): chờ chừng này giây mới tự chọn lộ trình mẫu (ID bản đồ đổi sau tên)
+THOIGIANCHONAPLOTRINHROIPHOBAN = 1.5
 
 BANDO_MADAPHO = 211
 BANDO_CUTHUDAO = 549
@@ -796,6 +802,7 @@ BANDO_TANQUOC = 50
 BANDO_SOQUOC = 60
 BANDO_YENQUOC = 70
 BANDO_CHUQUOC = 80
+BANDO7QUOCGIAs = (BANDO_TEQUOC, BANDO_HANQUOC, BANDO_TRIEUQUOC, BANDO_NGUYQUOC, BANDO_TANQUOC, BANDO_SOQUOC, BANDO_YENQUOC, )
 
 BANDO_CULOC = 131
 

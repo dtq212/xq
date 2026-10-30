@@ -697,7 +697,8 @@ class TacTuLangLySon:
         return s["khoathuong"] if s and s["giaidoan"] == "doinhom" and not s["is_daroinhom"] else ""
 
     def _laythanhvienchualanh(self, khoathuong):
-        # Tên thành viên trong nhóm chạy cùng máy (shared_data) chưa báo đã lĩnh mã thưởng này. Thành viên ở máy khác không biết được, bỏ qua
+        # Tên thành viên trong nhóm chạy cùng máy (shared_data, gồm cả máy khác nối qua LAN - lan_xq) chưa báo đã lĩnh mã thưởng này.
+        # Thành viên ở máy không nối LAN thì không biết được, bỏ qua
         if self.shared_data is None:
             return []
         thanhviens = set(self.moitruong.get_danhsachidnguoichoithanhviennhoms() or ()) - {self.moitruong.get_idnguoichoi()}
