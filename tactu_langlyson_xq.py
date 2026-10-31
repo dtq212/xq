@@ -36,7 +36,7 @@ import unicodedata
 from hangso_xq import *
 from giaodo_xq import taolenhgiao
 from thongbao_xq import baosuco
-from tienich_xq import phatam, laynhomtodoitudongs
+from tienich_xq import phatam, laynhomtodoitudongs, taicauhinhphongyeu, CAUHINHPHONGYEU_MACDINH
 
 BANDO_THUYHOASON = 82
 NPCVAOLANGLYSON = ("Đào Vong Khổ Dịch", 137, 117)
@@ -59,21 +59,21 @@ LOIMENUVAOPHONGYEU = "đã mở phong yêu kính"
 LUACHONVAOLAIPY = (0, 0)
 LOIMENUTHANHVIENXACNHANPY = "muốn mở phong yêu kính"
 LOIMENUDOITHANHVIENPY = "đợi thành viên"
-# Đồ đem đốt (_phantichdolamkim): tên màu Lam Kim (mã màu \x1bC đầu mô tả; đồ vàng là \x1bY), trang bị (dòng loại "［...］", không phải
-# "[Pháp Bảo]"), Chưa giám định, chưa Phong Ấn / Khoá, cấp sử dụng >= CAPDOLAMKIMTOITHIEU (game: trang bị từ cấp 15). Chọn món cấp thấp,
-# giá bán thấp nhất. Chỉ lấy đồ trong túi, không bao giờ đụng đồ đang mặc
+# Đồ đem đốt (_phantichdolamkim, cấu hình ở giao diện: tienich_xq.taicauhinhphongyeu): màu tên được chọn (mã màu đầu mô tả: Lam Kim
+# \x1bC, Hoàng Kim \x1bY), trang bị (dòng loại "［...］", không phải "[Pháp Bảo]"), (tuỳ chọn) Chưa giám định, chưa Phong Ấn / Khoá, cấp sử
+# dụng >= cấp nhân vật - caphonnhanvat (quái trong phó bản = cấp đồ + 20, đồ thấp quá quái yếu không có kinh nghiệm) và >=
+# CAPDOLAMKIMTOITHIEU (game: trang bị từ cấp 15), tên không chứa cụm "khongdot", có "chidot" thì tên phải chứa 1 cụm trong đó. Chọn món
+# cấp thấp, giá bán thấp nhất. Chỉ lấy đồ trong túi, không bao giờ đụng đồ đang mặc
 MAMAULAMKIM = "\x1bC"
+MAMAUHOANGKIM = "\x1bY"
 CAPDOLAMKIMTOITHIEU = 15
-# Quái trong phó bản = cấp đồ đốt + 20 (không vượt cấp trưởng nhóm): đồ thấp hơn cấp nhân vật quá chừng này thì quái yếu, không có
-# kinh nghiệm => không đốt (người dùng)
-CAPDOLAMKIMTHAPHONNHANVAT = 25
 # Mỗi lượt gửi desc tối đa chừng này ô chưa có mô tả (mỗi lệnh chờ 0.2s); gửi xong chừng này giây chưa có mô tả thì gửi lại, tối đa
 # SOLANDESCPY lần rồi bỏ ô đó
 SODESCMOILUOT = 3
 THOIGIANCHODESCPY = 3.
 SOLANDESCPY = 3
 SOBOSSPHONGYEU = 2
-# Tên boss có đuôi cấp, vd "Trịnh Vương Tàn Phách (cấp 96)" (85%, "<nước> Vương Tàn Phách"), "Hổ Cảnh Kính Ma (cấp 97)" (100%, còn có thể
+# Tên boss có đuôi cấp, vd "Trịnh Vương Tàn Phách (cấp 96)" (85%, "<nước> Vương Tàn Phách"), "Hổ Cảnh Kính Ma (cấp 97)" / "Long Nha Kính Ma (cấp 101)" / "Kính Ma Khuyển Thần (cấp 101)" (100%, còn có thể
 # gặp tên khác: thêm vào đây). Quái thường có chữ "Quốc": "Trịnh Quốc Kính Yêu", "Ngô Quốc Kính Ma" (cũng chứa "Kính Ma", từng bị nhận
 # nhầm là boss) => tên có TUKHONGPHAIBOSSPY thì không phải boss
 TUBOSSPHONGYEUs = ("Vương Tàn Phách", "Kính Ma")
@@ -966,17 +966,28 @@ class TacTuLangLySon:
 
     # --- Phong Yêu Kính ----------------------------------------------------------------------------------------------------------------
     @staticmethod
-    def _phantichdolamkim(mota, ten):
-        # Mô tả thô (còn mã màu) của 1 ô hành trang -> (cấp, giá bán) nếu là món được phép đem đốt (xem MAMAULAMKIM), không thì None.
+    def _phantichdolamkim(mota, ten, cauhinh = None):
+        # Mô tả thô (còn mã màu) của 1 ô hành trang -> (cấp, giá bán) nếu là món được phép đem đốt theo cauhinh (taicauhinhphongyeu; không
+        # truyền thì mặc định: chỉ Lam Kim chưa giám định), không thì None. Cấp tối thiểu theo cấp nhân vật xét ở _chondolamkim.
         # Dòng tên trong mô tả phải khớp tên ô (tên ô tối đa 31 byte nên chỉ so đầu): mô tả giữ theo ô, đồ chuyển chỗ có thể còn mô tả cũ
-        if not mota or not mota.startswith(MAMAULAMKIM):
+        cauhinh = cauhinh or CAUHINHPHONGYEU_MACDINH
+        mamaus = ((MAMAULAMKIM,) if cauhinh["is_lamkim"] else ()) + ((MAMAUHOANGKIM,) if cauhinh["is_hoangkim"] else ())
+        if not mota or not mamaus or not mota.startswith(mamaus):
             return None
         sach = unicodedata.normalize("NFC", re.sub(r"\x1b.", "", mota))
         dongs = [d.strip() for d in sach.split("\n") if d.strip()]
         ten = unicodedata.normalize("NFC", ten or "").strip()
         if len(dongs) < 2 or not ten or not dongs[0].startswith(ten) or not dongs[1].startswith("［"):
             return None
-        if "Chưa giám định" not in sach or "đã Phong Ấn" in dongs[0] or "Khoá" in dongs[0] or "Khóa" in dongs[0] or "★" in sach:
+        if "đã Phong Ấn" in dongs[0] or "Khoá" in dongs[0] or "Khóa" in dongs[0]:
+            return None
+        # Chỉ đồ chưa giám định: đồ có sao (★) cũng là đồ đã làm gì đó, bỏ luôn; tắt thì đốt cả đồ đã giám định
+        if cauhinh["is_chichuagiamdinh"] and ("Chưa giám định" not in sach or "★" in sach):
+            return None
+        tenthuong = dongs[0].lower()
+        if any(unicodedata.normalize("NFC", t).lower() in tenthuong for t in cauhinh["khongdot"]):
+            return None
+        if cauhinh["chidot"] and not any(unicodedata.normalize("NFC", t).lower() in tenthuong for t in cauhinh["chidot"]):
             return None
         khop = re.search(r"Cấp độ sử dụng\s*[:：]\s*cấp\s*(\d+)", sach)
         if not khop or int(khop.group(1)) < CAPDOLAMKIMTOITHIEU:
@@ -1128,8 +1139,8 @@ class TacTuLangLySon:
         return self._giaophongyeu(s, tennpc, x, y)
 
     def _laycapdolamkimtoithieu(self):
-        # Cấp đồ thấp nhất được đốt: cấp nhân vật - CAPDOLAMKIMTHAPHONNHANVAT, không dưới CAPDOLAMKIMTOITHIEU
-        return max(CAPDOLAMKIMTOITHIEU, (self.moitruong.get_capdonhanvat() or 0) - CAPDOLAMKIMTHAPHONNHANVAT)
+        # Cấp đồ thấp nhất được đốt: cấp nhân vật - caphonnhanvat (giao diện), không dưới CAPDOLAMKIMTOITHIEU
+        return max(CAPDOLAMKIMTOITHIEU, (self.moitruong.get_capdonhanvat() or 0) - taicauhinhphongyeu()["caphonnhanvat"])
 
     def _chondolamkim(self, s):
         # Món đem đốt: (cấp, giá, ô, id đối tượng, tên) cấp thấp / rẻ nhất trong túi (không xét đồ đang mặc), "doc" khi còn ô chưa có mô
@@ -1141,6 +1152,7 @@ class TacTuLangLySon:
         dadesc = s.setdefault("dadescpy", {})
         ketquas, sodesc, soguidesc = [], 0, 0
         captoithieu = self._laycapdolamkimtoithieu()
+        cauhinh = taicauhinhphongyeu()
         for ten, mons in moitruong.get_danhsachvatphamhanhtrang_map().items():
             if not ten:
                 continue
@@ -1159,7 +1171,7 @@ class TacTuLangLySon:
                             dadesc[(vitri, iddoituong)] = (now, solan + 1)
                             moitruong.truyvan_motavatphamhanhtrang(vitri)
                     continue
-                phantich = self._phantichdolamkim(mota, ten)
+                phantich = self._phantichdolamkim(mota, ten, cauhinh)
                 if phantich and phantich[0] >= captoithieu:
                     ketquas.append((*phantich, vitri, iddoituong, ten))
         if sodesc:
@@ -1210,14 +1222,14 @@ class TacTuLangLySon:
                 return None
             if not chon:
                 captoithieu = self._laycapdolamkimtoithieu()
-                baosuco(moitruong, "langlyson", f"⚠️ {ten}: hết đồ Lam Kim chưa giám định (cấp ≥ {captoithieu}) trong hành trang, "
+                baosuco(moitruong, "langlyson", f"⚠️ {ten}: hết đồ được phép đốt (cấp ≥ {captoithieu}, xem cấu hình đồ đem đốt) trong hành trang, "
                                                 f"dừng tự động", khoa = f"{s['batdau']}|hetdopy", giancach = 0.)
-                self._ketthuclanglyson(f"❌ Dừng: hết đồ Lam Kim chưa giám định cấp ≥ {captoithieu} để đốt")
+                self._ketthuclanglyson(f"❌ Dừng: hết đồ được phép đốt (cấp ≥ {captoithieu})")
                 return None
             cap, gia, vitri, iddoituong, tendo = chon
             # Đọc lại mô tả mới của chính ô này cho chắc rồi mới nhận (mô tả cũ có thể là của món trước ở ô đó)
             moitruong.get_motavatphamhanhtrang(vitri, is_napmoi = True)
-            if not self._phantichdolamkim(moitruong.get_motathovatphamhanhtrangcosan(vitri), tendo):
+            if not self._phantichdolamkim(moitruong.get_motathovatphamhanhtrangcosan(vitri), tendo, taicauhinhphongyeu()):
                 self._logpb(s, f"{tendo} (ô {vitri}) mô tả mới không còn đúng đồ Lam Kim, chọn lại")
                 return None
             d = s["dolamkim"] = {"vitri": vitri, "id": iddoituong, "ten": tendo, "cap": cap}

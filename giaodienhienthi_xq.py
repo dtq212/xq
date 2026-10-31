@@ -12,7 +12,7 @@ from hangso_xq import laytenbando, KHOANGCACHSUDUNGKYNANGTAMXA, PHANTRAMNOILUCKH
 import re
 
 from tienich_xq import tailotrinhmau, duongdanlotrinhmau, tainhomtodoitudongs, luunhomtodoitudongs, duongdantodoitudong, laynhomtodoitudongs
-from tienich_xq import duongdantaikhoan, phatam, tenmaynay
+from tienich_xq import duongdantaikhoan, phatam, tenmaynay, taicauhinhphongyeu, luucauhinhphongyeu
 from dangnhap_xq import duongdangamemaynay, is_batchomaynay, luucauhinhdangnhap, taicauhinhdangnhap, taikhoanbatchomaynay
 from thongke_xq import duongdanthongke, taithongke, gopthongke
 from luattuido_xq import tailuat, luuluat, motaluat, TENHANHDONG, DIEUKIENs, TENDIEUKIEN, TRUONGMUABU, TENTRUONGMUABU, TENCHIKHI, CHIKHI_LUON, XEPCHONGMACDINH
@@ -1547,11 +1547,12 @@ class GiaoDienHienThi:
                               "Thành Kiều: trưởng nhóm tới Tần Quốc (220, 65) Thảo Nghịch Tướng Quân \"3. Sử dụng [Hạt Mè Khai Môn] tiến vào\" → "
                               "Xác nhận (cả nhóm được đưa vào) → Mã Quỷ, Lương Hưng, Yến Thập Tam, Tư Tà → chờ đủ thành viên đánh Thủ Lĩnh "
                               "Thành Kiều → Hồi Thành Phù về Tần Quốc \"4. Nhận thưởng\" → \"1. Nhận thưởng\" → đổi tổ đội như trên. Hết Hạt Mè Khai Môn thì dừng. "
-                              "Phong Yêu Kính (bật ở mọi nhân vật trong nhóm; thành viên bật Theo sau thì đi theo, không bật thì tự đi lộ trình dò khắp bản đồ đánh quái như trưởng nhóm): người online đứng đầu nhóm Tổ đội tự động lập nhóm 1 người, tới Chu Quốc (252, 160) Tả Khâu Minh, give 1 món Lam Kim (chỉ đồ trong túi, tên màu xanh "
-                              "Lam Kim, Chưa giám định, chưa Phong Ấn, cấp ≥ cấp nhân vật − 25 và ≥ 15; chọn món cấp thấp nhất) → \"1. Đúng vậy, ta muốn đi\" → mời các thành viên online của nhóm vào → mọi người "
-                              "\"1. Đúng vậy, ta muốn vào\" → dò khắp bản đồ đánh hết quái, giết 2 boss (tên có Vương / Thần) → Thỏ Yêu về Chu Quốc "
-                              "→ đổi tổ đội như trên. Hết đồ Lam Kim thì dừng.",
+                              "Phong Yêu Kính (bật ở mọi nhân vật trong nhóm; thành viên bật Theo sau thì đi theo, không bật thì tự đi lộ trình dò khắp bản đồ đánh quái như trưởng nhóm): người online đứng đầu nhóm Tổ đội tự động lập nhóm 1 người, tới Chu Quốc (252, 160) Tả Khâu Minh, give 1 món đồ theo cấu hình bên dưới (chỉ đồ trong túi, "
+                              "chưa Phong Ấn, chọn món cấp thấp nhất) → \"1. Đúng vậy, ta muốn đi\" → mời các thành viên online của nhóm vào → mọi người "
+                              "\"1. Đúng vậy, ta muốn vào\" → dò khắp bản đồ đánh hết quái, giết 2 boss (Vương Tàn Phách / Kính Ma) → Thỏ Yêu về Chu Quốc "
+                              "→ đổi tổ đội như trên. Hết đồ được phép đốt thì dừng.",
                  fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(560)).grid(row = 2, column = 0, sticky = tk.W, pady = (6, 0))
+        self._taocauhinhphongyeu(nhom)
 
         # Tập Kích Môn Phái (tactu_tapkich_xq) cho nhân vật đang chọn
         nhom = self._taonhom(tab, "Phó bản Tập Kích Môn Phái (nhân vật đang chọn)")
@@ -1584,6 +1585,49 @@ class GiaoDienHienThi:
                               "và Thủ Lĩnh Võ Lâm Bại Hoại → hệ thống đưa ra sau 15s → vòng sau, tới khi bấm dừng. Chọn vào 3 lần không "
                               "được đưa vào (hết Ngân Bảo / hết lượt) thì dừng.",
                  fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(560)).grid(row = 2, column = 0, sticky = tk.W, pady = (6, 0))
+
+    def _taocauhinhphongyeu(self, nhom):
+        # Đồ đem đốt vào Phong Yêu Kính (file _internal/phongyeukinh.json, dùng chung mọi nhân vật trên máy; bot đọc lại khi file đổi):
+        # màu tên, chỉ đồ chưa giám định, cấp tối thiểu so với cấp nhân vật, tên không bao giờ đốt / chỉ đốt
+        cauhinh = taicauhinhphongyeu()
+        khung = ttk.Frame(nhom)
+        khung.grid(row = 3, column = 0, sticky = tk.W, pady = (8, 0))
+        ttk.Label(khung, text = "Đồ đem đốt vào Phong Yêu Kính (dùng chung mọi nhân vật trên máy):").grid(row = 0, column = 0, columnspan = 2, sticky = tk.W)
+        self._var_phongyeu = {k: tk.BooleanVar(value = cauhinh[k]) for k in ("is_lamkim", "is_hoangkim", "is_chichuagiamdinh")}
+        hangmau = ttk.Frame(khung)
+        hangmau.grid(row = 1, column = 0, columnspan = 2, sticky = tk.W, pady = (2, 0))
+        for khoa, chu in (("is_lamkim", "Lam Kim (chữ xanh)"), ("is_hoangkim", "Hoàng Kim (chữ vàng)"), ("is_chichuagiamdinh", "Chỉ đồ Chưa giám định")):
+            ttk.Checkbutton(hangmau, text = chu, variable = self._var_phongyeu[khoa], command = self._luucauhinhphongyeu).pack(side = tk.LEFT, padx = (0, 12))
+        hangcap = ttk.Frame(khung)
+        hangcap.grid(row = 2, column = 0, columnspan = 2, sticky = tk.W, pady = (2, 0))
+        ttk.Label(hangcap, text = "Cấp đồ ≥ cấp nhân vật −").pack(side = tk.LEFT)
+        self._str_caphonphongyeu = tk.StringVar(value = str(cauhinh["caphonnhanvat"]))
+        spin = ttk.Spinbox(hangcap, from_ = 0, to = 200, increment = 1, width = 5, textvariable = self._str_caphonphongyeu, command = self._luucauhinhphongyeu)
+        spin.pack(side = tk.LEFT, padx = 4)
+        ttk.Label(hangcap, text = "(và ≥ 15; quái trong phó bản = cấp đồ + 20)", foreground = MAUCHU_PHU).pack(side = tk.LEFT)
+        self._str_phongyeu = {}
+        for dong, (khoa, chu) in enumerate((("khongdot", "Không bao giờ đốt (tên chứa, cách nhau dấu phẩy):"),
+                                            ("chidot", "Chỉ đốt (tên chứa; để trống = mọi món đúng điều kiện trên):")), start = 3):
+            ttk.Label(khung, text = chu).grid(row = dong, column = 0, sticky = tk.W, pady = (2, 0))
+            self._str_phongyeu[khoa] = tk.StringVar(value = ", ".join(cauhinh[khoa]))
+            o = ttk.Entry(khung, textvariable = self._str_phongyeu[khoa], width = 40)
+            o.grid(row = dong, column = 1, sticky = tk.W, padx = (4, 0), pady = (2, 0))
+            o.bind("<FocusOut>", self._luucauhinhphongyeu)
+            o.bind("<Return>", self._luucauhinhphongyeu)
+        for su_kien in ("<FocusOut>", "<Return>"):
+            spin.bind(su_kien, self._luucauhinhphongyeu)
+
+    def _luucauhinhphongyeu(self, event = None):
+        try:
+            caphon = int(float(self._str_caphonphongyeu.get()))
+        except ValueError:
+            caphon = taicauhinhphongyeu()["caphonnhanvat"]
+            self._str_caphonphongyeu.set(str(caphon))
+        cauhinh = {k: v.get() for k, v in self._var_phongyeu.items()}
+        cauhinh["caphonnhanvat"] = caphon
+        for khoa, bien in self._str_phongyeu.items():
+            cauhinh[khoa] = [t.strip() for t in bien.get().split(",") if t.strip()]
+        luucauhinhphongyeu(cauhinh)
 
     def _battatlanglyson(self, phoban):
         # Đang đi phó bản nào thì nút nào cũng là dừng phó bản đó (mỗi nhân vật chỉ đi 1 phó bản 1 lúc)

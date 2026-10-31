@@ -291,6 +291,67 @@ def tainhomtodoitudongs():
         return _chuanhoanhomtodoitudongs(NHANVATTODOITUDONGs_LIST)
 
 
+# Đồ đem đốt khi vào Phong Yêu Kính (tactu_langlyson_xq._phantichdolamkim), dùng chung mọi nhân vật trên máy, sửa ở giao diện:
+# màu tên được đốt (Lam Kim / Hoàng Kim), chỉ đồ Chưa giám định, cấp đồ >= cấp nhân vật - caphonnhanvat, tên chứa cụm trong "khongdot"
+# thì không bao giờ đốt, "chidot" không rỗng thì chỉ đốt món có tên chứa 1 cụm trong đó
+CAUHINHPHONGYEU_MACDINH = {"is_lamkim": True, "is_hoangkim": False, "is_chichuagiamdinh": True, "caphonnhanvat": 25, "khongdot": [], "chidot": []}
+_cauhinhphongyeu_cache = {"cauhinh": None, "thoidiemsua": None, "thoidiemkiemtra": 0.}
+
+
+def duongdancauhinhphongyeu():
+    return os.path.join(os.path.dirname(_thumucthietlap()), "phongyeukinh.json")
+
+
+def _chuanhoacauhinhphongyeu(cauhinh):
+    ketqua = dict(CAUHINHPHONGYEU_MACDINH)
+    if isinstance(cauhinh, dict):
+        for khoa in ("is_lamkim", "is_hoangkim", "is_chichuagiamdinh"):
+            if khoa in cauhinh:
+                ketqua[khoa] = bool(cauhinh[khoa])
+        try:
+            ketqua["caphonnhanvat"] = max(0, int(cauhinh.get("caphonnhanvat", ketqua["caphonnhanvat"])))
+        except (TypeError, ValueError):
+            pass
+        for khoa in ("khongdot", "chidot"):
+            ketqua[khoa] = [str(t).strip() for t in cauhinh.get(khoa) or [] if str(t).strip()]
+    return ketqua
+
+
+def taicauhinhphongyeu():
+    # Đọc file (nhớ theo thời điểm sửa file, xét lại mỗi 1s); không có / lỗi thì mặc định
+    cache = _cauhinhphongyeu_cache
+    if cache["cauhinh"] is not None and time.time() - cache["thoidiemkiemtra"] < 1.:
+        return cache["cauhinh"]
+    cache["thoidiemkiemtra"] = time.time()
+    filepath = duongdancauhinhphongyeu()
+    try:
+        thoidiemsua = os.path.getmtime(filepath)
+    except OSError:
+        thoidiemsua = None
+    if cache["cauhinh"] is None or thoidiemsua != cache["thoidiemsua"]:
+        cauhinh = None
+        if thoidiemsua is not None:
+            try:
+                with open(filepath, "r", encoding = "utf-8") as file:
+                    cauhinh = json.load(file)
+            except Exception as err:
+                print(err)
+        cache.update(cauhinh = _chuanhoacauhinhphongyeu(cauhinh), thoidiemsua = thoidiemsua)
+    return cache["cauhinh"]
+
+
+def luucauhinhphongyeu(cauhinh):
+    filepath = duongdancauhinhphongyeu()
+    try:
+        os.makedirs(os.path.dirname(filepath), exist_ok = True)
+        filetam = filepath + ".tmp"
+        with open(filetam, "w", encoding = "utf-8") as file:
+            json.dump(_chuanhoacauhinhphongyeu(cauhinh), file, ensure_ascii = False, indent = 2)
+        thaythefile(filetam, filepath)
+    except Exception as err:
+        print(err)
+
+
 def luunhomtodoitudongs(nhoms):
     filepath = duongdantodoitudong()
     try:
