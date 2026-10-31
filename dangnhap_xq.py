@@ -4,6 +4,7 @@
 import csv
 import json
 import os
+import re
 import subprocess
 import threading
 import time
@@ -17,8 +18,9 @@ import win32process
 from moitruong_xq import MoiTruong
 from tienich_xq import duongdantaikhoan, duongdantaikhoantheomay, laytamngungdanghieuluc, tenmaynay, xoatamngung
 
-LAUNCHER_TITLE = "client 2.01.07"
-GAME_TITLE_LOGIN_SCREEN = "Chien Quoc 2D --ooo2026ooo-- v.2.01.07"
+# Mẫu regex, không ghi cứng số phiên bản: game cập nhật (2.01.07 -> 2.01.08...) hay đổi năm (ooo2026ooo) vẫn nhận ra cửa sổ
+LAUNCHER_TITLE = r"client \d+(\.\d+)+$"
+GAME_TITLE_LOGIN_SCREEN = r"Chien Quoc 2D --\S*-- v\.\d+(\.\d+)+"
 GAME_TITLE_PREFIX = "Chien Quoc 2D"
 
 DANH_SACH_CUA_SO_LOI = ["warning", "play"]
@@ -334,7 +336,7 @@ def timlauncherdangmo():
         nonlocal hwnd_found
         if win32gui.IsWindowVisible(hwnd):
             title = win32gui.GetWindowText(hwnd)
-            if title == LAUNCHER_TITLE:
+            if re.match(LAUNCHER_TITLE, title):
                 hwnd_found = hwnd
 
     win32gui.EnumWindows(callback, None)
@@ -388,7 +390,7 @@ def timcuasogamedangbiket(boquas = ()):
             return
         if win32gui.IsWindowVisible(hwnd):
             title = win32gui.GetWindowText(hwnd)
-            if GAME_TITLE_LOGIN_SCREEN in title:
+            if re.search(GAME_TITLE_LOGIN_SCREEN, title):
                 r = win32gui.GetWindowRect(hwnd)
                 w, h = r[2] - r[0], r[3] - r[1]
                 if 790 < w < 830 and 590 < h < 660 and not _is_cuasodadangnhap(hwnd):
