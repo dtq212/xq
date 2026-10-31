@@ -40,7 +40,8 @@ TENLOAI = {LOAI_DENTIM: "Đi tìm", LOAI_THUTHAP: "Thu thập", LOAI_THUMUA: "Mu
            LOAI_KHONGRO: "Chưa rõ"}
 # Môn Phái Tỷ Thý: đối thủ ở phái nào không phải "<phái> Đệ Tử" (người dùng cho biết): (tên, x, y) hoặc (tên,) khi chưa biết toạ độ;
 # cùng tên có nhiều NPC thì tới đúng toạ độ rồi lấy con gần nhất
-NPCTYTHI = {"daohoanguyen": ("Thôn Trang Hộ Vệ", 43, 59), "camvequan": ("Thân Binh", 168, 79), "duongmon": ("Đường Gia Thị Vệ",)}
+NPCTYTHI = {"daohoanguyen": ("Thôn Trang Hộ Vệ", 43, 59), "camvequan": ("Thân Binh", 168, 79), "duongmon": ("Đường Gia Thị Vệ",),
+            "vanmongcoc": ("Đậu Binh", 128, 41)}
 
 
 def tenthaythe(ten):
@@ -78,6 +79,8 @@ VITRINPCCODINH = {
     "Chủ Tiệm Giáp Trụ": (BANDO_TANTHUTHON, 120, 166),
     "Chủ Tiệm Y Dược": (BANDO_TANTHUTHON, 135, 170),
     "Đại Tướng Quân": (BANDO_CHUQUOC, 227, 50),
+    # Nhận / trả nhiệm vụ Danh Vọng (tactu_danhvong_xq), Tề Quốc
+    "Tề Tổng Quản": (10, 89, 168),
 }
 
 # Thăm Viếng: NPC (chưởng môn, quân vương) -> bản đồ, khi chưa biết toạ độ thì tới bản đồ đó tìm. So theo tên rút gọn (tên trong
@@ -579,6 +582,16 @@ class SoVitri:
                 if is_trungtenvatpham(tenvatpham, ten) and (not tot or ch.get("luc", 0) > tot[0]):
                     tot = (ch.get("luc", 0), int(o), int(gia))
         return tot[1:] if tot else None
+
+    def layhang(self, idbando, tennpc):
+        # Hàng của cửa hàng NPC (tên riêng hoặc danh hiệu) trên bản đồ theo lần mở gần nhất -> [(ô, giá, tên), ...] ([] khi chưa biết)
+        tot = None
+        for khoa, ch in self._laygop()["cuahang"].items():
+            idbandoxet, tenxet = khoa.split("|", 1)
+            if idbandoxet == str(idbando) and (tenxet == tennpc or is_trungten(tennpc, tenxet)) and ch.get("hang") \
+                    and (not tot or ch.get("luc", 0) > tot.get("luc", 0)):
+                tot = ch
+        return [(int(o), int(gia), ten) for o, gia, ten in tot["hang"]] if tot else []
 
     def timnpccungloai(self, tennpc, idbando, thumucgame = None):
         # Cửa hàng chưa biết chỗ: các cửa hàng ("Chủ Tiệm ...") của một nước đứng sát nhau, lấy chỗ của cửa hàng bất kỳ đã biết trên

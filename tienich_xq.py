@@ -232,6 +232,41 @@ def taivatcanhoc(idbando):
     return nho["dulieu"].get(str(idbando), set())
 
 
+def _duongdantiendophoban():
+    return os.path.join(os.path.dirname(_thumucthietlap()), "tiendophoban.json")
+
+
+# Tiến độ phó bản đang đi dở theo ID người chơi ({"<id>": {...}}): tắt bot mở lại trong phó bản thì làm tiếp từ bước đang dở
+def taitiendophoban(idnguoichoi):
+    try:
+        with open(_duongdantiendophoban(), "r", encoding = "utf-8") as file:
+            return json.load(file).get(str(idnguoichoi))
+    except Exception:
+        return None
+
+
+def luutiendophoban(idnguoichoi, tiendo):
+    # tiendo None: xoá
+    filepath = _duongdantiendophoban()
+    try:
+        try:
+            with open(filepath, "r", encoding = "utf-8") as file:
+                dulieu = json.load(file)
+        except (FileNotFoundError, ValueError):
+            dulieu = {}
+        if tiendo is None:
+            if dulieu.pop(str(idnguoichoi), None) is None:
+                return
+        else:
+            dulieu[str(idnguoichoi)] = tiendo
+        filetam = filepath + ".tmp"
+        with open(filetam, "w", encoding = "utf-8") as file:
+            json.dump(dulieu, file, ensure_ascii = False)
+        thaythefile(filetam, filepath)
+    except Exception as err:
+        print(err)
+
+
 def themvatcanhoc(idbando, x, y):
     filepath = duongdanvatcanhoc()
     try:

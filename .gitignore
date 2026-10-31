@@ -165,3 +165,7 @@ _internal/log/
 _internal/bandonho_cache.json
 # Đệm địa chỉ dò bằng chữ ký trên xq.exe: bot tự dò lại (diachi_xq.khoitao)
 _internal/diachi_cache.json
+
+# Đơn bán ngân lượng (bannganluong_xq): riêng máy chạy nhân vật bán; đồng bộ git ghi đè bản cũ là giao lại đơn đã giao
+_internal/bannganluong_don.json
+_internal/bannganluong_don.json.tmp

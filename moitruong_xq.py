@@ -67,6 +67,9 @@ THOIGIANKETDIOO = 8.
 KHOANGCACHCUNGDICHDIOO = 8.
 # action_dikhongcatgoc: đang đi mà ô thật đứng yên chừng này giây (bị máy chủ kéo về) thì ô kế tiếp là vật cản học được
 THOIGIANKETKHONGCATGOC = 1.5
+# Chuỗi đường đi xq + 0x1FC2B4 là 100 byte (ô 0 bỏ trống), byte ngay sau là con trỏ khác 0 => ghi đủ 99 bước thì chuỗi không có ký tự
+# kết thúc, client gửi "go" kèm rác phía sau, máy chủ từ chối => đứng giật giật tại chỗ (Ngọc ở Chu (216, 200) -> (232, 187)). Tối đa 98
+SOBUOCCHUOIDUONGDITOIDA = 98
 GIANCACHGOIKHONGCATGOC = 1.
 THOIGIANGIATKHONGCATGOC = 4.
 SOLANGIATKHONGCATGOC = 2
@@ -207,6 +210,11 @@ class MoiTruong:
         # Lúc bắt đầu giữ chuột trái (0 = không giữ) và lần gần nhất thấy đã giữ đủ lâu trên cửa sổ game (get_is_dangclickchuottrai)
         self._thoidiembatdaugiuchuottrai = 0.
         self._thoidiemgiuchuottraigannhat = 0.
+        # Click xuống đất để đi (get_is_dangclickchuottrai): lần gần nhất thấy chuột trái thật đang bấm trên cửa sổ game, đích click
+        # chuột của game (KDK_DICHCLICK) lượt trước
+        self._thoidiembamchuottraigannhat = 0.
+        self._dichclicktruoc = None
+        self._dichclicknguoichoi = None
 
         self._soluonghieuungnhanvattruocdo_map = {}
         self._thoidiemsoluonghieuungbangkhonggannhat_map = {}
@@ -220,6 +228,9 @@ class MoiTruong:
 
         self._diachicosothongtinnhanvatmuctieudangchon = False
         self._thoidiemthaydoibandogannhat = 0.
+        self._toadolantruoc = None
+        self._toadobandocu = None
+        self._lucvaobando = {}
         self._idbandohientai = False
         self._thoidiemcohieuungtienthanvodichgannhat = 0.
         self._thoidiemcohieuunglactuyetvongan = 0.
@@ -1437,9 +1448,17 @@ class MoiTruong:
         self.thoidiembaothuxuathiengannhat_map = {name: ts for name, ts in self.thoidiembaothuxuathiengannhat_map.items() if name in tenchunhanbaothuxungquanh_list}
 
         idbandohientai = self._get_idbandohientai()
+        try:
+            toado = self.get_toado()
+        except (pymem.exception.PymemError, pymem.exception.WinAPIError, struct.error):
+            toado = None
         if idbandohientai != self._idbandohientai:
             self._thoidiemthaydoibandogannhat = time.time()
+            # Toạ độ lượt trước (còn ở bản đồ cũ): mã bản đồ đổi trước, toạ độ có khi 2-3s sau mới đổi (get_is_toadochuaondinh)
+            self._toadobandocu = self._toadolantruoc
+            self._lucvaobando[idbandohientai] = time.time()
         self._idbandohientai = idbandohientai
+        self._toadolantruoc = toado
 
         idtuthenhanvat = self.get_idtuthenhanvat()
         if idtuthenhanvat != TUTHENHANVAT_DUNGIM or self.get_is_dangvankhi():
@@ -1562,6 +1581,18 @@ class MoiTruong:
 
     def get_thoidiemthaydoibandogannhat(self):
         return self._thoidiemthaydoibandogannhat
+
+    def get_lucvaobando(self, idbando):
+        # Lần gần nhất vào bản đồ idbando (0. nếu chưa vào từ lúc chạy bot)
+        return self._lucvaobando.get(idbando, 0.)
+
+    def get_is_toadochuaondinh(self):
+        # Vừa đổi bản đồ (phù / cổng) mà toạ độ vẫn là toạ độ ở bản đồ cũ: mã bản đồ đổi trước, toạ độ 2-3s sau mới đổi (ThichVaCham phù về
+        # Tân Thủ Thôn: bản đồ 1 mà còn ở (73, 182) Tần Quốc => tính ra cổng (244, 254), đi bộ vòng về Tề). Chờ tối đa THOIGIANCHOTOADOSAUDOIBANDO
+        conlai = time.time() - self._thoidiemthaydoibandogannhat
+        if conlai < THOIGIANCHOSAUDOIBANDO:
+            return True
+        return conlai < THOIGIANCHOTOADOSAUDOIBANDO and self._toadobandocu is not None and self.get_toado() == self._toadobandocu
 
     def get_is_cuasogametontai(self):
         return win32gui.IsWindow(self.idcuaso)
@@ -2028,6 +2059,16 @@ class MoiTruong:
             if idthanhvien: idthanhviens.append(idthanhvien)
         return idthanhviens
 
+    def get_toadothanhviennhoms(self):
+        # Toạ độ các thành viên nhóm (chấm trên bản đồ): x ở + 0xBD0, y ở + 0xC00, mỗi người 4 byte theo thứ tự id ở + 0; 65535 = ở bản đồ
+        # khác, 0 = chính mình (đo 2026-10-31). -> [(x, y)] những người cùng bản đồ
+        diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
+        if not diachicosothanhviennhom:
+            return []
+        xs = struct.unpack("<%di" % SOLUONGTHANHVIENNHOMTOIDATHUCTE, read_bytes(self.tientrinh, diachicosothanhviennhom + 0xBD0, SOLUONGTHANHVIENNHOMTOIDATHUCTE * 4))
+        ys = struct.unpack("<%di" % SOLUONGTHANHVIENNHOMTOIDATHUCTE, read_bytes(self.tientrinh, diachicosothanhviennhom + 0xC00, SOLUONGTHANHVIENNHOMTOIDATHUCTE * 4))
+        return [(x, y) for x, y in zip(xs, ys) if 0 < x < 65535 and 0 < y < 65535]
+
     def get_is_dangnamtrongnhom(self):
         diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
         return read_int(self.tientrinh, diachicosothanhviennhom) > 0 if diachicosothanhviennhom else False
@@ -2322,16 +2363,58 @@ class MoiTruong:
         # tiếp, người chơi không kéo ra được. Xét thêm phím chuột trái thật đang giữ khi cửa sổ game đang kích hoạt và con trỏ nằm
         # trong vùng game. Chỉ tính khi giữ liền quá THOIGIANGIUCHUOTTOITHIEU giây (click thường để chọn mục tiêu không làm bot
         # dừng); nhả chuột sau khi đã giữ đủ lâu thì vẫn tính đang giữ thêm THOIGIANNGUNGSAUNHACHUOT giây
+        # Click xuống đất để đi (kể cả click nhanh, cả lúc đang xuất chiêu): chuột trái thật vừa bấm trên cửa sổ game và đích click
+        # chuột của game vừa đổi sang ô mới => tính như đã giữ đủ lâu, bot thôi chặn di chuyển (chiêu đang xuất bị cắt theo ý người
+        # chơi). Click quái / bảng giao diện không đặt đích click nên không tính; bot tự đi thì xoá đích về 0 (không tính)
         thoidiemhientai = time.time()
-        if read_boolean(self.tientrinh, self.diachixq + DC.DANGCLICKCHUOTTRAI) or self._is_dangdichuottraitrongcuaso():
+        is_bamchuotthat = self._is_dangdichuottraitrongcuaso()
+        if is_bamchuotthat:
+            self._thoidiembamchuottraigannhat = thoidiemhientai
+        khoidieukhien = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
+        dichclick = read_bytes(self.tientrinh, khoidieukhien + DC.KDK_DICHCLICK, 8) if khoidieukhien else None
+        if dichclick != self._dichclicktruoc:
+            if self._dichclicktruoc is not None and dichclick and any(dichclick) \
+                    and thoidiemhientai - self._thoidiembamchuottraigannhat < THOIGIANNHANCLICKDICHUYEN:
+                self._thoidiemgiuchuottraigannhat = thoidiemhientai
+                self._dichclicknguoichoi = dichclick
+                self._inlog(f"[CLICK ĐI] Người chơi click tới {struct.unpack('<ii', dichclick)}, tư thế {self.get_idtuthenhanvat()}: bot nhường di chuyển")
+                self.action_catxuatchieuchonguoichoi()
+            self._dichclicktruoc = dichclick
+        # Còn đang đi tới đích người chơi vừa click thì vẫn tính (không để bot ra chiêu / đi cắt ngang giữa đường)
+        if self._dichclicknguoichoi:
+            if dichclick == self._dichclicknguoichoi and self.get_idtuthenhanvat() == TUTHENHANVAT_DICHUYEN:
+                self._thoidiemgiuchuottraigannhat = thoidiemhientai
+            elif thoidiemhientai - self._thoidiemgiuchuottraigannhat >= THOIGIANNGUNGSAUNHACHUOT:
+                self._dichclicknguoichoi = None
+        if read_boolean(self.tientrinh, self.diachixq + DC.DANGCLICKCHUOTTRAI) or is_bamchuotthat:
             if not self._thoidiembatdaugiuchuottrai:
                 self._thoidiembatdaugiuchuottrai = thoidiemhientai
             if thoidiemhientai - self._thoidiembatdaugiuchuottrai >= THOIGIANGIUCHUOTTOITHIEU:
                 self._thoidiemgiuchuottraigannhat = thoidiemhientai
+                self.action_catxuatchieuchonguoichoi()
                 return True
         else:
             self._thoidiembatdaugiuchuottrai = 0.
         return thoidiemhientai - self._thoidiemgiuchuottraigannhat < THOIGIANNGUNGSAUNHACHUOT
+
+    def action_catxuatchieuchonguoichoi(self):
+        # Người chơi click / giữ chuột để đi trong lúc nhân vật đang xuất chiêu (tư thế 6 / 9): client không đi khi còn tư thế xuất
+        # chiêu (đích click nằm chờ tới hết hoạt ảnh ~0.68s) => ghi tư thế về đứng im, tua hoạt ảnh tới khung cuối (NV_HOATANH ==
+        # NV_HOATANH + 4) và thả mốc client tự gửi lệnh, để client đi ngay tới đích click. Người chơi chủ động cắt chiêu (đã chốt
+        # 2026-11-01: click thì cho cắt dù hoạt ảnh chưa hết); bỏ luôn khựng sau chiêu của bot
+        diachi = self.get_diachicosothongtinnhanvat1()
+        if not diachi or self.get_idtuthenhanvat(diachi) not in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT):
+            return False
+        self._is_chieucanngatdichuyen = False
+        self._thoidiemxuatchieugannhat = 0.
+        hangcuoi = read_int(self.tientrinh, diachi + DC.NV_HOATANH + 4)
+        write_int(self.tientrinh, diachi + DC.NV_HOATANH, hangcuoi)
+        self.set_idtuthenhanvat(TUTHENHANVAT_DUNGIM, diachi)
+        thongtingame = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        if thongtingame:
+            write_bytes(self.tientrinh, thongtingame + DC.TG_MOCTUGUILENH, struct.pack("<I", ctypes.windll.winmm.timeGetTime() & 0xFFFFFFFF), 4)
+        self._inlog("[CLICK ĐI] Cắt tư thế xuất chiêu cho người chơi đi")
+        return True
 
     def _is_dangdichuottraitrongcuaso(self):
         if not ctypes.windll.user32.GetAsyncKeyState(0x01) & 0x8000 or not self.get_is_cuasogamekichhoat():
@@ -2547,7 +2630,7 @@ class MoiTruong:
     def get_is_quairiengnguoikhac(self, ten):
         # Quái nhiệm vụ riêng mang ID người chơi trong ngoặc ("Thủ Lĩnh Thích Khách (29)", "Cuồng Đồ (30)"): chỉ chủ của nó đánh được,
         # con mang ID người khác thì bỏ qua
-        m = re.search(r"\((\d+)\)", ten or "")
+        m = re.search(r"\(\s*(\d+)\s*\)", ten or "")
         return bool(m) and int(m.group(1)) != self.get_idnguoichoi()
 
     def get_manhiemvu(self, tenmuccha):
@@ -2590,6 +2673,19 @@ class MoiTruong:
                 break
             hang.append((o, gia, mon[0x12:].split(b"\0")[0].decode("utf-8", "ignore")))
         return {"is_danghien": read_boolean(self.tientrinh, x + 0x108), "hang": hang}
+
+    def get_motahangcuahang(self, o):
+        # Mô tả món ở ô o của cửa hàng (như rê chuột lên món): game lưu theo số ô trong cấu trúc cửa hàng + 0x164C + (ô - 1) * 0x44C (tên ô
+        # ở + 0x1AC + (ô - 1) * 0xC8), nạp bằng lệnh "desc <id NPC># <ô>" (mẫu xq + 0x19D8E4, cạnh "buy"). Còn mô tả cũ của cửa hàng mở
+        # trước nên nơi gọi phải so dòng tên. Đo 2026-10-31 trên 4 cửa hàng. -> chuỗi (bỏ mã màu \x1b + 1 ký tự) hoặc ""
+        if not 1 <= o <= 60:
+            return ""
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        x = read_int(self.tientrinh, x + DC.TG_CUAHANG) if x else 0
+        if not x:
+            return ""
+        mota = read_bytes(self.tientrinh, x + 0x164C + (o - 1) * 0x44C, 0x44C).split(b"\0")[0].decode("utf-8", "ignore")
+        return re.sub(r"\x1b.", "", mota)
 
     def action_dongcuasocuahang(self):
         # Đóng cửa sổ cửa hàng như bấm X (cờ đang hiện + 0x108, như cửa sổ kho); danh sách hàng vẫn còn trong bộ nhớ
@@ -2818,6 +2914,7 @@ class MoiTruong:
                 return False
         if sobuoctoida:
             chuoihuong = chuoihuong[:sobuoctoida]
+        chuoihuong = chuoihuong[:SOBUOCCHUOIDUONGDITOIDA]
         # Huỷ đích tự động tìm đường đang có: game tự tìm đường lại khi đứng yên và ghi đè chuỗi đi theo ô (2 nguồn cùng gửi "go")
         self.action_ngungtudongtimduong()
         self._dichdioogannhat = (x, y)
@@ -2859,14 +2956,14 @@ class MoiTruong:
         chuoihuong = self._timduongkhongcatgoc(x1, y1, x2, y2, khoangcachtoida)
         if chuoihuong:
             self._duongkhongcatgoc = [(x1, y1)]
-            for kytu in chuoihuong[:99].decode():
+            for kytu in chuoihuong[:SOBUOCCHUOIDUONGDITOIDA].decode():
                 dx, dy = HUONGTIMDUONG_MAP[kytu]
                 self._duongkhongcatgoc.append((self._duongkhongcatgoc[-1][0] + dx, self._duongkhongcatgoc[-1][1] + dy))
         if not chuoihuong:
             if IS_LOGDICHUYEN:
                 self._inlog(f"[ĐI KHÔNG CẮT GÓC] {(x1, y1)} -> {(x2, y2)} không ra đường, đi theo ô thường")
             return self.action_dioochangtoidich(x2, y2, khoangcachtoida)
-        chuoihuong = chuoihuong[:99]
+        chuoihuong = chuoihuong[:SOBUOCCHUOIDUONGDITOIDA]
         self.action_ngungtudongtimduong()
         self._dichkhongcatgoc = (x2, y2)
         self._dichdioogannhat = None
@@ -2963,6 +3060,19 @@ class MoiTruong:
         self._inlog(f"[ĐI KHÔNG CẮT GÓC] Ở {that} {lydo} {ke} (máy chủ chặn, lưới client ghi đi được): ghi {ke} là vật cản ở bản đồ {idbando}, "
                     f"tìm đường khác")
         return True
+
+    def get_sobuocduongtoi(self, x2, y2, khoangcachtoida = 0.):
+        # Số bước đi bộ (theo lưới vật cản + ô học được, như action_dikhongcatgoc) từ chỗ mình tới cách (x2, y2) không quá khoangcachtoida.
+        # 0: đã trong tầm, None: không có đường (bị vật cản bao kín) / chưa đọc được
+        diachinhanvat = self.get_diachicosothongtinnhanvat1()
+        if not diachinhanvat:
+            return None
+        x1, y1 = struct.unpack("<ii", read_bytes(self.tientrinh, diachinhanvat + 0x18, 8))
+        x2, y2 = round(x2), round(y2)
+        if math.dist((x1, y1), (x2, y2)) <= max(1., khoangcachtoida):
+            return 0
+        chuoihuong = self._timduongkhongcatgoc(x1, y1, x2, y2, max(1., khoangcachtoida))
+        return len(chuoihuong) if chuoihuong else None
 
     def _timduongkhongcatgoc(self, x1, y1, x2, y2, khoangcachtoida = 0., lechtoida = 25):
         # A* trên lưới vật cản vùng bao 2 điểm (thêm lechtoida ô mỗi bên), 8 hướng nhưng chéo chỉ khi 2 ô kề đều trống. Tới ô cách đích

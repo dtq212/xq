@@ -30,9 +30,19 @@ def _is_chuaxong(yeucau):
 
 class TacTuGiaoDo:
     def them_giaodo(self, yeucau):
-        yeucau = dict(yeucau, trangthai = TRANGTHAICHOGIAO, solangui = 0, kichhoat = None)
+        # Đơn bán ngân lượng (bannganluong_xq, "is_ban"): về giao ngay, chờ người nhận không giới hạn; cùng id đã có thì bỏ (đưa lại trùng)
+        if any(y["id"] == yeucau["id"] for y in self._hangchogiaodo):
+            return
+        yeucau = dict(yeucau, trangthai = TRANGTHAICHOGIAO, solangui = 0, kichhoat = KICHHOAT_TAY if yeucau.get("is_ban") else None)
         self._hangchogiaodo.append(yeucau)
-        print(f"[GIAO ĐỒ] Thêm yêu cầu giao {yeucau['nguoinhan']}: {motayeucau(yeucau)} (để dành tới lần về bán rác gặp người nhận / bấm Về giao)")
+        print(f"[GIAO ĐỒ] Thêm yêu cầu giao {yeucau['nguoinhan']}: {motayeucau(yeucau)}"
+              f"{' (bán ngân lượng: về Tiệm Tạp Hóa chờ)' if yeucau.get('is_ban') else ' (để dành tới lần về bán rác gặp người nhận / bấm Về giao)'}")
+
+    def _timnguoinhan(self, yeucau):
+        # Người nhận theo ID người chơi (đơn bán ngân lượng) hoặc theo tên
+        if yeucau.get("idnguoichoi"):
+            return self.moitruong.action_timkiemnhanvat(idnguoichoi = yeucau["idnguoichoi"])
+        return self.moitruong.action_timkiemnhanvat(tennhanvat = yeucau["nguoinhan"])
 
     def huy_giaodo(self, idyeucau):
         self._hangchogiaodo = [y for y in self._hangchogiaodo if y["id"] != idyeucau]
@@ -54,7 +64,7 @@ class TacTuGiaoDo:
     def batdau_giaodo_sauban(self):
         # Bán rác (+ sửa đồ, cất kho) xong: yêu cầu đang chờ mà người nhận đang ở gần (thấy được) thì giao luôn trong chuyến này
         for yeucau in self._hangchogiaodo:
-            if _is_chuaxong(yeucau) and not yeucau.get("kichhoat") and self.moitruong.action_timkiemnhanvat(tennhanvat = yeucau["nguoinhan"]):
+            if _is_chuaxong(yeucau) and not yeucau.get("kichhoat") and self._timnguoinhan(yeucau):
                 print(f"[GIAO ĐỒ] Về bán rác gặp {yeucau['nguoinhan']}: giao luôn")
                 yeucau["kichhoat"] = KICHHOAT_BANRAC
                 yeucau.pop("luctoi", None)
@@ -96,10 +106,15 @@ class TacTuGiaoDo:
     def _xulygiaodo(self, kichhoat = KICHHOAT_TAY):
         # Yêu cầu giao đã kích hoạt kiểu kichhoat chưa xong: "tay" gọi thay lộ trình điểm đánh, "banrac" gọi trong bước giao của về bán
         # rác (_xulygiaodobanrac) -> yêu cầu di chuyển hoặc None
-        yeucau = next((y for y in self._hangchogiaodo if _is_chuaxong(y) and y.get("kichhoat") == kichhoat), None)
+        moitruong = self.moitruong
+        dangchos = [y for y in self._hangchogiaodo if _is_chuaxong(y) and y.get("kichhoat") == kichhoat]
+        # Nhiều yêu cầu: yêu cầu đã gửi lệnh làm cho xong trước, rồi tới người nhận đang ở gần (đơn bán chờ mãi người chưa tới không
+        # chặn người tới sau)
+        yeucau = next((y for y in dangchos if y.get("lucgui")), None) or (next((y for y in dangchos if self._timnguoinhan(y)), None)
+                                                                         if moitruong.get_idbandohientai() == BANDO_TANTHUTHON else None)
+        yeucau = yeucau or (dangchos[0] if dangchos else None)
         if yeucau is None:
             return None
-        moitruong = self.moitruong
         if moitruong.get_is_nhanvatdachet() or moitruong.get_is_dangvankhi() or self.get_is_danghoithoainpc():
             return None
         if kichhoat == KICHHOAT_TAY and self._trangthaiveban != 0:
@@ -114,14 +129,14 @@ class TacTuGiaoDo:
                 return self._thuchienbuocditoibando(buoc, BANDO_TANTHUTHON, None, "[GIAO ĐỒ] Tân Thủ Thôn")
         yeucau.setdefault("luctoi", now)
 
-        diachinguoinhan = moitruong.action_timkiemnhanvat(tennhanvat = yeucau["nguoinhan"])
+        diachinguoinhan = self._timnguoinhan(yeucau)
         if not diachinguoinhan:
             if kichhoat == KICHHOAT_BANRAC and not yeucau.get("lucgui"):
                 # Giao ké chuyến bán rác: người nhận đã đi khỏi thì không chờ, để lần sau
                 print(f"[GIAO ĐỒ] Không thấy {yeucau['nguoinhan']}, bỏ qua (để dành tới lần về bán rác sau)")
                 yeucau["kichhoat"], yeucau["trangthai"] = None, TRANGTHAICHOGIAO
                 return None
-            if now - yeucau["luctoi"] > THOIGIANCHONGUOINHAN:
+            if not yeucau.get("is_ban") and now - yeucau["luctoi"] > THOIGIANCHONGUOINHAN:
                 self._ketthucgiaodo(yeucau, False, f"chờ {int(THOIGIANCHONGUOINHAN // 60)} phút ở Tân Thủ Thôn không thấy {yeucau['nguoinhan']}")
                 return None
             yeucau["trangthai"] = "chờ người nhận ở Tiệm Tạp Hóa"

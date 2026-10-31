@@ -1,12 +1,59 @@
 # Phần mục tiêu: lọc / chọn mục tiêu (chung và theo môn phái), tầm nhìn chia sẻ giữa các cửa sổ, gom quái.
 # Mixin của TacTu (tactu_xq.py): chỉ chứa hàm, trạng thái (self._...) khởi tạo trong TacTu.__init__
+import json
 import math
+import os
+import re
+import sys
 import time
 
 from hangso_xq import *
 from dexuatlotrinh_xq import taiviquai as util_taiviquai, luuviquai as util_luuviquai, taiviquaibando, ghinhanvitriquai, dexuatlotrinh
 from dexuatlotrinh_xq import THOIGIANGHIVITRIQUAI, THOIGIANLUUVITRIQUAI, SOLANTHAYQUAITOITHIEU, TENMAUDEXUAT
 from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, donbangthoidiem
+
+# Ép đá: 1->4 sao luôn thành công, 4->5 khoảng 65%, 5->6 khoảng 35%; chỉ ghi log từ 4 sao
+SAOEPDAGHILOG = 4
+
+
+def _demsao(motavatpham):
+    # Số sao của món = chuỗi ★ liền nhau dài nhất trong mô tả
+    return max((len(chuoi) for chuoi in re.findall("★+", motavatpham)), default = 0)
+
+
+def _duongdanlogepda(idnguoichoi):
+    thumucgoc = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
+    thumuc = os.path.join(thumucgoc, "_internal", "epda")
+    os.makedirs(thumuc, exist_ok = True)
+    return os.path.join(thumuc, "{}.jsonl".format(idnguoichoi))
+
+
+def _docthatbailientiep(duongdanlog):
+    # Số lần thất bại liên tiếp tính tới cuối log (đếm tiếp qua các lần bấm ép): ({sao trước: n} riêng từng cấp, n chung mọi cấp)
+    thatbaitheocap, thatbaichung = {}, 0
+    try:
+        with open(duongdanlog, encoding = "utf-8") as f:
+            for dong in f:
+                try:
+                    banghi = json.loads(dong)
+                except ValueError:
+                    continue
+                cap = banghi.get("saotruoc")
+                if banghi.get("thanhcong"):
+                    thatbaitheocap[cap], thatbaichung = 0, 0
+                else:
+                    thatbaitheocap[cap], thatbaichung = thatbaitheocap.get(cap, 0) + 1, thatbaichung + 1
+    except OSError:
+        pass
+    return thatbaitheocap, thatbaichung
+
+
+def _ghilogepda(duongdanlog, banghi):
+    try:
+        with open(duongdanlog, "a", encoding = "utf-8") as f:
+            f.write(json.dumps(banghi, ensure_ascii = False) + "\n")
+    except OSError as err:
+        print(f"[Ép đá] Lỗi ghi log: {err}")
 
 
 class TacTuMucTieu:
@@ -366,7 +413,7 @@ class TacTuMucTieu:
         # Đang Đi tới bản đồ người dùng chọn / đi giao đồ / cất kho / đi làm sư môn: không chọn quái dọc đường (trước đây gặp quái là đứng
         # lại đánh), tới nơi mới đánh
         if self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangcatkho() or self.get_is_sumondichuyen() or self.get_is_langlysondichuyen() \
-                or self.get_is_sugiadichuyen() or self.get_is_tapkichdichuyen():
+                or self.get_is_sugiadichuyen() or self.get_is_tapkichdichuyen() or self.get_is_matacdichuyen() or self.get_is_danhvongdichuyen():
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             return
 
@@ -699,27 +746,71 @@ class TacTuMucTieu:
         return True
 
     def action_test(self):
+        # Ép Đoạn Thạch vào món ở ô 0 tới 6 sao. Lần ép từ SAOEPDAGHILOG sao trở lên ghi 1 dòng vào _internal/epda/<id>.jsonl (sao
+        # trước/sau, loại đá, giờ, số lần thất bại liên tiếp trước đó của nhân vật) để đo tỉ lệ: có đệm thất bại không, giờ có ảnh hưởng
+        # không. Dưới 4 sao luôn thành công nên không ghi (ghi thì làm mất chuỗi thất bại đang đếm)
         vitrivatpham = 0
         iddoituong = self.moitruong.get_iddoituongvatphamhanhtrang(vitrivatpham)
-        if iddoituong:
+        if not iddoituong:
+            return
+        duongdanlog = _duongdanlogepda(self.moitruong.get_idnguoichoi())
+        thatbaitheocap, thatbaichung = _docthatbailientiep(duongdanlog)
+        while True:
+            motavatpham = self.moitruong.get_motavatphamhanhtrang(vitrivatpham, is_napmoi = True)
+            if not motavatpham or self.moitruong.get_iddoituongvatphamhanhtrang(vitrivatpham) != iddoituong:
+                break
+            saotruoc = _demsao(motavatpham)
+            if saotruoc >= 6:
+                break
+            if saotruoc >= 4:
+                tenda = CAOCAPDOANTHACH
+            elif saotruoc >= 2:
+                tenda = TRUNGCAPDOANTHACH
+            else:
+                tenda = SOCAPDOANTHACH
+            iddoituongdoanthach = self.moitruong.action_timkiemvatphamhanhtrang(tenda)
+            if not iddoituongdoanthach:
+                break
+            soluongdatruoc = (self.moitruong.get_soluongvatphamhanhtrangtheoten() or {}).get(tenda, 0)
+            self.moitruong.action_thucthicaulenh("mix3 0# {}# {}#".format(hex(iddoituong), hex(iddoituongdoanthach)).replace("0x", ""))
+            # Đá giảm = máy chủ đã xử lý lần ép; chờ tối đa 3s, không giảm thì không ghi (lệnh không tới / bị từ chối)
+            thoidiemhet = time.time() + 3
             while True:
-                self.moitruong.truyvan_motavatphamhanhtrang(vitrivatpham)
-                motavatpham = self.moitruong.get_motavatphamhanhtrang(vitrivatpham)
-                if not motavatpham:
+                time.sleep(0.1)
+                soluongdasau = (self.moitruong.get_soluongvatphamhanhtrangtheoten() or {}).get(tenda, soluongdatruoc)
+                if soluongdasau < soluongdatruoc or time.time() >= thoidiemhet:
                     break
-                if "★★★★★★" in motavatpham:
-                    break
-                if "★★★★★" in motavatpham or "★★★★" in motavatpham:
-                    iddoituongdoanthach = self.moitruong.action_timkiemvatphamhanhtrang(CAOCAPDOANTHACH)
-                elif "★★★" in motavatpham or "★★" in motavatpham:
-                    iddoituongdoanthach = self.moitruong.action_timkiemvatphamhanhtrang(TRUNGCAPDOANTHACH)
+            if soluongdasau >= soluongdatruoc:
+                print("[Ép đá] Đá không giảm, dừng")
+                break
+            time.sleep(0.2)
+            motasau = self.moitruong.get_motavatphamhanhtrang(vitrivatpham, is_napmoi = True)
+            if self.moitruong.get_iddoituongvatphamhanhtrang(vitrivatpham) != iddoituong:
+                # Món biến mất (vỡ đồ?) cũng ghi lại
+                saosau = -1
+            else:
+                saosau = _demsao(motasau) if motasau else saotruoc
+            is_thanhcong = saosau > saotruoc
+            if saotruoc >= SAOEPDAGHILOG:
+                thatbailientiep = thatbaitheocap.get(saotruoc, 0)
+                _ghilogepda(duongdanlog, {
+                    "thoidiem": time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "vatpham": self.moitruong.get_tenvatphamhanhtrang(vitrivatpham) or "",
+                    "da": tenda,
+                    "saotruoc": saotruoc,
+                    "saosau": saosau,
+                    "thanhcong": is_thanhcong,
+                    "thatbailientiep": thatbailientiep,
+                    "thatbailientiepchung": thatbaichung,
+                })
+                print("[Ép đá] {} sao -> {} sao ({}), thất bại liên tiếp trước đó: {} (cấp này) / {} (chung)".format(
+                    saotruoc, saosau, "thành công" if is_thanhcong else "thất bại", thatbailientiep, thatbaichung))
+                if is_thanhcong:
+                    thatbaitheocap[saotruoc], thatbaichung = 0, 0
                 else:
-                    iddoituongdoanthach = self.moitruong.action_timkiemvatphamhanhtrang(SOCAPDOANTHACH)
-                if iddoituongdoanthach:
-                    self.moitruong.action_thucthicaulenh("mix3 0# {}# {}#".format(hex(iddoituong), hex(iddoituongdoanthach)).replace("0x", ""))
-                    time.sleep(0.25)
-                else:
-                    break
+                    thatbaitheocap[saotruoc], thatbaichung = thatbailientiep + 1, thatbaichung + 1
+            if saosau < 0:
+                break
     def action_tudongtimkiemmuctieumonphai(self):
         tenmonphai = self.moitruong.get_tenmonphai()
 

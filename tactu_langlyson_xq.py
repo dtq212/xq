@@ -36,7 +36,7 @@ import unicodedata
 from hangso_xq import *
 from giaodo_xq import taolenhgiao
 from thongbao_xq import baosuco
-from tienich_xq import phatam, laynhomtodoitudongs, taicauhinhphongyeu, CAUHINHPHONGYEU_MACDINH
+from tienich_xq import phatam, laynhomtodoitudongs, taicauhinhphongyeu, CAUHINHPHONGYEU_MACDINH, taitiendophoban, luutiendophoban
 
 BANDO_THUYHOASON = 82
 NPCVAOLANGLYSON = ("Đào Vong Khổ Dịch", 137, 117)
@@ -106,7 +106,8 @@ PHOBAN_MAP = {
     "langlyson": {"ten": "Lăng Ly Sơn", "bandovao": BANDO_LANGLYSON1, "bandonpc": BANDO_THUYHOASON, "npc": NPCVAOLANGLYSON,
                   "luachonvao": None, "vatphamvao": None, "luachonthuong": 0, "is_kiemtrathuong": True, "tinhoanthanh": "lăng ly sơn"},
     "thanhkieu": {"ten": "Thành Kiều", "bandovao": BANDO_THANHKIEU, "bandonpc": BANDO_TANQUOC, "npc": NPCTHANHKIEU,
-                  "luachonvao": 2, "vatphamvao": "Hạt Mè Khai Môn", "luachonthuong": (3, 0), "is_kiemtrathuong": False, "tinhoanthanh": "thành kiều"},
+                  "luachonvao": 2, "vatphamvao": "Hạt Mè Khai Môn", "luachonthuong": (3, 0), "is_kiemtrathuong": False, "tinhoanthanh": "thành kiều",
+                  "npcxong": "Sứ Giả Thành Kiều"},
     # luachonthuong None: không có thưởng phải lĩnh, ra bằng Thỏ Yêu (_buocraphongyeu)
     "phongyeukinh": {"ten": "Phong Yêu Kính", "bandovao": None, "bandonpc": BANDO_CHUQUOC, "npc": NPCPHONGYEU,
                      "luachonvao": "give", "vatphamvao": None, "luachonthuong": None, "is_kiemtrathuong": False, "tinhoanthanh": "phong yêu kính"},
@@ -133,6 +134,10 @@ THOIGIANBAOCHOTHANHVIEN = 180.
 KHOANGCACHTOIBOSS = 6.
 THOIGIANCHOBOSS = 30.
 THOIGIANBOSSBIENMAT = 3.
+# NPC hiện ra khi boss cuối chết (PHOBAN_MAP npcxong) phải đứng cách toạ độ boss cuối tối đa chừng này ô mới tính
+KHOANGCACHNPCXONG = 20.
+# Xong phó bản thì nói chuyện npcxong chọn lựa chọn này (đếm từ 0) để về thay cho Hồi Thành Phù
+LUACHONRANPCXONG = 0
 # Giết xong boss cuối chờ chừng này giây (nhặt đồ) rồi mới Hồi Thành Phù ra
 THOIGIANCHORA = 8.
 # Boss cuối đã chết mà chưa đọc được tin "hoàn thành phó bản" (tin có thể không vào khung trò chuyện): chờ tối đa chừng này giây rồi mới ra
@@ -155,6 +160,10 @@ THOIGIANTHULAIVAO = 20.
 # Trước khi vào: nhóm phải đủ người như vòng trước và đứng yên chừng này giây; chờ quá THOIGIANBAONHOMTHIEU giây chưa đủ thì báo
 THOIGIANNHOMONDINH = 5.
 THOIGIANBAONHOMTHIEU = 120.
+# Tiến độ trong phó bản (bước từng tầng, đã hoàn thành chưa) lưu ra _internal/tiendophoban.json: bật lại bot khi đang đứng trong phó bản
+# thì làm tiếp từ bước đã lưu (không thì làm lại từ boss đầu, boss đã chết phải chờ THOIGIANCHOBOSS mỗi con, boss cuối chờ mãi). Lưu quá
+# chừng này giây thì bỏ (phó bản cũ)
+THOIGIANGIUTIENDO = 2 * 3600.
 
 
 def _tenboss(ten):
@@ -170,7 +179,9 @@ class TacTuLangLySon:
         self._langlyson = {"phoban": phoban, "batdau": time.time(), "trangthai": "bắt đầu", "chedo": "dichuyen", "giaidoan": "vao",
                            "buoc": {}, "hoithoai": None, "boss": None, "lucbatdauvong": time.time(), "sovong": 0, "dabao": set(),
                            "thanhviens": {}, "dudoi": False, "lucchodoi": 0., "lucmoi": {}, "diemvao": {}, "daxongphoban": False,
-                           "tindaghi": set(), "davao": False}
+                           "tindaghi": set(), "davao": False,
+                           # Bật bot lúc đang đứng trong phó bản: lần đầu thấy mình trong phó bản thì đọc tiến độ đã lưu (_khoiphuctiendo)
+                           "is_batdautrongphoban": self.moitruong.get_idbandohientai() in BUOCLANGLYSON_MAP}
         ten = PHOBAN_MAP[phoban]["ten"]
         self.moitruong._inlog(f"[{ten.upper()}] Bắt đầu tự động đi {ten}")
         phatam(f"Bắt đầu {ten}")
@@ -312,6 +323,34 @@ class TacTuLangLySon:
             if "hoàn thành phó bản" in thuong and PHOBAN_MAP[s["phoban"]]["tinhoanthanh"] in thuong and not s["daxongphoban"]:
                 s["daxongphoban"] = True
                 self._logpb(s, "Game báo đã hoàn thành phó bản")
+                self._luutiendo(s)
+
+    def _luutiendo(self, s):
+        # Chỉ phó bản có bước theo tầng (Phong Yêu Kính dò bản đồ, không lưu)
+        if s["phoban"] == "phongyeukinh" or not s["davao"]:
+            return
+        luutiendophoban(self.moitruong.get_idnguoichoi(), {"phoban": s["phoban"], "luc": time.time(), "daxongphoban": s["daxongphoban"],
+                                                            "buoc": {str(k): v for k, v in s["buoc"].items()}})
+
+    def _khoiphuctiendo(self, s, idbando):
+        # Bật bot khi đang trong phó bản: lấy lại bước từng tầng / cờ hoàn thành đã lưu. -> True nếu khôi phục được
+        tiendo = taitiendophoban(self.moitruong.get_idnguoichoi())
+        if not isinstance(tiendo, dict) or tiendo.get("phoban") != s["phoban"] or time.time() - tiendo.get("luc", 0.) > THOIGIANGIUTIENDO:
+            return False
+        try:
+            buoc = {int(k): int(v) for k, v in (tiendo.get("buoc") or {}).items()}
+        except (TypeError, ValueError):
+            return False
+        if not buoc and not tiendo.get("daxongphoban"):
+            return False
+        s["buoc"] = buoc
+        s["daxongphoban"] = s["daxongphoban"] or bool(tiendo.get("daxongphoban"))
+        buocs = BUOCLANGLYSON_MAP[idbando]
+        i = min(buoc.get(idbando, 0), len(buocs) - 1)
+        self._logpb(s, f"Bật lại bot trong phó bản: làm tiếp từ bước {i + 1}/{len(buocs)} ({buocs[i][0]} {buocs[i][1] if len(buocs[i]) > 1 else ''})"
+                       + (", game đã báo hoàn thành" if s["daxongphoban"] else "")
+                       + f", lưu lúc {time.strftime('%H:%M:%S', time.localtime(tiendo['luc']))}")
+        return True
 
     # --- Vòng chính ------------------------------------------------------------------------------------------------------------------
     def _xulylanglyson(self):
@@ -369,6 +408,9 @@ class TacTuLangLySon:
                 s.pop("lucthulaivao", None)
                 s.pop("lucvankhivao", None)
                 s["hoithoai"] = None
+                # Bật bot lúc đang trong phó bản thì lấy lại tiến độ đã lưu; vào phó bản mới thì ghi đè tiến độ cũ (vòng trước)
+                if not (s.pop("is_batdautrongphoban", False) and not is_trongphongyeu and self._khoiphuctiendo(s, idbando)):
+                    self._luutiendo(s)
             # Chỗ vừa vào tầng: chờ thành viên ở đây (xa boss, người vào sau cũng xuất hiện ở đây)
             s["diemvao"].setdefault(idbando, moitruong.get_toado())
             if is_trongphongyeu:
@@ -543,7 +585,13 @@ class TacTuLangLySon:
         tenbando = laytenbando(idbando)
         if loai == "danh":
             _, tenboss, x, y = buoc[:4]
-            if len(buoc) > 4 and buoc[4]:
+            is_bosscuoi = len(buoc) > 4 and buoc[4]
+            if is_bosscuoi and not s["daxongphoban"] and self._is_thaynpcxong(s, x, y):
+                # Boss cuối chết thì NPC npcxong hiện ra (Thành Kiều: Sứ Giả Thành Kiều): chắc chắn đã xong, kể cả khi bot tắt lúc boss chết
+                # (bật lại không thấy boss, cũng không còn tin hoàn thành để đọc). Không cần chờ đủ thành viên nữa
+                s["daxongphoban"] = True
+                self._logpb(s, f"Thấy {PHOBAN_MAP[s['phoban']]['npcxong']}: boss cuối đã chết, phó bản đã xong")
+            if is_bosscuoi and not s["daxongphoban"]:
                 vangs = self._laythanhvienvang(s)
                 if vangs:
                     s["dudoi"] = False
@@ -552,10 +600,10 @@ class TacTuLangLySon:
                     if s["lucchodoi"]:
                         self._logpb(s, f"Đủ thành viên sau {int(time.time() - s['lucchodoi'])}s, đánh {_tenboss(tenboss)}")
                     s.update(dudoi = True, lucchodoi = 0.)
-            # Boss cuối (bước có cờ): không "tới nơi lâu không thấy thì coi như đã giết" (ra nhầm là mất phó bản); game báo hoàn thành là xong
-            is_bosscuoi = len(buoc) > 4 and buoc[4]
+            # Boss cuối (bước có cờ): không "tới nơi lâu không thấy thì coi như đã giết" (ra nhầm là mất phó bản); game báo hoàn thành
+            # (hoặc thấy npcxong) là xong
             if is_bosscuoi and s["daxongphoban"]:
-                ketqua, yeucau = "game báo hoàn thành phó bản", None
+                ketqua, yeucau = "phó bản đã hoàn thành", None
             else:
                 ketqua, yeucau = self._danhboss(s, idbando, tenboss, x, y, is_bosscuoi)
             if ketqua:
@@ -577,6 +625,7 @@ class TacTuLangLySon:
                 self._logpb(s, f"{tennpc} {SOLANTHUNOICHUYEN} lần không vận khí, quay lại bước trước")
                 s["buoc"][idbando] = max(0, i - 1)
                 s["boss"] = None
+                self._luutiendo(s)
             return yeucau
         if loai == "sangtang":
             idke = buoc[1]
@@ -601,10 +650,20 @@ class TacTuLangLySon:
         self._logpb(s, f"Xong phó bản, ra {laytenbando(PHOBAN_MAP[s['phoban']]['bandonpc'])} nhận thưởng")
         return None
 
+    def _is_thaynpcxong(self, s, x, y):
+        # NPC chỉ hiện khi boss cuối đã chết (npcxong), đứng gần chỗ boss cuối (x, y)
+        tennpc = PHOBAN_MAP[s["phoban"]].get("npcxong")
+        diachi = self.moitruong.action_timkiemnhanvat(tennhanvat = tennpc) if tennpc else None
+        if not diachi:
+            return False
+        xnpc, ynpc = self.moitruong.get_toado(diachi)
+        return math.hypot(xnpc - x, ynpc - y) <= KHOANGCACHNPCXONG
+
     def _sangbuoc(self, s, idbando):
         s["buoc"][idbando] = s["buoc"].get(idbando, 0) + 1
         s["boss"] = None
         s["hoithoai"] = None
+        self._luutiendo(s)
 
     def _danhboss(self, s, idbando, tenboss, x, y, is_bosscuoi = False):
         # -> (lý do xong hoặc None, yêu cầu di chuyển). is_bosscuoi: chỉ xong khi đã thấy boss rồi boss biến mất, không thấy thì chờ mãi
@@ -775,7 +834,20 @@ class TacTuLangLySon:
             return self._buocraphongyeu(s)
         tennpc, x, y = cauhinh["npc"]
         bandonpc = cauhinh["bandonpc"]
-        if moitruong.get_idbandohientai() != bandonpc:
+        idbando = moitruong.get_idbandohientai()
+        if idbando in BUOCLANGLYSON_MAP and cauhinh.get("npcxong") and not s.get("is_boranpcxong"):
+            # Thành Kiều: còn thấy Sứ Giả Thành Kiều (hiện khi boss cuối chết) thì nói chuyện chọn LUACHONRANPCXONG để về luôn, khỏi tốn Hồi
+            # Thành Phù. Không thấy / nói SOLANTHUNOICHUYEN lần không ra được thì Hồi Thành Phù như cũ
+            tensg = cauhinh["npcxong"]
+            diachisg = moitruong.action_timkiemnhanvat(tennhanvat = tensg)
+            if diachisg:
+                s["trangthai"] = f"xong {cauhinh['ten']}, nói chuyện {tensg} để về"
+                ketqua, yeucau = self._noichuyenlls(s, tensg, *moitruong.get_toado(diachisg), luachon = LUACHONRANPCXONG)
+                if ketqua in ("loi", "tuchoi"):
+                    s["is_boranpcxong"] = True
+                    self._logpb(s, f"Nói chuyện {tensg} {SOLANTHUNOICHUYEN} lần chưa về được, dùng Hồi Thành Phù")
+                return yeucau
+        if idbando != bandonpc:
             s["trangthai"] = f"ra {laytenbando(bandonpc)} nhận thưởng"
             buoc = self._lapbuocditoibando(bandonpc, is_hoithanhphu = True, is_roiphoban = True, toadodich = (x, y))
             if buoc["loai"] in ("toinoi", "khongduong"):
@@ -804,6 +876,7 @@ class TacTuLangLySon:
             # Vòng sau phải đủ chừng này người mới vào (_is_nhomdu): mình + mọi người từng ở trong nhóm vòng này
             s["sothanhvien"] = len(s["thanhviens"]) + 1
             s.pop("solantuchoi", None)
+            luutiendophoban(moitruong.get_idnguoichoi(), None)
             self._logpb(s, f"Xong vòng {s['sovong']} ({int((time.time() - s['lucbatdauvong']) // 60)} phút), chờ thành viên lĩnh "
                            f"thưởng rồi đổi tổ đội")
             # Mã thưởng của vòng này báo cho thành viên cùng máy (get_khoathuonglanglyson qua shared_data): ai chưa lĩnh mã này thì tự lĩnh.
@@ -959,7 +1032,7 @@ class TacTuLangLySon:
                  lucchodoi = 0., lucmoi = {}, diemvao = {}, daxongphoban = False, davao = False)
         # Phong Yêu Kính: vòng mới được give món mới
         for khoa in ("py", "giao", "dagive", "dolamkim", "lucchonvaopy", "solanvaolaipy", "solanchuyentui", "lucchuyentui", "dadescpy",
-                     "lucdagive", "lucnhom1"):
+                     "lucdagive", "lucnhom1", "is_boranpcxong"):
             s.pop(khoa, None)
         self._logpb(s, f"Có tổ đội mới, bắt đầu vòng {s['sovong'] + 1}")
         return None

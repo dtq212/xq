@@ -25,7 +25,7 @@
             "server": 1,
             "char_index": 1,
             "vitricuaso": 1,
-            "maydangnhap": "Admin-PC"
+            "maydangnhap": ""
         },
         {
             "tennhanvat": "Ngọc",
@@ -36,7 +36,7 @@
             "server": 1,
             "char_index": 1,
             "vitricuaso": 2,
-            "maydangnhap": "Admin-PC"
+            "maydangnhap": ""
         },
         {
             "tennhanvat": "ThichVaCham",
@@ -47,7 +47,7 @@
             "server": 1,
             "char_index": 1,
             "vitricuaso": 3,
-            "maydangnhap": "Admin-PC"
+            "maydangnhap": ""
         },
         {
             "tennhanvat": "KNgaiVaCham",
@@ -58,7 +58,7 @@
             "server": 1,
             "char_index": 1,
             "vitricuaso": 4,
-            "maydangnhap": "Admin-PC"
+            "maydangnhap": ""
         },
         {
             "tennhanvat": "Mộc Lan",

@@ -14,6 +14,7 @@ import subprocess
 import win32process
 
 from amthanh_xq import khoitaocom, datamthanhtientrinhs
+from bannganluong_xq import BanNganLuong
 from cuaso_xq import CuaSo
 from dangnhap_xq import TuDongDangNhap
 from dieuphoi_xq import taicauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
@@ -82,6 +83,8 @@ class TroChoiManager:
         self.dangnhap.batdau()
         # Lệnh từ Telegram và báo cáo định kỳ (thongbao_xq), 1 luồng cho cả máy
         DieuKhienTelegram(self.shared_data, self.command_dict).batdau()
+        # Bán ngân lượng theo chuyển khoản (bannganluong_xq): chỉ máy chạy nhân vật bán mới hỏi SePay
+        BanNganLuong(self.shared_data, self.command_dict).batdau()
         if self.cauhinhlan:
             DongBoLan(self.cauhinhlan, self.shared_data, self.shared_data_lan).batdau()
 

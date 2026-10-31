@@ -204,7 +204,7 @@ class TacTuVatPham:
             # Đang PK ở bản đồ PK: dưới 75%; ở phó bản (không PK): dưới 25%
             is_hoiphucpk = is_dangbatpk and is_bandopk
             is_hoiphucphoban = not is_hoiphucpk and idbandohientai in BANDOPHOBANs
-            nguongphantramhoiphuc = 75 if is_hoiphucpk else 25
+            nguongphantramhoiphuc = 75 if is_hoiphucpk else 35
             sinhlucmatdi = self.moitruong.get_sinhluctoida() - self.moitruong.get_sinhlucconlai()
 
             # Vật phẩm hồi ngay dùng chung thời gian hồi theo nhóm: chỉ gửi lệnh khi client báo đã hồi xong (_sudungvatphamhoi).
@@ -214,7 +214,7 @@ class TacTuVatPham:
                 # Phó bản thì không cần bật tự động kỹ năng
                 if (is_hoiphucpk and self._is_tudongsudungkynang) or is_hoiphucphoban:
                     if phantramsinhlucconlai < nguongphantramhoiphuc and sinhlucmatdi > 2500:
-                        hoisinhlucs = [TRIDUOC, THILUYENQUA, CAPCUUDON, HOATLACHOAN, ]
+                        hoisinhlucs = [TRIDUOC, THILUYENQUA, THILUYENDON, CAPCUUDON, HOATLACHOAN, ]
                         # Phó bản không PK: dùng theo thứ tự ngược lại (cả sinh lực và nội lực)
                         if is_hoiphucphoban:
                             hoisinhlucs.reverse()
@@ -227,7 +227,7 @@ class TacTuVatPham:
                 hoinoilucs = []
                 if is_hoiphucpk or is_hoiphucphoban:
                     if phantramnoilucconlai < nguongphantramhoiphuc and noilucmatdi > 3000:
-                        hoinoilucs = [PHUCDUOC, LONGTIENTHAO, HOATTAMDON, ANTHANHOAN, ]
+                        hoinoilucs = [PHUCDUOC, LONGTIENTHAO, THILUYENDON, HOATTAMDON, ANTHANHOAN, ]
                         if is_hoiphucphoban:
                             hoinoilucs.reverse()
                 elif phantramnoilucconlai <= 75:
@@ -1011,25 +1011,54 @@ class TacTuVatPham:
             self._thoidiemsapxephanhtranggannhat = time.time()
             self._solandichuyensapxep += 1
 
+    def _ghitenvatphamdat(self, thoigiangiu = 15.):
+        # Ghi tên các vật phẩm đang nằm dưới đất quanh nhân vật, món mới vào túi trùng tên 1 món vừa thấy dưới đất mới tính là nhặt
+        thoidiemhientai = time.time()
+        i = -1
+        while True:
+            i += 1
+            diachivatpham = self.moitruong.get_diachicosothongtindoituongx(i)
+            if not diachivatpham:
+                break
+            if not self.moitruong.get_is_vatphamtontai(diachivatpham):
+                continue
+            tenvatpham = (self.moitruong.get_tendoituong(diachivatpham) or "").strip()
+            if tenvatpham:
+                self._tenvatphamdat_map[tenvatpham] = thoidiemhientai
+        self._tenvatphamdat_map = {k: v for k, v in self._tenvatphamdat_map.items() if thoidiemhientai - v <= thoigiangiu}
+
+    def _is_vatphamnhattudat(self, ten):
+        # Tên ô túi chỉ 31 byte (bị cắt) nên so theo đầu tên
+        ten = (ten or "").strip()
+        return bool(ten) and any(tendat == ten or tendat.startswith(ten) for tendat in self._tenvatphamdat_map)
+
     def action_tudongdatvatphammoi(self, thoigiancho = 3., delay = 0.6, solanchuyentoida = 3, soogiu = 2):
-        # Tự động nhẹ (khác nút Sắp xếp hành trang): so danh sách id mỗi lượt, món MỚI vào hành trang (nhặt, chế, mua, lấy kho...) nằm
-        # yên thoigiancho giây thì chèn vào đúng thứ tự với 2 món kề bên (_khoasapxepvatpham), chỗ đang nằm đã đúng thì thôi. Mỗi món
-        # chỉ vài lệnh (xem 4 cách bên dưới), không dồn cả hành trang; món bị rút ra thì để trống, không dồn lại.
+        # Tự động nhẹ (khác nút Sắp xếp hành trang): so danh sách id mỗi lượt, món MỚI NHẶT TỪ ĐẤT vào hành trang nằm yên thoigiancho
+        # giây thì chèn vào đúng thứ tự với 2 món kề bên (_khoasapxepvatpham), chỗ đang nằm đã đúng thì thôi. Đồ người khác cho, mở
+        # túi, lấy kho, mua, chế... (tên không trùng món vừa thấy dưới đất) thì để nguyên chỗ. Mỗi món chỉ vài lệnh (xem 4 cách bên
+        # dưới), không dồn cả hành trang; món bị rút ra thì để trống, không dồn lại.
         # Xử lý quá solanchuyentoida lần vẫn chưa đúng chỗ thì bỏ qua món đó
         if not self._is_tudongdatvatphammoi or self._is_dangsapxephanhtrang:
             self._idhanhtrangtruoc = None
             self._vatphammoi_map = {}
+            self._tenvatphamdat_map = {}
             return
+        self._ghitenvatphamdat()
         vitrimos = self.moitruong.get_danhsachvitrimohanhtrang()
         soluongo = vitrimos[-1] + 1
         ids = self.moitruong._docdanhsachidvatphamhanhtrang(soluongo)
         if len(ids) < soluongo:
             return
         idhientais = {ids[vitri] for vitri in vitrimos if ids[vitri]}
-        if self._idhanhtrangtruoc is not None:
-            for idvatpham in idhientais - self._idhanhtrangtruoc:
-                # [lúc thấy, số lần đã xử lý, ô đang chờ trống để đưa vào]
-                self._vatphammoi_map[idvatpham] = [time.time(), 0, None]
+        idmois = idhientais - self._idhanhtrangtruoc if self._idhanhtrangtruoc is not None else set()
+        if idmois:
+            tens = self.moitruong._docdanhsachtenvatphamhanhtrang(soluongo)
+            if len(tens) < soluongo:
+                return
+            for idvatpham in idmois:
+                if self._is_vatphamnhattudat(tens[ids.index(idvatpham)]):
+                    # [lúc thấy, số lần đã xử lý, ô đang chờ trống để đưa vào]
+                    self._vatphammoi_map[idvatpham] = [time.time(), 0, None]
         self._idhanhtrangtruoc = idhientais
         self._vatphammoi_map = {k: v for k, v in self._vatphammoi_map.items() if k in idhientais}
         if not self._vatphammoi_map or time.time() - self._thoidiemdatvatphammoigannhat < delay:

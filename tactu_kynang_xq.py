@@ -604,14 +604,6 @@ class TacTuKyNang:
             if callable(dieukien) and not dieukien(): continue
             if vitrikynang and not self._is_kynangdungduoc(vitrikynang): continue
 
-            # Trấn Cổ Thần Uy chỉ ra chiêu khi đang di chuyển: đứng im thì nhích rồi kết thúc lượt
-            # (các kỹ năng cận chiến phía sau có ngắt di chuyển, sẽ huỷ cú nhích), lượt sau đang di chuyển mới gửi
-            # Điều kiện của Trấn Cổ Thần Uy đã đòi có mục tiêu (không buff khi đứng chờ, theo sau, trong thành)
-            if vitrikynang in VITRIKYNANGCANNHICHDAOHOANGUYENs and self.moitruong.get_idtuthenhanvat() != TUTHENHANVAT_DICHUYEN:
-                if self._nhichdedungkynang(vitrikynang, diachimuctieu):
-                    return
-                continue
-
             target = target if target else diachimuctieu
 
             # Bot khác vừa gửi chiêu gây cùng hiệu ứng lên mục tiêu này (hiệu ứng chưa kịp hiện) thì dùng chiêu tiếp theo
@@ -677,34 +669,6 @@ class TacTuKyNang:
         except Exception:
             pass
 
-    def _nhichdedungkynang(self, vitrikynang, diachimuctieu):
-        # Đang đứng im mà cần dùng kỹ năng chỉ ra chiêu khi di chuyển => nhích một chút: đứng trùng ô quái (hoặc không có mục tiêu)
-        # thì ra 1 ô bên cạnh, đứng cạnh quái thì xuyên qua sang ô đối diện (vẫn sát quái để đánh cận chiến)
-        thoidiemhientai = time.time()
-        if thoidiemhientai - self._thoidiemnhichgannhat < THOIGIANGIUAHAILANNHICH:
-            return False
-        if self.moitruong.get_idtuthenhanvat() != TUTHENHANVAT_DUNGIM:
-            return False
-        # Kỹ năng đang bị khoá (chống spam / khoá kỹ năng lúc triệu hồi bảo thú) thì lượt sau cũng không gửi được, nhích vô ích
-        idkynang = self.moitruong.get_idkynang(vitrikynang)
-        if not idkynang or self.moitruong.get_is_kynangdangbikhoa(idkynang):
-            return False
-
-        x, y = self.moitruong.get_toado()
-        xquai, yquai = self.moitruong.get_toado(diachimuctieu) if diachimuctieu else (x, y)
-        if (x, y) == (xquai, yquai):
-            dx, dy = random.choice(((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1)))
-            xdich, ydich = x + dx, y + dy
-        else:
-            xdich, ydich = 2 * xquai - x, 2 * yquai - y
-        if self._kiemtra_divaovungcam(xdich, ydich):
-            return False
-
-        self._thoidiemnhichgannhat = thoidiemhientai
-        is_ok = self.moitruong.action_dichuyengiukhoangcachtoidadiem(xdich, ydich, 0, delay = 0.)
-        if IS_LOGCAULENH:
-            self.moitruong._inlog(f"[NHÍCH] để dùng kỹ năng ô {vitrikynang}: ({x}, {y}) -> ({xdich}, {ydich}){'' if is_ok else ' (không đi được)'}")
-        return is_ok
 
     def action_sudungkynangmonphaicamvequan(self):
         if not self._is_tudongsudungkynang: return

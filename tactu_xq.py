@@ -20,12 +20,14 @@ from tactu_sumon_xq import TacTuSuMon
 from tactu_langlyson_xq import TacTuLangLySon
 from tactu_sugia_xq import TacTuSuGia
 from tactu_tapkich_xq import TacTuTapKich
+from tactu_matac_xq import TacTuMaTac
+from tactu_danhvong_xq import TacTuDanhVong
 from nhiemvu_xq import SoVitri
 
 
 # Các nhóm việc nằm ở các file tactu_*_xq.py (mixin), TacTu giữ trạng thái (__init__), lưu / nạp thiết lập và các lệnh bật / tắt
 class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu, TacTuHoatDong, TacTuGiaoDo, TacTuCatKho, TacTuSuMon,
-            TacTuLangLySon, TacTuSuGia, TacTuTapKich):
+            TacTuLangLySon, TacTuSuGia, TacTuTapKich, TacTuMaTac, TacTuDanhVong):
     def __init__(self, moitruong: MoiTruong):
         self._thoidiemhettangbaodogannhat = 0.
         self._thoidiemmuaautogannhat = 0.
@@ -169,6 +171,17 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._tapkich_phai = ""
         self._lucchonmenutapkich = 0.
         self._lucchonvaotapkich = 0.
+        # Đoạt Bảo Mã Tặc (tactu_matac_xq): việc đang làm (None = không), kết quả lần gần nhất cho giao diện, danh sách bản đồ (chuỗi tên
+        # cách dấu phẩy, lưu theo nhân vật), mốc tin hệ thống đã xét
+        self._matac = None
+        self._ketquamatac = ""
+        self._matac_bandos = ""
+        self._thoidiemxettinmatac = 0.
+        # Tự bắt đầu khi thấy tin hệ thống báo bản đồ Mã Tặc (lưu theo nhân vật)
+        self._is_tubatmatac = False
+        # Nhiệm vụ Danh Vọng (tactu_danhvong_xq): việc đang làm (None = không), kết quả lần gần nhất cho giao diện
+        self._danhvong = None
+        self._ketquadanhvong = ""
         # Mở cửa hàng để đọc hàng (tactu_sumon_xq.batdau_mocuahang): việc đang làm (None = không), kết quả theo (bản đồ, tên NPC);
         # Mua bù: lần mở cửa hàng gần nhất theo NPC, các lệch ô / giá giữa luật và cửa hàng đã báo
         self._mocuahang = None
@@ -229,6 +242,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._is_tudongdatvatphammoi = True
         self._idhanhtrangtruoc = None
         self._vatphammoi_map = {}
+        # {tên vật phẩm dưới đất: lúc thấy gần nhất}: chỉ đặt món mới nhặt từ đất (không đụng đồ người khác cho, mở túi, lấy kho...)
+        self._tenvatphamdat_map = {}
         self._thoidiemdatvatphammoigannhat = 0.
         # Đổi chỗ 2 viên đá khi túi đầy: (id món trung gian, id đá cần đặt, ô đích, lúc gửi bước 1), xem _timbuocsapxephanhtrang
         self._xoayvongsapxep = None
@@ -287,6 +302,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._theodoitrungchieu = None
         self._idmuctieudangtheokiemtraket = 0
         self._thoidiemdungimkiemtraket = 0.
+        # Tiếp cận quái không gần thêm được (vật cản lớn): [id quái, khoảng cách gần nhất đã tới, lúc gần thêm gần nhất]
+        self._theodoitiepcan = None
 
         self._yeucaunhatvatpham = None
         self._yeucautheosau = None
@@ -477,7 +494,6 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._diachidoituongcanbuffthucgiapmaoson = None
         self._diachidoituongcanbuffthuctammaoson = None
         self._diachidoituongcanbuffammanhapthemaoson = None
-        self._thoidiemnhichgannhat = 0.
 
         # Đổi pháp bảo khi máu thấp: lúc ra lệnh đổi gần nhất, tên pháp bảo đang đeo trước khi đổi (None = không đang đổi,
         # "" = trước đó không đeo), % máu lúc đổi, lần thử đeo lại gần nhất
@@ -602,17 +618,23 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_baothutrieuhoimaoson": self._baothutrieuhoimaoson,
             "_sumon_npcgiao": self._sumon_npcgiao,
             "_tapkich_phai": self._tapkich_phai,
+            "_matac_bandos": self._matac_bandos,
+            "_is_tubatmatac": self._is_tubatmatac,
             # Sư môn đang bật: dis / mở lại bot vào lại thì tự bật tiếp (bấm Dừng, xong 20 lần, lỗi dừng thì là False)
             "_is_dangsumon": bool(self._sumon),
             # Sư Gia đang bật: như sư môn, dis / mở lại bot thì tự bật tiếp (bấm Dừng, đủ số lần trong ngày, lỗi dừng thì là False)
             "_is_dangsugia": bool(self._sugia),
             # Tập Kích đang bật: như sư môn, dis / mở lại bot thì tự bật tiếp với môn phái đã chọn (bấm Dừng, lỗi dừng thì là False)
             "_is_dangtapkich": bool(self._tapkich),
+            # Đoạt Bảo Mã Tặc đang bật: dis / mở lại bot thì tự bật tiếp
+            "_is_dangmatac": bool(self._matac),
+            # Danh Vọng đang bật: dis / mở lại bot thì tự bật tiếp
+            "_is_dangdanhvong": bool(self._danhvong),
             # Phó bản đang đi ("langlyson" / "thanhkieu", "" = không): dis / mở lại bot thì tự bật tiếp
             "_phobandanglanglyson": self.get_phobanlanglyson(),
         }
         # Sư môn / Sư Gia đang tạm đổi ô nào (Theo sau, Tự động sử dụng kỹ năng...) thì lưu giá trị gốc của người dùng, dis vào lại không mất
-        for s in (self._sumon, self._sugia, self._tapkich, self._langlyson):
+        for s in (self._sumon, self._sugia, self._tapkich, self._matac, self._danhvong, self._langlyson):
             thietlap.update({k: v for k, v in ((s or {}).get("tuychoncu") or {}).items() if k in thietlap})
         util_luuthietlap(str(idnguoichoi), thietlap)
         # luuthietlap chạy mỗi giây: vị trí quái thì THOIGIANLUUVITRIQUAI giây mới ghi file một lần (thoát thì luuvitriquai(True))
@@ -695,12 +717,18 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if thietlap.get("_baothutrieuhoimaoson") in BAOTHUTRIEUHOIMAOSONs: self._baothutrieuhoimaoson = thietlap["_baothutrieuhoimaoson"]
             if "_sumon_npcgiao" in thietlap: self._sumon_npcgiao = thietlap["_sumon_npcgiao"] or ""
             if "_tapkich_phai" in thietlap: self._tapkich_phai = thietlap["_tapkich_phai"] or ""
+            if "_matac_bandos" in thietlap: self._matac_bandos = thietlap["_matac_bandos"] or ""
+            if "_is_tubatmatac" in thietlap: self._is_tubatmatac = bool(thietlap["_is_tubatmatac"])
             if thietlap.get("_is_dangsumon") and not self._sumon:
                 self.batdau_sumon()
             if thietlap.get("_is_dangsugia") and not self._sugia:
                 self.batdau_sugia()
             if thietlap.get("_is_dangtapkich") and not self._tapkich:
                 self.batdau_tapkich()
+            if thietlap.get("_is_dangmatac") and not self._matac:
+                self.batdau_matac()
+            if thietlap.get("_is_dangdanhvong") and not self._danhvong:
+                self.batdau_danhvong()
             if thietlap.get("_phobandanglanglyson") and not self._langlyson:
                 self.batdau_langlyson(thietlap["_phobandanglanglyson"])
 

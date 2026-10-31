@@ -152,6 +152,12 @@ class TacTuSuMon:
         # Tập Kích Môn Phái trong phó bản: đánh mọi quái (500 con + boss)
         if self.get_is_tapkichdanhquai():
             return ()
+        # Đoạt Bảo Mã Tặc trong phó bản: đánh mọi quái (chỉ có Mã Tặc)
+        if self.get_is_matacdanhquai():
+            return ()
+        # Danh Vọng Truy Sát: chỉ đánh kẻ phản bội mang ID mình
+        if self.get_is_danhvongdanhquai():
+            return self._danhvong["tenquai"]
         # Sư Gia: chỉ đánh tội phạm của nhiệm vụ
         if self.get_is_sugiadanhquai() and self._sugia["tenquai"]:
             return self._sugia["tenquai"]
@@ -361,15 +367,17 @@ class TacTuSuMon:
         # có thể khác ("Kẻ Khả Nghi" là Cuồng Đồ): đánh mọi con mang ID mình, con khớp tên mà mang ID người khác thì bỏ.
         # -> (tên được đánh, địa chỉ con mang ID mình gần nhất hoặc None)
         moitruong = self.moitruong
-        duoi = f"({moitruong.get_idnguoichoi()})"
+        idtoi = moitruong.get_idnguoichoi()
         tens = [chuanhoaten(t) for t in tens if t]
         kq, gannhat = set(), None
         for d in moitruong._get_diachidoituongxungquanhs():
             if not moitruong.get_is_nhanvattontai(d) or moitruong.get_is_nguoichoi(d):
                 continue
             ten = moitruong.get_tendoituong(d) or ""
-            if re.search(r"\(\d+\)\s*$", ten):
-                if not ten.rstrip().endswith(duoi):
+            # ID có thể có dấu cách trong ngoặc: "Quan Đào Tẩu ( 29 )" (Danh Vọng)
+            khop = re.search(r"\(\s*(\d+)\s*\)\s*$", ten)
+            if khop:
+                if int(khop.group(1)) != idtoi:
                     continue
                 if moitruong.get_is_cothetancong(d) and (gannhat is None or moitruong.get_khoangcach(d) < moitruong.get_khoangcach(gannhat)):
                     gannhat = d
@@ -1091,7 +1099,10 @@ class TacTuSuMon:
             s["trangthai"] = f"{nhan}: chờ menu Công Văn Truy Nã"
             return True, None
         if t["buoc"] == "vitri":
-            vitris = moitruong.get_vitritruyna()
+            # Chấm vàng trên bản đồ còn có thành viên nhóm (cấu trúc nhóm riêng, không ở bảng này): phòng hờ vẫn bỏ ô trùng ID / toạ độ
+            # thành viên
+            idnhoms, toadonhoms = set(moitruong.get_danhsachidnguoichoithanhviennhoms()), set(moitruong.get_toadothanhviennhoms())
+            vitris = [v for v in moitruong.get_vitritruyna() if v[0] not in idnhoms and v[1:] not in toadonhoms]
             moi = [v for v in vitris if v not in t["mau"]]
             if not moi and now - t["luc"] < THOIGIANCHOTRUYNA:
                 s["trangthai"] = f"{nhan}: chờ vị trí Công Văn Truy Nã"

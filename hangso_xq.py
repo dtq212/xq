@@ -186,6 +186,10 @@ KICHTHUOCDOITUONGTIMDUONGCUCBO = 0x56000
 BANKINHKEODICH = 15
 # Đoạn tìm đường cục bộ ra đoạn cụt (không tới được đích) thì chừng này giây sau mới thử lại đúng đoạn đó
 THOIGIANNHODOANCUT = 1.
+# Vừa đổi bản đồ thì chừng này giây sau mới lập bước đi tới bản đồ khác (toạ độ còn của bản đồ cũ)
+THOIGIANCHOSAUDOIBANDO = 1.
+# ... và toạ độ còn y như ở bản đồ cũ thì chờ tiếp, tối đa chừng này giây
+THOIGIANCHOTOADOSAUDOIBANDO = 5.
 # Giữ khoảng cách tối thiểu mà sau lưng là vật cản: thử lùi lệch khỏi hướng thẳng chừng này độ (cả 2 bên, lệch ít trước), lệch hướng
 # thì quãng lùi được dài thêm tối đa chừng này ô cho đủ xa mục tiêu
 # Đi theo ô tới gần đích (NPC...) còn trong chừng này ô thì chọn ô trong tầm mà tìm đường cục bộ tới được thật (thử tối đa SOOTHU ô
@@ -1083,6 +1087,9 @@ THOIGIANCHANTUDICHUYENCLIENT = 0.15
 # click cuối (MoiTruong.get_is_dangclickchuottrai)
 THOIGIANGIUCHUOTTOITHIEU = 0.3
 THOIGIANNGUNGSAUNHACHUOT = 0.4
+# Click nhanh xuống đất cũng tính như giữ chuột (cắt cả chiêu đang xuất): đích click chuột của game đổi trong chừng này giây sau
+# lúc thấy chuột trái thật đang bấm trên cửa sổ game
+THOIGIANNHANCLICKDICHUYEN = 0.5
 # Gửi chiêu trong tầm rồi thì chặn client tự bước tối đa chừng này giây chờ vào tư thế xuất chiêu
 THOIGIANCHANTUDICHUYENTRUOCXUATCHIEU = 0.25
 # Trong lúc xuất chiêu / khựng chỉ gửi chiêu nhắm mục tiêu khi mục tiêu trong chừng này ô (ngoài tầm thì game tự chạy lại gần)
@@ -1095,11 +1102,6 @@ THOIGIANCHONGATDICHUYENXUATCHIEU = 1.
 SOLANGUITOIDASPAMKYNANG = 3
 SOGIAYDEMSPAMKYNANG = 1.5
 THOIGIANKHOASPAMKYNANG = 3.
-# Trấn Cổ Thần Uy (Đào Hoa Nguyên) đứng im thì game hay báo sẵn sàng mà không ra chiêu, đang di chuyển thì ra ngay
-# => chỉ dùng khi đang di chuyển; đứng im mà cần dùng thì nhích trước
-# (đứng trùng ô quái: ra 1 ô bên cạnh, cạnh quái: xuyên qua sang ô đối diện), mỗi lần nhích cách nhau THOIGIANGIUAHAILANNHICH giây
-THOIGIANGIUAHAILANNHICH = 1.
-VITRIKYNANGCANNHICHDAOHOANGUYENs = (VITRIKYNANG_TRANCOTHANUY,)
 # Kỹ năng không áp chống spam (gửi dồn bao nhiêu cũng được): Đại Hải Vô Lượng bấm tay liên tục vẫn ra chiêu bình thường,
 # chặn spam chỉ làm nó nghỉ 3s vô ích. Các chiêu đánh Đào Hoa Nguyên: server nhận chiêu kế lúc sẵn sàng (lệch ngẫu nhiên
 # 0.5-1.7s sau chiêu trước, đo 2026-10-28) nên nối chiêu phải gửi lại tới khi được nhận, khoá 3s làm đứt chuỗi
@@ -1238,6 +1240,17 @@ THOIGIANBOQUAMUCTIEUCHUNG = 60.
 THOIGIANKHONGTRUNGCHIEUTOIDA = 8.
 SOCHIEUKHONGTRUNGTOIDA = 3
 THOIGIANBOQUAMUCTIEUKHONGTRUNG = 60.
+
+# Tiếp cận quái mà bị vật cản lớn (cây, đá...) chắn: client tìm đường vòng qua lại nên nhân vật vẫn di chuyển, kiểm tra kẹt đứng im
+# không bắt được. Còn phải đi tới mà quá THOIGIANTIEPCANKHONGGANTHEM giây khoảng cách tới quái không giảm thêm được
+# KHOANGCACHTIEPCANGANTHEM ô thì bỏ qua quái đó THOIGIANBOQUAMUCTIEUKHONGTIEPCAN giây
+THOIGIANTIEPCANKHONGGANTHEM = 6.
+KHOANGCACHTIEPCANGANTHEM = 1.
+THOIGIANBOQUAMUCTIEUKHONGTIEPCAN = 60.
+# Bắt đầu tiếp cận 1 quái thì tìm đường trên lưới vật cản trước (moitruong.get_sobuocduongtoi): không có đường, hoặc đường dài hơn
+# HESODUONGVONGTOIDA lần khoảng cách thẳng + SOBUOCDUONGVONGCONGTHEM bước (phải vòng rất xa qua bên kia vật cản) thì bỏ qua luôn
+HESODUONGVONGTOIDA = 2.
+SOBUOCDUONGVONGCONGTHEM = 10
 
 # Giữ khoảng cách với đối tượng đang tấn công mình (tùy chọn trên giao diện, hay bật cho Mao Sơn / Vân Mộng Cốc khi giao tranh)
 KHOANGCACHGIUKETANCONG = 6.

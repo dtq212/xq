@@ -319,6 +319,14 @@ class CuaSo:
                     "_trangthaitapkich": self.tactu.get_trangthaitapkich(),
                     "_is_dangtapkich": self.tactu.get_is_dangtapkich(),
                     "_tapkich_phai": self.tactu._tapkich_phai or self.moitruong.get_tenmonphai() or "",
+                    # Đoạt Bảo Mã Tặc (tactu_matac_xq): trạng thái, danh sách bản đồ cho giao diện
+                    "_trangthaimatac": self.tactu.get_trangthaimatac(),
+                    "_is_dangmatac": self.tactu.get_is_dangmatac(),
+                    "_matac_bandos": self.tactu._matac_bandos,
+                    "_is_tubatmatac": self.tactu._is_tubatmatac,
+                    # Nhiệm vụ Danh Vọng (tactu_danhvong_xq): trạng thái cho giao diện
+                    "_trangthaidanhvong": self.tactu.get_trangthaidanhvong(),
+                    "_is_dangdanhvong": self.tactu.get_is_dangdanhvong(),
                     "_thongkephien": self.thongke.get_tomtatphien(),
                     # Ngân lượng mang theo hiện tại (báo cáo Telegram)
                     "nganluong": self.moitruong.get_nganluong(),
@@ -414,6 +422,20 @@ class CuaSo:
                     self.tactu.huy_tapkich()
                 elif isinstance(cmd, str) and cmd.startswith("set_tapkich_phai:"):
                     self.tactu.thietlap_phaitapkich(cmd.split(":", 1)[1])
+                elif cmd == "matac":
+                    # Đoạt Bảo Mã Tặc (tactu_matac_xq) bật / tắt từ giao diện
+                    self.tactu.batdau_matac()
+                elif cmd == "huymatac":
+                    self.tactu.huy_matac()
+                elif isinstance(cmd, str) and cmd.startswith("set_matac_bando:"):
+                    self.tactu.thietlap_bandomatac(cmd.split(":", 1)[1])
+                elif isinstance(cmd, str) and cmd.startswith("set_matac_tubat:"):
+                    self.tactu.thietlap_tubatmatac(cmd.split(":", 1)[1] == "1")
+                elif cmd == "danhvong":
+                    # Nhiệm vụ Danh Vọng (tactu_danhvong_xq) bật / tắt từ giao diện
+                    self.tactu.batdau_danhvong()
+                elif cmd == "huydanhvong":
+                    self.tactu.huy_danhvong()
                 elif isinstance(cmd, str) and cmd.startswith("set_sumon_npcgiao:"):
                     self.tactu.thietlap_npcgiaosumon(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("tamngungtuxa:"):

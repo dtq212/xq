@@ -322,6 +322,9 @@ class TacTuHoatDong:
         # Lăng Ly Sơn đang giải tán tổ đội cũ (tactu_langlyson_xq): tạm nghỉ, còn trong nhóm thì rời; xong thì lập nhóm mới như thường
         if self.action_roinhomlanglyson():
             return
+        # Đoạt Bảo Mã Tặc chỉ đi nhóm 1 người (tactu_matac_xq tự lo rời / lập nhóm): Tổ đội tự động nghỉ suốt lúc đang bật
+        if self._matac:
+            return
         # Tổ đội 1 lần (Ctrl+Alt+T, luồng riêng action_todoimotlan): đang gom (mình trưởng nhóm) hoặc đang được gom thì bỏ Tổ đội tự động
         # lượt này, khỏi giành nhau
         if self._todoimotlan or self._layidtruongnhomtodoimotlan()[0]:
