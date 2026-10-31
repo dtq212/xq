@@ -1088,6 +1088,15 @@ class MoiTruong:
             return False
         return read_int(self.tientrinh, x + 0x1E4 + 0x6C * (sothutu - 1))
 
+    def get_vitritruyna(self):
+        # Vị trí đối thủ nhiệm vụ máy chủ trả khi dùng Công Văn Truy Nã (chấm vàng trên bản đồ): khối điều khiển + 0x334, mỗi ô 12 byte
+        # (id đối tượng, x, y), ô trống id -1. Chỉ đổi khi dùng công văn, không tự cập nhật theo đối thủ (đo 2026-10-31). -> [(id, x, y)]
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
+        if not x:
+            return []
+        so = struct.unpack("<15i", read_bytes(self.tientrinh, x + 0x334, 60))
+        return [(so[k], so[k + 1], so[k + 2]) for k in range(0, 15, 3) if so[k] > 0 and so[k + 1] > 0 and so[k + 2] > 0]
+
     def get_phantramsinhlucconlaidoituongbaothukynangtrieuhoi(self, sothutu = 1):
         x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         if not x:

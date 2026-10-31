@@ -31,6 +31,14 @@ from tienich_xq import phatam, tailotrinhmau as util_tailotrinhmau, luulotrinhma
 DAYCANKHON = "Dây Càn Khôn"
 # Hết Dây Càn Khôn thì về Chủ Tiệm Tạp Hóa ở Tân Thủ Thôn mua chừng này (ô / giá tra theo tên trong cửa hàng)
 SOLUONGMUADAYCANKHON = 30
+CONGVANTRUYNA = "Công Văn Truy Nã"
+# Truy Bắt Thích Khách: hết Công Văn Truy Nã (dùng chỉ chỗ thích khách) thì về Chủ Tiệm Tạp Hóa ở Tân Thủ Thôn mua chừng này
+SOLUONGMUACONGVANTRUYNA = 5
+# Dùng công văn: chờ menu / vị trí máy chủ trả tối đa chừng này giây; tới cách chấm chừng này ô mà không thấy đối thủ thì dùng lại;
+# liền chừng này lần không ra gì (không menu, không vị trí, tới chấm không thấy) thì đi dò khắp bản đồ như cũ tới khi gặp đối thủ
+THOIGIANCHOTRUYNA = 4.
+KHOANGCACHTOICHAMTRUYNA = 4
+SOLANTRUYNALOI = 5
 # Mở cửa hàng (action_xulymocuahang): quá chừng này giây kể từ lúc bấm NPC mà cửa sổ chưa hiện thì coi như không mở được
 THOIGIANMOCUAHANGTOIDA = 10.
 THOIGIANCHOLIST = 3.
@@ -998,6 +1006,11 @@ class TacTuSuMon:
             return None
         nhan = f"{nv['ten']}: " + (", ".join(f"{t} {a}/{b}" for t, a, b in nv["tiendos"]) if nv.get("tiendos") else ", ".join(nv["quais"]))
         if self.moitruong.get_idbandohientai() != idbando:
+            if not self._demvatpham(CONGVANTRUYNA):
+                # Hết công văn: về Chủ Tiệm Tạp Hóa ở Tân Thủ Thôn mua trước khi sang nước thích khách trốn (đang truy mà hết thì không
+                # chạy về, đi dò khắp bản đồ)
+                return self._buocmuahang(s, {"vatpham": CONGVANTRUYNA, "soluong": SOLUONGMUACONGVANTRUYNA, "cuahang": CHUTIEMTAPHOA,
+                                             "luot": nv["luot"]})
             return self._dentoi(s, idbando, None, None, nhan)
         s["chedo"] = "danhquai"
         self._batdanhquai(s)
@@ -1005,9 +1018,14 @@ class TacTuSuMon:
         s["tenquai"], gannhat = self._layquairieng(nv["quais"])
         s["trangthai"] = nhan
         if gannhat:
+            if s.get("truyna"):
+                s["truyna"]["solanloi"] = 0
             x, y = self.moitruong.get_toado(gannhat)
             return self._dentoi(s, idbando, x, y, f"{nhan}: đuổi {self.moitruong.get_tendoituong(gannhat)}",
                                 khoangcach = self._khoangcachsudungkynangtamxa, is_dioo = self._is_dioo(idbando))
+        is_dangtruyna, yeucau = self._buoctruyna(s, nv, idbando, nhan)
+        if is_dangtruyna:
+            return yeucau
         # Lưới điểm đi khắp bản đồ, bắt đầu từ điểm gần chỗ vừa tới nhất (tính 1 lần cho lượt này, giữ thứ tự để đi tiếp vòng)
         khoa = f"truybat|{nv['luot']}|{idbando}"
         if s.get("luoi", (None,))[0] != khoa:
@@ -1035,6 +1053,71 @@ class TacTuSuMon:
                     diems = [nv["toado"]] + vong10 + laydiemkhampha(idbando, nv["toado"])[1:9] + [nv["toado"]] + diems
             s["luoi"] = (khoa, diems)
         return self._diquadiem(s, khoa, idbando, s["luoi"][1], nhan, chodiemdau = THOIGIANCHODIEMNHIEMVU if nv.get("toado") else 0.)
+
+    def _buoctruyna(self, s, nv, idbando, nhan):
+        # Công Văn Truy Nã: "use <id>#" mở menu "Bạn muốn tìm vị trí của ai ?" (chỉ các đối thủ còn sống, mỗi con 1 lệnh
+        # "use <id># target.3.<k>"), chọn con nào thì máy chủ ghi vị trí đúng con đó vào ô của nó trong khối điều khiển (get_vitritruyna,
+        # chấm vàng trên bản đồ, không tự cập nhật; ô con đã chết giữ toạ độ cũ). Dùng liên tục được: tới chấm gần nhất, tới nơi không
+        # thấy thì bỏ ô đó (tới khi nó có toạ độ mới) và dùng lại. -> (True, yêu cầu di chuyển / None) khi đang lo việc này, (False, None)
+        # khi hết công văn hoặc liền SOLANTRUYNALOI lần không ra gì (đi dò khắp bản đồ)
+        moitruong = self.moitruong
+        t = s.get("truyna")
+        if not t or t["luot"] != nv["luot"]:
+            t = s["truyna"] = {"luot": nv["luot"], "buoc": None, "luc": 0., "solan": 0, "solanloi": 0, "dich": None, "mau": [], "bo": set()}
+        if t["dich"]:
+            x, y = t["dich"][1:]
+            if moitruong.get_khoangcachdiem(x, y) > KHOANGCACHTOICHAMTRUYNA:
+                s["trangthai"] = f"{nhan}: tới chấm Truy Nã ({x}, {y})"
+                return True, self._dentoi(s, idbando, x, y, s["trangthai"], is_dioo = self._is_dioo(idbando))
+            moitruong._inlog(f"[SƯ MÔN] Tới chấm Truy Nã ({x}, {y}) không thấy đối thủ, dùng lại công văn")
+            t["bo"].add(t["dich"])
+            t["dich"], t["solanloi"] = None, t["solanloi"] + 1
+        if t["solanloi"] >= SOLANTRUYNALOI:
+            return False, None
+        now = time.time()
+        if t["buoc"] == "menu":
+            lenhs = [l for l in moitruong.get_lenhcuasotuychons() if "# target." in l] if moitruong.get_noidungcuasotuychon() else []
+            if lenhs:
+                # Lần lượt từng đối thủ trong menu (máy chủ có thể chỉ trả vị trí con được chọn)
+                lenh = lenhs[t["solan"] % len(lenhs)]
+                t["mau"] = moitruong.get_vitritruyna()
+                moitruong._inlog(f"[SƯ MÔN] Công Văn Truy Nã: {lenhs} -> {lenh}")
+                moitruong.xoa_noidungcuasotuychon()
+                moitruong.action_thucthicaulenh(lenh)
+                t["buoc"], t["luc"], t["solan"] = "vitri", now, t["solan"] + 1
+            elif now - t["luc"] > THOIGIANCHOTRUYNA:
+                moitruong._inlog(f"[SƯ MÔN] Dùng Công Văn Truy Nã {THOIGIANCHOTRUYNA:.0f}s không thấy menu chọn đối thủ")
+                t["buoc"], t["solanloi"] = None, t["solanloi"] + 1
+            s["trangthai"] = f"{nhan}: chờ menu Công Văn Truy Nã"
+            return True, None
+        if t["buoc"] == "vitri":
+            vitris = moitruong.get_vitritruyna()
+            moi = [v for v in vitris if v not in t["mau"]]
+            if not moi and now - t["luc"] < THOIGIANCHOTRUYNA:
+                s["trangthai"] = f"{nhan}: chờ vị trí Công Văn Truy Nã"
+                return True, None
+            t["buoc"] = None
+            # Ô vừa đổi là con vừa chọn; không ô nào đổi (con đó đứng yên) thì xét các ô chưa tới mà không thấy (ô con đã chết giữ toạ
+            # độ cũ, tới rồi thì bỏ)
+            vitris = moi or [v for v in vitris if v not in t["bo"]]
+            if vitris:
+                t["dich"] = min(vitris, key = lambda v: moitruong.get_khoangcachdiem(v[1], v[2]))
+                x, y = t["dich"][1:]
+                moitruong._inlog(f"[SƯ MÔN] Công Văn Truy Nã: vị trí {vitris} -> tới ({x}, {y})")
+                s["trangthai"] = f"{nhan}: tới chấm Truy Nã ({x}, {y})"
+                return True, self._dentoi(s, idbando, x, y, s["trangthai"], is_dioo = self._is_dioo(idbando))
+            moitruong._inlog(f"[SƯ MÔN] Dùng Công Văn Truy Nã {THOIGIANCHOTRUYNA:.0f}s không có vị trí đối thủ")
+            t["solanloi"] += 1
+            return True, None
+        ids = [iddoituong for tenxet, mons in moitruong.get_danhsachvatphamhanhtrang_map().items()
+               if chuanhoaten(tenxet) == chuanhoaten(CONGVANTRUYNA) for _, iddoituong in mons if iddoituong]
+        if not ids:
+            return False, None
+        moitruong.xoa_noidungcuasotuychon()
+        if moitruong.action_sudungvatpham(ids[0]):
+            t["buoc"], t["luc"] = "menu", now
+        s["trangthai"] = f"{nhan}: dùng Công Văn Truy Nã"
+        return True, None
 
     def _buoctythi(self, s, nv):
         # Môn Phái Tỷ Thý: tới bản đồ môn phái, tìm <phái> Đệ Tử. Còn là NPC thì nói chuyện chọn "1. Lập tức Khiêu chiến" (lựa chọn đầu),
