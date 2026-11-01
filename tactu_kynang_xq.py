@@ -1133,7 +1133,7 @@ class TacTuKyNang:
         # Mao Sơn bật _is_doidokhitrieuhoi: trong lúc vận khí gọi bảo thú triệu hồi (khoá vận khí triệu hồi) ghi lại bộ đồ đang mặc,
         # rồi đeo bộ đồ triệu hồi đã ghi (ghi_bodotrieuhoi, thường là đồ tấn công), tìm từng món trong hành trang theo dấu vân tay mô tả.
         # Dùng / đeo vật phẩm không ngắt vận khí. Vận khí xong thì ô trang bị nào khác lúc ghi lại sẽ mặc lại đúng món cũ (theo id)
-        if self.moitruong.get_is_khoavankhitrieuhoi():
+        if self.moitruong.get_is_khoavankhitrieuhoibaothu():
             if self._bodotruoctrieuhoi is None:
                 if self.moitruong.get_tenmonphai() != "maoson" or not self._is_doidokhitrieuhoi or not self._bodotrieuhoi:
                     return
@@ -1267,7 +1267,7 @@ class TacTuKyNang:
         if time.time() - self._thoidiemsudungloidongcuuthiengannhat > THOIGIANVANKHILOIDONGCUUTHIEN + 1.5:
             return False
         diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
-        if not diachimuctieu or self.moitruong.get_khoangcach(diachimuctieu) <= KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN + 0.5:
+        if not diachimuctieu or self.moitruong.get_khoangcachtamdanh(diachimuctieu) <= KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN + 0.5:
             return False
         if self._is_nhieumuctieuganbanthan3:
             return False

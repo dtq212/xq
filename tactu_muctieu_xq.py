@@ -10,7 +10,7 @@ import time
 from hangso_xq import *
 from dexuatlotrinh_xq import taiviquai as util_taiviquai, luuviquai as util_luuviquai, taiviquaibando, ghinhanvitriquai, dexuatlotrinh
 from dexuatlotrinh_xq import THOIGIANGHIVITRIQUAI, THOIGIANLUUVITRIQUAI, SOLANTHAYQUAITOITHIEU, TENMAUDEXUAT
-from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, donbangthoidiem
+from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, donbangthoidiem, khoangcachtamdanh
 
 # Ép đá: 1->4 sao luôn thành công, 4->5 khoảng 65%, 5->6 khoảng 35%; chỉ ghi log từ 4 sao
 SAOEPDAGHILOG = 4
@@ -266,7 +266,7 @@ class TacTuMucTieu:
             khoangcach = math.dist(toadobanthan, (x, y))
             if khoangcach > KHOANGCACHTIMMUCTIEUCHUNGTOIDA:
                 continue
-            if toadotheosau and math.dist(toadotheosau, (x, y)) > khoangcachchophepmuctieutheosau:
+            if toadotheosau and khoangcachtamdanh(toadotheosau, (x, y)) > khoangcachchophepmuctieutheosau:
                 continue
             if self._kiemtra_divaovungcam(x, y):
                 continue
@@ -450,7 +450,9 @@ class TacTuMucTieu:
             toado = toado or self.moitruong.get_toado(thongtin["diachi"])
             thongtin["toado"] = toado
             thongtin["khoangcach"] = math.dist(toado, toadobanthan)
-            thongtin["khoangcachtheosau"] = math.dist(toado, toadotheosau) if is_anhhuongboimuctieutheosau else 0.
+            thongtin["khoangcachtamdanh"] = khoangcachtamdanh(toado, toadobanthan)
+            # Mục tiêu quanh người theo sau: đo theo tầm đánh (đứng trong vùng quanh họ là bắn tới được)
+            thongtin["khoangcachtheosau"] = khoangcachtamdanh(toado, toadotheosau) if is_anhhuongboimuctieutheosau else 0.
             return thongtin
 
         # Đang farm & bán rác: nhường quái đang ở gần nhân vật khác của mình cho nhân vật đó,
@@ -536,8 +538,8 @@ class TacTuMucTieu:
             return True, self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TIENTHANVODICH, HIEUUNGKYNANG_KIMCUONGBATHOAIDON), macdinh = False, diachicosothongtinnhanvat = diachi, is_hieuungcoloi = 1)
 
         def _is_uutienhon(xemxet, hientai):
-            is_baothuxemxettrongtam = xemxet["is_baothukynangtrieuhoi"] and xemxet["khoangcach"] < self._khoangcachsudungkynangtamxa
-            is_baothuhientaitrongtam = hientai["is_baothukynangtrieuhoi"] and hientai["khoangcach"] < self._khoangcachsudungkynangtamxa
+            is_baothuxemxettrongtam = xemxet["is_baothukynangtrieuhoi"] and xemxet["khoangcachtamdanh"] <= self._khoangcachsudungkynangtamxa
+            is_baothuhientaitrongtam = hientai["is_baothukynangtrieuhoi"] and hientai["khoangcachtamdanh"] <= self._khoangcachsudungkynangtamxa
 
             if self._is_uutienbaothukynangtrieuhoi and (is_baothuxemxettrongtam or is_baothuhientaitrongtam):
                 if is_baothuxemxettrongtam != is_baothuhientaitrongtam:
@@ -624,12 +626,14 @@ class TacTuMucTieu:
             # khoảng cách ngắn chỉ đếm được con trong ~1.5 ô quanh trưởng nhóm nên gần như không bao giờ đủ số lượng
             toadomuctieuhoples.append(toadomuctieuxemxet)
 
-            if khoangcachmuctieuxemxettoibanthan <= 9.0:
-                if khoangcachmuctieuxemxettoibanthan <= 3.0:
+            # Chiêu diện rộng cũng xét theo ô max(|dx|, |dy|) như tầm đánh
+            khoangcachdem = khoangcachtamdanh(toadomuctieuxemxet, toadobanthan)
+            if khoangcachdem <= 9.0:
+                if khoangcachdem <= 3.0:
                     demmuctieuganbanthan3 += 1
-                if khoangcachmuctieuxemxettoibanthan <= 5.0:
+                if khoangcachdem <= 5.0:
                     demmuctieuganbanthan5 += 1
-                if khoangcachmuctieuxemxettoibanthan <= 7.0:
+                if khoangcachdem <= 7.0:
                     demmuctieuganbanthan7 += 1
                 demmuctieuganbanthan9 += 1
 
@@ -673,7 +677,7 @@ class TacTuMucTieu:
 
         toadotamdem = muctieutotnhat["toado"] if muctieutotnhat else toadobanthan
         for toadomuctieuhople in toadomuctieuhoples:
-            khoangcachtoitamdem = math.dist(toadomuctieuhople, toadotamdem)
+            khoangcachtoitamdem = khoangcachtamdanh(toadomuctieuhople, toadotamdem)
             if khoangcachtoitamdem <= 9.0:
                 if khoangcachtoitamdem <= 3.0:
                     demmuctieugan3 += 1
@@ -842,10 +846,10 @@ class TacTuMucTieu:
                         continue
 
                     if is_anhhuongboimuctieutheosau:
-                        if self.moitruong.get_khoangcachdiem(*toadotheosau, diachicosothongtindoituongmuctieuxemxet) > khoangcachchophepmuctieutheosau:
+                        if self.moitruong.get_khoangcachtamdanhdiem(*toadotheosau, diachicosothongtindoituongmuctieuxemxet) > khoangcachchophepmuctieutheosau:
                             continue
 
-                    if self.moitruong.get_khoangcach(diachicosothongtindoituongmuctieuxemxet) > self._khoangcachsudungkynangtamxa:
+                    if self.moitruong.get_khoangcachtamdanh(diachicosothongtindoituongmuctieuxemxet) > self._khoangcachsudungkynangtamxa:
                         continue
 
                     if self.moitruong.get_is_nguoichoi(diachicosothongtindoituongmuctieuxemxet):
@@ -891,10 +895,10 @@ class TacTuMucTieu:
                     continue
 
                 if is_anhhuongboimuctieutheosau:
-                    if self.moitruong.get_khoangcachdiem(*toadotheosau, diachicosothongtindoituongmuctieuxemxet) > khoangcachchophepmuctieutheosau:
+                    if self.moitruong.get_khoangcachtamdanhdiem(*toadotheosau, diachicosothongtindoituongmuctieuxemxet) > khoangcachchophepmuctieutheosau:
                         continue
 
-                khoangcach = self.moitruong.get_khoangcach(diachicosothongtindoituongmuctieuxemxet)
+                khoangcach = self.moitruong.get_khoangcachtamdanh(diachicosothongtindoituongmuctieuxemxet)
                 if khoangcach > self._khoangcachsudungkynangtamxa:
                     continue
 
@@ -1003,7 +1007,7 @@ class TacTuMucTieu:
                     continue
 
                 if is_anhhuongboimuctieutheosau:
-                    if self.moitruong.get_khoangcachdiem(*toadotheosau, diachidoituongdangxemxet) > khoangcachchophepmuctieutheosau:
+                    if self.moitruong.get_khoangcachtamdanhdiem(*toadotheosau, diachidoituongdangxemxet) > khoangcachchophepmuctieutheosau:
                         continue
 
                 khoangcachhientai = self.moitruong.get_khoangcach(diachidoituongdangxemxet)

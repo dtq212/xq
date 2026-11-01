@@ -12,7 +12,7 @@ from hangso_xq import laytenbando, KHOANGCACHSUDUNGKYNANGTAMXA, PHANTRAMNOILUCKH
 import re
 
 from tienich_xq import tailotrinhmau, duongdanlotrinhmau, tainhomtodoitudongs, luunhomtodoitudongs, duongdantodoitudong, laynhomtodoitudongs
-from tienich_xq import duongdantaikhoan, phatam, tenmaynay, taicauhinhphongyeu, luucauhinhphongyeu
+from tienich_xq import duongdantaikhoan, phatam, tenmaynay, taicauhinhphongyeu, luucauhinhphongyeu, taigiaodienkeocap, luugiaodienkeocap
 from dangnhap_xq import duongdangamemaynay, is_batchomaynay, luucauhinhdangnhap, taicauhinhdangnhap, taikhoanbatchomaynay
 from thongke_xq import taithongke, gopthongke
 from luattuido_xq import tailuat, luuluat, motaluat, TENHANHDONG, DIEUKIENs, TENDIEUKIEN, TRUONGMUABU, TENTRUONGMUABU, TENCHIKHI, CHIKHI_LUON, XEPCHONGMACDINH, \
@@ -1611,29 +1611,43 @@ class GiaoDienHienThi:
         self.btn_keocap.pack(side = tk.LEFT)
         self.btn_keocapphu = ttk.Button(hangnut, text = "🤝 Làm acc phụ PYK", command = self._battatkeocapphu)
         self.btn_keocapphu.pack(side = tk.LEFT, padx = (8, 0))
-        # Nhận đồ đệ: acc gà chọn (trống = acc gà đầu tiên theo tên) bái sư với acc chính ở Mạnh Tử trước khi lập nhóm, cấp 60 thì xuất sư
+        # Cấp kết thúc: mọi acc gà tới cấp này thì xong (đồ đệ xuất sư lúc đó); chỉ nhận lúc bấm bắt đầu, acc gà là cửa sổ dưới cấp này
+        tk.Label(hangnut, text = "Kéo tới cấp:").pack(side = tk.LEFT, padx = (12, 0))
+        self.var_keocapcapketthuc = tk.IntVar(value = 60)
+        ttk.Spinbox(hangnut, from_ = 10, to = 200, increment = 1, width = 5, textvariable = self.var_keocapcapketthuc).pack(side = tk.LEFT, padx = 4)
+        # Nhận đồ đệ: acc gà chọn (trống = acc gà đầu tiên theo tên) bái sư với acc chính ở Mạnh Tử trước khi lập nhóm, đồ đệ cấp 60 thì xuất sư
         hangdode = tk.Frame(nhom)
         hangdode.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
         self.var_keocapnhandode = tk.BooleanVar(value = False)
-        ttk.Checkbutton(hangdode, text = "Nhận đồ đệ (Mạnh Tử bái sư, cấp 60 xuất sư) — tên đồ đệ:",
+        ttk.Checkbutton(hangdode, text = "Nhận đồ đệ (Mạnh Tử bái sư, đồ đệ cấp 60 thì xuất sư) — tên đồ đệ:",
                         variable = self.var_keocapnhandode).pack(side = tk.LEFT)
         self.str_keocapdode = tk.StringVar(value = "")
         self.cbo_keocapdode = ttk.Combobox(hangdode, textvariable = self.str_keocapdode, width = 20, values = [])
         self.cbo_keocapdode.pack(side = tk.LEFT, padx = (6, 0))
-        self.lbl_keocap = tk.Label(nhom, text = "", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(560))
+        # Lưu 3 ô này ra _internal/keocap.json mỗi khi đổi, mở lại bot thì nạp lại (trước đây mở lại là mất)
+        daluu = taigiaodienkeocap()
+        try:
+            self.var_keocapcapketthuc.set(int(daluu.get("capketthuc", 60)))
+        except (TypeError, ValueError):
+            pass
+        self.var_keocapnhandode.set(bool(daluu.get("nhandode")))
+        self.str_keocapdode.set(str(daluu.get("tendode") or ""))
+        for bien in (self.var_keocapcapketthuc, self.var_keocapnhandode, self.str_keocapdode):
+            bien.trace_add("write", self._luugiaodienkeocap)
+        self.lbl_keocap =tk.Label(nhom, text = "", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(560))
         self.lbl_keocap.grid(row = 2, column = 0, sticky = tk.W, pady = (4, 0))
-        tk.Label(nhom, text = "Chọn acc chính rồi bấm: các cửa sổ khác cùng máy dưới cấp 60 là acc gà (hỏi lại trước khi bật). Acc gà: Tân Thủ "
+        tk.Label(nhom, text = "Chọn acc chính rồi bấm: các cửa sổ khác cùng máy dưới cấp \"Kéo tới cấp\" là acc gà (hỏi lại trước khi bật). Acc gà: Tân Thủ "
                               "Thôn (95, 123) Thần Tiên Gia Gia trả nhiệm vụ Sứ Mệnh Đưa Thư, nhập code welcome2d, dùng Cửu Long Thần Hỏa Trảo / "
                               "Hoàng Sa Chi Tâm / Thủy Bình / Chiến Quốc Lệnh x3 → mọi người tập hợp (143, 143), acc chính mời nhóm và mời bang → "
                               "acc chính đánh theo lộ trình điểm đánh, acc gà Theo sau: Ba Khâu tới cấp 10, Thuý Hoa Sơn tới 20, Cự Lộc tới 30, "
                               "Ranh Giới Đầm Lầy tới 35 → Phong Yêu Kính: acc gà có đồ Lam Kim give, acc chính dò đánh quái, acc gà đứng ở "
-                              "Thỏ Yêu, đủ 85% quái thì ra mở vòng mới (bản đồ Tây Thành thì ra ngay) → mọi acc gà cấp 60 thì dừng. "
+                              "Thỏ Yêu, đủ 85% quái thì ra mở vòng mới (bản đồ Tây Thành thì ra ngay) → mọi acc gà tới \"Kéo tới cấp\" thì dừng."
                               "Đồ Lam Kim để ở acc chính: acc gà give hết đồ thì acc chính tự đưa (give) đồ đủ cấp cho acc gà khi đứng cạnh. "
                               "Acc phụ (máy khác nối LAN hoặc cùng máy): chọn nhân vật đó bấm \"Làm acc phụ PYK\", nó tự tìm acc chính đang kéo "
                               "cấp, chỉ vào Phong Yêu Kính dò đánh quái cùng acc chính (bật trước khi bấm kéo cấp nếu cùng máy, kẻo bị tính là acc gà). "
                               "Nhận đồ đệ: acc gà xong tân thủ thì acc chính lập nhóm riêng với đồ đệ, Mạnh Tử (136, 143) \"2. Ta đem đệ tử đến làm "
-                              "lễ bái sư\" → Xác nhận, đồ đệ Xác nhận, rồi mới mời nhóm / bang như thường; mọi acc gà cấp 60 thì dắt đồ đệ về "
-                              "Mạnh Tử \"3. ... lễ xuất sư\" rồi mới dừng.",
+                              "lễ bái sư\" → Xác nhận, đồ đệ Xác nhận, rồi mới mời nhóm / bang như thường; đồ đệ tới cấp 60 (hoặc mọi acc gà tới \"Kéo tới cấp\") thì dắt đồ đệ về "
+                              "Mạnh Tử \"3. ... lễ xuất sư\" rồi kéo tiếp / dừng.",
                  fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W, wraplength = self._px(560)).grid(row = 3, column = 0, sticky = tk.W, pady = (6, 0))
 
         # Tập Kích Môn Phái (tactu_tapkich_xq) cho nhân vật đang chọn
@@ -1817,9 +1831,14 @@ class GiaoDienHienThi:
                     self.command_dict[int(h)] = "huykeocap"
             return
         idchinh = info.get("idnguoichoi")
+        capketthuc = self._laycapketthuckeocap()
+        if not capketthuc:
+            messagebox.showwarning("Kéo cấp", "\"Kéo tới cấp\" phải là số từ 10 tới 200", parent = self.root)
+            return
         gas = self._laygakeocap(hwnd)
         if not idchinh or not gas:
-            messagebox.showwarning("Kéo cấp", "Không thấy cửa sổ acc gà nào (cửa sổ khác cùng máy, dưới cấp 60, chưa kéo cấp)", parent = self.root)
+            messagebox.showwarning("Kéo cấp", f"Không thấy cửa sổ acc gà nào (cửa sổ khác cùng máy, dưới cấp {capketthuc}, chưa kéo cấp)",
+                                   parent = self.root)
             return
         iddode = 0
         dongdode = ""
@@ -1830,12 +1849,12 @@ class GiaoDienHienThi:
                 messagebox.showwarning("Kéo cấp", f"Không thấy acc gà tên \"{tendode}\" để nhận đồ đệ", parent = self.root)
                 return
             iddode = dode["idnguoichoi"]
-            dongdode = f"\nĐồ đệ (bái sư ở Mạnh Tử, cấp 60 xuất sư): {dode.get('tennhanvat')} (ID {iddode})"
+            dongdode = f"\nĐồ đệ (bái sư ở Mạnh Tử, cấp {min(capketthuc, 60)} xuất sư): {dode.get('tennhanvat')} (ID {iddode})"
         ds = "\n".join(f"  • {i.get('tennhanvat')} (ID {i.get('idnguoichoi')}, cấp {i.get('capdo')})" for _, i in gas)
-        if not messagebox.askyesno("Kéo cấp", f"Acc chính: {info.get('tennhanvat')} (ID {idchinh})\nAcc gà:\n{ds}{dongdode}\n\nBắt đầu kéo cấp?",
+        if not messagebox.askyesno("Kéo cấp", f"Acc chính: {info.get('tennhanvat')} (ID {idchinh})\nAcc gà:\n{ds}{dongdode}\nKéo tới cấp: {capketthuc}\n\nBắt đầu kéo cấp?",
                                    parent = self.root):
             return
-        self.command_dict[int(hwnd)] = "keocapchinh:" + ",".join(str(i["idnguoichoi"]) for _, i in gas) + (f";{iddode}" if iddode else "")
+        self.command_dict[int(hwnd)] = "keocapchinh:" + ",".join(str(i["idnguoichoi"]) for _, i in gas) + f";{iddode or ''};{capketthuc}"
         for h, _ in gas:
             self.command_dict[h] = f"keocapga:{idchinh}"
 
@@ -1847,14 +1866,29 @@ class GiaoDienHienThi:
         except KeyError:
             return None
 
+    def _luugiaodienkeocap(self, *_):
+        dulieu = {"capketthuc": self._laycapketthuckeocap() or 60, "nhandode": bool(self.var_keocapnhandode.get()),
+                  "tendode": self.str_keocapdode.get().strip()}
+        if dulieu != getattr(self, "_giaodienkeocapdaluu", None):
+            self._giaodienkeocapdaluu = dulieu
+            luugiaodienkeocap(dulieu)
+
+    def _laycapketthuckeocap(self):
+        # Ô "Kéo tới cấp" (10-200), gõ sai thì 0
+        try:
+            cap = int(self.var_keocapcapketthuc.get())
+        except (tk.TclError, ValueError):
+            return 0
+        return cap if 10 <= cap <= 200 else 0
+
     def _laygakeocap(self, hwnd):
-        # [(cửa sổ, info)] acc gà cho acc chính ở cửa sổ hwnd: cửa sổ khác cùng máy, dưới cấp 60 (acc mới tạo là cấp 0), chưa kéo cấp; theo
+        # [(cửa sổ, info)] acc gà cho acc chính ở cửa sổ hwnd: cửa sổ khác cùng máy, dưới cấp "Kéo tới cấp" (acc mới tạo là cấp 0), chưa kéo cấp; theo
         # tên (acc gà đầu tiên = đồ đệ mặc định). Acc gà còn vai acc gà của chính acc này (acc chính tự dừng, vd hết đồ Lam Kim, hoặc mở
         # lại bot: acc gà tự bật lại vai, đứng chờ acc chính) vẫn tính, không thì không bao giờ bật lại được (2026-11-01)
         idchinh = ((self.shared_data.get(hwnd) or {}) if hwnd else {}).get("idnguoichoi")
         gas = [(int(h), i) for h, i in list(self.shared_data.items())
                if hwnd and int(h) != int(hwnd) and isinstance(i, dict) and i.get("idnguoichoi")
-               and time.time() - i.get("thoidiemcapnhat", 0.) <= 5. and (i.get("capdo") or 0) < 60
+               and time.time() - i.get("thoidiemcapnhat", 0.) <= 5. and (i.get("capdo") or 0) < (self._laycapketthuckeocap() or 60)
                and (not i.get("_keocap") or (i["_keocap"].get("vaitro") == "ga" and i["_keocap"].get("idchinh") == idchinh))]
         return sorted(gas, key = lambda x: x[1].get("tennhanvat") or "")
 
@@ -1884,6 +1918,10 @@ class GiaoDienHienThi:
         chu = info.get("_trangthaikeocap") or ""
         if self.lbl_keocap.cget("text") != chu:
             self.lbl_keocap.config(text = chu)
+        # Acc chính đang kéo cấp: ô "Kéo tới cấp" hiện cấp nó đang dùng (đổi chỉ có tác dụng lúc bật lại)
+        capdangdung = (info.get("_keocap") or {}).get("capketthuc") if vaitro == "chinh" else None
+        if capdangdung and self._laycapketthuckeocap() != capdangdung:
+            self.var_keocapcapketthuc.set(capdangdung)
         # Danh sách tên đồ đệ chọn được: acc gà sẽ kéo cùng acc chính đang chọn; đang kéo cấp thì các acc gà của nó (đồ đệ chỉ nhận lúc bật)
         if not hwnd:
             tens = ()

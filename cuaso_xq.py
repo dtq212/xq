@@ -421,10 +421,12 @@ class CuaSo:
                 elif cmd == "huylanglyson":
                     self.tactu.huy_langlyson()
                 elif isinstance(cmd, str) and cmd.startswith("keocapchinh:"):
-                    # Kéo cấp acc gà (tactu_keocap_xq), vai acc chính: keocapchinh:<ID acc gà>,<ID acc gà>...[;<ID đồ đệ>]
-                    dsga, _, iddode = cmd.split(":", 1)[1].partition(";")
+                    # Kéo cấp acc gà (tactu_keocap_xq), vai acc chính: keocapchinh:<ID acc gà>,<ID acc gà>...[;<ID đồ đệ>[;<cấp kết thúc>]]
+                    dsga, _, conlai = cmd.split(":", 1)[1].partition(";")
+                    iddode, _, capketthuc = conlai.partition(";")
                     self.tactu.batdau_keocap("chinh", idgas = [int(i) for i in dsga.split(",") if i.strip().isdigit()],
-                                             iddode = int(iddode) if iddode.strip().isdigit() else 0)
+                                             iddode = int(iddode) if iddode.strip().isdigit() else 0,
+                                             capketthuc = int(capketthuc) if capketthuc.strip().isdigit() else 0)
                 elif isinstance(cmd, str) and cmd.startswith("keocapga:"):
                     # Vai acc gà: keocapga:<ID acc chính>
                     self.tactu.batdau_keocap("ga", idchinh = int(cmd.split(":", 1)[1]))

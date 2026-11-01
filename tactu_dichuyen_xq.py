@@ -838,11 +838,18 @@ class TacTuDiChuyen:
     def _lapbuocditoibando(self, idbandodich, is_hoithanhphu = False, toadodich = None, is_roiphoban = False):
         # Quyết định bước tiếp theo để tới bản đồ idbandodich (chưa làm gì), dùng chung cho Đi tới bản đồ, lộ trình, theo sau:
         #   - đang ở Tân Thủ Thôn / Chu: phù (Tân Thủ Tiên Cô / Chủ Dịch Trạm, layphuongandichuyen) nếu chạy bộ tiếp ít cổng hơn chạy bộ từ đây
-        #   - is_hoithanhphu: chạy bộ quá SOLANCHUYENBANDOTOIDA cổng mà về Tân Thủ Thôn phù đi gần hơn thì Hồi Thành Phù trước
+        #   - is_hoithanhphu: về Tân Thủ Thôn, hoặc về Tân Thủ Thôn phù đi bớt được cổng chạy bộ (quốc gia, môn phái...) thì Hồi Thành Phù trước
         #   - còn lại chạy bộ tới cổng sang bản đồ kế tiếp trên đường qua ít bản đồ nhất (không đặt thẳng bản đồ đích cho client)
         # -> {"loai": "toinoi" | "chaybo" | "phu" | "hoithanhphu" | "khongduong", "mota": chuỗi hiển thị, "solan": số cổng chạy bộ, "cong": (x, y)}
         idbandohientai = self.moitruong.get_idbandohientai()
         ten = laytenbando(idbandodich)
+        if self.moitruong.get_is_phobanmuonbando():
+            # Phó bản mượn ID bản đồ thường (Phong Yêu Kính, Tập Kích Môn Phái): dữ liệu cổng là của bản đồ thật nên tưởng chạy bộ ra được
+            # (từng chạy bộ 12 cổng về Tân Thủ Thôn trong Phong Yêu Kính). Không bao giờ chạy bộ: cố ý ra thì Hồi Thành Phù, không thì đứng
+            lydo = self.get_lydokhonghoithanhphu(idbandodich, is_roiphoban = True) if is_roiphoban else "không tự ra khỏi phó bản ở đây"
+            if lydo:
+                return {"loai": "khongduong", "solan": None, "mota": f"Đang ở {self.moitruong.get_tenbandogame()}, không chạy bộ ra: {lydo}"}
+            return {"loai": "hoithanhphu", "solan": 0, "is_roiphoban": True, "mota": f"Hồi Thành Phù ra khỏi {self.moitruong.get_tenbandogame()} (tới {ten})"}
         if idbandohientai == idbandodich:
             return {"loai": "toinoi", "mota": f"Đã ở {ten}", "solan": 0}
         # is_roiphoban: đang ở phó bản mà đích ở ngoài, không chạy bộ ra được (Lăng Ly Sơn xong, người được theo sau đã ra) thì Hồi Thành Phù
@@ -866,7 +873,6 @@ class TacTuDiChuyen:
                         "mota": f"Hồi Thành Phù về Tân Thủ Thôn rồi phù tới {laytenbando(uutien[2])}, chạy tiếp {uutien[3]} cổng ({ten}, đường ưu tiên)"}
         duongdi = timduongbando(idbandohientai, idbandodich, self.moitruong.get_toado())
         solanbo = len(duongdi) if duongdi is not None else None
-        is_xa = solanbo is None or solanbo > SOLANCHUYENBANDOTOIDA
         phuongan = layphuongandichuyen(idbandodich)
         if idbandohientai in (BANDO_TANTHUTHON, BANDO_CHUQUOC):
             if phuongan and (solanbo is None or phuongan[3] < solanbo):
@@ -874,8 +880,10 @@ class TacTuDiChuyen:
                 return {"loai": "phu", "solan": solanphu,
                         "mota": f"Phù {laynpcphu(loainpc, idbandohientai)[0]} tới {laytenbando(idphutoi)}{f', chạy tiếp {solanphu} cổng tới {ten}' if solanphu else ''}"}
         lydokhongphu = ""
-        if idbandohientai not in (BANDO_TANTHUTHON, BANDO_CHUQUOC) and is_hoithanhphu and is_xa \
-                and (idbandodich == BANDO_TANTHUTHON or (phuongan and (solanbo is None or phuongan[3] + 1 < solanbo))):
+        # Về Tân Thủ Thôn, hoặc phù (Tân Thủ Tiên Cô / Chủ Dịch Trạm tới quốc gia, môn phái...) bớt được cổng chạy bộ: luôn Hồi Thành Phù rồi
+        # phù, không chạy bộ dù gần (người dùng dặn nhiều lần). Chỉ chạy bộ khi phù không bớt được cổng nào
+        is_nenphu = idbandodich == BANDO_TANTHUTHON or (phuongan and (solanbo is None or phuongan[3] < solanbo))
+        if idbandohientai not in (BANDO_TANTHUTHON, BANDO_CHUQUOC) and is_hoithanhphu and is_nenphu:
             lydo = self.get_lydokhonghoithanhphu(idbandodich)
             if not lydo:
                 diphu = f" rồi phù tới {laytenbando(phuongan[2])}" if idbandodich != BANDO_TANTHUTHON else ""
@@ -1663,12 +1671,17 @@ class TacTuDiChuyen:
                 return False
             self._thoidiemhoithanhphus.append((time.time(), idbandodich))
             #self.action_sudungvatphamhanhtrang(HOITHANHPHU)
+            # Hồi Thành Phù phải vận khí: ra chiêu / đánh thường / di chuyển là bị huỷ (từng vừa gửi xong vẫn đánh quái, huỷ 3 lần liền rồi bị
+            # coi là lặp, chạy bộ 8 cổng). Đứng yên và khoá như triệu hồi bảo thú tới khi hết vận khí
+            self.moitruong.action_ngatdichuyen()
             if self.get_is_vomonphai():
                 # Vô Môn Phái: Hồi Môn Phái (miễn phí) cũng về Tân Thủ Thôn, luôn dùng thay Hồi Thành Phù (người dùng dặn 2026-11-01)
                 self.moitruong._inlog(f"[HỒI THÀNH PHÙ] Vô Môn Phái: Hồi Môn Phái ('{LENHHOIMONPHAI}') về Tân Thủ Thôn thay Hồi Thành Phù")
-                self.moitruong.action_thucthicaulenh(LENHHOIMONPHAI)
+                lenh = LENHHOIMONPHAI
             else:
-                self.moitruong.action_thucthicaulenh("dGludmF0 2")
+                lenh = "dGludmF0 2"
+            self.moitruong.action_khoavankhitrieuhoi((lenh,), ten = "HỒI THÀNH PHÙ")
+            self.moitruong.action_thucthicaulenh(lenh)
             return True
         return False
 

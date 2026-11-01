@@ -93,6 +93,11 @@ def read_string(process, address, max_length = 2048):
         return ""
 
 
+def khoangcachtamdanh(a, b):
+    # Khoảng cách máy chủ dùng để xét tầm chiêu giữa hai toạ độ ô: max(|dx|, |dy|) (vùng tầm là hình vuông, xem MoiTruong.get_khoangcachtamdanh)
+    return float(max(abs(a[0] - b[0]), abs(a[1] - b[1])))
+
+
 def donbangthoidiem(bang, giulai, kichthuoctoida = 256):
     # Bảng {khoá: thời điểm}: quá kichthuoctoida dòng thì bỏ các dòng cũ hơn giulai giây (chỉ ghi thêm mà không xoá thì phình mãi)
     if len(bang) <= kichthuoctoida:
@@ -382,6 +387,32 @@ def luucauhinhphongyeu(cauhinh):
         filetam = filepath + ".tmp"
         with open(filetam, "w", encoding = "utf-8") as file:
             json.dump(_chuanhoacauhinhphongyeu(cauhinh), file, ensure_ascii = False, indent = 2)
+        thaythefile(filetam, filepath)
+    except Exception as err:
+        print(err)
+
+
+def _duongdangiaodienkeocap():
+    return os.path.join(os.path.dirname(_thumucthietlap()), "keocap.json")
+
+
+def taigiaodienkeocap():
+    # Ô kéo cấp trên giao diện (Kéo tới cấp, Nhận đồ đệ, tên đồ đệ) lưu từ lần trước; không có / lỗi thì {}
+    try:
+        with open(_duongdangiaodienkeocap(), "r", encoding = "utf-8") as file:
+            dulieu = json.load(file)
+        return dulieu if isinstance(dulieu, dict) else {}
+    except Exception:
+        return {}
+
+
+def luugiaodienkeocap(dulieu):
+    filepath = _duongdangiaodienkeocap()
+    try:
+        os.makedirs(os.path.dirname(filepath), exist_ok = True)
+        filetam = filepath + ".tmp"
+        with open(filetam, "w", encoding = "utf-8") as file:
+            json.dump(dulieu, file, ensure_ascii = False, indent = 2)
         thaythefile(filetam, filepath)
     except Exception as err:
         print(err)

@@ -171,6 +171,7 @@ class MoiTruong:
         self._thoidiemthucthicaulenhgannhat = 0.
         self._thoidiemsudungtancongvatlygannhat = 0.
         self._thoidiemthaotacnhomgannhat = 0.
+        self._loimoinhom_map = {}  # id trưởng nhóm -> thời điểm nhận lời mời (hộp đã bị action_donghopmoinhom đóng)
         self._thoidiemphucsinhgannhat = 0.
         self._thoidiemdongcuasosauphucsinh = 0.
         self._thoidiemmaupkgannhat = 0.
@@ -795,26 +796,31 @@ class MoiTruong:
         caulenh = "team x {}".format(self.get_idnguoichoi())
         return self.action_thucthicaulenh(caulenh)
 
+    def action_donghopmoinhom(self):
+        # Hộp "Đội ngũ X muốn cùng bạn kết thành nhóm" (lệnh Xác Nhận "team ...") đóng ngay, không để hiện cho người dùng. Lời mời
+        # "team + <id>" ghi vào _loimoinhom_map để action_kiemtravadongyloimoinhom vẫn nhận lời được sau khi hộp đã đóng
+        hop, lenh = self.get_hopxacnhannpc()
+        if not hop or not lenh.startswith("team "):
+            return
+        phan = lenh.split("team + ")
+        if len(phan) > 1 and phan[1].strip().isdigit():
+            self._loimoinhom_map[int(phan[1])] = time.time()
+        self.action_donghopxacnhannpc()
+
     def action_kiemtravadongyloimoinhom(self, idtruongnhoms, delay = 0.2):
         if time.time() - self._thoidiemthaotacnhomgannhat < delay:
             return False
         if not idtruongnhoms:
             return False
-        caulenhmoinhomhientai = self.get_caulenhmoinhomhientai()
-        if not caulenhmoinhomhientai:
-            return False
-
-        if "team + " in caulenhmoinhomhientai and self.get_is_danghiencuasoyesno():
-            idnguoichoitruongnhoms = caulenhmoinhomhientai.split("team + ")
-            if len(idnguoichoitruongnhoms) > 1:
-                idnguoichoitruongnhom = int(idnguoichoitruongnhoms[1])
-                if idnguoichoitruongnhom in idtruongnhoms:
-                    caulenh = "team + {}".format(idnguoichoitruongnhom)
-                    self.action_thucthicaulenh(caulenh)
-                    self._thoidiemthaotacnhomgannhat = time.time()
-
-                    if self.get_is_danghiencuasoyesno():
-                        self.set_is_danghiencuasoyesno(False)
+        self.action_donghopmoinhom()
+        # Lời mời quá 60s coi như hết hạn
+        self._loimoinhom_map = {id: t for id, t in self._loimoinhom_map.items() if time.time() - t < 60}
+        for idnguoichoitruongnhom in idtruongnhoms:
+            if idnguoichoitruongnhom in self._loimoinhom_map:
+                del self._loimoinhom_map[idnguoichoitruongnhom]
+                self.action_thucthicaulenh("team + {}".format(idnguoichoitruongnhom))
+                self._thoidiemthaotacnhomgannhat = time.time()
+                break
         return True
 
     def action_sudungvatphambaothu(self, iddoituongvatpham, iddoituongbaothu, delay = 0.2):
@@ -3735,17 +3741,18 @@ class MoiTruong:
         if not self.get_is_khoavankhitrieuhoi():
             self._thoidiemhetchovankhi = 0.
 
-    def action_khoavankhitrieuhoi(self, caulenhduocpheps = ()):
-        # Triệu hồi bảo thú (tốn bùa, thất bại là mất bùa): khoá các thao tác ngắt vận khí (ra chiêu / đánh thường, di chuyển,
-        # tìm đường) cho tới khi vận khí xong. caulenhduocpheps: chính lệnh triệu hồi (đã vào hàng đợi) vẫn được gửi
+    def action_khoavankhitrieuhoi(self, caulenhduocpheps = (), ten = "TRIỆU HỒI"):
+        # Triệu hồi bảo thú (tốn bùa, thất bại là mất bùa) / Hồi Thành Phù: khoá các thao tác ngắt vận khí (ra chiêu / đánh thường, di
+        # chuyển, tìm đường) cho tới khi vận khí xong. caulenhduocpheps: chính lệnh triệu hồi (đã vào hàng đợi) vẫn được gửi
         thoidiemhientai = time.time()
         self._khoavankhitrieuhoi = {
             "batdau": thoidiemhientai,
             "toida": thoidiemhientai + THOIGIANKHOAVANKHITRIEUHOITOIDA,
             "caulenhduocpheps": set(caulenhduocpheps),
+            "ten": ten,
         }
         self.action_chovankhi(THOIGIANCHOVAOVANKHI)
-        self._inlog(f"[KHOÁ VẬN KHÍ TRIỆU HỒI] bắt đầu, cho phép {sorted(caulenhduocpheps)}")
+        self._inlog(f"[KHOÁ VẬN KHÍ {ten}] bắt đầu, cho phép {sorted(caulenhduocpheps)}")
 
     def get_is_dangxuatchieu(self):
         # Đang xuất chiêu (tư thế tấn công vật lý 6 / phép 9; 11 chỉ còn khi bot tự ghi) hoặc chưa hết THOIGIANKHUNGSAUXUATCHIEU giây
@@ -3818,8 +3825,13 @@ class MoiTruong:
         if thoidiemhientai < khoa["toida"] and (thoidiemhientai - khoa["batdau"] < THOIGIANCHOVAOVANKHI or self._get_is_dangvankhitrongame()):
             return True
         self._khoavankhitrieuhoi = None
-        self._inlog(f"[KHOÁ VẬN KHÍ TRIỆU HỒI] kết thúc sau {round(thoidiemhientai - khoa['batdau'], 1)}s")
+        self._inlog(f"[KHOÁ VẬN KHÍ {khoa.get('ten', 'TRIỆU HỒI')}] kết thúc sau {round(thoidiemhientai - khoa['batdau'], 1)}s")
         return False
+
+    def get_is_khoavankhitrieuhoibaothu(self):
+        # Khoá vận khí đúng của triệu hồi bảo thú (không phải Hồi Thành Phù)
+        khoa = self._khoavankhitrieuhoi
+        return bool(khoa) and khoa.get("ten") == "TRIỆU HỒI" and self.get_is_khoavankhitrieuhoi()
 
     def _is_lenhbichankhoavankhi(self, caulenh):
         # Đọc khoá 1 lần: luồng khác có thể vừa mở khoá (gán None) ngay sau khi kiểm tra
