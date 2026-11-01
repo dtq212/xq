@@ -919,12 +919,12 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
     def thietlap_phantramnoiluckhaithientichdia(self, phantram):
         self._phantramnoiluckhaithientichdia = min(100., max(0., float(phantram)))
 
-    def action_lammoitrangthai(self):
+    def action_lammoitrangthai(self, is_batbuoc = False):
         # Chọn danh hiệu / ẩn danh hiệu đã đặt ở giao diện: máy chủ gửi lại trạng thái nhân vật, client cập nhật lại toạ độ theo máy chủ.
-        # Chưa đặt (mặc định) thì không dùng, trả về False
-        if self._danhhieulammoi == DANHHIEULAMMOI_KHONG:
+        # Chưa đặt (mặc định) thì không dùng, trả về False; is_batbuoc thì vẫn gửi "title hide" (luôn khả dụng)
+        if self._danhhieulammoi == DANHHIEULAMMOI_KHONG and not is_batbuoc:
             return False
-        caulenh = "title hide" if self._danhhieulammoi == DANHHIEULAMMOI_AN else "title show {}".format(self._danhhieulammoi)
+        caulenh = "title hide" if self._danhhieulammoi in (DANHHIEULAMMOI_KHONG, DANHHIEULAMMOI_AN) else "title show {}".format(self._danhhieulammoi)
         return self.moitruong.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_KHANCAP)
 
     def thietlap_danhhieulammoi(self, ma):

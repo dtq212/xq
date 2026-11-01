@@ -39,6 +39,7 @@ SOLUONGMUACONGVANTRUYNA = 5
 THOIGIANCHOTRUYNA = 4.
 KHOANGCACHTOICHAMTRUYNA = 4
 SOLANTRUYNALOI = 5
+THOIGIANDONCHAMTRUYNA = 1.  # chờ máy chủ dọn chấm vàng cũ sau khi làm mới danh hiệu
 # Mở cửa hàng (action_xulymocuahang): quá chừng này giây kể từ lúc bấm NPC mà cửa sổ chưa hiện thì coi như không mở được
 THOIGIANMOCUAHANGTOIDA = 10.
 THOIGIANCHOLIST = 3.
@@ -1125,6 +1126,15 @@ class TacTuSuMon:
                if chuanhoaten(tenxet) == chuanhoaten(CONGVANTRUYNA) for _, iddoituong in mons if iddoituong]
         if not ids:
             return False, None
+        # Còn chấm vàng cũ (con đã chết giữ toạ độ cũ): làm mới danh hiệu thì máy chủ gửi lại trạng thái, dọn luôn các chấm này
+        # (người dùng thấy 2026-11-01), chờ chút rồi mới dùng công văn. Không dọn được thì vẫn dùng như cũ (lọc bằng t["bo"])
+        if moitruong.get_vitritruyna() and now - t.get("lucdon", 0.) > THOIGIANCHOTRUYNA and self.action_lammoitrangthai(is_batbuoc = True):
+            moitruong._inlog(f"[SƯ MÔN] Làm mới danh hiệu để dọn chấm vàng cũ {moitruong.get_vitritruyna()}")
+            t["lucdon"] = now
+            s["trangthai"] = f"{nhan}: dọn chấm vàng cũ"
+            return True, None
+        if now - t.get("lucdon", 0.) < THOIGIANDONCHAMTRUYNA:
+            return True, None
         moitruong.xoa_noidungcuasotuychon()
         if moitruong.action_sudungvatpham(ids[0]):
             t["buoc"], t["luc"] = "menu", now
