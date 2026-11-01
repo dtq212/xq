@@ -97,6 +97,7 @@ class TacTuTapKich:
             thongbao += f" (xong {s['sovong']} vòng)"
         self._logtk(thongbao)
         self._ketquatapkich = f"{time.strftime('%H:%M')} {thongbao}"
+        self._ghiketthucviec("tapkich", thongbao)
         phatam("Kết thúc Tập Kích Môn Phái")
 
     def _baotapkich(self, s, khoa, noidung):
@@ -197,6 +198,9 @@ class TacTuTapKich:
             s["sovong"] += 1
             s.update(davao = False, do = None, hoithoai = None, lucbatdauvong = time.time())
             self._logtk(f"Ra khỏi phó bản: xong vòng {s['sovong']}, vào vòng sau")
+            if self._is_dugioihanvong("tapkich", s["sovong"]):
+                self._ketthuctapkich("✅ Đủ số vòng đặt ở Hàng việc")
+                return None
         if moitruong.get_is_dangnamtrongnhom() and not moitruong.get_is_truongnhom():
             # Thành viên: Theo sau lo đi lại, menu vào / Lễ Bao tự chọn (_xulymenutapkich)
             s["chedo"] = "thanhvien"

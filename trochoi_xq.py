@@ -22,13 +22,15 @@ from giaodienhienthi_xq import GiaoDienHienThi
 from hangso_xq import IS_CHIBATAMTHANHCUASOUUTIEN, THOIGIANKIEMTRAAMTHANH
 from lan_xq import DongBoLan, taicauhinhlan
 from thongbao_xq import DieuKhienTelegram
-from tienich_xq import laynhomtodoitudongs
+from tienich_xq import laynhomtodoitudongs, toiuuhieunangtientrinh
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
 def run_bot_process(hwnd, shared_data, command_dict, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos, dieuphoi_giukynangs, shared_data_lan = None):
     try:
+        toiuuhieunangtientrinh()
         bot = CuaSo(hwnd, shared_data, command_dict, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos, dieuphoi_giukynangs, shared_data_lan)
+        toiuuhieunangtientrinh(bot.moitruong.tientrinh.process_handle)
         while not bot.main_stop.is_set():
             if not win32gui.IsWindow(hwnd):
                 break
@@ -185,6 +187,9 @@ class TroChoiManager:
     def loop_hotkey(self):
         while True:
             hwnd = win32gui.GetForegroundWindow()
+            # Đang ở cửa sổ giao diện bot: phím tắt áp dụng cho nhân vật của dòng đang chọn (trừ lúc đang gõ trong ô nhập)
+            if hwnd and hwnd == self.gui.hwndgiaodien:
+                hwnd = None if self.gui.is_dangnhapchu else self.gui.hwnddangchon
             if hwnd in self.bot_processes:
                 cmd = None
                 if keyboard.is_pressed("ctrl+r"):
@@ -218,6 +223,8 @@ class TroChoiManager:
                     cmd = "botoanbo_tenmuctieutancong"
                 elif keyboard.is_pressed("ctrl+alt+x"):
                     cmd = "botoanbo_tenmuctieukhongtancong"
+                elif keyboard.is_pressed("ctrl+alt+w"):
+                    cmd = "battat_tatbot"
                 elif keyboard.is_pressed("ctrl+alt+t"):
                     cmd = "todoimotlan"
                 elif keyboard.is_pressed("ctrl+alt+f"):

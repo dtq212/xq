@@ -4,7 +4,7 @@ import time
 
 from hangso_xq import *
 from thongbao_xq import baosuco, LYDOTAMNGUNGTUXA
-from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam
+from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam, canhbao
 
 
 class TacTuBaoThu:
@@ -115,7 +115,7 @@ class TacTuBaoThu:
                                             if self.moitruong.action_sudungvatphambaothu(iddoituongvatpham, iddoituongbaothu):
                                                 self._thoidiemhoiphucbaothugannhat = time.time()
                                         else:
-                                            phatam("Hết lão tửu")
+                                            canhbao(self.moitruong, "Hết lão tửu")
                                             baosuco(self.moitruong, "vatpham", "Hết Lão Tửu cho bảo thú", giancach = 1800.)
                                             self._thoidiemhoiphucbaothugannhat = time.time()
 

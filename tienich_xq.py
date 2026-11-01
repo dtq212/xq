@@ -16,6 +16,46 @@ import time
 import pywintypes
 
 
+class _PROCESS_POWER_THROTTLING_STATE(ctypes.Structure):
+    _fields_ = [("Version", ctypes.c_ulong), ("ControlMask", ctypes.c_ulong), ("StateMask", ctypes.c_ulong)]
+
+
+def toiuuhieunangtientrinh(handle = None):
+    # Máy nặng / gần hết RAM thì nhân vật lúc nhanh lúc chậm: Windows 11 hạ xung tiến trình nền (EcoQoS), bỏ qua độ phân giải
+    # timer khi cửa sổ bị che / thu nhỏ, và sleep mặc định tròn lên tick 15.6ms. handle None = tiến trình bot này (thêm timeBeginPeriod(1),
+    # áp riêng từng tiến trình từ Win10 2004); có handle = tiến trình game (cần quyền PROCESS_SET_INFORMATION)
+    kernel32 = ctypes.windll.kernel32
+    if handle is None:
+        handle = kernel32.GetCurrentProcess()
+        try:
+            ctypes.windll.winmm.timeBeginPeriod(1)
+        except Exception:
+            pass
+    try:
+        # ProcessPowerThrottling = 4; tắt EXECUTION_SPEED (0x1) và IGNORE_TIMER_RESOLUTION (0x4): StateMask 0 = luôn chạy hết tốc độ
+        trangthai = _PROCESS_POWER_THROTTLING_STATE(1, 0x1 | 0x4, 0)
+        kernel32.SetProcessInformation(ctypes.c_void_p(handle), 4, ctypes.byref(trangthai), ctypes.sizeof(trangthai))
+    except Exception:
+        pass
+    try:
+        kernel32.SetPriorityClass(ctypes.c_void_p(handle), 0x8000)  # ABOVE_NORMAL_PRIORITY_CLASS
+    except Exception:
+        pass
+
+
+def laytylesudungram():
+    # Phần trăm RAM đang dùng của cả máy (GlobalMemoryStatusEx.dwMemoryLoad)
+    class MEMORYSTATUSEX(ctypes.Structure):
+        _fields_ = [("dwLength", ctypes.c_ulong), ("dwMemoryLoad", ctypes.c_ulong), ("ullTotalPhys", ctypes.c_ulonglong),
+                    ("ullAvailPhys", ctypes.c_ulonglong), ("ullTotalPageFile", ctypes.c_ulonglong), ("ullAvailPageFile", ctypes.c_ulonglong),
+                    ("ullTotalVirtual", ctypes.c_ulonglong), ("ullAvailVirtual", ctypes.c_ulonglong), ("ullAvailExtendedVirtual", ctypes.c_ulonglong)]
+    trangthai = MEMORYSTATUSEX()
+    trangthai.dwLength = ctypes.sizeof(trangthai)
+    if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(trangthai)):
+        return None
+    return trangthai.dwMemoryLoad
+
+
 def taopatterntuaob(aob_string):
     pattern = b""
     for byte_str in aob_string.split():
@@ -157,6 +197,23 @@ def _phatam(noidung, is_block):
 def phatam(noidung, is_block = True):
     t = threading.Thread(target = _phatam, args = (noidung, is_block), daemon = True)
     t.start()
+
+
+# Cảnh báo gần đây của tiến trình bot này (mỗi cửa sổ 1 tiến trình): [(thời điểm, nội dung)], cuaso_xq đưa lên shared_data
+# "_canhbaos", giao diện gộp mọi nhân vật ở tab Cảnh báo
+CANHBAOGANDAYs = []
+SOCANHBAOGIULAI = 30
+
+
+def canhbao(moitruong, noidung, is_block = True):
+    # Phát âm cảnh báo của 1 nhân vật: đọc ID người chơi ở đầu câu (nhiều nhân vật cùng máy biết ai bị) và ghi vào danh sách cảnh báo
+    try:
+        idnguoichoi = moitruong.get_idnguoichoi()
+    except Exception:
+        idnguoichoi = 0
+    CANHBAOGANDAYs.append((time.time(), noidung))
+    del CANHBAOGANDAYs[:-SOCANHBAOGIULAI]
+    phatam(f"ID {idnguoichoi}. {noidung}" if idnguoichoi else noidung, is_block)
 
 
 def _thumucthietlap():
@@ -408,6 +465,32 @@ def taigiaodienkeocap():
 
 def luugiaodienkeocap(dulieu):
     filepath = _duongdangiaodienkeocap()
+    try:
+        os.makedirs(os.path.dirname(filepath), exist_ok = True)
+        filetam = filepath + ".tmp"
+        with open(filetam, "w", encoding = "utf-8") as file:
+            json.dump(dulieu, file, ensure_ascii = False, indent = 2)
+        thaythefile(filetam, filepath)
+    except Exception as err:
+        print(err)
+
+
+def _duongdandanhsachnhanvat():
+    return os.path.join(os.path.dirname(_thumucthietlap()), "danhsachnhanvat.json")
+
+
+def taidanhsachnhanvat():
+    # Thứ tự (kéo thả) và nhân vật ghim trên danh sách nhân vật của giao diện, theo ID người chơi: {"thutu": [id...], "ghim": [id...]}
+    try:
+        with open(_duongdandanhsachnhanvat(), "r", encoding = "utf-8") as file:
+            dulieu = json.load(file)
+        return {"thutu": [int(i) for i in dulieu.get("thutu", [])], "ghim": [int(i) for i in dulieu.get("ghim", [])]}
+    except Exception:
+        return {"thutu": [], "ghim": []}
+
+
+def luudanhsachnhanvat(dulieu):
+    filepath = _duongdandanhsachnhanvat()
     try:
         os.makedirs(os.path.dirname(filepath), exist_ok = True)
         filetam = filepath + ".tmp"

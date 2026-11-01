@@ -6,10 +6,11 @@ import time
 import unicodedata
 
 from hangso_xq import *
-from luattuido_xq import tailuat, timluat, timluatbao, timluatcatkho, HANHDONG_BAN, HANHDONG_VUT, CHIKHI_TRIEUHOIBAOTHU
+from luattuido_xq import tailuat, timluat, timluatbao, timluatcatkho, timhanhdongnhat, HANHDONG_BAN, HANHDONG_VUT, CHIKHI_TRIEUHOIBAOTHU, \
+    NHAT_NHAT, NHAT_UUTIEN, NHAT_KHONGNHAT
 from thongbao_xq import baosuco, LYDOTAMNGUNGTUXA
 from moitruong_xq import MoiTruong, DOUUTIEN_THAP, DOUUTIEN_KHANCAP, DOUUTIEN_CAO, SOLUONGDOITUONGXUNGQUANHTOIDA, tinh_is_huongmatvediem
-from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam
+from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam, canhbao
 from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, donbangthoidiem
 
 # Mua bù: cửa hàng chưa biết hàng thì mở để đọc (tactu_sumon_xq.batdau_mocuahang), mở hỏng thì chừng này giây sau mới thử lại
@@ -32,7 +33,7 @@ class TacTuVatPham:
         if "Hết hạn sử dụng" in (self.moitruong.get_motavatphamhanhtrang(vitri) or ""):
             if time.time() - self._thoidiemphatambaothuhethan > 60.:
                 self._thoidiemphatambaothuhethan = time.time()
-                phatam("{} đã hết hạn sử dụng".format(tenvatpham), is_block = False)
+                canhbao(self.moitruong, "{} đã hết hạn sử dụng".format(tenvatpham), is_block = False)
                 baosuco(self.moitruong, "vatpham", f"{tenvatpham} đã hết hạn sử dụng", giancach = 3600.)
             return None
         return vitri, tenvatpham
@@ -202,6 +203,13 @@ class TacTuVatPham:
                             print("{}: máu {}%, lưu pháp bảo đang đeo: {} -> đổi sang {}".format(
                                 self.moitruong.get_tendoituong(), phantramsinhlucconlai, tenphapbaohientai or "(không)", phapbaokhonghuhong))
                     break
+                else:
+                    # Máu thấp mà hành trang không có pháp bảo không hư hỏng nào: nhắc 60s một lần, Telegram 30 phút một lần
+                    if time.time() - self._thoidiemcanhbaokhongphapbao > 60.:
+                        self._thoidiemcanhbaokhongphapbao = time.time()
+                        canhbao(self.moitruong, f"Không có {PHAPBAOKHONGHUHONGs[0]} trong hành trang", is_block = False)
+                        baosuco(self.moitruong, "vatpham", f"Máu {int(phantramsinhlucconlai)}% mà không có {PHAPBAOKHONGHUHONGs[0]} trong hành trang để đổi",
+                                khoa = "khongphapbaokhonghuhong", giancach = 1800.)
 
             # Hồi sinh lực/nội lực: chưa mất đủ nhiều mà dùng thuốc thì phí => ngoài phần trăm còn phải mất quá 2500 sinh lực / 3000 nội lực.
             # Đang PK ở bản đồ PK: dưới 75%; ở phó bản (không PK): dưới 25%
@@ -372,25 +380,24 @@ class TacTuVatPham:
             self._yeucaunhatvatpham = None
             return
 
-        vatphamtudongnhats = VATPHAMTUDONGNHATs
-        if self._is_tudongvebanrac:
-            vatphamtudongnhats = (*vatphamtudongnhats,
-                                  TIENTE, "Tơ Nhện", "Kịch Độc Châm", "Đuôi Bọ Cạp", "Ly Hồn", "Ly Phách", "Ma Tinh thạch", "Trái Táo", "Trái lê", "Phá Bố Y", "Toái Lăng", "Tơ Tằm", "Da Rắn", "Ống Tên", "Bao Kiếm", "Cán Đao", "Toái Sa", "Hồng Sắc Tiểu Thạch", "Mạng Nhện", "Tử Giả Di Vật", "Phi Hành Phiến", "Núm Vú", "Hành Quân Tán"
-                                  )
+        # Luật nhặt ở tab Hành trang (luattuido_xq "nhat"), đọc 1 lần mỗi lượt; luật "chỉ khi về bán rác" chỉ xét khi bật Tự động về bán rác
+        dulieuluat = tailuat()
+
+        def hanhdongnhat(tenvatphamkiemtra):
+            return timhanhdongnhat(tenvatphamkiemtra, self._is_tudongvebanrac, dulieuluat)
 
         def kiemtradieukiennhat(tenvatphamkiemtra, diachikiemtra):
-            if tenvatphamkiemtra in VATPHAMKHONGNHATs:
+            hanhdong = hanhdongnhat(tenvatphamkiemtra)
+            if hanhdong == NHAT_KHONGNHAT:
                 return False
-            if tenvatphamkiemtra in VATPHAMUUTIENNHATs:
+            if hanhdong == NHAT_UUTIEN:
                 return True
             # Vật phẩm nhiệm vụ Thu thập của sư môn
             if tenvatphamkiemtra in self._layvatphamnhatsumon():
                 return True
             if is_chinhatvatphamuutien:
                 return False
-            if tenvatphamkiemtra in vatphamtudongnhats:
-                return True
-            if VATPHAMTUDONGNHATFARMs and self._is_tudongvebanrac and any(x in tenvatphamkiemtra for x in VATPHAMTUDONGNHATFARMs):
+            if hanhdong == NHAT_NHAT:
                 return True
             if self._tenvatphamnhats and tenvatphamkiemtra in self._tenvatphamnhats:
                 return True
@@ -462,7 +469,7 @@ class TacTuVatPham:
                 continue
 
             if kiemtradieukiennhat(tenvatpham, diachivatpham) and khoangcach < KHOANGCACHNHATDO:
-                danhsachvatpham.append((tenvatpham not in VATPHAMUUTIENNHATs, khoangcach, diachivatpham))
+                danhsachvatpham.append((hanhdongnhat(tenvatpham) != NHAT_UUTIEN, khoangcach, diachivatpham))
 
         if danhsachvatpham:
             # Vật phẩm ưu tiên lên đầu, sau đó mới xét gần nhất
@@ -485,7 +492,7 @@ class TacTuVatPham:
             khoangcach = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat)
             # Món Thu thập của sư môn cũng ưu tiên: không thì còn quái quanh đó là cứ đánh tiếp (tấn công xếp trước nhặt đồ), không nhặt
             tenvatphamdangnhat = self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat)
-            is_vatphamuutien = tenvatphamdangnhat in VATPHAMUUTIENNHATs or tenvatphamdangnhat in self._layvatphamnhatsumon()
+            is_vatphamuutien = hanhdongnhat(tenvatphamdangnhat) == NHAT_UUTIEN or tenvatphamdangnhat in self._layvatphamnhatsumon()
             if khoangcach > 1.5:
                 yeucaunhatvatphammoi = {
                     "yeucau": YEUCAUDICHUYENNHATDO,
@@ -523,7 +530,7 @@ class TacTuVatPham:
                 return
             nganquy = nganluong - NGANLUONGGIULAI
 
-            # Món cần mua, NPC, số lượng: luật mua bù (luattuido_xq, tab Túi đồ)
+            # Món cần mua, NPC, số lượng: luật mua bù (luattuido_xq, tab Hành trang)
             self._muabutheoluat(nganquy)
 
     def _muabutheoluat(self, nganquy):
@@ -597,7 +604,7 @@ class TacTuVatPham:
             if soluong <= muc["thapnhat"] and soluong < muc["muatoi"]:
                 self._thoidiemvemuabu_map[muc["vatpham"]] = time.time()
                 print(f"[MUA BÙ] {self.moitruong.get_tendoituong()}: còn {soluong} {muc['vatpham']} (<= {muc['thapnhat']}), về Tân Thủ Thôn mua")
-                phatam(f"Còn {soluong} {muc['vatpham']}, về mua bù", is_block = False)
+                canhbao(self.moitruong, f"Còn {soluong} {muc['vatpham']}, về mua bù", is_block = False)
                 return True
         return False
 
@@ -1287,7 +1294,7 @@ class TacTuVatPham:
                     vitrithatbai = next(vitri for vitri, idtaio in idtaios.items() if idtaio == self._idvatphamotrongdangchuyen)
                     print("{}: chuyển {} khỏi ô cuối hành trang 1 thất bại {} lần, bỏ qua {:.0f} giây".format(
                         self.moitruong.get_tendoituong(), self.moitruong.get_tenvatphamhanhtrang(vitrithatbai), self._solanchuyenotrongthatbai, thoigianboqua))
-                    phatam("Không chuyển được vật phẩm ở ô cuối hành trang 1")
+                    canhbao(self.moitruong, "Không chuyển được vật phẩm ở ô cuối hành trang 1")
                     self._thoidiemhetboquaotrong_map[self._idvatphamotrongdangchuyen] = time.time() + thoigianboqua
                     self._idvatphamotrongdangchuyen = 0
                     self._solanchuyenotrongthatbai = 0
@@ -1309,7 +1316,7 @@ class TacTuVatPham:
         tuidich = next((vitri // 24 + 1 for vitri in vitrimos if vitri >= 24 and not ids[vitri]), None)
         if tuidich is None:
             if self._solanchuyenotrongthatbai == 0 and not self._idvatphamotrongdangchuyen:
-                phatam("Các hành trang khác đã đầy, không chuyển được ô cuối hành trang 1")
+                canhbao(self.moitruong, "Các hành trang khác đã đầy, không chuyển được ô cuối hành trang 1")
                 baosuco(self.moitruong, "vatpham", "Hành trang đã đầy", giancach = 1800.)
             self._thoidiemhetboquaotrong_map[idvatpham] = time.time() + thoigianboqua
             return
@@ -1441,7 +1448,7 @@ class TacTuVatPham:
             # Tên chưa đọc được (đang tải...) thì không khớp luật Giữ nào, đừng bán nhầm
             if not tenvatphamhanhtrang:
                 continue
-            # Theo luật túi đồ (luattuido_xq, tab Túi đồ): không khớp luật nào hoặc luật Bán thì bán; Giữ / Vứt / Cất kho / chưa đọc được
+            # Theo luật túi đồ (luattuido_xq, tab Hành trang): không khớp luật nào hoặc luật Bán thì bán; Giữ / Vứt / Cất kho / chưa đọc được
             # mô tả (luật có điều kiện loại / mô tả) thì không bán
             hanhdong = self._layhanhdongluat(tenvatphamhanhtrang, i)
             # Món khớp luật Cất kho (dù luật đứng dưới luật Bán) thì để dành đi cất, không bán

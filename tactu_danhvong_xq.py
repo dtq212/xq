@@ -21,7 +21,7 @@ from hangso_xq import *
 from giaodo_xq import taolenhgiao
 from nhiemvu_xq import chuanhoaten, boma, timbandotheoten, laydiemluoi, _thumucgoc
 from thongbao_xq import baosuco
-from tienich_xq import phatam, thaythefile
+from tienich_xq import phatam, canhbao, thaythefile
 from tactu_sumon_xq import THOIGIANCHOTRUYNA, KHOANGCACHTOICHAMTRUYNA
 
 MUCDANHVONG = "Nhiệm vụ Danh Vọng"
@@ -245,8 +245,9 @@ class TacTuDanhVong:
             noidung += f" (phiên này trả {s['soluotxong']} lượt)"
         self._logdv(noidung)
         self._ketquadanhvong = f"{time.strftime('%H:%M')} {noidung}"
+        self._ghiketthucviec("danhvong", noidung)
         baosuco(self.moitruong, "sumon", noidung, khoa = f"danhvong|{s['batdau']}" if s else None, giancach = 0.)
-        phatam("Lỗi nhiệm vụ Danh Vọng" if loi else "Kết thúc nhiệm vụ Danh Vọng")
+        canhbao(self.moitruong, "Lỗi nhiệm vụ Danh Vọng") if loi else phatam("Kết thúc nhiệm vụ Danh Vọng")
 
     # --- Vòng chính ------------------------------------------------------------------------------------------------------------------
     def _xulydanhvong(self):

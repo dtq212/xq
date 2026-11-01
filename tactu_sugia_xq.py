@@ -22,7 +22,7 @@ from hangso_xq import *
 from dexuatlotrinh_xq import layvungtoiduoc
 from nhiemvu_xq import boma, chuanhoaten, laydiemkhampha, timbandotheoten, _thumucgoc
 from thongbao_xq import baosuco
-from tienich_xq import phatam
+from tienich_xq import phatam, canhbao
 
 NPCSUGIA = ("Từ Phúc", 345, 159)
 BANDONPCSUGIA = BANDO_CHUQUOC
@@ -219,8 +219,9 @@ class TacTuSuGia:
             thongbao += f" (phiên này trả {s['solan']} lượt)"
         self._logsg(thongbao)
         self._ketquasugia = f"{time.strftime('%H:%M')} {thongbao}"
+        self._ghiketthucviec("sugia", thongbao)
         baosuco(self.moitruong, "sumon", thongbao, khoa = f"sugia|{s['batdau'] if s else 0}", giancach = 0.)
-        phatam("Lỗi nhiệm vụ sư gia" if is_loi else "Kết thúc nhiệm vụ sư gia")
+        canhbao(self.moitruong, "Lỗi nhiệm vụ sư gia") if is_loi else phatam("Kết thúc nhiệm vụ sư gia")
 
     def _baosugia(self, s, khoa, noidung):
         # Báo Telegram 1 lần cho mỗi việc cần người dùng để ý, bot vẫn chạy tiếp

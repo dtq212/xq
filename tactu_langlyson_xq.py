@@ -293,6 +293,8 @@ class TacTuLangLySon:
             thongbao += f" (xong {s['sovong']} vòng)"
         self.moitruong._inlog(f"[{ten.upper()}] {thongbao}")
         self._ketqualanglyson = f"{time.strftime('%H:%M')} {ten}: {thongbao}"
+        if s:
+            self._ghiketthucviec(s["phoban"], thongbao)
         phatam(f"Kết thúc {ten}")
 
     def _baolanglyson(self, s, khoa, noidung):
@@ -1021,6 +1023,10 @@ class TacTuLangLySon:
                                                                 f"({', '.join(conlais)} còn trong nhóm), vẫn lập nhóm mới")
             s.update(tattodoi = False, is_daroinhom = True)
             self._logpb(s, "Đã giải tán tổ đội cũ, bật lại Tổ đội tự động để lập nhóm mới")
+            return None
+        # Hàng việc đặt giới hạn vòng: đủ thì dừng ở đây (đã lĩnh thưởng, đã giải tán tổ đội cũ), sang việc kế
+        if self._is_dugioihanvong(s["phoban"], s["sovong"]):
+            self._ketthuclanglyson("✅ Đủ số vòng đặt ở Hàng việc")
             return None
         if not is_trongnhom and PHOBAN_MAP[s["phoban"]]["luachonvao"] != "give":
             # (Phong Yêu Kính tự lập nhóm 1 người ở vòng sau, không chờ Tổ đội tự động)

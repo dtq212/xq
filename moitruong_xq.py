@@ -1583,6 +1583,11 @@ class MoiTruong:
             # Toạ độ lượt trước (còn ở bản đồ cũ): mã bản đồ đổi trước, toạ độ có khi 2-3s sau mới đổi (get_is_toadochuaondinh)
             self._toadobandocu = self._toadolantruoc
             self._lucvaobando[idbandohientai] = time.time()
+            # Vừa qua cổng mà đích tìm đường của client còn là cổng ở bản đồ cũ: client tự tìm đường quay lại cổng đó (bot đang chờ toạ
+            # độ ổn định nên chưa đặt đích mới) => qua lại một cổng mãi. Huỷ đích đó ngay
+            if self._idbandohientai and idbandohientai and self.get_bandotimduong() == self._idbandohientai:
+                self.action_ngungtudongtimduong()
+                self._inlog(f"[TÌM ĐƯỜNG] Đã sang bản đồ {idbandohientai}: huỷ đích tìm đường còn ở bản đồ cũ {self._idbandohientai}")
         self._idbandohientai = idbandohientai
         self._toadolantruoc = toado
 
@@ -2974,6 +2979,21 @@ class MoiTruong:
         luoi = self._get_luoivatcan(round(x), round(y), round(x), round(y))
         return bool(luoi and luoi[0][0])
 
+    def get_is_doanthangcovatcan(self, x1, y1, x2, y2):
+        # Đoạn thẳng (x1, y1) -> (x2, y2) có đi qua ô vật cản không (lấy mẫu mỗi 0.5 ô, bỏ ô đầu và ô cuối như _chonhuonglui). Chiêu lướt
+        # (Khai Thiên Tịch Địa, Lưu Tinh Truy Mạng) không lướt được qua vật cản. Không đọc được lưới thì coi như không có
+        xa, ya, xb, yb = round(x1), round(y1), round(x2), round(y2)
+        ox, oy = min(xa, xb), min(ya, yb)
+        luoi = self._get_luoivatcan(ox, oy, max(xa, xb), max(ya, yb))
+        if not luoi:
+            return False
+        sobuoc = max(1, math.ceil(math.dist((x1, y1), (x2, y2)) * 2))
+        for i in range(1, sobuoc):
+            x, y = round(x1 + (x2 - x1) * i / sobuoc), round(y1 + (y2 - y1) * i / sobuoc)
+            if (x, y) not in ((xa, ya), (xb, yb)) and luoi[x - ox][y - oy]:
+                return True
+        return False
+
     def get_oditduocganhat(self, x, y, bankinhtoida = BANKINHKEODICH):
         # Đích (x, y) của bản đồ hiện tại rơi vào vật cản (toạ độ nhiệm vụ / NPC lệch vào tường, nước...) thì trả ô đi được gần nhất trong
         # bankinhtoida ô (cùng khoảng cách thì ô gần mình hơn, kẻo lấy ô bên kia tường); đi được / không thấy ô nào thì giữ nguyên.
@@ -3864,6 +3884,12 @@ class MoiTruong:
             return False
         x = read_int(self.tientrinh, x + DC.TG_TIMDUONG)
         return x > 0
+
+    def get_bandotimduong(self):
+        # Bản đồ của đích tìm đường client đang đi (0 = không có đích)
+        a = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        a = read_int(self.tientrinh, a + DC.TG_TIMDUONG) if a else 0
+        return read_int(self.tientrinh, a + DC.TD_BANDO) if a else 0
 
     def action_tudongtimduong(self, x, y, idbando, is_lotrinh = True):
         # Đặt đích tìm đường mới là bắt đầu di chuyển => ngắt vận khí triệu hồi / mất tác dụng chiêu đang xuất

@@ -13,7 +13,7 @@ from hangso_xq import BANDO_BANGPHAI, TRUONGPHONGTIENSINH, RUONGDUTRU
 from hangso_xq import BANDO_CHIENTRUONG, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, BANDO_YENTRUONGTHANH3, BANDO_YENTRUONGTHANH2, BANDO_YENTRUONGTHANH1, TANGBAODO, LAMCAU, HACCAU, HIEUUNGKYNANG_TRONGTHUONG
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
-from tienich_xq import phatam
+from tienich_xq import canhbao
 
 
 class LoopLamMoiTrangThaiMoiTruong:
@@ -305,7 +305,7 @@ class LoopPhu:
         if self.moitruong.get_is_nhanvatdachet() and self.moitruong.get_idbandohientai() != BANDO_CHIENTRUONG:
             if time.time() - self.thoidiemthongbaochetgannhat > 5.0:
                 self.thoidiemthongbaochetgannhat = time.time()
-                phatam("Nhân vật đã chết", is_block = False)
+                canhbao(self.moitruong, "Nhân vật đã chết", is_block = False)
 
     def loop(self):
         while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():

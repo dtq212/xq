@@ -869,13 +869,8 @@ BANDO7QUOCGIAs = (BANDO_TEQUOC, BANDO_HANQUOC, BANDO_TRIEUQUOC, BANDO_NGUYQUOC, 
 BANDO_CULOC = 131
 
 BAOTHUVATPHAMs = (SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN, THANTHUMAYET, THANTHUDAN, THANTHUSUU, THANTHUDAN2, THANTHUSUU2, THANTHUCHUOT, *THUYBINHs)
-VATPHAMKHONGNHATs = tuple()
-# Vật phẩm ưu tiên nhặt trên mọi hành động khác (tấn công, theo nhóm, gom quái, ...)
-VATPHAMUUTIENNHATs = (LEBAOKHAIQUOC,)
-VATPHAMTUDONGNHATs = (HACCAU, LAMCAU, HOACAU, HONGCAU, TUSAMDON, CAPCUUDON, HOATTAMDON, TIEUDAOTAN, KIMTANGTAN, QUYNGUYENDON, KHIMACHDON, TUTAMDON,  HOANGKIMTHANHY, "Thanh Đồng Bảo Hộp", TUKIMBAOHOP, "Mồi Câu", "Đá Tương Uyên", TIENTE, "Vô Song Điểm Phiếu", "Cờ Đỏ", "Sao Vàng", LEBAOKHAIQUOC, "Âu Dã Bảo Thạch", "Long Cốt", "Phấn Huỳnh Quang",
-                      THANHTAMDON, TOAICAM, XALOITU,
-                      # Phôi vũ khí cấp 75: Kiếm, Đao, Thương, Côn, Ám Khí, Quyền
-                      "Ngọc Kiếm", "Kim Đao", "Xích Anh Thương", "Cổ Phương Côn", "Nguyệt Hoàn", "Thạch Điêu Quyền Nhẫn", )
+# Danh sách nhặt (VATPHAMKHONGNHATs / VATPHAMUUTIENNHATs / VATPHAMTUDONGNHATs / VATPHAMTUDONGNHATFARMs) đã chuyển thành luật nhặt
+# trong luattuido_xq.NHATMACDINH (sửa ở tab Hành trang)
 
 DUAHAU = "Dưa hấu"
 LAOTUU = "Lão Tửu"
@@ -890,19 +885,11 @@ TINHNGUYENDON = "Tinh Nguyên Đơn"
 HOIBANGPHU = "Hồi Bang Phù"
 NGUYENLIEULUYENDONs = ("Hoàng Kỳ", "Cúc Dại", "Quả Anh Túc", "Điền Thất", "Táo Đỏ", "Trần Bì", "Dương Kim Hoa", "Linh Chi Thảo", "Sơn Sâm", "Cát Cánh", "Cam Thảo", "Sinh Địa", "Xuyên Tâm Liên", "Hoàng Liên", "Hà Thủ Ô", "La Hán Quả", "Bạch Kỳ", "Đương Quy", "Xuyên Bối", "Đông Trùng Thảo")
 CUONGTHIPHU = "Cương Thi Phù"
-# Danh sách không bán (VATPHAMKHONGBANs) đã chuyển thành luật Giữ mặc định trong luattuido_xq.LUATMACDINH (sửa ở tab Túi đồ)
+# Danh sách không bán (VATPHAMKHONGBANs) đã chuyển thành luật Giữ mặc định trong luattuido_xq.LUATMACDINH (sửa ở tab Hành trang)
 
 # Khai khoáng (hái dược) ở các bản đồ này thì tự vứt các dược không cần (dù có luật Giữ)
 BANDOHAIDUOCs = (261, 262, 263)
 VATPHAMVUTKHIHAIDUOCs = ("La Hán Quả", "Hoàng Liên", "Hà Thủ Ô", "Xuyên Tâm Liên")
-
-VATPHAMTUDONGNHATFARMs = (
-    "Kiếm", "Đao", "Mâu", "Thủ", "Thương", "Sáo", "Bổng", " Y", "Giáp",
-    "Côn", "Kích", " Bào", " Lý", " Mạo", "Phi Phong", " Nguyệt",
-    "Quan", " Bào", " Liên", " Quần", " Hài", " Nhẫn", " Tiêu",
-    "Đầu Cân", "Xú Diêm", " Đầu Cân", "Nghênh Phong Trảm", " Mão", " Tố Quần", "Nhập môn", " Quần",
-    " Nguyệt", "Trứng gà", " cấp ", "Kim Cương"
-)
 
 # Xếp chồng tự nhận biết (món có số lượng >= 1 trong hành trang), 1 ô tối đa = số lớn nhất từng thấy (ít nhất 30);
 # món có số tối đa khác thì ghi ở đây
@@ -1356,7 +1343,7 @@ KIEUDICHUYEN_GIUKHOANGCACHTOIDA = 1
 KIEUDICHUYEN_GIUKHOANGCACHTOITHIEU = 2
 KIEUDICHUYEN_TOADOCHUAN = 3
 
-# Chỉ là mặc định khi chưa có file _internal/todoi.json; cấu hình thật ở giao diện (tab Mục tiêu & Tổ đội > Tổ đội tự động)
+# Chỉ là mặc định khi chưa có file _internal/todoi.json; cấu hình thật ở giao diện (tab Tổ đội > Tổ đội tự động)
 NHANVATTODOITUDONGs_LIST = [
     [29, 30, 32, 31],
     [132, 133, 134, 135]
@@ -1367,3 +1354,8 @@ TENMUCTIEUKHONGTANCONGs = (*BAOTHUVATPHAMs, "Tần QuốcBinh Sĩ", "Triệu Qu�
 TENBOSSBUFFMAOSONs = ("Mã Quỷ", "Lương Hưng", "Yến Thập Tam", "Tư Tà", "Thủ Lĩnh Thành Kiều", TROMBAOPHITAC, "Bảo Hộp Phi Tặc",
                       "Tướng Quân Dũng", "Lăng Mộ Tà Linh", "Đường Truy", "Thế Công Minh", "Thạch Tướng Quân", "Cơ Quan Tướng Quân",
                       "Hào Quật")
+
+# Hàng việc (tab Nhiệm vụ, tactu_hangviec_xq): mã việc -> tên, theo thứ tự mặc định; việc có vòng thì đặt được giới hạn số vòng
+VIECHANG_MAP = {"sumon": "Sư môn", "sugia": "Sư Gia", "danhvong": "Danh Vọng", "tapkich": "Tập Kích", "langlyson": "Lăng Ly Sơn",
+                "thanhkieu": "Thành Kiều", "phongyeukinh": "Phong Yêu Kính"}
+VIECCOVONGs = ("tapkich", "langlyson", "thanhkieu", "phongyeukinh")

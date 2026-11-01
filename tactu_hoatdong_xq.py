@@ -8,7 +8,7 @@ import win32con
 
 from hangso_xq import *
 from thongbao_xq import baosuco, LYDOTAMNGUNGTUXA
-from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam
+from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam, canhbao
 from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, donbangthoidiem
 from tienich_xq import ghitamngung as util_ghitamngung, xoatamngung as util_xoatamngung
 
@@ -44,7 +44,26 @@ class TacTuHoatDong:
         return self._is_tudongphucsinh and bool(self._thoidiembatdauchet)
 
     def get_is_dangtamngung(self):
-        return time.time() < self._thoidiemhettamngung
+        # Tắt bot cũng tính là tạm ngưng: mọi luồng chặn hoạt động theo hàm này
+        return self._is_tatbot or time.time() < self._thoidiemhettamngung
+
+    def thietlap_tatbot(self, is_tat):
+        if is_tat == self._is_tatbot:
+            return
+        self._is_tatbot = is_tat
+        print(f"[TẮT BOT] {'Tắt' if is_tat else 'Bật lại'} bot nhân vật này từ bảng điều khiển")
+        phatam("Tắt bot" if is_tat else "Bật bot")
+        if is_tat:
+            self._dungmoihoatdong()
+
+    def _dungmoihoatdong(self):
+        self.moitruong.action_ngatdichuyen()
+        self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
+        self._yeucautancong = None
+        self._yeucaunhatvatpham = None
+        self._yeucaugomquai = None
+        self._yeucautudo = None
+        self._is_battudongtancongvatly = False
 
     def action_kiemtraanthan(self):
         # 1) Tự quét: thấy người chơi lạ ẩn thân, hoặc (ở map train) thấy người ngoài danh sách tổ đội, thì ghi nhận
@@ -139,7 +158,7 @@ class TacTuHoatDong:
 
     def _batdautamngung(self, lydo, thoigian = None):
         thoigian = thoigian or THOIGIANTAMNGUNGANTHAN
-        is_moibatdau = not self.get_is_dangtamngung()
+        is_moibatdau = time.time() >= self._thoidiemhettamngung
         # Chỉ kéo dài, không rút ngắn (đang ngưng 10 phút vì ẩn thân mà gặp người lạ thì vẫn giữ 10 phút)
         thoidiemhetmoi = time.time() + thoigian
         if is_moibatdau or thoidiemhetmoi >= self._thoidiemhettamngung:
@@ -150,20 +169,14 @@ class TacTuHoatDong:
             thoigianhienthi = f"{int(thoigian // 60)} phút" if thoigian >= 60 else f"{int(thoigian)} giây"
             print(f"[TẠM NGƯNG] {lydo} -> Ngưng mọi hoạt động {thoigianhienthi}")
             if lydo == LYDOTAMNGUNGTUXA:
-                phatam("Tạm ngưng từ xa")
+                canhbao(self.moitruong, "Tạm ngưng từ xa")
             else:
-                phatam("Phát hiện ẩn thân, tạm ngưng" if "ẩn thân" in lydo else "Phát hiện người lạ, tạm ngưng")
+                canhbao(self.moitruong, "Phát hiện ẩn thân, tạm ngưng" if "ẩn thân" in lydo else "Phát hiện người lạ, tạm ngưng")
                 # Chỉ nhân vật tự phát hiện ("phát hiện <tên>") báo, các nhân vật ngưng theo ("<ai đó> phát hiện ...") thì không, cho
                 # 1 lần phát hiện chỉ ra 1 tin
                 if lydo.startswith("phát hiện"):
                     baosuco(self.moitruong, "tamngung", f"Phát hiện {lydo[len('phát hiện '):]}, cả máy tạm ngưng {thoigianhienthi}", khoa = lydo)
-            self.moitruong.action_ngatdichuyen()
-            self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
-            self._yeucautancong = None
-            self._yeucaunhatvatpham = None
-            self._yeucaugomquai = None
-            self._yeucautudo = None
-            self._is_battudongtancongvatly = False
+            self._dungmoihoatdong()
 
     def tieptuchoatdong(self):
         # Bật lại thủ công: vẫn tiếp tục kiểm tra ẩn thân, gặp người ẩn thân là tạm ngưng tiếp
@@ -610,7 +623,7 @@ class TacTuHoatDong:
             self._thoidiembatdautheokhoang = time.time()
         else:
             if time.time() - self._thoidiembatdautheokhoang > 10.0:
-                phatam("Khoáng lỗi, bỏ qua")
+                canhbao(self.moitruong, "Khoáng lỗi, bỏ qua")
                 self._idkhoangbiloi_map[id_min] = time.time()
                 self._idkhoangdangtheo = 0
                 self._yeucaukhaikhoang = None
@@ -790,11 +803,11 @@ class TacTuHoatDong:
                 self.moitruong.action_ngatdichuyen()
                 self.action_sudunghoithanhphu()
                 self._thoidiemsudunghoithanhphugannhat = time.time()
-                phatam("{} hết tàng bảo đồ".format(self.moitruong.get_tendoituong()))
+                canhbao(self.moitruong, "Hết tàng bảo đồ")
                 self._thoidiemchodaotangbaodo = time.time() + 5.
             else:
                 if not self.moitruong.action_timkiemvatphamhanhtrang(LAMCAU):
-                    phatam("{} hết tàng bảo đồ".format(self.moitruong.get_tendoituong()))
+                    canhbao(self.moitruong, "Hết tàng bảo đồ")
                     self._thoidiemchodaotangbaodo = time.time() + 5.
                     return
 

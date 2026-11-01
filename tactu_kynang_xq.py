@@ -6,7 +6,7 @@ import time
 
 from hangso_xq import *
 from moitruong_xq import MoiTruong, DOUUTIEN_THAP, DOUUTIEN_KHANCAP, DOUUTIEN_CAO, SOLUONGDOITUONGXUNGQUANHTOIDA, tinh_is_huongmatvediem
-from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam
+from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam, canhbao
 from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, donbangthoidiem
 
 
@@ -162,7 +162,13 @@ class TacTuKyNang:
         if not is_khaithiensansang:
             return False
 
-        if self._solanthatbaikhaithien >= self._solanthatbaikhaithientoida and time.time() - self._thoidiembiphatkhaithien > 3.0:
+        if tenmonphai == "thucson":
+            # Khai Thiên Tịch Địa không lướt qua vật cản: xét đoạn thẳng tới đích (đích xa thì chỉ xét trong tầm đánh xa, quãng lướt thật)
+            quangxet = min(khoangcach, self._khoangcachsudungkynangtamxa) / khoangcach
+            if self.moitruong.get_is_doanthangcovatcan(*toado, toado[0] + (x_dich - toado[0]) * quangxet, toado[1] + (y_dich - toado[1]) * quangxet):
+                return False
+
+        if self._solanthatbaikhaithien >=self._solanthatbaikhaithientoida and time.time() - self._thoidiembiphatkhaithien > 3.0:
             self._solanthatbaikhaithien = 0
             self._thoidiembiphatkhaithien = 0
 
@@ -1174,7 +1180,7 @@ class TacTuKyNang:
         if not khacs or self._solanmaclaitrieuhoi >= solanmaclaitoida:
             if khacs:
                 print("{}: không mặc lại được sau triệu hồi: {}".format(self.moitruong.get_tendoituong(), ", ".join(ten for _, _, ten in khacs)))
-                phatam("Không mặc lại được đồ sau triệu hồi")
+                canhbao(self.moitruong, "Không mặc lại được đồ sau triệu hồi")
             elif self._solanmaclaitrieuhoi:
                 print("{}: đã mặc lại bộ đồ trước triệu hồi".format(self.moitruong.get_tendoituong()))
             self._bodotruoctrieuhoi = None
@@ -1838,7 +1844,9 @@ class TacTuKyNang:
             is_duocphepsudungluutinhtruymang = is_luutinhtruymangsansang and noiluc > 50 and self._solanthatbailuutinhtruymang < self._solanthatbailuutinhtruymangtoida and idtuthenhanvat not in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT)
             is_bimatamthuat = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_MATAMTHUAT,), macdinh = False, is_hieuungcoloi = 1, diachicosothongtinnhanvat = diachimuctieu)
 
-            if khoangcach <= self._khoangcachsudungkynangtamxa and is_duocphepsudungluutinhtruymang and not is_bimatamthuat:
+            if khoangcach <= self._khoangcachsudungkynangtamxa and is_duocphepsudungluutinhtruymang and not is_bimatamthuat \
+                    and not self.moitruong.get_is_doanthangcovatcan(*self.moitruong.get_toado(), *self.moitruong.get_toado(diachimuctieu)):
+                # Lưu Tinh Truy Mạng lướt tới mục tiêu: đoạn thẳng có vật cản thì không lướt được, để đánh cận chiến / tiếp cận như thường
                 self._yeucautancong = None
                 if self.moitruong.action_sudungkynangvitrimuctieu(VITRIKYNANG_LUUTINHTRUYMANG):
                     # Gửi thẳng, không qua action_xulyuutiensudungkynang: tự đánh dấu chiêu cần đứng yên và chặn client tự bước từ lúc gửi

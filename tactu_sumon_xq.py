@@ -26,7 +26,7 @@ from giaodo_xq import taolenhgiao
 from nhiemvu_xq import *
 from nhiemvu_xq import _laynpcbandonho as nhiemvu_layvitri_soluong
 from thongbao_xq import baosuco
-from tienich_xq import phatam, tailotrinhmau as util_tailotrinhmau, luulotrinhmau as util_luulotrinhmau
+from tienich_xq import phatam, canhbao, tailotrinhmau as util_tailotrinhmau, luulotrinhmau as util_luulotrinhmau
 
 DAYCANKHON = "Dây Càn Khôn"
 # Hết Dây Càn Khôn thì về Chủ Tiệm Tạp Hóa ở Tân Thủ Thôn mua chừng này (ô / giá tra theo tên trong cửa hàng)
@@ -195,8 +195,9 @@ class TacTuSuMon:
             noidung += f" (phiên này trả {s['soluotxong']} lượt)"
         self.moitruong._inlog(f"[SƯ MÔN] {noidung}")
         self._ketquasumon = f"{time.strftime('%H:%M')} {noidung}"
+        self._ghiketthucviec("sumon", noidung)
         baosuco(self.moitruong, "sumon", noidung, khoa = s["batdau"] if s else None, giancach = 0.)
-        phatam("Lỗi nhiệm vụ sư môn" if loi else "Kết thúc nhiệm vụ sư môn")
+        canhbao(self.moitruong, "Lỗi nhiệm vụ sư môn") if loi else phatam("Kết thúc nhiệm vụ sư môn")
 
     def _baomotlan(self, s, khoa, noidung):
         # Báo Telegram 1 lần cho mỗi việc cần người dùng làm (mua tay, thêm luật...), bot vẫn chờ

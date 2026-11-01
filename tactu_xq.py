@@ -23,12 +23,14 @@ from tactu_tapkich_xq import TacTuTapKich
 from tactu_matac_xq import TacTuMaTac
 from tactu_danhvong_xq import TacTuDanhVong
 from tactu_keocap_xq import TacTuKeoCap
+from tactu_hangviec_xq import TacTuHangViec
 from nhiemvu_xq import SoVitri
 
 
 # Các nhóm việc nằm ở các file tactu_*_xq.py (mixin), TacTu giữ trạng thái (__init__), lưu / nạp thiết lập và các lệnh bật / tắt
 class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu, TacTuHoatDong, TacTuGiaoDo, TacTuCatKho, TacTuSuMon,
-            TacTuLangLySon, TacTuSuGia, TacTuTapKich, TacTuMaTac, TacTuDanhVong, TacTuKeoCap):
+            TacTuLangLySon, TacTuSuGia, TacTuTapKich, TacTuMaTac, TacTuDanhVong, TacTuKeoCap,
+            TacTuHangViec):
     def __init__(self, moitruong: MoiTruong):
         self._thoidiemhettangbaodogannhat = 0.
         self._thoidiemmuaautogannhat = 0.
@@ -212,6 +214,15 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         # Nhiệm vụ Danh Vọng (tactu_danhvong_xq): việc đang làm (None = không), kết quả lần gần nhất cho giao diện
         self._danhvong = None
         self._ketquadanhvong = ""
+        # Hàng việc (tactu_hangviec_xq, lưu theo nhân vật): thứ tự các việc, việc tích chọn, giới hạn vòng {việc: số vòng}, đang chạy hay
+        # không, việc hàng việc đang bật ("" = không), kết quả từng việc trong ngày, lần xét hàng việc kế tiếp
+        self._hangviec_thutu = list(VIECHANG_MAP)
+        self._hangviec_chon = []
+        self._hangviec_vong = {}
+        self._is_chayhangviec = False
+        self._viechangdangchay = ""
+        self._ketquahangviec = {"ngay": "", "viec": {}}
+        self._luchangviec = 0.
         # Mở cửa hàng để đọc hàng (tactu_sumon_xq.batdau_mocuahang): việc đang làm (None = không), kết quả theo (bản đồ, tên NPC);
         # Mua bù: lần mở cửa hàng gần nhất theo NPC, các lệch ô / giá giữa luật và cửa hàng đã báo
         self._mocuahang = None
@@ -318,6 +329,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         # Tạm ngưng toàn bộ hoạt động khi phát hiện người chơi ẩn thân xung quanh (đang di chuyển theo lộ trình điểm đánh)
         self._thoidiemhettamngung = 0.
         self._lydotamngung = ""
+        # Tắt bot riêng nhân vật này (ô tích trên danh sách nhân vật): ngưng mọi hoạt động như tạm ngưng nhưng không hết hạn,
+        # không ghi file tạm ngưng (file đó chặn tự đăng nhập cả máy)
+        self._is_tatbot = False
         self._thoidiemkiemtraanthangannhat = 0.
         # Lần gần nhất TỰ phát hiện ẩn thân (chia sẻ cho nhân vật khác cùng bản đồ)
         self._thoidiemphathienanthan = 0.
@@ -402,6 +416,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._thoidiemphatamlotrinhkhacbandogannhat = 0.
         self._thoidiemphatamdayhanhtrang = 0.
         self._thoidiemphatambaothuhethan = 0.
+        self._thoidiemcanhbaokhongphapbao = 0.
         self._is_tudongdichientruong = False
 
         self._is_yeucauvohieuhoadichuyen = False
@@ -662,6 +677,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_tapkich_phai": self._tapkich_phai,
             "_matac_bandos": self._matac_bandos,
             "_is_tubatmatac": self._is_tubatmatac,
+            "_is_tatbot": self._is_tatbot,
+            "_hangviec": {"thutu": self._hangviec_thutu, "chon": self._hangviec_chon, "vong": self._hangviec_vong,
+                          "chay": self._is_chayhangviec, "dangchay": self._viechangdangchay, "ketqua": self._ketquahangviec},
             # Sư môn đang bật: dis / mở lại bot vào lại thì tự bật tiếp (bấm Dừng, xong 20 lần, lỗi dừng thì là False)
             "_is_dangsumon": bool(self._sumon),
             # Sư Gia đang bật: như sư môn, dis / mở lại bot thì tự bật tiếp (bấm Dừng, đủ số lần trong ngày, lỗi dừng thì là False)
@@ -766,6 +784,14 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if "_tapkich_phai" in thietlap: self._tapkich_phai = thietlap["_tapkich_phai"] or ""
             if "_matac_bandos" in thietlap: self._matac_bandos = thietlap["_matac_bandos"] or ""
             if "_is_tubatmatac" in thietlap: self._is_tubatmatac = bool(thietlap["_is_tubatmatac"])
+            if "_is_tatbot" in thietlap: self._is_tatbot = bool(thietlap["_is_tatbot"])
+            if isinstance(thietlap.get("_hangviec"), dict):
+                hangviec = thietlap["_hangviec"]
+                self.thietlap_hangviec(hangviec)
+                self._is_chayhangviec = bool(hangviec.get("chay"))
+                self._viechangdangchay = hangviec.get("dangchay") or ""
+                if isinstance(hangviec.get("ketqua"), dict):
+                    self._ketquahangviec = hangviec["ketqua"]
             if thietlap.get("_is_dangsumon") and not self._sumon:
                 self.batdau_sumon()
             if thietlap.get("_is_dangsugia") and not self._sugia:

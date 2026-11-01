@@ -19,8 +19,9 @@ from lan_xq import DuLieuNhieuMay
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
 from thongke_xq import ThongKe, CHUKYLAYMAU
-from giamsat_xq import GiamSat, CHUKYGIAMSAT
+from giamsat_xq import GiamSat, DoNhip, CHUKYGIAMSAT
 from thongbao_xq import TheoDoiSuCo, LYDOTAMNGUNGTUXA
+from tienich_xq import CANHBAOGANDAYs
 
 
 def khoidong_looptonghop(moitruong, tactu, stop, giamsat):
@@ -28,8 +29,10 @@ def khoidong_looptonghop(moitruong, tactu, stop, giamsat):
     l_timkiem = LoopTimKiemMucTieu(moitruong, tactu, stop)
     l_dieuphoi = LoopDieuPhoiDiChuyen(moitruong, tactu, stop)
     l_chinh = LoopChinh(moitruong, tactu, stop)
+    donhip = DoNhip(moitruong, "tổng hợp")
 
     while not stop.is_set() and moitruong.get_is_cuasogametontai():
+        batdau = time.perf_counter()
         try:
             l_lammoi.step()
             l_timkiem.step()
@@ -40,7 +43,9 @@ def khoidong_looptonghop(moitruong, tactu, stop, giamsat):
             traceback.print_exc()
             time.sleep(1)
         giamsat.danhdau("tổng hợp")
+        chayxong = time.perf_counter()
         time.sleep(0.1)
+        donhip.ghiluot(chayxong - batdau, time.perf_counter() - chayxong, 0.1)
 
 
 def khoidong_loopphu(moitruong, tactu, stop, giamsat):
@@ -273,6 +278,7 @@ class CuaSo:
                     "_lotrinhmaudangdung": self.tactu._lotrinhmaudangdung,
                     "_thoigiantamngungconlai": max(0., self.tactu._thoidiemhettamngung - time.time()),
                     "_lydotamngung": self.tactu._lydotamngung,
+                    "_is_tatbot": self.tactu._is_tatbot,
                     "_thoidiemphathienanthan": self.tactu._thoidiemphathienanthan,
                     "_tenanthanphathien": self.tactu._tenanthanphathien,
                     "_thoigiantamngungphathien": self.tactu._thoigiantamngungphathien,
@@ -337,11 +343,15 @@ class CuaSo:
                     # Nhiệm vụ Danh Vọng (tactu_danhvong_xq): trạng thái cho giao diện
                     "_trangthaidanhvong": self.tactu.get_trangthaidanhvong(),
                     "_is_dangdanhvong": self.tactu.get_is_dangdanhvong(),
+                    # Hàng việc (tactu_hangviec_xq): bảng ở tab Nhiệm vụ
+                    "_hangviec": self.tactu.get_hangviecshare(),
                     "_thongkephien": self.thongke.get_tomtatphien(),
                     # Ngân lượng mang theo hiện tại (báo cáo Telegram)
                     "nganluong": self.moitruong.get_nganluong(),
                     # Biến động ngân lượng / vật phẩm gần đây để cửa sổ khác nhận ra chuyển cho nhau (thongke_xq)
                     "_biendongtainguyen": self.thongke.get_biendongganday(),
+                    # Cảnh báo phát âm gần đây (tienich_xq.canhbao) cho tab Cảnh báo
+                    "_canhbaos": list(CANHBAOGANDAYs),
                 }
                 # Tầm nhìn chia sẻ cho nhân vật khác cùng máy (đối tượng thù địch mình thấy); lỗi thì vẫn cập nhật phần còn lại
                 try:
@@ -389,6 +399,12 @@ class CuaSo:
                     self.tactu.thietlap_nguocchieulotrinh(cmd.split(":", 1)[1] == "1")
                 elif cmd == "tieptuchoatdong":
                     self.tactu.tieptuchoatdong()
+                elif isinstance(cmd, str) and cmd.startswith("set_tatbot:"):
+                    # Ô tích trên danh sách nhân vật: set_tatbot:1 tắt, set_tatbot:0 bật lại
+                    self.tactu.thietlap_tatbot(cmd.split(":", 1)[1] == "1")
+                elif cmd == "battat_tatbot":
+                    # Ctrl+Alt+W trong cửa sổ game: đảo bật/tắt bot nhân vật đó
+                    self.tactu.thietlap_tatbot(not self.tactu._is_tatbot)
                 elif isinstance(cmd, str) and cmd.startswith("giaodo:"):
                     # Yêu cầu giao tiền / đồ (giaodo_xq) dạng JSON từ giao diện / Telegram: 1 yêu cầu hoặc danh sách (gửi dồn trước khi bot nhận)
                     yeucaus = json.loads(cmd.split(":", 1)[1])
@@ -421,14 +437,16 @@ class CuaSo:
                 elif cmd == "huylanglyson":
                     self.tactu.huy_langlyson()
                 elif isinstance(cmd, str) and cmd.startswith("keocapchinh:"):
-                    # Kéo cấp acc gà (tactu_keocap_xq), vai acc chính: keocapchinh:<ID acc gà>,<ID acc gà>...[;<ID đồ đệ>[;<cấp kết thúc>]]
+                    # Kéo cấp acc gà (tactu_keocap_xq), vai acc chính:
+                    # keocapchinh:<ID acc gà>,<ID acc gà>...[;<ID đồ đệ>[;<cấp kết thúc>[;<tên đồ đệ máy khác>]]] (danh sách acc gà có thể trống)
                     dsga, _, conlai = cmd.split(":", 1)[1].partition(";")
-                    iddode, _, capketthuc = conlai.partition(";")
+                    iddode, _, conlai = conlai.partition(";")
+                    capketthuc, _, tendode = conlai.partition(";")
                     self.tactu.batdau_keocap("chinh", idgas = [int(i) for i in dsga.split(",") if i.strip().isdigit()],
                                              iddode = int(iddode) if iddode.strip().isdigit() else 0,
-                                             capketthuc = int(capketthuc) if capketthuc.strip().isdigit() else 0)
+                                             capketthuc = int(capketthuc) if capketthuc.strip().isdigit() else 0, tendode = tendode)
                 elif isinstance(cmd, str) and cmd.startswith("keocapga:"):
-                    # Vai acc gà: keocapga:<ID acc chính>
+                    # Vai acc gà: keocapga:<ID acc chính> (0 = tự tìm acc chính cùng máy / qua LAN, nút "Làm acc gà")
                     self.tactu.batdau_keocap("ga", idchinh = int(cmd.split(":", 1)[1]))
                 elif cmd == "keocapphu":
                     # Vai acc phụ Phong Yêu Kính (máy khác nối LAN): tự tìm acc chính đang kéo cấp
@@ -461,6 +479,15 @@ class CuaSo:
                     self.tactu.batdau_danhvong()
                 elif cmd == "huydanhvong":
                     self.tactu.huy_danhvong()
+                elif isinstance(cmd, str) and cmd.startswith("set_hangviec:"):
+                    # Hàng việc: set_hangviec:{"thutu": [...], "chon": [...], "vong": {...}} (thiếu khoá nào thì giữ cũ)
+                    self.tactu.thietlap_hangviec(json.loads(cmd.split(":", 1)[1]))
+                elif cmd == "hangviec":
+                    self.tactu.batdau_hangviec()
+                elif cmd == "huyhangviec":
+                    self.tactu.huy_hangviec()
+                elif isinstance(cmd, str) and cmd.startswith("lamlaihangviec:"):
+                    self.tactu.lamlai_hangviec(cmd.split(":", 1)[1].split(","))
                 elif isinstance(cmd, str) and cmd.startswith("set_sumon_npcgiao:"):
                     self.tactu.thietlap_npcgiaosumon(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("tamngungtuxa:"):

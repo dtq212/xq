@@ -29,7 +29,7 @@ import time
 import unicodedata
 
 from hangso_xq import *
-from tienich_xq import phatam, taicauhinhphongyeu
+from tienich_xq import phatam, canhbao, taicauhinhphongyeu
 from giaodo_xq import taolenhgiao
 from tactu_langlyson_xq import CAPDOLAMKIMTOITHIEU, TENTHOYEU, SOBOSSPHONGYEU, THOIGIANTOITHIEUPY
 
@@ -119,10 +119,12 @@ def _chuanhoa(ten):
 class TacTuKeoCap:
     # --- Bật / tắt, trạng thái cho giao diện ---------------------------------------------------------------------------------------
     def batdau_keocap(self, vaitro, idchinh = 0, idgas = (), dabang = False, xongtanthu = False, tuychoncu = None, muctieutheosaucu = None,
-                      iddode = 0, dabaisu = False, daxuatsu = False, capketthuc = CAPKETTHUCKEOCAP, **_):
+                      iddode = 0, dabaisu = False, daxuatsu = False, capketthuc = CAPKETTHUCKEOCAP, tendode = "", **_):
         # iddode (acc chính): ID acc gà nhận làm đồ đệ (0 = không); dabaisu / daxuatsu: đã xong (mở lại bot giữa chừng)
+        # tendode (acc chính): đồ đệ là acc gà máy khác (chưa biết ID lúc bấm): thấy acc gà tên này qua LAN thì lấy ID nó
         # capketthuc (acc chính, người dùng chọn trên giao diện): mọi acc gà tới cấp này thì xong; acc gà đọc theo acc chính
-        # vaitro "chinh": điều phối, idgas là ID các acc gà; "ga": idchinh là ID acc chính; "phu": acc phụ (idchinh 0 = tự tìm qua LAN)
+        # vaitro "chinh": điều phối, idgas là ID các acc gà (acc gà máy khác báo idchinh là mình thì tự thêm); "ga": idchinh là ID acc
+        # chính (0 = tự tìm qua LAN); "phu": acc phụ (idchinh 0 = tự tìm qua LAN)
         if self._keocap or vaitro not in ("chinh", "ga", "phu"):
             return
         self._keocap = {"vaitro": vaitro, "idchinh": int(idchinh or 0), "idgas": [int(i) for i in idgas if int(i)], "batdau": time.time(),
@@ -131,13 +133,13 @@ class TacTuKeoCap:
                         "lucmoibang": {}, "idgive": 0, "luctatgive": 0., "lucbatpy": 0., "codolamkim": None, "lucdocdo": 0., "dadescpy": {},
                         "dathuhoi": False}
         self._keocap.update(iddode = int(iddode or 0), dabaisu = bool(dabaisu), daxuatsu = bool(daxuatsu),
-                            capketthuc = int(capketthuc or CAPKETTHUCKEOCAP))
+                            capketthuc = int(capketthuc or CAPKETTHUCKEOCAP), tendode = "" if iddode else _chuanhoa(tendode))
         # Mở lại bot giữa chừng: ô gốc của người dùng lưu từ lần trước (get_keocapluu)
         if tuychoncu:
             self._keocap["tuychoncu"] = dict(tuychoncu)
         if muctieutheosaucu:
             self._keocap["muctieutheosaucu"] = tuple(muctieutheosaucu)
-        elif vaitro == "ga" and self._idmuctieutheosau == self._keocap["idchinh"]:
+        elif vaitro == "ga" and self._keocap["idchinh"] and self._idmuctieutheosau == self._keocap["idchinh"]:
             # Còn Theo sau acc chính sót từ lần kéo cấp trước (bản cũ không lưu ô gốc): coi như gốc là không theo sau ai
             self._keocap.setdefault("tuychoncu", {})["_is_tudongtheosau"] = False
             self._keocap["muctieutheosaucu"] = (0, "")
@@ -151,7 +153,9 @@ class TacTuKeoCap:
             # Bật giữa chừng: đã có cấp 8 = đã nhập code, bỏ nói chuyện Thần Tiên Gia Gia, chỉ dùng thưởng còn trong túi (nếu có)
             self._keocap["tanthu"] = "vatpham"
             self._logkc(f"Đã cấp {capdo}: bỏ bước trả nhiệm vụ / nhập code, chỉ dùng thưởng tân thủ còn trong túi")
-        mota = {"chinh": "acc chính, acc gà " + ", ".join(map(str, self._keocap["idgas"])), "ga": f"acc gà của {idchinh}",
+        mota = {"chinh": "acc chính, acc gà " + (", ".join(map(str, self._keocap["idgas"])) or "chưa có (chờ acc gà máy khác qua LAN)")
+                         + (f", đồ đệ tên {self._keocap['tendode']}" if self._keocap["tendode"] else ""),
+                "ga": f"acc gà của {idchinh or 'acc chính tự tìm qua LAN'}",
                 "phu": f"acc phụ Phong Yêu Kính của {idchinh or 'acc chính tự tìm qua LAN'}"}[vaitro]
         self._logkc(f"Bắt đầu kéo cấp ({mota})")
         phatam({"chinh": "Bắt đầu kéo cấp acc gà", "ga": "Bắt đầu kéo cấp, vai acc gà", "phu": "Bắt đầu kéo cấp, vai acc phụ"}[vaitro])
@@ -203,7 +207,7 @@ class TacTuKeoCap:
         # chính) là gốc, xong kéo cấp "trả lại" đúng Theo sau đó, acc mới vào cùng cửa sổ tự chạy theo acc chính (gacon7_3 2026-11-01)
         luu = {"vaitro": s["vaitro"], "idchinh": s["idchinh"], "idgas": s["idgas"], "dabang": s["dabang"], "xongtanthu": s["xongtanthu"],
                "tuychoncu": dict(s.get("tuychoncu") or {}), "iddode": s["iddode"], "dabaisu": s["dabaisu"], "daxuatsu": s["daxuatsu"],
-               "capketthuc": s["capketthuc"]}
+               "capketthuc": s["capketthuc"], "tendode": s.get("tendode") or ""}
         if "muctieutheosaucu" in s:
             luu["muctieutheosaucu"] = tuple(s["muctieutheosaucu"])
         return luu
@@ -286,8 +290,14 @@ class TacTuKeoCap:
 
     # --- Acc chính ----------------------------------------------------------------------------------------------------------------------
     def _laygaonline(self, s):
-        # {ID acc gà: info _keocap} của acc gà trong danh sách đang chạy kéo cấp (cùng máy)
+        # {ID acc gà: info _keocap} của acc gà trong danh sách đang chạy kéo cấp (cùng máy / máy khác nối LAN). Acc gà bật "Làm acc gà"
+        # (máy khác, tự tìm acc chính) báo idchinh là mình thì thêm vào danh sách
         cuasos = self._laycuasokeocap()
+        idtoi = self.moitruong.get_idnguoichoi()
+        for i, info in sorted(cuasos.items()):
+            if idtoi and i not in s["idgas"] and info["_keocap"].get("vaitro") == "ga" and info["_keocap"].get("idchinh") == idtoi:
+                s["idgas"].append(i)
+                self._logkc(f"Thêm acc gà {info.get('tennhanvat') or ''} (ID {i}" + (f", máy {info['_tenmay']}" if info.get("_tenmay") else "") + ")")
         return {i: cuasos[i] for i in s["idgas"] if i in cuasos and cuasos[i]["_keocap"].get("vaitro") == "ga"}
 
     def _xulykeocapchinh(self, s):
@@ -303,8 +313,16 @@ class TacTuKeoCap:
             return None
         if s["giaidoan"] == "thuhoi":
             return self._buocthuhoichinh(s, gas)
+        if s.get("tendode"):
+            # Đồ đệ là acc gà máy khác: thấy acc gà tên đó thì lấy ID; chưa thấy thì chờ (bái sư phải làm trước khi lập nhóm cả đám)
+            iddode = next((i for i, info in gas.items() if _chuanhoa(info.get("tennhanvat")) == s["tendode"]), 0)
+            if not iddode:
+                s["trangthai"] = f"chờ acc gà đồ đệ \"{s['tendode']}\" bật kéo cấp (máy khác: bấm \"Làm acc gà\" ở máy đó)"
+                return None
+            self._logkc(f"Đồ đệ: {s['tendode']} (ID {iddode})")
+            s.update(iddode = iddode, tendode = "")
         if not gas:
-            s["trangthai"] = "chờ cửa sổ acc gà bật kéo cấp"
+            s["trangthai"] = "chờ cửa sổ acc gà bật kéo cấp (cùng máy / máy khác bấm \"Làm acc gà\")"
             return None
         caps ={i: info["_keocap"].get("capdo") or 0 for i, info in gas.items()}
         capthap = min(caps.values())
@@ -515,7 +533,7 @@ class TacTuKeoCap:
                 s[co] = True
                 s.pop("suphu", None)
                 self._logkc(f"⚠️ {ten} {tendd}: {SOLANSUPHUKC} lần chưa thấy đồ đệ xác nhận, bỏ qua (làm tay giúp)")
-                phatam(f"Không {ten} được")
+                canhbao(self.moitruong, f"Không {ten} được")
                 return None
             if moitruong.get_is_danghiencuasotuychon():
                 moitruong.set_is_danghiencuasotuychon(False)
@@ -714,6 +732,18 @@ class TacTuKeoCap:
     def _xulykeocapga(self, s):
         moitruong = self.moitruong
         self._datkc(s, "_is_tudongtangcap", True, "Tự tăng cấp")
+        if not s["idchinh"]:
+            # Bật "Làm acc gà" (máy khác nối LAN): tự nhận acc chính đang kéo cấp; acc chính thấy mình báo idchinh là nó thì thêm vào
+            # danh sách acc gà. Chưa thấy thì vẫn làm tân thủ (không cần acc chính), xong thì chờ
+            chinhs = sorted(i for i, info in self._laycuasokeocap().items()
+                            if info["_keocap"].get("vaitro") == "chinh" and info["_keocap"].get("giaidoan") != "xong")
+            if chinhs:
+                s["idchinh"] = chinhs[0]
+                self._logkc(f"Làm acc gà cho acc chính ID {s['idchinh']}" + (f" (thấy {len(chinhs)} acc chính, lấy ID nhỏ nhất)" if len(chinhs) > 1 else ""))
+            elif s["xongtanthu"]:
+                s["trangthai"] = "chờ thấy acc chính đang kéo cấp (cùng máy / qua LAN)"
+                self._tatsautheokc(s)
+                return None
         # Cấp kết thúc theo acc chính (người dùng chọn trên giao diện), chưa thấy acc chính thì giữ lần đọc trước
         chinh = self._laychinh(s)
         if chinh:
@@ -874,7 +904,7 @@ class TacTuKeoCap:
         # Hộp Yes/No của acc chính: mời nhóm ("team + <ID chính>"), mời bang ("org join <ID chính>"). Phong Yêu Kính thì để
         # tactu_langlyson_xq đồng ý lời mời của người give
         moitruong = self.moitruong
-        if s["giaidoan"] == "phongyeu":
+        if s["giaidoan"] == "phongyeu" or not s["idchinh"]:
             return
         # Hộp mời nhóm bị loop phụ đóng ngay (moitruong.action_donghopmoinhom), lời mời nằm trong moitruong._loimoinhom_map
         moitruong.action_kiemtravadongyloimoinhom([s["idchinh"]])

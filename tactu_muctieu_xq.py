@@ -455,9 +455,9 @@ class TacTuMucTieu:
             thongtin["khoangcachtheosau"] = khoangcachtamdanh(toado, toadotheosau) if is_anhhuongboimuctieutheosau else 0.
             return thongtin
 
-        # Đang farm & bán rác: nhường quái đang ở gần nhân vật khác của mình cho nhân vật đó,
+        # Đang đi lộ trình điểm đánh: nhường quái đang ở gần nhân vật khác của mình cho nhân vật đó,
         # tránh các nhân vật đánh chung một chỗ, đi sát rạt vào nhau (giống logic nhường quái khi gom)
-        toadodongdois = self._laytoadodongdoikhacnhom() if self._is_tudongvebanrac else []
+        toadodongdois = self._laytoadodongdoikhacnhom() if self._is_tudongdichuyendiemdanhxungquanh else []
 
         def _is_nhuongdongdoi(thongtin):
             if thongtin["is_muctieupk"] or not toadodongdois:
@@ -1312,7 +1312,7 @@ class TacTuMucTieu:
         idbandohientai = self.moitruong.get_idbandohientai()
 
         # Sư môn / phó bản / Sư Gia: bản đồ đang đánh không nằm trong lộ trình điểm đánh của nhân vật mà vẫn phải gom
-        if self._is_tudongvebanrac and self._diemdanhxungquanhs and not self._is_bolotrinhdiemdanh():
+        if self._is_tudongdichuyendiemdanhxungquanh and self._diemdanhxungquanhs and not self._is_bolotrinhdiemdanh():
             danhsachbandohople = [diem[2] for diem in self._diemdanhxungquanhs if len(diem) >= 3]
             if danhsachbandohople and idbandohientai not in danhsachbandohople:
                 self._is_danggomquai = False
@@ -1416,10 +1416,10 @@ class TacTuMucTieu:
         # Tập Kích: neo rớt lại cũng không quay về đón, kéo tiếp cho đỡ chạy qua chạy lại (xong mới tụ về neo)
         is_neobirotlai = (diachiquaidautien and khoangcachneohientai > 12.0 and not is_gomhetquaithay)
 
-        # Chỉ khi bật farm & bán rác: quái gần nhân vật khác trong danh sách tổ đội tự động hơn mình thì nhường.
-        # Không bật farm & bán rác thì không nhường gì cả.
+        # Chỉ khi đi lộ trình điểm đánh: quái gần nhân vật khác trong danh sách tổ đội tự động hơn mình thì nhường.
+        # Không đi lộ trình thì không nhường gì cả.
         toadobanthan = self.moitruong.get_toado()
-        toadodongdois = self._laytoadodongdoikhacnhom() if self._is_tudongvebanrac else []
+        toadodongdois = self._laytoadodongdoikhacnhom() if self._is_tudongdichuyendiemdanhxungquanh else []
 
         while True:
             i += 1

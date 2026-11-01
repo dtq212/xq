@@ -593,14 +593,14 @@ HUONGDAN = ("📋 <b>Trạng thái</b> – nhân vật đang làm gì\n📊 <b>B
             "📸 <b>Chụp màn hình</b> – xem cửa sổ game\n⏸ <b>Tạm dừng</b> / ▶️ <b>Tiếp tục</b>\n"
             f"📦 <b>Giao tiền / đồ</b> – {HUONGDANGIAO}\n"
             "🗄 <b>Cất kho</b> – <code>/catkho Thọ</code> (hoặc <code>/catkho tất cả</code>): về Quản Khố ở Tân Thủ Thôn cất các món "
-            "trong bảng Cất kho (tab Túi đồ); bot cũng tự cất sau mỗi lần về bán rác nếu bật\n\n"
+            "trong bảng Cất kho (tab Hành trang); bot cũng tự cất sau mỗi lần về bán rác nếu bật\n\n"
             "Gõ tay cũng được: <code>/tạm dừng Thọ 30</code>, <code>/tiếp tục tất cả</code>")
 # Thao tác trong bảng điều khiển: mã -> (chữ trên nút, lệnh gửi bot, khoá trạng thái bật/tắt trong shared_data)
 THAOTAC = {
     "tc": ("⚔️ Tấn công", "battat_tudongsudungkynang", "_is_tudongsudungkynang"),
     "ts": ("👣 Theo sau", "battat_tudongtheosau", "_is_tudongtheosau"),
     "gq": ("🧲 Gom quái", "battat_tudonggomquai", "_is_tudonggomquai"),
-    "fr": ("🛒 Farm & bán rác", "battat_tudongvebanrac", "_is_tudongvebanrac"),
+    "fr": ("🛒 Về bán rác", "battat_tudongvebanrac", "_is_tudongvebanrac"),
     "dc": ("🧭 Di chuyển lộ trình", "battat_tudongdichuyendiemdanhxungquanh", "_is_tudongdichuyendiemdanhxungquanh"),
 }
 

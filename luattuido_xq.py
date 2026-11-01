@@ -1,4 +1,4 @@
-# Luật túi đồ: _internal/luattuido.json (sửa ở tab "Túi đồ" trên bảng điều khiển, hoặc bằng tay; bot tự đọc lại khi file đổi).
+# Luật túi đồ: _internal/luattuido.json (sửa ở tab "Hành trang" trên bảng điều khiển, hoặc bằng tay; bot tự đọc lại khi file đổi).
 # Dùng chung mọi nhân vật trên máy; chưa có file thì tạo từ LUATMACDINH / MUABUMACDINH (luật viết cứng trước đây, chuyển sang đây 2026-10-29).
 #   "luat": hành động (Giữ / Bán / Vứt): xét từ trên xuống, luật ĐẦU TIÊN khớp quyết định. Mỗi luật: {"bat": true,
 #           "hanhdong": "giu" | "ban" | "vut", "ten": [tên đúng...], "tenchua": [tên có chứa...], "loai": [loại trong ［］ có chứa...],
@@ -21,6 +21,13 @@
 #           thiếu nhiều hơn thì gửi nhiều lệnh (vd Bùa Giấy chồng 5000, mua cho đủ 10000 thì 2 lệnh 5000)
 #           "monphai": "" = mọi môn phái hoặc "maoson", "vanmongcoc"..., "chikhi": "" = luôn, "trieuhoibaothu" = chỉ khi bật triệu hồi
 #           bảo thú giang hồ}. Mua lần lượt từ trên xuống trong số ngân lượng đang có, chừa NGANLUONGGIULAI
+#   "nhat": nhặt vật phẩm dưới đất (tactu_vatpham_xq.action_tudongnhatvatpham): xét từ trên xuống, luật ĐẦU TIÊN khớp quyết định.
+#           Mỗi luật: {"bat": true, "hanhdong": "nhat" | "uutien" | "khongnhat", "ten": [tên đúng...], "tenchua": [tên có chứa...],
+#           "chibanrac": true = chỉ xét khi bật Tự động về bán rác, "ghichu": ...}. Dưới đất chỉ biết tên nên không có điều kiện loại /
+#           mô tả; "tenchua" giữ khoảng trắng đầu / cuối (" Y" khác "Y"). Ưu tiên: nhặt trước mọi việc khác (tấn công, theo nhóm...),
+#           vẫn nhặt khi đang theo sau. Không khớp luật nào thì còn xét đồ sư môn, phẩm chất (màu tên). Chuyển từ VATPHAMKHONGNHATs /
+#           VATPHAMUUTIENNHATs / VATPHAMTUDONGNHATs / VATPHAMTUDONGNHATFARMs ở hangso_xq (2026-11-01), file cũ chưa có "nhat" thì lấy
+#           NHATMACDINH
 import copy
 import json
 import os
@@ -28,7 +35,8 @@ import sys
 import threading
 import unicodedata
 
-from hangso_xq import (VATPHAMTUDONGNHATs, BAOTHUVATPHAMs, BUAGIAY, HYDUONG, TRANKY, TUIPHAPBAO, SOCAPDOANTHACH, TRUNGCAPDOANTHACH,
+from hangso_xq import (HACCAU, LAMCAU, HOACAU, HONGCAU, TUSAMDON, CAPCUUDON, HOATTAMDON, TUTAMDON, HOANGKIMTHANHY, TUKIMBAOHOP, TIENTE,
+                       LEBAOKHAIQUOC, THANHTAMDON, TOAICAM, BAOTHUVATPHAMs, BUAGIAY, HYDUONG, TRANKY, TUIPHAPBAO, SOCAPDOANTHACH, TRUNGCAPDOANTHACH,
                        CAOCAPDOANTHACH, CHIENQUOCLENH, NHIEPHONLINH, CHUONGHAMTHIEN, BATTIENDON, CUULONGTHANHOATRAO, DAIPHAPLUCTHACH,
                        TIEUPHAPLUCTHACH, DAIHUYETTHACH, TIEUHUYETTHACH, ANTHANHOAN, THUONGPHUONGBAOKIEM, DAUNANH, TIEUDAOTAN, QUYNGUYENDON,
                        KIMTANGTAN, KHIMACHDON, XALOITU, NGANHANHTU, TUTINHDON, PHUCSINHDON, THANHTAMDAN, KHUMATAN, THILUYENDON, THILUYENQUA,
@@ -55,6 +63,11 @@ THAPNHATMACDINH = -1
 CHIKHI_LUON = ""
 CHIKHI_TRIEUHOIBAOTHU = "trieuhoibaothu"
 TENCHIKHI = {CHIKHI_LUON: "Luôn", CHIKHI_TRIEUHOIBAOTHU: "Bật triệu hồi bảo thú giang hồ"}
+NHAT_NHAT = "nhat"
+NHAT_UUTIEN = "uutien"
+NHAT_KHONGNHAT = "khongnhat"
+TENHANHDONGNHAT = {NHAT_NHAT: "Nhặt", NHAT_UUTIEN: "Nhặt ưu tiên", NHAT_KHONGNHAT: "Không nhặt"}
+DIEUKIENNHATs = ("ten", "tenchua")
 
 
 def _khongtrung(*tens):
@@ -65,10 +78,31 @@ def _khongtrung(*tens):
     return kq
 
 
+# Nhặt viết cứng trước đây: hangso_xq VATPHAMUUTIENNHATs / VATPHAMTUDONGNHATs / VATPHAMTUDONGNHATFARMs và danh sách thêm khi về bán
+# rác trong tactu_vatpham_xq
+_VATPHAMTUDONGNHATCU = (
+    HACCAU, LAMCAU, HOACAU, HONGCAU, TUSAMDON, CAPCUUDON, HOATTAMDON, TIEUDAOTAN, KIMTANGTAN, QUYNGUYENDON, KHIMACHDON, TUTAMDON,
+    HOANGKIMTHANHY, "Thanh Đồng Bảo Hộp", TUKIMBAOHOP, "Mồi Câu", "Đá Tương Uyên", TIENTE, "Vô Song Điểm Phiếu", "Cờ Đỏ", "Sao Vàng",
+    LEBAOKHAIQUOC, "Âu Dã Bảo Thạch", "Long Cốt", "Phấn Huỳnh Quang", THANHTAMDON, TOAICAM, XALOITU,
+    # Phôi vũ khí cấp 75: Kiếm, Đao, Thương, Côn, Ám Khí, Quyền
+    "Ngọc Kiếm", "Kim Đao", "Xích Anh Thương", "Cổ Phương Côn", "Nguyệt Hoàn", "Thạch Điêu Quyền Nhẫn")
+NHATMACDINH = [
+    {"hanhdong": NHAT_UUTIEN, "ghichu": "Ưu tiên (cũ)", "ten": [LEBAOKHAIQUOC]},
+    {"hanhdong": NHAT_NHAT, "ghichu": "Tự động nhặt (cũ)", "ten": _khongtrung(*_VATPHAMTUDONGNHATCU)},
+    {"hanhdong": NHAT_NHAT, "chibanrac": True, "ghichu": "Nhặt thêm khi về bán rác (cũ)", "ten": [
+        TIENTE, "Tơ Nhện", "Kịch Độc Châm", "Đuôi Bọ Cạp", "Ly Hồn", "Ly Phách", "Ma Tinh thạch", "Trái Táo", "Trái lê", "Phá Bố Y",
+        "Toái Lăng", "Tơ Tằm", "Da Rắn", "Ống Tên", "Bao Kiếm", "Cán Đao", "Toái Sa", "Hồng Sắc Tiểu Thạch", "Mạng Nhện", "Tử Giả Di Vật",
+        "Phi Hành Phiến", "Núm Vú", "Hành Quân Tán"]},
+    {"hanhdong": NHAT_NHAT, "chibanrac": True, "ghichu": "Tên có chữ, khi về bán rác (cũ)", "tenchua": _khongtrung(
+        "Kiếm", "Đao", "Mâu", "Thủ", "Thương", "Sáo", "Bổng", " Y", "Giáp", "Côn", "Kích", " Bào", " Lý", " Mạo", "Phi Phong", " Nguyệt",
+        "Quan", " Liên", " Quần", " Hài", " Nhẫn", " Tiêu", "Đầu Cân", "Xú Diêm", "Nghênh Phong Trảm", " Mão", " Tố Quần", "Nhập môn",
+        "Trứng gà", " cấp ", "Kim Cương")},
+]
+
 # Luật viết cứng trước đây trong tactu (bán rác) / hangso_xq (VATPHAMKHONGBANs, LOAIVATPHAMKHONGBANs, MOTAVATPHAMKHONGBANs)
 LUATMACDINH = [
     {"hanhdong": HANHDONG_GIU, "ghichu": "Danh sách không bán (cũ)", "ten": _khongtrung(
-        *VATPHAMTUDONGNHATs, *BAOTHUVATPHAMs, BUAGIAY, HYDUONG, TRANKY, TUIPHAPBAO, SOCAPDOANTHACH, TRUNGCAPDOANTHACH, CAOCAPDOANTHACH,
+        *_VATPHAMTUDONGNHATCU, *BAOTHUVATPHAMs, BUAGIAY, HYDUONG, TRANKY, TUIPHAPBAO, SOCAPDOANTHACH, TRUNGCAPDOANTHACH, CAOCAPDOANTHACH,
         CHIENQUOCLENH, NHIEPHONLINH, CHUONGHAMTHIEN, BATTIENDON, CUULONGTHANHOATRAO, DAIPHAPLUCTHACH, TIEUPHAPLUCTHACH, DAIHUYETTHACH,
         TIEUHUYETTHACH, ANTHANHOAN, THUONGPHUONGBAOKIEM, DAUNANH, TIEUDAOTAN, QUYNGUYENDON, KIMTANGTAN, KHIMACHDON, XALOITU, NGANHANHTU,
         TUTINHDON, PHUCSINHDON, THANHTAMDAN, KHUMATAN, THILUYENDON, THILUYENQUA, CAOCAPBAOTHUTHUCPHAM, ANXAPHU, NHANSAM, TAITAOHOAN,
@@ -165,14 +199,38 @@ def _chuanhoacatkho(luat):
     return {k: luat[k] for k in ("bat", *DIEUKIENs, "ruong", "giulai", "ghichu")}
 
 
+def _danhsachgiukhoangtrang(giatri):
+    # Như _danhsach nhưng giữ khoảng trắng đầu / cuối của từng giá trị (" Y" để khỏi khớp mọi tên có chữ y)
+    if isinstance(giatri, str):
+        giatri = giatri.split("\n")
+    return [unicodedata.normalize("NFC", str(g).rstrip("\r")) for g in giatri or [] if str(g).strip()]
+
+
+def _chuanhoanhat(luat):
+    luat = dict(luat)
+    luat["bat"] = bool(luat.get("bat", True))
+    luat["chibanrac"] = bool(luat.get("chibanrac", False))
+    if luat.get("hanhdong") not in TENHANHDONGNHAT:
+        luat["hanhdong"] = NHAT_NHAT
+    luat["ten"] = _danhsach(luat.get("ten"))
+    luat["tenchua"] = _danhsachgiukhoangtrang(luat.get("tenchua"))
+    luat["ghichu"] = str(luat.get("ghichu") or "")
+    return {k: luat[k] for k in ("bat", "hanhdong", *DIEUKIENNHATs, "chibanrac", "ghichu")}
+
+
 def _chuanhoa(dulieu):
     luats, catkhos = list(dulieu.get("luat") or []), dulieu.get("catkho")
     if catkhos is None:
         # File cũ (Cất kho còn là hành động / cờ 🗄 trong "luat"): chuyển sang bảng Cất kho
         catkhos = [l for l in luats if l.get("hanhdong") == HANHDONG_CATKHO or l.get("is_catkho")]
         luats = [l for l in luats if l.get("hanhdong") != HANHDONG_CATKHO]
+    nhats = dulieu.get("nhat")
+    if nhats is None:
+        # File cũ chưa có bảng nhặt: lấy danh sách nhặt viết cứng trước đây
+        nhats = copy.deepcopy(NHATMACDINH)
     return {"luat": [_chuanhoaluat(l) for l in luats], "muabu": [_chuanhoamuabu(m) for m in dulieu.get("muabu") or []],
-            "catkho": [_chuanhoacatkho(l) for l in catkhos], "is_catkhosauban": bool(dulieu.get("is_catkhosauban", True))}
+            "catkho": [_chuanhoacatkho(l) for l in catkhos], "is_catkhosauban": bool(dulieu.get("is_catkhosauban", True)),
+            "nhat": [_chuanhoanhat(l) for l in nhats]}
 
 
 def macdinh():
@@ -282,6 +340,25 @@ def timluatcatkho(ten, laymota, dulieu = None):
     for luat in (dulieu or tailuat())["catkho"]:
         if luat["bat"] and khopluat(luat, ten, laymota):
             return luat
+    return None
+
+
+def timhanhdongnhat(ten, is_banrac, dulieu = None):
+    # Hành động nhặt của luật nhặt bật đầu tiên khớp món tên ten dưới đất: "nhat" / "uutien" / "khongnhat", None = không luật nào
+    # khớp. Luật "chibanrac" chỉ xét khi is_banrac (bật Tự động về bán rác). So không phân biệt hoa thường; "tenchua" giữ khoảng trắng
+    if not ten:
+        return None
+    tenchuan = chuanhoa(ten)
+    # Tên chứa: chỉ dựng sẵn dấu + chữ thường, không gộp / cắt khoảng trắng (" Y" ở đầu mỗi từ)
+    tenthuong = unicodedata.normalize("NFC", ten).lower()
+    for luat in (dulieu or tailuat())["nhat"]:
+        if not luat["bat"] or (luat["chibanrac"] and not is_banrac) or not any(luat.get(d) for d in DIEUKIENNHATs):
+            continue
+        if luat["ten"] and not any(chuanhoa(g) == tenchuan for g in luat["ten"]):
+            continue
+        if luat["tenchua"] and not any(g.lower() in tenthuong for g in luat["tenchua"]):
+            continue
+        return luat["hanhdong"]
     return None
 
 

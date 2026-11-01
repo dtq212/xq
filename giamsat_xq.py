@@ -16,13 +16,16 @@ import time
 from dangnhap_xq import taicauhinhdangnhap, taikhoanbatchomaynay
 from hangso_xq import BANDO_CHIENTRUONG
 from thongbao_xq import baosuco
-from tienich_xq import phatam, laytamngungdanghieuluc
+from tienich_xq import canhbao, laytamngungdanghieuluc, laytylesudungram
 
 CHUKYGIAMSAT = 5.
 THOIGIANKETLAMMOI = 180.
 THOIGIANKETKILL = 600.
 SOLANKILLTOIDA = 3
 THOIGIANTREOLUONG = 180.
+CHUKYBAONHIP = 60.
+NGUONGCHAYCHAM = 1.
+NGUONGNGUTRE = 0.05
 
 _khoaghi = threading.Lock()
 
@@ -57,6 +60,37 @@ def _ghinhankill(idnguoichoi):
 def _solankillgiogannhat(idnguoichoi):
     moc = time.time() - 3600
     return sum(1 for t in _tailankill().get(str(idnguoichoi), []) if t > moc)
+
+
+class DoNhip:
+    # Đo nhịp 1 vòng lặp để biết chậm do bot hay do game / mạng: thời gian chạy 1 lượt và độ ngủ trễ so với time.sleep yêu cầu
+    # (máy hết RAM / CPU nặng thì ngủ trễ tăng vọt). Mỗi CHUKYBAONHIP giây in 1 dòng, chỉ khi có lượt chậm
+    def __init__(self, moitruong, tenloop):
+        self.moitruong = moitruong
+        self.tenloop = tenloop
+        self._datlai(time.time())
+
+    def _datlai(self, now):
+        self._thoidiembatdau = now
+        self._soluot = 0
+        self._tongchay = 0.
+        self._chaymax = 0.
+        self._tremax = 0.
+
+    def ghiluot(self, thoigianchay, thoigianngu, thoigianngucan):
+        self._soluot += 1
+        self._tongchay += thoigianchay
+        self._chaymax = max(self._chaymax, thoigianchay)
+        self._tremax = max(self._tremax, thoigianngu - thoigianngucan)
+        now = time.time()
+        if now - self._thoidiembatdau < CHUKYBAONHIP:
+            return
+        if self._chaymax >= NGUONGCHAYCHAM or self._tremax >= NGUONGNGUTRE:
+            ram = laytylesudungram()
+            self.moitruong._inlog(f"[NHỊP] Vòng {self.tenloop}: {self._soluot} lượt/{int(now - self._thoidiembatdau)}s, chạy trung bình "
+                                  f"{self._tongchay / self._soluot * 1000:.0f}ms, chậm nhất {self._chaymax * 1000:.0f}ms, ngủ trễ tối đa "
+                                  f"{self._tremax * 1000:.0f}ms, RAM máy {ram}%")
+        self._datlai(now)
 
 
 class GiamSat:
@@ -113,7 +147,7 @@ class GiamSat:
         elif thoigianket >= THOIGIANKETLAMMOI and not self._is_dalammoi:
             self._is_dalammoi = True
             moitruong._inlog(f"[GIÁM SÁT] {int(thoigianket)}s không di chuyển, không đổi mục tiêu, không nhận gì: ngắt di chuyển, chọn lại điểm đánh")
-            phatam("Nhân vật bị kẹt, chọn lại điểm đánh", is_block = False)
+            canhbao(moitruong, "Nhân vật bị kẹt, chọn lại điểm đánh", is_block = False)
             baosuco(moitruong, "giamsat", f"Kẹt {int(thoigianket) // 60} phút (không đi, không đổi mục tiêu, không nhận gì), đã chọn lại điểm đánh")
             moitruong.action_ngatdichuyen()
             moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
@@ -136,7 +170,7 @@ class GiamSat:
         if lydo:
             # Không mở lại được thì nhắc mỗi lần đủ THOIGIANKETLAMMOI nữa, tính lại từ đầu
             moitruong._inlog(f"[GIÁM SÁT] Kẹt {int(thoigianket)}s nhưng không mở lại client: {lydo}")
-            phatam("Nhân vật bị kẹt lâu, cần kiểm tra", is_block = False)
+            canhbao(moitruong, "Nhân vật bị kẹt lâu, cần kiểm tra", is_block = False)
             baosuco(moitruong, "giamsat", f"Kẹt {int(thoigianket) // 60} phút, không tự mở lại client được ({lydo}), cần kiểm tra", khoa = "khongmolai", giancach = 1800.)
             self._datlai()
             return
