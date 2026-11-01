@@ -327,13 +327,6 @@ class TacTuVatPham:
             return self.action_sudungvatphamhanhtrang(ten, delay = 0.)
         return False
 
-    def action_tudongmuaauto(self):
-        # Mua auto trong game (phím tắt Ctrl+Alt+Shift+Y)
-        if time.time() - self._thoidiemmuaautogannhat < 5.:
-            return
-        self._thoidiemmuaautogannhat = time.time()
-        self.moitruong.action_thucthicaulenh("auto buy 5 10")
-
     def action_tudongvutvatpham(self):
         if time.time() - self._thoidiemvutvatphamgannhat < 1.:
             return

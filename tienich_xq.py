@@ -475,6 +475,32 @@ def luugiaodienkeocap(dulieu):
         print(err)
 
 
+def _duongdancaidatgiaodien():
+    return os.path.join(os.path.dirname(_thumucthietlap()), "giaodien.json")
+
+
+def taicaidatgiaodien():
+    # Cài đặt chung của giao diện (chế độ sáng/tối...); không có / lỗi thì {}
+    try:
+        with open(_duongdancaidatgiaodien(), "r", encoding = "utf-8") as file:
+            dulieu = json.load(file)
+        return dulieu if isinstance(dulieu, dict) else {}
+    except Exception:
+        return {}
+
+
+def luucaidatgiaodien(dulieu):
+    filepath = _duongdancaidatgiaodien()
+    try:
+        os.makedirs(os.path.dirname(filepath), exist_ok = True)
+        filetam = filepath + ".tmp"
+        with open(filetam, "w", encoding = "utf-8") as file:
+            json.dump(dulieu, file, ensure_ascii = False, indent = 2)
+        thaythefile(filetam, filepath)
+    except Exception as err:
+        print(err)
+
+
 def _duongdandanhsachnhanvat():
     return os.path.join(os.path.dirname(_thumucthietlap()), "danhsachnhanvat.json")
 

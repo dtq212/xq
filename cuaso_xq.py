@@ -376,9 +376,7 @@ class CuaSo:
             cmd = self.command_dict.get(self.idcuaso)
 
             if cmd:
-                if cmd == "action_lammoitrangthai":
-                    self.tactu.action_lammoitrangthai()
-                elif cmd == "battat_tudongdichuyendiemdanhxungquanh":
+                if cmd == "battat_tudongdichuyendiemdanhxungquanh":
                     self.tactu.battat_is_tudongdichuyendiemdanhxungquanh()
                 elif isinstance(cmd, str) and cmd.startswith(("nap_lotrinhmau:", "bosung_lotrinhmau:")):
                     # nap_lotrinhmau / bosung_lotrinhmau:<id bản đồ>|<tên mẫu>|<1 nếu ngược chiều> (bổ sung: nối vào lộ trình đang có)
@@ -601,8 +599,6 @@ class CuaSo:
                         pass
                 elif cmd == "battat_tudongkhaikhoang":
                     self.tactu.battat_is_tudongkhaikhoang()
-                elif cmd == "thuchien_tudongbanrac":
-                    self.tactu.action_tudongbanrac()
                 elif cmd == "botoanbo_tenmuctieutancong":
                     self.tactu.botoanbo_tenmuctieutancong()
                 elif cmd == "botoanbo_tenmuctieukhongtancong":
@@ -617,8 +613,6 @@ class CuaSo:
                     self.tactu.batdau_todoimotlan()
                 elif cmd == "huytodoimotlan":
                     self.tactu.huy_todoimotlan()
-                elif cmd == "battat_thucsondao":
-                    self.tactu.battat_is_thucsondao()
                 elif cmd == "battat_tudongsudungkynang":
                     self.tactu.battat_is_tudongsudungkynang()
                 elif cmd == "them_tenmuctieutancong":
@@ -651,18 +645,12 @@ class CuaSo:
                     self.tactu.battat_is_tudongdichientruong()
                 elif cmd == "battat_uutienbaothukynangtrieuhoi":
                     self.tactu.battat_is_uutienbaothukynangtrieuhoi()
-                elif cmd == "action_suavatpham":
-                    self.tactu.action_suavatpham()
                 elif cmd == "battat_chedobufftoanbang":
                     self.tactu.battat_chedobufftoanbang()
                 elif cmd == "battat_tudongdaotangbaodo":
                     self.tactu.battat_tudongdaotangbaodo()
-                elif cmd == "action_muaauto":
-                    self.tactu.action_tudongmuaauto()
                 elif cmd == "battat_tudongsudungkynangbaothu":
                     self.tactu.battat_tudongsudungkynangbaothu()
-                elif cmd == "action_test":
-                    self.tactu.action_test()
                 self.command_dict[self.idcuaso] = None
 
             time.sleep(0.15)

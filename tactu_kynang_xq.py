@@ -1640,7 +1640,26 @@ class TacTuKyNang:
             if is_break:
                 return
 
+    def _capnhatthucsondao(self):
+        # Thục Sơn Đao / Kiếm theo vũ khí đang cầm: loại vũ khí của nhân vật (+0x1180, 61 đao / 62 kiếm). Chưa rõ thì đọc tên + mô tả
+        # vũ khí đang mặc ("desc 3") tìm chữ Đao / Kiếm, mỗi món chỉ đọc 1 lần; vẫn không ra (tay không...) thì giữ như lần trước
+        idloaivukhi = self.moitruong.get_idloaivukhi()
+        if idloaivukhi in (IDLOAIVUKHI_DAO, IDLOAIVUKHI_KIEM):
+            self._is_thucsondao = idloaivukhi == IDLOAIVUKHI_DAO
+            return
+        vitrivukhi = VITRITRANGBIDAUTIEN + 2
+        iddoituongvukhi = self.moitruong.get_iddoituongvatphamhanhtrang(vitrivukhi)
+        if not iddoituongvukhi or iddoituongvukhi == self._iddoituongvukhidadoc:
+            return
+        self._iddoituongvukhidadoc = iddoituongvukhi
+        for chu in (self.moitruong.get_tenvatphamhanhtrang(vitrivukhi) or "", self.moitruong.get_motavatphamhanhtrang(vitrivukhi) or ""):
+            is_dao, is_kiem = "Đao" in chu, "Kiếm" in chu
+            if is_dao != is_kiem:
+                self._is_thucsondao = is_dao
+                return
+
     def action_sudungkynangmonphaithucson(self):
+        self._capnhatthucsondao()
         if self._is_thucsondao:
             self.action_sudungkynangmonphaithucsondao()
         else:

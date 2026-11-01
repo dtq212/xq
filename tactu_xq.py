@@ -33,7 +33,6 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             TacTuHangViec):
     def __init__(self, moitruong: MoiTruong):
         self._thoidiemhettangbaodogannhat = 0.
-        self._thoidiemmuaautogannhat = 0.
         # Đào tàng bảo đồ tạm nghỉ tới thời điểm này (thay cho sleep 1s sau mỗi lần đào, 5s khi hết đồ/vừa phù sang nước khác)
         self._thoidiemchodaotangbaodo = 0.
         self._thoidiemsudungditinhdaiphapgannhat = 0.
@@ -59,7 +58,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._solanthatbaikhaithien = 0
         self._solanthatbaikhaithientoida = 3
         self._thoidiembiphatkhaithien = 0.
+        # Thục Sơn Đao / Kiếm tự nhận theo vũ khí đang cầm (_capnhatthucsondao), lưu lại để lúc tay không vẫn biết
         self._is_thucsondao = False
+        self._iddoituongvukhidadoc = None
         self.moitruong = moitruong
 
         self._is_tudongtheosau = True
@@ -959,13 +960,6 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             phatam("Bật tự động sử dụng kỹ năng")
         else:
             phatam("Tắt tự động sử dụng kỹ năng")
-
-    def battat_is_thucsondao(self):
-        self._is_thucsondao = not self._is_thucsondao
-        if self._is_thucsondao:
-            phatam("Bật thục sơn đao")
-        else:
-            phatam("Tắt thục sơn đao")
 
     def battat_is_tudongtangcap(self):
         self._is_tudongtangcap = not self._is_tudongtangcap

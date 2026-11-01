@@ -192,33 +192,11 @@ class TroChoiManager:
                 hwnd = None if self.gui.is_dangnhapchu else self.gui.hwnddangchon
             if hwnd in self.bot_processes:
                 cmd = None
-                if keyboard.is_pressed("ctrl+r"):
-                    cmd = "action_lammoitrangthai"
-                elif keyboard.is_pressed("ctrl+alt+shift+p"):
+                # Tổ hợp nhiều phím xét trước: Ctrl+Alt+Shift+B rồi Ctrl+Alt+B rồi mới Ctrl+B
+                if keyboard.is_pressed("ctrl+alt+shift+b"):
                     cmd = "battat_tudongdichuyendiemdanhxungquanh"
-                elif keyboard.is_pressed("ctrl+alt+shift+c"):
-                    cmd = "battat_chantangcapdo"
-                elif keyboard.is_pressed("ctrl+alt+shift+k"):
-                    cmd = "battat_tudongkhaikhoang"
-                elif keyboard.is_pressed("ctrl+alt+shift+b"):
-                    cmd = "thuchien_tudongbanrac"
-                elif keyboard.is_pressed("ctrl+alt+shift+f"):
-                    self.root.after(0, self.gui.battat_xoayvongchieu)
-                    time.sleep(0.3)
                 elif keyboard.is_pressed("ctrl+alt+shift+g"):
                     cmd = "battat_tudonggomquai"
-                elif keyboard.is_pressed("ctrl+alt+shift+h"):
-                    cmd = "battat_tudongvebanrac"
-                elif keyboard.is_pressed("ctrl+alt+shift+z"):
-                    cmd = "battat_tudongdichientruong"
-                elif keyboard.is_pressed("ctrl+alt+shift+r"):
-                    cmd = "action_suavatpham"
-                elif keyboard.is_pressed("ctrl+alt+shift+n"):
-                    cmd = "battat_chedobufftoanbang"
-                elif keyboard.is_pressed("ctrl+alt+shift+i"):
-                    cmd = "battat_tudongdaotangbaodo"
-                elif keyboard.is_pressed("ctrl+alt+shift+y"):
-                    cmd = "action_muaauto"
                 elif keyboard.is_pressed("ctrl+alt+c"):
                     cmd = "botoanbo_tenmuctieutancong"
                 elif keyboard.is_pressed("ctrl+alt+x"):
@@ -229,10 +207,8 @@ class TroChoiManager:
                     cmd = "todoimotlan"
                 elif keyboard.is_pressed("ctrl+alt+f"):
                     cmd = "battat_tudongtheosau"
-                elif keyboard.is_pressed("ctrl+alt+p"):
+                elif keyboard.is_pressed("ctrl+alt+b"):
                     cmd = "botoanbo_diemdanhxungquanh"
-                elif keyboard.is_pressed("ctrl+alt+d"):
-                    cmd = "battat_thucsondao"
                 elif keyboard.is_pressed("ctrl+f"):
                     cmd = "battat_tudongsudungkynang"
                 elif keyboard.is_pressed("ctrl+c"):
@@ -247,12 +223,8 @@ class TroChoiManager:
                     cmd = "bat_pk"
                 elif keyboard.is_pressed("ctrl+q"):
                     cmd = "tat_pk"
-                elif keyboard.is_pressed("ctrl+p"):
-                    cmd = "them_diemdanhxungquanh"
                 elif keyboard.is_pressed("ctrl+b"):
                     cmd = "them_diemdanhxungquanh"
-                elif keyboard.is_pressed("ctrl+y"):
-                    cmd = "action_test"
                 elif keyboard.is_pressed("ctrl+alt+s"):
                     cmd = "battat_uutienbaothukynangtrieuhoi"
                 if cmd:
