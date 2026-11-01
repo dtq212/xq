@@ -141,7 +141,8 @@ class TacTuMaTac:
     def _is_bantubatmatac(self):
         # Đang làm việc khác thay lộ trình điểm đánh thì không tự bật Mã Tặc chen ngang
         return bool(self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangcatkho() or self.get_is_dangsumon()
-                    or self.get_is_danglanglyson() or self.get_is_dangsugia() or self.get_is_dangtapkich() or self.get_is_dangdanhvong())
+                    or self.get_is_danglanglyson() or self.get_is_dangsugia() or self.get_is_dangtapkich() or self.get_is_dangdanhvong()
+                    or self.get_is_dangtrongdoiphoban())
 
     def action_doctinmatac(self):
         # Gọi mỗi lượt (kể cả khi chưa bật): tin hệ thống báo bản đồ có Mã Tặc -> điền thay danh sách bản đồ (lưu theo nhân vật, giao diện

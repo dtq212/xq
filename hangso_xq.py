@@ -1358,6 +1358,10 @@ TENBOSSBUFFMAOSONs = ("Mã Quỷ", "Lương Hưng", "Yến Thập Tam", "Tư Tà
                       "Hào Quật")
 
 # Hàng việc (tab Nhiệm vụ, tactu_hangviec_xq): mã việc -> tên, theo thứ tự mặc định; việc có vòng thì đặt được giới hạn số vòng
-VIECHANG_MAP = {"sumon": "Sư môn", "sugia": "Sư Gia", "danhvong": "Danh Vọng", "tapkich": "Tập Kích", "langlyson": "Lăng Ly Sơn",
-                "thanhkieu": "Thành Kiều", "phongyeukinh": "Phong Yêu Kính"}
+VIECHANG_MAP = {"sumon": "Sư môn", "danhvong": "Danh Vọng"}
+# Việc đi chung theo đội phó bản (bảng "Phó bản chung", tactu_doiphoban_xq): mã việc -> tên, theo thứ tự mặc định; việc có vòng thì đặt
+# được giới hạn số vòng
+VIECDOI_MAP = {"sugia": "Sư Gia", "tapkich": "Tập Kích", "langlyson": "Lăng Ly Sơn", "thanhkieu": "Thành Kiều", "phongyeukinh": "Phong Yêu Kính"}
 VIECCOVONGs = ("tapkich", "langlyson", "thanhkieu", "phongyeukinh")
+# Việc riêng hiện cuối bảng hàng việc (bấm Làm ngay / thiết lập chung một chỗ) nhưng không chạy theo hàng việc
+VIECRIENG_MAP = {"matac": "Mã Tặc", "keocap": "Kéo cấp acc gà"}

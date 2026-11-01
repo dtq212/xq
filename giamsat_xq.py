@@ -184,5 +184,5 @@ class GiamSat:
         now = time.time()
         for tenloop, thoidiem in self.nhiploops.items():
             if now - thoidiem > THOIGIANTREOLUONG:
-                self.moitruong._inlog(f"[GIÁM SÁT] Vòng {tenloop} không chạy {int(now - thoidiem)}s: thoát tiến trình bot để mở lại")
+                self.moitruong._inlog(f"[GIÁM SÁT] Vòng {tenloop} không chạy {int(now - thoidiem)}s: thoát tiến trình Foxia để mở lại")
                 os._exit(1)

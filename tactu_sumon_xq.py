@@ -586,7 +586,7 @@ class TacTuSuMon:
         diachi, yeucau = self._tinpc(s, tennpc, idbandogoiy, is_chibandogoiy)
         if not diachi:
             if yeucau is None and not idbandogoiy:
-                self._ketthucsumon(f"không biết {tennpc} ở đâu ({viec}): đứng gần NPC đó 1 lần cho bot ghi lại vị trí")
+                self._ketthucsumon(f"không biết {tennpc} ở đâu ({viec}): đứng gần NPC đó 1 lần cho Foxia ghi lại vị trí")
             return yeucau
         khoangcach = moitruong.get_khoangcach(diachi)
         if khoangcach > KHOANGCACHNOICHUYEN:
@@ -832,6 +832,10 @@ class TacTuSuMon:
 
         npcgiao = self._laynpcgiaosumon()
         bandomonphai = BANDOMONPHAI.get(moitruong.get_tenmonphai())
+        if not nv and self.get_is_nhuongdoiphoban():
+            # Hết lượt đang dở (chưa nhận lượt mới) mà đội phó bản cần mình: tạm dừng, đội xong hàng việc bật lại
+            self._ketthucsumon(thongbao = "Tạm dừng sư môn (nhường đội)")
+            return None
         if not nv:
             s["trangthai"] = "nhận nhiệm vụ"
             return self._noichuyen(s, nv, npcgiao, ["look", "quest", "demsolan", "accept_quest"], "nhận nhiệm vụ", bandomonphai)

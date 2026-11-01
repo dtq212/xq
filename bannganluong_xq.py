@@ -225,7 +225,7 @@ class BanNganLuong:
                     don.update(trangthai = "loi", ghichu = yeucau.get("ghichu") or "")
                 continue
             if don.get("dathay") and don["dathay"].startswith(TRANGTHAIBOTDAGUI):
-                don.update(trangthai = "kiemtratay", ghichu = "bot đã gửi give rồi mất hàng chờ, chưa rõ đã giao chưa")
+                don.update(trangthai = "kiemtratay", ghichu = "Foxia đã gửi give rồi mất hàng chờ, chưa rõ đã giao chưa")
                 guitin(f"⚠️ Đơn ngân lượng ID <b>{don['idnguoichoi']}</b> ({_so(don['nganluong'])}): {don['ghichu']}. Kiểm tra rồi đặt "
                        f"\"guilai\" nếu chưa nhận", is_html = True)
                 continue

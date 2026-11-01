@@ -572,10 +572,15 @@ class TacTuKyNang:
         # Phải xoá NGAY TỪ LÚC ĐANG XUẤT CHIÊU, không chờ thấy tư thế di chuyển: đo được game bước đi đúng lúc hết tư thế xuất chiêu
         # (+0.00s, trước lượt kiểm tra đầu tiên của bot), dùng đích tìm đường / lệnh di chuyển đặt từ lúc tiếp cận còn nằm lại.
         # Game còn giữ "ô sắp tới" (bước dở, có khi đặt ngay trong lúc ra chiêu) thì cũng kéo về vị trí hiện tại
-        # Người chơi đang giữ chuột kéo nhân vật đi: không chặn / xoá lệnh đi của người chơi, bỏ luôn các hạn chờ ngắt đang treo
+        # Người chơi đang giữ chuột kéo nhân vật đi: không chặn / xoá lệnh đi của người chơi, bỏ luôn các hạn chờ ngắt đang treo.
+        # Đang đánh thường thì gửi "pf2 14" ngắt. Đào Hoa Nguyên máy chủ giữ "kill" cả khi chạy nên gửi tới khi máy chủ báo ngừng;
+        # phái khác máy chủ tự tắt khi đi, chỉ gửi lúc còn tư thế xuất chiêu (pf2 14 bật / tắt qua lại: tới sau lệnh đi là bật lại)
         if self.moitruong.get_is_dangclickchuottrai():
             self._thoidiemhetchantudichuyentruocxuatchieu = 0.
             self._thoidiemhetchongatdichuyen = 0.
+            if self._is_battudongtancongvatly and self._diachimuctieutancongvatly and (self.moitruong.get_tenmonphai() == "daohoanguyen"
+                    or self.moitruong.get_idtuthenhanvat() in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT)):
+                self._ngattancongvatlydaohoa(self._diachimuctieutancongvatly)
             return
         if self.moitruong.get_is_dangxuatchieu():
             self._thoidiemhetchantudichuyentruocxuatchieu = 0.
@@ -774,8 +779,8 @@ class TacTuKyNang:
         danhsachuutien = [
             (VITRIKYNANG_TRANCOTHANUY, "sudungkynangkhongmuctieu", lambda: diachimuctieu and not is_nhuongbuff and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRANCOTHANUY,), True, is_hieuungcoloi = 1), 0, None, False, False),
             # Không tự bật tâm pháp (Dã Tính / Kim Cương): người chơi tự chọn (bỏ tự bật Dã Tính 2026-10-28).
-            # Kim Chung Tráo: game không cho dùng khi đang Dã Tính nên bỏ qua lúc đó
-            (VITRIKYNANG_KIMTRUNGCHAO, "sudungkynangkhongmuctieu", lambda: not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_DATINCUONGLUC,), True, is_hieuungcoloi = 1) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KIMTRUNGCHAO,), True, is_hieuungcoloi = 1), 0, None, False, False),
+            # Kim Chung Tráo: như Trấn Cổ, chỉ dùng khi có mục tiêu; game không cho dùng khi đang Dã Tính nên bỏ qua lúc đó
+            (VITRIKYNANG_KIMTRUNGCHAO, "sudungkynangkhongmuctieu", lambda: diachimuctieu and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_DATINCUONGLUC,), True, is_hieuungcoloi = 1) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KIMTRUNGCHAO,), True, is_hieuungcoloi = 1), 0, None, False, False),
             (VIRIKYNANG_HOTHEKIMCANG, "sudungkynanglenbanthan", lambda: not is_nhuongbuff and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_HOTHEKIMCANG,), True, is_hieuungcoloi = 1), 0, None, False, False),
             # Nguyên Khí Quy Nguyên: bật / làm mới theo tin server ở _lammoinguyenkhiquynguyen (gọi trước danh sách)
             (VIRIKYNANG_HOTHEKIMCANG, "sudungkynanglendongdoi", lambda: diachidongdoicanbuff and not is_nhuongbuff, self._khoangcachsudungkynangtamxa, diachidongdoicanbuff, False, False),
@@ -1714,7 +1719,6 @@ class TacTuKyNang:
             if phantramsinhlucdongdoi < phantramsinhlucdongdoithapnhat:
                 phantramsinhlucdongdoithapnhat = phantramsinhlucdongdoi
                 diachidongdoimauthap = addr
-        self._is_khongcongidebuff = not diachidongdoicanbuff
         is_tieuchuthiensansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_TIEUCHUTHIEN)
         if self._is_tieuchuthiensansang and not is_tieuchuthiensansang and self._idnguoichoibuffnoikhanggannhat:
             self._thoidiembuffnoikhanggannhat_map[self._idnguoichoibuffnoikhanggannhat] = time.time()
@@ -1823,7 +1827,6 @@ class TacTuKyNang:
                 diachidongdoicanbuff = addr
                 break
 
-        self._is_khongcongidebuff = not diachidongdoicanbuff
         is_tieuchuthiensansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_TIEUCHUTHIEN)
         if self._is_tieuchuthiensansang and not is_tieuchuthiensansang and self._idnguoichoibuffnoikhanggannhat:
             self._thoidiembuffnoikhanggannhat_map[self._idnguoichoibuffnoikhanggannhat] = time.time()

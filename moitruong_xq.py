@@ -171,7 +171,7 @@ class MoiTruong:
         self._thoidiemthucthicaulenhgannhat = 0.
         self._thoidiemsudungtancongvatlygannhat = 0.
         self._thoidiemthaotacnhomgannhat = 0.
-        self._loimoinhom_map = {}  # id trưởng nhóm -> thời điểm nhận lời mời (hộp đã bị action_donghopmoinhom đóng)
+        self._loimoinhom_map = {}  # id trưởng nhóm -> thời điểm nhận lời mời (action_ghiloimoinhom ghi)
         self._thoidiemphucsinhgannhat = 0.
         self._thoidiemdongcuasosauphucsinh = 0.
         self._thoidiemmaupkgannhat = 0.
@@ -796,29 +796,33 @@ class MoiTruong:
         caulenh = "team x {}".format(self.get_idnguoichoi())
         return self.action_thucthicaulenh(caulenh)
 
-    def action_donghopmoinhom(self):
-        # Hộp "Đội ngũ X muốn cùng bạn kết thành nhóm" (lệnh Xác Nhận "team ...") đóng ngay, không để hiện cho người dùng. Lời mời
-        # "team + <id>" ghi vào _loimoinhom_map để action_kiemtravadongyloimoinhom vẫn nhận lời được sau khi hộp đã đóng
+    def action_ghiloimoinhom(self):
+        # Hộp "Đội ngũ X muốn cùng bạn kết thành nhóm" (lệnh Xác Nhận "team + <id>"): ghi lời mời vào _loimoinhom_map để
+        # action_kiemtravadongyloimoinhom nhận lời được kể cả khi hộp đã bị lời mời khác ghi đè. KHÔNG đóng hộp: lời mời của người
+        # bot không tự nhận vẫn hiện cho người dùng tự bấm
         hop, lenh = self.get_hopxacnhannpc()
         if not hop or not lenh.startswith("team "):
             return
         phan = lenh.split("team + ")
         if len(phan) > 1 and phan[1].strip().isdigit():
             self._loimoinhom_map[int(phan[1])] = time.time()
-        self.action_donghopxacnhannpc()
 
     def action_kiemtravadongyloimoinhom(self, idtruongnhoms, delay = 0.2):
         if time.time() - self._thoidiemthaotacnhomgannhat < delay:
             return False
         if not idtruongnhoms:
             return False
-        self.action_donghopmoinhom()
+        self.action_ghiloimoinhom()
         # Lời mời quá 60s coi như hết hạn
         self._loimoinhom_map = {id: t for id, t in self._loimoinhom_map.items() if time.time() - t < 60}
         for idnguoichoitruongnhom in idtruongnhoms:
             if idnguoichoitruongnhom in self._loimoinhom_map:
                 del self._loimoinhom_map[idnguoichoitruongnhom]
-                self.action_thucthicaulenh("team + {}".format(idnguoichoitruongnhom))
+                caulenh = "team + {}".format(idnguoichoitruongnhom)
+                # Hộp đang hiện đúng lời mời này thì đóng như game tự đóng sau khi bấm Xác Nhận
+                if self.get_hopxacnhannpc()[1] == caulenh:
+                    self.action_donghopxacnhannpc()
+                self.action_thucthicaulenh(caulenh)
                 self._thoidiemthaotacnhomgannhat = time.time()
                 break
         return True
@@ -2539,8 +2543,12 @@ class MoiTruong:
         # trong vùng game. Chỉ tính khi giữ liền quá THOIGIANGIUCHUOTTOITHIEU giây (click thường để chọn mục tiêu không làm bot
         # dừng); nhả chuột sau khi đã giữ đủ lâu thì vẫn tính đang giữ thêm THOIGIANNGUNGSAUNHACHUOT giây
         # Click xuống đất để đi (kể cả click nhanh, cả lúc đang xuất chiêu): chuột trái thật vừa bấm trên cửa sổ game và đích click
-        # chuột của game vừa đổi sang ô mới => tính như đã giữ đủ lâu, bot thôi chặn di chuyển (chiêu đang xuất bị cắt theo ý người
-        # chơi). Click quái / bảng giao diện không đặt đích click nên không tính; bot tự đi thì xoá đích về 0 (không tính)
+        # chuột của game vừa đổi sang ô mới => tính như đã giữ đủ lâu, bot thôi chặn di chuyển. Click quái / bảng giao diện không đặt
+        # đích click nên không tính; bot tự đi thì xoá đích về 0 (không tính)
+        # Click hay giữ chuột đều KHÔNG cắt tư thế xuất chiêu: cắt hoạt ảnh cho đi sớm thì máy chủ vẫn đang tính chiêu, toạ độ client
+        # lệch máy chủ => nhân vật giật. Để hoạt ảnh chiêu cuối chạy hết, chỉ thả mốc client tự gửi lệnh (client tự đi khi hết hoạt
+        # ảnh). Đang tính giữ / click thì bot không gửi chiêu nào (các chỗ gọi hàm này) và tactu gửi ngắt đánh thường
+        # (action_ngatdichuyenkhixuatchieu)
         thoidiemhientai = time.time()
         is_bamchuotthat = self._is_dangdichuottraitrongcuaso()
         if is_bamchuotthat:
@@ -2552,8 +2560,8 @@ class MoiTruong:
                     and thoidiemhientai - self._thoidiembamchuottraigannhat < THOIGIANNHANCLICKDICHUYEN:
                 self._thoidiemgiuchuottraigannhat = thoidiemhientai
                 self._dichclicknguoichoi = dichclick
-                self._inlog(f"[CLICK ĐI] Người chơi click tới {struct.unpack('<ii', dichclick)}, tư thế {self.get_idtuthenhanvat()}: bot nhường di chuyển")
-                self.action_catxuatchieuchonguoichoi()
+                self._inlog(f"[CLICK ĐI] Người chơi click tới {struct.unpack('<ii', dichclick)}, tư thế {self.get_idtuthenhanvat()}: Foxia nhường di chuyển")
+                self.action_thamocchonguoichoi()
             self._dichclicktruoc = dichclick
         # Còn đang đi tới đích người chơi vừa click thì vẫn tính (không để bot ra chiêu / đi cắt ngang giữa đường)
         if self._dichclicknguoichoi:
@@ -2566,30 +2574,29 @@ class MoiTruong:
                 self._thoidiembatdaugiuchuottrai = thoidiemhientai
             if thoidiemhientai - self._thoidiembatdaugiuchuottrai >= THOIGIANGIUCHUOTTOITHIEU:
                 self._thoidiemgiuchuottraigannhat = thoidiemhientai
-                self.action_catxuatchieuchonguoichoi()
+                self.action_thamocchonguoichoi()
                 return True
         else:
             self._thoidiembatdaugiuchuottrai = 0.
         return thoidiemhientai - self._thoidiemgiuchuottraigannhat < THOIGIANNGUNGSAUNHACHUOT
 
-    def action_catxuatchieuchonguoichoi(self):
-        # Người chơi click / giữ chuột để đi trong lúc nhân vật đang xuất chiêu (tư thế 6 / 9): client không đi khi còn tư thế xuất
-        # chiêu (đích click nằm chờ tới hết hoạt ảnh ~0.68s) => ghi tư thế về đứng im, tua hoạt ảnh tới khung cuối (NV_HOATANH ==
-        # NV_HOATANH + 4) và thả mốc client tự gửi lệnh, để client đi ngay tới đích click. Người chơi chủ động cắt chiêu (đã chốt
-        # 2026-11-01: click thì cho cắt dù hoạt ảnh chưa hết); bỏ luôn khựng sau chiêu của bot
+    def action_thamocchonguoichoi(self):
+        # Người chơi giữ chuột / click để đi: bỏ khựng sau chiêu của bot và kéo mốc client tự gửi lệnh (bot có thể đã đẩy tới bằng
+        # action_chandichuyen) về hiện tại, KHÔNG đụng hoạt ảnh / tư thế: client chờ hết hoạt ảnh chiêu cuối rồi tự đi tới đích chuột
+        # Chỉ làm khi còn tư thế xuất chiêu: lúc đang đi, mốc này là nhịp gửi "go" của chính client (lúc gửi + 500ms), kéo về liên
+        # tục thì client gửi "go" dồn dập, toạ độ lệch máy chủ => đi bình thường cũng giật
         diachi = self.get_diachicosothongtinnhanvat1()
         if not diachi or self.get_idtuthenhanvat(diachi) not in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT):
-            return False
+            return
         self._is_chieucanngatdichuyen = False
         self._thoidiemxuatchieugannhat = 0.
-        hangcuoi = read_int(self.tientrinh, diachi + DC.NV_HOATANH + 4)
-        write_int(self.tientrinh, diachi + DC.NV_HOATANH, hangcuoi)
-        self.set_idtuthenhanvat(TUTHENHANVAT_DUNGIM, diachi)
         thongtingame = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
-        if thongtingame:
-            write_bytes(self.tientrinh, thongtingame + DC.TG_MOCTUGUILENH, struct.pack("<I", ctypes.windll.winmm.timeGetTime() & 0xFFFFFFFF), 4)
-        self._inlog("[CLICK ĐI] Cắt tư thế xuất chiêu cho người chơi đi")
-        return True
+        if not thongtingame:
+            return
+        baygio = ctypes.windll.winmm.timeGetTime() & 0xFFFFFFFF
+        mochientai = struct.unpack("<I", read_bytes(self.tientrinh, thongtingame + DC.TG_MOCTUGUILENH, 4))[0]
+        if 0 < (mochientai - baygio) & 0xFFFFFFFF < 0x80000000:
+            write_bytes(self.tientrinh, thongtingame + DC.TG_MOCTUGUILENH, struct.pack("<I", baygio), 4)
 
     def _is_dangdichuottraitrongcuaso(self):
         if not ctypes.windll.user32.GetAsyncKeyState(0x01) & 0x8000 or not self.get_is_cuasogamekichhoat():

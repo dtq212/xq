@@ -385,6 +385,10 @@ class TacTuDanhVong:
             s["motanv"] = motanv
             self._logdv(f"Nhiệm vụ: {motanv}" + (f" | {nv['mota'][:200]!r}" if nv else ""))
         s["chedo"], s["tenquai"] = "dichuyen", set()
+        if not nv and self.get_is_nhuongdoiphoban():
+            # Hết lượt đang dở (chưa nhận lượt mới) mà đội phó bản cần mình: tạm dừng, đội xong hàng việc bật lại
+            self._ketthucdanhvong(thongbao = "Tạm dừng Danh Vọng (nhường đội)")
+            return None
 
         if not nv:
             s["trangthai"] = "nhận nhiệm vụ ở Tề Tổng Quản"
@@ -427,7 +431,7 @@ class TacTuDanhVong:
         if not diachi:
             # Yêu cầu None có thể chỉ là đang chờ (dùng phù, vừa chuyển bản đồ): chỉ dừng khi thật sự không tra được vị trí NPC
             if yeucau is None and not idbandogoiy and not self._sovitri.timnpc(tennpc, self._thumucgame()):
-                self._ketthucdanhvong(f"không biết {tennpc} ở đâu ({viec}): đứng gần NPC đó 1 lần cho bot ghi lại vị trí")
+                self._ketthucdanhvong(f"không biết {tennpc} ở đâu ({viec}): đứng gần NPC đó 1 lần cho Foxia ghi lại vị trí")
             return yeucau
         khoangcach = moitruong.get_khoangcach(diachi)
         if khoangcach > KHOANGCACHNOICHUYEN:

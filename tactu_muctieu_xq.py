@@ -666,7 +666,7 @@ class TacTuMucTieu:
             return False
         idchunhan = self.moitruong.get_idnguoichoi(diachichunhan)
         return idchunhan == idnguoichoi or bool(idnguoichoithanhviennhoms and idchunhan in idnguoichoithanhviennhoms) \
-            or idchunhan in laynhanvattodoitudongs()
+            or idchunhan in self.get_idnguoiquens()
 
     def _kiemtramuctieuhoplemonphai(self, diachidoituong, is_dongdoi = False):
         # Vừa xuất hiện thì chờ đủ THOIGIANCHOCHONMUCTIEUMOI, kể cả đồng đội (buff / hồi máu / hồi sinh)
@@ -887,7 +887,7 @@ class TacTuMucTieu:
                 is_dongdoi = False
                 if is_muctieudangxemxetlanguoichoi:
                     idnguoichoidangxemxet = self.moitruong.get_idnguoichoi(diachidoituongdangxemxet)
-                    is_dongdoi = (idnguoichoi == idnguoichoidangxemxet) or (idnguoichoithanhviennhoms and idnguoichoidangxemxet in idnguoichoithanhviennhoms) or (idnguoichoidangxemxet in laynhanvattodoitudongs())
+                    is_dongdoi = (idnguoichoi == idnguoichoidangxemxet) or (idnguoichoithanhviennhoms and idnguoichoidangxemxet in idnguoichoithanhviennhoms) or (idnguoichoidangxemxet in self.get_idnguoiquens())
                 else:
                     # Bảo thú của mình / đồng đội xét theo chủ nhân: không thì bị lọc như quái (ngoài danh sách tấn công, bản đồ không PK...)
                     is_dongdoi = self._is_baothudongdoi(diachidoituongdangxemxet, idnguoichoi, idnguoichoithanhviennhoms)
@@ -913,7 +913,7 @@ class TacTuMucTieu:
                     diachicosodoituongnguoichoi_map[tendoituong] = diachidoituongdangxemxet
 
                     idnguoichoidangxemxet = self.moitruong.get_idnguoichoi(diachidoituongdangxemxet)
-                    is_dongdoi = (idnguoichoi == idnguoichoidangxemxet) or (idnguoichoithanhviennhoms and idnguoichoidangxemxet in idnguoichoithanhviennhoms) or (idnguoichoidangxemxet in laynhanvattodoitudongs())
+                    is_dongdoi = (idnguoichoi == idnguoichoidangxemxet) or (idnguoichoithanhviennhoms and idnguoichoidangxemxet in idnguoichoithanhviennhoms) or (idnguoichoidangxemxet in self.get_idnguoiquens())
 
                     if not is_dongdoi and self.moitruong.get_is_cothetancong(diachidoituongdangxemxet):
                         idloaivukhi = self.moitruong.get_idloaivukhi(diachidoituongdangxemxet)
@@ -945,7 +945,7 @@ class TacTuMucTieu:
                         continue
                     if idnguoichoithanhviennhoms and idnguoichoidangxemxet in idnguoichoithanhviennhoms:
                         priority = 1
-                    elif idnguoichoidangxemxet in laynhanvattodoitudongs():
+                    elif idnguoichoidangxemxet in self.get_idnguoiquens():
                         priority = 2
 
                 elif doituong["is_baothu"]:
@@ -958,7 +958,7 @@ class TacTuMucTieu:
                             priority = 1
                         elif idnguoichoithanhviennhoms and idnguoichoichunhan in idnguoichoithanhviennhoms:
                             priority = 1
-                        elif idnguoichoichunhan in laynhanvattodoitudongs():
+                        elif idnguoichoichunhan in self.get_idnguoiquens():
                             priority = 2
 
                 if priority != -1:
@@ -1078,18 +1078,6 @@ class TacTuMucTieu:
             self._diachidoituongcanbuffphonganthuatvanmongcoc = diachidoituongcanbuffphonganthuat
             self._diachidoituongcanbuffhuyenquangthiemanhvanmongcoc = diachidoituongcanbuffhuyenquangthiemanh
 
-            self._is_khongcongidebuff = not any([
-                self._diachidoituongcanhoisinhvanmongcoc,
-                self._diachidoituongcanbufftaytranquyetvanmongcoc,
-                self._diachidoituongcanbommauvanmongcoc,
-                self._diachidoituongcanbufftaytranquyet2vanmongcoc,
-                self._diachidoituongcanbuffkimchamvanmongcoc,
-                self._diachidoituongcanbuffnganchamvanmongcoc,
-                self._diachidoituongcanbuffcuongthethuatvanmongcoc,
-                self._diachidoituongcanbuffphonganthuatvanmongcoc,
-                self._diachidoituongcanbuffhuyenquangthiemanhvanmongcoc
-            ])
-
     def _tinhkhoangcachdendoanthang(self, px, py, x1, y1, x2, y2):
         dx = x2 - x1
         dy = y2 - y1
@@ -1182,7 +1170,7 @@ class TacTuMucTieu:
             if not self.moitruong.get_is_nhanvattontai(diachidoituong) or not self.moitruong.get_is_nguoichoi(diachidoituong):
                 continue
             idnguoichoi = self.moitruong.get_idnguoichoi(diachidoituong)
-            if idnguoichoi in laynhanvattodoitudongs() and idnguoichoi != idnhanvathientai and idnguoichoi not in idbotheosaus:
+            if idnguoichoi in self.get_idnguoiquens() and idnguoichoi != idnhanvathientai and idnguoichoi not in idbotheosaus:
                 toadodongdois.append((self.moitruong.get_toado(diachidoituong), idnguoichoi))
         return toadodongdois
 

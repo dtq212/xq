@@ -335,9 +335,10 @@ class LoopPhu:
         self.moitruong.action_vohieuhoakhoanhvungkynang()
         self.moitruong.action_vohieuhoaphimspace()
         self.moitruong.action_vohieuhieuungmuloa()
-        self.moitruong.action_donghopmoinhom()
+        self.moitruong.action_ghiloimoinhom()
 
-        # Thấy người chơi ẩn thân, hoặc người lạ ở map train, khi đang di chuyển theo lộ trình điểm đánh: ngưng mọi hoạt động (có nút Bật lại trên bảng điều khiển)
+        # Thấy người chơi ẩn thân, hoặc người lạ ở map train, khi đang di chuyển theo lộ trình điểm đánh, hoặc thấy ẩn thân trong phó bản:
+        # ngưng mọi hoạt động, báo Telegram (có nút Bật lại trên bảng điều khiển)
         self.tactu.action_kiemtraanthan()
         if self.tactu.get_is_dangtamngung():
             return

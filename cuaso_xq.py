@@ -258,7 +258,6 @@ class CuaSo:
 
                     "_is_chidanhnguoichoi": self.tactu._is_chidanhnguoichoi,
                     "_is_uutienbaothukynangtrieuhoi": self.tactu._is_uutienbaothukynangtrieuhoi,
-                    "_is_chedobufftoanbang": self.tactu._is_chedobufftoanbang,
                     "_is_chantangcapdo": self.tactu._is_chantangcapdo,
                     "_is_tudongtangcap": self.tactu._is_tudongtangcap,
                     "_captudongtangcaptoida": self.tactu._captudongtangcaptoida,
@@ -310,10 +309,10 @@ class CuaSo:
                     "_hangchogiaodo": self.tactu.get_hangchogiaodo(),
                     "_trangthaicatkho": self.tactu.get_trangthaicatkho(),
                     "_is_dangcatkho": bool(self.tactu._catkho),
-                    # Đang bán rác / sửa đồ ở NPC (cột "Bot đang làm")
+                    # Đang bán rác / sửa đồ ở NPC (cột "Hoạt động")
                     "_is_dangbanrac": self.tactu.get_is_dangbanrac(),
                     "_is_dangsuavatpham": self.tactu.get_is_dangsuavatpham(),
-                    # Mục tiêu đang chọn / đang đi tới mục tiêu nhân vật khác thấy: hết thì cột "Bot đang làm" báo đứng chờ vì không có quái
+                    # Mục tiêu đang chọn / đang đi tới mục tiêu nhân vật khác thấy: hết thì cột "Hoạt động" báo đứng chờ vì không có quái
                     "_idmuctieudangchon": self.moitruong.get_iddoituongmuctieudangchon() or 0,
                     "_is_dangtimmuctieuchung": bool(self.tactu._muctieuchungdangtim),
                     "_lichsucatkho": self.tactu._lichsucatkho,
@@ -355,6 +354,12 @@ class CuaSo:
                     "_is_dangdanhvong": self.tactu.get_is_dangdanhvong(),
                     # Hàng việc (tactu_hangviec_xq): bảng ở tab Nhiệm vụ
                     "_hangviec": self.tactu.get_hangviecshare(),
+                    # Đội phó bản (tactu_doiphoban_xq): trưởng đội báo đội đang chạy, thành viên báo sẵn sàng; kết quả hôm nay / trạng thái cho
+                    # bảng Phó bản chung
+                    "_doiphoban": self.tactu.get_doiphobanshare(),
+                    "_doiphobanthanhvien": self.tactu.get_doiphobanthanhvienshare(),
+                    "_ketquadoiphoban": self.tactu.get_ketquadoiphobanshare(),
+                    "_trangthaidoiphoban": self.tactu.get_trangthaidoiphoban(),
                     "_thongkephien": self.thongke.get_tomtatphien(),
                     # Ngân lượng mang theo hiện tại (báo cáo Telegram)
                     "nganluong": self.moitruong.get_nganluong(),
@@ -411,7 +416,7 @@ class CuaSo:
                     # Ô tích trên danh sách nhân vật: set_tatbot:1 tắt, set_tatbot:0 bật lại
                     self.tactu.thietlap_tatbot(cmd.split(":", 1)[1] == "1")
                 elif cmd == "battat_tatbot":
-                    # Ctrl+Alt+W trong cửa sổ game: đảo bật/tắt bot nhân vật đó
+                    # Ctrl+W (Ctrl+Ư khi bật Unikey) trong cửa sổ game: đảo bật/tắt bot nhân vật đó
                     self.tactu.thietlap_tatbot(not self.tactu._is_tatbot)
                 elif isinstance(cmd, str) and cmd.startswith("giaodo:"):
                     # Yêu cầu giao tiền / đồ (giaodo_xq) dạng JSON từ giao diện / Telegram: 1 yêu cầu hoặc danh sách (gửi dồn trước khi bot nhận)
@@ -490,14 +495,26 @@ class CuaSo:
                 elif cmd == "huydanhvong":
                     self.tactu.huy_danhvong()
                 elif isinstance(cmd, str) and cmd.startswith("set_hangviec:"):
-                    # Hàng việc: set_hangviec:{"thutu": [...], "chon": [...], "vong": {...}} (thiếu khoá nào thì giữ cũ)
+                    # Hàng việc: set_hangviec:{"thutu": [...], "chon": [...]} (thiếu khoá nào thì giữ cũ)
                     self.tactu.thietlap_hangviec(json.loads(cmd.split(":", 1)[1]))
                 elif cmd == "hangviec":
                     self.tactu.batdau_hangviec()
                 elif cmd == "huyhangviec":
                     self.tactu.huy_hangviec()
+                elif cmd == "ngunghoatdong":
+                    # Nút ⏹ trên danh sách nhân vật: dừng việc đang hiện ở cột "Hoạt động"
+                    self.tactu.ngung_hoatdong()
                 elif isinstance(cmd, str) and cmd.startswith("lamlaihangviec:"):
                     self.tactu.lamlai_hangviec(cmd.split(":", 1)[1].split(","))
+                elif isinstance(cmd, str) and cmd.startswith("chaydoi:"):
+                    # Đội phó bản (tactu_doiphoban_xq): chạy đội mã ..., gửi tới cửa sổ trưởng đội
+                    self.tactu.batdau_doiphoban(cmd.split(":", 1)[1])
+                elif cmd == "dungdoi":
+                    self.tactu.huy_doiphoban()
+                elif isinstance(cmd, str) and cmd.startswith("lamlaidoi:"):
+                    # lamlaidoi:<mã đội>:<việc,việc>
+                    _, ma, viecs = cmd.split(":", 2)
+                    self.tactu.lamlai_doiphoban(ma, viecs.split(","))
                 elif isinstance(cmd, str) and cmd.startswith("set_sumon_npcgiao:"):
                     self.tactu.thietlap_npcgiaosumon(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("tamngungtuxa:"):
@@ -664,8 +681,6 @@ class CuaSo:
                     self.tactu.battat_is_tudongdichientruong()
                 elif cmd == "battat_uutienbaothukynangtrieuhoi":
                     self.tactu.battat_is_uutienbaothukynangtrieuhoi()
-                elif cmd == "battat_chedobufftoanbang":
-                    self.tactu.battat_chedobufftoanbang()
                 elif cmd == "battat_tudongdaotangbaodo":
                     self.tactu.battat_tudongdaotangbaodo()
                 elif cmd == "battat_tudongsudungkynangbaothu":

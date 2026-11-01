@@ -1209,6 +1209,8 @@ class TacTuDiChuyen:
         self._xulymenuphongyeu()
         # Đoạt Bảo Mã Tặc: tin hệ thống báo bản đồ (đúng giờ bắt đầu) -> điền bản đồ, bật ô tự bật thì bắt đầu (tactu_matac_xq)
         self.action_doctinmatac()
+        # Đội phó bản (tactu_doiphoban_xq): trưởng đội gọi đội / bật việc chung, thành viên theo đội
+        self.action_doiphoban()
         # Hàng việc (tactu_hangviec_xq): không có việc nào đang chạy thì bật việc tích chọn kế tiếp chưa làm hôm nay
         self.action_hangviec()
 

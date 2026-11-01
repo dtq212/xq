@@ -91,7 +91,7 @@ class TroChoiManager:
             DongBoLan(self.cauhinhlan, self.shared_data, self.shared_data_lan).batdau()
 
         root = tk.Tk()
-        gui = GiaoDienHienThi(root, self.shared_data, self.command_dict, self.dieuphoi_trangthai, self.dangnhap)
+        gui = GiaoDienHienThi(root, self.shared_data, self.command_dict, self.dieuphoi_trangthai, self.dangnhap, self.shared_data_lan)
         # Phím tắt xoay vòng chiêu là cấu hình chung (không gửi cho 1 bot): luồng phím tắt nhờ luồng giao diện bật / tắt
         self.root, self.gui = root, gui
 
@@ -201,14 +201,15 @@ class TroChoiManager:
                     cmd = "botoanbo_tenmuctieutancong"
                 elif keyboard.is_pressed("ctrl+alt+x"):
                     cmd = "botoanbo_tenmuctieukhongtancong"
-                elif keyboard.is_pressed("ctrl+alt+w"):
-                    cmd = "battat_tatbot"
                 elif keyboard.is_pressed("ctrl+alt+t"):
                     cmd = "todoimotlan"
                 elif keyboard.is_pressed("ctrl+alt+f"):
                     cmd = "battat_tudongtheosau"
                 elif keyboard.is_pressed("ctrl+alt+b"):
                     cmd = "botoanbo_diemdanhxungquanh"
+                elif keyboard.is_pressed("ctrl") and keyboard.is_pressed(17):
+                    # Ctrl+W theo mã phím vật lý (17) để bật Unikey (W gõ ra Ư) vẫn nhận
+                    cmd = "battat_tatbot"
                 elif keyboard.is_pressed("ctrl+f"):
                     cmd = "battat_tudongsudungkynang"
                 elif keyboard.is_pressed("ctrl+c"):

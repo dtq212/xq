@@ -565,6 +565,116 @@ def laynhanvattodoitudongs():
     return _todoitudong_cache["nhanvats"]
 
 
+_idtaikhoan_cache = {"ids": frozenset(), "thoidiemsua": None, "thoidiemkiemtra": 0.}
+
+
+def layidtaikhoans():
+    # ID người chơi các nhân vật trong file tài khoản (mọi máy): nhân vật của mình, coi là người quen. Đọc lại khi file đổi (tối đa 1 lần/5 giây)
+    c = _idtaikhoan_cache
+    if time.time() - c["thoidiemkiemtra"] < 5.:
+        return c["ids"]
+    c["thoidiemkiemtra"] = time.time()
+    try:
+        thoidiemsua = os.path.getmtime(duongdantaikhoan())
+    except OSError:
+        return c["ids"]
+    if thoidiemsua != c["thoidiemsua"]:
+        c["thoidiemsua"] = thoidiemsua
+        ids = set()
+        try:
+            with open(duongdantaikhoan(), encoding = "utf-8-sig") as file:
+                for taikhoan in json.load(file).get("taikhoans") or []:
+                    try:
+                        if int(taikhoan.get("idnguoichoi") or 0) > 0:
+                            ids.add(int(taikhoan["idnguoichoi"]))
+                    except (TypeError, ValueError, AttributeError):
+                        pass
+        except Exception as err:
+            print(err)
+        c["ids"] = frozenset(ids)
+    return c["ids"]
+
+
+def duongdandoiphoban():
+    return os.path.join(os.path.dirname(_thumucthietlap()), "doiphoban.json")
+
+
+# Đội phó bản (bảng "Phó bản chung", tactu_doiphoban_xq) dùng chung cho mọi cửa sổ: [{"ma", "ten", "thanhviens": [ID, người đầu là
+# trưởng đội], "thutu": [việc], "chon": [việc], "vong": {việc: số vòng}, "phai": môn phái Tập Kích}]. Đọc lại khi file đổi (tối đa 1 lần/giây)
+_doiphoban_cache = {"dois": None, "thoidiemsua": None, "thoidiemkiemtra": 0.}
+
+
+def _chuanhoadoiphobans(dois):
+    from hangso_xq import VIECDOI_MAP, VIECCOVONGs
+
+    ketqua = []
+    for doi in dois or []:
+        if not isinstance(doi, dict) or not doi.get("ma"):
+            continue
+        ids = []
+        for id_ in doi.get("thanhviens") or []:
+            try:
+                id_ = int(id_)
+            except (TypeError, ValueError):
+                continue
+            if id_ > 0 and id_ not in ids:
+                ids.append(id_)
+        if not ids:
+            continue
+        thutu = [k for k in doi.get("thutu") or [] if k in VIECDOI_MAP]
+        vong = {}
+        for k, v in (doi.get("vong") or {}).items():
+            try:
+                if k in VIECCOVONGs and int(v) > 0:
+                    vong[k] = int(v)
+            except (TypeError, ValueError):
+                pass
+        ketqua.append({"ma": str(doi["ma"]), "ten": str(doi.get("ten") or "Đội"), "thanhviens": ids,
+                       "thutu": thutu + [k for k in VIECDOI_MAP if k not in thutu],
+                       "chon": [k for k in doi.get("chon") or [] if k in VIECDOI_MAP], "vong": vong, "phai": str(doi.get("phai") or "")})
+    return ketqua
+
+
+def taidoiphobans():
+    try:
+        with open(duongdandoiphoban(), "r", encoding = "utf-8") as file:
+            return _chuanhoadoiphobans(json.load(file).get("dois"))
+    except FileNotFoundError:
+        return []
+    except Exception as err:
+        print(err)
+        return []
+
+
+def luudoiphobans(dois):
+    filepath = duongdandoiphoban()
+    try:
+        os.makedirs(os.path.dirname(filepath), exist_ok = True)
+        filetam = filepath + ".tmp"
+        with open(filetam, "w", encoding = "utf-8") as file:
+            json.dump({"dois": _chuanhoadoiphobans(dois)}, file, ensure_ascii = False, indent = 2)
+        thaythefile(filetam, filepath)
+    except Exception as err:
+        print(err)
+
+
+def laydoiphobans():
+    if _doiphoban_cache["dois"] is None or time.time() - _doiphoban_cache["thoidiemkiemtra"] >= 1.:
+        _doiphoban_cache["thoidiemkiemtra"] = time.time()
+        try:
+            thoidiemsua = os.path.getmtime(duongdandoiphoban())
+        except OSError:
+            thoidiemsua = None
+        if _doiphoban_cache["dois"] is None or thoidiemsua != _doiphoban_cache["thoidiemsua"]:
+            _doiphoban_cache["dois"] = taidoiphobans()
+            _doiphoban_cache["thoidiemsua"] = thoidiemsua
+    return _doiphoban_cache["dois"]
+
+
+def laydoiphoban(ma):
+    return next((d for d in laydoiphobans() if d["ma"] == ma), None)
+
+
 def duongdanthietlap(tennhanvat):
     return os.path.join(_thumucthietlap(), str(slugify(tennhanvat)))
 

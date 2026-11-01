@@ -922,7 +922,7 @@ class TacTuKeoCap:
         moitruong = self.moitruong
         if s["giaidoan"] == "phongyeu" or not s["idchinh"]:
             return
-        # Hộp mời nhóm bị loop phụ đóng ngay (moitruong.action_donghopmoinhom), lời mời nằm trong moitruong._loimoinhom_map
+        # Lời mời nhóm được loop phụ ghi vào moitruong._loimoinhom_map (moitruong.action_ghiloimoinhom)
         moitruong.action_kiemtravadongyloimoinhom([s["idchinh"]])
         if not moitruong.get_is_danghiencuasoyesno():
             return

@@ -593,7 +593,7 @@ HUONGDAN = ("📋 <b>Trạng thái</b> – nhân vật đang làm gì\n📊 <b>B
             "📸 <b>Chụp màn hình</b> – xem cửa sổ game\n⏸ <b>Tạm dừng</b> / ▶️ <b>Tiếp tục</b>\n"
             f"📦 <b>Giao tiền / đồ</b> – {HUONGDANGIAO}\n"
             "🗄 <b>Cất kho</b> – <code>/catkho Thọ</code> (hoặc <code>/catkho tất cả</code>): về Quản Khố ở Tân Thủ Thôn cất các món "
-            "trong bảng Cất kho (tab Hành trang); bot cũng tự cất sau mỗi lần về bán rác nếu bật\n\n"
+            "trong bảng Cất kho (tab Hành trang); Foxia cũng tự cất sau mỗi lần về bán rác nếu bật\n\n"
             "Gõ tay cũng được: <code>/tạm dừng Thọ 30</code>, <code>/tiếp tục tất cả</code>")
 # Thao tác trong bảng điều khiển: mã -> (chữ trên nút, lệnh gửi bot, khoá trạng thái bật/tắt trong shared_data)
 THAOTAC = {
@@ -639,7 +639,7 @@ class DieuKhienTelegram:
             # In 1 dòng mỗi khi đổi trạng thái: máy mới chép code mà thiếu telegram.json (bị .gitignore) thì tự tạo mẫu đang tắt, không
             # báo gì thì khó biết vì sao máy đó không trả lời
             if not cauhinh.get("is_bat") or not cauhinh.get("token") or not cauhinh.get("chat_id"):
-                trangthai = f"đang tắt ({'is_bat = false' if not cauhinh.get('is_bat') else 'thiếu token' if not cauhinh.get('token') else 'chưa có chat_id, nhắn /start cho bot'})"
+                trangthai = f"đang tắt ({'is_bat = false' if not cauhinh.get('is_bat') else 'thiếu token' if not cauhinh.get('token') else 'chưa có chat_id, nhắn /start cho Foxia'})"
             else:
                 trangthai = f"đang bật · tên máy {laytenmay(cauhinh)}"
             if trangthai != self._trangthai_log:
@@ -654,7 +654,7 @@ class DieuKhienTelegram:
                     self._is_dadatmenu = True
                     # Mỗi lần bật bot báo 1 tin: máy nào không thấy tin này (vd lỗi chứng chỉ, mất mạng) là biết máy đó không gửi được gì
                     if cauhinh.get("chat_id"):
-                        _gui(cauhinh["token"], cauhinh["chat_id"], f"🟢 Bot đã khởi động · 🖥 <b>{html.escape(laytenmay(cauhinh))}</b> · "
+                        _gui(cauhinh["token"], cauhinh["chat_id"], f"🟢 Foxia đã khởi động · 🖥 <b>{html.escape(laytenmay(cauhinh))}</b> · "
                                                                    f"🕒 {time.strftime('%H:%M:%S')}", True)
                 self._nhanlenh(cauhinh)
                 self._baocaodinhky(cauhinh)
@@ -699,7 +699,7 @@ class DieuKhienTelegram:
                 # Chat đầu tiên nhắn tới bot: nhận làm chủ
                 cauhinh = dict(cauhinh, chat_id = chat_id)
                 luucauhinh(cauhinh)
-                _gui(cauhinh["token"], chat_id, f"🖥 <b>{html.escape(laytenmay(cauhinh))}</b> đã kết nối với bot Chiến Quốc\n\n{HUONGDAN}",
+                _gui(cauhinh["token"], chat_id, f"🖥 <b>{html.escape(laytenmay(cauhinh))}</b> đã kết nối với Foxia Chiến Quốc\n\n{HUONGDAN}",
                      True, THANHNUT)
                 continue
             if chat_id != str(cauhinh["chat_id"]):
@@ -753,7 +753,7 @@ class DieuKhienTelegram:
         # (nội dung, is_html, nút) của Trạng thái / Báo cáo máy này, kèm nút Làm mới. Báo cáo bấm tay có cả số liệu kỳ (xem tạm)
         cacnhanvat = self._cacnhanvat()
         if not cacnhanvat:
-            return f"🖥 <b>{html.escape(laytenmay())}</b>: không có nhân vật nào đang chạy bot", True, None
+            return f"🖥 <b>{html.escape(laytenmay())}</b>: không có nhân vật nào đang chạy Foxia", True, None
         if is_baocao and dinhky is None:
             dinhky = self._laydinhky(False)
         noidung = taobaocao(cacnhanvat.values(), "📊 Báo cáo" if is_baocao else "📋 Trạng thái", is_baocao, dinhky)
@@ -779,7 +779,7 @@ class DieuKhienTelegram:
         # Bảng điều khiển 1 nhân vật: thẻ trạng thái + nút thao tác (nút bật/tắt hiện trạng thái hiện tại)
         info = self._cacnhanvat().get(hwnd)
         if not info:
-            return "Nhân vật không còn chạy bot", False, None
+            return "Nhân vật không còn chạy Foxia", False, None
         mamay = self._mamay()
         nuts = []
         for ma, (chu, _, khoa) in THAOTAC.items():
@@ -944,7 +944,7 @@ class DieuKhienTelegram:
             traloi = self._chonnhanvat("dk", "<b>🎮 Điều khiển</b>")
             sua(traloi or (f"🖥 {tenmay}: không có nhân vật nào", True, None))
         elif doituong and not hwnds:
-            thongbao = "Nhân vật không còn chạy bot"
+            thongbao = "Nhân vật không còn chạy Foxia"
         elif loai == "dk" and hwnd:
             sua(self._bangdieukhien(hwnd))
         elif loai == "ac" and hwnd and len(phan) >= 4 and phan[3] in THAOTAC:

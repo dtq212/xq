@@ -25,6 +25,8 @@ KHOACHIASELANS = (
     "_thoidiemphathienanthan", "_thoigiantamngungphathien", "_tenanthanphathien",
     "_is_danglanglyson", "_phobanlanglyson", "_khoathuonglanglyson", "_khoathuonglanglysondalanh", "_langlysonchothanhvien", "_langlysontattodoi", "_langlysongiunhom", "_bossdagietphongyeu",
     "_is_dangsugia", "_sugianhiemvu", "_sugiachothanhvien", "_todoimotlan", "_is_dangtapkich",
+    # Đội phó bản (tactu_doiphoban_xq): trưởng đội / thành viên ở máy khác
+    "_doiphoban", "_doiphobanthanhvien",
     "tamnhin", "iddoituongmuctieu", "_biendongtainguyen",
     # Kéo cấp acc gà: acc phụ ở máy khác vào nhóm Phong Yêu Kính của acc chính (tactu_keocap_xq)
     "_keocap",

@@ -24,13 +24,14 @@ from tactu_matac_xq import TacTuMaTac
 from tactu_danhvong_xq import TacTuDanhVong
 from tactu_keocap_xq import TacTuKeoCap
 from tactu_hangviec_xq import TacTuHangViec
+from tactu_doiphoban_xq import TacTuDoiPhoBan
 from nhiemvu_xq import SoVitri
 
 
 # Các nhóm việc nằm ở các file tactu_*_xq.py (mixin), TacTu giữ trạng thái (__init__), lưu / nạp thiết lập và các lệnh bật / tắt
 class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu, TacTuHoatDong, TacTuGiaoDo, TacTuCatKho, TacTuSuMon,
             TacTuLangLySon, TacTuSuGia, TacTuTapKich, TacTuMaTac, TacTuDanhVong, TacTuKeoCap,
-            TacTuHangViec):
+            TacTuHangViec, TacTuDoiPhoBan):
     def __init__(self, moitruong: MoiTruong):
         self._thoidiemhettangbaodogannhat = 0.
         # Đào tàng bảo đồ tạm nghỉ tới thời điểm này (thay cho sleep 1s sau mỗi lần đào, 5s khi hết đồ/vừa phù sang nước khác)
@@ -215,15 +216,25 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         # Nhiệm vụ Danh Vọng (tactu_danhvong_xq): việc đang làm (None = không), kết quả lần gần nhất cho giao diện
         self._danhvong = None
         self._ketquadanhvong = ""
-        # Hàng việc (tactu_hangviec_xq, lưu theo nhân vật): thứ tự các việc, việc tích chọn, giới hạn vòng {việc: số vòng}, đang chạy hay
-        # không, việc hàng việc đang bật ("" = không), kết quả từng việc trong ngày, lần xét hàng việc kế tiếp
+        # Hàng việc cá nhân (tactu_hangviec_xq, lưu theo nhân vật): thứ tự các việc, việc tích chọn, đang chạy hay không, việc hàng việc
+        # đang bật ("" = không), kết quả từng việc trong ngày, lần xét hàng việc kế tiếp
         self._hangviec_thutu = list(VIECHANG_MAP)
         self._hangviec_chon = []
-        self._hangviec_vong = {}
         self._is_chayhangviec = False
         self._viechangdangchay = ""
         self._ketquahangviec = {"ngay": "", "viec": {}}
         self._luchangviec = 0.
+        # Đội phó bản (tactu_doiphoban_xq): mình là trưởng đội đang chạy (None = không), đội vừa xong (báo thành viên thôi), mình là thành
+        # viên đang theo đội (None = không), trạng thái lần gần nhất cho giao diện, kết quả hôm nay các đội mình làm trưởng đội, Theo sau cũ
+        # đã lưu (bot mở lại giữa lúc theo đội); (lúc, kết quả) lần đọc đội của các cửa sổ, người quen
+        self._doiphoban = None
+        self._doiphobanxong = None
+        self._doiphobantv = None
+        self._trangthaidoiphoban = ""
+        self._ketquadoiphoban = {"ngay": "", "doi": {}}
+        self._theosaucudoi = None
+        self._bonhodoiphoban = (0., [])
+        self._bonhonguoiquen = (0., frozenset())
         # Mở cửa hàng để đọc hàng (tactu_sumon_xq.batdau_mocuahang): việc đang làm (None = không), kết quả theo (bản đồ, tên NPC);
         # Mua bù: lần mở cửa hàng gần nhất theo NPC, các lệch ô / giá giữa luật và cửa hàng đã báo
         self._mocuahang = None
@@ -430,11 +441,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._is_uutienbaothukynangtrieuhoi = False
         self._is_khonguutienbaothugiangho = False
 
-        self._is_chedobufftoanbang = False
-        self._is_khongcongidebuff = False
-
         self._thoidiemsudungbaothuvatphamgannhat = time.time()
-        self._thoidiemkiemtrakhongcongidebuffgannhat = 0.
 
         self._is_battudongtancongvatly = False
         self._diachimuctieutancongvatly = 0
@@ -655,7 +662,6 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_is_tudongvebanrac": self._is_tudongvebanrac,
             "_is_tudongvesuado": self._is_tudongvesuado,
             "_phantramvesuado": self._phantramvesuado,
-            "_is_chedobufftoanbang": self._is_chedobufftoanbang,
             "_is_tudongdichientruong": self._is_tudongdichientruong,
             "_is_tudongkhaikhoang": self._is_tudongkhaikhoang,
             "_is_tudongdaotangbaodo": self._is_tudongdaotangbaodo,
@@ -687,8 +693,12 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_matac_bandos": self._matac_bandos,
             "_is_tubatmatac": self._is_tubatmatac,
             "_is_tatbot": self._is_tatbot,
-            "_hangviec": {"thutu": self._hangviec_thutu, "chon": self._hangviec_chon, "vong": self._hangviec_vong,
+            "_hangviec": {"thutu": self._hangviec_thutu, "chon": self._hangviec_chon,
                           "chay": self._is_chayhangviec, "dangchay": self._viechangdangchay, "ketqua": self._ketquahangviec},
+            # Đội phó bản: mình là trưởng đội đang chạy thì dis / mở lại bot gọi đội tiếp; kết quả hôm nay; Theo sau cũ khi đang là thành viên
+            "_doiphoban": {"ma": self._doiphoban["ma"]} if self._doiphoban else None,
+            "_ketquadoiphoban": self._ketquadoiphoban,
+            "_theosaucudoi": (self._doiphobantv or {}).get("theosaucu") or self._theosaucudoi,
             # Sư môn đang bật: dis / mở lại bot vào lại thì tự bật tiếp (bấm Dừng, xong 20 lần, lỗi dừng thì là False)
             "_is_dangsumon": bool(self._sumon),
             # Sư Gia đang bật: như sư môn, dis / mở lại bot thì tự bật tiếp (bấm Dừng, đủ số lần trong ngày, lỗi dừng thì là False)
@@ -764,7 +774,6 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if "_is_tudongvebanrac" in thietlap: self._is_tudongvebanrac = thietlap["_is_tudongvebanrac"]
             if "_is_tudongvesuado" in thietlap: self._is_tudongvesuado = thietlap["_is_tudongvesuado"]
             if "_phantramvesuado" in thietlap: self.thietlap_phantramvesuado(thietlap["_phantramvesuado"])
-            if "_is_chedobufftoanbang" in thietlap: self._is_chedobufftoanbang = thietlap["_is_chedobufftoanbang"]
             if "_is_tudongdichientruong" in thietlap: self._is_tudongdichientruong = thietlap["_is_tudongdichientruong"]
             if "_is_tudongkhaikhoang" in thietlap: self._is_tudongkhaikhoang = thietlap["_is_tudongkhaikhoang"]
             if "_is_tudongdaotangbaodo" in thietlap: self._is_tudongdaotangbaodo = thietlap["_is_tudongdaotangbaodo"]
@@ -817,6 +826,12 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
                 self.batdau_langlyson(thietlap["_phobandanglanglyson"])
             if isinstance(thietlap.get("_keocap"), dict) and not self._keocap:
                 self.batdau_keocap(**thietlap["_keocap"])
+            if isinstance(thietlap.get("_ketquadoiphoban"), dict):
+                self._ketquadoiphoban = {"ngay": thietlap["_ketquadoiphoban"].get("ngay") or "", "doi": dict(thietlap["_ketquadoiphoban"].get("doi") or {})}
+            if thietlap.get("_theosaucudoi"):
+                self._theosaucudoi = tuple(thietlap["_theosaucudoi"])
+            if isinstance(thietlap.get("_doiphoban"), dict) and not self._doiphoban:
+                self.batdau_doiphoban(thietlap["_doiphoban"].get("ma"))
 
     def battat_dilotrinhkhacbando(self):
         self._is_dilotrinhkhacbando = not self._is_dilotrinhkhacbando
@@ -949,13 +964,6 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             except Exception:
                 pass
         return self._danhsachdanhhieu
-
-    def battat_chedobufftoanbang(self):
-        self._is_chedobufftoanbang = not self._is_chedobufftoanbang
-        if self._is_chedobufftoanbang:
-            phatam("Bật chế độ buff toàn bang")
-        else:
-            phatam("Tắt chế độ buff toàn bang")
 
     def battat_is_uutienbaothukynangtrieuhoi(self):
         self._is_uutienbaothukynangtrieuhoi = not self._is_uutienbaothukynangtrieuhoi

@@ -415,9 +415,18 @@ def _askinteger(tieude, noidung, parent = None, initialvalue = None, minvalue = 
     return _hopthoai(tieude, noidung, parent, "question", [("OK", None), ("Huỷ", None)], o_nhap = (initialvalue, kiemtra))
 
 
+def _askstring(tieude, noidung, parent = None, initialvalue = None, **kw):
+    # Ô nhập chữ, bỏ khoảng trắng 2 đầu, không cho để trống. -> chuỗi hoặc None khi huỷ
+    def kiemtra(chuoi):
+        chuoi = chuoi.strip()
+        return (chuoi, None) if chuoi else (None, "Không được để trống")
+    return _hopthoai(tieude, noidung, parent, "question", [("OK", None), ("Huỷ", None)], o_nhap = (initialvalue, kiemtra))
+
+
 class hopthoai:
     showinfo = staticmethod(_thongbao("info"))
     showwarning = staticmethod(_thongbao("warning"))
     showerror = staticmethod(_thongbao("error"))
     askyesno = staticmethod(_askyesno)
     askinteger = staticmethod(_askinteger)
+    askstring = staticmethod(_askstring)
