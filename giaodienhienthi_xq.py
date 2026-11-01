@@ -2273,7 +2273,8 @@ class GiaoDienHienThi:
         hangnut = ttk.Frame(nhom)
         hangnut.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
         self.btn_doi = ttk.Button(hangnut, text = "▶ Chạy đội", command = self._battatdoi)
-        self.btn_doi.pack(side = tk.LEFT, padx = (0, 8))
+        self.btn_doi.pack(side = tk.LEFT, padx = (0, 4))
+        ttk.Button(hangnut, text = "Giải tán", command = self._giaitandoi).pack(side = tk.LEFT, padx = (0, 8))
         for chu, rong, lenh in (("Thêm đội", 0, lambda: self._suadoi(is_moi = True)), ("Sửa", 0, lambda: self._suadoi(is_moi = False)),
                                 ("Đổi tên", 0, self._doitendoi), ("Xoá", 0, self._xoadoi), ("↑", 3, lambda: self._doichodoi(-1)),
                                 ("↓", 3, lambda: self._doichodoi(1))):
@@ -2329,6 +2330,8 @@ class GiaoDienHienThi:
                                 ("Số vòng", 0, lambda: self._suavongdoi(self._layviecdoichon())), ("↺ Làm lại", 0, self._lamlaidoi),
                                 ("⚙ Thiết lập", 0, lambda: self._mopopupviec(self._layviecdoichon()))):
             ttk.Button(hangnut, text = chu, width = rong or None, command = lenh).pack(side = tk.LEFT, padx = (0, 4))
+        self.btn_ngungviecdoi = ttk.Button(hangnut, text = "⏹ Ngưng việc này", command = self._ngungviecdoi)
+        self.btn_ngungviecdoi.pack(side = tk.LEFT, padx = (4, 4))
         self._taohuongdan(hangnut, "Thêm đội: đặt tên, chọn thành viên theo thứ tự (người đầu là trưởng đội: làm trưởng nhóm, người give Phong "
                                    "Yêu Kính). Muốn đi một mình thì tạo đội 1 người. Tích việc cho đội, sắp thứ tự, đặt số vòng, chọn đội rồi bấm "
                                    "\"Chạy đội\" (trưởng đội phải chạy Foxia trên máy này; thành viên ở máy khác nối LAN cũng được). Đội làm lần lượt "
@@ -3174,6 +3177,36 @@ class GiaoDienHienThi:
         else:
             self.command_dict[int(hwnd)] = f"chaydoi:{doi['ma']}"
 
+    def _giaitandoi(self):
+        # Gửi tới trưởng đội: dừng đội nếu đang chạy, rời nhóm trong game (trưởng nhóm rời = giải tán cả nhóm)
+        doi = self._laydoichon()
+        if not doi:
+            return
+        hwnd, info = self._layinfotheoid(doi["thanhviens"][0])
+        if not hwnd:
+            hopthoai.showwarning("Phó bản chung", "Trưởng đội không chạy Foxia trên máy này", parent = self.root)
+            return
+        share = info.get("_doiphoban") or {}
+        is_chay = share.get("ma") == doi["ma"] and share.get("giaidoan") not in (None, "xong")
+        noidung = (f"Giải tán đội {doi['ten']}: " + ("dừng đội đang chạy, " if is_chay else "") + "tắt Tổ đội tự động ở mọi thành viên "
+                   "(không thì nó lập lại nhóm cũ ngay) và mọi người rời nhóm trong game. Bật lại Tổ đội tự động ở tab Tổ đội khi cần."
+                   "\nĐang trong phó bản thì cả nhóm bị đưa ra ngoài. Tiếp tục?")
+        if hopthoai.askyesno("Giải tán", noidung, parent = self.root):
+            self.command_dict[int(hwnd)] = f"giaitandoi:{doi['ma']}"
+
+    def _ngungviecdoi(self):
+        # Ngưng việc đội đang làm (ghi "ngưng" hôm nay, không làm lại tới khi bấm Làm lại), đội sang việc kế; Dừng đội thì dừng hẳn
+        doi = self._laydoichon()
+        if not doi:
+            return
+        hwnd, info = self._layinfotheoid(doi["thanhviens"][0])
+        share = info.get("_doiphoban") or {}
+        if not hwnd or share.get("ma") != doi["ma"] or share.get("giaidoan") != "lam" or not share.get("viec"):
+            hopthoai.showwarning("Phó bản chung", "Đội này không đang làm việc nào", parent = self.root)
+            return
+        if hopthoai.askyesno("Ngưng việc", f"Ngưng {VIECDOI_MAP.get(share['viec'], share['viec'])} của đội {doi['ten']} và sang việc kế?", parent = self.root):
+            self.command_dict[int(hwnd)] = "ngungviecdoi"
+
     def _lamlaidoi(self):
         doi = self._laydoichon()
         if not doi:
@@ -3228,6 +3261,10 @@ class GiaoDienHienThi:
         chunut = "⏹ Dừng đội" if is_chay else "▶ Chạy đội"
         if self.btn_doi.cget("text") != chunut:
             self.btn_doi.config(text = chunut)
+        # "Ngưng việc này" chỉ bấm được khi đội đang làm 1 việc
+        is_ngungduoc = is_chay and share.get("giaidoan") == "lam"
+        if self.btn_ngungviecdoi.instate(["disabled"]) == is_ngungduoc:
+            self.btn_ngungviecdoi.state(["!disabled" if is_ngungduoc else "disabled"])
         thutu = doi["thutu"] if doi else list(VIECDOI_MAP)
         if list(self.tree_viecdoi.get_children()) != thutu:
             chonviec = self.tree_viecdoi.selection()
@@ -3244,8 +3281,8 @@ class GiaoDienHienThi:
             if is_chay and share.get("viec") == k:
                 homnay, tag, chu = "▶ đang làm", "dang", share.get("trangthai") or ""
             elif kq:
-                homnay = f"{'✅' if kq['kq'] == 'xong' else '❌'} {kq['luc']}"
-                tag, chu = ("xong" if kq["kq"] == "xong" else "loi"), kq.get("thongbao") or ""
+                homnay = f"{({'xong': '✅', 'ngung': '⏹'}).get(kq['kq'], '❌')} {kq['luc']}"
+                tag, chu = {"xong": "xong", "ngung": "tat"}.get(kq["kq"], "loi"), kq.get("thongbao") or ""
             else:
                 homnay = "⏭ tiếp theo" if k == tieptheo else ("chờ" if is_chon else "")
                 tag, chu = ("" if is_chon else "tat"), ""

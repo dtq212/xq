@@ -58,6 +58,68 @@ class TacTuDoiPhoBan:
             if s["viec"] and self.get_viecdanglam() == s["viec"]:
                 self._dungviec(s["viec"])
 
+    def giaitan_doiphoban(self, ma = ""):
+        # Nút "Giải tán" ở bảng Phó bản chung (gửi tới trưởng đội): dừng đội nếu đang chạy (thành viên thôi đội, trả Theo sau cũ), tắt Tổ
+        # đội tự động ở trưởng đội và mọi thành viên (không thì nó lập lại nhóm cũ ngay: xin vào / mời / nhường trưởng nhóm) rồi ai cũng
+        # rời nhóm trong game, kể cả đang trong phó bản (người dùng đã xác nhận). Thành viên (cả máy khác nối LAN) nhận qua share "xong"
+        # kèm "giaitan" (_xulygiaitandoi)
+        s = self._doiphoban
+        ma = s["ma"] if s else ma
+        if s:
+            self._ketthucdoiphoban("Giải tán đội (bấm tay)", is_giaitan = False)
+            if s["viec"] and self.get_viecdanglam() == s["viec"]:
+                self._dungviec(s["viec"])
+        doi = laydoiphoban(ma)
+        self._doiphobanxong = {"ma": ma, "thanhviens": list(doi["thanhviens"]) if doi else [], "luc": time.time(), "giaitan": True}
+        self._trangthaidoiphoban = f"{time.strftime('%H:%M')} Đội {doi['ten'] if doi else ''}: giải tán (bấm tay), đã tắt Tổ đội tự động"
+        self._batdaugiaitan("Giải tán đội (bấm tay)")
+
+    def _batdaugiaitan(self, lydo):
+        # Tắt Tổ đội tự động / huỷ Tổ đội 1 lần, rời nhóm ngay; THOIGIANBAOXONGDOI giây sau đó còn trong nhóm (bị mời / nhường lại giữa
+        # chừng) thì rời tiếp (_giunhomgiaitan)
+        if self._is_tudongtodoi:
+            self._is_tudongtodoi = False
+            self._logdoi(f"{lydo}: tắt Tổ đội tự động (bật lại ở tab Tổ đội)")
+        if self._todoimotlan:
+            self.huy_todoimotlan()
+        self._lucgiaitan = time.time()
+        self._lucroinhomgiaitan = 0.
+        self._giunhomgiaitan()
+
+    def _giunhomgiaitan(self):
+        if time.time() - self._lucgiaitan > THOIGIANBAOXONGDOI or not self.moitruong.get_is_dangnamtrongnhom():
+            return
+        if time.time() - self._lucroinhomgiaitan > 1.5:
+            self._lucroinhomgiaitan = time.time()
+            self.moitruong.action_thoatkhoinhom(delay = 0.)
+
+    def _xulygiaitandoi(self):
+        # Thành viên: trưởng đội vừa bấm Giải tán đội có mình (share "xong" kèm "giaitan") => tắt Tổ đội tự động, rời nhóm (1 lần mỗi lần
+        # giải tán); trong lúc giải tán còn trong nhóm thì rời tiếp
+        idtoi = self.moitruong.get_idnguoichoi()
+        for _, d in self._laydoiphobancacsos():
+            if d.get("giaidoan") == "xong" and d.get("giaitan") and idtoi in (d.get("thanhviens") or ()):
+                khoa = (d.get("idtruong"), d.get("luc"))
+                if khoa != self._giaitandaxuly:
+                    self._giaitandaxuly = khoa
+                    self._batdaugiaitan(f"Trưởng đội {self._tenidnguoichoi(d.get('idtruong'))} giải tán đội")
+        self._giunhomgiaitan()
+
+    def ngung_viecdoi(self):
+        # Nút "Ngưng việc này" ở bảng Phó bản chung: ngưng việc đội đang làm, ghi "ngưng" hôm nay (không làm lại tới khi bấm Làm lại), đội
+        # sang việc kế. Đổi giai đoạn trước rồi mới dừng việc: _ghiketthucviecdoi thấy không còn "lam" thì không dừng cả đội
+        s = self._doiphoban
+        if not s or s["giaidoan"] != "lam" or not s["viec"]:
+            return
+        viec = s["viec"]
+        self._lamtuoingaydoiphoban()
+        self._ketquadoiphoban["doi"].setdefault(s["ma"], {})[viec] = {"kq": "ngung", "luc": time.strftime("%H:%M"),
+                                                                      "thongbao": f"Ngưng {VIECDOI_MAP.get(viec, viec)} (bấm tay), sang việc kế"}
+        s.update(giaidoan = "cho", viec = "", lucviec = 0.)
+        self._logdoi(f"Ngưng {VIECDOI_MAP.get(viec, viec)} (bấm tay), sang việc kế")
+        if self.get_viecdanglam() == viec:
+            self._dungviec(viec)
+
     def get_thanhviendoiphoban(self):
         # Thành viên đội phó bản mình đang chạy / đang theo (người đầu là trưởng đội), None nếu không ở đội nào
         if self._doiphoban:
@@ -102,7 +164,8 @@ class TacTuDoiPhoBan:
                     "phai": doi.get("phai", ""), "dangmoi": s["dangmoi"], "trangthai": s["trangthai"]}
         x = self._doiphobanxong
         if x and time.time() - x["luc"] < THOIGIANBAOXONGDOI:
-            return {"ma": x["ma"], "idtruong": self.moitruong.get_idnguoichoi(), "thanhviens": x["thanhviens"], "giaidoan": "xong"}
+            return {"ma": x["ma"], "idtruong": self.moitruong.get_idnguoichoi(), "thanhviens": x["thanhviens"], "giaidoan": "xong",
+                    "giaitan": bool(x.get("giaitan")), "luc": x["luc"]}
         return None
 
     def get_doiphobanthanhvienshare(self):
@@ -228,6 +291,7 @@ class TacTuDoiPhoBan:
         if self._doiphoban:
             self._buoctruongdoi()
         else:
+            self._xulygiaitandoi()
             self._buocthanhviendoi()
 
     def action_doiphobannhanh(self):
@@ -285,7 +349,8 @@ class TacTuDoiPhoBan:
         for i in thanhviens:
             tv = botkhacs[i].get("_doiphobanthanhvien") or {}
             if tv.get("ma") != s["ma"] or tv.get("idtruong") != idtoi:
-                chuasansangs.append(f"{self._tenidnguoichoi(i)} (chưa nhận đội)")
+                # Online mà không báo gì về đội: Foxia bên đó là bản cũ (chưa có đội phó bản) hoặc chưa thấy trưởng đội qua LAN
+                chuasansangs.append(f"{self._tenidnguoichoi(i)} (chưa nhận đội: Foxia bên đó bản cũ / chưa thấy trưởng đội qua LAN?)")
             elif not tv.get("sansang"):
                 chuasansangs.append(f"{self._tenidnguoichoi(i)} ({tv.get('lydo') or 'chưa sẵn sàng'})")
         if chuasansangs:

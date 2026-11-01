@@ -559,6 +559,15 @@ class TacTuLangLySon:
             return None
         s["trangthai"] = f"vào {ten} (vòng {s['sovong'] + 1}): nói chuyện {tennpc}"
         ketqua, yeucau = self._noichuyenlls(s, tennpc, x, y, luachon = cauhinh["luachonvao"], is_xacnhan = True)
+        h = s["hoithoai"]
+        if h and h["buoc"] == "cho" and "hết lượt" in (moitruong.get_noidungcuasotuychon() or "").lower():
+            # Chọn "3. Sử dụng [Hạt Mè Khai Môn] tiến vào" xong NPC mở menu mới "Hôm nay ngươi đã hết lượt vào Thành Kiều." (chỉ có
+            # "1. Rời khỏi"; nội dung menu đã xoá trước khi chọn nên đây là menu sau khi chọn): xong việc hôm nay
+            if moitruong.get_is_danghiencuasotuychon():
+                moitruong.set_is_danghiencuasotuychon(False)
+            self._logpb(s, f"{tennpc}: hôm nay đã hết lượt vào {ten}")
+            self._ketthuclanglyson(f"✅ Hôm nay đã hết lượt vào {ten}")
+            return None
         if ketqua == "xong":
             # Vận khí xong mà THOIGIANTHULAIVAO giây vẫn chưa được đưa vào (vận khí bị ngắt...) thì nói chuyện lại từ đầu
             s.setdefault("lucvankhivao", time.time())
@@ -976,6 +985,33 @@ class TacTuLangLySon:
             self._lanhthuonglanglyson = None
             moitruong._inlog(f"[{cauhinh['ten'].upper()}] {'Đã lĩnh thưởng' if ketqua == 'xong' else f'{tennpc} không có phần thưởng cho mình'}")
             return None
+        return yeucau
+
+    def _xulyranpcxongtheosau(self):
+        # Thành viên theo sau: người được theo sau đã ra khỏi phó bản có npcxong (Thành Kiều) mà mình còn thấy npcxong thì tự nói chuyện chọn
+        # LUACHONRANPCXONG để được đưa về chỗ vào. Nói SOLANTHUNOICHUYEN lần không được thì thôi (Hồi Thành Phù như cũ).
+        # -> False: không làm; None / yêu cầu di chuyển: đang nói chuyện
+        moitruong = self.moitruong
+        idbando = moitruong.get_idbandohientai()
+        cauhinh = next((c for c in PHOBAN_MAP.values() if c.get("npcxong") and c["bandovao"] == idbando), None)
+        if not cauhinh:
+            self._ranpcxongtheosau = None
+            return False
+        s = getattr(self, "_ranpcxongtheosau", None)
+        if not s:
+            s = self._ranpcxongtheosau = {"hoithoai": None, "is_bo": False}
+        if s["is_bo"]:
+            return False
+        tennpc = cauhinh["npcxong"]
+        diachi = moitruong.action_timkiemnhanvat(tennhanvat = tennpc)
+        if not diachi:
+            return False
+        self._capnhatbuocdichuyen(f"{cauhinh['ten']}: nói chuyện {tennpc} để về")
+        ketqua, yeucau = self._noichuyenlls(s, tennpc, *moitruong.get_toado(diachi), luachon = LUACHONRANPCXONG)
+        if ketqua in ("loi", "tuchoi"):
+            s["is_bo"] = True
+            moitruong._inlog(f"[{cauhinh['ten'].upper()}] Nói chuyện {tennpc} {SOLANTHUNOICHUYEN} lần chưa về được, dùng Hồi Thành Phù")
+            return False
         return yeucau
 
     @staticmethod

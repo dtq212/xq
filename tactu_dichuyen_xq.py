@@ -160,6 +160,12 @@ class TacTuDiChuyen:
             # Vẫn nhích được: đo tiếp từ chỗ mới
             dangchay["batdau"], dangchay["toado"] = thoidiemhientai, (x1, y1)
 
+    def _lammoitheodoitiepcan(self):
+        # Bị giữ đứng yên không do vật cản (choáng, Bất Động, vận khí, ra chiêu...): đo "không gần thêm" lại từ lúc hết bị giữ,
+        # kẻo vừa hết khống chế đã quá THOIGIANTIEPCANKHONGGANTHEM giây mà bỏ qua quái vì tưởng vật cản
+        if self._theodoitiepcan:
+            self._theodoitiepcan[2] = time.time()
+
     def _capnhatkynangquantrong(self, tenmonphai, danhsachuutien, kynangchopheps = None):
         # Gọi trong danh sách kỹ năng của phái, trước vòng dùng kỹ năng: còn kỹ năng quan trọng (KYNANGQUANTRONGGIUKHOANGCACH_MAP)
         # hết hồi chiêu VÀ đủ điều kiện dùng (có mục tiêu thích hợp, đủ nội lực... đúng điều kiện trong danh sách) thì chưa lùi
@@ -246,14 +252,17 @@ class TacTuDiChuyen:
             # không bị tính là kẹt tường
             self._thoidiembatdaukiemtraket = time.time()
             self._toadokiemtraket = self.moitruong.get_toado()
+            self._lammoitheodoitiepcan()
         if is_khongdiduoc:
             # Không đi được: không gửi lệnh di chuyển (Bất Động vẫn ra chiêu với mục tiêu trong tầm)
             return
         if self.moitruong.get_is_dangclickchuottrai():
             if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Đang CLICK CHUỘT TRÁI")
+            self._lammoitheodoitiepcan()
             return
         if self.moitruong.get_is_dangvankhi() and not self._is_ngatvankhiloidongcuuthien():
             if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Đang VẬN KHÍ")
+            self._lammoitheodoitiepcan()
             return
         # Chiêu kéo dài tới hết tư thế ra chiêu (Ngự Kiếm Phi Tiên...): còn tư thế ra chiêu thì giữ đứng yên.
         # Đã thấy tư thế ra chiêu rồi mà hết (hoặc chờ quá THOIGIANCHONGATDICHUYENXUATCHIEU giây chưa thấy) thì bỏ giữ luôn,
@@ -270,9 +279,11 @@ class TacTuDiChuyen:
             # Ngắt cả khi chưa ở tư thế di chuyển: đích tìm đường còn trong game thì ra chiêu xong game tự đi tiếp
             self.moitruong.action_ngatdichuyen()
             if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Đang tạm ngưng để dùng SKILL")
+            self._lammoitheodoitiepcan()
             return
         if self._trangthaiveban != 0:
             if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Đang tạm ngưng để về bán rác")
+            self._lammoitheodoitiepcan()
             return
 
         is_anhhuongboimuctieutheosau = bool(self._laytoadomuctieutheosau())
@@ -829,6 +840,13 @@ class TacTuDiChuyen:
             self._capnhatbuocdichuyen(f"Chờ người được theo sau ở yên {laytenbando(idbandotheosau)}, rồi: {buoc['mota']}")
             return True
         if time.time() - self.moitruong.get_thoidiemthaydoibandogannhat() < 2.:
+            return True
+
+        # Thành Kiều: còn thấy Tần Quốc Mật Thám thì nói chuyện để được đưa về chỗ vào, khỏi Hồi Thành Phù (tactu_langlyson_xq)
+        yeucau = self._xulyranpcxongtheosau()
+        if yeucau is not False:
+            if yeucau:
+                self._yeucautheosau = yeucau
             return True
 
         toadotheosau = (info["x"], info["y"]) if info.get("x") and info.get("y") else None

@@ -330,8 +330,7 @@ class CuaSo:
                     "_langlysontattodoi": self.tactu.get_dsidtattodoilanglyson(),
                     "_langlysongiunhom": self.tactu.get_dsidgiunhomlanglyson(),
                     # Phong Yêu Kính: ID boss mình đã giết vòng này, người cùng nhóm cộng vào (boss chết xa họ vẫn được tính)
-                    "_bossdagietphongyeu": self.tactu.get_bossdagietphongyeu(),
-                    # Kéo cấp acc gà (tactu_keocap_xq): vai / giai đoạn / cấp cho cửa sổ cùng máy, trạng thái cho giao diện
+                    "_bossdagietphongyeu": self.tactu.get_bossdagietphongyeu(),                    # Kéo cấp acc gà (tactu_keocap_xq): vai / giai đoạn / cấp cho cửa sổ cùng máy, trạng thái cho giao diện
                     "_keocap": self.tactu.get_keocapshare(),
                     "_trangthaikeocap": self.tactu.get_trangthaikeocap(),
                     "capdo": self.moitruong.get_capdonhanvat() or 0,
@@ -511,6 +510,12 @@ class CuaSo:
                     self.tactu.batdau_doiphoban(cmd.split(":", 1)[1])
                 elif cmd == "dungdoi":
                     self.tactu.huy_doiphoban()
+                elif isinstance(cmd, str) and cmd.startswith("giaitandoi:"):
+                    # Dừng đội (nếu đang chạy), tắt Tổ đội tự động cả đội, giải tán nhóm trong game: giaitandoi:<mã đội>
+                    self.tactu.giaitan_doiphoban(cmd.split(":", 1)[1])
+                elif cmd == "ngungviecdoi":
+                    # Ngưng việc đội đang làm, đội sang việc kế
+                    self.tactu.ngung_viecdoi()
                 elif isinstance(cmd, str) and cmd.startswith("lamlaidoi:"):
                     # lamlaidoi:<mã đội>:<việc,việc>
                     _, ma, viecs = cmd.split(":", 2)
