@@ -102,10 +102,12 @@ THOIGIANMOIDIEMPY = 25.
 # Phó bản tự đi được: bandovao tầng đầu, bandonpc + npc nơi vào / nhận thưởng. luachonvao None: vào bằng lối đi NPC (LOIDINPC_MAP, lựa
 # chọn đầu); số: tự nói chuyện NPC chọn lựa chọn thứ luachonvao (đếm từ 0, bỏ CLOSE) rồi Xác nhận, vatphamvao là vật phẩm phải có trong hành trang (không bị trừ).
 # luachonthuong: lựa chọn nhận thưởng (tuple: chọn lần lượt qua từng menu, vd Thành Kiều "4. Nhận thưởng" rồi "1. Nhận thưởng"); is_kiemtrathuong: menu phải có lời chúc mừng mới chọn (Lăng Ly Sơn: NPC đổi menu khi đã xong)
+# npcra + bandora: NPC cố định ở tầng bandora, xong thì nói chuyện để được đưa về chỗ NPC nhận thưởng (thay Hồi Thành Phù)
 # is_chixongtheonpc: chỉ coi là xong khi thấy npcxong (Thành Kiều: Tần Quốc Mật Thám), tin game báo hoàn thành / boss biến mất không tính
 PHOBAN_MAP = {
     "langlyson": {"ten": "Lăng Ly Sơn", "bandovao": BANDO_LANGLYSON1, "bandonpc": BANDO_THUYHOASON, "npc": NPCVAOLANGLYSON,
-                  "luachonvao": None, "vatphamvao": None, "luachonthuong": 0, "is_kiemtrathuong": True, "tinhoanthanh": "lăng ly sơn"},
+                  "luachonvao": None, "vatphamvao": None, "luachonthuong": 0, "is_kiemtrathuong": True, "tinhoanthanh": "lăng ly sơn",
+                  "npcra": ("Lăng Mộ Thạch Sư", 39, 37), "bandora": BANDO_LANGLYSON3},
     "thanhkieu": {"ten": "Thành Kiều", "bandovao": BANDO_THANHKIEU, "bandonpc": BANDO_TANQUOC, "npc": NPCTHANHKIEU,
                   "luachonvao": 2, "vatphamvao": "Hạt Mè Khai Môn", "luachonthuong": (3, 0), "is_kiemtrathuong": False, "tinhoanthanh": "thành kiều",
                   "npcxong": "Tần Quốc Mật Thám", "is_chixongtheonpc": True},
@@ -133,6 +135,10 @@ GIANCACHMOILAI = 10.
 THOIGIANBAOCHOTHANHVIEN = 180.
 # Cách toạ độ boss chừng này ô thì coi như tới nơi, bắt đầu đánh mọi quái quanh đó
 KHOANGCACHTOIBOSS = 6.
+# Đã tới chỗ boss thì giữ đánh quái tới chừng này ô (quá thì đi lại vào, không đánh dọc đường); không có quái để đánh thì đi vào sát
+# toạ độ boss chừng này ô
+KHOANGCACHROIBOSS = 12.
+KHOANGCACHSATBOSS = 2.
 THOIGIANCHOBOSS = 30.
 THOIGIANBOSSBIENMAT = 3.
 # NPC hiện ra khi boss cuối chết (PHOBAN_MAP npcxong) phải đứng cách toạ độ boss cuối tối đa chừng này ô mới tính
@@ -739,12 +745,24 @@ class TacTuLangLySon:
             s["chedo"] = "danhquai"
             s["trangthai"] = f"{laytenbando(idbando)}: không còn thấy {_tenboss(tenboss)} ở ({xboss}, {yboss}), chờ xác nhận đã giết"
             return None, None
-        if diachi or moitruong.get_khoangcachdiem(x, y) <= KHOANGCACHTOIBOSS:
-            # Tới nơi (hoặc thấy boss): đánh mọi quái quanh đó
+        khoangcach = moitruong.get_khoangcachdiem(x, y)
+        if boss.get("is_datoi") and khoangcach > KHOANGCACHROIBOSS and not diachi:
+            # Bị quái kéo ra xa quá: đi lại về toạ độ boss (không đánh dọc đường)
+            boss["is_datoi"] = False
+        if diachi or khoangcach <= KHOANGCACHTOIBOSS or (boss.get("is_datoi") and khoangcach <= KHOANGCACHROIBOSS):
+            # Tới nơi (hoặc thấy boss): đánh mọi quái quanh đó. Đã tới thì giữ đánh tới KHOANGCACHROIBOSS ô (từng: vừa tới 6 ô là quay lại
+            # đánh quái đuổi theo, dạt ra quá 6 ô lại chạy vào, qua lại mãi)
+            boss["is_datoi"] = True
+            # Chỉ cộng thời gian đứng gần toạ độ boss (KHOANGCACHTOIBOSS ô) vào THOIGIANCHOBOSS: từng tính từ lần đầu tới gần, mải đánh quái
+            # đuổi theo ở xa 30s là tưởng boss đã chết, bỏ qua
+            lucxet = boss.get("lucxet") or now
+            if khoangcach <= KHOANGCACHTOIBOSS:
+                boss["thoigiangan"] = boss.get("thoigiangan", 0.) + min(now - lucxet, 1.)
+            boss["lucxet"] = now
             boss["luctoi"] = boss["luctoi"] or now
             s["chedo"] = "danhquai"
             self._batdanhquailanglyson(s)
-            if not diachi and not boss["lucthay"] and now - boss["luctoi"] > THOIGIANCHOBOSS:
+            if not diachi and not boss["lucthay"] and boss.get("thoigiangan", 0.) > THOIGIANCHOBOSS:
                 if not is_bosscuoi:
                     return f"tới nơi {THOIGIANCHOBOSS:.0f}s không thấy, coi như đã giết", None
                 self._baolanglyson(s, f"khongthayboss|{s['sovong']}", f"⚠️ {self._tenpb(s)}: tới {_tenboss(tenboss)} {THOIGIANCHOBOSS:.0f}s không thấy boss, "
@@ -752,8 +770,8 @@ class TacTuLangLySon:
                 s["trangthai"] = f"{laytenbando(idbando)}: không thấy {_tenboss(tenboss)}, chưa có tin hoàn thành phó bản, đứng chờ (không ra)"
                 return None, None
             s["trangthai"] = f"{laytenbando(idbando)}: đánh {_tenboss(tenboss)}" + ("" if diachi else " (chờ boss hiện)")
-            # Bị đánh dạt ra xa toạ độ boss thì quay về (đánh quái vẫn ưu tiên hơn)
-            if moitruong.get_khoangcachdiem(x, y) > KHOANGCACHTOIBOSS and not diachi:
+            # Chưa sát toạ độ boss / bị đánh dạt ra thì đi vào sát (đánh quái vẫn ưu tiên hơn): boss có thể chỉ hiện khi tới gần
+            if khoangcach > KHOANGCACHSATBOSS and not diachi:
                 return None, {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x, y, idbando), "khoangcachtoida": 1.}
             return None, None
         s["trangthai"] = f"{laytenbando(idbando)}: tới đánh {_tenboss(tenboss)} ({x}, {y})"
@@ -882,18 +900,18 @@ class TacTuLangLySon:
         tennpc, x, y = cauhinh["npc"]
         bandonpc = cauhinh["bandonpc"]
         idbando = moitruong.get_idbandohientai()
-        if idbando in BUOCLANGLYSON_MAP and cauhinh.get("npcxong") and not s.get("is_boranpcxong"):
-            # Thành Kiều: còn thấy Tần Quốc Mật Thám (hiện khi boss cuối chết) thì nói chuyện chọn LUACHONRANPCXONG để về luôn, khỏi tốn Hồi
-            # Thành Phù. Không thấy / nói SOLANTHUNOICHUYEN lần không ra được thì Hồi Thành Phù như cũ
-            tensg = cauhinh["npcxong"]
-            diachisg = moitruong.action_timkiemnhanvat(tennhanvat = tensg)
-            if diachisg:
-                s["trangthai"] = f"xong {cauhinh['ten']}, nói chuyện {tensg} để về"
-                ketqua, yeucau = self._noichuyenlls(s, tensg, *moitruong.get_toado(diachisg), luachon = LUACHONRANPCXONG)
-                if ketqua in ("loi", "tuchoi"):
-                    s["is_boranpcxong"] = True
-                    self._logpb(s, f"Nói chuyện {tensg} {SOLANTHUNOICHUYEN} lần chưa về được, dùng Hồi Thành Phù")
-                return yeucau
+        npcra = self._laynpcra(cauhinh, idbando) if not s.get("is_boranpcxong") else None
+        if npcra:
+            # Còn NPC đưa về (Thành Kiều: Tần Quốc Mật Thám hiện khi boss cuối chết; Lăng Ly Sơn: Lăng Mộ Thạch Sư "1. Trở lại mặt đất") thì
+            # nói chuyện chọn LUACHONRANPCXONG để về thẳng chỗ NPC nhận thưởng, khỏi tốn Hồi Thành Phù. Nói SOLANTHUNOICHUYEN lần không ra
+            # được thì Hồi Thành Phù như cũ
+            tenra, xra, yra = npcra
+            s["trangthai"] = f"xong {cauhinh['ten']}, nói chuyện {tenra} để về"
+            ketqua, yeucau = self._noichuyenlls(s, tenra, xra, yra, luachon = LUACHONRANPCXONG)
+            if ketqua in ("loi", "tuchoi"):
+                s["is_boranpcxong"] = True
+                self._logpb(s, f"Nói chuyện {tenra} {SOLANTHUNOICHUYEN} lần chưa về được, dùng Hồi Thành Phù")
+            return yeucau
         if idbando != bandonpc:
             s["trangthai"] = f"ra {laytenbando(bandonpc)} nhận thưởng"
             buoc = self._lapbuocditoibando(bandonpc, is_hoithanhphu = True, is_roiphoban = True, toadodich = (x, y))
@@ -987,27 +1005,42 @@ class TacTuLangLySon:
             return None
         return yeucau
 
+    def _laynpcra(self, cauhinh, idbando):
+        # NPC trong phó bản nói chuyện để được đưa về chỗ NPC nhận thưởng: npcra cố định ở tầng bandora (Lăng Ly Sơn: Lăng Mộ Thạch Sư),
+        # hoặc npcxong đang thấy ở bandovao (Thành Kiều: Tần Quốc Mật Thám, chỉ hiện khi xong). -> (tên, x, y) | None
+        if cauhinh.get("npcra"):
+            return cauhinh["npcra"] if idbando == cauhinh.get("bandora") else None
+        tennpc = cauhinh.get("npcxong")
+        if not tennpc or idbando != cauhinh["bandovao"]:
+            return None
+        diachi = self.moitruong.action_timkiemnhanvat(tennhanvat = tennpc)
+        return (tennpc, *self.moitruong.get_toado(diachi)) if diachi else None
+
     def _xulyranpcxongtheosau(self):
-        # Thành viên theo sau: người được theo sau đã ra khỏi phó bản có npcxong (Thành Kiều) mà mình còn thấy npcxong thì tự nói chuyện chọn
-        # LUACHONRANPCXONG để được đưa về chỗ vào. Nói SOLANTHUNOICHUYEN lần không được thì thôi (Hồi Thành Phù như cũ).
+        # Thành viên theo sau: người được theo sau đã ra khỏi phó bản mà mình còn ở chỗ có NPC đưa về (_laynpcra: Thành Kiều Tần Quốc Mật
+        # Thám, Lăng Ly Sơn Lăng Mộ Thạch Sư) thì tự nói chuyện chọn LUACHONRANPCXONG để được đưa về. Nói SOLANTHUNOICHUYEN lần không được
+        # thì thôi (Hồi Thành Phù như cũ).
         # -> False: không làm; None / yêu cầu di chuyển: đang nói chuyện
         moitruong = self.moitruong
         idbando = moitruong.get_idbandohientai()
-        cauhinh = next((c for c in PHOBAN_MAP.values() if c.get("npcxong") and c["bandovao"] == idbando), None)
-        if not cauhinh:
-            self._ranpcxongtheosau = None
-            return False
+        npcra, cauhinh = None, None
+        for c in PHOBAN_MAP.values():
+            npcra = self._laynpcra(c, idbando)
+            if npcra:
+                cauhinh = c
+                break
         s = getattr(self, "_ranpcxongtheosau", None)
+        if not npcra:
+            if idbando not in BUOCLANGLYSON_MAP:
+                self._ranpcxongtheosau = None
+            return False
         if not s:
             s = self._ranpcxongtheosau = {"hoithoai": None, "is_bo": False}
         if s["is_bo"]:
             return False
-        tennpc = cauhinh["npcxong"]
-        diachi = moitruong.action_timkiemnhanvat(tennhanvat = tennpc)
-        if not diachi:
-            return False
+        tennpc, x, y = npcra
         self._capnhatbuocdichuyen(f"{cauhinh['ten']}: nói chuyện {tennpc} để về")
-        ketqua, yeucau = self._noichuyenlls(s, tennpc, *moitruong.get_toado(diachi), luachon = LUACHONRANPCXONG)
+        ketqua, yeucau = self._noichuyenlls(s, tennpc, x, y, luachon = LUACHONRANPCXONG)
         if ketqua in ("loi", "tuchoi"):
             s["is_bo"] = True
             moitruong._inlog(f"[{cauhinh['ten'].upper()}] Nói chuyện {tennpc} {SOLANTHUNOICHUYEN} lần chưa về được, dùng Hồi Thành Phù")

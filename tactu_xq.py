@@ -583,6 +583,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._hangdoideodotrieuhoi = []
         self._thoidiemdoidotrieuhoigannhat = 0.
         self._solanmaclaitrieuhoi = 0
+        # id bảo thú triệu hồi đang có lúc bắt đầu vận khí, lúc hết vận khí (0 = chưa hết), đã thấy bảo thú mới gọi ra chưa
+        self._idbaothutruoctrieuhoi = set()
+        self._thoidiemhetvankhitrieuhoi = 0.
+        self._is_dathaybaothutrieuhoi = False
         self._thoidiemnapmotadotrieuhoi = 0.
         self._thoidiemhoandoiphapbao = 0.
         self._tenphapbaocu = None

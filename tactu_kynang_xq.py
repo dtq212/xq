@@ -1050,6 +1050,15 @@ class TacTuKyNang:
                 baothus.append((tendoituongbaothu.lower(), phantramsinhluc if phantramsinhluc is not False else 100))
         return baothus
 
+    def _get_idbaothukynangtrieuhois(self):
+        # {số thứ tự ô bảo thú: id đối tượng} của bảo thú kỹ năng triệu hồi (tên có ngoặc như _get_baothukynangtrieuhois)
+        idbaothus = {}
+        for sothutu in range(1, 4):
+            idbaothu = self.moitruong.get_iddoituongbaothu(sothutu)
+            if idbaothu and "(" in (self.moitruong.get_tendoituongbaothu(sothutu) or ""):
+                idbaothus[sothutu] = idbaothu
+        return idbaothus
+
     def _get_tenbaothukynangtrieuhois(self):
         return [ten for ten, _ in self._get_baothukynangtrieuhois()]
 
@@ -1150,6 +1159,9 @@ class TacTuKyNang:
                     return
                 self._bodotruoctrieuhoi = self._laybotrangbi()
                 self._solanmaclaitrieuhoi = 0
+                self._idbaothutruoctrieuhoi = set(self._get_idbaothukynangtrieuhois().values())
+                self._thoidiemhetvankhitrieuhoi = 0.
+                self._is_dathaybaothutrieuhoi = False
                 hangdoi = []
                 for mon in self._bodotrieuhoi:
                     # Đang mặc đúng món đó rồi (cùng id, hoặc cùng dấu vân tay nếu có mô tả) thì thôi
@@ -1176,6 +1188,21 @@ class TacTuKyNang:
             return
         if self.moitruong.get_is_dangvankhi() or self.moitruong.get_is_nhanvatdachet():
             return
+        # Chỉ mặc lại khi đã thấy bảo thú triệu hồi mới (id chưa có lúc bắt đầu vận khí, đang trong tầm nhìn): đồ triệu hồi
+        # ảnh hưởng chỉ số bảo thú lúc gọi ra. Quá THOIGIANCHOBAOTHUSAUTRIEUHOI giây không thấy (hỏng / bị ngắt) thì vẫn mặc lại
+        if not self._is_dathaybaothutrieuhoi:
+            if not self._thoidiemhetvankhitrieuhoi:
+                self._thoidiemhetvankhitrieuhoi = time.time()
+            idmois = [(sothutu, idbaothu) for sothutu, idbaothu in self._get_idbaothukynangtrieuhois().items()
+                      if idbaothu not in self._idbaothutruoctrieuhoi]
+            if any(self.moitruong._get_diachidoituongbaothu(sothutu) for sothutu, _ in idmois):
+                self._is_dathaybaothutrieuhoi = True
+                self.moitruong._inlog("[ĐỔI ĐỒ TRIỆU HỒI] thấy bảo thú mới sau {:.2f}s, mặc lại".format(time.time() - self._thoidiemhetvankhitrieuhoi))
+            elif time.time() - self._thoidiemhetvankhitrieuhoi < THOIGIANCHOBAOTHUSAUTRIEUHOI:
+                return
+            else:
+                self._is_dathaybaothutrieuhoi = True
+                print("{}: không thấy bảo thú triệu hồi ra sau {:.0f}s, vẫn mặc lại".format(self.moitruong.get_tendoituong(), THOIGIANCHOBAOTHUSAUTRIEUHOI))
         if time.time() - self._thoidiemdoidotrieuhoigannhat < giancachmaclai:
             return
         self._hangdoideodotrieuhoi = []

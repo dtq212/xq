@@ -169,3 +169,7 @@ _internal/diachi_cache.json
 # Đơn bán ngân lượng (bannganluong_xq): riêng máy chạy nhân vật bán; đồng bộ git ghi đè bản cũ là giao lại đơn đã giao
 _internal/bannganluong_don.json
 _internal/bannganluong_don.json.tmp
+
+# Trạng thái lúc chạy
+_internal/tiendophoban.json
+_internal/tiendophoban.json.tmp

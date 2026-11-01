@@ -1,8 +1,8 @@
 {
   "is_lamkim": true,
-  "is_hoangkim": true,
-  "is_chichuagiamdinh": false,
-  "caphonnhanvat": 19,
+  "is_hoangkim": false,
+  "is_chichuagiamdinh": true,
+  "caphonnhanvat": 20,
   "khongdot": [],
   "chidot": []
 }

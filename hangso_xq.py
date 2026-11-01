@@ -166,6 +166,8 @@ KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN = 3
 THOIGIANCHOVAOVANKHI = 2.5
 # Khoá vận khí triệu hồi bảo thú giữ tối đa chừng này (phòng đọc trạng thái vận khí sai mà khoá mãi)
 THOIGIANKHOAVANKHITRIEUHOITOIDA = 15.
+# Đổi đồ khi triệu hồi: hết vận khí mà chừng này giây chưa thấy bảo thú triệu hồi mới (triệu hồi hỏng / bị ngắt) thì vẫn mặc lại
+THOIGIANCHOBAOTHUSAUTRIEUHOI = 5.
 # Lôi Động Cửu Thiên (Mao Sơn) vận khí 6s (phạm vi 7x7 ô quanh bản thân); Lôi Long Quyết (Côn Luân, 9x9 ô liên tục 6s) cùng cơ chế,
 # dùng chung các hằng / cách ngắt vận khí này
 THOIGIANVANKHILOIDONGCUUTHIEN = 6.
