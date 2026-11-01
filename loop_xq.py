@@ -380,6 +380,7 @@ class LoopPhu:
         self.tactu.action_tudongbatautoingame()
 
         self.moitruong.action_vohieuhoahookchienquoc2()
+        self.moitruong.action_loglenhgame()
 
         if self.moitruong.get_idnguoichoi() in (59996, ) and self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
             diachi = self.moitruong.action_timkiemnhanvat("Thiên Sứ Trao Đổi")

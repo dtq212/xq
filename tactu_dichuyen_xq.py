@@ -11,7 +11,7 @@ from tienich_xq import tailotrinhmau as util_tailotrinhmau, luulotrinhmau as uti
 from dexuatlotrinh_xq import taiviquai as util_taiviquai, luuviquai as util_luuviquai, taiviquaibando, ghinhanvitriquai, dexuatlotrinh
 from bando_xq import timduongbando, laynpcloidi
 from dexuatlotrinh_xq import THOIGIANGHIVITRIQUAI, THOIGIANLUUVITRIQUAI, SOLANTHAYQUAITOITHIEU, TENMAUDEXUAT, TENMAUDO, dexuatlotrinhdo
-from nhiemvu_xq import _laydiemcong as nhiemvu_laydiemcong, KHOANGCACHTRANHCONG
+from nhiemvu_xq import _laydiemcong as nhiemvu_laydiemcong, KHOANGCACHTRANHCONG, BANDOMONPHAI
 from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, donbangthoidiem
 
 
@@ -985,7 +985,9 @@ class TacTuDiChuyen:
         if self.get_is_danghoithoainpc() or time.time() - self._thoidiemphutoibandogannhat < 8.:
             return None
         nganluong = self.moitruong.get_nganluong()
-        if loainpc == TANTHUTIENCO and nganluong is not None and nganluong < GIAPHUTANTHUTIENCO:
+        # Tân Thủ Tiên Cô chỉ lấy tiền từ CAPTINHTIENPHUTANTHUTIENCO (acc gà kéo cấp còn vài trăm lượng vẫn phù được)
+        if loainpc == TANTHUTIENCO and nganluong is not None and nganluong < GIAPHUTANTHUTIENCO \
+                and (self.moitruong.get_capdonhanvat() or 0) >= CAPTINHTIENPHUTANTHUTIENCO:
             self._thoidiemphutoibandogannhat = time.time()
             self._capnhatbuocdichuyen(f"Còn {nganluong} lượng, không đủ {GIAPHUTANTHUTIENCO} lượng phù {tennpc}")
             print(f"{nhanlog} => không phù: còn {nganluong} lượng, {tennpc} lấy {GIAPHUTANTHUTIENCO} lượng")
@@ -1224,6 +1226,14 @@ class TacTuDiChuyen:
         if self.get_is_dangsumon():
             yeucau = self._xulysumon()
             if not self.get_is_sumonfarm():
+                self._yeucautudo = yeucau
+                return
+
+        # Kéo cấp acc gà (tactu_keocap_xq): nhận thưởng tân thủ, tập hợp, tới bãi; False thì để lộ trình điểm đánh / Theo sau / Phong Yêu
+        # Kính bên dưới lo
+        if self.get_is_dangkeocap():
+            yeucau = self._xulykeocap()
+            if yeucau is not False:
                 self._yeucautudo = yeucau
                 return
 
@@ -1631,7 +1641,7 @@ class TacTuDiChuyen:
         if self.moitruong.get_is_phobanmuonbando() and not is_roiphoban:
             return f"đang ở {self.moitruong.get_tenbandogame()}"
         nganluong = self.moitruong.get_nganluong()
-        if nganluong is not None and nganluong < GIAHOITHANHPHU:
+        if nganluong is not None and nganluong < GIAHOITHANHPHU and not self.get_is_vomonphai():
             return f"còn {nganluong} lượng, không đủ {GIAHOITHANHPHU} lượng Hồi Thành Phù"
         self._thoidiemhoithanhphus = [(t, d) for t, d in self._thoidiemhoithanhphus if time.time() - t < THOIGIANDEMHOITHANHPHU]
         # Chỉ đếm lần chưa tới được nơi (sau lần dùng chưa vào bản đồ đích): Danh Vọng đi đi về về Tề Quốc vài phút 1 lần, đếm cả lần đã
@@ -1653,9 +1663,18 @@ class TacTuDiChuyen:
                 return False
             self._thoidiemhoithanhphus.append((time.time(), idbandodich))
             #self.action_sudungvatphamhanhtrang(HOITHANHPHU)
-            self.moitruong.action_thucthicaulenh("dGludmF0 2")
+            if self.get_is_vomonphai():
+                # Vô Môn Phái: Hồi Môn Phái (miễn phí) cũng về Tân Thủ Thôn, luôn dùng thay Hồi Thành Phù (người dùng dặn 2026-11-01)
+                self.moitruong._inlog(f"[HỒI THÀNH PHÙ] Vô Môn Phái: Hồi Môn Phái ('{LENHHOIMONPHAI}') về Tân Thủ Thôn thay Hồi Thành Phù")
+                self.moitruong.action_thucthicaulenh(LENHHOIMONPHAI)
+            else:
+                self.moitruong.action_thucthicaulenh("dGludmF0 2")
             return True
         return False
+
+    def get_is_vomonphai(self):
+        # Chưa vào môn phái (môn phái không có bản đồ trong BANDOMONPHAI): Hồi Môn Phái về Tân Thủ Thôn
+        return self.moitruong.get_tenmonphai() not in BANDOMONPHAI
 
     def action_dichuyenlenbandofarm(self):
         # Đang ở Tân Thủ Thôn / Chu: phù tới bản đồ của điểm đánh đầu tiên bằng NPC của cách tốt nhất (_phutoibando), phù tới bản đồ gần

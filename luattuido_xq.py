@@ -16,6 +16,7 @@
 #   "muabu": đứng gần NPC ở Tân Thủ Thôn mà còn ít hơn "duoi" món (đếm cả các chồng) thì mua cho đủ "muatoi". Mỗi mục: {"bat": true,
 #           "vatpham": tên (trong túi), "tencuahang": tên trong cửa hàng nếu khác ("" = như "vatpham"), "npc": tên / danh hiệu NPC bán,
 #           "duoi": N, "muatoi": M, (ô / giá bot tự tra theo tên trong cửa hàng; "o" / "dongia" của bản cũ bỏ đi)
+#           "thapnhat": còn <= chừng này (mặc định THAPNHATMACDINH) thì đang farm (bật Tự động về bán rác) cũng chạy về Tân Thủ Thôn mua
 #           "xepchong": số món tối đa 1 ô chồng được (mặc định XEPCHONGMACDINH): mỗi lệnh buy mua không quá chừng này,
 #           thiếu nhiều hơn thì gửi nhiều lệnh (vd Bùa Giấy chồng 5000, mua cho đủ 10000 thì 2 lệnh 5000)
 #           "monphai": "" = mọi môn phái hoặc "maoson", "vanmongcoc"..., "chikhi": "" = luôn, "trieuhoibaothu" = chỉ khi bật triệu hồi
@@ -44,10 +45,13 @@ RUONGTUDONG = 0
 TENHANHDONG = {HANHDONG_GIU: "Giữ", HANHDONG_BAN: "Bán", HANHDONG_VUT: "Vứt"}
 DIEUKIENs = ("ten", "tenchua", "loai", "mota")
 TENDIEUKIEN = {"ten": "Tên đúng", "tenchua": "Tên chứa", "loai": "Loại chứa", "mota": "Mô tả chứa"}
-TRUONGMUABU = ("vatpham", "tencuahang", "npc", "xepchong", "duoi", "muatoi", "monphai", "chikhi")
+TRUONGMUABU = ("vatpham", "tencuahang", "npc", "xepchong", "duoi", "muatoi", "thapnhat", "monphai", "chikhi")
 TENTRUONGMUABU = {"vatpham": "Vật phẩm", "tencuahang": "Tên ở cửa hàng (nếu khác)", "npc": "NPC bán", "xepchong": "Xếp chồng tối đa / ô",
-                  "duoi": "Mua khi dưới", "muatoi": "Mua cho đủ", "monphai": "Môn phái (trống = tất cả)", "chikhi": "Chỉ mua khi"}
+                  "duoi": "Mua khi dưới", "muatoi": "Mua cho đủ",
+                  "thapnhat": "Chạy về mua khi còn ≤", "monphai": "Môn phái (trống = tất cả)", "chikhi": "Chỉ mua khi"}
 XEPCHONGMACDINH = 100
+# -1 = không tự chạy về mua bù (chỉ mua khi đang đứng gần NPC)
+THAPNHATMACDINH = -1
 CHIKHI_LUON = ""
 CHIKHI_TRIEUHOIBAOTHU = "trieuhoibaothu"
 TENCHIKHI = {CHIKHI_LUON: "Luôn", CHIKHI_TRIEUHOIBAOTHU: "Bật triệu hồi bảo thú giang hồ"}
@@ -140,6 +144,10 @@ def _chuanhoamuabu(muc):
         muc["xepchong"] = max(1, int(muc.get("xepchong") or XEPCHONGMACDINH))
     except (TypeError, ValueError):
         muc["xepchong"] = XEPCHONGMACDINH
+    try:
+        muc["thapnhat"] = max(-1, int(muc.get("thapnhat", THAPNHATMACDINH)))
+    except (TypeError, ValueError):
+        muc["thapnhat"] = THAPNHATMACDINH
     return muc
 
 

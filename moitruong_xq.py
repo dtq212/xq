@@ -160,7 +160,7 @@ class MoiTruong:
         self._thoidiemlogkhoakynanggannhat = 0.
         # Chống spam kỹ năng không mục tiêu: {id kỹ năng: [thời điểm gửi gần đây]} và {id kỹ năng: thời điểm hết tạm khoá}
         self._thoidiemguikynangkhongmuctieu_map = {}
-        self._thoidiemhetkhoaspamkynang_map = {}
+        self._thoidiemlogspamkynang_map = {}
         self._vitrikynangdalog = set()
         # Lịch sử vị trí mục tiêu đang đuổi theo (để tính hướng/tốc độ chạy mà click đón đầu)
         self._lichsutoadomuctieu_map = {}
@@ -306,6 +306,12 @@ class MoiTruong:
         self._diachihamkichbannoidungtrochuyen = False
         self._diachihamkichbantinhethong = False
 
+        # Hook dò lệnh game tự gửi (action_thietlaphooklenhgame): bộ đệm vòng, đã đọc tới đâu, lệnh bot vừa gửi (để không log trùng)
+        self._diachibodemlenhgame = False
+        self._diachihamkichbanlenhgame = False
+        self._demdonglenhgamedadoc = 0
+        self._lenhbotganday = {}
+
     def __del__(self):
         def safe_free_old(flag_name, addr_name):
             try:
@@ -320,6 +326,8 @@ class MoiTruong:
             safe_free_old("_is_dasetupactionthietlaphooknoidungtrochuyen", "_diachibodemnoidungtrochuyen")
             safe_free_old("_is_dasetupactionthietlaphooknoidungtrochuyen", "_diachihamkichbannoidungtrochuyen")
             safe_free_old("_is_dasetupactionthietlaphooknoidungtrochuyen", "_diachihamkichbantinhethong")
+        safe_free_old("_diachibodemlenhgame", "_diachibodemlenhgame")
+        safe_free_old("_diachihamkichbanlenhgame", "_diachihamkichbanlenhgame")
 
         mem_map = [
             ("_is_dasetupautoassemblekhoitaothongtinbando", "_diachiautoassemblekhoitaothongtinbando"),
@@ -624,6 +632,7 @@ class MoiTruong:
         ghilognhanvat(idnguoichoi or f"cuaso_{self.idcuaso}", dong)
 
     def _loglenh(self, caulenh, nguon):
+        self._lenhbotganday[caulenh] = time.time()
         if IS_LOGCAULENH:
             self._inlog(f"[LỆNH {nguon}] {caulenh}")
 
@@ -633,27 +642,33 @@ class MoiTruong:
         return self._thoidiemsudungkynanggannhat
 
     def get_is_kynangdangbikhoa(self, idkynang):
-        # Đang khoá mọi kỹ năng hoặc riêng kỹ năng này đang bị khoá chống spam: gửi lúc này chắc chắn không đi (không log)
+        # Đang khoá mọi kỹ năng hoặc riêng kỹ năng này đang giãn nhịp chống spam: gửi lúc này chắc chắn không đi (không log)
         thoidiemhientai = time.time()
-        return thoidiemhientai < self._thoidiemhetkhoakynang or thoidiemhientai < self._thoidiemhetkhoaspamkynang_map.get(idkynang, 0.)
+        return thoidiemhientai < self._thoidiemhetkhoakynang or self._is_dangiannhipspam(idkynang, thoidiemhientai)
+
+    def _is_dangiannhipspam(self, idkynang, thoidiemhientai):
+        # Đã gửi >= SOLANGUITOIDASPAMKYNANG lần trong SOGIAYDEMSPAMKYNANG giây mà chưa ra và lần gửi cuối chưa quá KHOANGCACHGUISPAMKYNANG giây
+        thoidiemguis = [t for t in self._thoidiemguikynangkhongmuctieu_map.get(idkynang, []) if thoidiemhientai - t < SOGIAYDEMSPAMKYNANG]
+        return len(thoidiemguis) >= SOLANGUITOIDASPAMKYNANG and thoidiemhientai - thoidiemguis[-1] < KHOANGCACHGUISPAMKYNANG
 
     def _is_kynangbispam(self, idkynang):
         # Không kỹ năng nào cần gửi dồn dập (chiêu nào cũng có hồi chiêu >= 1s): game báo "sẵn sàng" mà kỹ năng không ra (bị khống chế
         # mà bot chưa biết hiệu ứng như mộng du, mục tiêu đặc biệt...) thì trước đây cứ gửi lại mỗi lượt (Cam Lộ Trì 625 lần / 3 phút làm
-        # server đơ), ngập hàng đợi lệnh khiến các kỹ năng khác không chen vào được. Áp cho cả kỹ năng có mục tiêu
+        # server đơ), ngập hàng đợi lệnh khiến các kỹ năng khác không chen vào được. Áp cho cả kỹ năng có mục tiêu.
+        # Không khoá kỹ năng: chỉ giãn nhịp còn 1 lần / KHOANGCACHGUISPAMKYNANG giây, giữa các lần gửi kỹ năng khác vẫn chen vào
         if idkynang in IDKYNANGKHONGCHANSPAMs:
             return False
         thoidiemhientai = time.time()
-        if thoidiemhientai < self._thoidiemhetkhoaspamkynang_map.get(idkynang, 0.):
-            return True
         thoidiemguis = [t for t in self._thoidiemguikynangkhongmuctieu_map.get(idkynang, []) if thoidiemhientai - t < SOGIAYDEMSPAMKYNANG]
         if len(thoidiemguis) >= SOLANGUITOIDASPAMKYNANG:
-            self._thoidiemhetkhoaspamkynang_map[idkynang] = thoidiemhientai + THOIGIANKHOASPAMKYNANG
-            self._thoidiemguikynangkhongmuctieu_map[idkynang] = []
-            # Ghi kèm hiệu ứng đang có trên người để tìm ra khống chế nào làm kỹ năng không ra
-            hieuungs = [(idhieuung, is_coloi) for idhieuung, is_coloi, _ in self.get_danhsachhieuungnhanvats()]
-            self._inlog(f"[CHẶN SPAM] kỹ năng {idkynang} gửi {len(thoidiemguis)} lần trong {SOGIAYDEMSPAMKYNANG}s mà vẫn sẵn sàng => tạm khoá {THOIGIANKHOASPAMKYNANG}s | hiệu ứng (id, có lợi): {hieuungs}")
-            return True
+            if thoidiemhientai - thoidiemguis[-1] < KHOANGCACHGUISPAMKYNANG:
+                return True
+            if thoidiemhientai - self._thoidiemlogspamkynang_map.get(idkynang, 0.) >= THOIGIANLOGSPAMKYNANG:
+                self._thoidiemlogspamkynang_map[idkynang] = thoidiemhientai
+                # Ghi kèm hiệu ứng đang có trên người để tìm ra khống chế nào làm kỹ năng không ra
+                hieuungs = [(idhieuung, is_coloi) for idhieuung, is_coloi, _ in self.get_danhsachhieuungnhanvats()]
+                self._inlog(f"[CHẶN SPAM] kỹ năng {idkynang} gửi {len(thoidiemguis)} lần trong {SOGIAYDEMSPAMKYNANG}s mà vẫn sẵn sàng => giãn nhịp"
+                            f" {KHOANGCACHGUISPAMKYNANG}s/lần | hiệu ứng (id, có lợi): {hieuungs}")
         thoidiemguis.append(thoidiemhientai)
         self._thoidiemguikynangkhongmuctieu_map[idkynang] = thoidiemguis
         return False
@@ -744,11 +759,15 @@ class MoiTruong:
         caulenh = "{} {}# {}".format(caulenhtrochuyen, hex(iddoituong), noidungtrochuyen).replace("0x", "")
         return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_THAP)
 
-    def action_sudungvatpham(self, iddoituong, is_boquaxacnhan = False, delay = 0.2, douutien = DOUUTIEN_KHANCAP):
+    def action_sudungvatpham(self, iddoituong, is_boquaxacnhan = False, delay = 0.2, douutien = DOUUTIEN_KHANCAP, is_use2 = False):
+        # is_use2: "use2 <id>#" = lệnh nút Xác Nhận của hộp hỏi khi dùng (VATPHAMDUNGUSE2s), gửi thẳng không cần "use" trước
         if time.time() - self._thoidiemsudungvatphamgannhat < delay:
             return False
         self._thoidiemsudungvatphamgannhat = time.time()
-        caulenh = "use ! {}#".format(hex(iddoituong)).replace("0x", "") if is_boquaxacnhan else "use {}#".format(hex(iddoituong)).replace("0x", "")
+        if is_use2:
+            caulenh = f"use2 {iddoituong:x}#"
+        else:
+            caulenh = "use ! {}#".format(hex(iddoituong)).replace("0x", "") if is_boquaxacnhan else "use {}#".format(hex(iddoituong)).replace("0x", "")
         return self.action_thucthicaulenh(caulenh, douutien = douutien)
 
     def action_moihoacxinvaonhom(self, idnguoichoi, delay = 0.2):
@@ -954,6 +973,85 @@ class MoiTruong:
 
         return True
 
+    def action_thietlaphooklenhgame(self):
+        # Dò lệnh client tự gửi lên máy chủ: hook đầu hàm gửi lệnh (HAMGUILENH + 5 là "sub esp, 0xC8", 5 byte đầu là chỗ
+        # action_vohieuhoahookchienquoc2 NOP nên không đụng), chép câu lệnh (tham số 1) vào bộ đệm vòng rồi chạy tiếp hàm gốc
+        if not IS_LOGLENHGAME:
+            return False
+        addr_at_hook = self.diachixq + DC.HAMGUILENH + 5
+        if read_bytes(self.tientrinh, addr_at_hook, 6) != bytes.fromhex("81 EC C8 00 00 00"):
+            return False
+
+        if not self._diachihamkichbanlenhgame:
+            self._diachibodemlenhgame = self.tientrinh.allocate(4 + SOLUONGDONGLENHGAME * KICHTHUOCDONGLENHGAME)
+            write_int(self.tientrinh, self._diachibodemlenhgame, 0)
+            diachikichban = self.tientrinh.allocate(256)
+            # Sau pushad tham số 1 (câu lệnh) ở [esp + 0x24]; chép xong mới tăng bộ đếm để bot không đọc ô đang chép dở
+            asm_script = f"""
+                pushad
+                mov esi, dword ptr [esp + 0x24]
+                test esi, esi
+                jz ketthuc
+                mov ebx, {self._diachibodemlenhgame}
+                mov eax, dword ptr [ebx]
+                and eax, {SOLUONGDONGLENHGAME - 1}
+                imul eax, eax, {KICHTHUOCDONGLENHGAME}
+                lea edi, [ebx + eax + 4]
+                mov ecx, {KICHTHUOCDONGLENHGAME - 1}
+            loop_copy:
+                mov al, byte ptr [esi]
+                mov byte ptr [edi], al
+                test al, al
+                jz end_copy
+                inc esi
+                inc edi
+                dec ecx
+                jnz loop_copy
+                mov byte ptr [edi], 0
+            end_copy:
+                inc dword ptr [ebx]
+            ketthuc:
+                popad
+                sub esp, 0xc8
+                push {addr_at_hook + 6}
+                ret
+            """
+            encoding, count = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+            if not encoding:
+                return False
+            write_bytes(self.tientrinh, diachikichban, bytes(encoding), len(encoding))
+            self._diachihamkichbanlenhgame = diachikichban
+
+        relative_offset = self._diachihamkichbanlenhgame - (addr_at_hook + 5)
+        patch_bytes = b"\xE9" + relative_offset.to_bytes(4, byteorder = "little", signed = True) + b"\x90"
+        write_bytes(self.tientrinh, addr_at_hook, patch_bytes, len(patch_bytes))
+        self._inlog("[LỆNH GAME] đã đặt hook dò lệnh game tự gửi")
+        return True
+
+    def action_loglenhgame(self):
+        # Log [LỆNH GAME] các lệnh hook bắt được mà bot không vừa gửi (bot gửi cũng đi qua hàm này)
+        if not self._diachibodemlenhgame:
+            return
+        try:
+            dulieu = read_bytes(self.tientrinh, self._diachibodemlenhgame, 4 + SOLUONGDONGLENHGAME * KICHTHUOCDONGLENHGAME)
+        except Exception:
+            return
+        dem = struct.unpack_from("<I", dulieu, 0)[0]
+        dadoc = self._demdonglenhgamedadoc
+        if dem < dadoc:
+            dadoc = 0
+        dadoc = max(dadoc, dem - SOLUONGDONGLENHGAME)
+        self._demdonglenhgamedadoc = dem
+        thoidiemhientai = time.time()
+        self._lenhbotganday = {k: v for k, v in self._lenhbotganday.items() if thoidiemhientai - v < 5.}
+        for i in range(dadoc, dem):
+            vitri = 4 + (i % SOLUONGDONGLENHGAME) * KICHTHUOCDONGLENHGAME
+            o = dulieu[vitri:vitri + KICHTHUOCDONGLENHGAME]
+            o = o[:o.find(b"\x00")] if b"\x00" in o else o
+            caulenh = o.decode("utf-8", errors = "replace")
+            if caulenh and caulenh not in self._lenhbotganday:
+                self._inlog(f"[LỆNH GAME] {caulenh}  (hex: {o.hex(' ')})")
+
     def get_sinhlucconlai(self):
         x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         return read_int(self.tientrinh, x + DC.KDK_SINHLUC) if x else False
@@ -984,10 +1082,32 @@ class MoiTruong:
         x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         return read_int(self.tientrinh, x + DC.KDK_TIENGUI) if x else None
 
+    def get_danhsachdanhhieu(self):
+        # Danh hiệu đang có (ô Danh Hiệu ở bảng Nhân Vật, chưa gồm "Ẩn danh hiệu"): [(mã dùng cho "title show <mã>", tên)], bỏ mục trùng mã
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
+        if not x:
+            return []
+        danhsach = []
+        for i in range(SODANHHIEUTOIDA):
+            muc = read_bytes(self.tientrinh, x + DC.KDK_DANHSACHDANHHIEU + i * KICHTHUOCMUCDANHHIEU, KICHTHUOCMUCDANHHIEU)
+            ma = muc[:6].split(b"\0")[0].decode("ascii", "ignore").strip()
+            if not ma:
+                break
+            ten = re.sub(r"\x1b.", "", muc[6:].split(b"\0")[0].decode("utf-8", "ignore")).strip()
+            if ma not in (m for m, _ in danhsach):
+                danhsach.append((ma, ten or ma))
+        return danhsach
+
     def get_kinhnghiem(self):
         # Kinh nghiệm hiện có (chặn tăng cấp thì cứ cộng dồn, lên cấp thì bị trừ đi), None khi chưa đọc được
         x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         return read_int(self.tientrinh, x + DC.KDK_KINHNGHIEM) if x else None
+
+    def get_kinhnghiemcanlencap(self):
+        # Kinh nghiệm cần để lên cấp kế (bảng Nhân Vật "521363 / 7347434" là số sau), ngay sau kinh nghiệm hiện có 0x28 byte
+        # (đo 2026-11-01: cấp 84 cần 7347434, cấp 100 cần 21365653), None khi chưa đọc được
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
+        return read_int(self.tientrinh, x + DC.KDK_KINHNGHIEM + 0x28) if x else None
 
     def get_soluongvatphamhanhtrangtheoten(self):
         # {tên: tổng số lượng} của cả hành trang trong 2 lần đọc; món không xếp chồng (số lượng 0) tính là 1
@@ -1681,6 +1801,11 @@ class MoiTruong:
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
         return read_int(self.tientrinh, diachicosothongtinnhanvat + DC.NV_PHANTRAMMAU) * 2
 
+    def get_toadobuoc(self, diachicosothongtinnhanvat = None):
+        # Ô đích của bước đang đi (+ 0x18, + 0x1C); đứng yên thì trùng toạ độ đang vẽ
+        diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
+        return struct.unpack("<ii", read_bytes(self.tientrinh, diachicosothongtinnhanvat + 0x18, 8))
+
     def get_toado(self, diachicosothongtinnhanvat = None, is_toadosaptoi = False):
         diachicosothongtinnhanvat = diachicosothongtinnhanvat or self.get_diachicosothongtinnhanvat1()
         # x, y nằm liền nhau: 1 lần đọc thay vì 2
@@ -1876,6 +2001,17 @@ class MoiTruong:
         x2, y2 = self.get_toado(diachicosothongtinnhanvat2)
 
         return math.dist((x1, y1), (x2, y2))
+
+    def get_khoangcachtamdanh(self, diachicosothongtinnhanvat2, diachicosothongtinnhanvat1 = False):
+        # Khoảng cách máy chủ dùng để xét tầm chiêu: theo ô, max(|dx|, |dy|) (vùng tầm là hình vuông: chéo tầm 8 với tới ~11.3 ô thẳng).
+        # Đo bằng log [TẦM XA CHI TIẾT]: max 8 / thẳng 10 ra 7/7, max 9 / thẳng 9 chỉ ra 16/56
+        x2, y2 = self.get_toado(diachicosothongtinnhanvat2)
+        return self.get_khoangcachtamdanhdiem(x2, y2, diachicosothongtinnhanvat1)
+
+    def get_khoangcachtamdanhdiem(self, x2, y2, diachicosothongtinnhanvat1 = False):
+        diachicosothongtinnhanvat1 = diachicosothongtinnhanvat1 or self.get_diachicosothongtinnhanvat1()
+        x1, y1 = self.get_toado(diachicosothongtinnhanvat1)
+        return float(max(abs(x2 - x1), abs(y2 - y1)))
 
     def get_khoangcachdiem(self, x2, y2, diachicosothongtinnhanvat1 = False):
         diachicosothongtinnhanvat1 = diachicosothongtinnhanvat1 or self.get_diachicosothongtinnhanvat1()
@@ -2096,8 +2232,19 @@ class MoiTruong:
         return read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0x29) == 0x80
 
     def get_is_baothuvatpham(self, diachicosothongtinnhanvat):
-        # Bảo thú gọi bằng vật phẩm (Thần Thú, Song Tử...): tên không có chủ nhân trong ngoặc, máu hiện > 100%
-        return bool(diachicosothongtinnhanvat) and self.get_tendoituong(diachicosothongtinnhanvat) in BAOTHUVATPHAMs
+        # Bảo thú gọi bằng vật phẩm (Thần Thú, Song Tử, Thuỷ Bình...): không tấn công được, không mất máu. Nhận theo tên trong BAOTHUVATPHAMs,
+        # hoặc tên không có chủ nhân trong ngoặc mà lớp +0x29 là bảo thú (0xA0 / 0xA1) hoặc máu hiện > 100% (bảo thú vật phẩm 120%).
+        # get_is_npc cũ có nhánh %máu > 100 nên chặn luôn mọi bảo thú vật phẩm; đổi sang +0x29 == 0x80 thì mất nhánh đó, con nào ngoài
+        # danh sách tên (Thuỷ Bình) bị chọn làm mục tiêu => xét lại ở đây
+        if not diachicosothongtinnhanvat:
+            return False
+        if self.get_tendoituong(diachicosothongtinnhanvat) in BAOTHUVATPHAMs:
+            return True
+        lop = read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0x29)
+        # Người chơi (< 0x80) không bao giờ là bảo thú vật phẩm (kẻo máu > 100% vì buff mà bỏ sót mục tiêu PK)
+        if lop < 0x80 or "(" in (self._get_tenthucte(diachicosothongtinnhanvat) or ""):
+            return False
+        return lop in (0xA0, 0xA1) or self.get_phantramsinhlucconlai(diachicosothongtinnhanvat) > 100
 
     def get_idkynang(self, idvitri_x, idvitri_y = None):
         # idvitri_x là mã kỹ năng (id hoặc vị trí (x, y)) khi không truyền idvitri_y
@@ -3348,6 +3495,14 @@ class MoiTruong:
             return False
         tyle = max(0., khoangcachtoida) / khoangcach
         xdich, ydich = round(x2 + (x1 - x2) * tyle), round(y2 + (y1 - y2) * tyle)
+        # Điểm trên đường thẳng rơi vào vật cản (nhích tầm xa khi lệch toạ độ client - server hay gặp): lấy ô đi được trong tầm, tới được
+        # thật, gần mình nhất (_chondichtoiduoc); không có thì ô đi được gần điểm đó nhất (có thể hơi ngoài tầm, lượt sau nhích tiếp)
+        if self.get_is_vatcan(xdich, ydich):
+            dichtoiduoc = self._chondichtoiduoc(round(x2), round(y2), max(0., khoangcachtoida))
+            xcu, ycu = xdich, ydich
+            xdich, ydich = dichtoiduoc if dichtoiduoc else self.get_oditduocganhat(xdich, ydich)
+            if IS_LOGDICHUYEN:
+                self._inlog(f"[TIẾP CẬN] đích {(xcu, ycu)} là vật cản => {(xdich, ydich)}")
         if (xdich, ydich) == (x1, y1):
             return False
         # Game không biết vùng cấm: đích tìm đường rơi vào vùng cấm thì đi theo vector (có lớp chặn đường đi cắt vùng cấm)

@@ -1075,6 +1075,11 @@ class TacTuLangLySon:
         thoidiem, ketqua = self._bonhonhompy
         if time.time() - thoidiem < 1. and ketqua:
             return ketqua
+        # Kéo cấp acc gà (tactu_keocap_xq): người give là acc gà acc chính chọn, nhóm là acc chính + acc gà thay cho nhóm todoi
+        nhomkeocap = self._laynhompykeocap()
+        if nhomkeocap:
+            self._bonhonhompy = (time.time(), nhomkeocap)
+            return nhomkeocap
         idtoi = self.moitruong.get_idnguoichoi()
         nhom = next((list(n) for n in laynhomtodoitudongs() if idtoi in n), [idtoi])
         onlines = {idtoi}
@@ -1215,16 +1220,18 @@ class TacTuLangLySon:
         # Cấp đồ thấp nhất được đốt: cấp nhân vật - caphonnhanvat (giao diện), không dưới CAPDOLAMKIMTOITHIEU
         return max(CAPDOLAMKIMTOITHIEU, (self.moitruong.get_capdonhanvat() or 0) - taicauhinhphongyeu()["caphonnhanvat"])
 
-    def _chondolamkim(self, s):
+    def _chondolamkim(self, s, captoithieu = None, is_tatca = False):
         # Món đem đốt: (cấp, giá, ô, id đối tượng, tên) cấp thấp / rẻ nhất trong túi (không xét đồ đang mặc), "doc" khi còn ô chưa có mô
         # tả (đã gửi desc, chờ máy chủ trả; THOIGIANCHODESCPY giây chưa có thì gửi lại, quá SOLANDESCPY lần thì bỏ ô đó), None khi không có
         # món nào. Đọc mô tả THÔ (giữ mã màu): get_motavatphamhanhtrangcosan bỏ hết mã màu nên không bao giờ thấy \x1bC (từng báo hết đồ
         # Lam Kim khi túi còn đầy)
+        # captoithieu: cấp đồ thấp nhất (mặc định theo cấp mình); is_tatca: trả cả danh sách thay vì món rẻ nhất (kéo cấp: acc chính đưa đồ
+        # cho acc gà theo cấp acc gà)
         moitruong = self.moitruong
         now = time.time()
         dadesc = s.setdefault("dadescpy", {})
         ketquas, sodesc, soguidesc = [], 0, 0
-        captoithieu = self._laycapdolamkimtoithieu()
+        captoithieu = self._laycapdolamkimtoithieu() if captoithieu is None else captoithieu
         cauhinh = taicauhinhphongyeu()
         for ten, mons in moitruong.get_danhsachvatphamhanhtrang_map().items():
             if not ten:
@@ -1249,6 +1256,8 @@ class TacTuLangLySon:
                     ketquas.append((*phantich, vitri, iddoituong, ten))
         if sodesc:
             return "doc"
+        if is_tatca:
+            return sorted(ketquas)
         return min(ketquas) if ketquas else None
 
     def _giaophongyeu(self, s, tennpc, x, y):
@@ -1491,6 +1500,10 @@ class TacTuLangLySon:
         if not is_thanhvien:
             # Người give: thành viên nào chưa vào nhóm thì vẫn mời tiếp (vào sau tự "look" Tả Khâu Minh vào phó bản)
             self._moithanhvienpy(s)
+        # Kéo cấp: acc gà đứng yên ở Thỏ Yêu, người give ra khi đủ số quái / bản đồ Tây Thành (tactu_keocap_xq)
+        yeucaukeocap = self._buoctrongphongyeukeocap(s, py, idbando, is_thanhvien)
+        if yeucaukeocap is not False:
+            return yeucaukeocap
         # Trưởng nhóm dò đủ SOLUOTDORAPHONGYEU lượt bản đồ mà chưa đủ boss (không đang đánh boss nào) thì cũng ra: boss chỉ để có thêm đồ
         # Lam Kim rơi ra xoay vòng, đứng dò mãi phí thời gian (người dùng)
         is_hetluot = not is_thanhvien and py["soluotdo"] >= SOLUOTDORAPHONGYEU and not py["boss"]
@@ -1556,6 +1569,9 @@ class TacTuLangLySon:
         noidung = unicodedata.normalize("NFC", moitruong.get_noidungcuasotuychon() or "") if ketqua == "xong" else ""
         khop = re.search(r"được\s*(\d+)\s*quái", noidung)
         py["soquai"] = int(khop.group(1)) if khop else None
+        # "Muốn phát hiện Boss phải đánh tới M quái vật" (kéo cấp ra khi đủ tỉ lệ)
+        khop = re.search(r"tới\s*(\d+)\s*quái", noidung)
+        py["soquaican"] = int(khop.group(1)) if khop else None
         self._logpb(s, f"Thỏ Yêu: {noidung[:100]!r}" if noidung else "Không hỏi được số quái từ Thỏ Yêu")
         if moitruong.get_is_danghiencuasotuychon():
             moitruong.set_is_danghiencuasotuychon(False)
@@ -1574,11 +1590,13 @@ class TacTuLangLySon:
                 return None
             toado = moitruong.get_toado()
             i = min(range(len(diems)), key = lambda k: math.dist(diems[k], toado))
-            do = py["do"] = {"idbando": idbando, "diems": diems, "i": i, "batdau": i, "luc": time.time()}
-            self._logpb(s, f"{len(diems)} điểm dò")
+            # Acc phụ kéo cấp dò ngược chiều acc chính (cùng vào 1 chỗ, đi cùng chiều là trùng đường)
+            chieu = -1 if self._is_donguocphongyeukeocap() else 1
+            do = py["do"] = {"idbando": idbando, "diems": diems, "i": i, "batdau": i, "luc": time.time(), "chieu": chieu}
+            self._logpb(s, f"{len(diems)} điểm dò" + (", đi ngược chiều" if chieu < 0 else ""))
         x, y = do["diems"][do["i"]]
         if moitruong.get_khoangcachdiem(x, y) <= KHOANGCACHTOIDIEMPY or time.time() - do["luc"] > THOIGIANMOIDIEMPY:
-            do["i"] = (do["i"] + 1) % len(do["diems"])
+            do["i"] = (do["i"] + do.get("chieu", 1)) % len(do["diems"])
             do["luc"] = time.time()
             if do["i"] == do["batdau"]:
                 py["soluotdo"] += 1

@@ -502,6 +502,23 @@ class TacTuHoatDong:
             self.moitruong.action_chantangcapdo()
         else:
             self.moitruong.action_bochantangcapdo()
+        self._tudongtangcap()
+
+    def _tudongtangcap(self):
+        # Tự tăng cấp tới _captudongtangcaptoida: kinh nghiệm hiện có >= kinh nghiệm cần thì gửi "gift upgrade" (nút Thăng Cấp ở bảng Nhân
+        # Vật, dò bằng log [LỆNH GAME]). Gửi lệnh trực tiếp nên chạy được cả khi đang Chặn tăng cấp độ (chỉ chặn hộp hỏi lên cấp).
+        # Mỗi lần gửi cách nhau THOIGIANGUILAITANGCAP giây (chờ máy chủ trừ kinh nghiệm / tăng cấp)
+        if not self._is_tudongtangcap or time.time() - self._thoidiemtudongtangcap < THOIGIANGUILAITANGCAP:
+            return
+        moitruong = self.moitruong
+        capdo = moitruong.get_capdonhanvat()
+        kinhnghiem, kinhnghiemcan = moitruong.get_kinhnghiem(), moitruong.get_kinhnghiemcanlencap()
+        if not capdo or capdo >= self._captudongtangcaptoida or kinhnghiem is None or not kinhnghiemcan or kinhnghiem < kinhnghiemcan:
+            return
+        self._thoidiemtudongtangcap = time.time()
+        if moitruong.action_thucthicaulenh("gift upgrade"):
+            moitruong._inlog(f"[TĂNG CẤP] cấp {capdo}, kinh nghiệm {kinhnghiem} / {kinhnghiemcan}: gửi gift upgrade (tự tăng tới cấp {self._captudongtangcaptoida})")
+            phatam(f"Tăng lên cấp {capdo + 1}", is_block = False)
 
     def action_tudongkhaikhoang(self):
         if not self._is_tudongkhaikhoang:

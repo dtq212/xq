@@ -14,6 +14,11 @@ from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, donbangthoid
 
 # Mua bù: cửa hàng chưa biết hàng thì mở để đọc (tactu_sumon_xq.batdau_mocuahang), mở hỏng thì chừng này giây sau mới thử lại
 GIANCACHMOCUAHANGMUABU = 120.
+# Về mua bù (món còn <= "thapnhat"): vừa về vì món nào thì chừng này giây sau mới xét lại món đó (NPC không bán / hết tiền thì khỏi chạy
+# về liên tục); tới NPC rồi chờ mua tối đa chừng này giây; xét món thiếu cách nhau chừng này giây
+THOIGIANCHOVEMUABULAI = 300.
+THOIGIANCHOMUABU = 60.
+GIANCACHKIEMTRAVEMUABU = 2.
 
 
 class TacTuVatPham:
@@ -60,9 +65,7 @@ class TacTuVatPham:
                         self._trangthaitrieuhoibaothuvatpham = 3
                         self.moitruong.action_mokhoakynang()
 
-                        danhhieu = DANHHIEU_MAP[self.moitruong.get_idnguoichoi()]
-                        if danhhieu:
-                            self.moitruong.action_thucthicaulenh("title show {}".format(danhhieu), douutien = DOUUTIEN_KHANCAP)
+                        self.action_lammoitrangthai()
 
                         break
 
@@ -529,18 +532,13 @@ class TacTuVatPham:
         # Ô / giá tra theo tên món ("tencuahang" nếu có) trong hàng đã đọc của cửa hàng đó (nhiemvu_xq.SoVitri); chưa đọc thì đứng gần
         # mở cửa hàng đọc 1 lần (đóng ngay).
         # Đếm cả các chồng của món đó; vừa mua món nào thì 10s sau mới xét lại món đó (chờ hành trang cập nhật, khỏi mua trùng)
-        mucs = [m for m in tailuat()["muabu"] if m["bat"] and m["vatpham"] and m["npc"] and m["muatoi"]]
+        mucs = self._laymucmuabus()
         if not mucs:
             return
         soluongtheoten = self.moitruong.get_soluongvatphamhanhtrangtheoten()
         if soluongtheoten is None:
             return
-        tenmonphai = self.moitruong.get_tenmonphai()
         for muc in mucs:
-            if muc["monphai"] and muc["monphai"] != tenmonphai:
-                continue
-            if muc["chikhi"] == CHIKHI_TRIEUHOIBAOTHU and not self._is_tudongtrieuhoibaothugiangho:
-                continue
             if time.time() - self._thoidiemmuabu_map.get(muc["vatpham"], 0.) < 10.:
                 continue
             soluong = soluongtheoten.get(muc["vatpham"], 0)
@@ -573,6 +571,62 @@ class TacTuVatPham:
             if damua:
                 self._thoidiemmuabu_map[muc["vatpham"]] = time.time()
                 print(f"[MUA BÙ] {self.moitruong.get_tendoituong()}: mua {damua} {muc['vatpham']} (còn {soluong}, chồng {muc['xepchong']}/ô)")
+
+    def _laymucmuabus(self):
+        # Các mục mua bù đang dùng được cho nhân vật này (bật, đủ thông tin, đúng môn phái / điều kiện)
+        tenmonphai = self.moitruong.get_tenmonphai()
+        return [m for m in tailuat()["muabu"] if m["bat"] and m["vatpham"] and m["npc"] and m["muatoi"]
+                and (not m["monphai"] or m["monphai"] == tenmonphai)
+                and (m["chikhi"] != CHIKHI_TRIEUHOIBAOTHU or self._is_tudongtrieuhoibaothugiangho)]
+
+    def _is_canvemuabu(self):
+        # Đang farm mà có món mua bù còn <= "thapnhat": phát âm, trả về True để luồng về bán rác chạy về Tân Thủ Thôn (mua ở
+        # action_tudongmuavatpham, chờ mua ở _xulychomuabu). Đang ở Tân Thủ Thôn thì action_tudongmuavatpham tự mua, khỏi về
+        if not self._is_tudongmuavatpham or self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON:
+            return False
+        if time.time() - self._thoidiemkiemtravemuabu < GIANCACHKIEMTRAVEMUABU:
+            return False
+        self._thoidiemkiemtravemuabu = time.time()
+        soluongtheoten = self.moitruong.get_soluongvatphamhanhtrangtheoten()
+        if soluongtheoten is None:
+            return False
+        for muc in self._laymucmuabus():
+            if time.time() - self._thoidiemvemuabu_map.get(muc["vatpham"], 0.) < THOIGIANCHOVEMUABULAI:
+                continue
+            soluong = soluongtheoten.get(muc["vatpham"], 0)
+            if soluong <= muc["thapnhat"] and soluong < muc["muatoi"]:
+                self._thoidiemvemuabu_map[muc["vatpham"]] = time.time()
+                print(f"[MUA BÙ] {self.moitruong.get_tendoituong()}: còn {soluong} {muc['vatpham']} (<= {muc['thapnhat']}), về Tân Thủ Thôn mua")
+                phatam(f"Còn {soluong} {muc['vatpham']}, về mua bù", is_block = False)
+                return True
+        return False
+
+    def _xulychomuabu(self):
+        # Đã về tới tiệm (bán rác xong): còn món mua bù dưới "Mua khi dưới" mà thấy NPC bán thì đi tới đứng chờ action_tudongmuavatpham
+        # mua (mỗi 3s), quá THOIGIANCHOMUABU giây thì thôi. True = xong, quay lại bãi
+        if not self._thoidiembatdauchomuabu:
+            self._thoidiembatdauchomuabu = time.time()
+        soluongtheoten = self.moitruong.get_soluongvatphamhanhtrangtheoten()
+        if time.time() - self._thoidiembatdauchomuabu < THOIGIANCHOMUABU and soluongtheoten is not None:
+            for muc in self._laymucmuabus():
+                soluong = soluongtheoten.get(muc["vatpham"], 0)
+                if soluong >= muc["duoi"] or soluong >= muc["muatoi"]:
+                    continue
+                diachinpc = self._timdoituongxungquanh(muc["npc"])
+                if not diachinpc:
+                    continue
+                if self.moitruong.get_khoangcach(diachinpc) > 3. and time.time() - self._thoidiemdichuyenchomuabu > 1.:
+                    self._thoidiemdichuyenchomuabu = time.time()
+                    self.moitruong.action_dichuyengiukhoangcachtoida(diachinpc, khoangcachtoida = 0.)
+                return False
+        self._thoidiembatdauchomuabu = 0.
+        return True
+
+    def _xulybanracvamuabu(self):
+        # Bước 3 của về bán rác: bán rác (nếu bật về bán rác) rồi chờ mua bù
+        if self._is_tudongvebanrac and self._thoidiembatdauchomuabu == 0. and not self._xulydangbanrac():
+            return False
+        return self._xulychomuabu()
 
     def _layogiamuabu(self, muc, diachinpc):
         # (ô, giá) để mua món của luật mua bù ở NPC này, None khi chưa biết (đã cho mở cửa hàng đọc nếu được)
@@ -731,7 +785,7 @@ class TacTuVatPham:
 
         print("{}: sử dụng vật phẩm: {}".format(self.moitruong.get_tendoituong(), tenvatpham))
 
-        is_ok = self.moitruong.action_sudungvatpham(iddoituongvatpham, is_boquaxacnhan, delay = delay)
+        is_ok = self.moitruong.action_sudungvatpham(iddoituongvatpham, is_boquaxacnhan, delay = delay, is_use2 = tenvatpham in VATPHAMDUNGUSE2s)
         if is_ok:
             self._thoidiemsudungvatphamgannhat = time.time()
 
@@ -751,7 +805,7 @@ class TacTuVatPham:
 
         print("{}: sử dụng vật phẩm: {} tại vị trí {}".format(self.moitruong.get_tendoituong(), tenvatpham, vitri))
 
-        is_ok = self.moitruong.action_sudungvatpham(iddoituongvatpham, is_boquaxacnhan, delay = delay)
+        is_ok = self.moitruong.action_sudungvatpham(iddoituongvatpham, is_boquaxacnhan, delay = delay, is_use2 = tenvatpham in VATPHAMDUNGUSE2s)
         if is_ok:
             self._thoidiemsudungvatphamgannhat = time.time()
 
@@ -1520,7 +1574,7 @@ class TacTuVatPham:
                     self._trangthaiveban = 4
                     self._thoidiemchuyentrangthai = time.time()
 
-            elif is_dayhanhtrang:
+            elif is_dayhanhtrang or self._is_canvemuabu():
                 self._trangthaiveban = 1
                 self._thoidiemchuyentrangthai = time.time()
 
@@ -1555,7 +1609,7 @@ class TacTuVatPham:
                         self._trangthaiveban = 0
 
         elif self._trangthaiveban == 3:
-            if self._xulydangbanrac():
+            if self._xulybanracvamuabu():
                 print("[AUTO-SELL] Đã bán xong, chuẩn bị quay lại")
                 self._trangthaiveban = 4
                 self._thoidiemchuyentrangthai = time.time()
@@ -1590,8 +1644,8 @@ class TacTuVatPham:
                     print("[AUTO-SELL] Đứng cạnh NPC nhưng túi đầy. Tiếp tục bán.")
                     self._trangthaiveban = 2
                     return
-            if self.moitruong.get_is_dayhanhtrang():
-                print("[AUTO-SELL] Hành trang đầy. Bắt đầu quy trình về bán.")
+            if self.moitruong.get_is_dayhanhtrang() or self._is_canvemuabu():
+                print("[AUTO-SELL] Hành trang đầy / cần mua bù. Bắt đầu quy trình về bán.")
                 self._trangthaiveban = 1
                 self._thoidiemhoithanhphu = 0
 
@@ -1640,7 +1694,7 @@ class TacTuVatPham:
                     print("[AUTO-SELL] Đang chờ load map hoặc chưa về thành...")
 
         elif self._trangthaiveban == 3:
-            if self._xulydangbanrac():
+            if self._xulybanracvamuabu():
                 print("[AUTO-SELL] Đã bán xong.")
                 self._trangthaiveban = 4
 

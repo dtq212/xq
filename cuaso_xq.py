@@ -102,6 +102,7 @@ class CuaSo:
             if dieuphoi_giukynangs is not None:
                 self.moitruong.giukynang = GiuKyNangMucTieu(idcuaso, dieuphoi_khoa, dieuphoi_giukynangs)
         self.moitruong.action_thietlaphooknoidungtrochuyen()
+        self.moitruong.action_thietlaphooklenhgame()
         self.tactu = TacTu(self.moitruong)
         # Bot đọc gộp cả cửa sổ máy khác trong LAN (lan_xq), ghi vẫn vào máy này
         self.tactu.shared_data = DuLieuNhieuMay(shared_data, shared_data_lan) if shared_data_lan is not None else shared_data
@@ -250,6 +251,8 @@ class CuaSo:
                     "_is_uutienbaothukynangtrieuhoi": self.tactu._is_uutienbaothukynangtrieuhoi,
                     "_is_chedobufftoanbang": self.tactu._is_chedobufftoanbang,
                     "_is_chantangcapdo": self.tactu._is_chantangcapdo,
+                    "_is_tudongtangcap": self.tactu._is_tudongtangcap,
+                    "_captudongtangcaptoida": self.tactu._captudongtangcaptoida,
 
                     # Danh sách (không nối chuỗi) để giao diện sửa được từng tên
                     "_tenmuctieutancongs": sorted(self.tactu._tenmuctieutancongs),
@@ -259,7 +262,10 @@ class CuaSo:
                     "_khoangcachtoidatheosau": self.tactu._khoangcachtoidatheosau,
                     "_bankinhdiemdanh": self.tactu._bankinhdiemdanh,
                     "_phamchatnhats": sorted(self.tactu._phamchatnhats),
-                    "_khoangcachsudungkynangtamxa": self.tactu._khoangcachsudungkynangtamxa,
+                    "_khoangcachsudungkynangtamxa": self.tactu._tamxatoida,
+                    "_tamxahientai": self.tactu._khoangcachsudungkynangtamxa,
+                    "_danhhieulammoi": self.tactu._danhhieulammoi,
+                    "_danhsachdanhhieu": self.tactu.get_danhsachdanhhieu(),
                     "_phantramnoiluckhaithientichdia": self.tactu._phantramnoiluckhaithientichdia,
 
                     "_is_tudongdichuyendiemdanhxungquanh": self.tactu._is_tudongdichuyendiemdanhxungquanh,
@@ -310,6 +316,10 @@ class CuaSo:
                     "_langlysongiunhom": self.tactu.get_dsidgiunhomlanglyson(),
                     # Phong Yêu Kính: ID boss mình đã giết vòng này, người cùng nhóm cộng vào (boss chết xa họ vẫn được tính)
                     "_bossdagietphongyeu": self.tactu.get_bossdagietphongyeu(),
+                    # Kéo cấp acc gà (tactu_keocap_xq): vai / giai đoạn / cấp cho cửa sổ cùng máy, trạng thái cho giao diện
+                    "_keocap": self.tactu.get_keocapshare(),
+                    "_trangthaikeocap": self.tactu.get_trangthaikeocap(),
+                    "capdo": self.moitruong.get_capdonhanvat() or 0,
                     # Sư Gia (tactu_sugia_xq): trạng thái cho giao diện; nhiệm vụ của mình ("" / "dang" / "xong") cho trưởng nhóm cùng máy chờ
                     "_trangthaisugia": self.tactu.get_trangthaisugia(),
                     "_is_dangsugia": self.tactu.get_is_dangsugia(),
@@ -410,6 +420,19 @@ class CuaSo:
                     self.tactu.batdau_langlyson("phongyeukinh")
                 elif cmd == "huylanglyson":
                     self.tactu.huy_langlyson()
+                elif isinstance(cmd, str) and cmd.startswith("keocapchinh:"):
+                    # Kéo cấp acc gà (tactu_keocap_xq), vai acc chính: keocapchinh:<ID acc gà>,<ID acc gà>...[;<ID đồ đệ>]
+                    dsga, _, iddode = cmd.split(":", 1)[1].partition(";")
+                    self.tactu.batdau_keocap("chinh", idgas = [int(i) for i in dsga.split(",") if i.strip().isdigit()],
+                                             iddode = int(iddode) if iddode.strip().isdigit() else 0)
+                elif isinstance(cmd, str) and cmd.startswith("keocapga:"):
+                    # Vai acc gà: keocapga:<ID acc chính>
+                    self.tactu.batdau_keocap("ga", idchinh = int(cmd.split(":", 1)[1]))
+                elif cmd == "keocapphu":
+                    # Vai acc phụ Phong Yêu Kính (máy khác nối LAN): tự tìm acc chính đang kéo cấp
+                    self.tactu.batdau_keocap("phu")
+                elif cmd == "huykeocap":
+                    self.tactu.huy_keocap()
                 elif cmd == "sugia":
                     # Nhiệm vụ Sư Gia (tactu_sugia_xq) bật / tắt từ giao diện
                     self.tactu.batdau_sugia()
@@ -456,6 +479,8 @@ class CuaSo:
                         self.tactu.thietlap_muctieutheosau(int(idmuctieu), tenmuctieu)
                     except Exception as e:
                         print(f"Lỗi khi chọn người theo sau: {e}")
+                elif isinstance(cmd, str) and cmd.startswith("set_danhhieulammoi:"):
+                    self.tactu.thietlap_danhhieulammoi(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_khoangcachsudungkynangtamxa:"):
                     try:
                         self.tactu.thietlap_khoangcachsudungkynangtamxa(float(cmd.split(":")[1]))
@@ -538,6 +563,13 @@ class CuaSo:
                     self.tactu.thietlap_baothutrieuhoimaoson(cmd.split(":", 1)[1])
                 elif cmd == "battat_chantangcapdo":
                     self.tactu.battat_is_chantangcapdo()
+                elif cmd == "battat_tudongtangcap":
+                    self.tactu.battat_is_tudongtangcap()
+                elif isinstance(cmd, str) and cmd.startswith("set_captudongtangcaptoida:"):
+                    try:
+                        self.tactu.thietlap_captudongtangcaptoida(cmd.split(":")[1])
+                    except Exception:
+                        pass
                 elif cmd == "battat_tudongkhaikhoang":
                     self.tactu.battat_is_tudongkhaikhoang()
                 elif cmd == "thuchien_tudongbanrac":

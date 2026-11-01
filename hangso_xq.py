@@ -49,6 +49,8 @@ THANTHUDAN2 = "Thần Thú - Dần (Giới h"
 THANTHUSUU = "Thần Thú - Sửu (Giới hạn)"
 THANTHUSUU2 = "Thần Thú - Sửu (Giới h"
 THANTHUCHUOT = "Thần Thú - Chuột"
+# Bảo thú vật phẩm thưởng code tân thủ (vật phẩm / con bảo thú game viết "Thuỷ" hoặc "Thủy")
+THUYBINHs = ("Thuỷ Bình", "Thủy Bình")
 THANTHUTHO = "Thần Thú - Thỏ"
 THANTHUTHIN = "Thần Thú - Thìn"
 THANTHUTINHLINHNOEL = "Thần Thú - Tinh Linh Noel"
@@ -84,7 +86,10 @@ BATTIENDON = "Bát Tiên Đơn"
 HOITHANHPHU = "Hồi Thành Phù"
 # Giá (ngân lượng): Hồi Thành Phù qua Tín Vật (menu Tín Vật trong game), phù Tân Thủ Tiên Cô (từ cấp 50)
 GIAHOITHANHPHU = 1500
+# Hồi môn phái: miễn phí, chưa vào môn phái thì về Tân Thủ Thôn (acc ít tiền thay Hồi Thành Phù)
+LENHHOIMONPHAI = "dGludmF0 1"
 GIAPHUTANTHUTIENCO = 500
+CAPTINHTIENPHUTANTHUTIENCO = 50
 # Mua đồ luôn chừa lại bấy nhiêu ngân lượng (đủ Hồi Thành Phù về rồi phù đi)
 NGANLUONGGIULAI = GIAHOITHANHPHU + GIAPHUTANTHUTIENCO
 # Tối đa bấy nhiêu lần Hồi Thành Phù trong THOIGIANDEMHOITHANHPHU giây: quá thì coi như đang lặp, ngưng dùng (mỗi lần 1.500 lượng)
@@ -177,6 +182,41 @@ KHOANGCACHSUDUNGKYNANGTAMXA = 9.  # 12.
 # - đứng đánh lâu / đang chạy bù thì tầm yêu cầu giảm BUKHOANGCACHTAMXA ô (đánh ở ~8 ô), chạy vào tầm thì dừng ở tầm xa - BU - 1 (~7 ô)
 TRUHAOTAMXACHONMUCTIEU = 0.
 BUKHOANGCACHTAMXA = 1.
+# Tầm xa tự học (TacTu._capnhattamxa): ô tầm xa trên giao diện là tầm TỐI ĐA (tầm thật ~12), bot dùng tầm hiện tại. Chiêu nhắm mục tiêu
+# gửi từ khoảng cách >= TAMXATOITHIEU - VUNGMEPTAMXA: vào hồi chiêu / tư thế xuất chiêu trong THOIGIANCHOCHIEUNHAN giây là "ra", không
+# thì "không ra" (lệch toạ độ client - server, máy chủ thấy xa hơn). Đếm theo khoảng cách lúc gửi làm tròn xuống (ô d = [d, d+1));
+# tầm hiện tại = mép trên của ô xa nhất mà mọi ô từ TAMXATOITHIEU tới đó có tỉ lệ ra >= NGUONGTILERATAMXA (ô chưa đủ SOMAUTOITHIEUTAMXA
+# lần gửi coi như đạt => tự thử xa hơn). Số đếm mỗi ô giữ tối đa SOMAUTOIDATAMXA và giảm một nửa sau mỗi BANRATAMXA giây nhưng không
+# xuống dưới SOMAUTOITHIEUTAMXA (ô đã biết hay trượt không bị coi là chưa đủ mẫu rồi nhảy tầm lên tối đa).
+# Thống kê 2026-11-01 (187, tầm tối đa 12, ~1 giờ, ra/gửi): 7 ô 95%, 8 ô 96%, 9 ô 79%, 10 ô 56%, 11 ô 40% (bản co / nới cũ giữ tầm TB
+# 10.7 nên hụt gần nửa số chiêu). 85%: hụt 1 chiêu mất ~0.5s, đắt hơn chạy thêm 1 ô (~0.25s).
+# Đo spam tới khi nhận (187, ~5000 chuỗi): lần gửi đầu -> cuối trung vị 0.12s, 90% 0.25s => chiêu ra thấy trong ~0.4s
+THOIGIANCHOCHIEUNHAN = 0.5
+# Chế độ đứng yên (TacTu._chontamxa): mình không di chuyển >= THOIGIANDUNGYENTAMXA giây và mục tiêu không di chuyển thì toạ độ client
+# khớp server, dùng bảng học riêng (chưa có mẫu => thử tới tầm tối đa). Trượt thì nhích vào NHICHTAMXA ô với mục tiêu đó; đang nhích /
+# tiếp cận thì giữ chế độ đứng yên THOIGIANNHICHTAMXA giây; tiếp cận chỉ vào trong tầm VUNGTIEPCANTAMXADUNGYEN ô rồi bắn
+THOIGIANDUNGYENTAMXA = 0.3
+NHICHTAMXA = 1.
+THOIGIANNHICHTAMXA = 1.
+VUNGTIEPCANTAMXADUNGYEN = 0.5
+# Chiêu tầm xa trượt: làm mới toạ độ bằng lệnh danh hiệu (TacTu.action_lammoitrangthai), chờ THOIGIANCHOLAMMOITOADO giây mới bắn lại.
+# Làm mới tốn tài nguyên game (tính lại nhiều thứ), lệch pha cũng hiếm, nên cách lần trước tối thiểu THOIGIANGIANCACHLAMMOITOADO giây.
+# Log độ lệch toạ độ client đo được trong THOIGIANDOLECHLAMMOI giây sau khi gửi
+THOIGIANCHOLAMMOITOADO = 0.3
+THOIGIANGIANCACHLAMMOITOADO = 5.
+THOIGIANDOLECHLAMMOI = 1.5
+VUNGMEPTAMXA = 2.
+TAMXATOITHIEU = 8.
+NGUONGTILERATAMXA = 0.85
+SOMAUTOITHIEUTAMXA = 8
+SOMAUTOIDATAMXA = 40
+BANRATAMXA = 600.
+THOIGIANLOGTHONGKETAMXA = 120.
+# Thống kê khởi đầu {ô: tỉ lệ ra} (số đo trên, tính như 10 lần gửi mỗi ô, phai dần như số liệu thật): khỏi học lại từ đầu mỗi lần chạy.
+# Đổi tầm tối đa ở giao diện thì bỏ hết (cả số này), học lại từ đầu
+# Đo theo khoảng cách tầm đánh max(|dx|, |dy|) (log [TẦM XA CHI TIẾT] 01/11/2026, 303 phát); số cũ đo theo đường thẳng:
+# {7: 0.95, 8: 0.96, 9: 0.79, 10: 0.56, 11: 0.40}
+TILERATAMXAMACDINH = {6: 0.91, 7: 0.96, 8: 0.89, 9: 0.27, 10: 0.14}
 # Tiếp cận cận chiến như client khi bấm chiêu trên phím tắt (xq + 0x1873A, đọc 2026-10-28): tìm đường tới ô mục tiêu, mỗi lần chỉ
 # ghi chừng này bước (client: KDK + 0x1620 = 2), đích đổi thì chừng này giây sau lần ghi trước mới tìm lại (client: mốc +500ms)
 SOBUOCTIEPCANCANCHIEN = 2
@@ -287,6 +327,11 @@ VITRIPHIMTATKYNANG_THUCANBAOTHU = VITRIPHIMTATKYNANG_X
 # Bộ đệm vòng hook trò chuyện (MoiTruong.action_thietlaphooknoidungtrochuyen): số ô (lũy thừa của 2, asm lấy dư bằng and) và số
 # byte mỗi ô (dòng dài hơn bị cắt)
 SOLUONGDONGTROCHUYEN = 64
+# Dò lệnh client tự gửi lên máy chủ (MoiTruong.action_thietlaphooklenhgame, vd bấm xác nhận lên cấp): bật thì log [LỆNH GAME] mọi lệnh
+# game gửi mà bot không gửi. Bộ đệm vòng SOLUONGDONGLENHGAME ô (lũy thừa của 2) x KICHTHUOCDONGLENHGAME byte
+IS_LOGLENHGAME = True
+SOLUONGDONGLENHGAME = 32
+KICHTHUOCDONGLENHGAME = 160
 # Bang phái người chơi khác hỏi bằng "desc user <ID>" (máy chủ trả các dòng " Danh tính: ...", " Bang phái: ..." vào khung tin hệ thống):
 # mỗi lần hỏi cách nhau GIANCACHHOIBANGPHAI giây, chờ trả lời tối đa THOIGIANCHOTRALOIBANGPHAI giây, đã biết thì hỏi lại sau THOIGIANLAMMOIBANGPHAI giây
 GIANCACHHOIBANGPHAI = 1.5
@@ -476,6 +521,9 @@ VITRIKYNANG_DATINHCUONGLUC = 3191
 
 # "kill" (bật tự động đánh thường lên mục tiêu, không phải kỹ năng) đã bật với mục tiêu này thì chừng này giây mới gửi lại cho chắc
 THOIGIANGUILAITANCONGVATLY = 5.
+# Tự tăng cấp (TacTu._tudongtangcap): mặc định tăng tới cấp này, mỗi lần gửi "gift upgrade" cách nhau chừng này giây
+CAPTUDONGTANGCAPTOIDA = 60
+THOIGIANGUILAITANGCAP = 3.
 # Đào Hoa Nguyên chỉ "kill" (bật đánh thường) khi nguyên khí không quá chừng này: còn nguyên khí thì spam chiêu, đánh thường làm chiêu ra chậm.
 # 3 = chưa đủ 4 cho Nhất Quyền (để 2 thì nguyên khí 3 + mục tiêu đã có Trọng Thương / Lạc Kích không chiêu nào được dùng, đứng im ~1s)
 NGUYENKHITANCONGVATLYDAOHOA = 3
@@ -815,7 +863,7 @@ BANDO7QUOCGIAs = (BANDO_TEQUOC, BANDO_HANQUOC, BANDO_TRIEUQUOC, BANDO_NGUYQUOC, 
 
 BANDO_CULOC = 131
 
-BAOTHUVATPHAMs = (SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN, THANTHUMAYET, THANTHUDAN, THANTHUSUU, THANTHUDAN2, THANTHUSUU2, THANTHUCHUOT)
+BAOTHUVATPHAMs = (SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN, THANTHUMAYET, THANTHUDAN, THANTHUSUU, THANTHUDAN2, THANTHUSUU2, THANTHUCHUOT, *THUYBINHs)
 VATPHAMKHONGNHATs = tuple()
 # Vật phẩm ưu tiên nhặt trên mọi hành động khác (tấn công, theo nhóm, gom quái, ...)
 VATPHAMUUTIENNHATs = (LEBAOKHAIQUOC,)
@@ -831,6 +879,8 @@ CHUONGHAMTHIEN = "Chuông Hám Thiên"
 TUIPHAPBAO = "Túi Pháp Bảo"
 CHIENQUOCLENH = "Chiến Quốc Lệnh"
 CUULONGTHANHOATRAO = "Cửu Long Thần Hỏa Trảo"
+# Thưởng code tân thủ dùng bằng "use2 <id>#" (lệnh nút Xác Nhận của hộp hỏi), không cần "use" trước (người dùng dặn 2026-11-01)
+VATPHAMDUNGUSE2s = (CUULONGTHANHOATRAO, "Cửu Long Thần Hoả Trảo", "Hoàng Sa Chi Tâm", *THUYBINHs)
 TINHNGUYENDON = "Tinh Nguyên Đơn"
 HOIBANGPHU = "Hồi Bang Phù"
 NGUYENLIEULUYENDONs = ("Hoàng Kỳ", "Cúc Dại", "Quả Anh Túc", "Điền Thất", "Táo Đỏ", "Trần Bì", "Dương Kim Hoa", "Linh Chi Thảo", "Sơn Sâm", "Cát Cánh", "Cam Thảo", "Sinh Địa", "Xuyên Tâm Liên", "Hoàng Liên", "Hà Thủ Ô", "La Hán Quả", "Bạch Kỳ", "Đương Quy", "Xuyên Bối", "Đông Trùng Thảo")
@@ -856,7 +906,14 @@ SOLUONGXEPCHONGMACDINH = 100
 SOLUONGXEPCHONGTOIDA_MAP = {
 }
 
-DANHHIEU_MAP = defaultdict(lambda: False)
+# Làm mới toạ độ trước khi bắn xa (TacTu.action_lammoitrangthai): chọn danh hiệu ("title show <mã>") hoặc ẩn danh hiệu ("title hide")
+# làm máy chủ gửi lại trạng thái nhân vật => client cập nhật toạ độ thật. Chọn ở giao diện theo nhân vật, mặc định không dùng
+DANHHIEULAMMOI_KHONG = ""
+DANHHIEULAMMOI_AN = "hide"
+# Danh sách danh hiệu đang có ở KDK_DANHSACHDANHHIEU: mỗi mục KICHTHUOCMUCDANHHIEU byte (mã +0, tên +6), đọc tối đa SODANHHIEUTOIDA mục
+KICHTHUOCMUCDANHHIEU = 0x42
+SODANHHIEUTOIDA = 16
+THOIGIANDOCDANHHIEU = 5.
 
 BANDO_TIVO = 885
 BANDO_BANGPHAI = 886
@@ -1037,9 +1094,6 @@ THOIGIANNHOSHAREDDATA = 0.25
 
 # Chết rồi chờ bấy nhiêu giây (có thể được người khác cứu) mới tự phục sinh
 THOIGIANCHOTRUOCKHIPHUCSINH = 30.
-
-# Kỹ năng (có hay không mục tiêu) gửi >= SOLANGUITOIDASPAMKYNANG lần trong SOGIAYDEMSPAMKYNANG giây (tức là game báo sẵn sàng mà kỹ năng không ra)
-# thì tạm khoá riêng kỹ năng đó THOIGIANKHOASPAMKYNANG giây
 CAPDOTOITHIEUTETHANTUONG = 60
 # Bảo thú triệu hồi còn dưới PHANTRAMSINHLUCTETHANTUONG% sinh lực thì Tế Thần Tướng
 PHANTRAMSINHLUCTETHANTUONG = 25
@@ -1099,9 +1153,12 @@ CHUKYGIUOTRONGHANHTRANG = 0.03
 # Kỹ năng cần đứng lại khi ra đòn: chờ tối đa chừng này giây để nhân vật vào tư thế xuất chiêu rồi mới ngắt di chuyển
 THOIGIANCHONGATDICHUYENXUATCHIEU = 1.
 
+# Kỹ năng (có hay không mục tiêu) gửi >= SOLANGUITOIDASPAMKYNANG lần trong SOGIAYDEMSPAMKYNANG giây (tức là game báo sẵn sàng mà kỹ năng không ra)
+# thì không khoá, chỉ giãn nhịp kỹ năng đó còn 1 lần / KHOANGCACHGUISPAMKYNANG giây; log CHẶN SPAM tối đa 1 lần / THOIGIANLOGSPAMKYNANG giây
 SOLANGUITOIDASPAMKYNANG = 3
 SOGIAYDEMSPAMKYNANG = 1.5
-THOIGIANKHOASPAMKYNANG = 3.
+KHOANGCACHGUISPAMKYNANG = 0.5
+THOIGIANLOGSPAMKYNANG = 5.
 # Kỹ năng không áp chống spam (gửi dồn bao nhiêu cũng được): Đại Hải Vô Lượng bấm tay liên tục vẫn ra chiêu bình thường,
 # chặn spam chỉ làm nó nghỉ 3s vô ích. Các chiêu đánh Đào Hoa Nguyên: server nhận chiêu kế lúc sẵn sàng (lệch ngẫu nhiên
 # 0.5-1.7s sau chiêu trước, đo 2026-10-28) nên nối chiêu phải gửi lại tới khi được nhận, khoá 3s làm đứt chuỗi
@@ -1300,6 +1357,7 @@ NHANVATTODOITUDONGs_LIST = [
     [132, 133, 134, 135]
 ]
 
+# Bảo thú vật phẩm (cả Thuỷ Bình) không tấn công / không mất máu
 TENMUCTIEUKHONGTANCONGs = (*BAOTHUVATPHAMs, "Tần QuốcBinh Sĩ", "Triệu QuốcBinh Sĩ", QUYTOT, THIENBINH, DAUBINH, "CAVE1", "CAVE.2", 'Đỗ Độc', 'Ôn Thần', "Liễu Vọng Tháp")
 TENBOSSBUFFMAOSONs = ("Mã Quỷ", "Lương Hưng", "Yến Thập Tam", "Tư Tà", "Thủ Lĩnh Thành Kiều", TROMBAOPHITAC, "Bảo Hộp Phi Tặc",
                       "Tướng Quân Dũng", "Lăng Mộ Tà Linh", "Đường Truy", "Thế Công Minh", "Thạch Tướng Quân", "Cơ Quan Tướng Quân",

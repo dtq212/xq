@@ -59,6 +59,7 @@ MUCTIEU = [
     ("VA_TUTHEDELAY1", 0x1AFE3, "ma", "mov [esi+0x11B8], 0x0B (tư thế delay sau tấn công)"),
     ("VA_TUTHEDELAY2", 0x1B377, "ma", "mov [esi+0x11B8], 0x0B (tư thế delay sau tấn công)"),
     ("HOOK_TROCHUYEN", 0x5964, "ma", "chỗ hook đọc nội dung trò chuyện (6 byte)"),
+    ("HOOK_TINHETHONG", 0x2B63, "ma", "chỗ hook gói 0x3E chỉ in vào khung tin hệ thống (trả lời \"desc user\"), 6 byte"),
     # Offset trong cấu trúc ("hang": hằng số nằm trong lệnh). TG_: trong [THONGTINGAME]; TD_: trong cấu trúc tìm đường [TG + TG_TIMDUONG];
     # KN_: bảng kỹ năng [TG + TG_KYNANG]; HT_: hành trang [TG + TG_HANHTRANG]; NV_: nhân vật / đối tượng; KDK_: trong [KHOIDIEUKHIEN]
     ("TG_TIMDUONG", 0xADFDEC, "hang", "cấu trúc tìm đường / bản đồ"),
@@ -126,6 +127,7 @@ MUCTIEU = [
     ("KDK_THELUC", 0x15A8, "hang", "thể lực"),
     ("KDK_TIENGUI", 0x15AC, "hang", "tiền gửi trong kho"),
     ("KDK_CAPDO", 0x15B0, "hang", "cấp độ"),
+    ("KDK_DANHSACHDANHHIEU", 0x3E9, "hang", "danh sách danh hiệu đang có (mỗi mục KICHTHUOCMUCDANHHIEU byte: mã +0, tên +6)"),
     ("KDK_BANDO", 0x15F4, "hang", "bản đồ hiện tại"),
     ("KDK_MUCTIEUTANCONG", 0x15F8, "hang", "id mục tiêu tấn công của client (+ 0xC con trỏ)"),
     ("KDK_DICHCLICK", 0x1608, "hang", "đích click chuột (x, y)"),
