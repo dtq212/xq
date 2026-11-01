@@ -175,7 +175,12 @@ THOIGIANPHONGVUKINHTHIEN = 8.
 KHOANGCACHTIEPCANLOIDONGCUUTHIEN = 2.
 
 KHOANGCACHTOIDAHOPLE = 255.
-KHOANGCACHSUDUNGKYNANGCANCHIEN = 1.5
+# Tầm cận chiến thật (bot tự học, 01/11/2026): 1 ô theo max(|dx|, |dy|) => ô kề, tính cả ô chéo
+KHOANGCACHSUDUNGKYNANGCANCHIEN = 1.
+# Mục tiêu (người chơi giữ khoảng cách) trong chừng này ô thì lùi / dùng chiêu thoát (Ma Tâm Thuật...)
+KHOANGCACHLUIGIUKHOANGCACH = 3.
+# Đang theo sau: mình ra xa trưởng nhóm quá vùng đứng đánh chừng này ô (trưởng nhóm đang đi) thì chưa chọn mục tiêu, chạy về trước
+DUKHOANGCACHTHEOSAUCHONMUCTIEU = 1.5
 KHOANGCACHSUDUNGKYNANGTAMXA = 9.  # 12.
 # Tầm xa 9 ô đã là con số trừ hao lệch tọa độ client - server (tầm thật ~12 ô), nên không trừ thêm nhiều nữa:
 # - lọc mục tiêu quanh người theo sau dùng tầm xa - TRUHAOTAMXACHONMUCTIEU (dùng trọn 9 ô)

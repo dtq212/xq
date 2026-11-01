@@ -507,7 +507,7 @@ class TacTuMucTieu:
         if is_anhhuongboimuctieutheosau:
             khoangcachtoibanthanvatheosau = math.dist(toadobanthan, toadotheosau)
             # Chừa thêm một khoảng: ngưỡng này trùng chỗ dừng khi theo nhóm nên lệch chút xíu (trưởng nhóm đang đi) là không chọn được mục tiêu
-            if khoangcachtoibanthanvatheosau > khoangcachtoidatheosau + KHOANGCACHSUDUNGKYNANGCANCHIEN:
+            if khoangcachtoibanthanvatheosau > khoangcachtoidatheosau + DUKHOANGCACHTHEOSAUCHONMUCTIEU:
                 # Không đếm lượt này: xoá kết quả đếm cũ để không dùng chiêu diện rộng theo số quái của lượt trước khi đang chạy về
                 self._is_nhieumuctieugan3 = self._is_nhieumuctieugan5 = self._is_nhieumuctieugan7 = self._is_nhieumuctieugan9 = False
                 self._is_nhieumuctieuganbanthan3 = self._is_nhieumuctieuganbanthan5 = self._is_nhieumuctieuganbanthan7 = self._is_nhieumuctieuganbanthan9 = False
