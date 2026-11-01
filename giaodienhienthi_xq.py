@@ -12,7 +12,7 @@ from tkinter import font as tkfont
 from tkinter import ttk
 
 from bando_xq import BANDOCONG_MAP, laycapquaibando
-from chude_xq import BANGMAU_SANG, laybangmau, apdungchude, doithanhtieude, hopthoai, canhgiua
+from chude_xq import BANGMAU_SANG, laybangmau, apdungchude, doithanhtieude, hopthoai, canhgiua, dualentren, tomaunut, doichunut
 from dexuatlotrinh_xq import SOLANTHAYQUAITOITHIEU
 from hangso_xq import laytenbando, KHOANGCACHSUDUNGKYNANGTAMXA, PHANTRAMNOILUCKHAITHIENTICHDIA, KHOANGCACHGIUKETANCONG, BAOTHUTRIEUHOIMAOSONs
 import re
@@ -428,14 +428,16 @@ class GiaoDienHienThi:
 
         self._taotabchiendau(self._taotab(notebook, "Chiến đấu"))
         self._taotabfarm(self._taotab(notebook, "Di chuyển"))
-        self._taotabtodoitheosau(self._taotab(notebook, "Tổ đội"))
+        tabtodoi = self._taotab(notebook, "Tổ đội")
+        self._taotabtodoi(tabtodoi)
+        self._taonhomphobanchung(tabtodoi)
         self._taotabtuido(self._taotab(notebook, "Hành trang"))
         self._taotabnhiemvu(self._taotab(notebook, "Nhiệm vụ"))
         if self.dangnhap is not None:
             self._taotabdangnhap(self._taotab(notebook, "Đăng nhập"))
-        if HIEN_TUYCHON_CHUADUNG:
-            self._taotabkhac(self._taotab(notebook, "Khác"))
+        self._taotabkhac(self._taotab(notebook, "Khác"))
         self._taotabcanhbao(notebook, self._taotab(notebook, "Cảnh báo"))
+        tomaunut(self.root)
 
         # Bấm ra chỗ khác (không phải ô nhập) thì bỏ focus ô đang sửa -> FocusOut áp dụng số vừa nhập
         self.root.bind_all("<Button-1>", self._bofocusokhibamrangoai, add = "+")
@@ -485,7 +487,7 @@ class GiaoDienHienThi:
         style.configure("Tieude.TLabel", font = (FONTCHU, COCHU + 1, "bold"))
         # Nhãn phím tắt kiểu "phím bấm": nền xám nhạt, chữ nhỏ
         style.configure("Phim.TLabel", font = (FONTCHU, COCHU - 2), foreground = mau["chu_phim"], background = mau["nen_phim"], padding = (6, 1))
-        style.configure("Nho.TButton", padding = (self._px(8), self._px(2)), font = (FONTCHU, COCHU - 1))
+        style.configure("Nho.TButton", padding = (self._px(6), self._px(1)), font = (FONTCHU, COCHU - 1))
 
     def _doichedo(self):
         # Đổi sáng/tối: style ttk đổi ngay; widget tk thuần và màu tag của các bảng thì dò màu cũ -> màu mới cùng khoá
@@ -835,12 +837,9 @@ class GiaoDienHienThi:
             ttk.Label(parent, text = phimtat, style = "Phim.TLabel").grid(row = dong, column = 1, sticky = tk.E, padx = (8, 0))
 
     def _taotabchiendau(self, tab):
-        self._taonhomtamdanh(tab)
-
         nhom = self._taonhom(tab, "Tự động")
         self._create_check(nhom, "Tự động sử dụng kỹ năng", self.vars["sudungkynang"], "battat_tudongsudungkynang", "Ctrl+F")
-        self._create_check(nhom, "Tự tìm mục tiêu", self.vars["timmuctieu"], "battat_tudongtimkiemmuctieu")
-        self._create_check(nhom, "Tự động gom quái", self.vars["gomquai"], "battat_tudonggomquai", "Ctrl+Alt+Shift+G")
+        # "Tự tìm mục tiêu" ẩn khỏi giao diện (không bao giờ tắt), biến timmuctieu vẫn giữ để đồng bộ trạng thái bot
 
         nhom = self._taonhom(tab, "Chọn mục tiêu")
         self._create_check(nhom, "Chỉ đánh người chơi", self.vars["chidanhnguoichoi"], "toggle_chidanhnguoichoi", "Ctrl+D / Ctrl+A")
@@ -851,6 +850,12 @@ class GiaoDienHienThi:
         # Danh sách Tấn công / Bỏ qua và mục tiêu bot đang tự bỏ qua, ngay dưới các ô chọn mục tiêu
         self._taonhommuctieu(tab)
 
+        self._taonhombaothu(tab)
+
+        # Tầm đánh ít khi chỉnh: để cuối tab
+        self._taonhomtamdanh(tab)
+
+    def _taonhomgiukhoangcach(self, tab):
         # Giữ khoảng cách với đối tượng đang đánh mình (ra đòn và quay mặt về mình): lùi ra, chỉ buff / hồi máu, bỏ chiêu đánh
         nhom = self._taonhom(tab, "Giữ khoảng cách")
         self._create_check(nhom, "Lùi ra khỏi kẻ đang tấn công mình (chỉ buff, không đánh)", self.vars["giukhoangcachketancong"], "battat_giukhoangcachketancong")
@@ -873,12 +878,8 @@ class GiaoDienHienThi:
         self._ganspinboxapdung(self.spin_khoangcachgiuketancong, on_giukhoangcach_change)
         ttk.Label(hanggiukhoangcach, text = "ô", style = "Phu.TLabel").pack(side = tk.LEFT)
 
-        self._taonhombaothu(tab)
-
-        self._taonhomnhiplenh(tab)
-
     def _taonhomtamdanh(self, tab):
-        # Nhóm Tầm đánh đặt trên cùng tab Chiến đấu
+        # Nhóm Tầm đánh đặt cuối tab Chiến đấu
         nhom = self._taonhom(tab, "Tầm đánh")
         hangtamxa = ttk.Frame(nhom)
         hangtamxa.grid(row = 0, column = 0, columnspan = 2, sticky = tk.W)
@@ -977,11 +978,6 @@ class GiaoDienHienThi:
                 self._ganspinboxapdung(spin, on_apdung)
                 ttk.Label(hangranh, text = "giây thì nhường lượt", style = "Phu.TLabel").pack(side = tk.LEFT)
 
-    def _taotabtodoitheosau(self, tab):
-        # Bật / tắt tổ đội nằm ngay trên bảng nhóm tổ đội, rồi tới Theo sau
-        self._taotabtodoi(tab)
-        self._taotabnhom(tab)
-
     def _taonhommuctieu(self, tab):
         # Danh sách mục tiêu theo từng nhân vật (bot gửi lên shared_data, sửa ở đây là gửi lệnh set_danhsachmuctieu xuống ngay)
         nhom = self._taonhom(tab, "Danh sách mục tiêu (của nhân vật đang chọn)")
@@ -994,7 +990,7 @@ class GiaoDienHienThi:
             o_.grid(row = 0, column = cot, sticky = tk.NSEW, padx = (0, 8) if cot == 0 else (0, 0))
             khung = ttk.Frame(o_)
             khung.pack(fill = tk.BOTH, expand = True)
-            tree = BangCatChu(khung, columns = ("ten",), show = "headings", height = 7, selectmode = "extended")
+            tree = BangCatChu(khung, columns = ("ten",), show = "headings", height = 4, selectmode = "extended")
             tree.heading("ten", text = tieude)
             tree.column("ten", width = self._px(250), anchor = tk.W)
             tree.tag_configure("ten", foreground = mau)
@@ -1139,8 +1135,12 @@ class GiaoDienHienThi:
         self._hiendanhsachmuctieu(hwnd, {"tancong": tancongs, "boqua": boquas})
 
     def _taotabfarm(self, tab):
+        self._taonhomtheosau(tab)
+        self._taonhomgiukhoangcach(tab)
+
         nhom = self._taonhom(tab, "Chế độ")
         self._create_check(nhom, "Tránh vùng cấm", self.vars["tranhvungcam"], "battat_tranhvungcam")
+        self._create_check(nhom, "Tự động gom quái", self.vars["gomquai"], "battat_tudonggomquai", "Ctrl+Alt+Shift+G")
         self._create_check(nhom, "Di chuyển theo lộ trình điểm đánh", self.vars["diemdanhxungquanh"], "battat_tudongdichuyendiemdanhxungquanh", "Ctrl+Alt+Shift+B")
         # Tắt: chỉ đi các điểm đánh cùng bản đồ đang đứng (vd phó bản Phong Yêu Kính mượn ID bản đồ ngoài)
         self._create_check(nhom, "Đi tới điểm đánh ở bản đồ khác", self.vars["dilotrinhkhacbando"], "battat_dilotrinhkhacbando")
@@ -1318,8 +1318,9 @@ class GiaoDienHienThi:
                                     "đang đứng (hoặc điểm trỏ chuột khi mở bản đồ lớn), Ctrl+Alt+B: xoá hết.")
 
 
-    def _taotabnhom(self, tab):
-        nhom = self._taonhom(tab, "Nhóm")
+    def _taonhomtheosau(self, tab):
+        # Nhóm Theo sau trên cùng tab Di chuyển
+        nhom = self._taonhom(tab, "Theo sau")
 
         def on_click_theosau():
             hwnd = self.get_selected_hwnd()
@@ -1460,7 +1461,7 @@ class GiaoDienHienThi:
         info = (self.shared_data.get(hwnd) or {}) if hwnd else {}
         chunut = "⏹ Huỷ tổ đội 1 lần" if info.get("_is_dangtodoimotlan") else "👥 Tổ đội 1 lần"
         if self.btn_todoimotlan.cget("text") != chunut:
-            self.btn_todoimotlan.config(text = chunut)
+            doichunut(self.btn_todoimotlan, chunut)
         chu = info.get("_trangthaitodoimotlan") or ""
         if self.lbl_todoimotlan.cget("text") != chu:
             self.lbl_todoimotlan.config(text = chu)
@@ -1645,8 +1646,11 @@ class GiaoDienHienThi:
         hangnut.grid(row = 6, column = 0, sticky = tk.E, pady = (12, 0))
         ttk.Button(hangnut, text = "Lưu", command = on_luu).pack(side = tk.LEFT, padx = (0, 4))
         ttk.Button(hangnut, text = "Huỷ", command = hop.destroy).pack(side = tk.LEFT)
+        hop.bind("<Escape>", lambda e: hop.destroy())
         vechon(0 if thanhviens else None)
+        tomaunut(hop)
         canhgiua(hop, self.root)
+        dualentren(hop, self.is_ghim)
         hop.grab_set()
         self.root.wait_window(hop)
         return ketqua.get("thanhviens")
@@ -1938,6 +1942,10 @@ class GiaoDienHienThi:
         self._luutaikhoan(cauhinh, chon = j)
 
     def _taotabkhac(self, tab):
+        # Tab Khác luôn hiện vì có Nhịp lệnh; các tuỳ chọn chưa dùng vẫn chỉ hiện khi bật HIEN_TUYCHON_CHUADUNG
+        self._taonhomnhiplenh(tab)
+        if not HIEN_TUYCHON_CHUADUNG:
+            return
         nhom = self._taonhom(tab, "Tạm ẩn (chưa dùng)")
         self._create_check(nhom, "Tự động khai khoáng", self.vars["khaikhoang"], "battat_tudongkhaikhoang")
         self._create_check(nhom, "Đào tàng bảo đồ", self.vars["daobaodo"], "battat_tudongdaotangbaodo")
@@ -1989,7 +1997,15 @@ class GiaoDienHienThi:
         ttk.Label(hangsapxep, text = "Gộp chồng, xếp theo tên, dồn lên đầu từng túi", style = "Phu.TLabel").pack(side = tk.LEFT, padx = (8, 0))
 
         nhom = self._taonhom(tab, "Luật túi đồ (xét từ trên xuống, luật đầu tiên khớp quyết định)")
-        self.tree_luattuido = BangCatChu(nhom, columns = ("bat", "bao", "hanhdong", "dieukien", "ghichu"), show = "headings", height = 8, selectmode = "browse")
+        # Lọc chỉ để xem (iid vẫn là vị trí trong danh sách đầy đủ); đang lọc thì không cho đổi thứ tự vì sẽ vượt qua luật bị ẩn
+        hangloc = ttk.Frame(nhom)
+        hangloc.grid(row = 0, column = 0, sticky = tk.W, pady = (0, 4))
+        ttk.Label(hangloc, text = "Xem:").pack(side = tk.LEFT, padx = (0, 4))
+        self.var_locluattuido = tk.StringVar(value = "")
+        for ma, ten in (("", "Tất cả"), *TENHANHDONG.items()):
+            ttk.Radiobutton(hangloc, text = ten, value = ma, variable = self.var_locluattuido,
+                            command = self._doilocluattuido).pack(side = tk.LEFT, padx = (0, 8))
+        self.tree_luattuido = BangCatChu(nhom, columns = ("bat", "bao", "hanhdong", "dieukien", "ghichu"), show = "headings", height = 6, selectmode = "browse")
         for col, text, width, anchor in (
                 ("bat", "Bật", 40, tk.CENTER),
                 ("bao", "📣", 35, tk.CENTER),
@@ -1998,10 +2014,13 @@ class GiaoDienHienThi:
                 ("ghichu", "Ghi chú", 150, tk.W)):
             self.tree_luattuido.heading(col, text = text)
             self.tree_luattuido.column(col, width = self._px(width), anchor = anchor, stretch = col == "dieukien")
-        self.tree_luattuido.grid(row = 0, column = 0, sticky = tk.EW)
+        self.tree_luattuido.grid(row = 1, column = 0, sticky = tk.EW)
         self.tree_luattuido.bind("<Double-1>", lambda e: self._sualuattuido(is_moi = False))
+        # Màu chữ theo hành động (Giữ lục, Bán vàng, Vứt đỏ), luật tắt thì mờ
+        for tag, khoa in (("giu", "luc"), ("ban", "vang"), ("vut", "do"), ("tat", "chu_mo")):
+            self.tree_luattuido.tag_configure(tag, foreground = self._mau[khoa])
         hangnut = ttk.Frame(nhom)
-        hangnut.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
+        hangnut.grid(row = 2, column = 0, sticky = tk.W, pady = (4, 0))
         for chu, lenh in (("Thêm", lambda: self._sualuattuido(is_moi = True)), ("Sửa", lambda: self._sualuattuido(is_moi = False)),
                           ("Xoá", lambda: self._xoamuctuido("luat", self.tree_luattuido)),
                           ("↑ Lên", lambda: self._doichomuctuido("luat", self.tree_luattuido, -1)),
@@ -2136,6 +2155,95 @@ class GiaoDienHienThi:
                                    "mới giao; giao xong kiểm tra ngân lượng / túi đồ đã giảm rồi báo Telegram.")
         self._giaododanghien = None
 
+    def _taonhomphobanchung(self, tab):
+        # Phó bản chung (tactu_doiphoban_xq, file _internal/doiphoban.json dùng chung mọi nhân vật trên máy): danh sách đội và bảng việc
+        # của đội đang chọn (tích chọn, thứ tự, số vòng, kết quả hôm nay theo trưởng đội)
+        nhom = self._taonhom(tab, "Phó bản chung (đội cố định đi chung Sư Gia, Tập Kích, phó bản)")
+        self.tree_doi = BangCatChu(nhom, columns = ("ten", "thanhvien", "online", "trangthai"), show = "headings", height = 4, selectmode = "browse")
+        for col, text, width, anchor in (
+                ("ten", "Đội", 90, tk.W),
+                ("thanhvien", "Thành viên (người đầu là trưởng đội)", 230, tk.W),
+                ("online", "Online", 55, tk.CENTER),
+                ("trangthai", "Trạng thái", 285, tk.W)):
+            self.tree_doi.heading(col, text = text)
+            self.tree_doi.column(col, width = self._px(width), anchor = anchor, stretch = col == "trangthai")
+        self.tree_doi.tag_configure("chay", foreground = MAUCHU_XANH)
+        self.tree_doi.grid(row = 0, column = 0, sticky = tk.EW)
+        self.tree_doi.bind("<Double-1>", lambda e: self._suadoi(is_moi = False))
+        hangnut = ttk.Frame(nhom)
+        hangnut.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
+        self.btn_doi = ttk.Button(hangnut, text = "▶ Chạy đội", command = self._battatdoi)
+        self.btn_doi.pack(side = tk.LEFT, padx = (0, 4))
+        ttk.Button(hangnut, text = "Giải tán", command = self._giaitandoi).pack(side = tk.LEFT, padx = (0, 8))
+        for chu, rong, lenh in (("Thêm đội", 0, lambda: self._suadoi(is_moi = True)), ("Sửa", 0, lambda: self._suadoi(is_moi = False)),
+                                ("Đổi tên", 0, self._doitendoi), ("Xoá", 0, self._xoadoi), ("↑", 3, lambda: self._doichodoi(-1)),
+                                ("↓", 3, lambda: self._doichodoi(1))):
+            ttk.Button(hangnut, text = chu, width = rong or None, command = lenh).pack(side = tk.LEFT, padx = (0, 4))
+
+        self.lbl_viecdoi = ttk.Label(nhom, text = "", font = (FONTCHU, COCHU, "bold"))
+        self.lbl_viecdoi.grid(row = 2, column = 0, sticky = tk.W, pady = (8, 2))
+        self.tree_viecdoi = BangCatChu(nhom, columns = ("chon", "viec", "vong", "homnay", "ketqua", "thietlap"), show = "headings",
+                                         height = len(VIECDOI_MAP), selectmode = "browse")
+        for col, text, width, anchor in (
+                ("chon", "Làm", 40, tk.CENTER),
+                ("viec", "Việc", 110, tk.W),
+                ("vong", "Số vòng", 60, tk.CENTER),
+                ("homnay", "Hôm nay", 95, tk.W),
+                ("ketqua", "Trạng thái / kết quả gần nhất", 330, tk.W),
+                ("thietlap", "Thiết lập", 64, tk.CENTER)):
+            self.tree_viecdoi.heading(col, text = text)
+            self.tree_viecdoi.column(col, width = self._px(width), anchor = anchor, stretch = col == "ketqua")
+        for tag, mau in (("dang", MAUCHU_XANH), ("xong", MAUCHU_LUC), ("loi", MAUCHU_DO), ("tat", MAUCHU_PHU)):
+            self.tree_viecdoi.tag_configure(tag, foreground = mau)
+        self.tree_viecdoi.grid(row = 3, column = 0, sticky = tk.EW)
+
+        def on_click_viecdoi(event):
+            # Bấm cột "Làm": tích / bỏ tích việc cho đội đang chọn; cột "Thiết lập": mở cửa sổ thiết lập việc đó
+            if self.tree_viecdoi.identify_region(event.x, event.y) != "cell":
+                return None
+            viec = self.tree_viecdoi.identify_row(event.y)
+            cot = self.tree_viecdoi.identify_column(event.x)
+            if not viec:
+                return None
+            if cot == "#1":
+                self._tichviecdoi(viec)
+                return "break"
+            if cot == "#6":
+                self._mopopupviec(viec)
+                return "break"
+            return None
+
+        def on_dup_viecdoi(event):
+            # Nhấp đúp cột "Số vòng": đặt giới hạn vòng; chỗ khác của dòng: mở cửa sổ thiết lập
+            viec = self.tree_viecdoi.identify_row(event.y)
+            cot = self.tree_viecdoi.identify_column(event.x)
+            if viec in VIECCOVONGs and cot == "#3":
+                self._suavongdoi(viec)
+            elif viec and cot not in ("#1", "#6"):
+                self._mopopupviec(viec)
+
+        self.tree_viecdoi.bind("<Button-1>", on_click_viecdoi)
+        self.tree_viecdoi.bind("<Double-1>", on_dup_viecdoi)
+        hangnut = ttk.Frame(nhom)
+        hangnut.grid(row = 4, column = 0, sticky = tk.W, pady = (4, 0))
+        for chu, rong, lenh in (("↑", 3, lambda: self._doichoviecdoi(-1)), ("↓", 3, lambda: self._doichoviecdoi(1)),
+                                ("Số vòng", 0, lambda: self._suavongdoi(self._layviecdoichon())), ("↺ Làm lại", 0, self._lamlaidoi),
+                                ("⚙ Thiết lập", 0, lambda: self._mopopupviec(self._layviecdoichon()))):
+            ttk.Button(hangnut, text = chu, width = rong or None, command = lenh).pack(side = tk.LEFT, padx = (0, 4))
+        self.btn_ngungviecdoi = ttk.Button(hangnut, text = "⏹ Ngưng việc này", command = self._ngungviecdoi)
+        self.btn_ngungviecdoi.pack(side = tk.LEFT, padx = (4, 4))
+        self._taohuongdan(hangnut, "Thêm đội: đặt tên, chọn thành viên theo thứ tự (người đầu là trưởng đội: làm trưởng nhóm, người give Phong "
+                                   "Yêu Kính). Muốn đi một mình thì tạo đội 1 người. Tích việc cho đội, sắp thứ tự, đặt số vòng, chọn đội rồi bấm "
+                                   "\"Chạy đội\" (trưởng đội phải chạy Foxia trên máy này; thành viên ở máy khác nối LAN cũng được). Đội làm lần lượt "
+                                   "các việc tích chưa làm hôm nay: chờ mọi thành viên online và rảnh (đang làm Sư môn / Danh Vọng thì làm xong lượt "
+                                   "đang dở rồi tạm dừng; đang Mã Tặc / Kéo cấp / giao đồ / cất kho thì đội chờ), thiếu người thì cả đội chờ, không "
+                                   "tự đi thiếu. Đủ người thì lập nhóm (thành viên tự rời nhóm cũ), trưởng đội bật việc, thành viên tự bật cùng việc "
+                                   "và Theo sau trưởng đội. Phó bản giải tán nhóm giữa các vòng thì đội tự lập lại. Hết việc thì giải tán nhóm, thành "
+                                   "viên trả Theo sau cũ, quay về nhiệm vụ cá nhân. Lúc đội chạy, Tổ đội tự động / Tổ đội 1 lần không đụng tới thành "
+                                   "viên đội. Trưởng đội mất kết nối: thành viên chờ 60s rồi mới tạm về việc riêng.",
+                          chu = "ⓘ Phó bản chung")
+        self._doidanghien = None
+
     def _taotabnhiemvu(self, tab):
         nhom = self._taonhom(tab, "Tăng cấp độ")
         self._create_check(nhom, "Chặn tăng cấp độ", self.vars["chantangcap"], "battat_chantangcapdo")
@@ -2256,94 +2364,6 @@ class GiaoDienHienThi:
                           chu = "ⓘ Hàng việc")
         ttk.Label(hangdan, text = "⚙ hoặc nhấp đúp một dòng: thiết lập + hướng dẫn riêng của việc đó", style = "Phu.TLabel").pack(side = tk.LEFT, padx = (12, 0))
 
-        # Phó bản chung (tactu_doiphoban_xq, file _internal/doiphoban.json dùng chung mọi nhân vật trên máy): danh sách đội và bảng việc
-        # của đội đang chọn (tích chọn, thứ tự, số vòng, kết quả hôm nay theo trưởng đội)
-        nhom = self._taonhom(tab, "Phó bản chung (đội cố định đi chung Sư Gia, Tập Kích, phó bản)")
-        self.tree_doi = BangCatChu(nhom, columns = ("ten", "thanhvien", "online", "trangthai"), show = "headings", height = 4, selectmode = "browse")
-        for col, text, width, anchor in (
-                ("ten", "Đội", 90, tk.W),
-                ("thanhvien", "Thành viên (người đầu là trưởng đội)", 230, tk.W),
-                ("online", "Online", 55, tk.CENTER),
-                ("trangthai", "Trạng thái", 285, tk.W)):
-            self.tree_doi.heading(col, text = text)
-            self.tree_doi.column(col, width = self._px(width), anchor = anchor, stretch = col == "trangthai")
-        self.tree_doi.tag_configure("chay", foreground = MAUCHU_XANH)
-        self.tree_doi.grid(row = 0, column = 0, sticky = tk.EW)
-        self.tree_doi.bind("<Double-1>", lambda e: self._suadoi(is_moi = False))
-        hangnut = ttk.Frame(nhom)
-        hangnut.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
-        self.btn_doi = ttk.Button(hangnut, text = "▶ Chạy đội", command = self._battatdoi)
-        self.btn_doi.pack(side = tk.LEFT, padx = (0, 4))
-        ttk.Button(hangnut, text = "Giải tán", command = self._giaitandoi).pack(side = tk.LEFT, padx = (0, 8))
-        for chu, rong, lenh in (("Thêm đội", 0, lambda: self._suadoi(is_moi = True)), ("Sửa", 0, lambda: self._suadoi(is_moi = False)),
-                                ("Đổi tên", 0, self._doitendoi), ("Xoá", 0, self._xoadoi), ("↑", 3, lambda: self._doichodoi(-1)),
-                                ("↓", 3, lambda: self._doichodoi(1))):
-            ttk.Button(hangnut, text = chu, width = rong or None, command = lenh).pack(side = tk.LEFT, padx = (0, 4))
-
-        self.lbl_viecdoi = ttk.Label(nhom, text = "", font = (FONTCHU, COCHU, "bold"))
-        self.lbl_viecdoi.grid(row = 2, column = 0, sticky = tk.W, pady = (8, 2))
-        self.tree_viecdoi = BangCatChu(nhom, columns = ("chon", "viec", "vong", "homnay", "ketqua", "thietlap"), show = "headings",
-                                         height = len(VIECDOI_MAP), selectmode = "browse")
-        for col, text, width, anchor in (
-                ("chon", "Làm", 40, tk.CENTER),
-                ("viec", "Việc", 110, tk.W),
-                ("vong", "Số vòng", 60, tk.CENTER),
-                ("homnay", "Hôm nay", 95, tk.W),
-                ("ketqua", "Trạng thái / kết quả gần nhất", 330, tk.W),
-                ("thietlap", "Thiết lập", 64, tk.CENTER)):
-            self.tree_viecdoi.heading(col, text = text)
-            self.tree_viecdoi.column(col, width = self._px(width), anchor = anchor, stretch = col == "ketqua")
-        for tag, mau in (("dang", MAUCHU_XANH), ("xong", MAUCHU_LUC), ("loi", MAUCHU_DO), ("tat", MAUCHU_PHU)):
-            self.tree_viecdoi.tag_configure(tag, foreground = mau)
-        self.tree_viecdoi.grid(row = 3, column = 0, sticky = tk.EW)
-
-        def on_click_viecdoi(event):
-            # Bấm cột "Làm": tích / bỏ tích việc cho đội đang chọn; cột "Thiết lập": mở cửa sổ thiết lập việc đó
-            if self.tree_viecdoi.identify_region(event.x, event.y) != "cell":
-                return None
-            viec = self.tree_viecdoi.identify_row(event.y)
-            cot = self.tree_viecdoi.identify_column(event.x)
-            if not viec:
-                return None
-            if cot == "#1":
-                self._tichviecdoi(viec)
-                return "break"
-            if cot == "#6":
-                self._mopopupviec(viec)
-                return "break"
-            return None
-
-        def on_dup_viecdoi(event):
-            # Nhấp đúp cột "Số vòng": đặt giới hạn vòng; chỗ khác của dòng: mở cửa sổ thiết lập
-            viec = self.tree_viecdoi.identify_row(event.y)
-            cot = self.tree_viecdoi.identify_column(event.x)
-            if viec in VIECCOVONGs and cot == "#3":
-                self._suavongdoi(viec)
-            elif viec and cot not in ("#1", "#6"):
-                self._mopopupviec(viec)
-
-        self.tree_viecdoi.bind("<Button-1>", on_click_viecdoi)
-        self.tree_viecdoi.bind("<Double-1>", on_dup_viecdoi)
-        hangnut = ttk.Frame(nhom)
-        hangnut.grid(row = 4, column = 0, sticky = tk.W, pady = (4, 0))
-        for chu, rong, lenh in (("↑", 3, lambda: self._doichoviecdoi(-1)), ("↓", 3, lambda: self._doichoviecdoi(1)),
-                                ("Số vòng", 0, lambda: self._suavongdoi(self._layviecdoichon())), ("↺ Làm lại", 0, self._lamlaidoi),
-                                ("⚙ Thiết lập", 0, lambda: self._mopopupviec(self._layviecdoichon()))):
-            ttk.Button(hangnut, text = chu, width = rong or None, command = lenh).pack(side = tk.LEFT, padx = (0, 4))
-        self.btn_ngungviecdoi = ttk.Button(hangnut, text = "⏹ Ngưng việc này", command = self._ngungviecdoi)
-        self.btn_ngungviecdoi.pack(side = tk.LEFT, padx = (4, 4))
-        self._taohuongdan(hangnut, "Thêm đội: đặt tên, chọn thành viên theo thứ tự (người đầu là trưởng đội: làm trưởng nhóm, người give Phong "
-                                   "Yêu Kính). Muốn đi một mình thì tạo đội 1 người. Tích việc cho đội, sắp thứ tự, đặt số vòng, chọn đội rồi bấm "
-                                   "\"Chạy đội\" (trưởng đội phải chạy Foxia trên máy này; thành viên ở máy khác nối LAN cũng được). Đội làm lần lượt "
-                                   "các việc tích chưa làm hôm nay: chờ mọi thành viên online và rảnh (đang làm Sư môn / Danh Vọng thì làm xong lượt "
-                                   "đang dở rồi tạm dừng; đang Mã Tặc / Kéo cấp / giao đồ / cất kho thì đội chờ), thiếu người thì cả đội chờ, không "
-                                   "tự đi thiếu. Đủ người thì lập nhóm (thành viên tự rời nhóm cũ), trưởng đội bật việc, thành viên tự bật cùng việc "
-                                   "và Theo sau trưởng đội. Phó bản giải tán nhóm giữa các vòng thì đội tự lập lại. Hết việc thì giải tán nhóm, thành "
-                                   "viên trả Theo sau cũ, quay về nhiệm vụ cá nhân. Lúc đội chạy, Tổ đội tự động / Tổ đội 1 lần không đụng tới thành "
-                                   "viên đội. Trưởng đội mất kết nối: thành viên chờ 60s rồi mới tạm về việc riêng.",
-                          chu = "ⓘ Phó bản chung")
-        self._doidanghien = None
-
         # Cửa sổ thiết lập riêng từng việc (tạo sẵn rồi ẩn, update_ui vẫn cập nhật widget bên trong như trước), theo nhân vật đang chọn
         self._popupviecs = {}
         phobanchung = ("Chạy theo đội ở bảng Phó bản chung: trưởng đội vào phó bản, thành viên tự bật cùng việc và Theo sau trưởng đội "
@@ -2380,7 +2400,7 @@ class GiaoDienHienThi:
             "thanhkieu": phobanchung + "Trưởng nhóm tới Tần Quốc (220, 65) Thảo Nghịch Tướng Quân \"3. Sử dụng [Hạt Mè Khai Môn] tiến vào\" → "
                          "Xác nhận (cả nhóm được đưa vào) → Mã Quỷ, Lương Hưng, Yến Thập Tam, Tư Tà → chờ đủ thành viên đánh Thủ Lĩnh "
                          "Thành Kiều → Hồi Thành Phù về Tần Quốc \"4. Nhận thưởng\" → \"1. Nhận thưởng\" → " + doitodoi + ". Hết Hạt Mè Khai Môn thì dừng.",
-            "phongyeukinh": "Chạy theo đội ở bảng Phó bản chung: mọi thành viên tự bật Phong Yêu Kính và Theo sau trưởng đội. "
+            "phongyeukinh": "Chạy theo đội ở bảng Phó bản chung: mọi thành viên tự bật Phong Yêu Kính, Theo sau giữ như đang đặt (tắt thì mỗi người tự dò, lệch điểm nhau). "
                             "Trưởng đội (người đầu đội) lập nhóm 1 người, tới Chu Quốc (252, 160) Tả Khâu Minh, give 1 món đồ theo cấu hình ở trên (chỉ đồ trong túi, "
                             "chưa Phong Ấn, chọn món cấp thấp nhất) → \"1. Đúng vậy, ta muốn đi\" → mời các thành viên đội vào → mọi người "
                             "\"1. Đúng vậy, ta muốn vào\" → dò khắp bản đồ đánh hết quái, giết 2 boss (Vương Tàn Phách / Kính Ma) → Thỏ Yêu về Chu Quốc "
@@ -2572,11 +2592,11 @@ class GiaoDienHienThi:
                 bang.selection_set(viec)
         hop = popup["hop"]
         self._capnhatpopupviec(viec)
+        tomaunut(hop)
         canhgiua(hop, self.root)
         hop.deiconify()
         doithanhtieude(hop, self.is_chedotoi)
-        hop.lift()
-        hop.focus_set()
+        dualentren(hop, self.is_ghim)
         self._giugrabpopup()
 
     def _popupdangmo(self):
@@ -2627,7 +2647,7 @@ class GiaoDienHienThi:
             if "btn_lamngay" in popup:
                 chu = "⏹ Dừng việc này" if hv.get("danglam") == viec else "▶ Làm ngay"
                 if popup["btn_lamngay"].cget("text") != chu:
-                    popup["btn_lamngay"].config(text = chu)
+                    doichunut(popup["btn_lamngay"], chu)
 
     def _tichviechang(self, viec):
         # Tích / bỏ tích việc trong hàng việc của nhân vật đang chọn
@@ -2643,7 +2663,7 @@ class GiaoDienHienThi:
         khung = ttk.Frame(nhom)
         khung.grid(row = 3, column = 0, sticky = tk.W, pady = (8, 0))
         ttk.Label(khung, text = "Đồ đem đốt vào Phong Yêu Kính (dùng chung mọi nhân vật trên máy):").grid(row = 0, column = 0, columnspan = 2, sticky = tk.W)
-        self._var_phongyeu = {k: tk.BooleanVar(value = cauhinh[k]) for k in ("is_lamkim", "is_hoangkim", "is_chichuagiamdinh")}
+        self._var_phongyeu = {k: tk.BooleanVar(value = cauhinh[k]) for k in ("is_lamkim", "is_hoangkim", "is_chichuagiamdinh", "is_laydothanhvien")}
         hangmau = ttk.Frame(khung)
         hangmau.grid(row = 1, column = 0, columnspan = 2, sticky = tk.W, pady = (2, 0))
         for khoa, chu in (("is_lamkim", "Lam Kim (chữ xanh)"), ("is_hoangkim", "Hoàng Kim (chữ vàng)"), ("is_chichuagiamdinh", "Chỉ đồ Chưa giám định")):
@@ -2664,6 +2684,9 @@ class GiaoDienHienThi:
             o.grid(row = dong, column = 1, sticky = tk.W, padx = (4, 0), pady = (2, 0))
             o.bind("<FocusOut>", self._luucauhinhphongyeu)
             o.bind("<Return>", self._luucauhinhphongyeu)
+        ttk.Checkbutton(khung, text = "Người give hết đồ thì lấy đồ của thành viên cùng nhóm (thành viên tới give sang)",
+                        variable = self._var_phongyeu["is_laydothanhvien"], command = self._luucauhinhphongyeu
+                        ).grid(row = 5, column = 0, columnspan = 2, sticky = tk.W, pady = (2, 0))
         for su_kien in ("<FocusOut>", "<Return>"):
             spin.bind(su_kien, self._luucauhinhphongyeu)
 
@@ -2797,13 +2820,13 @@ class GiaoDienHienThi:
         vaitro = (info.get("_keocap") or {}).get("vaitro")
         chunut = "⏹ Dừng kéo cấp" if vaitro in ("chinh", "ga") else "🐣 Bắt đầu kéo cấp"
         if self.btn_keocap.cget("text") != chunut:
-            self.btn_keocap.config(text = chunut)
+            doichunut(self.btn_keocap, chunut)
         chuphu = "⏹ Dừng acc phụ" if vaitro == "phu" else "🤝 Làm acc phụ PYK"
         if self.btn_keocapphu.cget("text") != chuphu:
-            self.btn_keocapphu.config(text = chuphu)
+            doichunut(self.btn_keocapphu, chuphu)
         chuga = "⏹ Dừng acc gà" if vaitro == "ga" else "🐥 Làm acc gà"
         if self.btn_keocapga.cget("text") != chuga:
-            self.btn_keocapga.config(text = chuga)
+            doichunut(self.btn_keocapga, chuga)
         chu = info.get("_trangthaikeocap") or ""
         if self.lbl_keocap.cget("text") != chu:
             self.lbl_keocap.config(text = chu)
@@ -2842,7 +2865,7 @@ class GiaoDienHienThi:
         info = (self.shared_data.get(hwnd) or {}) if hwnd else {}
         chunut = "⏹ Dừng Mã Tặc" if info.get("_is_dangmatac") else "🐎 Bắt đầu Mã Tặc"
         if self.btn_matac.cget("text") != chunut:
-            self.btn_matac.config(text = chunut)
+            doichunut(self.btn_matac, chunut)
         chu = info.get("_trangthaimatac") or ""
         if self.lbl_matac.cget("text") != chu:
             self.lbl_matac.config(text = chu)
@@ -3012,11 +3035,11 @@ class GiaoDienHienThi:
 
         chunut = "⏹ Dừng hàng việc" if hv.get("chay") else "▶ Chạy hàng việc"
         if self.btn_hangviec.cget("text") != chunut:
-            self.btn_hangviec.config(text = chunut)
+            doichunut(self.btn_hangviec, chunut)
         viecchon = self._layviechangchon()
         chunut = "⏹ Dừng việc này" if viecchon and viecchon == danglam else "▶ Làm ngay"
         if self.btn_lamngayviec.cget("text") != chunut:
-            self.btn_lamngayviec.config(text = chunut)
+            doichunut(self.btn_lamngayviec, chunut)
         self._capnhatdoiphoban()
         self._capnhatpopupviec()
 
@@ -3260,7 +3283,7 @@ class GiaoDienHienThi:
             self.lbl_viecdoi.config(text = tieude)
         chunut = "⏹ Dừng đội" if is_chay else "▶ Chạy đội"
         if self.btn_doi.cget("text") != chunut:
-            self.btn_doi.config(text = chunut)
+            doichunut(self.btn_doi, chunut)
         # "Ngưng việc này" chỉ bấm được khi đội đang làm 1 việc
         is_ngungduoc = is_chay and share.get("giaidoan") == "lam"
         if self.btn_ngungviecdoi.instate(["disabled"]) == is_ngungduoc:
@@ -3391,10 +3414,17 @@ class GiaoDienHienThi:
 
     def _hienluattuido(self, chonluat = None, chonmuabu = None, choncatkho = None, chonnhat = None):
         dulieu = tailuat()
+        # Luật vừa thêm / sửa không thuộc nhóm đang lọc thì về "Tất cả" để còn thấy nó
+        if chonluat is not None and 0 <= chonluat < len(dulieu["luat"]) and self.var_locluattuido.get() not in ("", dulieu["luat"][chonluat]["hanhdong"]):
+            self.var_locluattuido.set("")
+        loc = self.var_locluattuido.get()
         self.tree_luattuido.delete(*self.tree_luattuido.get_children())
         for i, luat in enumerate(dulieu["luat"]):
+            if loc and luat["hanhdong"] != loc:
+                continue
             self.tree_luattuido.insert("", tk.END, iid = str(i), values = ("✔" if luat["bat"] else "", "📣" if luat["is_bao"] else "", TENHANHDONG[luat["hanhdong"]],
-                                                                          motaluat(luat), luat["ghichu"]))
+                                                                          motaluat(luat), luat["ghichu"]),
+                                       tags = (luat["hanhdong"] if luat["bat"] else "tat",))
         self.tree_catkho.delete(*self.tree_catkho.get_children())
         for i, luat in enumerate(dulieu["catkho"]):
             self.tree_catkho.insert("", tk.END, iid = str(i), values = ("✔" if luat["bat"] else "", motaluat(luat),
@@ -3417,7 +3447,15 @@ class GiaoDienHienThi:
             if chon is not None and tree.exists(str(chon)):
                 tree.selection_set(str(chon))
 
-    def _luutuido(self, dulieu, chonluat = None, chonmuabu = None, choncatkho = None, chonnhat = None):
+    def _doilocluattuido(self):
+        # Đổi bộ lọc thì giữ dòng đang chọn nếu nó vẫn hiện
+        chon = self.tree_luattuido.selection()
+        dulieu = tailuat()
+        if chon and self.var_locluattuido.get() not in ("", dulieu["luat"][int(chon[0])]["hanhdong"]):
+            chon = ()
+        self._hienluattuido(chonluat = int(chon[0]) if chon else None)
+
+    def _luutuido(self, dulieu,chonluat = None, chonmuabu = None, choncatkho = None, chonnhat = None):
         try:
             luuluat(dulieu)
         except OSError as err:
@@ -3480,6 +3518,10 @@ class GiaoDienHienThi:
     def _doichomuctuido(self, khoa, tree, huong):
         chon = tree.selection()
         if not chon:
+            return
+        if khoa == "luat" and self.var_locluattuido.get():
+            hopthoai.showinfo("Luật túi đồ", "Đang lọc theo hành động: chọn \"Tất cả\" rồi mới đổi thứ tự (thứ tự tính cả các luật đang ẩn)",
+                              parent = self.root)
             return
         dulieu = tailuat()
         luats = list(dulieu[khoa])
@@ -3548,7 +3590,10 @@ class GiaoDienHienThi:
         hangnut.grid(row = dong, column = 0, columnspan = 2, sticky = tk.E, pady = (4, 0))
         ttk.Button(hangnut, text = "Lưu", command = on_luu).pack(side = tk.LEFT, padx = (0, 4))
         ttk.Button(hangnut, text = "Huỷ", command = hop.destroy).pack(side = tk.LEFT)
+        hop.bind("<Escape>", lambda e: hop.destroy())
+        tomaunut(hop)
         canhgiua(hop, self.root)
+        dualentren(hop, self.is_ghim)
         hop.grab_set()
         self.root.wait_window(hop)
         return ketqua or None
@@ -3932,7 +3977,7 @@ class GiaoDienHienThi:
         for ma, bien in self.vars_phamchat.items():
             bien.set(ma in phamchatnhats)
 
-        self.btn_sapxephanhtrang.config(text = "Dừng sắp xếp" if info.get("_is_dangsapxephanhtrang") else "Sắp xếp hành trang")
+        doichunut(self.btn_sapxephanhtrang, "Dừng sắp xếp" if info.get("_is_dangsapxephanhtrang") else "Sắp xếp hành trang")
         choxacnhan = self._baothutrieuhoichoxacnhan
         if choxacnhan and (choxacnhan[0] != hwnd_to_show or info.get("_baothutrieuhoimaoson") == choxacnhan[1] or time.time() - choxacnhan[2] > 5.):
             self._baothutrieuhoichoxacnhan = choxacnhan = None

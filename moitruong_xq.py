@@ -153,6 +153,7 @@ class MoiTruong:
 
         self._thoidiemdichuyengannhat = 0.
         self._thoidiemhetchovankhi = 0.
+        self._thoidiemdongvankhiket = 0.
         # Khoá vận khí triệu hồi bảo thú (action_khoavankhitrieuhoi): None hoặc {"batdau", "toida", "caulenhduocpheps"}
         self._khoavankhitrieuhoi = None
         # Đang spam lệnh triệu hồi bảo thú (pf 4131.@) => không cho dùng kỹ năng nào khác tới thời điểm này
@@ -3431,8 +3432,10 @@ class MoiTruong:
             return max(abs(xa - x1), abs(ya - y1))
 
         # Đã kề: còn chuỗi bước thì ngắt ngay, không chạy xuyên qua mục tiêu (ngắt chỉ chặn client tự bước THOIGIANCHANTUDICHUYENCLIENT)
-        # Mục tiêu đang đi về phía mình và bước tới đã gần (KHOANGCACHCHOMUCTIEUTOI ô) thì đứng chờ nó tới, không đi rồi quay đầu
-        if kc(x2, y2) <= 1 or (kc(x2, y2) < kc(xhientai, yhientai) and kc(x2, y2) <= KHOANGCACHCHOMUCTIEUTOI):
+        # Mục tiêu đang đi về phía mình và bước tới đã gần (KHOANGCACHCHOMUCTIEUTOI ô) thì đứng chờ nó tới, không đi rồi quay đầu.
+        # Quái (lớp 0x82) đi chậm hơn mình nhiều: dùng KHOANGCACHCHOQUAITOI, tự đi tới nhanh hơn đứng chờ
+        khoangcachcho = KHOANGCACHCHOQUAITOI if read_short_int(self.tientrinh, diachimuctieu + 0x29) == 0x82 else KHOANGCACHCHOMUCTIEUTOI
+        if kc(x2, y2) <= 1 or (kc(x2, y2) < kc(xhientai, yhientai) and kc(x2, y2) <= khoangcachcho):
             if self.get_idlenhdichuyen():
                 self.action_ngatdichuyen()
             return False
@@ -3910,7 +3913,19 @@ class MoiTruong:
         if not x:
             return False
         x = read_int(self.tientrinh, x + DC.TG_VANKHI)
-        return read_int(self.tientrinh, x + 0xD8) == TRANGTHAIVANKHI_DANGVANKHI if x else False
+        if not x or read_int(self.tientrinh, x + 0xD8) != TRANGTHAIVANKHI_DANGVANKHI:
+            return False
+        # Gói máy chủ bắt đầu vận khí ghi + 0xF8 timeGetTime lúc nhận, + 0xFC thời lượng (ms); gói kết thúc đổi + 0xD8 sang thành công /
+        # thất bại rồi ẩn thanh. Dis giữa lúc vận khí thì gói kết thúc không tới, đăng nhập lại (cùng client) thanh đứng 100% mãi, game cũng
+        # chặn thao tác vì vtable[0] (+ 0x34 đang hiện) => quá thời lượng thì đóng bằng vtable[1](0) (xq + 0xB4B40: tắt + 0x34, xoá trạng thái)
+        dachay = (ctypes.windll.winmm.timeGetTime() - read_int(self.tientrinh, x + 0xF8)) & 0xFFFFFFFF
+        if dachay <= (read_int(self.tientrinh, x + 0xFC) & 0xFFFFFFFF) + THOIGIANVANKHIKETTHEM * 1000:
+            return True
+        if time.time() - self._thoidiemdongvankhiket > 1.:
+            self._thoidiemdongvankhiket = time.time()
+            self._inlog(f"[VẬN KHÍ KẸT] '{read_string(self.tientrinh, x + 0xE0).strip()}' đã {round(dachay / 1000)}s, đóng thanh vận khí")
+            self._goivtableanhien(DC.TG_VANKHI, False)
+        return False
 
     def get_is_dakhoitaothongtinbando(self):
         x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)

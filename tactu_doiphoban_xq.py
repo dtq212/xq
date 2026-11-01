@@ -1,4 +1,4 @@
-# Đội phó bản (bảng "Phó bản chung" ở tab Nhiệm vụ, cấu hình _internal/doiphoban.json qua tienich_xq.laydoiphobans): các nhân vật cố
+# Đội phó bản (bảng "Phó bản chung" ở tab Tổ đội, cấu hình _internal/doiphoban.json qua tienich_xq.laydoiphobans): các nhân vật cố
 # định đi chung các việc theo nhóm (VIECDOI_MAP: Sư Gia, Tập Kích, Lăng Ly Sơn, Thành Kiều, Phong Yêu Kính). Thành viên đầu là trưởng
 # đội; bấm Chạy ở cửa sổ trưởng đội (máy đang mở giao diện), thành viên ở máy nào cũng được (đọc qua shared_data / LAN). Trưởng đội:
 #   cho     : việc kế = việc tích đầu tiên (theo thứ tự) chưa có kết quả hôm nay; chờ mọi thành viên online (thiếu ai cả đội chờ, không
@@ -494,12 +494,21 @@ class TacTuDoiPhoBan:
         # Bật cùng việc với trưởng đội (chế độ thành viên) và Theo sau trưởng đội; Theo sau cũ nhớ lại để trả khi thôi đội
         if tv["theosaucu"] is None:
             tv["theosaucu"] = (self._is_tudongtheosau, self._idmuctieutheosau, self._tenmuctieutheosau)
-        self._is_tudongtheosau = True
-        self._idmuctieutheosau = int(d["idtruong"])
-        self._tenmuctieutheosau = self._tenidnguoichoi(d["idtruong"])
+        if d["viec"] == "phongyeukinh":
+            # Phong Yêu Kính: thành viên tự nói chuyện Tả Khâu Minh vào, tắt Theo sau thì tự dò lệch điểm với trưởng đội (_buoctrongphongyeu).
+            # Không ép bật Theo sau: giữ đúng ô Theo sau đang đặt (không lấy Theo sau cũ đã lưu: mở lại bot thì nó bật lại dù đã tắt tay),
+            # trừ khi Theo sau đang là do đội ép bật ở việc trước (Lăng Ly Sơn / Thành Kiều) thì trả về Theo sau cũ
+            if self._is_tudongtheosau and self._idmuctieutheosau == int(d["idtruong"]):
+                self._is_tudongtheosau, self._idmuctieutheosau, self._tenmuctieutheosau = tv["theosaucu"]
+            tv["theosaucu"] = (self._is_tudongtheosau, self._idmuctieutheosau, self._tenmuctieutheosau)
+        else:
+            self._is_tudongtheosau = True
+            self._idmuctieutheosau = int(d["idtruong"])
+            self._tenmuctieutheosau = self._tenidnguoichoi(d["idtruong"])
         tv.update(viec = d["viec"], lucviec = d.get("lucviec", 0.))
         if self.get_viecdanglam() != d["viec"]:
-            self._logdoi(f"Bật {VIECDOI_MAP.get(d['viec'], d['viec'])} (thành viên), Theo sau {self._tenmuctieutheosau}")
+            self._logdoi(f"Bật {VIECDOI_MAP.get(d['viec'], d['viec'])} (thành viên)"
+                         + (f", Theo sau {self._tenmuctieutheosau}" if self._is_tudongtheosau else ", không Theo sau (tự dò)"))
             self._batviecdoi(d["viec"], d.get("phai"))
 
     def _dungviecthanhvien(self, tv):

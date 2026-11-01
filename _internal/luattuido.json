@@ -173,15 +173,29 @@
     },
     {
       "bat": true,
+      "is_bao": true,
       "hanhdong": "giu",
+      "ghichu": "",
       "ten": [
-        "Hoa Cầu"
+        "Hoa Cầu",
+        "Hồng Cầu",
+        "Ngọc Kiếm"
       ],
       "tenchua": [],
       "loai": [],
-      "mota": [],
-      "ghichu": "",
-      "is_bao": true
+      "mota": []
+    },
+    {
+      "bat": true,
+      "is_bao": false,
+      "hanhdong": "vut",
+      "ghichu": "Vứt tàng bảo đồ",
+      "ten": [
+        "Tàng Bảo Đồ"
+      ],
+      "tenchua": [],
+      "loai": [],
+      "mota": []
     }
   ],
   "muabu": [
@@ -334,16 +348,6 @@
   "nhat": [
     {
       "bat": true,
-      "hanhdong": "uutien",
-      "ten": [
-        "Lễ Bao Khai Quốc"
-      ],
-      "tenchua": [],
-      "chibanrac": false,
-      "ghichu": "Ưu tiên (cũ)"
-    },
-    {
-      "bat": true,
       "hanhdong": "nhat",
       "ten": [
         "Hắc Cầu",
@@ -380,7 +384,10 @@
         "Cổ Phương Côn",
         "Nguyệt Hoàn",
         "Thạch Điêu Quyền Nhẫn",
-        "Toái Sa"
+        "Toái Sa",
+        "Da Bò",
+        "Da Sói",
+        "Nhiếp Hồn Thạch"
       ],
       "tenchua": [],
       "chibanrac": false,
@@ -467,6 +474,16 @@
       ],
       "chibanrac": false,
       "ghichu": ""
+    },
+    {
+      "bat": true,
+      "hanhdong": "khongnhat",
+      "ten": [
+        "Tàng Bảo Đồ"
+      ],
+      "tenchua": [],
+      "chibanrac": false,
+      "ghichu": "Tàng Bảo Đồ"
     }
   ]
 }

@@ -97,6 +97,15 @@ THOIGIANCHOMOIPY = 90.
 # Dò hết 1 lượt bản đồ thì hỏi Thỏ Yêu số quái đã đánh (ghi log); trưởng nhóm dò chừng này lượt chưa đủ 2 boss thì ra luôn
 SOLUOTDORAPHONGYEU = 2
 THOIGIANHOISOQUAI = 40.
+# Người give hết đồ (cấu hình is_laydothanhvien): báo xin đồ qua shared_data ("_pylamkim"), thành viên ngoài phó bản còn đồ đúng điều kiện
+# (cấp >= cấp tối thiểu của người give) tới cạnh give hết sang. Chờ quá THOIGIANCHODOTHANHVIENPY giây không ai báo còn đồ, hoặc mọi
+# thành viên báo hết thì mới dừng. Thành viên đọc túi mỗi GIANCACHDOCDOTHANHVIENPY giây, give mỗi GIANCACHGIAODOPY giây, tối đa
+# SOLANGIAODOPY lần số món không giảm (đồ khoá / người give đầy túi) thì báo hết
+THOIGIANCHODOTHANHVIENPY = 90.
+GIANCACHDOCDOTHANHVIENPY = 3.
+GIANCACHGIAODOPY = 4.
+SOLANGIAODOPY = 3
+KHOANGCACHGIAODOPY = 3.
 KHOANGCACHTOIDIEMPY = 3.
 THOIGIANMOIDIEMPY = 25.
 # Phó bản tự đi được: bandovao tầng đầu, bandonpc + npc nơi vào / nhận thưởng. luachonvao None: vào bằng lối đi NPC (LOIDINPC_MAP, lựa
@@ -1238,6 +1247,9 @@ class TacTuLangLySon:
         s.pop("py", None)
         s["diemvao"] = {}
         s.update(momophongyeu = False, lathanhvien = True)
+        yeucau = self._dualamkimchonguoigive(s, idgive)
+        if yeucau is not False:
+            return yeucau
         if moitruong.get_idbandohientai() != cauhinh["bandonpc"]:
             s["trangthai"] = f"thành viên: tới {laytenbando(cauhinh['bandonpc'])} chờ {tengive} mở {ten}"
             buoc = self._lapbuocditoibando(cauhinh["bandonpc"], is_hoithanhphu = True, toadodich = (x, y))
@@ -1265,6 +1277,137 @@ class TacTuLangLySon:
             # Chưa mở (người give chưa xác nhận xong): chờ rồi hỏi lại
             s["luclooktv"] = time.time() + GIANCACHLOOKTHANHVIENPY
         return yeucau
+
+    def get_pylamkimshare(self):
+        # Báo qua shared_data: người give hết đồ {"can": cấp đồ tối thiểu}; thành viên đang được xin {"idgive", "co": True / False / None
+        # (đang đọc túi)}; không thì None
+        s = self._langlyson
+        if not s or s["phoban"] != "phongyeukinh":
+            return None
+        if s.get("candolamkim") is not None:
+            return {"can": s["candolamkim"]}
+        return s.get("pylamkim")
+
+    def _laythongtinnguoichoi(self, idnguoichoi):
+        # shared_data của người chơi idnguoichoi (cùng máy / LAN, còn cập nhật), không có thì None
+        try:
+            for info in list(self.shared_data.values()) if self.shared_data is not None else ():
+                if isinstance(info, dict) and info.get("idnguoichoi") == idnguoichoi and time.time() - info.get("thoidiemcapnhat", 0.) <= 5.:
+                    return info
+        except Exception:
+            pass
+        return None
+
+    def _xindolamkimthanhvien(self, s):
+        # Người give hết đồ đốt được: báo xin đồ, đứng yên chờ thành viên tới give sang (_dualamkimchonguoigive). -> None khi đang chờ,
+        # False khi thôi (tắt cấu hình, đang kéo cấp - acc chính tự lo đưa đồ, không thành viên nào còn đồ / chờ quá lâu)
+        now = time.time()
+        if not taicauhinhphongyeu()["is_laydothanhvien"] or self._keocap:
+            return False
+        ten = self._tenpb(s)
+        thanhviens = self._laynhompy()[1]
+        if not thanhviens:
+            s.pop("candolamkim", None)
+            return False
+        idtoi = self.moitruong.get_idnguoichoi()
+        if s.get("candolamkim") is None:
+            s["candolamkim"] = self._laycapdolamkimtoithieu()
+            s["lucxindo"] = now
+            self._logpb(s, f"Hết đồ được phép đốt (cấp ≥ {s['candolamkim']}): xin thành viên còn đồ give sang")
+        cos, hets = [], []
+        for idtv in thanhviens:
+            info = self._laythongtinnguoichoi(idtv) or {}
+            bao = info.get("_pylamkim") or {}
+            tentv = info.get("tennhanvat") or f"ID {idtv}"
+            if bao.get("idgive") == idtoi and bao.get("co"):
+                cos.append(tentv)
+            elif bao.get("idgive") == idtoi and bao.get("co") is False:
+                hets.append(tentv)
+        if cos:
+            # Còn người đang mang đồ tới: tính lại thời gian chờ
+            s["lucxindo"] = s["luccodo"] = now
+            s["trangthai"] = f"vào {ten}: hết đồ, chờ {', '.join(cos)} tới give đồ Lam Kim"
+            return None
+        if now - s.get("luccodo", 0.) < 10.:
+            # Thành viên vừa give xong báo hết: chờ đồ về tới túi mình
+            s["trangthai"] = f"vào {ten}: chờ đồ Lam Kim thành viên give về túi"
+            return None
+        if len(hets) == len(thanhviens):
+            self._logpb(s, f"Thành viên ({', '.join(hets)}) cũng hết đồ đốt được")
+            s.pop("candolamkim", None)
+            return False
+        if now - s["lucxindo"] > THOIGIANCHODOTHANHVIENPY:
+            self._logpb(s, f"Chờ {int(THOIGIANCHODOTHANHVIENPY)}s không thành viên nào mang đồ tới")
+            s.pop("candolamkim", None)
+            return False
+        s["trangthai"] = f"vào {ten}: hết đồ, chờ thành viên đọc túi tìm đồ Lam Kim ({int(THOIGIANCHODOTHANHVIENPY - (now - s['lucxindo']))}s)"
+        return None
+
+    def _dualamkimchonguoigive(self, s, idgive):
+        # Thành viên ngoài phó bản: người give báo hết đồ ("_pylamkim" {"can": cấp tối thiểu}) thì đọc túi mình tìm đồ đốt được theo cấp
+        # đó, ở Chu Quốc thì tới cạnh người give give hết sang ("give <ID> <đồ>#1 ... $0", chuyển thẳng). -> yêu cầu di chuyển / None khi
+        # đang lo đưa đồ, False khi không cần (để đi tiếp như thành viên thường)
+        moitruong = self.moitruong
+        now = time.time()
+        info = self._laythongtinnguoichoi(idgive)
+        can = ((info or {}).get("_pylamkim") or {}).get("can")
+        if can is None or self._keocap:
+            s.pop("pylamkim", None)
+            s.pop("duado", None)
+            return False
+        bao = s.setdefault("pylamkim", {"idgive": idgive, "co": None})
+        d = s.get("duado")
+        if not d or d["idgive"] != idgive:
+            d = s["duado"] = {"idgive": idgive, "lucdoc": 0., "ds": None, "lucgive": 0., "solan": 0, "somon": None}
+            bao.update(idgive = idgive, co = None)
+        if bao["co"] is False:
+            return False
+        if now - d["lucdoc"] > GIANCACHDOCDOTHANHVIENPY or d["ds"] == "doc":
+            ds = self._chondolamkim(s, captoithieu = can, is_tatca = True)
+            if ds != "doc":
+                d["lucdoc"] = now
+            d["ds"] = ds
+        ds = d["ds"]
+        tengive = info.get("tennhanvat") or str(idgive)
+        if ds == "doc":
+            s["trangthai"] = f"thành viên: {tengive} hết đồ, đọc túi tìm đồ Lam Kim (cấp ≥ {can})"
+            return None
+        if not ds:
+            self._logpb(s, f"{tengive} xin đồ Lam Kim (cấp ≥ {can}): mình " + ("đã đưa hết" if d["somon"] else "không có"))
+            bao["co"] = False
+            return False
+        if d["somon"] is not None and len(ds) < d["somon"]:
+            d["solan"] = 0
+        elif d["solan"] >= SOLANGIAODOPY:
+            self._logpb(s, f"⚠️ Give {SOLANGIAODOPY} lần mà đồ Lam Kim không giảm (đồ khoá / {tengive} đầy túi?): thôi đưa đồ")
+            bao["co"] = False
+            return False
+        bao["co"] = True
+        cauhinh = PHOBAN_MAP[s["phoban"]]
+        if moitruong.get_idbandohientai() != cauhinh["bandonpc"]:
+            # Người give đứng ở Chu Quốc: để bước thành viên đưa mình về đó
+            return False
+        nhan = f"thành viên: tới {tengive} give {len(ds)} món Lam Kim"
+        s["trangthai"] = nhan
+        diachi = moitruong.action_timkiemnhanvat(idnguoichoi = idgive)
+        if not diachi:
+            x, y = info.get("x"), info.get("y")
+            if not x or not y or not moitruong.get_is_cungbando(info):
+                return None
+            return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (round(x), round(y), moitruong.get_idbandohientai()), "khoangcachtoida": 1.}
+        if moitruong.get_khoangcach(diachi) > KHOANGCACHGIAODOPY - 1:
+            x, y = moitruong.get_toado(diachi)
+            return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (round(x), round(y), moitruong.get_idbandohientai()), "khoangcachtoida": 1.}
+        if now - d["lucgive"] < GIANCACHGIAODOPY:
+            return None
+        moitruong.action_ngatdichuyen()
+        for lenh in taolenhgiao(str(idgive), [(mon[3], 1) for mon in ds], 0):
+            moitruong.action_thucthicaulenh(lenh)
+            self._logpb(s, f"Đưa đồ Lam Kim cho {tengive}: {lenh}")
+        self._logpb(s, f"Đã gửi {len(ds)} món cho {tengive}: " + ", ".join(f"{mon[4]} (cấp {mon[0]})" for mon in ds))
+        d.update(lucgive = now, solan = d["solan"] + 1, somon = len(ds), lucdoc = 0.)
+        s["trangthai"] = f"thành viên: give {len(ds)} món Lam Kim cho {tengive}"
+        return None
 
     def _buocvaophongyeu(self, s):
         # Vào Phong Yêu Kính theo nhóm todoi. Chỉ người online đứng đầu nhóm todoi give; người khác chờ được mời (_xulymenuphongyeu tự đồng
@@ -1416,11 +1559,17 @@ class TacTuLangLySon:
                 s["trangthai"] = f"vào {ten}: đọc mô tả hành trang tìm đồ Lam Kim"
                 return None
             if not chon:
+                yeucau = self._xindolamkimthanhvien(s)
+                if yeucau is not False:
+                    return yeucau
                 captoithieu = self._laycapdolamkimtoithieu()
                 baosuco(moitruong, "langlyson", f"⚠️ {ten}: hết đồ được phép đốt (cấp ≥ {captoithieu}, xem cấu hình đồ đem đốt) trong hành trang, "
                                                 f"dừng tự động", khoa = f"{s['batdau']}|hetdopy", giancach = 0.)
                 self._ketthuclanglyson(f"❌ Dừng: hết đồ được phép đốt (cấp ≥ {captoithieu})")
                 return None
+            if s.pop("candolamkim", None) is not None:
+                self._logpb(s, "Đã có đồ Lam Kim (thành viên đưa sang), thôi xin đồ")
+            s.pop("lucxindo", None)
             cap, gia, vitri, iddoituong, tendo = chon
             # Đọc lại mô tả mới của chính ô này cho chắc rồi mới nhận (mô tả cũ có thể là của món trước ở ô đó)
             moitruong.get_motavatphamhanhtrang(vitri, is_napmoi = True)

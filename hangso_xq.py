@@ -166,6 +166,9 @@ KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN = 3
 THOIGIANCHOVAOVANKHI = 2.5
 # Khoá vận khí triệu hồi bảo thú giữ tối đa chừng này (phòng đọc trạng thái vận khí sai mà khoá mãi)
 THOIGIANKHOAVANKHITRIEUHOITOIDA = 15.
+# Thanh vận khí quá thời lượng máy chủ báo chừng này giây mà vẫn "đang vận khí" => kẹt (vd đang Lôi Động Cửu Thiên thì dis: máy chủ không
+# bao giờ gửi gói kết thúc, đăng nhập lại thanh vẫn đứng 100%), tự đóng thanh
+THOIGIANVANKHIKETTHEM = 5.
 # Đổi đồ khi triệu hồi: hết vận khí mà chừng này giây chưa thấy bảo thú triệu hồi mới (triệu hồi hỏng / bị ngắt) thì vẫn mặc lại
 THOIGIANCHOBAOTHUSAUTRIEUHOI = 5.
 # Lôi Động Cửu Thiên (Mao Sơn) vận khí 6s (phạm vi 7x7 ô quanh bản thân); Lôi Long Quyết (Côn Luân, 9x9 ô liên tục 6s) cùng cơ chế,
@@ -250,6 +253,8 @@ QUANGLUITHEMTOIDA = 3.
 THOIGIANTINHLAITIEPCANCANCHIEN = 0.25
 # Mục tiêu đang đi về phía mình, bước tới của nó cách mình không quá chừng này ô (theo ô, max |dx| |dy|) thì đứng chờ
 KHOANGCACHCHOMUCTIEUTOI = 2
+# Quái đi chậm (đo 2026-11-02: quái ~0.41s/ô, người ~0.25s/ô, bảo thú ~0.3s/ô): chờ nó tới lâu hơn mình đi tới => chỉ đứng khi đã kề
+KHOANGCACHCHOQUAITOI = 1
 # Mục tiêu chạy ra xa mà còn cách từ chừng này ô thì đón đầu nhẹ, tối đa QUANGDONDAUCANCHIEN ô; gần hơn thì nhắm ô của nó như client
 KHOANGCACHDONDAUCANCHIEN = 3
 QUANGDONDAUCANCHIEN = 2.
@@ -1067,7 +1072,7 @@ IS_LOGDICHUYEN = True
 
 # Xoay vòng lệnh chiêu / đánh giữa các bot: tại mỗi thời điểm chỉ 1 bot được ra chiêu / đánh, giữ lượt ngẫu nhiên KHOANGGIULUOTLENH giây
 # (trong đó gửi bao nhiêu lệnh cũng được) rồi nhường bot đang chờ kế tiếp, để các bot không cùng ra chiêu một lúc như máy.
-# Đây là giá trị mặc định: chỉnh trên giao diện (tab Chiến đấu > Nhịp lệnh) thì lưu vào _internal/dieuphoi.json và dùng giá trị trong đó
+# Đây là giá trị mặc định: chỉnh trên giao diện (tab Khác > Nhịp lệnh) thì lưu vào _internal/dieuphoi.json và dùng giá trị trong đó
 IS_XOAYVONGLENHGIUACACBOT = True
 KHOANGGIULUOTLENH = (1.0, 2.0)
 # Bot đang giữ lượt mà quá ngần này giây không gửi chiêu có mục tiêu nào (không có chiêu cần dùng, hồi chiêu, hết quái...) thì nhường ngay

@@ -33,6 +33,15 @@ BANGMAU_SANG = {
     "nen_phim": "#e6eaf0",
     "chu_phim": "#3a4250",
     "vang": "#c27c0e",          # biểu tượng hộp cảnh báo
+    # Nút màu kiểu Bootstrap (btn-danger / btn-warning / btn-success / btn-secondary), mỗi loại một màu rê chuột
+    "nut_nguyhiem": "#dc3545",
+    "nut_nguyhiem_re": "#bb2d3b",
+    "nut_canhbao": "#ffc107",
+    "nut_canhbao_re": "#e6ac00",
+    "nut_thanhcong": "#198754",
+    "nut_thanhcong_re": "#146c43",
+    "nut_phu": "#6c757d",
+    "nut_phu_re": "#5c636a",
 }
 
 BANGMAU_TOI = {
@@ -59,10 +68,55 @@ BANGMAU_TOI = {
     "nen_phim": "#30353f",
     "chu_phim": "#c5ccd8",
     "vang": "#f0b54a",
+    "nut_nguyhiem": "#d9434c",
+    "nut_nguyhiem_re": "#e85d65",
+    "nut_canhbao": "#e8ad1e",
+    "nut_canhbao_re": "#f5c03c",
+    "nut_thanhcong": "#22955a",
+    "nut_thanhcong_re": "#2fae6c",
+    "nut_phu": "#5a6270",
+    "nut_phu_re": "#6a7383",
 }
 
 for _bang in (BANGMAU_SANG, BANGMAU_TOI):
     assert len({m.lower() for m in _bang.values()}) == len(_bang), "Bảng màu có hai khoá trùng mã màu"
+
+
+# Loại nút màu -> style "<Loai>.TButton" (Nguyhiem.TButton = btn-danger...); Chinh.TButton là btn-primary
+LOAINUTMAU = ("nguyhiem", "canhbao", "thanhcong", "phu")
+
+
+# Màu nút theo chữ đầu (khớp tiền tố, thứ tự quan trọng): như class btn-success / btn-danger / btn-warning / btn-primary bên web
+_MAUNUTTHEOCHU = (
+    (("Huỷ / bỏ", "Xoá", "Giải tán", "Bỏ", "⏹", "Dừng"), "Nguyhiem.TButton"),
+    (("Thêm", "Ghi bộ đồ"), "Thanhcong.TButton"),
+    (("Sửa", "Đổi tên", "Số vòng", "↺", "⚙", "Bổ sung"), "Canhbao.TButton"),
+    (("Lưu", "▶", "Áp dụng", "Đi", "Tiếp tục", "Nạp mẫu", "Tự đề xuất", "Tự chọn", "🗄", "🚚", "Cả máy", "👥", "🐣", "🤝", "🐥", "🐎",
+      "Sắp xếp"), "Chinh.TButton"),
+    (("Huỷ", "Mở file"), "Phu.TButton"),
+)
+
+
+def _stylenuttheochu(chu):
+    # "" = nút xám mặc định (↑ ↓...)
+    chu = str(chu).strip()
+    return next((tenstyle for tiengtos, tenstyle in _MAUNUTTHEOCHU if chu.startswith(tiengtos)), "")
+
+
+def tomaunut(widget):
+    # Gán style màu cho mọi nút thường (chưa có style riêng) bên trong widget theo chữ trên nút
+    for con in widget.winfo_children():
+        tomaunut(con)
+    if isinstance(widget, ttk.Button) and not str(widget.cget("style")):
+        tenstyle = _stylenuttheochu(widget.cget("text"))
+        if tenstyle:
+            widget.configure(style = tenstyle)
+
+
+def doichunut(nut, chu):
+    # Nút bật/tắt đổi chữ (▶ Chạy ↔ ⏹ Dừng) thì đổi màu theo chữ mới (xanh ↔ đỏ)
+    if str(nut.cget("text")) != chu:
+        nut.configure(text = chu, style = _stylenuttheochu(chu))
 
 
 def laybangmau(is_toi):
@@ -140,6 +194,10 @@ def _veanh(mau, heso):
                            ("nut_bam", mau["nut_bam"], mau["nut_bam"]), ("nut_tat", mau["nen"], mau["vien"]),
                            ("nutchinh", mau["chinh"], mau["chinh"]), ("nutchinh_re", mau["chinh_dam"], mau["chinh_dam"])):
         anh[ten] = _anhhop(canh, canh, hopnut, r, nen, vien, heso)
+    for loai in LOAINUTMAU:
+        for duoi in ("", "_re"):
+            khoa = f"nut_{loai}{duoi}"
+            anh[khoa] = _anhhop(canh, canh, hopnut, r, mau[khoa], mau[khoa], heso)
 
     # Ô tích: hộp vuông bo góc, chừa trong suốt bên phải làm khoảng cách tới chữ
     o = round(16 * heso)
@@ -221,6 +279,10 @@ def apdungchude(root, mau, heso, font):
         layoutnut = style.layout("TButton")
         style.layout("TButton", _doilayout(layoutnut, {"Button.border": "XQ.Nut.nen", "Button.focus": None}))
         style.layout("Chinh.TButton", _doilayout(layoutnut, {"Button.border": "XQ.NutChinh.nen", "Button.focus": None}))
+        for loai in LOAINUTMAU:
+            style.element_create(f"XQ.Nut{loai}.nen", "image", a[f"nut_{loai}"], ("disabled", a["nut_tat"]),
+                                 ("pressed", a[f"nut_{loai}_re"]), ("active", a[f"nut_{loai}_re"]), border = kichthuoc["nut"], sticky = "nsew")
+            style.layout(f"{loai.capitalize()}.TButton", _doilayout(layoutnut, {"Button.border": f"XQ.Nut{loai}.nen", "Button.focus": None}))
         style.layout("TCheckbutton", _doilayout(style.layout("TCheckbutton"), {"Checkbutton.indicator": "XQ.Tich.chi",
                                                                                 "Checkbutton.focus": None}))
         style.layout("TNotebook.Tab", _doilayout(style.layout("TNotebook.Tab"), {"Notebook.tab": "XQ.Tab.nen", "Notebook.focus": None}))
@@ -235,10 +297,15 @@ def apdungchude(root, mau, heso, font):
                     focuscolor = mau["chinh"], arrowcolor = mau["chu_phu"], font = font)
     style.map(".", background = [], foreground = [("disabled", mau["chu_mo"])])
 
-    style.configure("TButton", padding = (px(12), px(4)), foreground = chu, anchor = tk.CENTER)
+    # clam ép nút rộng tối thiểu 11 ký tự (-11) làm nút "Thêm"/"Xoá" to bè: chỉ giữ tối thiểu 4 ký tự, padding gọn
+    # clam ép nút rộng tối thiểu 11 ký tự (-11) làm nút "Thêm"/"Xoá" to bè: chỉ giữ tối thiểu 3 ký tự, chữ nhỏ 1 cỡ, padding gọn (kiểu btn-sm)
+    style.configure("TButton", padding = (px(8), px(1)), width = -3, foreground = chu, anchor = tk.CENTER, font = (font[0], font[1] - 1))
     style.map("TButton", foreground = [("disabled", mau["chu_mo"])], background = [])
-    style.configure("Chinh.TButton", foreground = "#ffffff")
-    style.map("Chinh.TButton", foreground = [("disabled", mau["chu_mo"])])
+    # Nút màu: chữ trắng, riêng nút vàng (btn-warning) chữ tối cho dễ đọc
+    for tenstyle, mauchu in (("Chinh.TButton", "#ffffff"), ("Nguyhiem.TButton", "#ffffff"), ("Canhbao.TButton", "#212529"),
+                             ("Thanhcong.TButton", "#ffffff"), ("Phu.TButton", "#ffffff")):
+        style.configure(tenstyle, foreground = mauchu)
+        style.map(tenstyle, foreground = [("disabled", mau["chu_mo"])])
     style.configure("TCheckbutton", padding = (0, px(1)))
     style.map("TCheckbutton", background = [], indicatorbackground = [])
 
@@ -308,15 +375,81 @@ def doithanhtieude(cuaso, is_toi):
 _BIEUTUONG = {"info": ("chinh", "i"), "warning": ("vang", "!"), "error": ("do", "×"), "question": ("chinh", "?")}
 
 
+def _vungmanhinh(cuaso):
+    # Vùng làm việc (trừ taskbar) của màn hình chứa cửa sổ -> (trái, trên, phải, dưới). Cửa sổ đang thu nhỏ thì Windows lấy chỗ trước khi
+    # thu nhỏ; nhiều màn hình thì toạ độ có thể âm. Lỗi thì lấy màn hình chính
+    try:
+        import ctypes
+        from ctypes import wintypes
+        user32 = ctypes.windll.user32
+        user32.GetParent.restype = ctypes.c_void_p
+        user32.GetParent.argtypes = [ctypes.c_void_p]
+        user32.MonitorFromWindow.restype = ctypes.c_void_p
+        user32.MonitorFromWindow.argtypes = [ctypes.c_void_p, wintypes.DWORD]
+        user32.GetMonitorInfoW.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+
+        class MONITORINFO(ctypes.Structure):
+            _fields_ = [("cbSize", wintypes.DWORD), ("rcMonitor", wintypes.RECT), ("rcWork", wintypes.RECT), ("dwFlags", wintypes.DWORD)]
+
+        hwnd = user32.GetParent(cuaso.winfo_id()) or cuaso.winfo_id()
+        thongtin = MONITORINFO(cbSize = ctypes.sizeof(MONITORINFO))
+        # MONITOR_DEFAULTTONEAREST = 2
+        if user32.GetMonitorInfoW(user32.MonitorFromWindow(hwnd, 2), ctypes.byref(thongtin)):
+            vung = thongtin.rcWork
+            return vung.left, vung.top, vung.right, vung.bottom
+    except Exception:
+        pass
+    return 0, 0, cuaso.winfo_screenwidth(), cuaso.winfo_screenheight() - int(40 * _hientai["heso"])
+
+
+def is_chahien(cha):
+    # Cửa sổ cha đang hiện trên màn hình (không thu nhỏ / ẩn): thu nhỏ thì toạ độ -32000, hộp transient theo nó cũng bị ẩn theo
+    try:
+        return cha.state() not in ("iconic", "withdrawn") and cha.winfo_rootx() > -30000
+    except tk.TclError:
+        return False
+
+
 def canhgiua(hop, cha):
-    # Đặt hộp thoại giữa cửa sổ cha (1/3 chiều cao), không tràn ra ngoài màn hình
+    # Đặt hộp thoại giữa cửa sổ cha (1/3 chiều cao); cha thu nhỏ / ẩn thì giữa màn hình chứa cha. Không tràn ra ngoài màn hình
     hop.update_idletasks()
     rong, cao = hop.winfo_reqwidth(), hop.winfo_reqheight()
-    x = cha.winfo_rootx() + (cha.winfo_width() - rong) // 2
-    y = cha.winfo_rooty() + (cha.winfo_height() - cao) // 3
-    x = max(0, min(x, hop.winfo_screenwidth() - rong))
-    y = max(0, min(y, hop.winfo_screenheight() - cao - int(40 * _hientai["heso"])))
+    trai, tren, phai, duoi = _vungmanhinh(cha)
+    if is_chahien(cha):
+        x = cha.winfo_rootx() + (cha.winfo_width() - rong) // 2
+        y = cha.winfo_rooty() + (cha.winfo_height() - cao) // 3
+    else:
+        x = trai + (phai - trai - rong) // 2
+        y = tren + (duoi - tren - cao) // 3
+    x = max(trai, min(x, phai - rong))
+    y = max(tren, min(y, duoi - cao))
     hop.geometry(f"+{x}+{y}")
+    # Áp toạ độ ngay: để chờ lúc rảnh thì đổi -topmost / lift sau đó (dualentren) kéo cửa sổ về chỗ cũ (góc trái trên)
+    hop.update_idletasks()
+
+
+def dualentren(hop, is_giunoi = True):
+    # Đưa hộp lên trên mọi cửa sổ và lấy focus bàn phím (không phải click vào). is_giunoi = False: chỉ nổi lúc mở, sau đó thôi topmost
+    # (để App không ghim thì cửa sổ khác vẫn đè lên được)
+    hop.lift()
+    hop.attributes("-topmost", True)
+    hop.focus_force()
+    try:
+        import ctypes
+        user32 = ctypes.windll.user32
+        user32.GetParent.restype = ctypes.c_void_p
+        user32.GetParent.argtypes = [ctypes.c_void_p]
+        user32.SetForegroundWindow.argtypes = [ctypes.c_void_p]
+        user32.SetForegroundWindow(user32.GetParent(hop.winfo_id()) or hop.winfo_id())
+    except Exception:
+        pass
+    if not is_giunoi:
+        def thoinoi():
+            try:
+                hop.attributes("-topmost", False)
+            except tk.TclError:
+                pass
+        hop.after(300, thoinoi)
 
 
 def _hopthoai(tieude, noidung, parent, loai, nuts, o_nhap = None):
@@ -329,15 +462,13 @@ def _hopthoai(tieude, noidung, parent, loai, nuts, o_nhap = None):
 
     cha = parent.winfo_toplevel() if parent else tk._default_root
     hop = tk.Toplevel(cha)
+    # Ẩn tới khi đặt xong chỗ (không loé ở góc trái trên)
+    hop.withdraw()
     hop.title(tieude)
     hop.resizable(False, False)
-    hop.transient(cha)
-    try:
-        if cha.attributes("-topmost"):
-            hop.attributes("-topmost", True)
-    except tk.TclError:
-        pass
-    doithanhtieude(hop, mau is BANGMAU_TOI)
+    # Cha đang thu nhỏ thì không transient: hộp transient bị ẩn theo cha, bot báo lúc App thu nhỏ sẽ không thấy
+    if is_chahien(cha):
+        hop.transient(cha)
     ketqua = {"giatri": nuts[-1][1]}
 
     khung = ttk.Frame(hop, padding = (px(18), px(16), px(18), px(12)))
@@ -385,6 +516,10 @@ def _hopthoai(tieude, noidung, parent, loai, nuts, o_nhap = None):
     hop.protocol("WM_DELETE_WINDOW", lambda: bam(nuts[-1][1], False))
 
     canhgiua(hop, cha)
+    hop.deiconify()
+    doithanhtieude(hop, mau is BANGMAU_TOI)
+    # Hộp thông báo / hỏi luôn nổi trên cùng tới khi đóng
+    dualentren(hop)
     if loai in ("warning", "error"):
         hop.bell()
     hop.grab_set()

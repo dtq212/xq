@@ -390,8 +390,10 @@ def tainhomtodoitudongs():
 
 # Đồ đem đốt khi vào Phong Yêu Kính (tactu_langlyson_xq._phantichdolamkim), dùng chung mọi nhân vật trên máy, sửa ở giao diện:
 # màu tên được đốt (Lam Kim / Hoàng Kim), chỉ đồ Chưa giám định, cấp đồ >= cấp nhân vật - caphonnhanvat, tên chứa cụm trong "khongdot"
-# thì không bao giờ đốt, "chidot" không rỗng thì chỉ đốt món có tên chứa 1 cụm trong đó
-CAUHINHPHONGYEU_MACDINH = {"is_lamkim": True, "is_hoangkim": False, "is_chichuagiamdinh": True, "caphonnhanvat": 25, "khongdot": [], "chidot": []}
+# thì không bao giờ đốt, "chidot" không rỗng thì chỉ đốt món có tên chứa 1 cụm trong đó. is_laydothanhvien: người give hết đồ thì xin
+# thành viên cùng nhóm (cùng máy / LAN) còn đồ đúng điều kiện tới give sang thay vì dừng
+CAUHINHPHONGYEU_MACDINH = {"is_lamkim": True, "is_hoangkim": False, "is_chichuagiamdinh": True, "caphonnhanvat": 25, "khongdot": [], "chidot": [],
+                           "is_laydothanhvien": True}
 _cauhinhphongyeu_cache = {"cauhinh": None, "thoidiemsua": None, "thoidiemkiemtra": 0.}
 
 
@@ -402,7 +404,7 @@ def duongdancauhinhphongyeu():
 def _chuanhoacauhinhphongyeu(cauhinh):
     ketqua = dict(CAUHINHPHONGYEU_MACDINH)
     if isinstance(cauhinh, dict):
-        for khoa in ("is_lamkim", "is_hoangkim", "is_chichuagiamdinh"):
+        for khoa in ("is_lamkim", "is_hoangkim", "is_chichuagiamdinh", "is_laydothanhvien"):
             if khoa in cauhinh:
                 ketqua[khoa] = bool(cauhinh[khoa])
         try:
