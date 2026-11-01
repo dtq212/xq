@@ -1161,6 +1161,23 @@ class MoiTruong:
         tenbandogame = unicodedata.normalize("NFC", tenbandogame)
         return tenbandogame.startswith(TIENTOTENPHOBANMUONBANDOs) and self.get_idbandohientai() not in BANDOPHOBANs
 
+    def get_tenphobanmuonbando(self):
+        # Đầu tên phó bản mượn ID bản đồ ngoài đang ở ("Phó Bản" / "Tập Kích Môn"), "" nếu ở bản đồ thật hoặc chưa đọc được tên.
+        # Chia sẻ qua shared_data ("_phobanmuonbando") để cửa sổ khác phân biệt Phong Yêu Kính với bản đồ thật cùng ID
+        tenbandogame = unicodedata.normalize("NFC", self.get_tenbandogame() or "")
+        if not tenbandogame or self.get_idbandohientai() in BANDOPHOBANs:
+            return ""
+        return next((tiento for tiento in TIENTOTENPHOBANMUONBANDOs if tenbandogame.startswith(tiento)), "")
+
+    def get_is_cungbando(self, info, idbando = None):
+        # Nhân vật cửa sổ khác (info trong shared_data) có đang cùng bản đồ với mình: cùng ID và cùng là / không là phó bản mượn ID
+        # (Phong Yêu Kính mượn ID bản đồ thật, nhân vật ở hai nơi không thấy nhau). Cửa sổ chưa khởi động lại chưa có trường thì chỉ so ID
+        idbando = self.get_idbandohientai() if idbando is None else idbando
+        if not info or info.get("tenbando") != idbando:
+            return False
+        phobanmuon = self.get_tenphobanmuonbando()
+        return info.get("_phobanmuonbando", phobanmuon) == phobanmuon
+
     def get_is_bandotapkichmonphai(self):
         # Tập Kích Môn Phái mượn ID 151 (Kênh Trịnh Quốc 1) nên chỉ nhận ra qua tên bản đồ game
         tenbandogame = self.get_tenbandogame()

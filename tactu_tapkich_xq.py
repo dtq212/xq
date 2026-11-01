@@ -72,11 +72,11 @@ class TacTuTapKich:
 
     def get_is_tapkichdichuyen(self):
         # Đang tự lo đi lại / tìm NPC ngoài phó bản: không chọn quái dọc đường, đi trước đánh / nhặt
-        return bool(self._tapkich) and self._tapkich["chedo"] == "dichuyen"
+        return bool(self._tapkich) and self._tapkich.get("chedodoc", "dichuyen") == "dichuyen"
 
     def get_is_tapkichdanhquai(self):
         # Trong phó bản: đánh mọi quái, không giới hạn theo danh sách tên / điểm đánh của nhân vật
-        return bool(self._tapkich) and self._tapkich["chedo"] == "danhquai"
+        return bool(self._tapkich) and self._tapkich.get("chedodoc") == "danhquai"
 
     def get_trangthaitapkich(self):
         if self._tapkich:
@@ -159,16 +159,27 @@ class TacTuTapKich:
     # --- Vòng chính ------------------------------------------------------------------------------------------------------------------
     def _xulytapkich(self):
         # Gọi thay lộ trình điểm đánh khi đang đi Tập Kích -> yêu cầu di chuyển hoặc None
+        # chedo đặt lại từ đầu mỗi lượt rồi mới biết chế độ thật: luồng chọn mục tiêu đọc giữa chừng thấy "dichuyen" thì bỏ mục tiêu
+        # (chập chờn). Getter đọc "chedodoc", chỉ chép khi xong cả lượt
+        s = self._tapkich
+        yeucau = self._xulytapkichluot()
+        s["chedodoc"] = s["chedo"]
+        return yeucau
+
+    def _xulytapkichluot(self):
         s = self._tapkich
         moitruong = self.moitruong
         if s["trangthai"] != s.get("trangthaidaghi"):
             s["trangthaidaghi"] = s["trangthai"]
             self._logtk(s["trangthai"])
-        s["chedo"] = "dichuyen"
+        # Thoát sớm thì giữ chế độ lượt trước
         if moitruong.get_is_nhanvatdachet() or self.get_is_danghoithoainpc() or self._trangthaiveban != 0 or moitruong.get_is_dangvankhi():
             return None
         if time.time() - moitruong.get_thoidiemthaydoibandogannhat() < 2.:
+            # Vừa đổi bản đồ (vào / ra phó bản): chưa đánh
+            s["chedo"] = "dichuyen"
             return None
+        s["chedo"] = "dichuyen"
         if time.time() - s["lucbatdauvong"] > THOIGIANVONGTAPKICHTOIDA:
             self._baotapkich(s, f"cham|{s['sovong']}", f"⚠️ Tập Kích: vòng {s['sovong'] + 1} quá {int(THOIGIANVONGTAPKICHTOIDA // 60)} phút chưa xong "
                                                      f"({s['trangthai']})")

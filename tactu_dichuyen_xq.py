@@ -715,7 +715,7 @@ class TacTuDiChuyen:
 
         # Ngoài tầm nhìn nhưng cùng bản đồ => lấy tọa độ cửa sổ đó báo lên (bản đồ khác thì _xulyphutheosau lo phù sang)
         info = self._laythongtinmuctieutheosaucuasokhac()
-        if info and info.get("tenbando") == self.moitruong.get_idbandohientai() and (info.get("x") or info.get("y")):
+        if self.moitruong.get_is_cungbando(info) and (info.get("x") or info.get("y")):
             return info.get("x"), info.get("y")
         return False
 
@@ -781,7 +781,7 @@ class TacTuDiChuyen:
         for idcuaso, info in danhsach:
             if idcuaso == self.idcuaso or not isinstance(info, dict):
                 continue
-            if info.get("tenbando") != idbandohientai or time.time() - info.get("thoidiemcapnhat", 0.) > 5.:
+            if not self.moitruong.get_is_cungbando(info, idbandohientai) or time.time() - info.get("thoidiemcapnhat", 0.) > 5.:
                 continue
             idtruongnhom = info.get("idtruongnhom")
             if not idtruongnhom:

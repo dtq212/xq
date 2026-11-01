@@ -147,7 +147,7 @@ class TacTuHoatDong:
         for idcuaso, info in danhsach:
             if idcuaso == self.idcuaso or not isinstance(info, dict):
                 continue
-            if info.get("tenbando") != idbandohientai:
+            if not self.moitruong.get_is_cungbando(info, idbandohientai):
                 continue
             if time.time() - info.get("_thoidiemphathienanthan", 0.) > THOIGIANCHIASEANTHAN:
                 continue

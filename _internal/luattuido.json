@@ -193,7 +193,9 @@
       "monphai": "vanmongcoc",
       "bat": true,
       "chikhi": "",
-      "tencuahang": ""
+      "tencuahang": "",
+      "xepchong": 100,
+      "thapnhat": -1
     },
     {
       "vatpham": "Đậu Nành",
@@ -203,7 +205,9 @@
       "monphai": "vanmongcoc",
       "bat": true,
       "chikhi": "",
-      "tencuahang": ""
+      "tencuahang": "",
+      "xepchong": 100,
+      "thapnhat": -1
     },
     {
       "vatpham": "Bùa Giấy",
@@ -213,7 +217,9 @@
       "monphai": "maoson",
       "bat": true,
       "chikhi": "",
-      "tencuahang": ""
+      "tencuahang": "",
+      "xepchong": 100,
+      "thapnhat": -1
     },
     {
       "vatpham": "Cao Cấp Bảo Thú Thực Ph",
@@ -223,7 +229,9 @@
       "chikhi": "trieuhoibaothu",
       "bat": true,
       "monphai": "",
-      "tencuahang": "Thức Ăn Bảo Thú Cao Cấp"
+      "tencuahang": "Thức Ăn Bảo Thú Cao Cấp",
+      "xepchong": 100,
+      "thapnhat": -1
     },
     {
       "vatpham": "Lão Tửu",
@@ -233,7 +241,9 @@
       "chikhi": "trieuhoibaothu",
       "bat": true,
       "monphai": "",
-      "tencuahang": ""
+      "tencuahang": "",
+      "xepchong": 100,
+      "thapnhat": -1
     },
     {
       "vatpham": "Dưa hấu",
@@ -243,7 +253,9 @@
       "chikhi": "trieuhoibaothu",
       "bat": true,
       "monphai": "",
-      "tencuahang": ""
+      "tencuahang": "",
+      "xepchong": 100,
+      "thapnhat": -1
     },
     {
       "vatpham": "Bùa Giấy",
@@ -253,7 +265,9 @@
       "muatoi": 10000,
       "monphai": "conluan",
       "chikhi": "",
-      "bat": true
+      "bat": true,
+      "xepchong": 100,
+      "thapnhat": -1
     }
   ],
   "catkho": [
@@ -316,5 +330,142 @@
       "ghichu": ""
     }
   ],
-  "is_catkhosauban": true
+  "is_catkhosauban": true,
+  "nhat": [
+    {
+      "bat": true,
+      "hanhdong": "uutien",
+      "ten": [
+        "Lễ Bao Khai Quốc"
+      ],
+      "tenchua": [],
+      "chibanrac": false,
+      "ghichu": "Ưu tiên (cũ)"
+    },
+    {
+      "bat": true,
+      "hanhdong": "nhat",
+      "ten": [
+        "Hắc Cầu",
+        "Lam Cầu",
+        "Hoa Cầu",
+        "Hồng Cầu",
+        "Tử Sâm Đơn",
+        "Cấp Cứu Đơn",
+        "Hoạt Tâm Đơn",
+        "Tiêu Dao Tán",
+        "Kim Tang Tán",
+        "Quy Nguyên Đơn",
+        "Khí Mạch Đơn",
+        "Tử Tâm Đơn",
+        "Hoàng Kim Thánh Y",
+        "Thanh Đồng Bảo Hộp",
+        "Tử Kim Bảo Hộp",
+        "Mồi Câu",
+        "Đá Tương Uyên",
+        "Tiền Tệ",
+        "Vô Song Điểm Phiếu",
+        "Cờ Đỏ",
+        "Sao Vàng",
+        "Lễ Bao Khai Quốc",
+        "Âu Dã Bảo Thạch",
+        "Long Cốt",
+        "Phấn Huỳnh Quang",
+        "Thanh Tâm Đơn",
+        "Toái Cẩm",
+        "Xá Lợi Tử",
+        "Ngọc Kiếm",
+        "Kim Đao",
+        "Xích Anh Thương",
+        "Cổ Phương Côn",
+        "Nguyệt Hoàn",
+        "Thạch Điêu Quyền Nhẫn"
+      ],
+      "tenchua": [],
+      "chibanrac": false,
+      "ghichu": "Tự động nhặt (cũ)"
+    },
+    {
+      "bat": true,
+      "hanhdong": "nhat",
+      "ten": [
+        "Tiền Tệ",
+        "Tơ Nhện",
+        "Kịch Độc Châm",
+        "Đuôi Bọ Cạp",
+        "Ly Hồn",
+        "Ly Phách",
+        "Ma Tinh thạch",
+        "Trái Táo",
+        "Trái lê",
+        "Phá Bố Y",
+        "Toái Lăng",
+        "Tơ Tằm",
+        "Da Rắn",
+        "Ống Tên",
+        "Bao Kiếm",
+        "Cán Đao",
+        "Toái Sa",
+        "Hồng Sắc Tiểu Thạch",
+        "Mạng Nhện",
+        "Tử Giả Di Vật",
+        "Phi Hành Phiến",
+        "Núm Vú",
+        "Hành Quân Tán"
+      ],
+      "tenchua": [],
+      "chibanrac": true,
+      "ghichu": "Nhặt thêm khi về bán rác (cũ)"
+    },
+    {
+      "bat": true,
+      "hanhdong": "nhat",
+      "ten": [],
+      "tenchua": [
+        "Kiếm",
+        "Đao",
+        "Mâu",
+        "Thủ",
+        "Thương",
+        "Sáo",
+        "Bổng",
+        " Y",
+        "Giáp",
+        "Côn",
+        "Kích",
+        " Bào",
+        " Lý",
+        " Mạo",
+        "Phi Phong",
+        " Nguyệt",
+        "Quan",
+        " Liên",
+        " Quần",
+        " Hài",
+        " Nhẫn",
+        " Tiêu",
+        "Đầu Cân",
+        "Xú Diêm",
+        "Nghênh Phong Trảm",
+        " Mão",
+        " Tố Quần",
+        "Nhập môn",
+        "Trứng gà",
+        " cấp ",
+        "Kim Cương"
+      ],
+      "chibanrac": true,
+      "ghichu": "Tên có chữ, khi về bán rác (cũ)"
+    },
+    {
+      "bat": true,
+      "hanhdong": "nhat",
+      "ten": [],
+      "tenchua": [
+        "Công thức"
+      ],
+      "chibanrac": false,
+      "ghichu": ""
+    }
+  ]
 }

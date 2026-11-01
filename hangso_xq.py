@@ -698,6 +698,8 @@ THOIGIANCHOHOIXONGTOIDA = 0.5
 VITRITRANGBI_PHAPBAO = VITRITRANGBIDAUTIEN + 6
 # Ô trang bị Chủ Tiệm Sửa Chữa sửa được: nón, hạng liên, vũ khí, áo, yêu đới, giày (pháp bảo / ngọc / cánh / ngoại trang không sửa)
 VITRITRANGBISUADUOCs = tuple(range(VITRITRANGBIDAUTIEN, VITRITRANGBI_PHAPBAO))
+# Tự về sửa đồ (tab Hành trang): mặc định về khi có món sửa được còn dưới chừng này % độ bền
+PHANTRAMVESUADO = 20
 # Mao Sơn bật "đổi đồ khi triệu hồi": trong lúc vận khí gọi bảo thú triệu hồi thì đeo "bộ đồ triệu hồi" đã ghi (thường là đồ tấn công),
 # vận khí xong mặc lại bộ cũ. Bộ đồ ghi từ đồ đang mặc ở các ô trang bị này (nón, hạng liên, vũ khí, áo, yêu đới, giày, pháp bảo;
 # không ngọc / cánh / ngoại trang). Loại theo ô nên không cần mô tả để biết món nào được ghi

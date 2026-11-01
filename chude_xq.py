@@ -308,6 +308,17 @@ def doithanhtieude(cuaso, is_toi):
 _BIEUTUONG = {"info": ("chinh", "i"), "warning": ("vang", "!"), "error": ("do", "×"), "question": ("chinh", "?")}
 
 
+def canhgiua(hop, cha):
+    # Đặt hộp thoại giữa cửa sổ cha (1/3 chiều cao), không tràn ra ngoài màn hình
+    hop.update_idletasks()
+    rong, cao = hop.winfo_reqwidth(), hop.winfo_reqheight()
+    x = cha.winfo_rootx() + (cha.winfo_width() - rong) // 2
+    y = cha.winfo_rooty() + (cha.winfo_height() - cao) // 3
+    x = max(0, min(x, hop.winfo_screenwidth() - rong))
+    y = max(0, min(y, hop.winfo_screenheight() - cao - int(40 * _hientai["heso"])))
+    hop.geometry(f"+{x}+{y}")
+
+
 def _hopthoai(tieude, noidung, parent, loai, nuts, o_nhap = None):
     # nuts = [(chữ, giá trị)], nút đầu là nút chính (Enter); Esc / đóng cửa sổ trả giá trị của nút cuối.
     # o_nhap = (giá trị đầu, hàm kiểm tra chuỗi -> (giá trị, lỗi)) thì có ô nhập, nút chính trả giá trị đã kiểm tra
@@ -373,14 +384,7 @@ def _hopthoai(tieude, noidung, parent, loai, nuts, o_nhap = None):
     hop.bind("<Escape>", lambda e: bam(nuts[-1][1], False))
     hop.protocol("WM_DELETE_WINDOW", lambda: bam(nuts[-1][1], False))
 
-    # Giữa cửa sổ cha, không tràn ra ngoài màn hình
-    hop.update_idletasks()
-    rong, cao = hop.winfo_reqwidth(), hop.winfo_reqheight()
-    x = cha.winfo_rootx() + (cha.winfo_width() - rong) // 2
-    y = cha.winfo_rooty() + (cha.winfo_height() - cao) // 3
-    x = max(0, min(x, hop.winfo_screenwidth() - rong))
-    y = max(0, min(y, hop.winfo_screenheight() - cao - px(40)))
-    hop.geometry(f"+{x}+{y}")
+    canhgiua(hop, cha)
     if loai in ("warning", "error"):
         hop.bell()
     hop.grab_set()

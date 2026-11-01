@@ -48,6 +48,8 @@ THOIGIANCHOMOTANHIEMVU = 30.
 GIANCACHDESC = 1.5
 # Desc món trong cửa hàng chừng này lần mà không ra mô tả thì mua thử như cũ
 SOLANDESCCUAHANG = 3
+# Desc món trong túi chừng này lần mà không ra mô tả thì bỏ qua món đó
+SOLANDESCTUI = 5
 # Nhiệm vụ Danh Vọng mỗi ngày tối đa chừng này lượt
 SOLUOTDANHVONGMOINGAY = 30
 # Kẻ phản bội khuất tầm nhìn chưa tới chừng này giây sau lần thấy cuối, lúc đó còn dưới chừng này % máu và ở gần: coi như đã chết
@@ -503,6 +505,15 @@ class TacTuDanhVong:
         # -> cấp, hoặc None khi đang chờ mô tả
         if iddoituong in s["capmon"]:
             return s["capmon"][iddoituong]
+        # Món cửa hàng đã biết cấp (mỗi tên 1 cấp): khỏi desc. Log 2026-11-01: Hoả Nhẫn có sẵn trong túi, "desc <id>#" 4 phút không ra mô tả
+        # nên đứng mãi ở "đọc cấp đồ trong túi"
+        capbiet = _laycapvukhi()
+        tenchuan = chuanhoaten(ten)
+        caps = {c for t, c in capbiet.items() if t == tenchuan or t.startswith(tenchuan)}
+        if len(caps) == 1:
+            s["capmon"][iddoituong] = cap = caps.pop()
+            self._logdv(f"{ten}: cấp {cap} (đã biết)")
+            return cap
         moitruong = self.moitruong
         mota = unicodedata.normalize("NFC", moitruong.get_motavatphamhanhtrangcosan(vitri) or "")
         dongs = [d.strip() for d in mota.split("\n") if d.strip()]
@@ -514,8 +525,16 @@ class TacTuDanhVong:
             _ghicapvukhi(ten, cap)
             self._logdv(f"{ten}: cấp {cap or '? (mô tả không ghi)'}")
             return cap
+        # Desc SOLANDESCTUI lần không ra mô tả thì bỏ qua món này (coi như không rõ cấp, đi mua món khác)
+        khoa = f"{iddoituong}|desctui"
+        solan = s["thu"].get(khoa, (0, 0.))[0]
+        if solan >= SOLANDESCTUI:
+            s["capmon"][iddoituong] = 0
+            self._logdv(f"{ten} (ô {vitri}): desc {solan} lần không ra mô tả, bỏ qua")
+            return 0
         if time.time() - s["lucdesc"] > GIANCACHDESC:
             s["lucdesc"] = time.time()
+            s["thu"][khoa] = (solan + 1, time.time())
             moitruong.truyvan_motavatphamhanhtrang(vitri)
         return None
 

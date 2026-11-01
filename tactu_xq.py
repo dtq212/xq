@@ -396,6 +396,12 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._khoangcachgomtotnhat = 0.
         self._thoidiemgomcaithiengannhat = 0.
         self._is_tudongvebanrac = False
+        # Tự về sửa đồ (tab Hành trang): món sửa được còn dưới _phantramvesuado % độ bền thì chạy luồng về bán rác (về thành, sửa ở Chủ
+        # Tiệm Sửa Chữa, quay lại bãi). Không bao giờ về khi đang ở phó bản (_is_canvesuado)
+        self._is_tudongvesuado = False
+        self._phantramvesuado = PHANTRAMVESUADO
+        self._thoidiemkiemtravesuado = 0.  # lần desc đồ đang mặc gần nhất để xét về sửa; đặt về tương lai khi vừa về sửa
+        self._thoidiemtruyvandobenvesua = 0.  # > 0: đã desc, đang chờ máy chủ trả mô tả để đọc độ bền
         self._trangthaiveban = 0  # 0: Idle, 1: Đang về, 2: Đang đi shop, 3: Đang bán, 4: Đang quay lại
         self._thoidiemchuyentrangthai = 0.
 
@@ -647,6 +653,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_is_nguocchieulotrinh": self._is_nguocchieulotrinh,
             "_is_tudonggomquai": self._is_tudonggomquai,
             "_is_tudongvebanrac": self._is_tudongvebanrac,
+            "_is_tudongvesuado": self._is_tudongvesuado,
+            "_phantramvesuado": self._phantramvesuado,
             "_is_chedobufftoanbang": self._is_chedobufftoanbang,
             "_is_tudongdichientruong": self._is_tudongdichientruong,
             "_is_tudongkhaikhoang": self._is_tudongkhaikhoang,
@@ -754,6 +762,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if "_is_nguocchieulotrinh" in thietlap: self._is_nguocchieulotrinh = thietlap["_is_nguocchieulotrinh"]
             if "_is_tudonggomquai" in thietlap: self._is_tudonggomquai = thietlap["_is_tudonggomquai"]
             if "_is_tudongvebanrac" in thietlap: self._is_tudongvebanrac = thietlap["_is_tudongvebanrac"]
+            if "_is_tudongvesuado" in thietlap: self._is_tudongvesuado = thietlap["_is_tudongvesuado"]
+            if "_phantramvesuado" in thietlap: self.thietlap_phantramvesuado(thietlap["_phantramvesuado"])
             if "_is_chedobufftoanbang" in thietlap: self._is_chedobufftoanbang = thietlap["_is_chedobufftoanbang"]
             if "_is_tudongdichientruong" in thietlap: self._is_tudongdichientruong = thietlap["_is_tudongdichientruong"]
             if "_is_tudongkhaikhoang" in thietlap: self._is_tudongkhaikhoang = thietlap["_is_tudongkhaikhoang"]
@@ -1038,6 +1048,18 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             phatam("Bật tự động về bán rác")
         else:
             phatam("Tắt tự động về bán rác")
+
+    def battat_tudongvesuado(self):
+        self._is_tudongvesuado = not self._is_tudongvesuado
+        self._thoidiemkiemtravesuado = 0.
+        self._thoidiemtruyvandobenvesua = 0.
+        if self._is_tudongvesuado:
+            phatam(f"Bật tự về sửa đồ khi độ bền dưới {self._phantramvesuado} phần trăm")
+        else:
+            phatam("Tắt tự về sửa đồ")
+
+    def thietlap_phantramvesuado(self, phantram):
+        self._phantramvesuado = min(99, max(1, int(float(phantram))))
 
     def battat_tudongdaotangbaodo(self):
         self._is_tudongdaotangbaodo = not self._is_tudongdaotangbaodo

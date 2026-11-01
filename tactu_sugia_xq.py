@@ -185,10 +185,11 @@ class TacTuSuGia:
         # Đang tự lo đi lại / nói chuyện NPC / truy tìm: không chọn quái dọc đường, đi trước đánh / nhặt. Bật ở thành viên thì chỉ khi đang
         # tự đi trả nhiệm vụ (còn lại theo sau và đánh như thường)
         s = self._sugia
-        return bool(s) and (s["chedo"] in ("dichuyen", "cho") or (s["chedo"] == "thanhvien" and bool(self._yeucautudo)))
+        chedo = s.get("chedodoc", "dichuyen") if s else ""
+        return bool(s) and (chedo in ("dichuyen", "cho") or (chedo == "thanhvien" and bool(self._yeucautudo)))
 
     def get_is_sugiadanhquai(self):
-        return bool(self._sugia) and self._sugia["chedo"] == "danhquai"
+        return bool(self._sugia) and self._sugia.get("chedodoc") == "danhquai"
 
     def get_trangthaisugia(self):
         if self._sugia:
@@ -233,16 +234,27 @@ class TacTuSuGia:
     # --- Vòng chính ------------------------------------------------------------------------------------------------------------------
     def _xulysugia(self):
         # Gọi thay lộ trình điểm đánh khi đang làm Sư Gia -> yêu cầu di chuyển hoặc None
+        # chedo đặt lại từ đầu mỗi lượt rồi mới biết chế độ thật: luồng chọn mục tiêu đọc giữa chừng thấy "dichuyen" thì bỏ mục tiêu
+        # (chập chờn). Getter đọc "chedodoc", chỉ chép khi xong cả lượt
+        s = self._sugia
+        yeucau = self._xulysugialuot()
+        s["chedodoc"] = s["chedo"]
+        return yeucau
+
+    def _xulysugialuot(self):
         s = self._sugia
         moitruong = self.moitruong
         if s["trangthai"] != s.get("trangthaidaghi"):
             s["trangthaidaghi"] = s["trangthai"]
             self._logsg(s["trangthai"])
-        s["chedo"] = "dichuyen"
+        # Thoát sớm thì giữ chế độ lượt trước
         if moitruong.get_is_nhanvatdachet() or self.get_is_danghoithoainpc() or self._trangthaiveban != 0 or moitruong.get_is_dangvankhi():
             return None
         if time.time() - moitruong.get_thoidiemthaydoibandogannhat() < 2.:
+            # Vừa đổi bản đồ (vào / ra phó bản): chưa đánh
+            s["chedo"] = "dichuyen"
             return None
+        s["chedo"] = "dichuyen"
         if time.time() - s["batdau"] > THOIGIANSUGIATOIDA:
             self._ketthucsugia(f"❌ Sư Gia dừng: quá {int(THOIGIANSUGIATOIDA // 3600)} giờ", is_loi = True)
             return None
@@ -528,7 +540,7 @@ class TacTuSuGia:
         is_cam = self.get_is_sugiachothanhvien()
         if not is_cam and self._is_tudongtheosau:
             info = self._laythongtinmuctieutheosaucuasokhac()
-            is_cam = bool(info and info.get("_sugiachothanhvien") and info.get("tenbando") == self.moitruong.get_idbandohientai())
+            is_cam = bool(info and info.get("_sugiachothanhvien") and self.moitruong.get_is_cungbando(info))
         if is_cam and self._is_battudongtancongvatly and self._diachimuctieutancongvatly:
             self._ngattancongvatlydaohoa(self._diachimuctieutancongvatly)
         return is_cam

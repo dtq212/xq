@@ -20,6 +20,11 @@ GIANCACHMOCUAHANGMUABU = 120.
 THOIGIANCHOVEMUABULAI = 300.
 THOIGIANCHOMUABU = 60.
 GIANCACHKIEMTRAVEMUABU = 2.
+# Về sửa đồ (độ bền món sửa được < _phantramvesuado %): desc lại đồ đang mặc cách nhau chừng này giây (độ bền giảm chậm), chờ mô tả
+# tối đa chừng này giây; vừa về sửa thì chừng này giây sau mới xét lại (thiếu tiền / không tới được NPC thì khỏi chạy về liên tục)
+GIANCACHKIEMTRAVESUADO = 60.
+THOIGIANCHODOBENVESUADO = 3.
+THOIGIANCHOVESUADOLAI = 300.
 
 
 class TacTuVatPham:
@@ -601,6 +606,43 @@ class TacTuVatPham:
                 return True
         return False
 
+    def _is_canvesuado(self):
+        # Bật tự về sửa đồ mà có món sửa được dưới _phantramvesuado % độ bền: True để luồng về bán rác chạy về thành sửa ở Chủ Tiệm Sửa
+        # Chữa (bước sửa đồ của _xulybanracvamuabu). Ở phó bản (kể cả phó bản mượn bản đồ ngoài, chưa đọc được tên bản đồ thì coi như
+        # đang ở phó bản) thì không bao giờ về: về là mất phó bản. Không chặn luồng: lần đầu desc đồ đang mặc, lượt sau mới đọc độ bền
+        moitruong = self.moitruong
+        if not self._is_tudongvesuado or moitruong.get_is_nhanvatdachet() or moitruong.get_idbandohientai() in BANDOPHOBANs \
+                or moitruong.get_is_phobanmuonbando() is not False:
+            self._thoidiemtruyvandobenvesua = 0.
+            return False
+        thoidiemhientai = time.time()
+        if not self._thoidiemtruyvandobenvesua:
+            if thoidiemhientai - self._thoidiemkiemtravesuado < GIANCACHKIEMTRAVESUADO:
+                return False
+            self._thoidiemkiemtravesuado = thoidiemhientai
+            if moitruong.action_truyvandobentrangbi():
+                self._thoidiemtruyvandobenvesua = thoidiemhientai
+            return False
+        dobens = moitruong.get_dobentrangbisuaduocs()
+        if None in dobens.values() and thoidiemhientai - self._thoidiemtruyvandobenvesua < THOIGIANCHODOBENVESUADO:
+            return False
+        self._thoidiemtruyvandobenvesua = 0.
+        thaps = [vitri for vitri, doben in dobens.items() if doben and doben[1] > 0 and doben[0] * 100 < doben[1] * self._phantramvesuado]
+        if not thaps:
+            return False
+        # Vừa về sửa thì THOIGIANCHOVESUADOLAI giây sau mới xét lại (sửa hỏng vì thiếu tiền / không thấy NPC thì khỏi chạy về liên tục)
+        self._thoidiemkiemtravesuado = thoidiemhientai + THOIGIANCHOVESUADOLAI
+        mota = ", ".join("{} ({}/{})".format(moitruong.get_tentrangbi(vitri), *dobens[vitri]) for vitri in thaps)
+        print(f"[VỀ SỬA ĐỒ] {moitruong.get_tendoituong()}: độ bền dưới {self._phantramvesuado}%: {mota}, về sửa")
+        canhbao(moitruong, "Độ bền thấp, về sửa đồ", is_block = False)
+        return True
+
+    def _is_canve(self):
+        # Luồng về bán rác có cần về không: túi đầy / thiếu đồ mua bù (khi bật về bán rác) hoặc độ bền thấp (khi bật về sửa đồ)
+        if self._is_tudongvebanrac and (self.moitruong.get_is_dayhanhtrang() or self._is_canvemuabu()):
+            return True
+        return self._is_canvesuado()
+
     def _xulychomuabu(self):
         # Đã về tới tiệm (bán rác xong): còn món mua bù dưới "Mua khi dưới" mà thấy NPC bán thì đi tới đứng chờ action_tudongmuavatpham
         # mua (mỗi 3s), quá THOIGIANCHOMUABU giây thì thôi. True = xong, quay lại bãi
@@ -623,10 +665,25 @@ class TacTuVatPham:
         return True
 
     def _xulybanracvamuabu(self):
-        # Bước 3 của về bán rác: bán rác (nếu bật về bán rác) rồi chờ mua bù
-        if self._is_tudongvebanrac and self._thoidiembatdauchomuabu == 0. and not self._xulydangbanrac():
-            return False
+        # Bước 3 của về bán rác: bán rác + sửa đồ (nếu bật về bán rác; chỉ bật về sửa đồ thì chỉ sửa) rồi chờ mua bù
+        if self._thoidiembatdauchomuabu == 0.:
+            if self._is_tudongvebanrac:
+                if not self._xulydangbanrac():
+                    return False
+            elif not self._xulysuadokhongbanrac():
+                return False
         return self._xulychomuabu()
+
+    def _xulysuadokhongbanrac(self):
+        # Chỉ bật về sửa đồ (không về bán rác): bắt đầu sửa đồ rồi chờ action_xulybanracvasuado sửa xong. True = xong
+        if self._buocbanrac == 0:
+            self.action_suavatpham()
+            self._buocbanrac = 2
+            return False
+        if self.get_is_dangsuavatpham():
+            return False
+        self._buocbanrac = 0
+        return True
 
     def _layogiamuabu(self, muc, diachinpc):
         # (ô, giá) để mua món của luật mua bù ở NPC này, None khi chưa biết (đã cho mở cửa hàng đọc nếu được)
@@ -1485,11 +1542,11 @@ class TacTuVatPham:
                 print("[Auto-SuaDo] Đồ còn nguyên độ bền, không cần sửa.")
             self._thoidiemhetsuavatpham = 0.
             return
-        if self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON:
-            if not diachinpc:
-                self.moitruong.action_dichuyengiukhoangcachtoidadiem(111, 157, khoangcachtoida = 3.)
-            else:
-                self.moitruong.action_dichuyengiukhoangcachtoida(diachinpc, khoangcachtoida = 3.)
+        # Chủ Tiệm Sửa Chữa ở bản đồ nào cũng sửa được: thấy là đi tới; Tân Thủ Thôn chưa thấy thì đi về chỗ tiệm
+        if diachinpc:
+            self.moitruong.action_dichuyengiukhoangcachtoida(diachinpc, khoangcachtoida = 3.)
+        elif self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON:
+            self.moitruong.action_dichuyengiukhoangcachtoidadiem(111, 157, khoangcachtoida = 3.)
         self._thoidiemsudunghoithanhphugannhat = time.time()
 
     def _xulydangbanrac(self):
@@ -1532,7 +1589,8 @@ class TacTuVatPham:
         return False
 
     def action_tudongxulyvebanrac(self):
-        if not self._is_tudongvebanrac:
+        if not self._is_tudongvebanrac and not self._is_tudongvesuado:
+            self._trangthaiveban = 0
             return
 
         tenmonphai = self.moitruong.get_tenmonphai()
@@ -1543,7 +1601,7 @@ class TacTuVatPham:
             self._action_xulyvebanrac_phaikhac()
 
     def _action_xulyvebanrac_maoson(self):
-        if not self._is_tudongvebanrac:
+        if not self._is_tudongvebanrac and not self._is_tudongvesuado:
             self._trangthaiveban = 0
             return
 
@@ -1560,7 +1618,8 @@ class TacTuVatPham:
 
             diachi_npc = self.moitruong.action_timkiemnhanvat(chutiemtaphoa)
             is_dangganchutiemtaphoa = False
-            if diachi_npc:
+            # Chỉ bật về sửa đồ thì không tự bán / quay lại bãi khi đứng cạnh tiệm
+            if diachi_npc and self._is_tudongvebanrac:
                 if self.moitruong.get_khoangcach(diachi_npc) <= 3.0:
                     is_dangganchutiemtaphoa = True
 
@@ -1574,7 +1633,7 @@ class TacTuVatPham:
                     self._trangthaiveban = 4
                     self._thoidiemchuyentrangthai = time.time()
 
-            elif is_dayhanhtrang or self._is_canvemuabu():
+            elif self._is_canve():
                 self._trangthaiveban = 1
                 self._thoidiemchuyentrangthai = time.time()
 
@@ -1634,7 +1693,8 @@ class TacTuVatPham:
         if self._trangthaiveban == 0:
             diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = CHUTIEMTAPHOA)
 
-            if diachinpc and self.moitruong.get_khoangcach(diachinpc) <= 3.0:
+            # Chỉ bật về sửa đồ thì không tự bán / quay lại bãi khi đứng cạnh tiệm
+            if self._is_tudongvebanrac and diachinpc and self.moitruong.get_khoangcach(diachinpc) <= 3.0:
                 if not self.moitruong.get_is_dayhanhtrang():
                     if self._diemdanhxungquanhs:
                         print("[AUTO-SELL] Đứng cạnh NPC và túi đã gọn. Tiếp tục quay lại bãi farm.")
@@ -1644,8 +1704,8 @@ class TacTuVatPham:
                     print("[AUTO-SELL] Đứng cạnh NPC nhưng túi đầy. Tiếp tục bán.")
                     self._trangthaiveban = 2
                     return
-            if self.moitruong.get_is_dayhanhtrang() or self._is_canvemuabu():
-                print("[AUTO-SELL] Hành trang đầy / cần mua bù. Bắt đầu quy trình về bán.")
+            if self._is_canve():
+                print("[AUTO-SELL] Hành trang đầy / cần mua bù / cần sửa đồ. Bắt đầu quy trình về bán.")
                 self._trangthaiveban = 1
                 self._thoidiemhoithanhphu = 0
 

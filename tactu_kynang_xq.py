@@ -123,7 +123,7 @@ class TacTuKyNang:
                         continue
                     if time.time() - info.get("thoidiemcapnhat", 0.) > 5. or not info.get("_is_tudongsudungkynang") or info.get("status") == "Đã chết":
                         continue
-                    if info.get("tenbando") != idbandohientai or info.get("x") is None:
+                    if not self.moitruong.get_is_cungbando(info, idbandohientai) or info.get("x") is None:
                         continue
                     if self.moitruong.get_khoangcachtamdanhdiem(info["x"], info["y"]) > self._khoangcachsudungkynangtamxa:
                         continue

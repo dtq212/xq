@@ -223,6 +223,8 @@ class CuaSo:
                     "idnguoichoi": self.moitruong.get_idnguoichoi(),
                     "thoidiemcapnhat": time.time(),
                     "tenbando": self.moitruong.get_idbandohientai(),
+                    # Đầu tên phó bản mượn ID bản đồ ngoài (Phong Yêu Kính...), "" = bản đồ thật (moitruong.get_is_cungbando)
+                    "_phobanmuonbando": self.moitruong.get_tenphobanmuonbando(),
                     # Vân Mộng Cốc cùng máy dùng để biết buff Ngân Châm hay Kim Châm cho nhân vật này
                     "tenmonphai": self.moitruong.get_tenmonphai(),
                     # Tổ đội tự động dùng để biết các nhóm khác đang cùng bản đồ
@@ -248,6 +250,8 @@ class CuaSo:
                     "_is_tudongtimkiemmuctieu": self.tactu._is_tudongtimkiemmuctieu,
                     "_is_tudonggomquai": self.tactu._is_tudonggomquai,
                     "_is_tudongvebanrac": self.tactu._is_tudongvebanrac,
+                    "_is_tudongvesuado": self.tactu._is_tudongvesuado,
+                    "_phantramvesuado": self.tactu._phantramvesuado,
                     "_is_tudongkhaikhoang": self.tactu._is_tudongkhaikhoang,
                     "_is_tudongdichientruong": self.tactu._is_tudongdichientruong,
                     "_is_tudongdaotangbaodo": self.tactu._is_tudongdaotangbaodo,
@@ -306,6 +310,12 @@ class CuaSo:
                     "_hangchogiaodo": self.tactu.get_hangchogiaodo(),
                     "_trangthaicatkho": self.tactu.get_trangthaicatkho(),
                     "_is_dangcatkho": bool(self.tactu._catkho),
+                    # Đang bán rác / sửa đồ ở NPC (cột "Bot đang làm")
+                    "_is_dangbanrac": self.tactu.get_is_dangbanrac(),
+                    "_is_dangsuavatpham": self.tactu.get_is_dangsuavatpham(),
+                    # Mục tiêu đang chọn / đang đi tới mục tiêu nhân vật khác thấy: hết thì cột "Bot đang làm" báo đứng chờ vì không có quái
+                    "_idmuctieudangchon": self.moitruong.get_iddoituongmuctieudangchon() or 0,
+                    "_is_dangtimmuctieuchung": bool(self.tactu._muctieuchungdangtim),
                     "_lichsucatkho": self.tactu._lichsucatkho,
                     "_trangthaisumon": self.tactu.get_trangthaisumon(),
                     "_is_dangsumon": self.tactu.get_is_dangsumon(),
@@ -463,8 +473,10 @@ class CuaSo:
                     self.tactu.huy_tapkich()
                 elif isinstance(cmd, str) and cmd.startswith("set_tapkich_phai:"):
                     self.tactu.thietlap_phaitapkich(cmd.split(":", 1)[1])
-                elif cmd == "matac":
-                    # Đoạt Bảo Mã Tặc (tactu_matac_xq) bật / tắt từ giao diện
+                elif cmd == "matac" or (isinstance(cmd, str) and cmd.startswith("matac:")):
+                    # Đoạt Bảo Mã Tặc (tactu_matac_xq) bật / tắt từ giao diện, "matac:<bản đồ>" lưu bản đồ trong ô trước khi bắt đầu
+                    if cmd.startswith("matac:"):
+                        self.tactu.thietlap_bandomatac(cmd.split(":", 1)[1])
                     self.tactu.batdau_matac()
                 elif cmd == "huymatac":
                     self.tactu.huy_matac()
@@ -641,6 +653,13 @@ class CuaSo:
                     self.tactu.battat_tudonggomquai()
                 elif cmd == "battat_tudongvebanrac":
                     self.tactu.battat_tudongvebanrac()
+                elif cmd == "battat_tudongvesuado":
+                    self.tactu.battat_tudongvesuado()
+                elif isinstance(cmd, str) and cmd.startswith("set_phantramvesuado:"):
+                    try:
+                        self.tactu.thietlap_phantramvesuado(cmd.split(":")[1])
+                    except Exception:
+                        pass
                 elif cmd == "battat_tudongdichientruong":
                     self.tactu.battat_is_tudongdichientruong()
                 elif cmd == "battat_uutienbaothukynangtrieuhoi":

@@ -22,6 +22,7 @@ from thongbao_xq import baosuco
 from tienich_xq import phatam
 
 TENMATAC = "Đoạt Bảo Mã Tặc"
+TENPHOBANMATAC = chuanhoaten("Mã Tặc")
 # Tin hệ thống báo bản đồ: "... Đoạt Bảo Mã Tặc đã xuất hiện tại <bản đồ>, <bản đồ>, ... !"
 MAUTINBANDOMATAC = re.compile(r"Đoạt Bảo Mã Tặc đã xuất hiện tại\s*(.+?)\s*!?\s*$")
 # Menu NPC: "Ngươi muốn khiêu chiến với ta sao, suy nghĩ kĩ chưa ?" 1. Khiêu chiến 2. Rời khỏi
@@ -174,25 +175,34 @@ class TacTuMaTac:
         if s["trangthai"] != s.get("trangthaidaghi"):
             s["trangthaidaghi"] = s["trangthai"]
             self._logmt(s["trangthai"])
-        s["chedo"] = "dichuyen"
+        # Chế độ theo đang trong phó bản hay không, không đặt tạm "dichuyen" đầu lượt: luồng chọn mục tiêu đọc giữa chừng (hoặc lượt thoát
+        # sớm lúc vận khí...) thấy "dichuyen" thì bỏ mục tiêu Mã Tặc
+        s["chedo"] = "danhquai" if s["davao"] else "dichuyen"
         if moitruong.get_is_nhanvatdachet() or self.get_is_danghoithoainpc() or self._trangthaiveban != 0 or moitruong.get_is_dangvankhi():
             return None
         if time.time() - moitruong.get_thoidiemthaydoibandogannhat() < 2.:
+            # Vừa đổi bản đồ (vào / ra phó bản): chưa đánh
+            s["chedo"] = "dichuyen"
             return None
         idbando = moitruong.get_idbandohientai()
         tengame = moitruong.get_tenbandogame()
-        # Vào phó bản: bản đồ / tên bản đồ game khác chỗ chọn Khiêu chiến, hoặc (phó bản mượn đúng bản đồ đó) thấy Mã Tặc là quái
-        if not s["davao"] and s["lucchon"] and s["ngoai"] and tengame \
-                and ((idbando, tengame) != s["ngoai"] or self._timdoituongmatac(is_npc = False)[0]):
+        # Phó bản tên game "Mã Tặc Ngoại" (id bản đồ đổi theo lượt)
+        is_tenphoban = TENPHOBANMATAC in chuanhoaten(tengame or "")
+        # Vào phó bản: bản đồ / tên bản đồ game khác chỗ chọn Khiêu chiến, hoặc (phó bản mượn đúng bản đồ đó) thấy Mã Tặc là quái.
+        # Bật khi đang ở sẵn trong phó bản (tắt bot mở lại): nhận theo tên phó bản / thấy Mã Tặc là quái, không có chỗ ngoài để so
+        if not s["davao"] and ((s["lucchon"] and s["ngoai"] and tengame and (idbando, tengame) != s["ngoai"])
+                               or is_tenphoban or self._timdoituongmatac(is_npc = False)[0]):
             s.update(davao = True, lucchon = 0., hoithoai = None, do = None, vitriboss = None, lucvao = time.time(), solanloi = 0)
             self._logmt(f"Đã vào phó bản (bản đồ {idbando} \"{tengame}\")")
-        if s["davao"] and (idbando, tengame) == s["ngoai"] and not self._timdoituongmatac(is_npc = False)[0]:
+        if s["davao"] and ((idbando, tengame) == s["ngoai"] or (not s["ngoai"] and not is_tenphoban)) \
+                and not self._timdoituongmatac(is_npc = False)[0]:
             # Giết xong hệ thống đưa về chỗ cũ (hoặc chết / rớt ra): xong vòng, tìm con khác
             s["sovong"] += 1
             s.update(davao = False, ngoai = None, do = None, hoithoai = None, solandotrong = 0)
             self._logmt(f"Ra khỏi phó bản: xong con thứ {s['sovong']}, tìm con khác")
         if s["davao"]:
             return self._danhmatac(s, idbando)
+        s["chedo"] = "dichuyen"
         return self._timmatac(s, idbando)
 
     def _danhmatac(self, s, idbando):

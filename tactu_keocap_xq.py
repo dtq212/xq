@@ -691,7 +691,7 @@ class TacTuKeoCap:
             s.update(chuyendo = idnhan, solangiaodo = 0)
         diachi = moitruong.action_timkiemnhanvat(idnguoichoi = idnhan)
         if not diachi:
-            if nhan.get("tenbando") != moitruong.get_idbandohientai():
+            if not moitruong.get_is_cungbando(nhan):
                 # Khác bản đồ: để Phong Yêu Kính đưa mình về Chu Quốc (acc gà cũng ở đó chờ)
                 s["trangthai"] = f"Phong Yêu Kính: chờ gặp {tennhan} (khác bản đồ) để đưa {len(ds)} món Lam Kim"
                 return False
@@ -796,7 +796,7 @@ class TacTuKeoCap:
                 s["lucdocdo"] = min(s["lucdocdo"], time.time() - GIANCACHDOCDOLAMKIMKC + GIANCACHDOCDONHANKC)
                 self._docdolamkimkc(s)
                 s["trangthai"] = f"Phong Yêu Kính: tới nhận đồ Lam Kim từ {chinh.get('tennhanvat') or s['idchinh']}"
-                if chinh.get("tenbando") != moitruong.get_idbandohientai():
+                if not moitruong.get_is_cungbando(chinh):
                     return False if self._langlyson else None
                 x, y = chinh.get("x"), chinh.get("y")
                 if x and y and moitruong.get_khoangcachdiem(x, y) > KHOANGCACHGIAODOKC - 1:

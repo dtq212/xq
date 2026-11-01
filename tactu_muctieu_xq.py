@@ -73,11 +73,13 @@ class TacTuMucTieu:
             except Exception:
                 danhsach = []
             idbandohientai = self.moitruong.get_idbandohientai()
+            phobanmuon = self.moitruong.get_tenphobanmuonbando()
             for idcuaso, info in danhsach:
                 if idcuaso == self.idcuaso or not isinstance(info, dict):
                     continue
                 tamnhin = info.get("tamnhin")
-                if not tamnhin or tamnhin.get("bando") != idbandohientai or thoidiemhientai - tamnhin.get("thoidiem", 0.) > THOIGIANHIEULUCTAMNHIN:
+                # Phong Yêu Kính mượn ID bản đồ thật: quái nhân vật ở bản đồ thật cùng ID thấy là ở nơi khác, mình không tới được
+                if not tamnhin or tamnhin.get("bando") != idbandohientai or info.get("_phobanmuonbando", phobanmuon) != phobanmuon or thoidiemhientai - tamnhin.get("thoidiem", 0.) > THOIGIANHIEULUCTAMNHIN:
                     continue
                 for doituong in tamnhin.get("doituongs", ()):
                     # Cửa sổ chưa khởi động lại sau khi cập nhật chỉ có 6 trường (chưa có tên)
@@ -257,7 +259,7 @@ class TacTuMucTieu:
         info = self._laythongtinmuctieutheosaucuasokhac()
         if not info or time.time() - info.get("thoidiemcapnhat", 0.) > THOIGIANHIEULUCTAPHOA:
             return 0
-        if info.get("tenbando") != self.moitruong.get_idbandohientai():
+        if not self.moitruong.get_is_cungbando(info):
             return 0
         iddoituongmuctieu = info.get("iddoituongmuctieu")
         if not iddoituongmuctieu or iddoituongmuctieu <= 0:
