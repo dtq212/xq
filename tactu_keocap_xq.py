@@ -517,10 +517,26 @@ class TacTuKeoCap:
             # Hộp "Hiện tại bạn có thể nhận <đồ đệ> làm đồ đệ ... 1. Xác nhận" (chưa thấy hộp này lúc xuất sư thì thôi, chờ đồ đệ)
             s["trangthai"] = f"{ten}: xác nhận với Mạnh Tử"
             lenhs = [l for l in moitruong.get_lenhcuasotuychons() if l.strip() and l.upper() != "CLOSE"]
-            if moitruong.get_noidungcuasotuychon() and lenhs:
-                self._logkc(f"Mạnh Tử: {moitruong.get_noidungcuasotuychon()[:80]!r} -> chọn {lenhs[0]!r}")
+            noidung = moitruong.get_noidungcuasotuychon()
+            if loai == "xuatsu" and "đồ đệ bạn đâu" in noidung:
+                # "Bạn sắp sửa xuất sư ? đồ đệ bạn đâu ?" lúc đồ đệ đứng cạnh: không còn đồ đệ nữa = đã xuất sư (mở lại bot giữa chừng)
+                moitruong.xoa_noidungcuasotuychon()
+                s[co] = True
+                s.pop("suphu", None)
+                self._logkc(f"✅ Mạnh Tử hỏi đồ đệ đâu: {tendd} đã xuất sư")
+                phatam(f"Xong {ten}")
+                return None
+            if noidung and lenhs:
+                self._logkc(f"Mạnh Tử: {noidung[:80]!r} -> chọn {lenhs[0]!r}")
                 moitruong.xoa_noidungcuasotuychon()
                 moitruong.action_thucthicaulenh(lenhs[0])
+                if loai == "xuatsu":
+                    # Xuất sư không cần đồ đệ xác nhận: sư phụ chọn Xác nhận là xong (từng chờ đồ đệ báo, nói chuyện Mạnh Tử lại 3 lần)
+                    s[co] = True
+                    s.pop("suphu", None)
+                    self._logkc(f"✅ {tendd} đã xuất sư")
+                    phatam(f"Xong {ten}")
+                    return None
                 sp.update(buoc = "cho", luc = now)
             elif now - sp["luc"] > THOIGIANCHOMENUKC:
                 self._logkc(f"Mạnh Tử không hiện hộp Xác nhận {ten}: chờ {tendd} xác nhận")
