@@ -233,6 +233,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._trangthaidoiphoban = ""
         self._ketquadoiphoban = {"ngay": "", "doi": {}}
         self._theosaucudoi = None
+        # Giải tán đội (nút Giải tán): lúc bắt đầu, lần rời nhóm gần nhất, (trưởng đội, lúc) lần giải tán đã xử lý ở thành viên
+        self._lucgiaitan = 0.
+        self._lucroinhomgiaitan = 0.
+        self._giaitandaxuly = None
         self._bonhodoiphoban = (0., [])
         self._bonhonguoiquen = (0., frozenset())
         # Mở cửa hàng để đọc hàng (tactu_sumon_xq.batdau_mocuahang): việc đang làm (None = không), kết quả theo (bản đồ, tên NPC);
@@ -587,11 +591,27 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
 
         self._is_tudongsudungkynangbaothu = False
 
+        # Triệu hồi bảo thú vật phẩm (tactu_vatpham_xq._action_trieuhoibaothuvatpham): 0 theo dõi, 1 vừa dùng vật phẩm chờ chỉ số nhảy
         self._trangthaitrieuhoibaothuvatpham = 0
-        self._thoidiemchuyentrangthaitrieuhoibaothuvatpham = 0.
+        self._tenbaothuvatphamdangtrieuhoi = ""
+        # Đang có bảo thú vật phẩm: None chưa biết (mới bật bot / không chắc nữa), True / False
+        self._is_cobaothuvatpham = None
+        # Tên bảo thú vật phẩm -> các ô chỉ số nó cộng cho chủ (đọc từ mô tả, None = chỉ số chưa biết)
+        self._dichchisobaothuvatpham_map = {}
+        # Dấu vân tay: [mức nhảy từng ô chỉ số] khi gọi / thu hồi con tên _tendauvantaybaothuvatpham
+        self._dauvantaybaothuvatpham = None
+        self._tendauvantaybaothuvatpham = ""
+        self._chisobaothuvatphamtruoc = None
+        self._chisobaothuvatphamkhidung = None
+        self._thoidiemthaybaothuvatpham = time.time()
+        self._thoidiemkiemtrabaothuvatphamxungquanh = 0.
+        # Trạng thái lưu từ lần chạy trước (get_baothuvatphamluu), dùng 1 lần lúc mới nhận con trong ô cuối
+        self._baothuvatphamluu = None
+        self._baothuvatphamluucuoi = None
+        # Cần dùng vật phẩm thì chờ tới mốc ngẫu nhiên này (nhiều nhân vật không bật / tắt bảo thú cùng giây), None = chưa đặt
+        self._thoidiemduocdungbaothuvatpham = None
         # Bảo thú kỹ năng triệu hồi đang bị gọi về vì ra quá xa nhân vật
         self._idbaothudanggoive = set()
-        self._thoidiemyeucaubaothuvatphamdoilenh = 0.
 
         self._is_danguutiennhatdo = False
 
@@ -713,6 +733,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_phobandanglanglyson": self.get_phobanlanglyson(),
             # Kéo cấp acc gà đang bật (vai, acc chính / acc gà): dis / mở lại bot thì tự bật tiếp
             "_keocap": self.get_keocapluu(),
+            # Bảo thú vật phẩm (tên, có / không, dấu vân tay, chỉ số lúc đó): mở lại bot khỏi dùng vật phẩm xét lại (tactu_vatpham_xq)
+            "_baothuvatpham": self.get_baothuvatphamluu(),
         }
         # Sư môn / Sư Gia đang tạm đổi ô nào (Theo sau, Tự động sử dụng kỹ năng...) thì lưu giá trị gốc của người dùng, dis vào lại không mất
         for s in (self._sumon, self._sugia, self._tapkich, self._matac, self._danhvong, self._langlyson, self._keocap):
@@ -729,6 +751,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
     def taithietlap(self, idnguoichoi, tennhanvat = None):
         if not idnguoichoi or idnguoichoi <= 0:
             return
+        # Nhân vật khác: bảo thú vật phẩm của nhân vật cũ không còn đúng (kẻo lưu nhầm sang nhân vật mới)
+        self._baothuvatphamluu = self._baothuvatphamluucuoi = None
+        self._tendauvantaybaothuvatpham = ""
+        self._trangthaitrieuhoibaothuvatpham = 0
         # Đổi nhân vật: ghi vị trí quái của nhân vật cũ rồi nạp của nhân vật mới
         if idnguoichoi != self._idnguoichoiviquai:
             self.luuvitriquai(True)
@@ -751,6 +777,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
                 if khoacu in thietlap and khoamoi not in thietlap:
                     thietlap[khoamoi] = thietlap[khoacu]
             if "_is_tudongtheosau" in thietlap: self._is_tudongtheosau = thietlap["_is_tudongtheosau"]
+            if "_baothuvatpham" in thietlap: self._baothuvatphamluu = thietlap["_baothuvatpham"]
             if "_idmuctieutheosau" in thietlap: self._idmuctieutheosau = int(thietlap["_idmuctieutheosau"] or 0)
             if "_tenmuctieutheosau" in thietlap: self._tenmuctieutheosau = thietlap["_tenmuctieutheosau"] or ""
             if "_is_tudongtimkiemmuctieu" in thietlap: self._is_tudongtimkiemmuctieu = thietlap["_is_tudongtimkiemmuctieu"]

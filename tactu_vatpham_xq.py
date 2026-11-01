@@ -1,6 +1,7 @@
 # Phần vật phẩm: dùng thuốc / vật phẩm, nhặt, vứt, mua, sửa, sắp xếp / xếp chồng hành trang, bán rác, về bán rác.
 # Mixin của TacTu (tactu_xq.py): chỉ chứa hàm, trạng thái (self._...) khởi tạo trong TacTu.__init__
 import math
+import random
 import re
 import time
 import unicodedata
@@ -25,7 +26,19 @@ GIANCACHKIEMTRAVEMUABU = 2.
 GIANCACHKIEMTRAVESUADO = 60.
 THOIGIANCHODOBENVESUADO = 3.
 THOIGIANCHOVESUADOLAI = 300.
-
+# Bảo thú vật phẩm: dùng vật phẩm là công tắc (đang có thì thu hồi, chưa có thì gọi ra), con gọi ra cộng chỉ số cho chủ, chỉ số nào ghi
+# trong mô tả ("tăng 7% Ngoại Công cho chủ nhân", "gia tăng cho chủ nhân 7% Bạo Kích") => tra CHISONHANVAT_MAP ra ô cần theo dõi.
+# Game không lưu chủ của đối tượng bảo thú nên không nhận theo đối tượng (dễ nhầm con cùng tên của người khác): dùng vật phẩm rồi xem
+# chỉ số đó => tăng là vừa gọi ra, giảm là vừa thu hồi (Thìn: Ngoại Công ±180, Dần: Bạo Kích ±700, đo 2026-11-02). Nhớ mức nhảy ("dấu
+# vân tay"); sau đó đúng các ô đó tụt cùng lúc (lệch tối đa SAISODAUVANTAYBAOTHU) là con đã mất. Chỉ theo dõi ô của chỉ số trong mô tả
+# vì chỉ số khác tự đổi liên tục (Đào Hoa: Ngoại / Nội Kháng chớp ±77, Ngoại Công đổi theo nguyên khí)
+THOIGIANCHOCHISOBAOTHUVATPHAM = 3.
+SAISODAUVANTAYBAOTHU = 0.05
+# Phòng dấu vân tay lệch (đổi đồ / lên cấp làm mức cộng khác): nghĩ đang có mà chừng này giây không thấy con nào cùng tên quanh mình
+# (bảo thú luôn theo chủ) thì không chắc nữa, dùng vật phẩm để xét lại (công tắc: tụt thì dùng thêm lần nữa)
+THOIGIANKHONGTHAYBAOTHUVATPHAM = 15.
+# Cần dùng vật phẩm (chưa biết có / không, bảo thú vừa mất) thì chờ ngẫu nhiên trong khoảng này (giây) rồi mới dùng
+THOIGIANCHONGAUNHIENBAOTHUVATPHAM = (3., 20.)
 
 class TacTuVatPham:
     def _get_baothuvatphamocuoi(self):
@@ -43,6 +56,144 @@ class TacTuVatPham:
             return None
         return vitri, tenvatpham
 
+    def _get_dichchisobaothuvatpham(self, vitri, ten):
+        # Các ô chỉ số bảo thú vật phẩm ten cộng cho chủ, đọc từ mô tả (chỉ số nhắc tới đầu tiên sau "triệu hồi"); None nếu chưa có mô
+        # tả / chỉ số chưa biết ô (báo 1 lần, không dùng vật phẩm mù vì dùng là bật / tắt)
+        if ten in self._dichchisobaothuvatpham_map:
+            return self._dichchisobaothuvatpham_map[ten]
+        mota = unicodedata.normalize("NFC", self.moitruong.get_motavatphamhanhtrang(vitri) or "")
+        if not mota:
+            return None
+        doan = mota.split("triệu hồi", 1)[-1]
+        vitris = {tenchiso: doan.find(tenchiso) for tenchiso in CHISONHANVAT_MAP if tenchiso in doan}
+        dichs = CHISONHANVAT_MAP[min(vitris, key = vitris.get)] if vitris else None
+        if not dichs:
+            canhbao(self.moitruong, f"{ten}: chưa biết chỉ số cộng cho chủ, không tự triệu hồi", is_block = False)
+            self.moitruong._inlog(f"[TRIỆU HỒI BẢO THÚ] {ten}: mô tả không có chỉ số trong CHISONHANVAT_MAP, không tự triệu hồi. Mô tả: {mota!r}")
+        elif IS_LOGCAULENH:
+            self.moitruong._inlog(f"[TRIỆU HỒI BẢO THÚ] {ten} cộng {min(vitris, key = vitris.get)} cho chủ, theo dõi ô {[hex(dich) for dich in dichs]}")
+        self._dichchisobaothuvatpham_map[ten] = dichs
+        return dichs
+
+    def get_baothuvatphamluu(self):
+        # Lưu vào thiết lập (mỗi giây): chỉ khi đã chắc có / không và đang không chờ chỉ số nhảy; chưa chắc thì giữ bản đã nạp (chưa
+        # dùng tới) để không ghi đè mất
+        if self._is_cobaothuvatpham is not None and self._dauvantaybaothuvatpham and self._chisobaothuvatphamtruoc \
+                and self._trangthaitrieuhoibaothuvatpham == 0:
+            self._baothuvatphamluucuoi = {"ten": self._tendauvantaybaothuvatpham, "co": self._is_cobaothuvatpham,
+                                          "dauvantay": list(self._dauvantaybaothuvatpham), "chisos": list(self._chisobaothuvatphamtruoc)}
+        return self._baothuvatphamluucuoi or self._baothuvatphamluu
+
+    def _is_khopdauvantaybaothu(self, chenhlechs, dau):
+        # Chênh lệch chỉ số khớp dấu vân tay bảo thú vật phẩm: dau +1 vừa gọi ra, -1 vừa mất
+        dauvantay = self._dauvantaybaothuvatpham
+        return bool(dauvantay) and all(abs(c - dau * muc) <= max(2, muc * SAISODAUVANTAYBAOTHU) for c, muc in zip(chenhlechs, dauvantay))
+
+    def _action_trieuhoibaothuvatpham(self):
+        # Triệu hồi bảo thú vật phẩm ở ô cuối hành trang, nhận biết có / mất bằng chỉ số của chính mình (xem SAISODAUVANTAYBAOTHU).
+        # Không gửi pf 4131.@ ("Đợi lệnh" / "Hành động"): câu trả lời không kèm tên thú, dính cả bảo thú kỹ năng Mao Sơn / Vân Mộng Cốc
+        thoidiemhientai = time.time()
+        baothuvatphamocuoi = self._get_baothuvatphamocuoi()
+        if not baothuvatphamocuoi:
+            return
+        vitri, ten = baothuvatphamocuoi
+        dichs = self._get_dichchisobaothuvatpham(vitri, ten)
+        if not dichs:
+            return
+        if ten != self._tendauvantaybaothuvatpham:
+            # Mới bật bot / người chơi đổi con khác vào ô cuối: chưa biết gì về con này
+            self._tendauvantaybaothuvatpham = ten
+            self._dauvantaybaothuvatpham = None
+            self._is_cobaothuvatpham = None
+            self._chisobaothuvatphamtruoc = None
+            self._trangthaitrieuhoibaothuvatpham = 0
+        chisos = self.moitruong.get_chisonhanvats(dichs)
+        if not chisos:
+            return
+        chisotruoc = self._chisobaothuvatphamtruoc
+        self._chisobaothuvatphamtruoc = chisos
+
+        if self._trangthaitrieuhoibaothuvatpham == 1:
+            chenhlechs = [a - b for a, b in zip(chisos, self._chisobaothuvatphamkhidung)]
+            if all(c > 0 for c in chenhlechs) or all(c < 0 for c in chenhlechs):
+                is_goira = chenhlechs[0] > 0
+                self._dauvantaybaothuvatpham = [abs(c) for c in chenhlechs]
+                self._is_cobaothuvatpham = is_goira
+                self._thoidiemthaybaothuvatpham = thoidiemhientai
+                self._trangthaitrieuhoibaothuvatpham = 0
+                if IS_LOGCAULENH: self.moitruong._inlog(f"[TRIỆU HỒI BẢO THÚ] {ten} {'đã gọi ra' if is_goira else 'đang có nên vừa bị thu hồi'}, chỉ số nhảy {chenhlechs}")
+                if is_goira:
+                    self.action_lammoitrangthai()
+                else:
+                    # Vật phẩm là công tắc: vừa thu hồi con đang có thì chốc lát sau dùng lại để gọi ra
+                    self._thoidiemsudungbaothuvatphamgannhat = thoidiemhientai - 3.
+                    self._thoidiemduocdungbaothuvatpham = thoidiemhientai + random.uniform(1.5, 4.)
+            elif thoidiemhientai - self._thoidiemsudungbaothuvatphamgannhat > THOIGIANCHOCHISOBAOTHUVATPHAM:
+                # Chỉ số không nhảy (game không nhận lệnh dùng) hoặc nhảy lẫn lộn: 30s sau thử lại
+                if IS_LOGCAULENH: self.moitruong._inlog(f"[TRIỆU HỒI BẢO THÚ] dùng {ten} {THOIGIANCHOCHISOBAOTHUVATPHAM}s chỉ số không nhảy rõ ({chenhlechs}), 30s sau thử lại")
+                self._trangthaitrieuhoibaothuvatpham = 0
+                self._thoidiemsudungbaothuvatphamgannhat = thoidiemhientai + 27.
+            return
+
+        if chisotruoc:
+            chenhlechs = [a - b for a, b in zip(chisos, chisotruoc)]
+            if self._is_cobaothuvatpham and self._is_khopdauvantaybaothu(chenhlechs, -1):
+                # Hết giờ / đổi bản đồ / người chơi tự thu hồi
+                if IS_LOGCAULENH: self.moitruong._inlog(f"[TRIỆU HỒI BẢO THÚ] chỉ số tụt đúng dấu vân tay {ten} {chenhlechs}: đã mất bảo thú")
+                self._is_cobaothuvatpham = False
+            elif not self._is_cobaothuvatpham and self._is_khopdauvantaybaothu(chenhlechs, 1):
+                if IS_LOGCAULENH: self.moitruong._inlog(f"[TRIỆU HỒI BẢO THÚ] chỉ số tăng đúng dấu vân tay {ten} {chenhlechs}: bảo thú đã ra (người chơi tự gọi)")
+                self._is_cobaothuvatpham = True
+                self._thoidiemthaybaothuvatpham = thoidiemhientai
+
+        if self._is_cobaothuvatpham:
+            if thoidiemhientai - self._thoidiemkiemtrabaothuvatphamxungquanh > 2.:
+                self._thoidiemkiemtrabaothuvatphamxungquanh = thoidiemhientai
+                # Tên trong hành trang có thể bị cắt ("Thần Thú - Dần (Giới h"), đối tượng thì đủ tên => so phần đầu
+                if any((self.moitruong.get_tendoituong(diachi) or "").startswith(ten) and self.moitruong.get_phantramsinhlucconlai(diachi) > 100
+                       for diachi in self.moitruong._get_diachidoituongxungquanhs()):
+                    self._thoidiemthaybaothuvatpham = thoidiemhientai
+                elif thoidiemhientai - self._thoidiemthaybaothuvatpham > THOIGIANKHONGTHAYBAOTHUVATPHAM:
+                    if IS_LOGCAULENH: self.moitruong._inlog(f"[TRIỆU HỒI BẢO THÚ] {THOIGIANKHONGTHAYBAOTHUVATPHAM}s không thấy {ten} quanh mình, dùng vật phẩm xét lại")
+                    self._is_cobaothuvatpham = None
+            if self._is_cobaothuvatpham:
+                return
+
+        if self._is_cobaothuvatpham is None and self._baothuvatphamluu:
+            # Mới mở lại bot: so chỉ số với lúc lưu, khớp thì biết có / không mà khỏi dùng vật phẩm (dùng là bật / tắt, mọi nhân vật mở
+            # cùng lúc thì bảo thú tắt bật cùng lúc, lộ)
+            luu, self._baothuvatphamluu = self._baothuvatphamluu, None
+            if luu.get("ten") == ten and luu.get("dauvantay") and len(luu.get("chisos") or ()) == len(chisos):
+                self._dauvantaybaothuvatpham = list(luu["dauvantay"])
+                chenhlechs = [a - b for a, b in zip(chisos, luu["chisos"])]
+                if not any(chenhlechs):
+                    self._is_cobaothuvatpham = luu["co"]
+                elif luu["co"] and self._is_khopdauvantaybaothu(chenhlechs, -1):
+                    self._is_cobaothuvatpham = False
+                elif not luu["co"] and self._is_khopdauvantaybaothu(chenhlechs, 1):
+                    self._is_cobaothuvatpham = True
+                if IS_LOGCAULENH: self.moitruong._inlog(f"[TRIỆU HỒI BẢO THÚ] {ten} lúc lưu {'có' if luu['co'] else 'không có'}, chỉ số lệch {chenhlechs} => "
+                                        f"{'chưa chắc, dùng vật phẩm xét lại' if self._is_cobaothuvatpham is None else ('đang có' if self._is_cobaothuvatpham else 'đang không có')}")
+                self._thoidiemthaybaothuvatpham = thoidiemhientai
+                if self._is_cobaothuvatpham:
+                    return
+
+        if thoidiemhientai - self._thoidiemsudungbaothuvatphamgannhat <= 3.:
+            return
+        if self._thoidiemduocdungbaothuvatpham is None:
+            # Chờ ngẫu nhiên: nhiều nhân vật cùng mở bot / cùng mất bảo thú (đổi bản đồ) thì không bật / tắt cùng giây
+            self._thoidiemduocdungbaothuvatpham = thoidiemhientai + random.uniform(*THOIGIANCHONGAUNHIENBAOTHUVATPHAM)
+        if thoidiemhientai < self._thoidiemduocdungbaothuvatpham:
+            return
+        self._thoidiemduocdungbaothuvatpham = None
+        self._chisobaothuvatphamkhidung = chisos
+        self._thoidiemsudungbaothuvatphamgannhat = thoidiemhientai
+        if self.action_sudungvatphamhanhtrangtaivitri(vitri, ten, delay = 0.):
+            if IS_LOGCAULENH: self.moitruong._inlog(f"[TRIỆU HỒI BẢO THÚ] dùng {ten} ({'chưa biết có hay không' if self._is_cobaothuvatpham is None else 'chưa có'}), chờ chỉ số nhảy")
+            self._thoidiemtamngungsudungkynang = max(self._thoidiemtamngungsudungkynang, thoidiemhientai + 0.5)
+            self._tenbaothuvatphamdangtrieuhoi = ten
+            self._trangthaitrieuhoibaothuvatpham = 1
+
     def action_tudongsudungvatpham(self):
         if self._is_tudongsudungvatpham:
             if self.moitruong.get_is_nhanvatdachet():
@@ -53,82 +204,7 @@ class TacTuVatPham:
             tenvatphamhanhtrangs = set(self.moitruong.get_danhsachtenvatphamhanhtrang())
             co = tenvatphamhanhtrangs.__contains__
 
-            lichsutrochuyen5s = self.moitruong.get_lichsutrochuyen5s()
-
-            if self._trangthaitrieuhoibaothuvatpham != 3:
-                is_doilenh = False
-                is_hanhdong = False
-                for _, noidungtrochuyen in lichsutrochuyen5s:
-                    if "Đợi lệnh" in noidungtrochuyen:
-                        is_doilenh = True
-                    if "Hành động" in noidungtrochuyen:
-                        is_hanhdong = True
-
-                    # Đang kiểm tra (gửi pf 4131.@ đúng 1 lần) thì chỉ cần thấy 1 trong 2 dòng là đã có bảo thú
-                    is_datrieuhoi = (is_doilenh or is_hanhdong) if self._trangthaitrieuhoibaothuvatpham == 4 else (is_doilenh and is_hanhdong)
-                    if is_datrieuhoi:
-                        if IS_LOGCAULENH: print(f"[TRIỆU HỒI BẢO THÚ] trạng thái {self._trangthaitrieuhoibaothuvatpham} -> 3: đã triệu hồi xong, mở khoá kỹ năng")
-                        self._trangthaitrieuhoibaothuvatpham = 3
-                        self.moitruong.action_mokhoakynang()
-
-                        self.action_lammoitrangthai()
-
-                        break
-
-            if self._trangthaitrieuhoibaothuvatpham == 0:
-                # Trước khi dùng vật phẩm: gửi pf 4131.@ xem bảo thú vật phẩm đã triệu hồi chưa (có thì hiện "Đợi lệnh"/"Hành động")
-                if time.time() - self._thoidiemsudungbaothuvatphamgannhat > 3.0 and self._get_baothuvatphamocuoi():
-                    if IS_LOGCAULENH: print("[TRIỆU HỒI BẢO THÚ] trạng thái 0 -> 4: gửi pf 4131.@ kiểm tra đã triệu hồi chưa")
-                    self.moitruong.xoalichsutrochuyen()
-                    self.moitruong.action_khoakynang(1.5)
-                    self.moitruong.action_thucthicaulenh("pf 4131.@", douutien = DOUUTIEN_KHANCAP)
-                    self._trangthaitrieuhoibaothuvatpham = 4
-                    self._thoidiemchuyentrangthaitrieuhoibaothuvatpham = time.time()
-
-            elif self._trangthaitrieuhoibaothuvatpham == 4:
-                if time.time() - self._thoidiemchuyentrangthaitrieuhoibaothuvatpham > 1.5:
-                    # Không thấy "Đợi lệnh"/"Hành động" => chưa có bảo thú, giờ mới dùng vật phẩm
-                    if IS_LOGCAULENH: print("[TRIỆU HỒI BẢO THÚ] trạng thái 4 -> dùng vật phẩm: chưa có bảo thú")
-                    self.moitruong.action_mokhoakynang()
-                    # Dùng không được vật phẩm nào thì về trạng thái 0, 3s sau kiểm tra lại
-                    self._trangthaitrieuhoibaothuvatpham = 0
-                    self._thoidiemsudungbaothuvatphamgannhat = time.time()
-                    baothuvatphamocuoi = self._get_baothuvatphamocuoi()
-                    if baothuvatphamocuoi and self.action_sudungvatphamhanhtrangtaivitri(*baothuvatphamocuoi, delay = 0.):
-                        if IS_LOGCAULENH: print(f"[TRIỆU HỒI BẢO THÚ] trạng thái 4 -> 1: đã dùng {baothuvatphamocuoi[1]}, chờ 1s rồi spam pf 4131.@")
-                        self._thoidiemtamngungsudungkynang = max(self._thoidiemtamngungsudungkynang, time.time() + 0.5)
-                        self._thoidiemsudungbaothuvatphamgannhat = time.time()
-
-                        self._trangthaitrieuhoibaothuvatpham = 1
-                        self._thoidiemchuyentrangthaitrieuhoibaothuvatpham = time.time()
-                        self.moitruong.xoalichsutrochuyen()
-
-            elif self._trangthaitrieuhoibaothuvatpham == 1:
-                if time.time() - self._thoidiemchuyentrangthaitrieuhoibaothuvatpham > 1.0:
-                    # Lệnh triệu hồi cũng là spam kỹ năng: khoá mọi kỹ năng khác suốt lúc spam (mở lại khi xong hoặc hết 3s)
-                    if IS_LOGCAULENH: print("[TRIỆU HỒI BẢO THÚ] trạng thái 1 -> 2: bắt đầu spam pf 4131.@, khoá kỹ năng")
-                    self.moitruong.action_khoakynang(1.5)
-                    self.moitruong.action_thucthicaulenh("pf 4131.@", douutien = DOUUTIEN_KHANCAP)
-
-                    self._trangthaitrieuhoibaothuvatpham = 2
-                    self._thoidiemchuyentrangthaitrieuhoibaothuvatpham = time.time()
-                    self._thoidiemyeucaubaothuvatphamdoilenh = time.time()
-
-            elif self._trangthaitrieuhoibaothuvatpham == 2:
-                thoigianchochuyentrangthaitrieuhoibaothuvatpham = time.time() - self._thoidiemchuyentrangthaitrieuhoibaothuvatpham
-                self.moitruong.action_khoakynang(1.5)
-
-                if time.time() - self._thoidiemyeucaubaothuvatphamdoilenh > 0.25:
-                    self.moitruong.action_thucthicaulenh("pf 4131.@", douutien = DOUUTIEN_KHANCAP)
-                    self._thoidiemyeucaubaothuvatphamdoilenh = time.time()
-
-                if thoigianchochuyentrangthaitrieuhoibaothuvatpham > 3.:
-                    # Không thấy "Đợi lệnh"/"Hành động" => coi như thất bại. Trước đây 3s sau là dùng vật phẩm + spam lại,
-                    # quay vòng mãi nên kỹ năng bị khoá gần như liên tục; giờ chờ 30s mới thử lại
-                    if IS_LOGCAULENH: print("[TRIỆU HỒI BẢO THÚ] trạng thái 2 -> 0: spam 3s không thấy 'Đợi lệnh'/'Hành động', mở khoá kỹ năng, 30s sau thử lại")
-                    self._trangthaitrieuhoibaothuvatpham = 0
-                    self._thoidiemsudungbaothuvatphamgannhat = time.time() + 27.
-                    self.moitruong.action_mokhoakynang()
+            self._action_trieuhoibaothuvatpham()
 
             idbandohientai = self.moitruong.get_idbandohientai()
             is_bandokhongpk = idbandohientai in BANDOKHONGPKs

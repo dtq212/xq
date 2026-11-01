@@ -1078,6 +1078,16 @@ class MoiTruong:
         x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         return read_int(self.tientrinh, x + DC.KDK_NOILUCTOIDA) if x else False
 
+    def get_chisonhanvats(self, dichs):
+        # Chỉ số nhân vật ở các ô KDK + dich (xem CHISONHANVAT_MAP), đọc 1 lần cả vùng. None khi chưa đọc được
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
+        if not x or not dichs:
+            return None
+        dau = min(dichs)
+        dulieu = read_bytes(self.tientrinh, x + dau, max(dichs) - dau + 4)
+        chisos = tuple(struct.unpack_from("<i", dulieu, dich - dau)[0] for dich in dichs)
+        return chisos if any(chisos) else None
+
     def get_thelucconlai(self):
         x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         return read_int(self.tientrinh, x + DC.KDK_THELUC) if x else False

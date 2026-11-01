@@ -871,6 +871,18 @@ BANDO7QUOCGIAs = (BANDO_TEQUOC, BANDO_HANQUOC, BANDO_TRIEUQUOC, BANDO_NGUYQUOC, 
 BANDO_CULOC = 131
 
 BAOTHUVATPHAMs = (SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN, THANTHUMAYET, THANTHUDAN, THANTHUSUU, THANTHUDAN2, THANTHUSUU2, THANTHUCHUOT, *THUYBINHs)
+# Tên chỉ số trên bảng Nhân Vật -> các ô trong khối điều khiển (KDK + dich; cặp thấp / cao), đối chiếu bảng Nhân Vật của Thọ 2026-11-02.
+# Bảo thú vật phẩm ghi trong mô tả chỉ số cộng cho chủ ("tăng 7% Ngoại Công cho chủ nhân", "gia tăng cho chủ nhân 7% Bạo Kích")
+CHISONHANVAT_MAP = {
+    "Khí Huyết": (0x1530,),
+    "Ngoại Công": (0x153C, 0x1550),
+    "Ngoại Kháng": (0x1540, 0x1554),
+    "Thân Thủ": (0x1544,),
+    "Nội Công": (0x1548, 0x1558),
+    "Nội Kháng": (0x154C, 0x155C),
+    # Bạo Kích x 100 (901 = 9.01%); Thần Thú - Dần cộng đúng 700
+    "Bạo Kích": (0x15BC,),
+}
 # Danh sách nhặt (VATPHAMKHONGNHATs / VATPHAMUUTIENNHATs / VATPHAMTUDONGNHATs / VATPHAMTUDONGNHATFARMs) đã chuyển thành luật nhặt
 # trong luattuido_xq.NHATMACDINH (sửa ở tab Hành trang)
 
