@@ -16,7 +16,7 @@ import win32gui
 import win32process
 
 from moitruong_xq import MoiTruong
-from tienich_xq import duongdantaikhoan, duongdantaikhoantheomay, laytamngungdanghieuluc, tenmaynay, xoatamngung
+from tienich_xq import duongdantaikhoan, duongdantaikhoantheomay, is_tieudecuasogame, laytamngungdanghieuluc, tenmaynay, xoatamngung
 
 # Mẫu regex, không ghi cứng số phiên bản: game cập nhật (2.01.07 -> 2.01.08...) hay đổi năm (ooo2026ooo) vẫn nhận ra cửa sổ
 LAUNCHER_TITLE = r"client \d+(\.\d+)+$"
@@ -581,13 +581,17 @@ def dondeptientrinhaovuabithoatgame(tuoitoithieu = TUOIXQAOTOITHIEU):
     def callback(hwnd, _):
         if win32gui.IsWindowVisible(hwnd):
             title = win32gui.GetWindowText(hwnd)
-            if title and "Chien Quoc 2" in title:
+            if is_tieudecuasogame(title):
                 _, pid = win32process.GetWindowThreadProcessId(hwnd)
                 valid_pids.add(pid)
 
     win32gui.EnumWindows(callback, None)
 
-    ghost_pids = {pid for pid in _laypidxq() - valid_pids if _laytuoitientrinh(pid) >= tuoitoithieu}
+    # Chỉ dọn xq.exe của bản game tự đăng nhập quản lý: bản khác (vd Niết Bàn) cũng tên xq.exe, có thể đang ở màn hình có tiêu đề
+    # lạ (đăng nhập, chọn máy chủ...) mà không phải tiến trình ảo
+    duongdangame = os.path.normcase(os.path.abspath(duongdangamemaynay(taicauhinhdangnhap())))
+    ghost_pids = {pid for pid in _laypidxq() - valid_pids
+                  if _laytuoitientrinh(pid) >= tuoitoithieu and _layduongdantientrinh(pid) == duongdangame}
 
     if ghost_pids:
         print(f"[CLEANUP] Đang kiểm tra các tiến trình xq.exe bị treo ngầm...")
@@ -643,6 +647,18 @@ def _laypidxq():
     except Exception as e:
         print(f"❌ Lỗi khi lấy danh sách tiến trình: {e}")
     return xq_pids
+
+
+def _layduongdantientrinh(pid):
+    # Đường dẫn exe của tiến trình (đã chuẩn hoá để so sánh), None khi không đọc được
+    try:
+        handle = win32api.OpenProcess(0x0410, False, pid)  # PROCESS_QUERY_INFORMATION | PROCESS_VM_READ
+        try:
+            return os.path.normcase(os.path.abspath(win32process.GetModuleFileNameEx(handle, 0)))
+        finally:
+            win32api.CloseHandle(handle)
+    except Exception:
+        return None
 
 
 def _laytuoitientrinh(pid):

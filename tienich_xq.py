@@ -15,6 +15,14 @@ import win32con
 import time
 import pywintypes
 
+# Tiêu đề cửa sổ game các bản client bot chạy được. Cùng 1 mã xq.exe: Niết Bàn là bản gốc, Aegis = bản gốc + lớp vá .v10fix
+# (107/107 chữ ký diachi_xq ra cùng giá trị, cấu trúc .data giống hệt) nên không cần địa chỉ riêng theo bản
+TIEUDECUASOGAMEs = ("Chien Quoc 2D", "Chien Quoc Niet Ban")
+
+
+def is_tieudecuasogame(title):
+    return bool(title) and any(tieude in title for tieude in TIEUDECUASOGAMEs)
+
 
 class _PROCESS_POWER_THROTTLING_STATE(ctypes.Structure):
     _fields_ = [("Version", ctypes.c_ulong), ("ControlMask", ctypes.c_ulong), ("StateMask", ctypes.c_ulong)]

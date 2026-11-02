@@ -22,7 +22,7 @@ from giaodienhienthi_xq import GiaoDienHienThi
 from hangso_xq import IS_CHIBATAMTHANHCUASOUUTIEN, THOIGIANKIEMTRAAMTHANH
 from lan_xq import DongBoLan, taicauhinhlan
 from thongbao_xq import DieuKhienTelegram
-from tienich_xq import laynhomtodoitudongs, toiuuhieunangtientrinh
+from tienich_xq import is_tieudecuasogame, laynhomtodoitudongs, toiuuhieunangtientrinh
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
@@ -66,7 +66,7 @@ class TroChoiManager:
         def callback(hwnd, _):
             if win32gui.IsWindowVisible(hwnd):
                 title = win32gui.GetWindowText(hwnd)
-                if title and "Chien Quoc 2" in title:
+                if is_tieudecuasogame(title):
                     ds_hwnd.append(hwnd)
 
         win32gui.EnumWindows(callback, None)

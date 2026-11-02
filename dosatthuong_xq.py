@@ -19,7 +19,8 @@ import time
 
 import win32gui
 
-from dangnhap_xq import GAME_TITLE_PREFIX, chuanhoatennhanvat
+from dangnhap_xq import chuanhoatennhanvat
+from tienich_xq import is_tieudecuasogame
 from hangso_xq import CHISONHANVAT_MAP
 from moitruong_xq import MoiTruong
 
@@ -43,7 +44,7 @@ def timnhanvats():
     nhanvats = {}
 
     def callback(hwnd, _):
-        if not win32gui.IsWindowVisible(hwnd) or GAME_TITLE_PREFIX not in win32gui.GetWindowText(hwnd):
+        if not win32gui.IsWindowVisible(hwnd) or not is_tieudecuasogame(win32gui.GetWindowText(hwnd)):
             return
         try:
             mt = MoiTruong(hwnd)
