@@ -343,6 +343,7 @@ class TacTuSuGia:
         buoc = self._lapbuocditoibando(BANDONPCSUGIA, is_hoithanhphu = True, toadodich = (x, y))
         if buoc["loai"] in ("toinoi", "khongduong"):
             s["trangthai"] = f"không có đường tới {laytenbando(BANDONPCSUGIA)}: {buoc['mota']}"
+            self._baodungcho("Sư Gia", s["trangthai"])
             return None
         return self._thuchienbuocditoibando(buoc, BANDONPCSUGIA, (x, y), "[SƯ GIA] " + nhan)
 

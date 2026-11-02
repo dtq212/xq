@@ -92,6 +92,8 @@ class MoiTruong:
         ctypes.windll.user32.GetWindowThreadProcessId(self.idcuaso, ctypes.byref(idtientrinh))
         idtientrinh = idtientrinh.value
 
+        # Niết Bàn: ChienQuocNietBan.dll tự hook đầu hàm gửi lệnh => không NOP đầu HAMGUILENH, không hook lệnh game; lệnh gửi kèm "\r\n"
+        self.is_nietban = "Chien Quoc Niet Ban" in win32gui.GetWindowText(self.idcuaso)
         self.tientrinh = pymem.Pymem()
         self.tientrinh.open_process_from_id(idtientrinh)
 
@@ -152,7 +154,10 @@ class MoiTruong:
         self._is_dasetupactionthietlaphooknoidungtrochuyen = False
 
         self._thoidiemdichuyengannhat = 0.
-        self._thoidiemhetchovankhi = 0.
+        # Chờ xác nhận vận khí (action_chovankhi): None hoặc {"caulenh", "vitrikynang", "tao", "gui", "guitgt", "chapnhan", "ten"}
+        self._chovankhi = None
+        # Lệnh vừa ghi vào game gần nhất: (câu lệnh, time.time(), timeGetTime) để khớp lệnh vận khí đã gửi trước khi đăng ký chờ
+        self._lenhguigannhat = None
         self._thoidiemdongvankhiket = 0.
         # Khoá vận khí triệu hồi bảo thú (action_khoavankhitrieuhoi): None hoặc {"batdau", "toida", "caulenhduocpheps"}
         self._khoavankhitrieuhoi = None
@@ -307,6 +312,8 @@ class MoiTruong:
         self._diachibodemnoidungtrochuyen = False
         self._diachihamkichbannoidungtrochuyen = False
         self._diachihamkichbantinhethong = False
+        # Hàm + bộ đệm chuỗi của action_themdongkhungchat
+        self._diachithemdongkhungchat = False
 
         # Hook dò lệnh game tự gửi (action_thietlaphooklenhgame): bộ đệm vòng, đã đọc tới đâu, lệnh bot vừa gửi (để không log trùng)
         self._diachibodemlenhgame = False
@@ -352,6 +359,8 @@ class MoiTruong:
             safe_free(self._diachitimduongcucbo)
         if getattr(self, "_doituongtimduongcucbo", None):
             safe_free(self._doituongtimduongcucbo)
+        if getattr(self, "_diachithemdongkhungchat", None):
+            safe_free(self._diachithemdongkhungchat)
 
     def _ghilenhvaobonho(self, lenh):
         if not self.diachihamthucthicaulenh:
@@ -359,14 +368,18 @@ class MoiTruong:
 
         if self.diachihamthucthicaulenh:
             if self._is_lenhkynangdavaohoichieu(lenh):
+                # Kỹ năng đã vào hồi chiêu = lệnh cùng chiêu trước đó đã được nhận: chờ vận khí coi như đã chấp nhận
+                self._bochovankhi(lenh.caulenh, is_dachapnhan = True)
                 return
             # Lệnh vào hàng đợi trước khi khoá vận khí triệu hồi mà tới giờ mới gửi: bỏ (vòng lặp sau tự gửi lại nếu còn cần)
             if self._is_lenhbichankhoavankhi(lenh.caulenh):
                 self._loglenh(lenh.caulenh, "bỏ: đang khoá vận khí triệu hồi")
+                self._bochovankhi(lenh.caulenh)
                 return
             # Lệnh chiêu / đánh vào hàng đợi trước khi bị choáng (hoặc Trầm Mặc với phái phép thuật) mà tới giờ mới gửi: bỏ, hết khống chế vòng lặp tự gửi lại
             if (lenh.caulenh.startswith("pf ") and self.get_is_khongthedungkynang()) or (lenh.caulenh.startswith("kill ") and self._is_nhanvatbichoang):
                 self._loglenh(lenh.caulenh, "bỏ: đang bị khống chế")
+                self._bochovankhi(lenh.caulenh)
                 return
             self._loglenh(lenh.caulenh, f"hàng đợi, ưu tiên {lenh.douutien}")
             diachidulieu = self.diachihamthucthicaulenh + 0x40
@@ -376,6 +389,7 @@ class MoiTruong:
             write_bytes(self.tientrinh, diachidulieu + 4, chuoi_bytes + b"\x00", len(chuoi_bytes) + 1)
 
             self.tientrinh.start_thread(self.diachihamthucthicaulenh)
+            self._danhdauguilenhvankhi(lenh.caulenh)
             if lenh.trihoansaulenh > 0.:
                 time.sleep(lenh.trihoansaulenh)
 
@@ -390,20 +404,9 @@ class MoiTruong:
         if self.diachihamthucthicaulenh:
             return
 
-        aob = "51 52 E8 ?? ?? ?? ?? 8B 86 ?? ?? ?? ?? 83 C4 08 89 86 ?? ?? ?? ?? 5F 5E 5D 5B"
-        scan_diachi = pymem.pattern.pattern_scan_module(
-            self.tientrinh.process_handle,
-            self.gamemodule,
-            taopatterntuaob(aob)
-        )
-
-        if not scan_diachi:
-            print("[LỖI] Không tìm thấy Pattern hàm thực thi câu lệnh!")
-            return
-
-        diachi_lenh_call = scan_diachi + 2
-        khoang_cach_call = read_int(self.tientrinh, diachi_lenh_call + 1)
-        diachi_ham = diachi_lenh_call + 5 + khoang_cach_call
+        # Hàm gửi lệnh dò sẵn từ file (DC). Trước đây quét bộ nhớ tìm chỗ gọi nó: Niết Bàn (ChienQuocNietBan.dll vá mã) làm quét bộ nhớ
+        # không ra => mọi lệnh hàng đợi bị bỏ im lặng
+        diachi_ham = self.diachixq + DC.HAMGUILENH
 
         self.diachihamthucthicaulenh = self.tientrinh.allocate(256)
         diachidulieu = self.diachihamthucthicaulenh + 0x40
@@ -984,6 +987,41 @@ class MoiTruong:
 
         return True
 
+    def action_themdongkhungchat(self, noidung):
+        # In dòng chữ của bot vào khung trò chuyện của client (chỉ hiện ở máy này, không gửi gì lên máy chủ): gọi đúng hàm game dùng khi
+        # nhận tin trò chuyện / tin hệ thống, [TG + TG_KHUNGCHAT]->HAMTHEMDONGKHUNGCHAT(chuỗi UTF-8, 0) (thiscall, ret 8).
+        # "\n" xuống dòng, ESC + 1 chữ là mã màu của game. Chạy ở luồng riêng như các hàm gọi khác, chờ xong mới trả về để lần gọi
+        # sau không ghi đè chuỗi đang in
+        if not self._diachithemdongkhungchat:
+            diachi = self.tientrinh.allocate(0x40 + KICHTHUOCDONGKHUNGCHAT)
+            asm_script = f"""
+                mov eax, dword ptr [{hex(self.diachixq + DC.THONGTINGAME)}]
+                test eax, eax
+                je ketthuc
+                mov ecx, dword ptr [eax + {hex(DC.TG_KHUNGCHAT)}]
+                test ecx, ecx
+                je ketthuc
+                push 0
+                push {hex(diachi + 0x40)}
+                mov eax, {hex(self.diachixq + DC.HAMTHEMDONGKHUNGCHAT)}
+                call eax
+            ketthuc:
+                ret 4
+            """
+            encoding, count = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+            if not encoding or len(encoding) > 0x40:
+                return False
+            write_bytes(self.tientrinh, diachi, bytes(encoding), len(encoding))
+            self._diachithemdongkhungchat = diachi
+        # Cắt theo byte UTF-8 cho vừa bộ đệm, không cắt đôi ký tự
+        chuoi_bytes = noidung.encode("utf-8")[:KICHTHUOCDONGKHUNGCHAT - 1].decode("utf-8", errors = "ignore").encode("utf-8")
+        write_bytes(self.tientrinh, self._diachithemdongkhungchat + 0x40, chuoi_bytes + b"\x00", len(chuoi_bytes) + 1)
+        luong = self.tientrinh.start_thread(self._diachithemdongkhungchat)
+        if luong:
+            ctypes.windll.kernel32.WaitForSingleObject(luong, 2000)
+            ctypes.windll.kernel32.CloseHandle(luong)
+        return True
+
     def action_thietlaphooklenhgame(self):
         # Dò lệnh client tự gửi lên máy chủ: hook đầu hàm gửi lệnh (HAMGUILENH + 5 là "sub esp, 0xC8", 5 byte đầu là chỗ
         # action_vohieuhoahookchienquoc2 NOP nên không đụng), chép câu lệnh (tham số 1) vào bộ đệm vòng rồi chạy tiếp hàm gốc
@@ -1060,7 +1098,7 @@ class MoiTruong:
             o = dulieu[vitri:vitri + KICHTHUOCDONGLENHGAME]
             o = o[:o.find(b"\x00")] if b"\x00" in o else o
             caulenh = o.decode("utf-8", errors = "replace")
-            if caulenh and caulenh not in self._lenhbotganday:
+            if caulenh and caulenh.rstrip("\r\n") not in self._lenhbotganday:
                 self._inlog(f"[LỆNH GAME] {caulenh}  (hex: {o.hex(' ')})")
 
     def get_sinhlucconlai(self):
@@ -1981,7 +2019,8 @@ class MoiTruong:
             if dong.startswith("Môn phái:"):
                 self._monphaidanggomthongtin = dong.split(":", 1)[1].strip()
             elif dong.startswith("Bang phái:"):
-                self._ghibangphai(ten, dong.split(":", 1)[1].strip())
+                # Niết Bàn ghi "－－" khi không có bang (Aegis bỏ hẳn dòng Bang phái)
+                self._ghibangphai(ten, dong.split(":", 1)[1].strip().strip("－-"))
             elif dong.startswith(("Ngoại hiệu:", "Điểm PK:")):
                 self._ghibangphai(ten, "")
 
@@ -2508,19 +2547,6 @@ class MoiTruong:
             x = read_int(self.tientrinh, self.diachixq + DC.CONTROALT)
             if x: write_boolean(self.tientrinh, x, is_batalt)
 
-    def get_is_batautoingame(self):
-        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
-        return read_boolean(self.tientrinh, x + DC.TG_AUTOINGAME) if x else False
-
-    def set_is_batautoingame(self, is_batautoingame):
-        if not is_batautoingame:
-            if read_bytes(self.tientrinh, self.diachixq + DC.VA_AUTOINGAME, 1) != bytes.fromhex("90"):
-                write_bytes(self.tientrinh, self.diachixq + DC.VA_AUTOINGAME, bytes.fromhex("90 90 90 90 90 90 90 90 90 90"), 10)
-
-        if self.get_is_batautoingame() != is_batautoingame:
-            x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
-            if x: write_boolean(self.tientrinh, x + DC.TG_AUTOINGAME, is_batautoingame)
-
     def get_is_dangbatchucnangmorong(self):
         x = read_int(self.tientrinh, self.diachixq + DC.NHANVAT)
         if not x:
@@ -2730,6 +2756,8 @@ class MoiTruong:
         pass
 
     def action_vohieuhoahookchienquoc2(self):
+        if self.is_nietban:
+            return
         if read_bytes(self.tientrinh, self.diachixq + DC.HAMGUILENH, 1) != bytes.fromhex("90"):
             write_bytes(self.tientrinh, self.diachixq + DC.HAMGUILENH, b'\x90\x90\x90\x90\x90', 5)
 
@@ -3788,19 +3816,99 @@ class MoiTruong:
         x = read_int(self.tientrinh, x + 0x2C)
         return False if x <= 10 else True
 
-    def action_chovankhi(self, thoigian):
-        # Kỹ năng vận khí cần một lúc mới bật trạng thái "Đang vận khí"; coi như đang vận khí trong khoảng chờ đó để không thao tác gì làm ngắt chiêu
-        self._thoidiemhetchovankhi = max(self._thoidiemhetchovankhi, time.time() + thoigian)
+    def action_chovankhi(self, vitrikynang = None, caulenh = None, ten = "VẬN KHÍ"):
+        # Kỹ năng vận khí cần một lúc mới bật trạng thái "Đang vận khí": coi như đang vận khí trong khoảng chờ đó để không thao tác gì
+        # làm ngắt chiêu, nhưng không chờ mù một khoảng cố định. Khoảng chờ chỉ tính từ lúc lệnh thật sự ghi vào game (_danhdauguilenhvankhi)
+        # và kết thúc sớm khi (xem _get_is_dangchovankhi):
+        #   - thanh vận khí có gói bắt đầu mới (+ 0xF8 sau lúc gửi): đã vào vận khí, từ đó theo trạng thái thật của game
+        #   - lệnh bị bỏ khỏi hàng đợi (hồi chiêu / khống chế / khoá) hoặc nằm hàng đợi quá THOIGIANCHOGUILENHVANKHI
+        #   - gửi xong THOIGIANXACNHANRACHIEUVANKHI giây không vào tư thế xuất chiêu, kỹ năng chưa hồi chiêu: chiêu không ra
+        # Có dấu hiệu chiêu đã ra mà chưa thấy thanh vận khí thì chờ tối đa THOIGIANCHOVAOVANKHI kể từ lúc gửi
+        if caulenh is None and vitrikynang is not None:
+            idkynang = self.get_idkynang(vitrikynang)
+            caulenh = "pf {}".format(idkynang) if idkynang else None
+        thoidiemhientai = time.time()
+        cho = {"caulenh": caulenh, "vitrikynang": vitrikynang, "tao": thoidiemhientai, "gui": None, "guitgt": None, "chapnhan": False, "ten": ten}
+        lenhgui = self._lenhguigannhat
+        if caulenh is None:
+            # Không biết lệnh nào: tính như vừa gửi
+            cho["guitgt"], cho["gui"] = ctypes.windll.winmm.timeGetTime(), thoidiemhientai
+        elif lenhgui and lenhgui[0] == caulenh and thoidiemhientai - lenhgui[1] < 1.:
+            # Luồng xử lý lệnh đã ghi lệnh vào game trước khi kịp đăng ký chờ
+            cho["guitgt"], cho["gui"] = lenhgui[2], lenhgui[1]
+        self._chovankhi = cho
+
+    def _danhdauguilenhvankhi(self, caulenh):
+        # Gọi ngay sau khi ghi lệnh vào game (luồng xử lý lệnh)
+        thoidiemgui, tgtgui = time.time(), ctypes.windll.winmm.timeGetTime()
+        self._lenhguigannhat = (caulenh, thoidiemgui, tgtgui)
+        cho = self._chovankhi
+        if cho and cho["gui"] is None and cho["caulenh"] == caulenh:
+            cho["guitgt"] = tgtgui
+            cho["gui"] = thoidiemgui
+
+    def _bochovankhi(self, caulenh, is_dachapnhan = False):
+        # Lệnh vận khí bị bỏ khỏi hàng đợi trước khi gửi. is_dachapnhan: bỏ vì kỹ năng đã vào hồi chiêu (lệnh trước đã được nhận) =>
+        # vẫn chờ như chiêu đã ra, thanh vận khí bắt đầu trong THOIGIANCHOVAOVANKHI giây gần đây cũng tính là xác nhận
+        cho = self._chovankhi
+        if not cho or cho["gui"] is not None or cho["caulenh"] != caulenh:
+            return
+        if is_dachapnhan:
+            cho["chapnhan"] = True
+            cho["guitgt"] = (ctypes.windll.winmm.timeGetTime() - int(THOIGIANCHOVAOVANKHI * 1000)) & 0xFFFFFFFF
+            cho["gui"] = time.time()
+            return
+        self._ketthucchovankhi(cho, "lệnh bị bỏ trước khi gửi")
+
+    def _ketthucchovankhi(self, cho, lydo):
+        if self._chovankhi is cho:
+            self._chovankhi = None
+            self._inlog(f"[CHỜ VẬN KHÍ] {cho['ten']} '{cho['caulenh']}': {lydo}")
+        return False
+
+    def _docthanhvankhi(self):
+        # (trạng thái + 0xD8, timeGetTime lúc nhận gói bắt đầu + 0xF8, địa chỉ đối tượng) hoặc None
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        x = read_int(self.tientrinh, x + DC.TG_VANKHI) if x else 0
+        if not x:
+            return None
+        return read_int(self.tientrinh, x + 0xD8), read_int(self.tientrinh, x + 0xF8) & 0xFFFFFFFF, x
+
+    def _get_is_dangchovankhi(self):
+        cho = self._chovankhi
+        if not cho:
+            return False
+        thoidiemhientai = time.time()
+        if cho["gui"] is None:
+            if thoidiemhientai - cho["tao"] < THOIGIANCHOGUILENHVANKHI:
+                return True
+            return self._ketthucchovankhi(cho, f"nằm hàng đợi quá {THOIGIANCHOGUILENHVANKHI}s chưa gửi")
+        dagui = thoidiemhientai - cho["gui"]
+        thanh = self._docthanhvankhi()
+        if thanh and thanh[0] != TRANGTHAIVANKHI_KHONGVANKHI and ((thanh[1] - cho["guitgt"]) & 0xFFFFFFFF) < 0x80000000:
+            ten = read_string(self.tientrinh, thanh[2] + 0xE0).strip()
+            return self._ketthucchovankhi(cho, f"vào vận khí '{ten}' sau {round(dagui * 1000)}ms")
+        if not cho["chapnhan"] and cho["vitrikynang"] is not None:
+            idtuthe = self.get_idtuthenhanvat()
+            if idtuthe in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT) or not self.get_is_kynangsansang(cho["vitrikynang"]):
+                cho["chapnhan"] = True
+                self._inlog(f"[CHỜ VẬN KHÍ] {cho['ten']} '{cho['caulenh']}': chiêu đã ra sau {round(dagui * 1000)}ms (tư thế {idtuthe}), chờ thanh vận khí")
+            elif dagui >= THOIGIANXACNHANRACHIEUVANKHI:
+                return self._ketthucchovankhi(cho, f"gửi {round(dagui * 1000)}ms không ra chiêu (tư thế {idtuthe}, kỹ năng vẫn sẵn sàng), bỏ chờ")
+        if dagui < THOIGIANCHOVAOVANKHI:
+            return True
+        return self._ketthucchovankhi(cho, f"quá {THOIGIANCHOVAOVANKHI}s không thấy thanh vận khí")
 
     def action_huychovankhi(self):
-        # Bỏ khoảng chờ vận khí giả (action_chovankhi) khi chủ động ngắt vận khí để di chuyển / dùng chiêu khác.
+        # Bỏ khoảng chờ vận khí (action_chovankhi) khi chủ động ngắt vận khí để di chuyển / dùng chiêu khác.
         # Đang khoá vận khí triệu hồi bảo thú thì không bỏ
         if not self.get_is_khoavankhitrieuhoi():
-            self._thoidiemhetchovankhi = 0.
+            self._chovankhi = None
 
-    def action_khoavankhitrieuhoi(self, caulenhduocpheps = (), ten = "TRIỆU HỒI"):
+    def action_khoavankhitrieuhoi(self, caulenhduocpheps = (), ten = "TRIỆU HỒI", vitrikynang = None):
         # Triệu hồi bảo thú (tốn bùa, thất bại là mất bùa) / Hồi Thành Phù: khoá các thao tác ngắt vận khí (ra chiêu / đánh thường, di
-        # chuyển, tìm đường) cho tới khi vận khí xong. caulenhduocpheps: chính lệnh triệu hồi (đã vào hàng đợi) vẫn được gửi
+        # chuyển, tìm đường) cho tới khi vận khí xong. caulenhduocpheps: chính lệnh triệu hồi (đã vào hàng đợi) vẫn được gửi.
+        # Khoá giữ trong lúc chờ vào vận khí (action_chovankhi theo lệnh đó: chiêu không ra thì mở khoá sớm) rồi theo thanh vận khí
         thoidiemhientai = time.time()
         self._khoavankhitrieuhoi = {
             "batdau": thoidiemhientai,
@@ -3808,7 +3916,7 @@ class MoiTruong:
             "caulenhduocpheps": set(caulenhduocpheps),
             "ten": ten,
         }
-        self.action_chovankhi(THOIGIANCHOVAOVANKHI)
+        self.action_chovankhi(vitrikynang, next(iter(caulenhduocpheps), None), ten = ten)
         self._inlog(f"[KHOÁ VẬN KHÍ {ten}] bắt đầu, cho phép {sorted(caulenhduocpheps)}")
 
     def get_is_dangxuatchieu(self):
@@ -3874,12 +3982,12 @@ class MoiTruong:
         self._is_datrungchieu = False
 
     def get_is_khoavankhitrieuhoi(self):
-        # Khoá từ lúc gửi lệnh triệu hồi: chờ tối đa THOIGIANCHOVAOVANKHI để vào vận khí, sau đó giữ tới khi game hết vận khí (tối đa THOIGIANKHOAVANKHITRIEUHOITOIDA)
+        # Khoá từ lúc gửi lệnh triệu hồi: giữ trong lúc chờ vào vận khí (_get_is_dangchovankhi), sau đó giữ tới khi game hết vận khí (tối đa THOIGIANKHOAVANKHITRIEUHOITOIDA)
         khoa = self._khoavankhitrieuhoi
         if not khoa:
             return False
         thoidiemhientai = time.time()
-        if thoidiemhientai < khoa["toida"] and (thoidiemhientai - khoa["batdau"] < THOIGIANCHOVAOVANKHI or self._get_is_dangvankhitrongame()):
+        if thoidiemhientai < khoa["toida"] and (self._get_is_dangchovankhi() or self._get_is_dangvankhitrongame()):
             return True
         self._khoavankhitrieuhoi = None
         self._inlog(f"[KHOÁ VẬN KHÍ {khoa.get('ten', 'TRIỆU HỒI')}] kết thúc sau {round(thoidiemhientai - khoa['batdau'], 1)}s")
@@ -3904,7 +4012,7 @@ class MoiTruong:
         return caulenh not in khoa["caulenhduocpheps"]
 
     def get_is_dangvankhi(self):
-        if time.time() < self._thoidiemhetchovankhi:
+        if self._get_is_dangchovankhi():
             return True
         return self._get_is_dangvankhitrongame()
 

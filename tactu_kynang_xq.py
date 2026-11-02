@@ -755,7 +755,8 @@ class TacTuKyNang:
         is_cancanchien = bool(diachimuctieu) and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN
         idloaivukhimuctieu = self.moitruong.get_idloaivukhi(diachimuctieu) if diachimuctieu and is_muctieulanguoichoi else None
         nguyenkhiconlai = self.moitruong.get_nguyenkhiconlai() or 0
-        self._lammoinguyenkhiquynguyen()
+        if self.moitruong.get_sinhlucconlai() > MOCSINHLUCSUDUNGNGUYENKHIQUYNGUYEN:
+            self._lammoinguyenkhiquynguyen()
         # Nhất Quyền (dame chính) đã hồi chiêu mà nguyên khí còn thấp: để dành cho nó, không lót chiêu delay 0 (delay 0 -> Nhất Quyền là
         # bước chậm nhất, 0.8-1.7s). Lạc Kích lặp lại / Ba Động cận chiến đã cần NGUYENKHITOITHIEUCHIEULOT nên luật này chặn Đại Hải
         is_nhatquyensansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_NHATQUYENBATSON)
@@ -1023,7 +1024,7 @@ class TacTuKyNang:
             )
             if vitrikynang == VITRIKYNANG_LOILONGQUYET and loaikynang == "sudungkynangkhongmuctieu" and is_ok:
                 # Như Lôi Động Cửu Thiên: chờ game vào vận khí, ghi mốc để biết lúc nào được ngắt sớm
-                self.moitruong.action_chovankhi(THOIGIANCHOVAOVANKHI)
+                self.moitruong.action_chovankhi(vitrikynang)
                 self._thoidiemsudungloidongcuuthiengannhat = time.time()
             if is_break:
                 return
@@ -1263,7 +1264,7 @@ class TacTuKyNang:
         # Lệnh triệu hồi vừa vào hàng đợi là "pf <id kỹ năng>" (action_sudungkynang): vẫn cho gửi, các lệnh chiêu / đánh khác
         # và di chuyển bị chặn tới khi vận khí xong (xem moitruong._is_lenhbichankhoavankhi)
         idkynang = self.moitruong.get_idkynang(vitrikynang)
-        self.moitruong.action_khoavankhitrieuhoi(caulenhduocpheps = ("pf {}".format(idkynang),) if idkynang else ())
+        self.moitruong.action_khoavankhitrieuhoi(caulenhduocpheps = ("pf {}".format(idkynang),) if idkynang else (), vitrikynang = vitrikynang)
         self._yeucautancong = None
 
     def _laytieuhao(self, makynang, loai):
@@ -1417,7 +1418,7 @@ class TacTuKyNang:
                 self._bogiuchokynangphai(giucho)
 
             if vitrikynang == VITRIKYNANG_LOIDONGCUUTHIEN and loaikynang == "sudungkynangkhongmuctieu" and is_ok:
-                self.moitruong.action_chovankhi(THOIGIANCHOVAOVANKHI)
+                self.moitruong.action_chovankhi(vitrikynang)
                 self._thoidiemsudungloidongcuuthiengannhat = time.time()
             if vitrikynang in (VITRIKYNANG_TRIEUHOICUONGTHI, VITRIKYNANG_TRIEUHOITHIENBINH, VITRIKYNANG_TRIEUHOIQUYTOT) and is_ok:
                 # Triệu hồi tốn bùa, vận khí bị ngắt là mất bùa: khoá mọi thao tác tới khi vận khí xong

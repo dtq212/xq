@@ -12,7 +12,8 @@
 #   hết việc: giải tán nhóm, thành viên trả Theo sau cũ, quay về Hàng việc cá nhân
 # Đội phó bản đang chạy giữ thành viên (get_idsdoiphobangiu): Tổ đội tự động / Tổ đội 1 lần không đụng tới nhân vật đó, nhân vật ngoài đội
 # cũng không kéo họ. Trưởng đội mất kết nối: thành viên chờ THOIGIANGIUDOIKHIMAT giây rồi mới tạm về việc cá nhân; trưởng đội vào lại
-# (trạng thái lưu theo nhân vật) thì gọi đội tiếp.
+# (trạng thái lưu theo nhân vật) thì gọi đội tiếp; trong lúc đó thành viên không tự dẫn đi (get_is_thanhviendoiviec). Sửa đội giữa
+# chừng đổi trưởng đội sang thành viên khác: trưởng đội cũ chuyển đội (_chuyentruongdoi / _nhantruongdoi), việc đang làm giữ nguyên.
 # Mixin của TacTu (tactu_xq.py): chỉ chứa hàm, trạng thái (self._...) khởi tạo trong TacTu.__init__
 import time
 
@@ -28,6 +29,8 @@ THOIGIANCHOBATDAUVIECDOI = 5.
 # Trưởng đội / thành viên rời nhóm, mời lại người rớt nhóm: mỗi lần cách nhau ít nhất chừng này giây
 GIANCACHROINHOMDOI = 2.
 GIANCACHMOILAIDOI = 5.
+# Lập nhóm mà trưởng nhóm trong game là thành viên đội (đổi trưởng đội giữa chừng): chờ họ nhường trưởng nhóm chừng này giây rồi mới rời
+THOIGIANCHONHUONGTRUONGNHOM = 15.
 
 
 def _ngayhomnay():
@@ -45,7 +48,7 @@ class TacTuDoiPhoBan:
             self._trangthaidoiphoban = f"Đội {doi['ten']}: nhân vật này không phải trưởng đội (thành viên đầu)"
             return
         self._doiphoban = {"ma": ma, "giaidoan": "cho", "viec": "", "lucviec": 0., "trangthai": "bắt đầu", "dangmoi": 0, "lucmoi": 0.,
-                           "luclam": 0., "lucroinhom": 0., "lucmoilai": {}}
+                           "luclam": 0., "lucroinhom": 0., "lucmoilai": {}, "luclapnhom": 0.}
         self._doiphobanxong = None
         self._logdoi(f"Bắt đầu chạy đội {doi['ten']}: " + ", ".join(VIECDOI_MAP[k] for k in doi["thutu"] if k in doi["chon"]))
         phatam(f"Bắt đầu đội {doi['ten']}")
@@ -148,8 +151,8 @@ class TacTuDoiPhoBan:
         self._trangthaidoiphoban = f"{time.strftime('%H:%M')} Đội {ten}: {thongbao}"
         self._logdoi(f"Đội {ten}: {thongbao}")
         moitruong = self.moitruong
-        if is_giaitan and moitruong.get_is_dangnamtrongnhom() and moitruong.get_idbandohientai() not in BANDOPHOBANs:
-            # Trưởng nhóm rời nhóm = giải tán
+        if is_giaitan and moitruong.get_is_dangnamtrongnhom() and not self._is_trongphobandoi():
+            # Trưởng nhóm rời nhóm = giải tán (trong phó bản thì không: phó bản ăn theo nhóm, giải tán là đóng phó bản)
             moitruong.action_thoatkhoinhom()
         phatam(f"Kết thúc đội {ten}")
 
@@ -165,7 +168,7 @@ class TacTuDoiPhoBan:
         x = self._doiphobanxong
         if x and time.time() - x["luc"] < THOIGIANBAOXONGDOI:
             return {"ma": x["ma"], "idtruong": self.moitruong.get_idnguoichoi(), "thanhviens": x["thanhviens"], "giaidoan": "xong",
-                    "giaitan": bool(x.get("giaitan")), "luc": x["luc"]}
+                    "giaitan": bool(x.get("giaitan")), "luc": x["luc"], "chuyentruong": x.get("chuyentruong", 0)}
         return None
 
     def get_doiphobanthanhvienshare(self):
@@ -220,6 +223,12 @@ class TacTuDoiPhoBan:
         # Đội đang cần mình (trưởng đội đang chạy / thành viên đang theo đội): Hàng việc cá nhân không bật việc mới, Sư môn / Danh Vọng
         # làm xong lượt đang dở thì tạm dừng
         return self.get_is_dangtrongdoiphoban()
+
+    def get_is_thanhviendoiviec(self, viec):
+        # Mình là thành viên (không phải trưởng đội) đội phó bản đang làm viec: ngoài phó bản không tự dẫn đi (trưởng đội dis / nhóm tan
+        # thì mình thành trưởng nhóm hoặc không có nhóm: chờ trưởng đội, không tự vào phó bản một mình / thay trưởng đội)
+        tv = self._doiphobantv
+        return bool(tv) and tv.get("viecdoi") == viec
 
     def get_idnguoiquens(self):
         # Người quen (không báo người lạ, đồng đội: buff, không đánh): mình, nhân vật đang chạy bot (cùng máy / LAN), nhân vật trong file
@@ -316,7 +325,10 @@ class TacTuDoiPhoBan:
             return
         idtoi = moitruong.get_idnguoichoi()
         if doi["thanhviens"][0] != idtoi:
-            self._ketthucdoiphoban("nhân vật này không còn là trưởng đội", is_giaitan = False)
+            if idtoi in doi["thanhviens"]:
+                self._chuyentruongdoi(s, doi)
+            else:
+                self._ketthucdoiphoban("nhân vật này không còn là trưởng đội", is_giaitan = False)
             return
         if s["giaidoan"] == "lam":
             self._buoclamviec(s, doi)
@@ -357,7 +369,7 @@ class TacTuDoiPhoBan:
             s.update(giaidoan = "cho", trangthai = f"{tenviec}: chờ {', '.join(chuasansangs)}")
             return
         if s["giaidoan"] == "cho":
-            s.update(giaidoan = "lapnhom", dangmoi = 0, lucmoi = 0.)
+            s.update(giaidoan = "lapnhom", dangmoi = 0, lucmoi = 0., luclapnhom = time.time())
             self._logdoi(f"Đủ người, lập nhóm đi {tenviec}")
         # Lập nhóm chạy ở luồng nhanh (action_doiphobannhanh); đủ người thì _buoclapnhom chuyển sang "lam"
 
@@ -371,7 +383,29 @@ class TacTuDoiPhoBan:
         thanhviens = doi["thanhviens"][1:]
         is_trongnhom = moitruong.get_is_dangnamtrongnhom()
         trongnhoms = set(moitruong.get_danhsachidnguoichoithanhviennhoms() or ()) if is_trongnhom else set()
+        if is_trongnhom and self._is_trongphobandoi():
+            # Đang trong phó bản (bot mở lại / đổi trưởng đội giữa chừng): không bao giờ rời nhóm (rời là bị đưa ra ngoài). Nhóm toàn người
+            # trong đội thì bật việc luôn (chưa làm trưởng nhóm thì việc tự đi theo, ra phó bản được nhường lại), có người ngoài thì chờ ra
+            if not trongnhoms - set(doi["thanhviens"]):
+                self._logdoi("Đang trong phó bản cùng nhóm đội: bật việc luôn, không lập lại nhóm")
+                self._batdauviecdoi(s, doi)
+            else:
+                s["trangthai"] = f"{VIECDOI_MAP[s['viec']]}: đang trong phó bản (nhóm có người ngoài đội), chờ ra mới lập nhóm"
+            return
         if is_trongnhom and (not moitruong.get_is_truongnhom() or trongnhoms - set(doi["thanhviens"])):
+            idtruongnhom = moitruong.get_idnguoichoitruongnhom()
+            if not trongnhoms - set(doi["thanhviens"]) and idtruongnhom in doi["thanhviens"]:
+                # Nhóm toàn người trong đội, trưởng nhóm là thành viên đội (đổi trưởng đội giữa chừng): chờ họ nhường trưởng nhóm
+                # (_xulynhomthanhvien) thay vì rời nhóm
+                if time.time() - s["luclapnhom"] < THOIGIANCHONHUONGTRUONGNHOM:
+                    trangthai = f"{VIECDOI_MAP[s['viec']]}: chờ {self._tenidnguoichoi(idtruongnhom)} nhường trưởng nhóm"
+                    if s["trangthai"] != trangthai:
+                        self._logdoi(f"Trưởng nhóm là {self._tenidnguoichoi(idtruongnhom)} (trong đội): chờ nhường trưởng nhóm "
+                                     f"{int(THOIGIANCHONHUONGTRUONGNHOM)}s thay vì rời nhóm")
+                    s["trangthai"] = trangthai
+                    return
+                if s["lucroinhom"] < s["luclapnhom"]:
+                    self._logdoi(f"Chờ {int(THOIGIANCHONHUONGTRUONGNHOM)}s mà {self._tenidnguoichoi(idtruongnhom)} chưa nhường trưởng nhóm")
             if time.time() - s["lucroinhom"] > GIANCACHROINHOMDOI:
                 s["lucroinhom"] = time.time()
                 self._logdoi("Rời nhóm hiện tại (có người ngoài đội / mình không làm trưởng nhóm) để lập nhóm đội")
@@ -383,6 +417,16 @@ class TacTuDoiPhoBan:
             self._batdauviecdoi(s, doi)
             return
         botkhacs = self._laybotkhacs()
+        if not is_trongnhom:
+            # Chờ nhường trưởng nhóm tính từ lúc vào nhóm
+            s["luclapnhom"] = time.time()
+            truongnhomdois = [i for i in thanhviens if (botkhacs.get(i) or {}).get("idtruongnhom") == i]
+            if truongnhomdois:
+                # Thành viên đội đang làm trưởng nhóm (trong phó bản không được rời / giải tán: họ mời mình vào rồi nhường): nhận lời mời
+                # của họ, không tự mời người khác chen ngang
+                moitruong.action_kiemtravadongyloimoinhom(truongnhomdois)
+                s["trangthai"] = f"{VIECDOI_MAP[s['viec']]}: chờ vào nhóm của {', '.join(self._tenidnguoichoi(i) for i in truongnhomdois)} để được nhường"
+                return
         sansangs, conkets = self._moilanluot(s, chuavaos, botkhacs)
         phans = [f"đang mời {self._tenidnguoichoi(s['dangmoi'])}"] if s["dangmoi"] else []
         if conkets:
@@ -429,6 +473,27 @@ class TacTuDoiPhoBan:
                 moitruong.action_moihoacxinvaonhom(i)
                 return
 
+    def _chuyentruongdoi(self, s, doi):
+        # Sửa đội giữa chừng, trưởng đội mới là người khác trong đội (mình vẫn trong đội): không dừng việc đang làm, báo trưởng đội mới
+        # nhận đội (share "xong" kèm "chuyentruong", _nhantruongdoi) và mình thành thành viên của trưởng đội mới luôn; đang làm trưởng
+        # nhóm trong game thì nhường cho trưởng đội mới (_xulynhomthanhvien)
+        idmoi = doi["thanhviens"][0]
+        self._ketthucdoiphoban(f"đổi trưởng đội sang {self._tenidnguoichoi(idmoi)}: chuyển đội, việc đang làm giữ nguyên", is_giaitan = False)
+        self._doiphobanxong["chuyentruong"] = idmoi
+        self._doiphobantv = {"ma": s["ma"], "idtruong": idmoi, "ten": doi["ten"], "viec": "", "lucviec": 0., "theosaucu": None,
+                             "giaidoan": "", "luccuoi": time.time(), "lucroinhom": 0., "viecdoi": s["viec"],
+                             "trangthai": "chờ trưởng đội mới nhận đội"}
+
+    def _nhantruongdoi(self, d):
+        # Trưởng đội cũ chuyển đội cho mình: thôi theo đội nhưng giữ việc đang chạy, trả Theo sau cũ (không theo trưởng đội cũ nữa) rồi
+        # chạy đội luôn (việc đang chạy sẵn thì làm tiếp, không phải lập lại nhóm)
+        tv = self._doiphobantv
+        if tv and tv["theosaucu"] is not None:
+            self._is_tudongtheosau, self._idmuctieutheosau, self._tenmuctieutheosau = tv["theosaucu"]
+        self._doiphobantv = None
+        self._logdoi(f"{self._tenidnguoichoi(d['idtruong'])} chuyển trưởng đội {d.get('ten', '')} cho mình: nhận đội, chạy tiếp")
+        self.batdau_doiphoban(d["ma"])
+
     # --- Thành viên ------------------------------------------------------------------------------------------------------------------
     def _laydoicuatoi(self):
         # Share đội (cửa sổ khác) có mình là thành viên, None nếu không có. Trưởng đội có nhiều đội cùng chạy có mình (lỗi cấu hình) thì
@@ -446,6 +511,11 @@ class TacTuDoiPhoBan:
         d = self._laydoicuatoi()
         tv = self._doiphobantv
         now = time.time()
+        idtoi = self.moitruong.get_idnguoichoi()
+        if d and d.get("giaidoan") == "xong" and d.get("chuyentruong") == idtoi \
+                and ((laydoiphoban(d["ma"]) or {}).get("thanhviens") or [0])[0] == idtoi:
+            self._nhantruongdoi(d)
+            return
         if not d or d.get("giaidoan") == "xong":
             if tv and (d or now - tv["luccuoi"] > THOIGIANGIUDOIKHIMAT):
                 self._thoidoithanhvien("đội xong / dừng" if d else f"mất tín hiệu trưởng đội quá {int(THOIGIANGIUDOIKHIMAT)}s")
@@ -477,6 +547,21 @@ class TacTuDoiPhoBan:
         # Đang ở nhóm không phải của trưởng đội thì rời (ngoài phó bản, phó bản không đang giữ nhóm); chưa có nhóm thì nhận lời mời của
         # trưởng đội (chỉ trưởng đội, không tự xin vào: xin vào chen ngang lời mời trưởng đội đang gửi người khác)
         moitruong = self.moitruong
+        if moitruong.get_is_dangnamtrongnhom() and moitruong.get_is_truongnhom():
+            # Mình làm trưởng nhóm (đổi trưởng đội giữa chừng / bot mở lại): trưởng đội trong nhóm thì nhường trưởng nhóm; chưa trong nhóm
+            # mà mình đang trong phó bản (phó bản ăn theo nhóm, rời / giải tán là đóng phó bản) thì mời trưởng đội vào rồi nhường
+            if tv["idtruong"] in (moitruong.get_danhsachidnguoichoithanhviennhoms() or ()):
+                if time.time() - tv["lucroinhom"] > 1.5:
+                    tv["lucroinhom"] = time.time()
+                    self._logdoi(f"Nhường trưởng nhóm cho trưởng đội {self._tenidnguoichoi(tv['idtruong'])}")
+                    moitruong.action_nhuongquyentruongnhom(tv["idtruong"])
+                return
+            if self._is_trongphobandoi():
+                if time.time() - tv["lucroinhom"] > GIANCACHMOILAIDOI:
+                    tv["lucroinhom"] = time.time()
+                    self._logdoi(f"Trong phó bản, mình là trưởng nhóm: mời trưởng đội {self._tenidnguoichoi(tv['idtruong'])} vào nhóm để nhường")
+                    moitruong.action_moihoacxinvaonhom(tv["idtruong"])
+                return
         if self.get_is_tamtattodoilanglyson():
             # Phó bản đang giải tán tổ đội cũ / Phong Yêu Kính đang lập nhóm 1 người: action_roinhomlanglyson lo rời, chưa nhận lời mời
             return

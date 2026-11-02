@@ -88,6 +88,11 @@ HOITHANHPHU = "Hồi Thành Phù"
 GIAHOITHANHPHU = 1500
 # Hồi môn phái: miễn phí, chưa vào môn phái thì về Tân Thủ Thôn (acc ít tiền thay Hồi Thành Phù)
 LENHHOIMONPHAI = "dGludmF0 1"
+# Niết Bàn không có tinvat 1 / 2: kỹ năng "Sử dụng tín vật" (thẻ Cơ Bản, id 61, đọc bảng kỹ năng 2026-11-02) về môn phái, đứng cạnh
+# Xa Phu, nói chuyện "1. Chấp nhận" về Tân Thủ Thôn; quá THOIGIANXAPHUNIETBAN giây chưa về được thì thôi
+LENHTINVAT_NIETBAN = "pf2 61"
+TENXAPHU_NIETBANs = ("Xa Phu", "Thị Giả")
+THOIGIANXAPHUNIETBAN = 90.
 GIAPHUTANTHUTIENCO = 500
 CAPTINHTIENPHUTANTHUTIENCO = 50
 # Mua đồ luôn chừa lại bấy nhiêu ngân lượng (đủ Hồi Thành Phù về rồi phù đi)
@@ -164,6 +169,11 @@ KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN = 3
 # Kỹ năng vận khí: từ lúc gửi lệnh tới lúc game vào trạng thái vận khí thường 0.5-1.5s, có lúc tới ~1.6-2s
 # (log: chờ 1.5s hết là Huyết Ma Chú chen vào ngắt vận khí triệu hồi) nên chờ dư
 THOIGIANCHOVAOVANKHI = 2.5
+# Chờ xác nhận vận khí (moitruong.action_chovankhi): lệnh nằm trong hàng đợi quá chừng này giây chưa gửi thì bỏ chờ
+THOIGIANCHOGUILENHVANKHI = 1.5
+# Gửi lệnh xong chừng này giây mà nhân vật không vào tư thế xuất chiêu 6 / 9, kỹ năng chưa vào hồi chiêu, thanh vận khí chưa có
+# gói mới => chiêu không ra (máy chủ từ chối / lệnh hỏng), bỏ chờ ngay thay vì đứng đủ THOIGIANCHOVAOVANKHI
+THOIGIANXACNHANRACHIEUVANKHI = 0.6
 # Khoá vận khí triệu hồi bảo thú giữ tối đa chừng này (phòng đọc trạng thái vận khí sai mà khoá mãi)
 THOIGIANKHOAVANKHITRIEUHOITOIDA = 15.
 # Thanh vận khí quá thời lượng máy chủ báo chừng này giây mà vẫn "đang vận khí" => kẹt (vd đang Lôi Động Cửu Thiên thì dis: máy chủ không
@@ -266,6 +276,11 @@ KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN = 9.
 KHOANGCACHTIEPCANNGUKIEMPHITIEN = 4.
 KHOANGCACHHIEUQUAKYNANGKHAITHIENTICHDIA = 6.0
 KHOANGCACHNHATDO = KHOANGCACHTOANMANHINH
+# Vừa mất mục tiêu chưa quá bấy nhiêu giây thì chưa đi nhặt đồ, chờ chọn con kế (món trong tầm nhặt tại chỗ vẫn nhặt luôn, món Nhặt ưu
+# tiên / đồ sư môn không phải chờ): tránh vừa giết xong con này đã chạy đi nhặt rồi lại quay về đánh con kế
+THOIGIANCHOMUCTIEUKETRUOCKHINHATDO = 2.
+# Có món cần đi nhặt mà chờ (bận đánh) quá bấy nhiêu giây thì đi nhặt luôn dù còn mục tiêu: quái ra liên tục vẫn nhặt được
+THOIGIANCHONHATDOTOIDA = 6.
 
 # Mục tiêu mới nhìn thấy phải chờ ngần này giây mới được chọn tấn công; mất dấu quá THOIGIANMATDAUMUCTIEU thì thấy lại tính là mới
 THOIGIANCHOCHONMUCTIEUMOI = 1.
@@ -353,6 +368,8 @@ THOIGIANLAMMOIBANGPHAI = 600.
 KHOANGCACHHOIBANGPHAI = 12.
 # Game gửi cả khối nhiều dòng (nối "\n", tới 0x640 byte) vào 1 tin, vd trả lời "desc user": ô 128 byte cắt mất dòng Bang phái
 KICHTHUOCDONGTROCHUYEN = 512
+# Bộ đệm chuỗi bot tự in vào khung trò chuyện (moitruong_xq.action_themdongkhungchat), byte UTF-8 kể cả số 0 cuối
+KICHTHUOCDONGKHUNGCHAT = 1024
 
 VITRIKYNANG_DONDAOTRUCNHAP = 2210
 VITRIKYNANG_NGHENHPHONGTRAM = 2211
@@ -536,6 +553,10 @@ THOIGIANGUILAITANCONGVATLY = 5.
 # Tự tăng cấp (TacTu._tudongtangcap): mặc định tăng tới cấp này, mỗi lần gửi "gift upgrade" cách nhau chừng này giây
 CAPTUDONGTANGCAPTOIDA = 60
 THOIGIANGUILAITANGCAP = 3.
+# Lên cấp thì tự quay vòng số ở Bảo Điển (TacTu._tudongquayso): lệnh dò bằng log [LỆNH GAME] khi người chơi tự bấm "Khởi động Game",
+# gửi lần lượt cách nhau chừng này giây (người chơi bấm cũng ~0.5s)
+LENHQUAYSOLENCAPs = ("zgdict open", "zgdict rock open", "zgdict rock start")
+THOIGIANGIUALENHQUAYSO = 0.6
 # Đào Hoa Nguyên chỉ "kill" (bật đánh thường) khi nguyên khí không quá chừng này: còn nguyên khí thì spam chiêu, đánh thường làm chiêu ra chậm.
 # 3 = chưa đủ 4 cho Nhất Quyền (để 2 thì nguyên khí 3 + mục tiêu đã có Trọng Thương / Lạc Kích không chiêu nào được dùng, đứng im ~1s)
 NGUYENKHITANCONGVATLYDAOHOA = 3
@@ -1384,3 +1405,5 @@ VIECDOI_MAP = {"sugia": "Sư Gia", "tapkich": "Tập Kích", "langlyson": "Lăng
 VIECCOVONGs = ("tapkich", "langlyson", "thanhkieu", "phongyeukinh")
 # Việc riêng hiện cuối bảng hàng việc (bấm Làm ngay / thiết lập chung một chỗ) nhưng không chạy theo hàng việc
 VIECRIENG_MAP = {"matac": "Mã Tặc", "keocap": "Kéo cấp acc gà"}
+
+MOCSINHLUCSUDUNGNGUYENKHIQUYNGUYEN = 2000

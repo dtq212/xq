@@ -46,6 +46,8 @@ NPCPHONGYEU = ("Tả Khâu Minh", 252, 160)
 # có sẵn ở chỗ vào (toạ độ tuỳ bản đồ): thấy thì nhớ toạ độ thật, chưa thấy thì về chỗ mình xuất hiện lúc vào (diemvao)
 TIENTOTENBANDOPHONGYEU = "Phó Bản Phong"
 TENTHOYEU = "Truyền Tống Thỏ Yêu"
+# Phong Yêu Kính mượn ID các bản đồ này (khó đi, người dùng dặn): người give ra ngay mở bản đồ khác (cả khi kéo cấp). 521 Tây Thành
+BANDOBOQUAPHONGYEUs = (521,)
 # Menu sau khi give, có 2 kiểu, chỉ chọn lựa chọn 1 khi lời có đủ các cụm của 1 kiểu:
 #   - "Sau khi đem trang bị này thiêu đốt làm chất xúc tác thì có thể tiến vào Phong Yêu Kính..." -> "1. Đúng vậy, ta muốn đi"
 #   - "Ta có thể đem trang bị này đốt đi, để làm chất xúc tác, ngươi muốn như vậy phải không ?" -> "1. Xác nhận"; trưởng nhóm thấy "Xin đợi
@@ -108,6 +110,8 @@ SOLANGIAODOPY = 3
 KHOANGCACHGIAODOPY = 3.
 KHOANGCACHTOIDIEMPY = 3.
 THOIGIANMOIDIEMPY = 25.
+# Chia vùng dò: tính lại người cùng dò mỗi chừng này giây (người rớt / vào sau thì chia lại đoạn)
+GIANCACHCHIAVUNGPY = 3.
 # Phó bản tự đi được: bandovao tầng đầu, bandonpc + npc nơi vào / nhận thưởng. luachonvao None: vào bằng lối đi NPC (LOIDINPC_MAP, lựa
 # chọn đầu); số: tự nói chuyện NPC chọn lựa chọn thứ luachonvao (đếm từ 0, bỏ CLOSE) rồi Xác nhận, vatphamvao là vật phẩm phải có trong hành trang (không bị trừ).
 # luachonthuong: lựa chọn nhận thưởng (tuple: chọn lần lượt qua từng menu, vd Thành Kiều "4. Nhận thưởng" rồi "1. Nhận thưởng"); is_kiemtrathuong: menu phải có lời chúc mừng mới chọn (Lăng Ly Sơn: NPC đổi menu khi đã xong)
@@ -435,6 +439,11 @@ class TacTuLangLySon:
             return self._buocdoinhom(s)
         idbando = moitruong.get_idbandohientai()
         is_trongphongyeu = self._is_trongphongyeu()
+        if not (idbando in BUOCLANGLYSON_MAP or is_trongphongyeu) and self.get_is_thanhviendoiviec(s["phoban"]):
+            # Thành viên đội phó bản ngoài phó bản mà không có nhóm / thành trưởng nhóm (trưởng đội dis): chờ trưởng đội mời, không tự vào
+            s["chedo"] = "thanhvien"
+            s["trangthai"] = f"thành viên đội: chờ trưởng đội {self._tenidnguoichoi(self._doiphobantv['idtruong'])} lập nhóm (không tự vào)"
+            return None
         if idbando in BUOCLANGLYSON_MAP or is_trongphongyeu:
             self._ghithanhvienvong(s)
             if not s["davao"]:
@@ -553,6 +562,7 @@ class TacTuLangLySon:
             buoc = self._lapbuocditoibando(cauhinh["bandonpc"], is_hoithanhphu = True, toadodich = (x, y))
             if buoc["loai"] in ("toinoi", "khongduong"):
                 s["trangthai"] = f"không có đường tới {laytenbando(cauhinh['bandonpc'])}: {buoc['mota']}"
+                self._baodungcho(ten, s["trangthai"])
                 return None
             return self._thuchienbuocditoibando(buoc, cauhinh["bandonpc"], (x, y), f"[{ten.upper()}] Vào {ten}")
         if time.time() < s.get("lucthulaivao", 0.):
@@ -1436,6 +1446,7 @@ class TacTuLangLySon:
             buoc = self._lapbuocditoibando(cauhinh["bandonpc"], is_hoithanhphu = True, toadodich = (x, y))
             if buoc["loai"] in ("toinoi", "khongduong"):
                 s["trangthai"] = f"không có đường tới {laytenbando(cauhinh['bandonpc'])}: {buoc['mota']}"
+                self._baodungcho(ten, s["trangthai"])
                 return None
             return self._thuchienbuocditoibando(buoc, cauhinh["bandonpc"], (x, y), f"[{ten.upper()}] Vào {ten}")
         if now < s.get("lucthulaivao", 0.):
@@ -1762,7 +1773,13 @@ class TacTuLangLySon:
         if not is_thanhvien:
             # Người give: thành viên nào chưa vào nhóm thì vẫn mời tiếp (vào sau tự "look" Tả Khâu Minh vào phó bản)
             self._moithanhvienpy(s)
-        # Kéo cấp: acc gà đứng yên ở Thỏ Yêu, người give ra khi đủ số quái / bản đồ Tây Thành (tactu_keocap_xq)
+        if not is_thanhvien and idbando in BANDOBOQUAPHONGYEUs and s.get("raboqua") != s["sovong"]:
+            # Bản đồ khó đi (Tây Thành...): ra ngay mở bản đồ khác, kể cả acc gà đủ CAPDANHDUBOSSPY khi kéo cấp
+            s["raboqua"] = s["sovong"]
+            self._logpb(s, f"Bản đồ {idbando} (khó đi): ra mở bản đồ khác")
+            s.update(giaidoan = "nhanthuong", hoithoai = None)
+            return None
+        # Kéo cấp: acc gà đứng yên ở Thỏ Yêu, người give ra khi đủ số quái (tactu_keocap_xq)
         yeucaukeocap = self._buoctrongphongyeukeocap(s, py, idbando, is_thanhvien)
         if yeucaukeocap is not False:
             return yeucaukeocap
@@ -1841,8 +1858,55 @@ class TacTuLangLySon:
         s["hoithoai"] = None
         return None
 
+    def _laynguoidophongyeu(self):
+        # ID người cùng dò Phong Yêu Kính với mình (kể cả mình), tăng dần: cùng nhóm game, đang chạy bot Phong Yêu Kính (cùng máy / LAN),
+        # cùng ở trong phó bản này, không Theo sau (theo sau thì không dò), không kéo cấp
+        moitruong = self.moitruong
+        idtoi = moitruong.get_idnguoichoi()
+        thanhviens = set(moitruong.get_danhsachidnguoichoithanhviennhoms() or ())
+        ids = {idtoi}
+        try:
+            danhsach = list(self.shared_data.items()) if self.shared_data is not None else []
+        except Exception:
+            danhsach = []
+        for idcuaso, info in danhsach:
+            if idcuaso == self.idcuaso or not isinstance(info, dict) or info.get("idnguoichoi") not in thanhviens:
+                continue
+            if time.time() - info.get("thoidiemcapnhat", 0.) > 5. or info.get("_phobanlanglyson") != "phongyeukinh" \
+                    or info.get("_is_tudongtheosau") or info.get("_keocap") or not moitruong.get_is_cungbando(info):
+                continue
+            ids.add(info["idnguoichoi"])
+        return sorted(ids)
+
+    def _chiavungdophongyeu(self, s, do):
+        # Chia vòng dò thành các đoạn liền nhau theo thứ tự ID người cùng dò: mình đi qua lại trong đoạn của mình, gặp quái là đánh, không
+        # nhường ai. Số người đổi (rớt / vào sau / bật Theo sau) thì chia lại, điểm đang tới ngoài đoạn mới thì sang điểm gần nhất trong đoạn
+        now = time.time()
+        if now - do.get("lucchia", 0.) < GIANCACHCHIAVUNGPY:
+            return
+        do["lucchia"] = now
+        ids = self._laynguoidophongyeu()
+        sodiem = len(do["diems"])
+        thutu = ids.index(self.moitruong.get_idnguoichoi())
+        # Mỗi đoạn ít nhất 2 điểm (đoạn 1 điểm thì đứng quay đầu tại chỗ, đếm lượt liên tục); ít điểm hơn thì người sau dò chung đoạn cuối
+        songuoi = min(len(ids), sodiem // 2)
+        if songuoi < 1:
+            do.pop("dau", None)
+            return
+        dau = min(thutu, songuoi - 1) * sodiem // songuoi
+        cuoi = (min(thutu, songuoi - 1) + 1) * sodiem // songuoi - 1
+        if (dau, cuoi) == (do.get("dau"), do.get("cuoi")):
+            return
+        do.update(dau = dau, cuoi = cuoi, soquay = 0)
+        if not dau <= do["i"] <= cuoi:
+            toado = self.moitruong.get_toado()
+            do["i"] = min(range(dau, cuoi + 1), key = lambda k: math.dist(do["diems"][k], toado))
+            do["luc"] = now
+        self._logpb(s, f"Chia vùng dò: người {thutu + 1}/{len(ids)}, đi điểm {dau + 1}-{cuoi + 1}/{sodiem}")
+
     def _dophongyeu(self, s, py, idbando):
-        # Đi lần lượt các điểm dò phủ vùng đi được (lưới vật cản, _taodiemdo) từ điểm gần mình nhất, hết 1 lượt thì hỏi số quái rồi đi tiếp
+        # Đi lần lượt các điểm dò phủ vùng đi được (lưới vật cản, _taodiemdo). Không kéo cấp: mỗi người dò riêng 1 đoạn của vòng
+        # (_chiavungdophongyeu), đi qua lại trong đoạn, hết 1 lượt đoạn thì hỏi số quái rồi đi tiếp. Kéo cấp: đi cả vòng như cũ
         moitruong = self.moitruong
         do = py["do"]
         if not do or do["idbando"] != idbando:
@@ -1850,25 +1914,34 @@ class TacTuLangLySon:
             if not diems:
                 s["trangthai"] = f"{self._tenpb(s)}: chưa đọc được bản đồ"
                 return None
+            if not self._keocap and len(diems) > 1:
+                # Vòng bắt đầu từ điểm nhỏ nhất thay vì chỗ đứng: mọi người tính ra cùng 1 vòng thì đoạn chia mới khớp nhau
+                diems = list(self._taodiemdo(idbando, batdau = min(diems))) or diems
             toado = moitruong.get_toado()
             i = min(range(len(diems)), key = lambda k: math.dist(diems[k], toado))
             # Acc phụ kéo cấp dò ngược chiều acc chính (cùng vào 1 chỗ, đi cùng chiều là trùng đường)
             chieu = -1 if self._is_donguocphongyeukeocap() else 1
-            vitri = ""
-            if not self._keocap:
-                # Mọi người cùng vào 1 chỗ, cùng lộ trình: lệch điểm bắt đầu theo thứ tự ID trong nhóm, chia đều vòng dò (từng đi sát nhau
-                # cùng 1 đường, dọn quái chậm). Mỗi người vẫn đi đủ vòng nên ai rớt / theo sau thì phần đó người khác vẫn đi tới
-                ids = sorted(set(moitruong.get_danhsachidnguoichoithanhviennhoms() or ()) | {moitruong.get_idnguoichoi()})
-                thutu = ids.index(moitruong.get_idnguoichoi())
-                i = (i + thutu * len(diems) // len(ids)) % len(diems)
-                vitri = f", người {thutu + 1}/{len(ids)} bắt đầu từ điểm {i + 1}"
             do = py["do"] = {"idbando": idbando, "diems": diems, "i": i, "batdau": i, "luc": time.time(), "chieu": chieu}
-            self._logpb(s, f"{len(diems)} điểm dò" + (", đi ngược chiều" if chieu < 0 else "") + vitri)
+            self._logpb(s, f"{len(diems)} điểm dò" + (", đi ngược chiều" if chieu < 0 else ""))
+        if not self._keocap:
+            self._chiavungdophongyeu(s, do)
         x, y = do["diems"][do["i"]]
         if moitruong.get_khoangcachdiem(x, y) <= KHOANGCACHTOIDIEMPY or time.time() - do["luc"] > THOIGIANMOIDIEMPY:
-            do["i"] = (do["i"] + do.get("chieu", 1)) % len(do["diems"])
             do["luc"] = time.time()
-            if do["i"] == do["batdau"]:
+            is_hetluot = False
+            if "dau" in do:
+                # Qua lại trong đoạn: tới đầu / cuối đoạn thì quay đầu; quay đầu từ lần thứ 2 là vừa đi hết 1 lượt cả đoạn
+                ke = do["i"] + do["chieu"]
+                if not do["dau"] <= ke <= do["cuoi"]:
+                    do["chieu"] = -do["chieu"]
+                    ke = min(max(do["i"] + do["chieu"], do["dau"]), do["cuoi"])
+                    do["soquay"] += 1
+                    is_hetluot = do["soquay"] >= 2
+                do["i"] = ke
+            else:
+                do["i"] = (do["i"] + do.get("chieu", 1)) % len(do["diems"])
+                is_hetluot = do["i"] == do["batdau"]
+            if is_hetluot:
                 py["soluotdo"] += 1
                 py["hoisoquai"] = time.time()
                 self._logpb(s, f"Dò xong lượt {py['soluotdo']}, đã giết {len(py['bossdagiet'])}/{SOBOSSPHONGYEU} boss")

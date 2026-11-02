@@ -35,7 +35,6 @@ from tactu_langlyson_xq import CAPDOLAMKIMTOITHIEU, TENTHOYEU, SOBOSSPHONGYEU, T
 
 BANDO_BAKHAU = 162
 BANDO_THUYHOASON_KC = 82
-BANDO_TAYTHANH = 521
 NPCTHANTIENGIAGIA = ("Thần Tiên Gia Gia", 95, 123)
 DIEMTAPHOPKEOCAP = (143, 143)
 # Đuôi lệnh của từng menu lần lượt (so với lệnh lựa chọn "tallk <id NPC># <đuôi>", không theo số thứ tự vì menu đổi theo nhiệm vụ)
@@ -1186,17 +1185,11 @@ class TacTuKeoCap:
 
     def _buoctrongphongyeukeocap(self, s, py, idbando, is_thanhvien):
         # Trong Phong Yêu Kính khi kéo cấp, acc gà không đi đâu: đứng cạnh Thỏ Yêu (đứng đâu cũng có kinh nghiệm), không đánh. Người give
-        # hỏi Thỏ Yêu số quái mỗi GIANCACHHOITHOYEU giây, đủ TILERAPHONGYEU thì ra (vòng mới); bản đồ Tây Thành thì ra ngay.
+        # hỏi Thỏ Yêu số quái mỗi GIANCACHHOITHOYEU giây, đủ TILERAPHONGYEU thì ra (vòng mới); bản đồ Tây Thành thì _buoctrongphongyeu ra ngay.
         # -> yêu cầu di chuyển / None, False khi không phải acc gà kéo cấp (Phong Yêu Kính làm như cũ)
         kc = self._keocap
         if not kc or kc["vaitro"] != "ga":
             return False
-        if not is_thanhvien and idbando == BANDO_TAYTHANH and s.get("rataythanh") != s["sovong"]:
-            # Không đi bản đồ Tây Thành (người dùng dặn, kể cả acc gà đủ CAPDANHDUBOSSPY): ra ngay mở bản đồ khác
-            s["rataythanh"] = s["sovong"]
-            self._logpb(s, "Bản đồ Tây Thành (khó đi): ra mở bản đồ khác")
-            s.update(giaidoan = "nhanthuong", hoithoai = None)
-            return None
         now = time.time()
         s["chedo"] = "cho"
         tenpb = self._tenpb(s)

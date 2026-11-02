@@ -230,6 +230,8 @@ def dexuatlotrinhdo(luoi, batdau, is_tranh = None, canh = CANHKHOIDO, tam = None
         diems.append(min(hople, key = lambda o: math.dist(o, (xtam, ytam))))
     if len(diems) <= 1:
         return diems
+    # Thứ tự điểm cố định (không theo thứ tự loang từ chỗ đứng): cùng bản đồ, cùng ô bắt đầu thì ra cùng 1 vòng ở mọi nhân vật
+    diems.sort()
 
     # Quãng đi bộ giữa các điểm trên lưới thô
     h = HESOLUOITHO

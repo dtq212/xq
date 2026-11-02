@@ -246,8 +246,12 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._lucmocuahangmuabu_map = {}
         self._lechmuabudabao = set()
         self._buocdichuyen = ("", 0.)
+        # Việc tự động đứng chờ vì không đi tiếp được (_baodungcho): [nội dung, lúc bắt đầu kẹt, lần gọi gần nhất, đã báo]
+        self._dungcho = ["", 0., 0., False]
         # Các lần Hồi Thành Phù gần đây (chặn lặp tốn tiền, get_lydokhonghoithanhphu)
         self._thoidiemhoithanhphus = []
+        # Niết Bàn: lúc bắt đầu về Tân Thủ Thôn bằng Tín Vật + Xa Phu (action_xulyxaphunietban), None khi không về
+        self._xaphunietban = None
         # Tên vật phẩm -> lần gần nhất báo không đủ tiền mua (5 phút báo 1 lần)
         self._thoidiembaothieutienmuagannhat_map = {}
         # Hội thoại NPC nhiều bước (Tân Thủ Tiên Cô...): các câu lệnh còn chờ gửi, cách nhau 1s, gửi hết thì đóng cửa sổ tuỳ chọn.
@@ -400,6 +404,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._is_tudongtangcap = False
         self._captudongtangcaptoida = CAPTUDONGTANGCAPTOIDA
         self._thoidiemtudongtangcap = 0.
+        # Tự quay vòng số khi lên cấp: cấp lần trước thấy, các lệnh quay số còn chờ gửi, lần gửi gần nhất
+        self._capdoquaysotruoc = 0
+        self._lenhquaysochos = []
+        self._thoidiemlenhquayso = 0.
         self._idbandomuctieudangchon = 0
 
         self._idquaidangkeo = 0
@@ -522,6 +530,11 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
 
         self._is_dangchaybukhoangcach = False
         self._thoidiemvohieuquadichuyennhatvatpham = 0.0
+        # Lần gần nhất còn mục tiêu tấn công / vừa mất mục tiêu chưa quá THOIGIANCHOMUCTIEUKETRUOCKHINHATDO giây (chưa đi nhặt đồ) /
+        # lúc bắt đầu có món cần đi nhặt mà chưa được đi (quá THOIGIANCHONHATDOTOIDA giây thì đi nhặt luôn), 0 = không chờ
+        self._thoidiemcomuctieugannhat = 0.0
+        self._is_vuamatmuctieu = False
+        self._thoidiembatdauchonhatdo = 0.0
         # Tránh vùng cấm (VUNGCAM_MAP) khi chọn mục tiêu, nhặt đồ, gom quái và di chuyển
         self._is_tranhvungcam = True
         # Giữ khoảng cách với đối tượng đang tấn công mình (chỉnh ở giao diện, lưu theo nhân vật)

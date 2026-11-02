@@ -361,6 +361,7 @@ class LoopPhu:
         self.tactu.action_tudongsuavatpham()
 
         self.tactu.action_xulyhoithoainpc()
+        self.tactu.action_xulyxaphunietban()
         self.tactu.action_xulybanracvasuado()
         self.tactu.action_tudongxulyvebanrac()
         self.tactu.action_tudongkhaikhoang()
@@ -378,8 +379,6 @@ class LoopPhu:
 
         if not self.moitruong.get_is_bathanhtrang():
             self.moitruong.set_is_batalt(True)
-
-        self.tactu.action_tudongbatautoingame()
 
         self.moitruong.action_vohieuhoahookchienquoc2()
         self.moitruong.action_loglenhgame()

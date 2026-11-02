@@ -499,16 +499,17 @@ class TacTuSuMon:
         self.moitruong._inlog(f"[SƯ MÔN] {laytenbando(idbando)} chưa có lộ trình mẫu: tạo lộ trình dò {len(diems)} điểm")
         return [tuple(d) for d in diems]
 
-    def _taodiemdo(self, idbando, tam = None, bankinh = None, canh = CANHKHOIDO):
+    def _taodiemdo(self, idbando, tam = None, bankinh = None, canh = CANHKHOIDO, batdau = None):
         # Điểm dò theo lưới vật cản (dexuatlotrinhdo): cả vùng đi được nối với chỗ đứng, hoặc trong bankinh ô quanh tam. Tránh cổng / điểm
-        # xuất hiện và vùng cấm. Chỉ tính được khi đang ở bản đồ đó. -> [(x, y), ...] hoặc []
+        # xuất hiện và vùng cấm. Chỉ tính được khi đang ở bản đồ đó. batdau: ô bắt đầu vòng (mặc định chỗ đứng, phải cùng vùng đi được).
+        # -> [(x, y), ...] hoặc []
         if self.moitruong.get_idbandohientai() != idbando:
             return []
         luoi = self.moitruong.get_luoivatcanbando()
         if not luoi:
             return []
         congs = [(x, y) for _, x, y, _, _ in (BANDOCONG_MAP.get(idbando) or ("", ()))[1]]
-        return [tuple(d) for d in dexuatlotrinhdo(luoi, self.moitruong.get_toado(),
+        return [tuple(d) for d in dexuatlotrinhdo(luoi, batdau or self.moitruong.get_toado(),
                                                   lambda x, y: any(math.dist((x, y), c) < 12 for c in congs) or self._kiemtra_vungcam(x, y),
                                                   canh = canh, tam = tam, bankinh = bankinh)]
 

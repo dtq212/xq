@@ -584,7 +584,8 @@ class TacTuVatPham:
                     self._thoidiemnhatvatphamgannhat_map[self._diachicosovatphamdangnhat] = time.time()
                     self._thoidiemnhatvatphamgannhat_map = donbangthoidiem(self._thoidiemnhatvatphamgannhat_map, 120.)
 
-        elif self._is_tudongvebanrac and not is_chinhatvatphamuutien and not is_covatphamvungcamgan:
+        elif self._is_tudongvebanrac and not is_chinhatvatphamuutien and not is_covatphamvungcamgan and not self._is_vuamatmuctieu:
+            # Lệnh nhặt xung quanh tự chạy tới vật phẩm => vừa mất mục tiêu thì cũng chờ chọn con kế như di chuyển nhặt đồ
             self.moitruong.action_nhatvatphamxungquanh(delay = 0.5)
 
         self._yeucaunhatvatpham = yeucaunhatvatphammoi

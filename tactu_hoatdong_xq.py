@@ -526,6 +526,23 @@ class TacTuHoatDong:
         else:
             self.moitruong.action_bochantangcapdo()
         self._tudongtangcap()
+        self._tudongquayso()
+
+    def _tudongquayso(self):
+        # Cấp nhân vật tăng (bot tự tăng hay người chơi bấm) thì quay vòng số ở Bảo Điển: gửi lần lượt LENHQUAYSOLENCAPs (mở Bảo Điển,
+        # mở vòng quay, "Khởi động Game"). Lần đầu đọc được cấp chỉ ghi nhớ, không quay
+        moitruong = self.moitruong
+        capdo = moitruong.get_capdonhanvat()
+        if capdo:
+            if self._capdoquaysotruoc and capdo > self._capdoquaysotruoc:
+                self._lenhquaysochos = list(LENHQUAYSOLENCAPs)
+                moitruong._inlog(f"[QUAY SỐ] lên cấp {self._capdoquaysotruoc} -> {capdo}: quay vòng số")
+            self._capdoquaysotruoc = capdo
+        if not self._lenhquaysochos or time.time() - self._thoidiemlenhquayso < THOIGIANGIUALENHQUAYSO:
+            return
+        self._thoidiemlenhquayso = time.time()
+        if moitruong.action_thucthicaulenh(self._lenhquaysochos[0]):
+            self._lenhquaysochos.pop(0)
 
     def _tudongtangcap(self):
         # Tự tăng cấp tới _captudongtangcaptoida: kinh nghiệm hiện có >= kinh nghiệm cần thì gửi "gift upgrade" (nút Thăng Cấp ở bảng Nhân
@@ -861,9 +878,6 @@ class TacTuHoatDong:
             self.moitruong.action_ngatdichuyen()
             # Chờ chuyển bản đồ xong mới xét tiếp (trước đây sleep 5s chặn cả loop phụ)
             self._thoidiemchodaotangbaodo = time.time() + 5.
-
-    def action_tudongbatautoingame(self):
-        self.moitruong.set_is_batautoingame(False)
 
     def _xoatrangthaisaukhichet(self):
         self._yeucaunhatvatpham = None

@@ -29,6 +29,14 @@ from hangso_xq import VIECHANG_MAP, VIECDOI_MAP, VIECCOVONGs, VIECRIENG_MAP
 from hangso_xq import CHUTIEMTAPHOA, CHUTUULAU, TENMONPHAI, PHAMCHATVATPHAM_MAP, CAPTUDONGTANGCAPTOIDA, PHANTRAMVESUADO, DANHHIEULAMMOI_KHONG, DANHHIEULAMMOI_AN
 from dieuphoi_xq import taicauhinhdieuphoi, luucauhinhdieuphoi, chuanhoacauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
 
+# Thanh taskbar gom cửa sổ theo AppUserModelID của tiến trình: chạy bằng python.exe thì mặc định là của Python nên hiện icon Python.
+# Đặt ID riêng (trước khi cửa sổ hiện) để taskbar lấy icon của cửa sổ bot
+try:
+    import ctypes
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Foxia.BangDieuKhien")
+except (AttributeError, OSError):
+    pass
+
 # Tạm ẩn các tùy chọn chưa dùng/không còn khả dụng (CN mở rộng, Khai khoáng, Đào tàng bảo đồ, Chiến trường).
 # Đổi thành True để hiện lại (tab "Khác"). Phím tắt của chúng vẫn hoạt động.
 HIEN_TUYCHON_CHUADUNG = False
@@ -656,8 +664,10 @@ class GiaoDienHienThi:
         # Nút ghim / đổi sáng/tối và phím tắt của ô tích "Bật" trên danh sách nhân vật (pack trước để nằm bên phải hai dòng chữ)
         self.nut_chedo = ttk.Button(frame, text = self._chunutchedo(), style = "Nho.TButton", command = self._doichedo)
         self.nut_chedo.pack(side = tk.RIGHT, anchor = tk.N, padx = (8, 0))
+        self._gantooltip(self.nut_chedo, "Đổi giao diện sáng / tối (nhớ cho lần mở sau)")
         self.nut_ghim = ttk.Button(frame, text = self._chunutghim(), style = "Nho.TButton", command = self._doighim)
         self.nut_ghim.pack(side = tk.RIGHT, anchor = tk.N, padx = (8, 0))
+        self._gantooltip(self.nut_ghim, "Ghim: cửa sổ Foxia (cả cửa sổ thiết lập việc) luôn nổi trên các cửa sổ khác. Bấm lại để bỏ ghim")
         ttk.Label(frame, text = "Bật/tắt Foxia: Ctrl+W", style = "Phim.TLabel").pack(side = tk.RIGHT, anchor = tk.N, pady = (2, 0))
         self.lbl_dangdieukhien = ttk.Label(frame, text = "Chưa có nhân vật", style = "Tieude.TLabel")
         self.lbl_dangdieukhien.pack(anchor = tk.W)
@@ -675,7 +685,8 @@ class GiaoDienHienThi:
             if hwnd:
                 self.command_dict[hwnd] = "tieptuchoatdong"
 
-        ttk.Button(self.frame_tamngung, text = "Bật lại", style = "Chinh.TButton", command = on_tieptuchoatdong).pack(side = tk.RIGHT, padx = 6, pady = 4)
+        self._gantooltip(ttk.Button(self.frame_tamngung, text = "Bật lại", style = "Chinh.TButton", command = on_tieptuchoatdong),
+                         "Bỏ tạm ngưng, cho nhân vật đang chọn hoạt động lại ngay").pack(side = tk.RIGHT, padx = 6, pady = 4)
 
     def _px(self, sopixel):
         return int(sopixel * self._heso)
@@ -734,6 +745,11 @@ class GiaoDienHienThi:
         # Nút "ⓘ Hướng dẫn" nhỏ cạnh các nút điều khiển: rê chuột vào mới hiện mô tả dài (tooltip), giao diện đỡ rối
         nut = tk.Label(parent, text = chu, fg = MAUCHU_XANH, cursor = "question_arrow")
         nut.pack(side = tk.LEFT, padx = (12, 0))
+        return self._gantooltip(nut, noidung, is_bamhien = True)
+
+    def _gantooltip(self, nut, noidung, is_bamhien = False):
+        # Rê chuột vào widget 250ms thì hiện noidung bên dưới; is_bamhien: bấm để bật/tắt (nút ⓘ), không thì bấm là ẩn (nút lệnh).
+        # Trả lại widget để viết liền: self._gantooltip(ttk.Button(...), "...").pack(...)
         trangthai = {"cua_so": None, "hen": None}
 
         def hien():
@@ -768,9 +784,9 @@ class GiaoDienHienThi:
             if not trangthai["hen"] and not trangthai["cua_so"]:
                 trangthai["hen"] = nut.after(250, hien)
 
-        nut.bind("<Enter>", vao)
-        nut.bind("<Leave>", an)
-        nut.bind("<ButtonPress>", lambda e: an() if trangthai["cua_so"] else hien())
+        nut.bind("<Enter>", vao, add = "+")
+        nut.bind("<Leave>", an, add = "+")
+        nut.bind("<ButtonPress>", (lambda e: an() if trangthai["cua_so"] else hien()) if is_bamhien else an, add = "+")
         return nut
 
     def _bofocusokhibamrangoai(self, event):
@@ -1001,8 +1017,10 @@ class GiaoDienHienThi:
             tree.bind("<Delete>", lambda e, k = khoa: self._xoamuctieu(k))
             hangnut = ttk.Frame(o_)
             hangnut.pack(fill = tk.X, pady = (4, 0))
-            ttk.Button(hangnut, text = "Thêm", command = lambda k = khoa: self._themmuctieu(k)).pack(side = tk.LEFT, padx = (0, 4))
-            ttk.Button(hangnut, text = "Xoá", command = lambda k = khoa: self._xoamuctieu(k)).pack(side = tk.LEFT)
+            self._gantooltip(ttk.Button(hangnut, text = "Thêm", command = lambda k = khoa: self._themmuctieu(k)),
+                             "Thêm tên vào danh sách này (mỗi dòng 1 tên), áp dụng cho nhân vật đang chọn").pack(side = tk.LEFT, padx = (0, 4))
+            self._gantooltip(ttk.Button(hangnut, text = "Xoá", command = lambda k = khoa: self._xoamuctieu(k)),
+                             "Xoá các tên đang chọn khỏi danh sách này (phím Delete)").pack(side = tk.LEFT)
             ttk.Label(o_, text = phimtat, style = "Phim.TLabel").pack(anchor = tk.W, pady = (4, 0))
             self.tree_muctieus[khoa] = tree
 
@@ -1010,7 +1028,8 @@ class GiaoDienHienThi:
         hang.grid(row = 1, column = 0, columnspan = 2, sticky = tk.EW, pady = (8, 0))
         self.lbl_trangthaimuctieu = tk.Label(hang, text = "", fg = MAUCHU_PHU, anchor = tk.W)
         self.lbl_trangthaimuctieu.pack(side = tk.LEFT, fill = tk.X, expand = True)
-        ttk.Button(hang, text = "Áp dụng 2 danh sách này cho tất cả nhân vật", command = lambda: self._guidanhsachmuctieu(is_tatca = True)).pack(side = tk.RIGHT)
+        self._gantooltip(ttk.Button(hang, text = "Áp dụng 2 danh sách này cho tất cả nhân vật", command = lambda: self._guidanhsachmuctieu(is_tatca = True)),
+                         "Chép 2 danh sách Tấn công / Bỏ qua đang hiện sang mọi nhân vật đang chạy Foxia (thay danh sách cũ của họ)").pack(side = tk.RIGHT)
         # (hwnd, {"tancong": [...], "boqua": [...]}) đang hiện
         self._muctieudanghien = (None, {"tancong": [], "boqua": []})
 
@@ -1030,8 +1049,10 @@ class GiaoDienHienThi:
         self.tree_muctieuboqua.bind("<Delete>", lambda e: self._xoamuctieuboqua())
         hangnut = ttk.Frame(nhom)
         hangnut.grid(row = 1, column = 0, columnspan = 2, sticky = tk.W, pady = (4, 0))
-        ttk.Button(hangnut, text = "Xoá", command = self._xoamuctieuboqua).pack(side = tk.LEFT, padx = (0, 4))
-        ttk.Button(hangnut, text = "Xoá hết", command = lambda: self._xoamuctieuboqua(is_tatca = True)).pack(side = tk.LEFT)
+        self._gantooltip(ttk.Button(hangnut, text = "Xoá", command = self._xoamuctieuboqua),
+                         "Thôi bỏ qua các mục tiêu đang chọn: Foxia đánh lại ngay (phím Delete)").pack(side = tk.LEFT, padx = (0, 4))
+        self._gantooltip(ttk.Button(hangnut, text = "Xoá hết", command = lambda: self._xoamuctieuboqua(is_tatca = True)),
+                         "Thôi bỏ qua mọi mục tiêu trong bảng này").pack(side = tk.LEFT)
         ttk.Label(hangnut, text = "Xoá = Foxia thôi bỏ qua, đánh lại ngay", style = "Phu.TLabel").pack(side = tk.LEFT, padx = (8, 0))
 
     def _hiendanhsachmuctieu(self, hwnd, danhsachs):
@@ -1181,8 +1202,9 @@ class GiaoDienHienThi:
             if hwnd and idbando is not None:
                 self.command_dict[hwnd] = f"ditoibando:{idbando}"
 
-        ttk.Button(nhom, text = "Đi", width = 5, command = lambda: on_ditoibando(self._idbandotheohienthi.get(self.str_bandocandi.get()))).grid(row = 0, column = 1, padx = (4, 0))
-        ttk.Button(nhom, text = "Dừng", width = 6, command = lambda: on_ditoibando(0)).grid(row = 0, column = 2, padx = (4, 0))
+        self._gantooltip(ttk.Button(nhom, text = "Đi", width = 5, command = lambda: on_ditoibando(self._idbandotheohienthi.get(self.str_bandocandi.get()))),
+                         "Nhân vật đang chọn tự đi tới bản đồ đã chọn (tính cả phù)").grid(row = 0, column = 1, padx = (4, 0))
+        self._gantooltip(ttk.Button(nhom, text = "Dừng", width = 6, command = lambda: on_ditoibando(0)), "Dừng đi tới bản đồ").grid(row = 0, column = 2, padx = (4, 0))
         self.lbl_buocdichuyen = tk.Label(nhom, text = "Bước tiếp theo: -", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = 320)
         self.lbl_buocdichuyen.grid(row = 1, column = 0, columnspan = 3, sticky = tk.W, pady = (4, 0))
 
@@ -1238,9 +1260,12 @@ class GiaoDienHienThi:
                 lenh = "bosung_lotrinhmau" if is_bosung else "nap_lotrinhmau"
                 self.command_dict[hwnd] = f"{lenh}:{idbando}|{tenmau}|{1 if self.var_nguocchieu.get() else 0}"
 
-        ttk.Button(hangnut, text = "Tự chọn", command = on_tuchon_lotrinhmau).pack(side = tk.RIGHT)
-        ttk.Button(hangnut, text = "Bổ sung", command = lambda: on_nap_lotrinhmau(True)).pack(side = tk.RIGHT, padx = (0, 4))
-        ttk.Button(hangnut, text = "Nạp mẫu", command = on_nap_lotrinhmau).pack(side = tk.RIGHT, padx = (0, 4))
+        self._gantooltip(ttk.Button(hangnut, text = "Tự chọn", command = on_tuchon_lotrinhmau),
+                         "Foxia tự chọn một mẫu chưa nhân vật nào dùng rồi nạp (khỏi đứng chung bãi)").pack(side = tk.RIGHT)
+        self._gantooltip(ttk.Button(hangnut, text = "Bổ sung", command = lambda: on_nap_lotrinhmau(True)),
+                         "Nối điểm của mẫu đang chọn vào cuối lộ trình đang có (bỏ điểm trùng)").pack(side = tk.RIGHT, padx = (0, 4))
+        self._gantooltip(ttk.Button(hangnut, text = "Nạp mẫu", command = on_nap_lotrinhmau),
+                         "Thay lộ trình đang có bằng mẫu đang chọn (nhấp đúp mẫu cũng được)").pack(side = tk.RIGHT, padx = (0, 4))
 
         hangluu = ttk.Frame(nhom)
         hangluu.grid(row = 3, column = 0, columnspan = 2, sticky = tk.EW, pady = (6, 2))
@@ -1254,7 +1279,8 @@ class GiaoDienHienThi:
                 self.command_dict[hwnd] = f"luu_lotrinhmau:{tenmau}"
                 self.str_tenmaumoi.set("")
 
-        ttk.Button(hangluu, text = "Lưu", width = 6, command = on_luu_lotrinhmau).pack(side = tk.RIGHT)
+        self._gantooltip(ttk.Button(hangluu, text = "Lưu", width = 6, command = on_luu_lotrinhmau),
+                         "Lưu các điểm đánh hiện tại thành mẫu với tên gõ trong ô").pack(side = tk.RIGHT)
         ttk.Entry(hangluu, textvariable = self.str_tenmaumoi, width = 14).pack(side = tk.RIGHT, padx = 4)
 
         # Tự đề xuất: gom vị trí quái đã thấy trên bản đồ hiện tại thành vòng điểm đánh, lưu thành mẫu "Tự đề xuất"
@@ -1268,7 +1294,8 @@ class GiaoDienHienThi:
             if hwnd:
                 self.command_dict[hwnd] = "dexuat_lotrinhmau"
 
-        ttk.Button(hangdexuat, text = "Tự đề xuất", command = on_dexuat_lotrinhmau).pack(side = tk.RIGHT)
+        self._gantooltip(ttk.Button(hangdexuat, text = "Tự đề xuất", command = on_dexuat_lotrinhmau),
+                         "Gom vị trí quái đã thấy trên bản đồ hiện tại thành vòng điểm đánh, lưu thành mẫu \"Tự đề xuất\"").pack(side = tk.RIGHT)
         ttk.Label(nhom, text = "Nhấp đúp một mẫu để nạp. Bản đồ đang đứng hiện chữ xanh ở đầu bảng.", style = "Phu.TLabel").grid(
             row = 5, column = 0, columnspan = 2, sticky = tk.W, pady = (4, 0))
 
@@ -1308,8 +1335,9 @@ class GiaoDienHienThi:
             if hwnd:
                 self.command_dict[hwnd] = "botoanbo_diemdanhxungquanh"
 
-        ttk.Button(hangnhap, text = "Xoá hết", command = on_clear_diemdanh).pack(side = tk.RIGHT)
-        ttk.Button(hangnhap, text = "Thêm", width = 6, command = on_add_diemdanh).pack(side = tk.RIGHT, padx = 4)
+        self._gantooltip(ttk.Button(hangnhap, text = "Xoá hết", command = on_clear_diemdanh), "Xoá mọi điểm đánh của nhân vật (Ctrl+Alt+B)").pack(side = tk.RIGHT)
+        self._gantooltip(ttk.Button(hangnhap, text = "Thêm", width = 6, command = on_add_diemdanh),
+                         "Thêm điểm gõ trong ô (x, y, bản đồ) hoặc cả danh sách dán vào").pack(side = tk.RIGHT, padx = 4)
         entry_diemdanh = ttk.Entry(hangnhap, textvariable = self.str_nhapdiemdanh)
         entry_diemdanh.pack(side = tk.LEFT, fill = tk.X, expand = True)
         entry_diemdanh.bind("<Return>", lambda e: on_add_diemdanh())
@@ -1407,7 +1435,8 @@ class GiaoDienHienThi:
             if hwnd:
                 self.command_dict[hwnd] = "ghi_bodotrieuhoi"
 
-        ttk.Button(hangbodo, text = "Ghi bộ đồ đang mặc", command = on_ghibodotrieuhoi).pack(side = tk.LEFT)
+        self._gantooltip(ttk.Button(hangbodo, text = "Ghi bộ đồ đang mặc", command = on_ghibodotrieuhoi),
+                         "Mặc bộ đồ muốn dùng khi triệu hồi rồi bấm: Foxia ghi lại, lúc triệu hồi tự đeo bộ này, xong mặc lại đồ cũ").pack(side = tk.LEFT)
         self.lbl_bodotrieuhoi = tk.Label(hangbodo, text = "", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(300))
         self.lbl_bodotrieuhoi.pack(side = tk.LEFT, fill = tk.X, expand = True, padx = (6, 0))
 
@@ -1420,6 +1449,8 @@ class GiaoDienHienThi:
         hangmotlan.grid(row = 1, column = 0, sticky = tk.EW, pady = (2, 6))
         self.btn_todoimotlan = ttk.Button(hangmotlan, text = "👥 Tổ đội 1 lần", command = self._todoimotlan)
         self.btn_todoimotlan.pack(side = tk.LEFT)
+        self._gantooltip(self.btn_todoimotlan, "Nhân vật đang chọn giữ nguyên nhóm hiện tại, mời đồng đội cùng nhóm tổ đội đang online vào "
+                                               "rồi thôi (không cần bật Tổ đội tự động)")
         ttk.Label(hangmotlan, text = "Ctrl+Alt+T", style = "Phim.TLabel").pack(side = tk.LEFT, padx = (6, 0))
         self.lbl_todoimotlan = tk.Label(hangmotlan, text = "", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(420))
         self.lbl_todoimotlan.pack(side = tk.LEFT, fill = tk.X, expand = True, padx = (8, 0))
@@ -1435,9 +1466,12 @@ class GiaoDienHienThi:
         self.tree_todoi.bind("<Double-1>", lambda e: self._suanhomtodoi(is_moi = False))
         hangnut = ttk.Frame(nhom)
         hangnut.grid(row = 3, column = 0, sticky = tk.W, pady = (4, 0))
-        for chu, lenh in (("Thêm nhóm", lambda: self._suanhomtodoi(is_moi = True)), ("Sửa", lambda: self._suanhomtodoi(is_moi = False)),
-                          ("Xoá", self._xoanhomtodoi), ("↑ Lên", lambda: self._doichonhomtodoi(-1)), ("↓ Xuống", lambda: self._doichonhomtodoi(1))):
-            ttk.Button(hangnut, text = chu, command = lenh).pack(side = tk.LEFT, padx = (0, 4))
+        for chu, lenh, goiy in (("Thêm nhóm", lambda: self._suanhomtodoi(is_moi = True), "Thêm nhóm tổ đội mới"),
+                                ("Sửa", lambda: self._suanhomtodoi(is_moi = False), "Sửa nhóm đang chọn (nhấp đúp cũng được)"),
+                                ("Xoá", self._xoanhomtodoi, "Xoá nhóm đang chọn"),
+                                ("↑ Lên", lambda: self._doichonhomtodoi(-1), "Đưa nhóm đang chọn lên trên"),
+                                ("↓ Xuống", lambda: self._doichonhomtodoi(1), "Đưa nhóm đang chọn xuống dưới")):
+            self._gantooltip(ttk.Button(hangnut, text = chu, command = lenh), goiy).pack(side = tk.LEFT, padx = (0, 4))
         self.lbl_idnhanvatdangchon = tk.Label(nhom, text = "", fg = MAUCHU_XANH, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(560))
         self.lbl_idnhanvatdangchon.grid(row = 4, column = 0, sticky = tk.W, pady = (6, 0))
         self._taohuongdan(hangnut, "Người đứng trước trong nhóm được ưu tiên làm trưởng nhóm. Nhân vật trong danh sách cũng được coi là đồng đội "
@@ -1609,8 +1643,9 @@ class GiaoDienHienThi:
                 thanhviens.pop(sel[0])
                 vechon(min(sel[0], len(thanhviens) - 1))
 
-        for chu, lenh in (("↑ Lên", lambda: dichuyen(-1)), ("↓ Xuống", lambda: dichuyen(1)), ("Bỏ", bo)):
-            ttk.Button(cotnut, text = chu, width = 8, command = lenh).pack(pady = (0, 4))
+        for chu, lenh, goiy in (("↑ Lên", lambda: dichuyen(-1), "Đưa nhân vật đang chọn lên trước (ưu tiên hơn)"),
+                                ("↓ Xuống", lambda: dichuyen(1), "Đưa nhân vật đang chọn xuống sau"), ("Bỏ", bo, "Bỏ nhân vật đang chọn khỏi danh sách")):
+            self._gantooltip(ttk.Button(cotnut, text = chu, width = 8, command = lenh), goiy).pack(pady = (0, 4))
 
         ttk.Label(khung, text = "Thêm nhân vật", font = (FONTCHU, COCHU, "bold")).grid(row = 3, column = 0, sticky = tk.W, pady = (10, 0))
         ttk.Label(khung, text = "chọn trong danh sách hoặc gõ ID", style = "Phu.TLabel").grid(row = 4, column = 0, sticky = tk.W)
@@ -1632,7 +1667,7 @@ class GiaoDienHienThi:
             str_them.set("")
             vechon(thanhviens.index(id_))
 
-        ttk.Button(hangthem, text = "Thêm", command = them).pack(side = tk.LEFT, padx = (6, 0))
+        self._gantooltip(ttk.Button(hangthem, text = "Thêm", command = them), "Thêm nhân vật chọn / ID gõ ở ô bên cạnh vào cuối danh sách").pack(side = tk.LEFT, padx = (6, 0))
         ketqua = {}
 
         def on_luu():
@@ -1677,7 +1712,7 @@ class GiaoDienHienThi:
             self._socanhbaomoi = 0
             self._capnhattieudecanhbao()
 
-        ttk.Button(nhom, text = "Xoá danh sách", command = on_xoacanhbao).grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
+        self._gantooltip(ttk.Button(nhom, text = "Xoá danh sách", command = on_xoacanhbao), "Xoá các cảnh báo đang hiện trong bảng (chỉ xoá trên giao diện)").grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
         # Khoá (ID người chơi, thời điểm, nội dung) đã hiện, để mỗi lượt chỉ thêm cảnh báo mới; số cảnh báo chưa xem hiện trên tên tab
         self._canhbaodahien = set()
         self._socanhbaomoi = 0
@@ -1728,7 +1763,8 @@ class GiaoDienHienThi:
         self.lbl_trangthaidangnhap = tk.Label(nhom, text = "", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(390))
         self.lbl_trangthaidangnhap.grid(row = 1, column = 0, columnspan = 2, sticky = tk.W, pady = (2, 4))
         # Chỉ hiện khi đang tạm ngưng / tạm hoãn (_capnhatdangnhap)
-        self.btn_tieptucdangnhap = ttk.Button(nhom, text = "Tiếp tục đăng nhập ngay", command = self._tieptucdangnhap)
+        self.btn_tieptucdangnhap = self._gantooltip(ttk.Button(nhom, text = "Tiếp tục đăng nhập ngay", command = self._tieptucdangnhap),
+                                                    "Bỏ thời gian tạm ngưng / tạm hoãn, tự đăng nhập lại ngay")
         ttk.Label(nhom, text = "Đang tạm ngưng (ẩn thân / người lạ) hoặc tạm hoãn (bị đá liên tục) thì không đăng nhập cho tới khi hết hạn, "
                                "bấm \"Tiếp tục đăng nhập ngay\" để bỏ chờ.",
                   style = "Phu.TLabel", justify = tk.LEFT, wraplength = self._px(390)).grid(row = 2, column = 0, columnspan = 2, sticky = tk.W)
@@ -1772,10 +1808,13 @@ class GiaoDienHienThi:
             taicauhinhdangnhap()
             os.startfile(duongdantaikhoan())
 
-        for chu, lenh in (("Thêm", lambda: self._suataikhoan(is_moi = True)), ("Sửa", lambda: self._suataikhoan(is_moi = False)),
-                          ("Xoá", self._xoataikhoan), ("↑ Lên", lambda: self._doichotaikhoan(-1)), ("↓ Xuống", lambda: self._doichotaikhoan(1)),
-                          ("Mở file", on_mofiletaikhoan)):
-            ttk.Button(hangnut, text = chu, command = lenh).pack(side = tk.LEFT, padx = (0, 4))
+        for chu, lenh, goiy in (("Thêm", lambda: self._suataikhoan(is_moi = True), "Thêm tài khoản (đang chọn nhân vật thì tự điền tên, ID)"),
+                                ("Sửa", lambda: self._suataikhoan(is_moi = False), "Sửa tài khoản đang chọn (nhấp đúp cũng được)"),
+                                ("Xoá", self._xoataikhoan, "Xoá tài khoản đang chọn"),
+                                ("↑ Lên", lambda: self._doichotaikhoan(-1), "Đăng nhập tài khoản đang chọn sớm hơn"),
+                                ("↓ Xuống", lambda: self._doichotaikhoan(1), "Đăng nhập tài khoản đang chọn muộn hơn"),
+                                ("Mở file", on_mofiletaikhoan, "Mở file tài khoản JSON để sửa tay")):
+            self._gantooltip(ttk.Button(hangnut, text = chu, command = lenh), goiy).pack(side = tk.LEFT, padx = (0, 4))
 
         hangduongdan = ttk.Frame(nhom)
         hangduongdan.grid(row = 2, column = 0, sticky = tk.EW, pady = (8, 0))
@@ -1790,7 +1829,7 @@ class GiaoDienHienThi:
                 cauhinh.setdefault("duongdangames", {})[tenmaynay()] = self.str_duongdangame.get().strip()
                 luucauhinhdangnhap(cauhinh)
 
-        ttk.Button(hangduongdan, text = "Lưu", command = on_luuduongdan).pack(side = tk.LEFT)
+        self._gantooltip(ttk.Button(hangduongdan, text = "Lưu", command = on_luuduongdan), "Lưu đường dẫn game cho riêng máy này").pack(side = tk.LEFT)
         self._taohuongdan(hangnut, f"{duongdantaikhoan()} · một file chung mọi máy (đồng bộ qua git), mỗi tài khoản chỉ bật được cho một máy "
                                    "nên hai máy không giành nhau. Thêm khi đang chọn nhân vật trong game thì tên và ID tự điền sẵn, bật luôn cho máy này.")
         self._taikhoandanghien = None
@@ -1994,6 +2033,7 @@ class GiaoDienHienThi:
         hangsapxep.grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W, pady = (4, 0))
         self.btn_sapxephanhtrang = ttk.Button(hangsapxep, text = "Sắp xếp hành trang", command = on_sapxephanhtrang)
         self.btn_sapxephanhtrang.pack(side = tk.LEFT)
+        self._gantooltip(self.btn_sapxephanhtrang, "Nhân vật đang chọn gộp chồng, xếp đồ theo tên trong từng túi. Đang xếp thì bấm lại để dừng")
         ttk.Label(hangsapxep, text = "Gộp chồng, xếp theo tên, dồn lên đầu từng túi", style = "Phu.TLabel").pack(side = tk.LEFT, padx = (8, 0))
 
         nhom = self._taonhom(tab, "Luật túi đồ (xét từ trên xuống, luật đầu tiên khớp quyết định)")
@@ -2021,11 +2061,12 @@ class GiaoDienHienThi:
             self.tree_luattuido.tag_configure(tag, foreground = self._mau[khoa])
         hangnut = ttk.Frame(nhom)
         hangnut.grid(row = 2, column = 0, sticky = tk.W, pady = (4, 0))
-        for chu, lenh in (("Thêm", lambda: self._sualuattuido(is_moi = True)), ("Sửa", lambda: self._sualuattuido(is_moi = False)),
-                          ("Xoá", lambda: self._xoamuctuido("luat", self.tree_luattuido)),
-                          ("↑ Lên", lambda: self._doichomuctuido("luat", self.tree_luattuido, -1)),
-                          ("↓ Xuống", lambda: self._doichomuctuido("luat", self.tree_luattuido, 1))):
-            ttk.Button(hangnut, text = chu, command = lenh).pack(side = tk.LEFT, padx = (0, 4))
+        for chu, lenh, goiy in (("Thêm", lambda: self._sualuattuido(is_moi = True), "Thêm luật mới"),
+                                ("Sửa", lambda: self._sualuattuido(is_moi = False), "Sửa luật đang chọn (nhấp đúp cũng được)"),
+                                ("Xoá", lambda: self._xoamuctuido("luat", self.tree_luattuido), "Xoá luật đang chọn"),
+                                ("↑ Lên", lambda: self._doichomuctuido("luat", self.tree_luattuido, -1), "Đưa luật lên: được xét trước"),
+                                ("↓ Xuống", lambda: self._doichomuctuido("luat", self.tree_luattuido, 1), "Đưa luật xuống: được xét sau")):
+            self._gantooltip(ttk.Button(hangnut, text = chu, command = lenh), goiy).pack(side = tk.LEFT, padx = (0, 4))
         self._taohuongdan(hangnut, "Về bán rác: món KHÔNG khớp luật nào thì BÁN, muốn giữ thì phải có luật Giữ. Vứt: vứt ngay khi có trong túi. "
                                    "📣: nhặt được món khớp bất kỳ luật 📣 nào thì báo Telegram kèm ảnh (xét riêng, luật đứng trên không chặn). "
                                    "Món trong bảng Cất kho bên dưới thì không bán, không vứt. Nhấp đúp một dòng để sửa.")
@@ -2045,11 +2086,12 @@ class GiaoDienHienThi:
         self.tree_nhat.bind("<Double-1>", lambda e: self._suanhat(is_moi = False))
         hangnut = ttk.Frame(nhom)
         hangnut.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
-        for chu, lenh in (("Thêm", lambda: self._suanhat(is_moi = True)), ("Sửa", lambda: self._suanhat(is_moi = False)),
-                          ("Xoá", lambda: self._xoamuctuido("nhat", self.tree_nhat)),
-                          ("↑ Lên", lambda: self._doichomuctuido("nhat", self.tree_nhat, -1)),
-                          ("↓ Xuống", lambda: self._doichomuctuido("nhat", self.tree_nhat, 1))):
-            ttk.Button(hangnut, text = chu, command = lenh).pack(side = tk.LEFT, padx = (0, 4))
+        for chu, lenh, goiy in (("Thêm", lambda: self._suanhat(is_moi = True), "Thêm luật nhặt mới"),
+                                ("Sửa", lambda: self._suanhat(is_moi = False), "Sửa luật nhặt đang chọn (nhấp đúp cũng được)"),
+                                ("Xoá", lambda: self._xoamuctuido("nhat", self.tree_nhat), "Xoá luật nhặt đang chọn"),
+                                ("↑ Lên", lambda: self._doichomuctuido("nhat", self.tree_nhat, -1), "Đưa luật lên: được xét trước"),
+                                ("↓ Xuống", lambda: self._doichomuctuido("nhat", self.tree_nhat, 1), "Đưa luật xuống: được xét sau")):
+            self._gantooltip(ttk.Button(hangnut, text = chu, command = lenh), goiy).pack(side = tk.LEFT, padx = (0, 4))
         self._taohuongdan(hangnut, "Nhặt ưu tiên: nhặt trước cả tấn công / theo nhóm, đang theo sau người khác vẫn nhặt (Nhặt thường thì khi theo sau "
                                    "không nhặt). Không nhặt: bỏ qua cả đồ sư môn và ô Nhặt đồ màu. \"Về bán rác\" = luật chỉ xét khi bật Tự động về bán "
                                    "rác. Không khớp luật nào thì còn xét đồ Thu thập sư môn và ô Nhặt đồ màu bên dưới. Tên chứa giữ "
@@ -2083,14 +2125,16 @@ class GiaoDienHienThi:
         self.tree_catkho.bind("<Double-1>", lambda e: self._suacatkho(is_moi = False))
         hangnut = ttk.Frame(nhom)
         hangnut.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
-        for chu, lenh in (("Thêm", lambda: self._suacatkho(is_moi = True)), ("Sửa", lambda: self._suacatkho(is_moi = False)),
-                          ("Xoá", lambda: self._xoamuctuido("catkho", self.tree_catkho))):
-            ttk.Button(hangnut, text = chu, command = lenh).pack(side = tk.LEFT, padx = (0, 4))
+        for chu, lenh, goiy in (("Thêm", lambda: self._suacatkho(is_moi = True), "Thêm món cần cất kho"),
+                                ("Sửa", lambda: self._suacatkho(is_moi = False), "Sửa dòng đang chọn (nhấp đúp cũng được)"),
+                                ("Xoá", lambda: self._xoamuctuido("catkho", self.tree_catkho), "Xoá dòng đang chọn")):
+            self._gantooltip(ttk.Button(hangnut, text = chu, command = lenh), goiy).pack(side = tk.LEFT, padx = (0, 4))
         self.var_catkhosauban = tk.BooleanVar(value = True)
         ttk.Checkbutton(hangnut, text = "Tự cất sau mỗi lần về bán rác", variable = self.var_catkhosauban,
                         command = self._doicatkhosauban).pack(side = tk.LEFT, padx = (8, 4))
         # Cất kho ngay cho nhân vật đang chọn; trạng thái lấy từ shared_data "_trangthaicatkho" (_capnhatgiaodo vẽ lại)
-        ttk.Button(hangnut, text = "🗄 Cất kho ngay", command = self._catkhongay).pack(side = tk.LEFT, padx = (8, 4))
+        self._gantooltip(ttk.Button(hangnut, text = "🗄 Cất kho ngay", command = self._catkhongay),
+                         "Nhân vật đang chọn về Quản Khố cất ngay các món khớp bảng này. Đang cất thì bấm lại để dừng").pack(side = tk.LEFT, padx = (8, 4))
         self.lbl_catkho = tk.Label(nhom, text = "", fg = MAUCHU_PHU, anchor = tk.W)
         self.lbl_catkho.grid(row = 2, column = 0, sticky = tk.W)
         self._taohuongdan(hangnut, "Món khớp luật bật nào trong bảng này thì không bán, không vứt, và được cất (thứ tự không quan trọng, luật Giữ ở "
@@ -2117,9 +2161,10 @@ class GiaoDienHienThi:
         self.tree_muabu.bind("<Double-1>", lambda e: self._suamuabu(is_moi = False))
         hangnut = ttk.Frame(nhom)
         hangnut.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
-        for chu, lenh in (("Thêm", lambda: self._suamuabu(is_moi = True)), ("Sửa", lambda: self._suamuabu(is_moi = False)),
-                          ("Xoá", lambda: self._xoamuctuido("muabu", self.tree_muabu))):
-            ttk.Button(hangnut, text = chu, command = lenh).pack(side = tk.LEFT, padx = (0, 4))
+        for chu, lenh, goiy in (("Thêm", lambda: self._suamuabu(is_moi = True), "Thêm món cần mua bù"),
+                                ("Sửa", lambda: self._suamuabu(is_moi = False), "Sửa dòng đang chọn (nhấp đúp cũng được)"),
+                                ("Xoá", lambda: self._xoamuctuido("muabu", self.tree_muabu), "Xoá dòng đang chọn")):
+            self._gantooltip(ttk.Button(hangnut, text = chu, command = lenh), goiy).pack(side = tk.LEFT, padx = (0, 4))
         self._taohuongdan(hangnut, "Ô và giá Foxia tự tra theo tên món trong cửa hàng (đứng gần NPC thì mở cửa hàng đọc 1 lần rồi đóng, nhớ cho các "
                                    "lần sau). Tên trong cửa hàng khác tên trong túi (vd Thức Ăn Bảo Thú Cao Cấp / Cao Cấp Bảo Thú Thực Phẩm) thì "
                                    "ghi thêm \"Tên ở cửa hàng\". NPC tìm theo tên hoặc danh hiệu (cửa hàng các nước). Mua lần lượt từ trên xuống "
@@ -2144,10 +2189,13 @@ class GiaoDienHienThi:
         self.tree_giaodo.grid(row = 0, column = 0, sticky = tk.EW)
         hangnut = ttk.Frame(nhom)
         hangnut.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
-        ttk.Button(hangnut, text = "Thêm", command = self._themgiaodo).pack(side = tk.LEFT, padx = (0, 4))
-        ttk.Button(hangnut, text = "Huỷ / bỏ dòng", command = self._huygiaodo).pack(side = tk.LEFT)
-        ttk.Button(hangnut, text = "🚚 Về giao ngay", command = self._vegiaongay).pack(side = tk.LEFT, padx = (8, 4))
-        ttk.Button(hangnut, text = "Cả máy về giao", command = lambda: self._vegiaongay(is_tatca = True)).pack(side = tk.LEFT)
+        self._gantooltip(ttk.Button(hangnut, text = "Thêm", command = self._themgiaodo), "Thêm yêu cầu giao tiền / đồ").pack(side = tk.LEFT, padx = (0, 4))
+        self._gantooltip(ttk.Button(hangnut, text = "Huỷ / bỏ dòng", command = self._huygiaodo),
+                         "Huỷ yêu cầu giao đang chọn (dòng đã xong / lỗi thì bỏ khỏi bảng)").pack(side = tk.LEFT)
+        self._gantooltip(ttk.Button(hangnut, text = "🚚 Về giao ngay", command = self._vegiaongay),
+                         "Người giao của dòng đang chọn (không chọn dòng = nhân vật đang chọn) về Tiệm Tạp Hóa giao ngay").pack(side = tk.LEFT, padx = (8, 4))
+        self._gantooltip(ttk.Button(hangnut, text = "Cả máy về giao", command = lambda: self._vegiaongay(is_tatca = True)),
+                         "Mọi nhân vật trên máy còn yêu cầu đang chờ đều về giao ngay").pack(side = tk.LEFT)
         self._taohuongdan(hangnut, "Yêu cầu mới được để dành, Foxia vẫn đánh tiếp. Giao khi: về bán rác mà người nhận đang ở Tân Thủ Thôn (không thấy "
                                    "thì bỏ qua, không chờ, để lần sau), hoặc bấm Về giao ngay (nhân vật của dòng đang chọn) / Cả máy về giao: về Tiệm Tạp Hóa chờ người "
                                    "nhận tối đa 10 phút. Người giao phải đang chạy Foxia trên máy này; \"Tất cả nhân vật trên máy\" thì mỗi nhân vật "
@@ -2174,11 +2222,15 @@ class GiaoDienHienThi:
         hangnut.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
         self.btn_doi = ttk.Button(hangnut, text = "▶ Chạy đội", command = self._battatdoi)
         self.btn_doi.pack(side = tk.LEFT, padx = (0, 4))
-        ttk.Button(hangnut, text = "Giải tán", command = self._giaitandoi).pack(side = tk.LEFT, padx = (0, 8))
-        for chu, rong, lenh in (("Thêm đội", 0, lambda: self._suadoi(is_moi = True)), ("Sửa", 0, lambda: self._suadoi(is_moi = False)),
-                                ("Đổi tên", 0, self._doitendoi), ("Xoá", 0, self._xoadoi), ("↑", 3, lambda: self._doichodoi(-1)),
-                                ("↓", 3, lambda: self._doichodoi(1))):
-            ttk.Button(hangnut, text = chu, width = rong or None, command = lenh).pack(side = tk.LEFT, padx = (0, 4))
+        self._gantooltip(self.btn_doi, "Đội đang chọn làm lần lượt các việc đã tích (bấm ở máy của trưởng đội). Đang chạy thì bấm để dừng đội")
+        self._gantooltip(ttk.Button(hangnut, text = "Giải tán", command = self._giaitandoi),
+                         "Dừng đội, tắt Tổ đội tự động ở mọi thành viên, cả nhóm rời nhóm trong game (có hỏi lại)").pack(side = tk.LEFT, padx = (0, 8))
+        for chu, rong, lenh, goiy in (("Thêm đội", 0, lambda: self._suadoi(is_moi = True), "Tạo đội mới, chọn thành viên (người đầu là trưởng đội)"),
+                                      ("Sửa", 0, lambda: self._suadoi(is_moi = False), "Sửa thành viên đội đang chọn (nhấp đúp cũng được)"),
+                                      ("Đổi tên", 0, self._doitendoi, "Đổi tên đội đang chọn"), ("Xoá", 0, self._xoadoi, "Xoá đội đang chọn"),
+                                      ("↑", 3, lambda: self._doichodoi(-1), "Đưa đội đang chọn lên trên"),
+                                      ("↓", 3, lambda: self._doichodoi(1), "Đưa đội đang chọn xuống dưới")):
+            self._gantooltip(ttk.Button(hangnut, text = chu, width = rong or None, command = lenh), goiy).pack(side = tk.LEFT, padx = (0, 4))
 
         self.lbl_viecdoi = ttk.Label(nhom, text = "", font = (FONTCHU, COCHU, "bold"))
         self.lbl_viecdoi.grid(row = 2, column = 0, sticky = tk.W, pady = (8, 2))
@@ -2226,12 +2278,20 @@ class GiaoDienHienThi:
         self.tree_viecdoi.bind("<Double-1>", on_dup_viecdoi)
         hangnut = ttk.Frame(nhom)
         hangnut.grid(row = 4, column = 0, sticky = tk.W, pady = (4, 0))
-        for chu, rong, lenh in (("↑", 3, lambda: self._doichoviecdoi(-1)), ("↓", 3, lambda: self._doichoviecdoi(1)),
-                                ("Số vòng", 0, lambda: self._suavongdoi(self._layviecdoichon())), ("↺ Làm lại", 0, self._lamlaidoi),
-                                ("⚙ Thiết lập", 0, lambda: self._mopopupviec(self._layviecdoichon()))):
-            ttk.Button(hangnut, text = chu, width = rong or None, command = lenh).pack(side = tk.LEFT, padx = (0, 4))
+        for chu, rong, lenh, goiy in (("↑", 3, lambda: self._doichoviecdoi(-1), "Đưa việc đang chọn lên: đội làm trước"),
+                                      ("↓", 3, lambda: self._doichoviecdoi(1), "Đưa việc đang chọn xuống: đội làm sau"),
+                                      ("Số vòng", 0, lambda: self._suavongdoi(self._layviecdoichon()),
+                                       "Đặt số vòng đội đi việc đang chọn rồi sang việc kế (phó bản / Tập Kích; 0 = không giới hạn)"),
+                                      ("↺ Làm lại", 0, self._lamlaidoi,
+                                       "Xoá kết quả hôm nay (xong / lỗi / ngưng) để đội làm lại việc đang chọn; không chọn dòng = mọi việc. "
+                                       "Mỗi việc chỉ làm 1 lần mỗi ngày, muốn làm thêm hoặc sửa xong lỗi thì bấm nút này"),
+                                      ("⚙ Thiết lập", 0, lambda: self._mopopupviec(self._layviecdoichon()),
+                                       "Mở cửa sổ thiết lập + hướng dẫn riêng của việc đang chọn")):
+            self._gantooltip(ttk.Button(hangnut, text = chu, width = rong or None, command = lenh), goiy).pack(side = tk.LEFT, padx = (0, 4))
         self.btn_ngungviecdoi = ttk.Button(hangnut, text = "⏹ Ngưng việc này", command = self._ngungviecdoi)
         self.btn_ngungviecdoi.pack(side = tk.LEFT, padx = (4, 4))
+        self._gantooltip(self.btn_ngungviecdoi, "Ngưng việc đội đang làm (ghi \"ngưng\" hôm nay, không làm lại tới khi bấm Làm lại) "
+                                                "rồi sang việc kế; đội vẫn chạy")
         self._taohuongdan(hangnut, "Thêm đội: đặt tên, chọn thành viên theo thứ tự (người đầu là trưởng đội: làm trưởng nhóm, người give Phong "
                                    "Yêu Kính). Muốn đi một mình thì tạo đội 1 người. Tích việc cho đội, sắp thứ tự, đặt số vòng, chọn đội rồi bấm "
                                    "\"Chạy đội\" (trưởng đội phải chạy Foxia trên máy này; thành viên ở máy khác nối LAN cũng được). Đội làm lần lượt "
@@ -2346,12 +2406,19 @@ class GiaoDienHienThi:
         hangnut.grid(row = 3, column = 0, sticky = tk.W, pady = (4, 0))
         self.btn_hangviec = ttk.Button(hangnut, text = "▶ Chạy hàng việc", command = self._battathangviec)
         self.btn_hangviec.pack(side = tk.LEFT, padx = (0, 8))
-        for chu, rong, lenh in (("↑", 3, lambda: self._doichohangviec(-1)), ("↓", 3, lambda: self._doichohangviec(1)),
-                                ("↺ Làm lại", 0, self._lamlaihangviec)):
-            ttk.Button(hangnut, text = chu, width = rong or None, command = lenh).pack(side = tk.LEFT, padx = (0, 4))
+        self._gantooltip(self.btn_hangviec, "Làm lần lượt các việc đã tích mà hôm nay chưa làm, xong việc này tự sang việc kế. "
+                                            "Đang chạy thì bấm để dừng")
+        for chu, rong, lenh, goiy in (("↑", 3, lambda: self._doichohangviec(-1), "Đưa việc đang chọn lên: làm trước"),
+                                      ("↓", 3, lambda: self._doichohangviec(1), "Đưa việc đang chọn xuống: làm sau"),
+                                      ("↺ Làm lại", 0, self._lamlaihangviec,
+                                       "Xoá kết quả hôm nay (xong / lỗi) để hàng việc làm lại việc đang chọn; không chọn dòng = cả hàng. "
+                                       "Việc lỗi cũng tính là đã làm hôm nay, sửa xong bấm nút này để làm lại")):
+            self._gantooltip(ttk.Button(hangnut, text = chu, width = rong or None, command = lenh), goiy).pack(side = tk.LEFT, padx = (0, 4))
         self.btn_lamngayviec = ttk.Button(hangnut, text = "▶ Làm ngay", command = self._lamngayviechang)
         self.btn_lamngayviec.pack(side = tk.LEFT, padx = (4, 0))
-        ttk.Button(hangnut, text = "⚙ Thiết lập", command = lambda: self._mopopupviec(self._layviechangchon())).pack(side = tk.LEFT, padx = (4, 0))
+        self._gantooltip(self.btn_lamngayviec, "Làm riêng việc đang chọn ngay, không cần tích hay chạy hàng việc. Đang làm thì nút thành Dừng")
+        self._gantooltip(ttk.Button(hangnut, text = "⚙ Thiết lập", command = lambda: self._mopopupviec(self._layviechangchon())),
+                         "Mở cửa sổ thiết lập + hướng dẫn riêng của việc đang chọn (nhấp đúp dòng cũng được)").pack(side = tk.LEFT, padx = (4, 0))
         hangdan = ttk.Frame(nhom)
         hangdan.grid(row = 4, column = 0, sticky = tk.W, pady = (4, 0))
         self._taohuongdan(hangdan, "Tích cột \"Làm\" các nhiệm vụ muốn làm, sắp thứ tự bằng ↑ / ↓, bấm \"Chạy hàng việc\": Foxia làm việc tích "
@@ -2443,7 +2510,7 @@ class GiaoDienHienThi:
             self.ent_sumonnpcgiao.winfo_toplevel().focus_set()
 
         self.ent_sumonnpcgiao.bind("<Return>", on_luunpcgiao)
-        ttk.Button(hangnpc, text = "Lưu", width = 6, command = on_luunpcgiao).pack(side = tk.LEFT)
+        self._gantooltip(ttk.Button(hangnpc, text = "Lưu", width = 6, command = on_luunpcgiao), "Lưu NPC giao nhiệm vụ sư môn (trống = NPC mặc định)").pack(side = tk.LEFT)
         self.lbl_sumonnpcmacdinh = ttk.Label(self._popupviecs["sumon"]["noidung"], text = "", style = "Phu.TLabel")
         self.lbl_sumonnpcmacdinh.grid(row = 1, column = 0, sticky = tk.W, pady = (2, 0))
         self._hwndsumonhienthi = None
@@ -2470,10 +2537,16 @@ class GiaoDienHienThi:
         hangnut.grid(row = 0, column = 0, sticky = tk.W)
         self.btn_keocap = ttk.Button(hangnut, text = "🐣 Bắt đầu kéo cấp", command = self._battatkeocap)
         self.btn_keocap.pack(side = tk.LEFT)
+        self._gantooltip(self.btn_keocap, "Nhân vật đang chọn làm acc chính, kéo các acc gà (cửa sổ khác dưới \"Kéo tới cấp\") lên cấp. "
+                                          "Đang kéo thì bấm để dừng cả nhóm")
         self.btn_keocapphu = ttk.Button(hangnut, text = "🤝 Làm acc phụ PYK", command = self._battatkeocapphu)
         self.btn_keocapphu.pack(side = tk.LEFT, padx = (8, 0))
+        self._gantooltip(self.btn_keocapphu, "Nhân vật đang chọn làm acc phụ: chỉ vào Phong Yêu Kính đánh quái cùng acc chính (tự tìm "
+                                             "qua LAN). Bấm lại để dừng")
         self.btn_keocapga = ttk.Button(hangnut, text = "🐥 Làm acc gà", command = self._battatkeocapga)
         self.btn_keocapga.pack(side = tk.LEFT, padx = (8, 0))
+        self._gantooltip(self.btn_keocapga, "Nhân vật đang chọn làm acc gà: làm tân thủ rồi tự tìm acc chính đang kéo cấp (cùng máy / LAN). "
+                                            "Bấm lại để dừng riêng nó")
         # Cấp kết thúc: mọi acc gà tới cấp này thì xong (đồ đệ xuất sư lúc đó); chỉ nhận lúc bấm bắt đầu, acc gà là cửa sổ dưới cấp này
         tk.Label(hangnut, text = "Kéo tới cấp:").pack(side = tk.LEFT, padx = (12, 0))
         self.var_keocapcapketthuc = tk.IntVar(value = 60)
@@ -2522,6 +2595,7 @@ class GiaoDienHienThi:
         self.ent_bandomatac.bind("<FocusOut>", on_luu_bandomatac)
         self.btn_matac = ttk.Button(hangnut, text = "🐎 Bắt đầu Mã Tặc", command = self._battatmatac)
         self.btn_matac.pack(side = tk.LEFT, padx = (8, 0))
+        self._gantooltip(self.btn_matac, "Nhân vật đang chọn đi Đoạt Bảo Mã Tặc ở bản đồ trong ô. Đang làm thì bấm để dừng")
         self.var_tubatmatac = tk.BooleanVar()
         # Vừa bấm: (hwnd, giá trị, thời điểm) để chờ bot nhận, update_ui không nạp lại giá trị cũ đè lên
         self._tubatmatacchoxacnhan = None
@@ -2566,6 +2640,7 @@ class GiaoDienHienThi:
             ttk.Checkbutton(hangnut, text = "Làm trong hàng việc", variable = popup["var_lam"], command = lambda: self._tichviechang(viec)).pack(side = tk.LEFT)
             popup["btn_lamngay"] = ttk.Button(hangnut, text = "▶ Làm ngay", command = lambda: self._lamngayviechang(viec))
             popup["btn_lamngay"].pack(side = tk.LEFT, padx = (12, 0))
+            self._gantooltip(popup["btn_lamngay"], "Làm riêng việc này ngay, không cần tích hay chạy hàng việc. Đang làm thì nút thành Dừng")
         elif viec in VIECDOI_MAP:
             # Việc đi chung: tích / số vòng theo đội đang chọn ở bảng Phó bản chung
             hangnut = ttk.Frame(khung)
@@ -2575,6 +2650,7 @@ class GiaoDienHienThi:
             if viec in VIECCOVONGs:
                 popup["btn_vong"] = ttk.Button(hangnut, text = "Số vòng", command = lambda: self._suavongdoi(viec))
                 popup["btn_vong"].pack(side = tk.LEFT, padx = (12, 0))
+                self._gantooltip(popup["btn_vong"], "Đặt số vòng đội đi việc này rồi sang việc kế (0 = không giới hạn)")
         if huongdan:
             tk.Label(khung, text = huongdan, fg = MAUCHU_PHU, justify = tk.LEFT, anchor = tk.W,
                      wraplength = self._px(560)).grid(row = 3, column = 0, sticky = tk.W, pady = (10, 0))

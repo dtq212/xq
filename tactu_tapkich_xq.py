@@ -26,6 +26,9 @@ LOINPCVAOTAPKICH = "muốn vào không"
 # rồi nói lại
 LOINPCGOITHANHVIEN = "gọi tất cả thành viên"
 GIANCACHCHOTHANHVIENTAPKICH = 5.
+# Con NPC đang bị đội khác đánh: "NPC đang cùng chiến đấu với người chơi" (chỉ có "Rời khỏi") -> bỏ qua con đó chừng này giây, tìm con khác
+LOINPCDANGCHIENDAU = "đang cùng chiến đấu"
+THOIGIANBOQUANPCTAPKICH = 5 * 60.
 # Đứng cách NPC tối đa chừng này ô mới "look"; look xong chờ menu tối đa THOIGIANCHOMENUTAPKICH giây rồi look lại
 KHOANGCACHNOICHUYENTAPKICH = 3.
 THOIGIANCHOMENUTAPKICH = 3.
@@ -212,6 +215,16 @@ class TacTuTapKich:
             if self._is_dugioihanvong("tapkich", s["sovong"]):
                 self._ketthuctapkich("✅ Đủ số vòng đặt ở Hàng việc")
                 return None
+        if self.get_is_thanhviendoiviec("tapkich"):
+            # Thành viên đội phó bản: không bao giờ tự dẫn đi vào (trưởng đội dis / nhóm tan mà mình thành trưởng nhóm / không có nhóm
+            # thì chờ trưởng đội mời lại, trước từng tự nói chuyện NPC liên tục)
+            s["chedo"] = "thanhvien"
+            idtruong = self._doiphobantv["idtruong"]
+            if moitruong.get_is_dangnamtrongnhom() and moitruong.get_idnguoichoitruongnhom() == idtruong:
+                s["trangthai"] = "thành viên đội: đi theo trưởng đội" + ("" if self._is_tudongtheosau else " (chưa bật Theo sau!)")
+            else:
+                s["trangthai"] = f"thành viên đội: chờ trưởng đội {self._tenidnguoichoi(idtruong)} lập nhóm (không tự vào)"
+            return None
         if moitruong.get_is_dangnamtrongnhom() and not moitruong.get_is_truongnhom():
             # Thành viên: Theo sau lo đi lại, menu vào / Lễ Bao tự chọn (_xulymenutapkich)
             s["chedo"] = "thanhvien"
@@ -228,6 +241,7 @@ class TacTuTapKich:
             buoc = self._lapbuocditoibando(bandophai, is_hoithanhphu = True)
             if buoc["loai"] in ("toinoi", "khongduong"):
                 s["trangthai"] = f"không có đường tới {laytenbando(bandophai)}: {buoc['mota']}"
+                self._baodungcho("Tập Kích", s["trangthai"])
                 return None
             return self._thuchienbuocditoibando(buoc, bandophai, None, f"[TẬP KÍCH] Tới {tenphai}")
         now = time.time()
@@ -248,7 +262,10 @@ class TacTuTapKich:
             s["trangthai"] = f"chờ thành viên tới gần {TENNPCTAPKICH} ({int(s['lucthulai'] - now)}s)"
             return None
         h = s["hoithoai"]
-        diachinpc, idnpc = self._timnpctapkich(h["id"] if h else 0)
+        boquas = s.setdefault("boqua", {})
+        for iddoituong in [i for i, het in boquas.items() if het <= now]:
+            del boquas[iddoituong]
+        diachinpc, idnpc = self._timnpctapkich(h["id"] if h else 0, boquas = boquas)
         if not diachinpc:
             s["hoithoai"] = None
             return self._ditheodiem(s, idbando, f"dò {laytenbando(idbando)} tìm {TENNPCTAPKICH}", is_timnpc = True)
@@ -258,6 +275,10 @@ class TacTuTapKich:
         if ketqua == "xong":
             s["lucchon"] = self._lucchonvaotapkich = time.time()
             self._logtk("Đã chọn \"Bớt nói nhảm\" -> \"Dùng 5 Ngân Bảo\", chờ được đưa vào phó bản")
+        elif ketqua == "dangchiendau":
+            s["boqua"][idnpc] = time.time() + THOIGIANBOQUANPCTAPKICH
+            self._logtk(f"{TENNPCTAPKICH} (id {idnpc:x}) đang chiến đấu với người chơi khác: bỏ qua {THOIGIANBOQUANPCTAPKICH / 60:.0f} phút, "
+                        f"tìm con khác")
         elif ketqua == "chothanhvien":
             s["lucthulai"] = time.time() + GIANCACHCHOTHANHVIENTAPKICH
             self._logtk(f"NPC bảo gọi đủ thành viên tới: chờ {GIANCACHCHOTHANHVIENTAPKICH:.0f}s rồi nói lại")
@@ -265,8 +286,9 @@ class TacTuTapKich:
 
     def _noichuyentapkich(self, s, diachinpc, idnpc):
         # Tới cạnh đúng con NPC idnpc, "look" -> menu 1 chọn lựa chọn 1 "Bớt nói nhảm đi, ta oánh nè !" -> menu "Muốn vào không ?" chọn lựa
-        # chọn 1 "Dùng 5 Ngân Bảo". NPC bảo "Hãy gọi tất cả thành viên trong đội tới đây..." (không có lựa chọn) thì chờ thành viên.
-        # -> (None | "xong" | "chothanhvien", yêu cầu di chuyển)
+        # chọn 1 "Dùng 5 Ngân Bảo". NPC bảo "Hãy gọi tất cả thành viên trong đội tới đây..." (không có lựa chọn) thì chờ thành viên;
+        # "NPC đang cùng chiến đấu với người chơi" (đội khác đang đánh) thì đóng menu, bỏ qua con này.
+        # -> (None | "xong" | "chothanhvien" | "dangchiendau", yêu cầu di chuyển)
         moitruong = self.moitruong
         now = time.time()
         h = s["hoithoai"]
@@ -297,6 +319,12 @@ class TacTuTapKich:
             if moitruong.get_is_danghiencuasotuychon():
                 moitruong.set_is_danghiencuasotuychon(False)
             return "chothanhvien", None
+        if LOINPCDANGCHIENDAU in thuong:
+            s["hoithoai"] = None
+            moitruong.xoa_noidungcuasotuychon()
+            if moitruong.get_is_danghiencuasotuychon():
+                moitruong.set_is_danghiencuasotuychon(False)
+            return "dangchiendau", None
         if not lenhs:
             moitruong.xoa_noidungcuasotuychon()
             h.update(buoc = "look", luc = now)
@@ -312,10 +340,11 @@ class TacTuTapKich:
         h.update(buoc = "chon", luc = now, cap = 1)
         return None, None
 
-    def _timnpctapkich(self, idgiu = 0, tenca = None):
+    def _timnpctapkich(self, idgiu = 0, tenca = None, boquas = ()):
         # NPC Võ Lâm Bại Hoại trong tầm nhìn -> (địa chỉ, id đối tượng) hoặc (0, 0). Môn phái có nhiều con cùng lúc: lấy con idgiu (đang
         # tới) nếu còn thấy, không thì con gần nhất (trước lấy con đầu danh sách, thứ tự đổi liên tục nên chạy qua chạy lại giữa các con).
-        # tenca: tìm con có đúng tên này (đã chuẩn hoá) còn sống thay vì tên chứa "Võ Lâm Bại Hoại" (boss Thủ Lĩnh cũng chứa)
+        # tenca: tìm con có đúng tên này (đã chuẩn hoá) còn sống thay vì tên chứa "Võ Lâm Bại Hoại" (boss Thủ Lĩnh cũng chứa).
+        # boquas: id các con đang bỏ qua (đội khác đang đánh)
         moitruong = self.moitruong
         canten = chuanhoaten(tenca or TENNPCTAPKICH)
         toado = moitruong.get_toado()
@@ -330,7 +359,7 @@ class TacTuTapKich:
                 continue
             khoangcach = math.dist(toado, moitruong.get_toado(diachi))
             iddoituong = moitruong.get_iddoituong(diachi)
-            if khoangcach > KHOANGCACHTOANMANHINH:
+            if khoangcach > KHOANGCACHTOANMANHINH or iddoituong in boquas:
                 continue
             if idgiu and iddoituong == idgiu:
                 return diachi, iddoituong
