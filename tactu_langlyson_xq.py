@@ -44,8 +44,30 @@ NPCTHANHKIEU = ("Thảo Nghịch Tướng Quân", 220, 65)
 NPCPHONGYEU = ("Tả Khâu Minh", 252, 160)
 # Phong Yêu Kính: nhận ra qua đầu tên bản đồ game (ID là 1 bản đồ ngẫu nhiên, không bao giờ là Tân Thủ Thôn / quốc gia). Thỏ Yêu luôn
 # có sẵn ở chỗ vào (toạ độ tuỳ bản đồ): thấy thì nhớ toạ độ thật, chưa thấy thì về chỗ mình xuất hiện lúc vào (diemvao)
-TIENTOTENBANDOPHONGYEU = "Phó Bản Phong"
+# Niết Bàn đặt tên khác: "Chiến Quốc Tr..." (tên bị cắt 20 byte; acc gà 9286 vừa chọn "Tiến vào" là sang, Tín Vật không dùng được, 2026-11-03)
+TIENTOTENBANDOPHONGYEU = ("Phó Bản Phong", "Chiến Quốc Tr")
 TENTHOYEU = "Truyền Tống Thỏ Yêu"
+# Niết Bàn: "Dịch Phu Thố Yêu" (chữ "Thố", không phải "Thỏ": người dùng xác nhận 2026-11-03; ghi "Thỏ" thì trưởng nhóm 9198 đi về chỗ
+# Thỏ Yêu 2.5 phút không "look", hỏi số quái cũng không được). Menu: "talk <NPC># welcome.1" về Chu Quốc, "welcome.2" tỉ lệ trừ yêu.
+# Dùng laytenthoyeu(moitruong)
+TENTHOYEUNIETBAN = "Dịch Phu Thố Yêu"
+# Phòng tên lệch nữa: tìm NPC có tên chứa 1 trong các cụm này rồi dùng đúng tên đọc được
+TUTHOYEUs = ("Thố Yêu", "Thỏ Yêu")
+
+
+def laytenthoyeu(moitruong):
+    diachi = next((d for d in (moitruong.action_timkiemnhanvat(tennhanvatchua = tu) for tu in TUTHOYEUs) if d), None)
+    if diachi and moitruong.get_is_npc(diachi):
+        # Không strip: _noichuyenlls tìm lại theo tên khớp đúng
+        ten = moitruong.get_tendoituong(diachi)
+        if ten:
+            if ten not in (TENTHOYEU, TENTHOYEUNIETBAN) and getattr(moitruong, "_tenthoyeudalog", None) != ten:
+                moitruong._tenthoyeudalog = ten
+                moitruong._inlog(f"[PHONG YÊU KÍNH] Tên Thỏ Yêu thật: {ten!r}")
+            return ten
+    return TENTHOYEUNIETBAN if moitruong.is_nietban else TENTHOYEU
+
+
 # Phong Yêu Kính mượn ID các bản đồ này (khó đi, người dùng dặn): người give ra ngay mở bản đồ khác (cả khi kéo cấp). 521 Tây Thành
 BANDOBOQUAPHONGYEUs = (521,)
 # Menu sau khi give, có 2 kiểu, chỉ chọn lựa chọn 1 khi lời có đủ các cụm của 1 kiểu:
@@ -53,9 +75,19 @@ BANDOBOQUAPHONGYEUs = (521,)
 #   - "Ta có thể đem trang bị này đốt đi, để làm chất xúc tác, ngươi muốn như vậy phải không ?" -> "1. Xác nhận"; trưởng nhóm thấy "Xin đợi
 #     thành viên khác trả lời", thành viên thấy "Đội trưởng của ngươi muốn mở Phong Yêu Kính, ngươi Xác nhận không ?" -> "1. Xác nhận"
 # Sau đó mọi người: "Đội nhóm các ngươi đã mở Phong Yêu Kính..." -> "1. Đúng vậy, ta muốn vào"
+#   - Niết Bàn: "Uh, Hủy trang bị này sẽ có thể vào Phong Yêu Kính , Ngươi xác định muốn hủy trang bị..." -> lệnh "talk <NPC># accept.<id món>#"
+#     (acc gà 9286, 2026-11-03)
 # Game viết cả "thêu đốt" (sai chính tả) lẫn "thiêu đốt" / "đốt đi" => chỉ xét "đốt" + "chất xúc tác"
-LOIMENUTHIEUDOTs = (("đốt", "chất xúc tác"),)
-LOIMENUVAOPHONGYEU = "đã mở phong yêu kính"
+LOIMENUTHIEUDOTs = (("đốt", "chất xúc tác"), ("hủy trang bị", "phong yêu kính"), ("huỷ trang bị", "phong yêu kính"))
+# Niết Bàn: "Đội ngươi đã mở được đường thông vào yêu cảnh Phong Yêu Kính , ngươi muốn vào ngay?" -> "1. Vâng, vào ngay" ("talk 278# welcome.7#",
+# Tả Khâu Minh (252, 160), người dùng chụp 2026-11-03)
+LOIMENUVAOPHONGYEUs = ("đã mở phong yêu kính", "đường thông vào yêu cảnh")
+
+
+def is_loimenuvaophongyeu(thuong):
+    return any(k in thuong for k in LOIMENUVAOPHONGYEUs)
+
+
 # Đội đã mở thì vào lúc nào cũng được: "look" Tả Khâu Minh -> menu chính "1. Tiến vào Phong Yêu Kính" -> "...đã mở Phong Yêu Kính..." ->
 # "1. Đúng vậy, ta muốn vào" (lựa chọn đếm từ 0)
 LUACHONVAOLAIPY = (0, 0)
@@ -77,8 +109,10 @@ SOLANDESCPY = 3
 SOBOSSPHONGYEU = 2
 # Tên boss có đuôi cấp, vd "Trịnh Vương Tàn Phách (cấp 96)" (85%, "<nước> Vương Tàn Phách"), "Hổ Cảnh Kính Ma (cấp 97)" / "Long Nha Kính Ma (cấp 101)" / "Kính Ma Khuyển Thần (cấp 101)" (100%, còn có thể
 # gặp tên khác: thêm vào đây). Quái thường có chữ "Quốc": "Trịnh Quốc Kính Yêu", "Ngô Quốc Kính Ma" (cũng chứa "Kính Ma", từng bị nhận
-# nhầm là boss) => tên có TUKHONGPHAIBOSSPY thì không phải boss
-TUBOSSPHONGYEUs = ("Vương Tàn Phách", "Kính Ma")
+# nhầm là boss) => tên có TUKHONGPHAIBOSSPY thì không phải boss.
+# Niết Bàn: boss 85% là "Oan hồn <nước> Vương" (vd "Oan hồn Quắc Vương"; bot từng đánh như quái thường, chỉ đếm được 1/2 boss nên dò mãi
+# không ra, 2026-11-03), boss 100% vẫn "Kính Ma Hổ Dực / Long Nha / Khuyển Thần". Quái thường Niết Bàn "Kính Yêu Quắc Quốc" vẫn có "Quốc"
+TUBOSSPHONGYEUs = ("Vương Tàn Phách", "Kính Ma", "Oan hồn", "Oan Hồn")
 TUKHONGPHAIBOSSPY = "Quốc"
 # Đọc boss các thành viên khác đã giết (shared_data, cả máy khác nối LAN) mỗi chừng này giây
 GIANCACHDOCBOSSPY = 1.
@@ -847,6 +881,11 @@ class TacTuLangLySon:
             h["buoc"] = "look"
         if not diachinpc or moitruong.get_khoangcach(diachinpc) > KHOANGCACHNOICHUYENLLS:
             h["buoc"] = "look"
+            if not diachinpc and moitruong.get_khoangcachdiem(x, y) <= 2. and now - h.get("luclogkhongthay", 0.) > 10.:
+                # Đứng đúng chỗ mà không thấy NPC theo tên: ghi tên các NPC quanh đó để biết tên thật (từng đứng đực 2.5 phút không log gì)
+                h["luclogkhongthay"] = now
+                tens = sorted({moitruong.get_tendoituong(d) or "" for d in moitruong._get_diachidoituongxungquanhs() if moitruong.get_is_npc(d)})
+                moitruong._inlog(f"[PHÓ BẢN] Tới ({x}, {y}) không thấy NPC {tennpc!r}, NPC quanh đây: {tens}")
             xdich, ydich = moitruong.get_toado(diachinpc) if diachinpc else (x, y)
             return None, {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (xdich, ydich, idbando), "khoangcachtoida": 1.}
         if h["buoc"] == "look":
@@ -907,7 +946,7 @@ class TacTuLangLySon:
         if h.get("daxacnhan"):
             return False
         hop = moitruong.get_hopxacnhannpc()
-        if not hop[0] or not hop[1].startswith("tallk ") or hop == h.get("hopcu"):
+        if not hop[0] or not hop[1].startswith(("tallk ", "talk ")) or hop == h.get("hopcu"):
             return False
         moitruong.action_ngatdichuyen()
         moitruong.action_thucthicaulenh(hop[1])
@@ -1188,7 +1227,8 @@ class TacTuLangLySon:
         sach = unicodedata.normalize("NFC", re.sub(r"\x1b.", "", mota))
         dongs = [d.strip() for d in sach.split("\n") if d.strip()]
         ten = unicodedata.normalize("NFC", ten or "").strip()
-        if len(dongs) < 2 or not ten or not dongs[0].startswith(ten) or not dongs[1].startswith("［"):
+        # Niết Bàn ghi loại bằng ngoặc thường "[Y Phục]" thay cho "［Y Phục］" của Aegis
+        if len(dongs) < 2 or not ten or not dongs[0].startswith(ten) or not dongs[1].startswith(("［", "[")):
             return None
         if "đã Phong Ấn" in dongs[0] or "Khoá" in dongs[0] or "Khóa" in dongs[0]:
             return None
@@ -1200,7 +1240,8 @@ class TacTuLangLySon:
             return None
         if cauhinh["chidot"] and not any(unicodedata.normalize("NFC", t).lower() in tenthuong for t in cauhinh["chidot"]):
             return None
-        khop = re.search(r"Cấp độ sử dụng\s*[:：]\s*cấp\s*(\d+)", sach)
+        # Aegis "Cấp độ sử dụng: cấp 30", Niết Bàn "Trang bị yêu cầu: 30 cấp" (Cuồng Chiến Quần acc gà 9286, 2026-11-03)
+        khop = re.search(r"Cấp độ sử dụng\s*[:：]\s*cấp\s*(\d+)", sach) or re.search(r"Trang bị yêu cầu\s*[:：]\s*(\d+)\s*cấp", sach)
         if not khop or int(khop.group(1)) < CAPDOLAMKIMTOITHIEU:
             return None
         gia = re.search(r"Giá bán ra\s*[:：]\s*(\d+)", sach)
@@ -1286,7 +1327,7 @@ class TacTuLangLySon:
         # Menu chính "1. Tiến vào Phong Yêu Kính" -> đội đã mở thì "Đội nhóm các ngươi đã mở Phong Yêu Kính..." "1. Đúng vậy, ta muốn vào"
         # (vào lúc nào cũng được, không chỉ lúc menu tự hiện khi vừa mở)
         ketqua, yeucau = self._noichuyenlls(s, tennpc, x, y, is_chovankhi = False, luachon = LUACHONVAOLAIPY,
-                                            kiemtramenucuoi = lambda noidung: LOIMENUVAOPHONGYEU in noidung.lower())
+                                            kiemtramenucuoi = lambda noidung: is_loimenuvaophongyeu(noidung.lower()))
         if ketqua == "xong":
             self._logpb(s, f"Thành viên: đã chọn vào {ten} ở {tennpc}")
             s["luclooktv"] = time.time() + GIANCACHLOOKTHANHVIENPY
@@ -1548,7 +1589,7 @@ class TacTuLangLySon:
             s["trangthai"] = f"vào {ten} (vòng {s['sovong'] + 1}): đã đốt đồ, hỏi lại {tennpc} để vào"
             ketqua, yeucau = self._noichuyenlls(s, tennpc, x, y, is_chovankhi = False, luachon = LUACHONVAOLAIPY,
                                                 kiemtramenucuoi = lambda noidung: any(k in noidung.lower() for k in
-                                                                                      (LOIMENUVAOPHONGYEU, LOIMENUDOITHANHVIENPY)))
+                                                                                      (*LOIMENUVAOPHONGYEUs, LOIMENUDOITHANHVIENPY)))
             if ketqua == "xong":
                 s["lucchonvaopy"] = time.time()
                 s["solanvaolaipy"] = s.get("solanvaolaipy", 0) + 1
@@ -1682,7 +1723,7 @@ class TacTuLangLySon:
         noidung = unicodedata.normalize("NFC", moitruong.get_noidungcuasotuychon() or "")
         # Menu vào (mọi người) hoặc menu thành viên xác nhận đội trưởng mở Phong Yêu Kính (kiểu give thứ 2)
         thuong = noidung.lower()
-        if LOIMENUVAOPHONGYEU not in thuong and LOIMENUTHANHVIENXACNHANPY not in thuong:
+        if not is_loimenuvaophongyeu(thuong) and LOIMENUTHANHVIENXACNHANPY not in thuong:
             return
         if s and s.get("dagive") and not s["davao"] and self._thanhvienchuavaonhompy(s) \
                 and now - s.get("lucdagive", now) < THOIGIANCHOMOIPY:
@@ -1698,7 +1739,7 @@ class TacTuLangLySon:
         moitruong._inlog(f"[PHONG YÊU KÍNH] Menu {noidung[:60]!r}: chọn {lenhs[0]!r}")
         if s:
             s["lucchonvaopy"] = now
-            if LOIMENUVAOPHONGYEU in thuong and not moitruong.get_is_truongnhom():
+            if is_loimenuvaophongyeu(thuong) and not moitruong.get_is_truongnhom():
                 # Thành viên vào vòng mới: bỏ boss đã giết / điểm dò của vòng trước (thành viên không qua bước đổi tổ đội nên không ai xoá)
                 s.pop("py", None)
                 s["diemvao"] = {}
@@ -1736,7 +1777,7 @@ class TacTuLangLySon:
 
     def _vitrithoyeu(self, s, py, idbando):
         # Thỏ Yêu đứng ở chỗ vào: thấy thì nhớ toạ độ thật, chưa thấy thì chỗ vào, không biết cả 2 thì chỗ đang đứng
-        diachi = self.moitruong.action_timkiemnhanvat(tennhanvat = TENTHOYEU)
+        diachi = self.moitruong.action_timkiemnhanvat(tennhanvat = laytenthoyeu(self.moitruong))
         if diachi:
             py["vitrithoyeu"] = self.moitruong.get_toado(diachi)
         return py.get("vitrithoyeu") or s["diemvao"].get(idbando) or self.moitruong.get_toado()
@@ -1849,7 +1890,7 @@ class TacTuLangLySon:
         moitruong = self.moitruong
         x, y = self._vitrithoyeu(s, py, self.moitruong.get_idbandohientai())
         s["trangthai"] = f"{self._tenpb(s)}: dò xong {py['soluotdo']} lượt, hỏi Thỏ Yêu số quái đã đánh"
-        ketqua, yeucau = self._noichuyenlls(s, TENTHOYEU, x, y, is_chovankhi = False, luachon = 1)
+        ketqua, yeucau = self._noichuyenlls(s, laytenthoyeu(self.moitruong), x, y, is_chovankhi = False, luachon = 1)
         if ketqua != "xong" and time.time() - py["hoisoquai"] <= THOIGIANHOISOQUAI:
             return yeucau
         noidung = unicodedata.normalize("NFC", moitruong.get_noidungcuasotuychon() or "") if ketqua == "xong" else ""
@@ -1964,7 +2005,7 @@ class TacTuLangLySon:
         if self._is_trongphongyeu():
             x, y = self._vitrithoyeu(s, self._taopy(s), self.moitruong.get_idbandohientai())
             s["trangthai"] = f"xong {self._tenpb(s)}, nói chuyện Thỏ Yêu về Chu Quốc"
-            return self._noichuyenlls(s, TENTHOYEU, x, y, is_chovankhi = False, luachon = 0)[1]
+            return self._noichuyenlls(s, laytenthoyeu(self.moitruong), x, y, is_chovankhi = False, luachon = 0)[1]
         s["sovong"] += 1
         s["sothanhvien"] = len(s["thanhviens"]) + 1
         self._logpb(s, f"Xong vòng {s['sovong']} ({int((time.time() - s['lucbatdauvong']) // 60)} phút), đổi tổ đội")

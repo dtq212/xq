@@ -61,6 +61,12 @@ class TacTuVatPham:
         # tả / chỉ số chưa biết ô (báo 1 lần, không dùng vật phẩm mù vì dùng là bật / tắt)
         if ten in self._dichchisobaothuvatpham_map:
             return self._dichchisobaothuvatpham_map[ten]
+        if ten in CHISOBAOTHUVATPHAM_MAP:
+            # Mô tả không ghi chỉ số (12 con Giáp - Chuột bản Niết Bàn): dùng chỉ số khai tay
+            dichs = tuple(dich for tenchiso in CHISOBAOTHUVATPHAM_MAP[ten] for dich in CHISONHANVAT_MAP[tenchiso])
+            if IS_LOGCAULENH: self.moitruong._inlog(f"[TRIỆU HỒI BẢO THÚ] {ten} cộng {CHISOBAOTHUVATPHAM_MAP[ten]} cho chủ (khai tay), theo dõi ô {[hex(dich) for dich in dichs]}")
+            self._dichchisobaothuvatpham_map[ten] = dichs
+            return dichs
         mota = unicodedata.normalize("NFC", self.moitruong.get_motavatphamhanhtrang(vitri) or "")
         if not mota:
             return None
@@ -194,6 +200,22 @@ class TacTuVatPham:
             self._tenbaothuvatphamdangtrieuhoi = ten
             self._trangthaitrieuhoibaothuvatpham = 1
 
+    def _thaophapbao(self, tenphapbaohientai, phantramsinhlucconlai):
+        # Tháo pháp bảo đang đeo: "remove <vị trí>" đếm ô trang bị từ 1 như desc đồ đang mặc (pháp bảo = 7), cần túi còn ô trống.
+        # Lưu tên để máu hồi lại thì đeo lại. False = túi đầy
+        if not self.moitruong.get_iddoituongvatphamhanhtrang(VITRITRANGBI_PHAPBAO):
+            return False
+        if all(self.moitruong.get_iddoituongvatphamhanhtrang(vitri) for vitri in self.moitruong.get_danhsachvitrimohanhtrang()):
+            return False
+        if self.moitruong.action_thucthicaulenh("remove {}".format(VITRITRANGBI_PHAPBAO - VITRITRANGBIDAUTIEN + 1), douutien = DOUUTIEN_CAO):
+            self._thoidiemhoandoiphapbao = time.time()
+            if self._tenphapbaocu is None:
+                self._tenphapbaocu = tenphapbaohientai
+                self._mucsinhluckhihoandoi = phantramsinhlucconlai
+                print("{}: máu {}%, không có {} -> tháo pháp bảo {}".format(
+                    self.moitruong.get_tendoituong(), phantramsinhlucconlai, PHAPBAOKHONGHUHONGs[0], tenphapbaohientai))
+        return True
+
     def action_tudongsudungvatpham(self):
         if self._is_tudongsudungvatpham:
             if self.moitruong.get_is_nhanvatdachet():
@@ -256,8 +278,8 @@ class TacTuVatPham:
                 if self._tenphapbaocu and tenphapbaohientai == self._tenphapbaocu:
                     print("{}: đã đeo lại pháp bảo {}".format(self.moitruong.get_tendoituong(), self._tenphapbaocu))
                     self._tenphapbaocu = None
-                elif tenphapbaohientai not in PHAPBAOKHONGHUHONGs:
-                    # Không còn đeo pháp bảo không hư hỏng (người chơi tự đổi / tháo): thôi không đeo lại
+                elif tenphapbaohientai not in (*PHAPBAOKHONGHUHONGs, ""):
+                    # Không còn đeo pháp bảo không hư hỏng / đã tháo (người chơi tự đổi): thôi không đeo lại
                     print("{}: pháp bảo đang đeo là {}, bỏ đeo lại {}".format(self.moitruong.get_tendoituong(), tenphapbaohientai or "(không)", self._tenphapbaocu))
                     self._tenphapbaocu = None
                 elif phantramsinhlucconlai >= self._mucsinhluckhihoandoi + 15 and time.time() - self._thoidiemthumaclaiphapbao > 2.:
@@ -285,12 +307,16 @@ class TacTuVatPham:
                                 self.moitruong.get_tendoituong(), phantramsinhlucconlai, tenphapbaohientai or "(không)", phapbaokhonghuhong))
                     break
                 else:
-                    # Máu thấp mà hành trang không có pháp bảo không hư hỏng nào: nhắc 60s một lần, Telegram 30 phút một lần
-                    if time.time() - self._thoidiemcanhbaokhongphapbao > 60.:
+                    # Không có pháp bảo không hư hỏng: tháo thẳng pháp bảo đang đeo ("remove 7").
+                    # Thượng Phương Bảo Kiếm chỉ cần cho Đào Hoa đang Dã Tính Cường Lực / Kim Cường (không tháo đồ được)
+                    if tenphapbaohientai and self._thaophapbao(tenphapbaohientai, phantramsinhlucconlai):
+                        pass
+                    # Máu thấp mà không đổi / tháo được pháp bảo (túi đầy): nhắc 60s một lần, Telegram 30 phút một lần
+                    elif tenphapbaohientai and time.time() - self._thoidiemcanhbaokhongphapbao > 60.:
                         self._thoidiemcanhbaokhongphapbao = time.time()
-                        canhbao(self.moitruong, f"Không có {PHAPBAOKHONGHUHONGs[0]} trong hành trang", is_block = False)
-                        baosuco(self.moitruong, "vatpham", f"Máu {int(phantramsinhlucconlai)}% mà không có {PHAPBAOKHONGHUHONGs[0]} trong hành trang để đổi",
-                                khoa = "khongphapbaokhonghuhong", giancach = 1800.)
+                        canhbao(self.moitruong, f"Không có {PHAPBAOKHONGHUHONGs[0]}, túi đầy không tháo được pháp bảo", is_block = False)
+                        baosuco(self.moitruong, "vatpham", f"Máu {int(phantramsinhlucconlai)}% mà không có {PHAPBAOKHONGHUHONGs[0]} để đổi, "
+                                f"túi đầy không tháo được pháp bảo", khoa = "khongphapbaokhonghuhong", giancach = 1800.)
 
             # Hồi sinh lực/nội lực: chưa mất đủ nhiều mà dùng thuốc thì phí => ngoài phần trăm còn phải mất quá 2500 sinh lực / 3000 nội lực.
             # Đang PK ở bản đồ PK: dưới 75%; ở phó bản (không PK): dưới 25%
@@ -768,9 +794,22 @@ class TacTuVatPham:
         idbando = moitruong.get_idbandohientai()
         tenmon = muc["tencuahang"] or muc["vatpham"]
         tra = self._sovitri.timhang(idbando, muc["npc"], tenmon)
-        if tra:
-            return tra
         ketqua = self.get_ketquamocuahang(idbando, muc["npc"])
+        khoa = (idbando, muc["npc"])
+        if tra:
+            # Hàng nhớ có thể của nhân vật khác / bản khác (Niết Bàn xếp hàng khác Aegis): desc ô trước khi mua. Mình vừa đọc cửa hàng
+            # (sau lần mở để kiểm) thì tin luôn; desc ra món khác thì đứng gần mở cửa hàng đọc lại
+            lucdoc = self._lucmocuahangmuabu_map.get(khoa, 0.)
+            if lucdoc and ketqua and ketqua[0] and ketqua[1] >= lucdoc:
+                return tra
+            dung = self._kiemhangcuahang(self._kiemcuahangmuabu, diachinpc, tra[0], tenmon)
+            if dung:
+                return tra
+            if dung is False and moitruong.get_khoangcach(diachinpc) <= 3. and not self._mocuahang \
+                    and time.time() - lucdoc > GIANCACHMOCUAHANGMUABU:
+                self._lucmocuahangmuabu_map[khoa] = time.time()
+                self.batdau_mocuahang(diachinpc)
+            return None
         if ketqua and ketqua[0]:
             khoa = (idbando, muc["npc"], tenmon)
             if khoa not in self._lechmuabudabao:
@@ -778,7 +817,6 @@ class TacTuVatPham:
                 print(f"[MUA BÙ] {muc['npc']} không bán \"{tenmon}\": sửa tên món / \"Tên ở cửa hàng\" trong luật mua bù")
             return None
         # Chưa đọc cửa hàng này: đứng gần thì mở đọc (mở hỏng thì GIANCACHMOCUAHANGMUABU giây sau mới thử lại)
-        khoa = (idbando, muc["npc"])
         if moitruong.get_khoangcach(diachinpc) <= 3. and not self._mocuahang \
                 and time.time() - self._lucmocuahangmuabu_map.get(khoa, 0.) > GIANCACHMOCUAHANGMUABU:
             self._lucmocuahangmuabu_map[khoa] = time.time()
@@ -1566,7 +1604,7 @@ class TacTuVatPham:
         # Chỉ xếp lệnh bán vào hàng đợi; action_xulybanracvasuado gửi dần 1 lệnh/giây ở mỗi lượt loop phụ
         hangdoi = []
         soluongvatphamhanhtrangtoida = self.moitruong.get_soluongvatphamhanhtrangtoida()
-        for i in range(6, soluongvatphamhanhtrangtoida):
+        for i in range(soluongvatphamhanhtrangtoida + 1):
             iddoituongvatphamhanhtrang = self.moitruong.get_iddoituongvatphamhanhtrang(i)
             if not iddoituongvatphamhanhtrang or iddoituongvatphamhanhtrang <= 0:
                 continue

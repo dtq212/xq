@@ -165,9 +165,17 @@ class TroChoiManager:
         while True:
             try:
                 pids = self._pidcuasogames()
-                hwndphat = self._chonhwndphatamthanh(list(pids))
+                # Mỗi bản (Aegis / Niết Bàn) 1 cửa sổ có tiếng: chơi song song 2 bản thì bản nào cũng nghe được
+                nhoms = {}
+                for hwnd in pids:
+                    try:
+                        is_nietban = "Chien Quoc Niet Ban" in win32gui.GetWindowText(hwnd)
+                    except Exception:
+                        is_nietban = False
+                    nhoms.setdefault(is_nietban, []).append(hwnd)
+                hwndphats = {self._chonhwndphatamthanh(hwnds) for hwnds in nhoms.values()}
                 if pids:
-                    datamthanhtientrinhs({pid: hwnd != hwndphat for hwnd, pid in pids.items()})
+                    datamthanhtientrinhs({pid: hwnd not in hwndphats for hwnd, pid in pids.items()})
             except Exception as err:
                 print(f"Lỗi chỉnh âm thanh: {err}")
             time.sleep(THOIGIANKIEMTRAAMTHANH)
@@ -238,6 +246,10 @@ class TroChoiManager:
     def stop_all(self):
         print("\nĐang dọn dẹp và thoát...")
         self._batlaiamthanh()
+        try:
+            self.gui.hientatcagame()
+        except Exception:
+            pass
         for p in self.bot_processes.values():
             try:
                 p.terminate()

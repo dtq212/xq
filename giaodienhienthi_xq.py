@@ -14,14 +14,14 @@ from tkinter import ttk
 from bando_xq import BANDOCONG_MAP, laycapquaibando
 from chude_xq import BANGMAU_SANG, laybangmau, apdungchude, doithanhtieude, hopthoai, canhgiua, dualentren, tomaunut, doichunut
 from dexuatlotrinh_xq import SOLANTHAYQUAITOITHIEU
-from hangso_xq import laytenbando, KHOANGCACHSUDUNGKYNANGTAMXA, PHANTRAMNOILUCKHAITHIENTICHDIA, KHOANGCACHGIUKETANCONG, BAOTHUTRIEUHOIMAOSONs
+from hangso_xq import laytenbando, KHOANGCACHSUDUNGKYNANGTAMXA, PHANTRAMNOILUCKHAITHIENTICHDIA, KHOANGCACHGIUKETANCONG, BAOTHUTRIEUHOIMAOSONs, NGUONGMAUCHAYTRON, NGUONGMAUHETCHAYTRON
 import re
 
 from tienich_xq import tailotrinhmau, duongdanlotrinhmau, tainhomtodoitudongs, luunhomtodoitudongs, duongdantodoitudong, laynhomtodoitudongs
 from tienich_xq import duongdantaikhoan, tenmaynay, taicauhinhphongyeu, luucauhinhphongyeu, taigiaodienkeocap, luugiaodienkeocap
 from tienich_xq import taidanhsachnhanvat, luudanhsachnhanvat, taicaidatgiaodien, luucaidatgiaodien
 from tienich_xq import laydoiphobans, taidoiphobans, luudoiphobans
-from dangnhap_xq import duongdangamemaynay, is_batchomaynay, luucauhinhdangnhap, taicauhinhdangnhap, taikhoanbatchomaynay
+from dangnhap_xq import ancuasogame, duongdangamemaynay, focuscuasogame, hiencuasogame, is_batchomaynay, is_cuasogamedaan, luucauhinhdangnhap, taicauhinhdangnhap, taikhoanbatchomaynay
 from thongke_xq import taithongke, gopthongke
 from luattuido_xq import tailuat, luuluat, motaluat, TENHANHDONG, DIEUKIENs, TENDIEUKIEN, TRUONGMUABU, TENTRUONGMUABU, TENCHIKHI, CHIKHI_LUON, XEPCHONGMACDINH, \
     THAPNHATMACDINH, TENHANHDONGNHAT, DIEUKIENNHATs, NHAT_NHAT
@@ -56,48 +56,106 @@ TEN_MUCTIEUMACDINH = "(Trưởng nhóm)"
 NGUONGMAUTHAP = 40
 
 
-def taoanhdinhghim(kichthuoc, is_ghim):
-    # Ảnh đinh ghim nghiêng 45° (đầu tròn đỏ trên phải, kim bạc dưới trái) dạng PNG có kênh trong suốt, khử răng cưa bằng lấy mẫu 4x4.
-    # Chưa ghim thì xám nhạt. Tk 8.6 đọc PNG được; emoji 📌 thì Tk bản cũ hiện không ổn định nên tự vẽ
-    mau_dau, mau_sang, mau_co, mau_kim = ((214, 48, 49), (245, 130, 120), (160, 30, 35), (120, 124, 130)) if is_ghim else \
-        ((185, 185, 185), (215, 215, 215), (160, 160, 160), (190, 190, 190))
-    dodac = 1. if is_ghim else 0.8
-    canh = math.sqrt(0.5)
+# Màu chung của dải icon đầu dòng nhân vật (mắt / tay kéo / ô tích): bật xanh, tắt xám, để 3 icon cùng tông
+MAUICON_XANH, MAUICON_XAM = (40, 110, 200), (150, 150, 150)
+# Kích thước 1 icon và khoảng cách giữa các icon trong dải (px trước khi nhân hệ số DPI)
+COICON, KHOANGICON = 16, 7
 
-    def mau(dx, dy):
-        # Toạ độ trong hệ của đinh đứng thẳng: v dọc (đầu ở v âm), u ngang
-        u, v = (dx + dy) * canh, (dy - dx) * canh
-        if (u * u) / 0.42 ** 2 + ((v + 0.85) ** 2) / 0.38 ** 2 <= 1:
-            return mau_sang if u < -0.12 and v < -0.95 else mau_dau
-        if abs(u) <= 0.2 and -0.6 <= v <= -0.15:
-            return mau_dau
-        if abs(u) <= 0.5 and -0.2 <= v <= 0.02:
-            return mau_co
-        if 0.02 < v <= 1.25 and abs(u) <= 0.075 * (1.25 - v) / 1.23 + 0.02:
-            return mau_kim
-        return None
 
+def _hinhconmat(is_an):
+    # Con mắt (viền hạnh nhân + tròng + con ngươi), toạ độ -1.3..1.3: cửa sổ game đang hiện thì mắt mở xanh, đã ẩn thì xám có gạch chéo
+    mau_vien, mau_trong, mau_nguoi, mau_sang, mau_gach = (MAUICON_XAM, (175, 175, 175), (120, 120, 120), (235, 235, 235), (110, 110, 110)) \
+        if is_an else (MAUICON_XANH, (70, 140, 225), (20, 45, 90), (255, 255, 255), None)
+
+    def mau(x, y):
+        # Gạch chéo (trên trái -> dưới phải) đè lên mắt
+        if mau_gach and abs(x - y) <= 0.15 and abs(x) <= 1.05:
+            return mau_gach
+        # Mép mắt trên / dưới: 2 cung parabol gặp nhau ở khoé |x| = 1.15
+        if abs(x) > 1.15:
+            return None
+        bien = 0.62 * (1 - (x / 1.15) ** 2)
+        if abs(y) > bien:
+            return None
+        r2 = x * x + y * y
+        if (x + 0.13) ** 2 + (y + 0.13) ** 2 <= 0.1 ** 2:
+            return mau_sang
+        if r2 <= 0.2 ** 2:
+            return mau_nguoi
+        if r2 <= 0.42 ** 2:
+            return mau_trong
+        return mau_vien if abs(y) > bien - 0.16 else None
+    return mau
+
+
+def _hinhtaykeo(x, y):
+    # Tay nắm kéo thả: 3 vạch ngang bo tròn, xám
+    for k in (-0.5, 0., 0.5):
+        dx = max(0., abs(x) - 0.75)
+        if dx * dx + (y - k) ** 2 <= 0.13 ** 2:
+            return MAUICON_XAM
+    return None
+
+
+def _khoangcachdoan(x, y, a, b):
+    vx, vy = b[0] - a[0], b[1] - a[1]
+    t = max(0., min(1., ((x - a[0]) * vx + (y - a[1]) * vy) / (vx * vx + vy * vy)))
+    return ((x - a[0] - t * vx) ** 2 + (y - a[1] - t * vy) ** 2) ** 0.5
+
+
+def _hinhotich(is_bat):
+    # Ô tích bo góc: bật thì nền xanh dấu tích trắng, tắt thì chỉ viền xám
+    def mau(x, y):
+        r, canh = 0.3, 1.05
+        dx, dy = max(0., abs(x) - (canh - r)), max(0., abs(y) - (canh - r))
+        kc = (dx * dx + dy * dy) ** 0.5
+        if kc > r:
+            return None
+        if not is_bat:
+            return MAUICON_XAM if kc > r - 0.2 or abs(x) > canh - 0.2 or abs(y) > canh - 0.2 else None
+        if min(_khoangcachdoan(x, y, (-0.55, 0.), (-0.15, 0.42)), _khoangcachdoan(x, y, (-0.15, 0.42), (0.58, -0.42))) <= 0.15:
+            return (255, 255, 255)
+        return MAUICON_XANH
+    return mau
+
+
+def taoanhpng(rong, cao, mau):
+    # Ảnh PNG có kênh trong suốt từ hàm mau(x, y) theo pixel (None = trong suốt), khử răng cưa bằng lấy mẫu 4x4.
+    # Tk 8.6 đọc PNG được; emoji 👁 / ☑ thì Tk bản cũ hiện không ổn định, màu theo font nên tự vẽ
     somau = 4
     dong = []
-    for y in range(kichthuoc):
+    for y in range(cao):
         hang = bytearray([0])
-        for x in range(kichthuoc):
+        for x in range(rong):
             tong, so = [0, 0, 0], 0
             for sy in range(somau):
                 for sx in range(somau):
-                    c = mau(((x + (sx + 0.5) / somau) / kichthuoc) * 2.6 - 1.3, ((y + (sy + 0.5) / somau) / kichthuoc) * 2.6 - 1.3)
+                    c = mau(x + (sx + 0.5) / somau, y + (sy + 0.5) / somau)
                     if c:
                         tong = [t + k for t, k in zip(tong, c)]
                         so += 1
-            hang += bytes([t // so for t in tong] + [round(255 * dodac * so / somau ** 2)]) if so else bytes(4)
+            hang += bytes([t // so for t in tong] + [round(255 * so / somau ** 2)]) if so else bytes(4)
         dong.append(bytes(hang))
 
     def khoi(loai, dulieu):
         return struct.pack(">I", len(dulieu)) + loai + dulieu + struct.pack(">I", zlib.crc32(loai + dulieu) & 0xffffffff)
 
-    png = b"\x89PNG\r\n\x1a\n" + khoi(b"IHDR", struct.pack(">IIBBBBB", kichthuoc, kichthuoc, 8, 6, 0, 0, 0)) + \
+    png = b"\x89PNG\r\n\x1a\n" + khoi(b"IHDR", struct.pack(">IIBBBBB", rong, cao, 8, 6, 0, 0, 0)) + \
         khoi(b"IDAT", zlib.compress(b"".join(dong))) + khoi(b"IEND", b"")
     return tk.PhotoImage(data = base64.b64encode(png).decode("ascii"), format = "png")
+
+
+def taoanhdaiicon(coicon, khoang, is_an, is_tatbot):
+    # Dải icon đầu dòng nhân vật: [ô tích][tay kéo][con mắt], mỗi icon coicon px, cách nhau khoang px
+    hinhs = (_hinhotich(not is_tatbot), _hinhtaykeo, _hinhconmat(is_an))
+
+    def mau(x, y):
+        i = int(x // (coicon + khoang))
+        lx = x - i * (coicon + khoang)
+        if i >= len(hinhs) or lx >= coicon:
+            return None
+        return hinhs[i]((lx / coicon) * 2.6 - 1.3, (y / coicon) * 2.6 - 1.3)
+    return taoanhpng(coicon * 3 + khoang * 2, coicon, mau)
 
 
 class BangCatChu(ttk.Treeview):
@@ -182,7 +240,7 @@ class BangCatChu(ttk.Treeview):
 
     def _colaicot(self):
         # Tk chỉ co cột giãn được (stretch) khi bảng đổi cỡ, lúc mới hiện mà tổng cột rộng hơn bảng thì cột cuối tràn ra ngoài
-        # (vd nút ⏹ trên danh sách nhân vật): co bớt các cột giãn được, cột sau co trước, không dưới minwidth
+        # (vd cột "Hoạt động" trên danh sách nhân vật): co bớt các cột giãn được, cột sau co trước, không dưới minwidth
         if not self.winfo_ismapped() or self.winfo_width() <= 1:
             return
         hien = tuple(self.tk.splitlist(self.cget("displaycolumns")))
@@ -341,11 +399,9 @@ class GiaoDienHienThi:
         # Ô chọn người theo sau: chữ hiển thị -> (ID, tên); vừa chọn thì (hwnd, ID, thời điểm) để chờ bot nhận, không bị nạp lại giá trị cũ đè lên
         self._muctieutheosau_map = {TEN_MUCTIEUMACDINH: (0, "")}
         self._muctieutheosauchoxacnhan = None
-        # Danh sách nhân vật: thứ tự kéo thả / ghim theo ID người chơi (lưu file), ô tích bật/tắt bot vừa bấm {hwnd: (is_tat, thời điểm)}
+        # Danh sách nhân vật: thứ tự kéo thả theo ID người chơi (lưu file), ô tích bật/tắt bot vừa bấm {hwnd: (is_tat, thời điểm)}
         # chờ bot nhận, dòng đang kéo [iid, đã dời chưa]
-        dulieudanhsach = taidanhsachnhanvat()
-        self._thutunhanvat = dulieudanhsach["thutu"]
-        self._ghimnhanvat = set(dulieudanhsach["ghim"])
+        self._thutunhanvat = taidanhsachnhanvat()["thutu"]
         self._tatbotchoxacnhan = {}
         self._dongdangkeo = None
         # Cho luồng phím tắt (trochoi_xq, không gọi Tk từ luồng khác được): hwnd cửa sổ giao diện, cửa sổ game của dòng đang chọn,
@@ -375,6 +431,10 @@ class GiaoDienHienThi:
         # Ghim nổi trên cùng (nút 📌 ở thanh trạng thái), mặc định tắt, nhớ qua các lần mở
         self.is_ghim = bool(taicaidatgiaodien().get("ghim"))
         self.root.attributes('-topmost', self.is_ghim)
+        # Ẩn game (nút ở thanh trạng thái, theo dòng đang chọn): ID người chơi có cửa sổ game dời ra ngoài màn hình cho đỡ bấm nhầm, nhớ
+        # qua các lần mở (bản cũ lưu true/false cho cả máy: bỏ)
+        angame = taicaidatgiaodien().get("angame")
+        self.idangames = set(angame) if isinstance(angame, list) else set()
 
         # Chế độ sáng/tối (nút ở thanh trạng thái), nhớ qua các lần mở
         self.is_chedotoi = bool(taicaidatgiaodien().get("chedotoi"))
@@ -399,7 +459,7 @@ class GiaoDienHienThi:
             "tudongtangcap": tk.BooleanVar(),
             "captangcaptoida": tk.IntVar(value = CAPTUDONGTANGCAPTOIDA),
             "khoangcachtheosau": tk.DoubleVar(value = 9.0),
-            "bankinhdiemdanh": tk.DoubleVar(value = 18.0),
+            "bankinhdiemdanh": tk.DoubleVar(value = 40.0),
             "khoangcachtamxa": tk.DoubleVar(value = KHOANGCACHSUDUNGKYNANGTAMXA),
             "phantramnoiluckhaithien": tk.DoubleVar(value = PHANTRAMNOILUCKHAITHIENTICHDIA),
             "diemdanhxungquanh": tk.BooleanVar(),
@@ -412,6 +472,8 @@ class GiaoDienHienThi:
             "taphoa": tk.BooleanVar(),
             "timmuctieuchung": tk.BooleanVar(value = True),
             "khoangcachgiuketancong": tk.DoubleVar(value = KHOANGCACHGIUKETANCONG),
+            "mauchaytron": tk.IntVar(value = NGUONGMAUCHAYTRON),
+            "mauhetchaytron": tk.IntVar(value = NGUONGMAUHETCHAYTRON),
             "tutimduongtheosau": tk.BooleanVar(),
             "doidotrieuhoi": tk.BooleanVar(),
         }
@@ -523,6 +585,35 @@ class GiaoDienHienThi:
     def _chunutghim(self):
         return "📌 Bỏ ghim" if self.is_ghim else "📌 Ghim"
 
+    def _doiangame(self, idnguoichoi):
+        # Bấm con mắt trên danh sách nhân vật: ẩn / hiện game của nhân vật đó (nhớ theo ID người chơi, cửa sổ đổi hwnd khi đăng nhập lại
+        # vẫn ẩn). 0 = nhân vật chưa tải xong
+        if not idnguoichoi:
+            return
+        self.idangames.symmetric_difference_update({idnguoichoi})
+        luucaidatgiaodien(dict(taicaidatgiaodien(), angame = sorted(self.idangames)))
+        self._capnhatangame()
+        self._capnhatdanhsachnhanvat()
+
+    def _capnhatangame(self):
+        # Chỉ ẩn cửa sổ đang chơi (bot vừa gửi dữ liệu): cửa sổ đang đăng nhập / bị dis thì dữ liệu cũ, để trên màn hình cho bước đăng nhập
+        # (đăng nhập tự đưa cửa sổ về màn hình, vào game xong lại bị ẩn). Nhân vật không trong danh sách ẩn mà cửa sổ còn ẩn (vừa bấm Hiện,
+        # hoặc ẩn từ lần chạy trước) thì đưa về
+        baygio = time.time()
+        for hwnd, info in list(self.shared_data.items()):
+            if not isinstance(info, dict):
+                continue
+            if info.get("idnguoichoi") not in self.idangames:
+                if is_cuasogamedaan(hwnd):
+                    hiencuasogame(hwnd)
+            elif baygio - info.get("thoidiemcapnhat", 0) < 5.:
+                ancuasogame(hwnd)
+
+    def hientatcagame(self):
+        # Thoát bot: đưa mọi cửa sổ game về màn hình (không thì không ai dời về được)
+        for hwnd in list(self.shared_data.keys()):
+            hiencuasogame(hwnd)
+
     def _domau(self, widget, doimau):
         for con in widget.winfo_children():
             if isinstance(con, ttk.Treeview):
@@ -556,24 +647,26 @@ class GiaoDienHienThi:
         frame = ttk.Frame(self.root)
         frame.pack(fill = tk.X, padx = 8, pady = (8, 4))
 
-        # Cột "hwnd" ẩn đi (vẫn dùng làm khoá), chỉ hiện thông tin dễ đọc. Cột cây #0 chỉ hiện ảnh đinh ghim (bấm để ghim lên đầu),
-        # cột "keo" là tay nắm kéo thả (kéo ở cột nào cũng được), bấm cột "bat" bật/tắt bot nhân vật đó; cột "viec" là bot đang cho
-        # nhân vật làm gì (nhiệm vụ / phó bản / cất kho / lộ trình...), dài quá thì rê chuột xem đủ; bấm ⏹ ở cột "dung" ngừng việc đó
-        columns = ("hwnd", "keo", "bat", "name", "hp", "mp", "map", "status", "viec", "dung")
-        self.tree = BangCatChu(frame, columns = columns, displaycolumns = columns[1:], show = ("tree", "headings"), height = 5, selectmode = "browse")
-        self._anhghim = taoanhdinhghim(self._px(16), True)
-        self._anhboghim = taoanhdinhghim(self._px(16), False)
-        self.tree.column("#0", width = self._px(28), minwidth = self._px(28), stretch = False)
+        # Cột "hwnd" ẩn đi (vẫn dùng làm khoá), chỉ hiện thông tin dễ đọc. Cột cây #0 là dải icon cùng tông: ô tích bật/tắt bot nhân vật đó,
+        # tay nắm kéo thả (kéo ở cột nào cũng được), con mắt (bấm để ẩn / hiện cửa sổ game); cột "viec" là bot đang cho
+        # nhân vật làm gì (nhiệm vụ / phó bản / cất kho / lộ trình...), dài quá thì rê chuột xem đủ.
+        # Máu / Nội lực / Trạng thái tạm ẩn (vẫn giữ trong values, màu dòng vẫn báo chết / tạm ngưng / máu thấp / tắt bot)
+        columns = ("hwnd", "keo", "bat", "name", "hp", "mp", "map", "status", "viec")
+        self.tree = BangCatChu(frame, columns = columns, displaycolumns = ("name", "map", "viec"), show = ("tree", "headings"), height = 5,
+                               selectmode = "browse")
+        # {(mắt ẩn, tắt bot): ảnh dải icon}
+        self._anhdaiicon = {(an, tat): taoanhdaiicon(self._px(COICON), self._px(KHOANGICON), an, tat) for an in (False, True) for tat in (False, True)}
+        rongicon = self._px(COICON * 3 + KHOANGICON * 2 + 14)
+        self.tree.column("#0", width = rongicon, minwidth = rongicon, stretch = False)
         for col, text, width, anchor in (
                 ("keo", "", 20, tk.CENTER),
                 ("bat", "", 26, tk.CENTER),
-                ("name", "Nhân vật", 110, tk.W),
+                ("name", "Nhân vật", 130, tk.W),
                 ("hp", "Máu", 45, tk.W),
                 ("mp", "Nội lực", 64, tk.W),
-                ("map", "Bản đồ", 110, tk.W),
+                ("map", "Bản đồ", 170, tk.W),
                 ("status", "Trạng thái", 90, tk.W),
-                ("viec", "Hoạt động", 170, tk.W),
-                ("dung", "", 26, tk.CENTER)):
+                ("viec", "Hoạt động", 260, tk.W)):
             # Tên cột và dữ liệu cùng sát trái (các cột icon thì căn giữa)
             self.tree.heading(col, text = text, anchor = anchor)
             self.tree.column(col, width = self._px(width), anchor = anchor, stretch = col in ("name", "map", "viec"))
@@ -591,6 +684,7 @@ class GiaoDienHienThi:
         self.tree.bind("<ButtonPress-1>", self._bamdongnhanvat)
         self.tree.bind("<B1-Motion>", self._keodongnhanvat)
         self.tree.bind("<ButtonRelease-1>", self._thadongnhanvat)
+        self.tree.bind("<Double-1>", self._bamdupnhanvat)
 
     def _khoanhanvat(self, iid):
         # ID người chơi của dòng (khoá thứ tự / ghim), 0 khi nhân vật chưa tải xong
@@ -605,7 +699,13 @@ class GiaoDienHienThi:
         if not iid:
             return
         cot = self.tree.identify_column(event.x)
-        if cot == "#2":
+        # Dải icon cột #0 (ảnh sát trái, cách mép vài px): biết đang bấm icon nào theo vị trí x, ranh giới ở giữa khoảng cách 2 icon
+        icon = None
+        if cot == "#0":
+            bbox = self.tree.bbox(iid, "#0")
+            buoc = self._px(COICON + KHOANGICON)
+            icon = int((event.x - (bbox[0] if bbox else 0) - self._px(3) + self._px(KHOANGICON) / 2) // buoc) if buoc else 0
+        if icon is not None and icon <= 0:
             # Ô tích: bấm là đảo trạng thái bot của riêng nhân vật này (không đổi dòng đang chọn)
             info = self.shared_data.get(int(iid)) or {}
             dangtat = self._tatbotchoxacnhan.get(int(iid), (info.get("_is_tatbot"),))[0]
@@ -613,22 +713,25 @@ class GiaoDienHienThi:
             self.command_dict[int(iid)] = f"set_tatbot:{0 if dangtat else 1}"
             self._capnhatdanhsachnhanvat()
             return "break"
-        if cot == "#9":
-            # Nút ⏹: ngừng việc đang hiện ở cột "Hoạt động" (hỏi lại cho chắc, bấm nhầm thì mất cả phó bản đang đi)
-            info = self.shared_data.get(int(iid)) or {}
-            viec = self._viecngungduoc(info, bool(info.get("_is_tatbot")))
-            if viec and hopthoai.askyesno("Ngừng hoạt động", f"Ngừng \"{viec}\" của {info.get('tennhanvat') or '?'}?", parent = self.root):
-                self.command_dict[int(iid)] = "ngunghoatdong"
-            return "break"
-        if cot == "#0":
-            idnguoichoi = self._khoanhanvat(iid)
-            if idnguoichoi:
-                self._ghimnhanvat.symmetric_difference_update({idnguoichoi})
-                self._luudanhsachnhanvat()
-                self._capnhatdanhsachnhanvat()
+        if icon is not None and icon >= 2:
+            # Con mắt: ẩn / hiện cửa sổ game của riêng nhân vật này (không đổi dòng đang chọn)
+            self._doiangame(self._khoanhanvat(iid))
             return "break"
         if self._khoanhanvat(iid):
             self._dongdangkeo = [iid, False]
+
+    def _bamdupnhanvat(self, event):
+        # Bấm đúp một dòng (ngoài dải icon): đưa cửa sổ game của nhân vật đó lên trước. Game đang bị ẩn (con mắt) thì hiện lại trước
+        if self.tree.identify_region(event.x, event.y) != "cell":
+            return
+        iid = self.tree.identify_row(event.y)
+        if not iid:
+            return
+        idnguoichoi = self._khoanhanvat(iid)
+        if idnguoichoi in self.idangames:
+            self._doiangame(idnguoichoi)
+        focuscuasogame(int(iid))
+        return "break"
 
     def _keodongnhanvat(self, event):
         if not self._dongdangkeo:
@@ -637,9 +740,7 @@ class GiaoDienHienThi:
         dich = self.tree.identify_row(event.y)
         if not self.tree.exists(iid) or not dich or dich == iid:
             return
-        # Chỉ đổi chỗ trong cùng nhóm (ghim với ghim, thường với thường), dòng ghim luôn ở trên
-        idkeo, iddich = self._khoanhanvat(iid), self._khoanhanvat(dich)
-        if not iddich or (idkeo in self._ghimnhanvat) != (iddich in self._ghimnhanvat):
+        if not self._khoanhanvat(dich):
             return
         self.tree.configure(cursor = "sb_v_double_arrow")
         self.tree.move(iid, "", self.tree.index(dich))
@@ -655,8 +756,7 @@ class GiaoDienHienThi:
         self._dongdangkeo = None
 
     def _luudanhsachnhanvat(self):
-        luudanhsachnhanvat({"thutu": self._thutunhanvat, "ghim": [k for k in self._thutunhanvat if k in self._ghimnhanvat] +
-                                                                  sorted(self._ghimnhanvat.difference(self._thutunhanvat))})
+        luudanhsachnhanvat({"thutu": self._thutunhanvat})
 
     def _taothanhtrangthai(self):
         frame = ttk.Frame(self.root)
@@ -676,17 +776,19 @@ class GiaoDienHienThi:
 
         # Dòng cảnh báo tạm ngưng (chỉ hiện khi phát hiện người chơi ẩn thân) + nút bật lại
         self.frame_tamngung = tk.Frame(frame, bg = self._mau["nen_canhbao"], highlightbackground = MAUCHU_DO, highlightthickness = 1)
-        self.lbl_tamngung = tk.Label(self.frame_tamngung, text = "", fg = MAUCHU_DO, bg = self._mau["nen_canhbao"], justify = tk.LEFT,
-                                     anchor = tk.W, wraplength = self._px(300), font = (FONTCHU, COCHU, "bold"))
-        self.lbl_tamngung.pack(side = tk.LEFT, fill = tk.X, expand = True, padx = 6, pady = 4)
-
         def on_tieptuchoatdong():
             hwnd = self.get_selected_hwnd()
             if hwnd:
                 self.command_dict[hwnd] = "tieptuchoatdong"
 
+        # Nút cố định ở góc phải (cột không giãn), chữ chiếm phần còn lại và tự xuống dòng theo đúng bề rộng còn lại
+        self.frame_tamngung.columnconfigure(0, weight = 1)
+        self.lbl_tamngung = tk.Label(self.frame_tamngung, text = "", fg = MAUCHU_DO, bg = self._mau["nen_canhbao"], justify = tk.LEFT,
+                                     anchor = tk.W, width = 1, font = (FONTCHU, COCHU, "bold"))
+        self.lbl_tamngung.grid(row = 0, column = 0, sticky = tk.EW, padx = 6, pady = 4)
+        self.lbl_tamngung.bind("<Configure>", lambda e: self.lbl_tamngung.configure(wraplength = max(e.width - 4, 50)))
         self._gantooltip(ttk.Button(self.frame_tamngung, text = "Bật lại", style = "Chinh.TButton", command = on_tieptuchoatdong),
-                         "Bỏ tạm ngưng, cho nhân vật đang chọn hoạt động lại ngay").pack(side = tk.RIGHT, padx = 6, pady = 4)
+                         "Bỏ tạm ngưng, cho nhân vật đang chọn hoạt động lại ngay").grid(row = 0, column = 1, sticky = tk.E, padx = 6, pady = 4)
 
     def _px(self, sopixel):
         return int(sopixel * self._heso)
@@ -893,6 +995,30 @@ class GiaoDienHienThi:
         self.spin_khoangcachgiuketancong.pack(side = tk.LEFT, padx = 4)
         self._ganspinboxapdung(self.spin_khoangcachgiuketancong, on_giukhoangcach_change)
         ttk.Label(hanggiukhoangcach, text = "ô", style = "Phu.TLabel").pack(side = tk.LEFT)
+
+        # Máu thấp thì chạy xa khỏi mọi kẻ đang tấn công (mọi phái, cả quái, không cần tick ô trên); ngưỡng chạy 0 = tắt
+        hangchaytron = ttk.Frame(nhom)
+        hangchaytron.grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W)
+
+        def taoochaytron(ten, lenh, nhan_truoc, nhan_sau):
+            ttk.Label(hangchaytron, text = nhan_truoc).pack(side = tk.LEFT)
+
+            def on_change(hwnd = None):
+                hwnd = hwnd or self.get_selected_hwnd()
+                if hwnd:
+                    try:
+                        self.command_dict[hwnd] = f"{lenh}:{self.vars[ten].get()}"
+                    except tk.TclError:
+                        pass
+
+            spin = ttk.Spinbox(hangchaytron, from_ = 0, to = 100, increment = 5, width = 4, textvariable = self.vars[ten], command = on_change)
+            spin.pack(side = tk.LEFT, padx = 4)
+            self._ganspinboxapdung(spin, on_change)
+            ttk.Label(hangchaytron, text = nhan_sau).pack(side = tk.LEFT)
+            return spin
+
+        self.spin_mauchaytron = taoochaytron("mauchaytron", "set_mauchaytron", "Máu dưới", "% thì chạy trốn,")
+        self.spin_mauhetchaytron = taoochaytron("mauhetchaytron", "set_mauhetchaytron", " trên", "% đánh lại (0 = tắt)")
 
     def _taonhomtamdanh(self, tab):
         # Nhóm Tầm đánh đặt cuối tab Chiến đấu
@@ -1818,7 +1944,7 @@ class GiaoDienHienThi:
 
         hangduongdan = ttk.Frame(nhom)
         hangduongdan.grid(row = 2, column = 0, sticky = tk.EW, pady = (8, 0))
-        ttk.Label(hangduongdan, text = "Đường dẫn game:").pack(side = tk.LEFT)
+        ttk.Label(hangduongdan, text = "Đường dẫn game chung:").pack(side = tk.LEFT)
         self.str_duongdangame = tk.StringVar(value = duongdangamemaynay(taicauhinhdangnhap()))
         ttk.Entry(hangduongdan, textvariable = self.str_duongdangame).pack(side = tk.LEFT, fill = tk.X, expand = True, padx = (4, 4))
 
@@ -1829,7 +1955,7 @@ class GiaoDienHienThi:
                 cauhinh.setdefault("duongdangames", {})[tenmaynay()] = self.str_duongdangame.get().strip()
                 luucauhinhdangnhap(cauhinh)
 
-        self._gantooltip(ttk.Button(hangduongdan, text = "Lưu", command = on_luuduongdan), "Lưu đường dẫn game cho riêng máy này").pack(side = tk.LEFT)
+        self._gantooltip(ttk.Button(hangduongdan, text = "Lưu", command = on_luuduongdan), "Lưu đường dẫn game cho riêng máy này (tài khoản có đường dẫn riêng thì dùng đường dẫn riêng)").pack(side = tk.LEFT)
         self._taohuongdan(hangnut, f"{duongdantaikhoan()} · một file chung mọi máy (đồng bộ qua git), mỗi tài khoản chỉ bật được cho một máy "
                                    "nên hai máy không giành nhau. Thêm khi đang chọn nhân vật trong game thì tên và ID tự điền sẵn, bật luôn cho máy này.")
         self._taikhoandanghien = None
@@ -1921,11 +2047,12 @@ class GiaoDienHienThi:
         else:
             taikhoan = dict(taikhoans[vitri])
         giatris = {k: ("" if taikhoan.get(k) is None else str(taikhoan.get(k))) for k in ("tennhanvat", "idnguoichoi", "user", "pass", "group", "server",
-                                                                                          "char_index", "vitricuaso")}
+                                                                                          "char_index", "vitricuaso", "duongdangame")}
         truongs = [("tennhanvat", "Tên nhân vật", None), ("idnguoichoi", "ID người chơi (cố định, ưu tiên để nhận ra)", None),
                    ("user", "Tài khoản", None), ("pass", "Mật khẩu", None),
                    ("group", "Cụm máy chủ", ["1", "2", "3", "4"]), ("server", "Máy chủ", ["1", "2"]),
-                   ("char_index", "Ô nhân vật (1-6)", ["1", "2", "3", "4", "5", "6"]), ("vitricuaso", "Vị trí cửa sổ (1-4 góc, 5 giữa)", ["1", "2", "3", "4", "5"])]
+                   ("char_index", "Ô nhân vật (1-6)", ["1", "2", "3", "4", "5", "6"]), ("vitricuaso", "Vị trí cửa sổ (1-4 góc, 5 giữa)", ["1", "2", "3", "4", "5"]),
+                   ("duongdangame", "Đường dẫn game riêng (trống = đường dẫn chung, vd bản Niết Bàn)", None)]
 
         def kiemtra(kq):
             if not kq["user"].strip() or not kq["pass"]:
@@ -1937,6 +2064,8 @@ class GiaoDienHienThi:
             for t, toida in (("group", 4), ("server", 2), ("char_index", 6), ("vitricuaso", 5)):
                 if not kq[t].strip().isdigit() or not 1 <= int(kq[t]) <= toida:
                     return f"Ô \"{dict((k, n) for k, n, _ in truongs)[t]}\" phải từ 1 tới {toida}"
+            if kq["duongdangame"].strip() and not os.path.isfile(kq["duongdangame"].strip()):
+                return "Không thấy file game ở đường dẫn riêng"
             return None
 
         kq = self._hopthoaituido("Thêm tài khoản" if is_moi else "Sửa tài khoản", truongs, giatris, kiemtra, matkhaus = ("pass",))
@@ -1945,6 +2074,10 @@ class GiaoDienHienThi:
         moi = dict(taikhoan, tennhanvat = kq["tennhanvat"].strip(), idnguoichoi = int(kq["idnguoichoi"]) if kq["idnguoichoi"].strip() else None,
                    user = kq["user"].strip(), **{"pass": kq["pass"]}, group = int(kq["group"]), server = int(kq["server"]),
                    char_index = int(kq["char_index"]), vitricuaso = int(kq["vitricuaso"]))
+        if kq["duongdangame"].strip():
+            moi["duongdangame"] = kq["duongdangame"].strip()
+        else:
+            moi.pop("duongdangame", None)
         if is_moi:
             taikhoans.append(moi)
             vitri = len(taikhoans) - 1
@@ -3832,6 +3965,7 @@ class GiaoDienHienThi:
             self._capnhatmatac()
             self._capnhattodoimotlan()
             self._capnhatcanhbao()
+            self._capnhatangame()
             # Nội dung có thể cao lên/thấp xuống (dòng tạm ngưng, danh sách tài khoản...) mà Canvas không tự biết
             for tabcuon in self._tabcuons:
                 self._capnhatcuontab(*tabcuon)
@@ -3891,28 +4025,6 @@ class GiaoDienHienThi:
             return "Tự đánh (không tự tìm mục tiêu)"
         return "Không tự đánh"
 
-    @staticmethod
-    def _viecngungduoc(info, is_tatbot):
-        # Việc nút ⏹ sẽ ngừng (cùng thứ tự với _botdanglam và tactu ngung_hoatdong), "" = không có gì để ngừng
-        if is_tatbot or info.get("_thoigiantamngungconlai", 0) > 0:
-            return ""
-        hv = info.get("_hangviec") or {}
-        if hv.get("danglam"):
-            return VIECHANG_MAP.get(hv["danglam"]) or VIECDOI_MAP.get(hv["danglam"]) or VIECRIENG_MAP.get(hv["danglam"], hv["danglam"])
-        if (info.get("_doiphoban") or {}).get("giaidoan") not in (None, "xong"):
-            return "Đội phó bản"
-        if info.get("_is_dangcatkho"):
-            return "Cất kho"
-        if info.get("_is_dangtodoimotlan"):
-            return "Tổ đội 1 lần"
-        if info.get("_idbandocandi"):
-            return f"Đi tới {laytenbando(info['_idbandocandi'])}"
-        if info.get("_is_tudongtheosau"):
-            return "Theo sau"
-        if info.get("_is_tudongdichuyendiemdanhxungquanh"):
-            return "Lộ trình điểm đánh"
-        return ""
-
     def _capnhatdanhsachnhanvat(self):
         dulieu = dict(self.shared_data.items())
 
@@ -3947,15 +4059,15 @@ class GiaoDienHienThi:
                 hwnd,
                 "≡",
                 "☐" if is_tatbot else "☑",
-                info.get("tennhanvat") or "Đang tải...",
+                f"{info.get('tennhanvat')} ({info['idnguoichoi']})" if info.get("tennhanvat") and info.get("idnguoichoi")
+                else info.get("tennhanvat") or "Đang tải...",
                 f"{info.get('phantramsinhluc', 0)}%",
                 f"{info.get('phantramnoiluc', 0)}%",
                 f"{laytenbando(info['tenbando'])} ({info['tenbando']})" if info.get("tenbando") is not None else "-",
                 trangthai,
                 self._botdanglam(info, is_tatbot),
-                "⏹" if self._viecngungduoc(info, is_tatbot) else "",
             )
-            anhghim = self._anhghim if idnguoichoi in self._ghimnhanvat else self._anhboghim
+            anhmat = self._anhdaiicon[(idnguoichoi in self.idangames, is_tatbot)]
             if is_tatbot:
                 tags = ("tatbot",)
             elif info.get("status") == "Đã chết":
@@ -3968,22 +4080,22 @@ class GiaoDienHienThi:
                 tags = ()
             if iid in hienco:
                 if tuple(str(v) for v in self.tree.item(iid, "values")) != tuple(str(v) for v in values) or tuple(self.tree.item(iid, "tags")) != tags \
-                        or tuple(str(a) for a in self.tree.item(iid, "image") or ()) != (str(anhghim),):
-                    self.tree.item(iid, values = values, tags = tags, image = anhghim)
+                        or tuple(str(a) for a in self.tree.item(iid, "image") or ()) != (str(anhmat),):
+                    self.tree.item(iid, values = values, tags = tags, image = anhmat)
                 hienco.discard(iid)
             else:
-                self.tree.insert("", tk.END, iid = iid, values = values, tags = tags, image = anhghim)
+                self.tree.insert("", tk.END, iid = iid, values = values, tags = tags, image = anhmat)
         for iid in hienco:
             self.tree.delete(iid)
 
-        # Sắp xếp: ghim lên đầu, trong mỗi nhóm theo thứ tự kéo thả; nhân vật chưa tải xong (chưa có ID) xuống cuối. Đang kéo thì để yên
+        # Sắp xếp theo thứ tự kéo thả; nhân vật chưa tải xong (chưa có ID) xuống cuối. Đang kéo thì để yên
         if not (self._dongdangkeo and self._dongdangkeo[1]):
             vitri = {k: i for i, k in enumerate(self._thutunhanvat)}
             dongs = list(self.tree.get_children())
 
             def khoa(iid):
                 k = self._khoanhanvat(iid)
-                return (k not in self._ghimnhanvat, vitri.get(k, len(vitri)) if k else len(vitri) + 1, dongs.index(iid))
+                return (vitri.get(k, len(vitri)) if k else len(vitri) + 1, dongs.index(iid))
 
             sapxep = sorted(dongs, key = khoa)
             if sapxep != dongs:
@@ -4016,7 +4128,7 @@ class GiaoDienHienThi:
 
         conlai = info.get("_thoigiantamngungconlai", 0)
         if conlai > 0:
-            self.lbl_tamngung.config(text = f"⏸ TẠM NGƯNG – {info.get('_lydotamngung', '')}\nTự chạy lại sau {int(conlai) // 60}:{int(conlai) % 60:02d}")
+            self.lbl_tamngung.config(text = f"⏸ TẠM NGƯNG – {info.get('_lydotamngung', '')} · tự chạy lại sau {int(conlai) // 60}:{int(conlai) % 60:02d}")
             if not self.frame_tamngung.winfo_ismapped():
                 self.frame_tamngung.pack(fill = tk.X, pady = (6, 0))
         elif self.frame_tamngung.winfo_ismapped():
@@ -4077,9 +4189,18 @@ class GiaoDienHienThi:
             except tk.TclError:
                 pass
 
+        for ten, khoa, macdinh in (("mauchaytron", "_mauchaytron", NGUONGMAUCHAYTRON), ("mauhetchaytron", "_mauhetchaytron", NGUONGMAUHETCHAYTRON)):
+            if widgetdangfocus != getattr(self, f"spin_{ten}", None):
+                try:
+                    giatri_moi = int(info.get(khoa, macdinh))
+                    if self.vars[ten].get() != giatri_moi:
+                        self.vars[ten].set(giatri_moi)
+                except tk.TclError:
+                    pass
+
         if widgetdangfocus != getattr(self, 'spin_bankinhdiemdanh', None):
             try:
-                bankinh_moi = info.get("_bankinhdiemdanh", 18.0)
+                bankinh_moi = info.get("_bankinhdiemdanh", 40.0)
                 if abs(self.vars["bankinhdiemdanh"].get() - bankinh_moi) > 0.01:
                     self.vars["bankinhdiemdanh"].set(bankinh_moi)
             except tk.TclError:

@@ -74,6 +74,9 @@ BANDOTRAINTHEOCAP = (
     (100, 1000, (291,)),                   # Khốn Ma Trận 1 (người dùng chọn cho cấp 100)
 )
 SOLANTHUSUMON = 3
+# Trước khi mua: "desc <NPC># <ô>" xem ô đó đúng món không (hàng nhớ có thể của nhân vật khác / cửa hàng đã đổi), cách nhau / tối đa
+GIANCACHDESCCUAHANG = 1.5
+SOLANDESCCUAHANG = 3
 # Mỗi bước hội thoại cách nhau, chờ menu trả lời tối đa
 GIANCACHBUOCHOITHOAI = 0.8
 THOIGIANCHOMENU = 2.
@@ -231,7 +234,7 @@ class TacTuSuMon:
         # Phó bản mượn ID bản đồ ngoài (Phong Yêu Kính, Tập Kích Môn Phái): quái / NPC trong đó không có ở bản đồ thật cùng ID, không ghi
         if moitruong.get_is_phobanmuonbando() is not False:
             return
-        self._sovitri.nap(idnguoichoi)
+        self._sovitri.nap(idnguoichoi, moitruong.is_nietban)
         for diachi in moitruong._get_diachidoituongxungquanhs():
             if not moitruong.get_is_nhanvattontai(diachi) or moitruong.get_is_nguoichoi(diachi):
                 continue
@@ -411,7 +414,14 @@ class TacTuSuMon:
                 if now - s["lucmonphai"] > GIANCACHHOIMONPHAI and now - moitruong.get_thoidiemthaydoibandogannhat() >= 2.:
                     self.moitruong._inlog(f"[SƯ MÔN] Hồi môn phái để tới {nhan}")
                     moitruong.action_ngatdichuyen()
-                    moitruong.action_thucthicaulenh("dGludmF0 1")
+                    # Bỏ cờ Xa Phu còn sót từ lần về thành trước: về phái thì Tín Vật là xong
+                    self._xaphunietban = None
+                    # Niết Bàn không có "dGludmF0 1": Tín Vật về môn phái (không qua Xa Phu), vận khí như Hồi Thành Phù
+                    if moitruong.is_nietban:
+                        moitruong.action_khoavankhitrieuhoi((LENHTINVAT_NIETBAN,), ten = "TÍN VẬT")
+                        moitruong.action_thucthicaulenh(LENHTINVAT_NIETBAN)
+                    else:
+                        moitruong.action_thucthicaulenh(LENHHOIMONPHAI)
                     s["lucmonphai"] = now
                     s["solanmonphai"] += 1
                 self._capnhatbuocdichuyen(f"Sư môn: Hồi môn phái tới {nhan}")
@@ -586,7 +596,9 @@ class TacTuSuMon:
         moitruong = self.moitruong
         diachi, yeucau = self._tinpc(s, tennpc, idbandogoiy, is_chibandogoiy)
         if not diachi:
-            if yeucau is None and not idbandogoiy:
+            # yeucau None còn là đang chờ (vận khí, toạ độ chưa ổn định vừa nhận nhiệm vụ...): chỉ dừng khi thật sự không tra được vị trí
+            # (TieuLyPhiDao dừng "không biết Ngụy Vương ở đâu" 11ms sau khi nhận, dù đã biết (313, 122) Ngụy Quốc)
+            if yeucau is None and not idbandogoiy and not self._sovitri.timnpc(tennpc, self._thumucgame()):
                 self._ketthucsumon(f"không biết {tennpc} ở đâu ({viec}): đứng gần NPC đó 1 lần cho Foxia ghi lại vị trí")
             return yeucau
         khoangcach = moitruong.get_khoangcach(diachi)
@@ -1310,6 +1322,21 @@ class TacTuSuMon:
         if solan >= SOLANTHUSUMON:
             self._ketthucsumon(f"mua {nv['vatpham']} (ô {o}, giá {gia}) {solan} lần không được")
             return None
+        # Ô / giá có thể là của lần đọc cũ (nhân vật khác, cửa hàng đổi hàng) -> ô đó là món khác (Niết Bàn ô 2 Chủ Tiệm Vũ Khí là Huyền
+        # Mộc Kiếm cùng giá Vân Mộng Kiếm bên Aegis: mua nhầm 3 cây). desc ô trước, sai món (hoặc mua rồi chưa thấy về) thì mở cửa hàng đọc
+        # lại 1 lần (hàng mình vừa đọc đè lên hàng gộp, tin luôn, khỏi desc) rồi mới mua theo ô mới
+        khoadoclai = f"{nv['luot']}|{nv['vatpham']}|doclai"
+        if khoadoclai not in s["thu"]:
+            dung = True if solan else self._kiemhangcuahang(s.setdefault("kiemcuahang", {}), diachi, o, nv["vatpham"])
+            if dung is None:
+                s["trangthai"] = f"xem ô {o} của {loaicuahang} có phải {nv['vatpham']}"
+                return None
+            if not dung or solan:
+                s["thu"][khoadoclai] = (1, time.time())
+                lydo = "không phải món này" if not dung else "mua rồi chưa thấy về"
+                self.moitruong._inlog(f"[SƯ MÔN] {nv['vatpham']} ở ô {o}: {lydo}, đọc lại hàng của {loaicuahang}")
+                self.batdau_mocuahang(diachi)
+                return None
         moitruong.action_ngatdichuyen()
         nganquy = (moitruong.get_nganluong() or 0) - NGANLUONGGIULAI
         if not self._muavatpham(moitruong.get_iddoituong(diachi), o, nv["soluong"] - self._demvatpham(nv["vatpham"]), gia, nv["vatpham"], nganquy):
@@ -1318,6 +1345,32 @@ class TacTuSuMon:
         s["thu"][khoa] = (solan + 1, time.time())
         s["trangthai"] = f"mua {nv['vatpham']} (ô {o}, giá {gia})"
         self.moitruong._inlog(f"[SƯ MÔN] Mua {nv['vatpham']} ở {moitruong.get_tendoituong(diachi)}: ô {o}, giá {gia}")
+        return None
+
+    def _kiemhangcuahang(self, kiems, diachi, o, ten):
+        # Ô o cửa hàng của NPC diachi có phải món ten (Sư môn, Danh Vọng, Mua bù gọi trước khi buy): đọc mô tả game đã nạp (dòng đầu là
+        # tên), chưa khớp thì "desc <id NPC># <ô>" (cách nhau GIANCACHDESCCUAHANG giây). Mô tả cũ của lần desc trước còn trong bộ nhớ nên
+        # chỉ kết luận sai món sau khi đã desc và chờ. SOLANDESCCUAHANG lần không có mô tả thì coi như sai (đọc lại cửa hàng cho chắc).
+        # kiems: {"<id NPC>|<ô>": số lần desc, lúc} của nơi gọi, có kết luận thì xoá để lần sau desc lại từ đầu.
+        # -> True / False, None khi đang chờ mô tả
+        moitruong = self.moitruong
+        dongs = [d.strip() for d in (moitruong.get_motahangcuahang(o) or "").split("\n") if d.strip()]
+        khoa = f"{moitruong.get_iddoituong(diachi)}|{o}"
+        if dongs and is_trungtenvatpham(ten, dongs[0]):
+            kiems.pop(khoa, None)
+            return True
+        kiem = kiems.setdefault(khoa, {"solan": 0, "luc": 0.})
+        now = time.time()
+        if now - kiem["luc"] < GIANCACHDESCCUAHANG:
+            return None
+        if kiem["solan"] and dongs or kiem["solan"] >= SOLANDESCCUAHANG:
+            kiems.pop(khoa, None)
+            moitruong._inlog(f"[CỬA HÀNG] Ô {o} của {moitruong.get_tendoituong(diachi)} là {dongs[0] if dongs else '? (không có mô tả)'}, "
+                             f"không phải {ten}")
+            return False
+        kiem["solan"] += 1
+        kiem["luc"] = now
+        moitruong.action_thucthicaulenh(f"desc {moitruong.get_iddoituong(diachi):x}# {o}")
         return None
 
     def _danhgiammau(self, s, nv, diachi):

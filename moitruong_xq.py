@@ -147,6 +147,7 @@ class MoiTruong:
         self._doancut_cache = {}
         # (bản đồ, x, y, tầm) -> (lúc chọn, ô tới được trong tầm hoặc None) (_chondichtoiduoc)
         self._dichtoiduoc_cache = {}
+        self._diembanthong = None
         self._is_dasetupautoassemblenhatvatpham = False
         self._is_dasetupautoassemblekhoitaothongtinbando = False
         # (vị trí con trỏ cửa sổ trong thông tin game, hiện?) -> đoạn mã gọi vtable[1] ẩn / hiện cửa sổ (_goivtableanhien)
@@ -441,7 +442,14 @@ class MoiTruong:
         if self.dieuphoi and self.get_idtuthenhanvat() in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT):
             self.dieuphoi.baogiuluot()
 
+    def _doilenhnietban(self, caulenh):
+        # Niết Bàn nói chuyện NPC bằng "talk", không phải "tallk"
+        if self.is_nietban and caulenh.startswith("tallk "):
+            return "talk " + caulenh[6:]
+        return caulenh
+
     def action_thucthicaulenh(self, caulenh, douutien = DOUUTIEN_TRUNGBINH, vitrikynang = None):
+        caulenh = self._doilenhnietban(caulenh)
         if self._is_lenhbichankhoavankhi(caulenh):
             return False
         if self._is_chuatoiluotlenh(caulenh, douutien == DOUUTIEN_KHANCAP):
@@ -464,6 +472,7 @@ class MoiTruong:
 
     def action_thucthicaulenh2(self, caulenh, delay = 0.05, is_khancap = False):
         # is_khancap: gửi ngay không chờ lượt chia giữa các nhân vật
+        caulenh = self._doilenhnietban(caulenh)
         if self._is_lenhbichankhoavankhi(caulenh):
             return False
         if time.time() - self._thoidiemthucthicaulenh2gannhat < delay:
@@ -1600,15 +1609,6 @@ class MoiTruong:
 
     def action_dongvongquayso(self):
         self._goivtableanhien(DC.TG_VONGQUAYSO, False)
-
-    def get_is_danghienbaodien(self):
-        # Cửa sổ Bảo Điển (TG_BAODIEN, "zgdict open"): + 0x34 đang hiện, ẩn / hiện bằng vtable[1]
-        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
-        x = read_int(self.tientrinh, x + DC.TG_BAODIEN) if x else 0
-        return read_boolean(self.tientrinh, x + 0x34) if x else False
-
-    def action_dongbaodien(self):
-        self._goivtableanhien(DC.TG_BAODIEN, False)
 
     def get_danhsachidnguoichoixungquanhs(self):
         danhsachidnguoichoixungquanhs = []
@@ -2874,8 +2874,8 @@ class MoiTruong:
         for controten, contromota in zip(controtens, contromotas):
             if not controten:
                 break
-            ten = read_bytes(self.tientrinh, controten, 0x80).split(b"\0")[0].decode("utf-8", "ignore")
-            mota = read_bytes(self.tientrinh, contromota, 0x1000).split(b"\0")[0].decode("utf-8", "ignore") if contromota else ""
+            ten = read_chuoi(self.tientrinh, controten, 0x80).decode("utf-8", "ignore")
+            mota = read_chuoi(self.tientrinh, contromota, 0x1000).decode("utf-8", "ignore") if contromota else ""
             mucs.append((re.sub(r"\x1b.", "", ten), mota))
         return mucs
 
@@ -2898,7 +2898,7 @@ class MoiTruong:
             controten = read_int(self.tientrinh, x + 0x90 + dong * 4)
             if not controten:
                 return None
-            ten = re.sub(r"\x1b.", "", read_bytes(self.tientrinh, controten, 0x80).split(b"\0")[0].decode("utf-8", "ignore"))
+            ten = re.sub(r"\x1b.", "", read_chuoi(self.tientrinh, controten, 0x80).decode("utf-8", "ignore"))
             if not ten.startswith(" "):
                 is_trongmuc = ten.strip().lower() == tenmuccha.strip().lower()
                 continue
@@ -3601,6 +3601,92 @@ class MoiTruong:
         if len(self._dichtoiduoc_cache) > 64:
             self._dichtoiduoc_cache.clear()
         self._dichtoiduoc_cache[khoa] = (time.time(), ketqua)
+        return ketqua
+
+    def get_diembanthong(self, x2, y2, tamtoida):
+        # Ô đứng bắn mục tiêu ở (x2, y2) được (tầm xa bị vật cản chắn): ô đi được, đoạn thẳng tới mục tiêu không qua vật cản, tầm
+        # max(|dx|, |dy|) <= tamtoida. Không chọn điểm giữa mình và mục tiêu: chi phí = quãng đi + HESOPHATGANMUCTIEU x số ô gần mục
+        # tiêu hơn bây giờ => ưu tiên đi ngang / lùi ra chỗ thông, giữ khoảng cách. Thử SOOTHUDICHTOIDUOC ô rẻ nhất bằng tìm đường cục
+        # bộ, bỏ ô phải vòng xa hay đường đi lướt sát mục tiêu. Ô đã chọn giữ tới khi hết dùng được. None: không có ô nào
+        diachinhanvat = self.get_diachicosothongtinnhanvat1()
+        if not diachinhanvat:
+            return None
+        x1, y1 = struct.unpack("<ii", read_bytes(self.tientrinh, diachinhanvat + 0x18, 8))
+        x2, y2 = round(x2), round(y2)
+        idbando = self.get_idbandohientai()
+        now = time.time()
+        r = BANKINHTIMDIEMBAN
+        ox, oy = min(x1 - r, x2), min(y1 - r, y2)
+        luoi = self._get_luoivatcan(ox, oy, max(x1 + r, x2), max(y1 + r, y2))
+        if not luoi:
+            return None
+
+        def is_vatcan(x, y):
+            return luoi[x - ox][y - oy]
+
+        def is_thong(xa, ya):
+            sobuoc = max(1, math.ceil(math.dist((xa, ya), (x2, y2)) * 2))
+            for i in range(1, sobuoc):
+                x, y = round(xa + (x2 - xa) * i / sobuoc), round(ya + (y2 - ya) * i / sobuoc)
+                if (x, y) not in ((xa, ya), (x2, y2)) and is_vatcan(x, y):
+                    return False
+            return True
+
+        def tam(x, y):
+            return max(abs(x - x2), abs(y - y2))
+
+        def is_dungduoc(o):
+            return abs(o[0] - x1) <= r and abs(o[1] - y1) <= r and not is_vatcan(*o) and tam(*o) <= tamtoida and is_thong(*o)
+
+        # Giữ ô cũ (cùng bản đồ) khi còn bắn được từ đó: mục tiêu nhích ít thì không chọn lại, kẻo đổi hướng đi liên tục
+        cu = self._diembanthong
+        if cu and cu[0] == idbando and cu[1] and is_dungduoc(cu[1]):
+            return cu[1]
+        # Vừa tính mà không ra ô nào: chờ THOIGIANTINHLAIDIEMBAN giây mới tính lại (mỗi lần tốn tới SOOTHUDICHTOIDUOC lần tìm đường)
+        if cu and cu[0] == idbando and cu[1] is None and now - cu[2] < THOIGIANTINHLAIDIEMBAN and cu[3] == (x2, y2):
+            return None
+
+        tamhientai = min(tam(x1, y1), tamtoida)
+        ungviens = []
+        for dx in range(-r, r + 1):
+            for dy in range(-r, r + 1):
+                o = (x1 + dx, y1 + dy)
+                if not is_dungduoc(o):
+                    continue
+                tamo = tam(*o)
+                chiphi = math.hypot(dx, dy) + HESOPHATGANMUCTIEU * max(0., tamhientai - tamo)
+                ungviens.append((tamo < KHOANGCACHDIEMBANTOITHIEU, chiphi, o))
+        ungviens.sort()
+
+        ketqua = None
+        for _, _, o in ungviens[:SOOTHUDICHTOIDUOC]:
+            if o == (x1, y1):
+                ketqua = o
+                break
+            chuoihuong = self._get_chuoihuongtimduongcucbo(x1, y1, *o)
+            if not chuoihuong or len(chuoihuong) >= 100 or self._get_diemcuoichuoihuong(x1, y1, chuoihuong) != o:
+                continue
+            if len(chuoihuong) > HESODUONGVONGDIEMBAN * math.dist((x1, y1), o) + 4:
+                continue
+            # Đường đi không được lao lại gần mục tiêu hơn cả điểm đầu lẫn điểm cuối (vòng qua phía mục tiêu)
+            tamsan = min(tam(x1, y1), tam(*o)) - 1
+            x, y = x1, y1
+            is_satmuctieu = False
+            for kytu in chuoihuong.decode("latin1"):
+                ddx, ddy = HUONGTIMDUONG_MAP.get(kytu, (0, 0))
+                x, y = x + ddx, y + ddy
+                if tam(x, y) < tamsan:
+                    is_satmuctieu = True
+                    break
+            if not is_satmuctieu:
+                ketqua = o
+                break
+        if ketqua is None and ungviens and not self.get_is_cotimduongcucbo():
+            # Chưa có đối tượng tìm đường cục bộ (client chưa click lần nào): lấy ô rẻ nhất, đi bằng tìm đường của game
+            ketqua = ungviens[0][2]
+        self._diembanthong = (idbando, ketqua, now, (x2, y2))
+        if ketqua and IS_LOGDICHUYEN:
+            self._inlog(f"[ĐIỂM BẮN THÔNG] (đang ở {(x1, y1)}, tầm {tam(x1, y1)}) -> {ketqua} (tầm {tam(*ketqua)}), mục tiêu {(x2, y2)}")
         return ketqua
 
     def action_dichuyengiukhoangcachtoidadiembangtimduong(self, x2, y2, khoangcachtoida):

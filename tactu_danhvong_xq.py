@@ -97,6 +97,13 @@ def _laycapvukhi():
     return _CAPVUKHI
 
 
+def _doccapmota(mota):
+    # Cấp trong mô tả món: Aegis "Cấp độ sử dụng: cấp 30", Niết Bàn "Trang bị yêu cầu: 30 cấp" (đo 2026-11-03). -> cấp, 0 khi không ghi
+    khop = re.search(r"Cấp độ sử dụng\s*[:：]\s*cấp\s*(\d+)", mota, re.IGNORECASE) \
+        or re.search(r"Trang bị yêu cầu\s*[:：]\s*(\d+)\s*cấp", mota, re.IGNORECASE)
+    return int(khop.group(1)) if khop else 0
+
+
 def _ghicapvukhi(ten, cap):
     capbiet = _laycapvukhi()
     if not cap or capbiet.get(chuanhoaten(ten)) == cap:
@@ -505,7 +512,7 @@ class TacTuDanhVong:
 
     # --- Trang Bị Quân Đội ---------------------------------------------------------------------------------------------------------
     def _docapmon(self, s, vitri, iddoituong, ten):
-        # Cấp ("Cấp độ sử dụng: cấp N") của món ở ô vitri: đọc mô tả game đã nạp, chưa có thì desc (cách nhau GIANCACHDESC giây).
+        # Cấp (_doccapmota) của món ở ô vitri: đọc mô tả game đã nạp, chưa có thì desc (cách nhau GIANCACHDESC giây).
         # -> cấp, hoặc None khi đang chờ mô tả
         if iddoituong in s["capmon"]:
             return s["capmon"][iddoituong]
@@ -523,8 +530,7 @@ class TacTuDanhVong:
         dongs = [d.strip() for d in mota.split("\n") if d.strip()]
         # Mô tả giữ theo ô: dòng tên phải khớp tên món (tên ô tối đa 31 byte nên chỉ so đầu), không thì mô tả cũ của món khác
         if dongs and chuanhoaten(dongs[0]).startswith(chuanhoaten(ten)):
-            khop = re.search(r"Cấp độ sử dụng\s*[:：]\s*cấp\s*(\d+)", mota, re.IGNORECASE)
-            cap = int(khop.group(1)) if khop else 0
+            cap = _doccapmota(mota)
             s["capmon"][iddoituong] = cap
             _ghicapvukhi(ten, cap)
             self._logdv(f"{ten}: cấp {cap or '? (mô tả không ghi)'}")
@@ -550,8 +556,7 @@ class TacTuDanhVong:
         mota = unicodedata.normalize("NFC", moitruong.get_motahangcuahang(o) or "")
         dongs = [d.strip() for d in mota.split("\n") if d.strip()]
         if dongs and chuanhoaten(dongs[0]).startswith(chuanhoaten(ten)):
-            khop = re.search(r"Cấp độ sử dụng\s*[:：]\s*cấp\s*(\d+)", mota, re.IGNORECASE)
-            cap = int(khop.group(1)) if khop else 0
+            cap = _doccapmota(mota)
             _ghicapvukhi(ten, cap)
             self._logdv(f"{ten} (ô {o} cửa hàng): cấp {cap or '? (mô tả không ghi)'}")
             return cap
@@ -724,6 +729,18 @@ class TacTuDanhVong:
         tra = self._sovitri.timhang(idbando, loaicuahang, CONGVANTRUYNA)
         if not tra:
             return self._mocuahangdv(s, nv, diachi, loaicuahang)
+        # Hàng nhớ có thể của nhân vật khác / bản khác (Niết Bàn xếp hàng khác Aegis): desc ô trước, sai món (hoặc mua rồi chưa thấy về) thì
+        # đọc lại cửa hàng 1 lần, hàng mình vừa đọc thì tin luôn (như sư môn _buocmuahang)
+        tiento = f"{nv['khoa'] if nv else ''}|{CONGVANTRUYNA}"
+        if f"{tiento}|doclai" not in s["thu"]:
+            solan = s["thu"].get(f"{tiento}|mua", (0, 0.))[0]
+            dung = True if solan else self._kiemhangcuahang(s.setdefault("kiemcuahang", {}), diachi, tra[0], CONGVANTRUYNA)
+            if dung is None:
+                s["trangthai"] = f"mua {CONGVANTRUYNA}: xem ô {tra[0]} của {loaicuahang}"
+                return None
+            if not dung or solan:
+                s["thu"][f"{tiento}|doclai"] = (1, time.time())
+                return self._mocuahangdv(s, nv, diachi, loaicuahang)
         self._muadv(s, nv, diachi, tra[0], tra[1], CONGVANTRUYNA, SOLUONGMUACONGVANTRUYNA, f"mua {CONGVANTRUYNA}")
         return None
 

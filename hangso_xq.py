@@ -49,6 +49,8 @@ THANTHUDAN2 = "Thần Thú - Dần (Giới h"
 THANTHUSUU = "Thần Thú - Sửu (Giới hạn)"
 THANTHUSUU2 = "Thần Thú - Sửu (Giới h"
 THANTHUCHUOT = "Thần Thú - Chuột"
+# Bản Niết Bàn: con Chuột tên "12 con Giáp - Chuột" (vật phẩm và đối tượng cùng tên), mô tả không ghi chỉ số cộng cho chủ
+CONGIAPCHUOT = "12 con Giáp - Chuột"
 # Bảo thú vật phẩm thưởng code tân thủ (vật phẩm / con bảo thú game viết "Thuỷ" hoặc "Thủy")
 THUYBINHs = ("Thuỷ Bình", "Thủy Bình")
 THANTHUTHO = "Thần Thú - Thỏ"
@@ -259,6 +261,16 @@ SOOTHUDICHTOIDUOC = 8
 THOIGIANNHODICHTOIDUOC = 3.
 GOCLECHLUIs =(0, 25, 50, 75, 100, 125)
 QUANGLUITHEMTOIDA = 3.
+# Tầm xa (Đường Môn) bị vật cản chắn đường bắn: tìm ô đứng bắn được (đường thẳng tới mục tiêu thông, trong tầm) quanh mình trong
+# BANKINHTIMDIEMBAN ô thay vì chạy lại gần. Chi phí = quãng đi + HESOPHATGANMUCTIEU x số ô gần mục tiêu hơn bây giờ (máu yếu, không
+# lao vào); ô cách mục tiêu dưới KHOANGCACHDIEMBANTOITHIEU ô chỉ dùng khi không còn ô nào khác. Đường đi tới ô đó không được vòng
+# quá HESODUONGVONGDIEMBAN x đường thẳng + 4 bước, không được lại gần mục tiêu quá 1 ô so với điểm đầu / điểm cuối.
+# Ô đã chọn giữ nguyên tới khi hết thông / ra ngoài tầm (không nhảy qua lại); không ra ô nào thì THOIGIANTINHLAIDIEMBAN giây mới tính lại
+BANKINHTIMDIEMBAN = 10
+HESOPHATGANMUCTIEU = 3.
+KHOANGCACHDIEMBANTOITHIEU = 4.
+HESODUONGVONGDIEMBAN = 2.
+THOIGIANTINHLAIDIEMBAN = 0.5
 # Bot tìm đường lại và ghi đoạn mới mỗi chừng này giây kể cả khi đích không đổi (client 0.5s; ngắn hơn để chuỗi không cạn giữa đường)
 THOIGIANTINHLAITIEPCANCANCHIEN = 0.25
 # Mục tiêu đang đi về phía mình, bước tới của nó cách mình không quá chừng này ô (theo ô, max |dx| |dy|) thì đứng chờ
@@ -555,7 +567,7 @@ CAPTUDONGTANGCAPTOIDA = 60
 THOIGIANGUILAITANGCAP = 3.
 # Lên cấp thì tự quay vòng số ở Bảo Điển (TacTu._tudongquayso): lệnh dò bằng log [LỆNH GAME] khi người chơi tự bấm "Khởi động Game".
 # Mỗi lượt gửi lần lượt (mở Bảo Điển, mở vòng quay, "Khởi động Game") cách nhau THOIGIANGIUALENHQUAYSO giây: gửi riêng
-# "zgdict rock start" thì máy chủ không quay (thử 2026-11-02). Máy chủ bật Bảo Điển / vòng quay lên thì bot đóng; chờ máy chủ trả tên
+# "zgdict rock start" thì máy chủ không quay (thử 2026-11-02). Bảo Điển để mở cho người dùng xem phần thưởng, vòng quay thì đóng; chờ máy chủ trả tên
 # món tối đa THOIGIANCHODONGVONGQUAY giây rồi mới sang lượt kế; tự tăng cấp chờ quay hết lượt mới tăng tiếp
 LENHQUAYSOLENCAPs = ("zgdict open", "zgdict rock open", "zgdict rock start")
 THOIGIANGIUALENHQUAYSO = 1.
@@ -825,7 +837,7 @@ BANDO_LANGLYSON3 = 704
 BANDOPHOBANs = (BANDO_BATQUAITRAN, BANDO_THANHKIEU, BANDO_LANGLYSON1, BANDO_LANGLYSON2, BANDO_LANGLYSON3, 891, 892, 893, 894, 895, 896, 897, 898, 899)
 # Phó bản mượn ID bản đồ ngoài, nhận ra qua đầu tên bản đồ game (tên chỉ 20 byte nên bị cắt): Phong Yêu Kính "Phó Bản Phong Y" (ID 1 bản đồ ngẫu nhiên, không bao giờ là Tân Thủ Thôn / quốc gia; vd 133
 # như Thần Bí Động 1), Tập Kích Môn Phái "Tập Kích Môn Ph" (ID 151 như Kênh Trịnh Quốc 1). Lộ trình nạp trong đó ra ngoài là tự bỏ
-TIENTOTENPHOBANMUONBANDOs = ("Phó Bản", "Tập Kích Môn")
+TIENTOTENPHOBANMUONBANDOs = ("Phó Bản", "Tập Kích Môn", "Chiến Quốc Tr")
 # Đầu tên bản đồ Tập Kích Môn Phái: gom quái tới khi mọi con thấy được đều đã gom 1 lần mới dừng đánh
 TIENTOTENBANDOTAPKICHMONPHAI = "Tập Kích Môn"
 # Vừa ra khỏi phó bản mượn ID bản đồ ngoài (Phong Yêu Kính): chờ chừng này giây mới tự chọn lộ trình mẫu (ID bản đồ đổi sau tên)
@@ -903,7 +915,7 @@ BANDO7QUOCGIAs = (BANDO_TEQUOC, BANDO_HANQUOC, BANDO_TRIEUQUOC, BANDO_NGUYQUOC, 
 
 BANDO_CULOC = 131
 
-BAOTHUVATPHAMs = (SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN, THANTHUMAYET, THANTHUDAN, THANTHUSUU, THANTHUDAN2, THANTHUSUU2, THANTHUCHUOT, *THUYBINHs)
+BAOTHUVATPHAMs = (SONGTUDUNGCAM, SONGTUANHMINH, THANTHUTHO, THANTHUTHIN, THANTHUMAYET, THANTHUDAN, THANTHUSUU, THANTHUDAN2, THANTHUSUU2, THANTHUCHUOT, CONGIAPCHUOT, *THUYBINHs)
 # Tên chỉ số trên bảng Nhân Vật -> các ô trong khối điều khiển (KDK + dich; cặp thấp / cao), đối chiếu bảng Nhân Vật của Thọ 2026-11-02.
 # Bảo thú vật phẩm ghi trong mô tả chỉ số cộng cho chủ ("tăng 7% Ngoại Công cho chủ nhân", "gia tăng cho chủ nhân 7% Bạo Kích")
 CHISONHANVAT_MAP = {
@@ -915,6 +927,11 @@ CHISONHANVAT_MAP = {
     "Nội Kháng": (0x154C, 0x155C),
     # Bạo Kích x 100 (901 = 9.01%); Thần Thú - Dần cộng đúng 700
     "Bạo Kích": (0x15BC,),
+}
+# Bảo thú vật phẩm mà mô tả không ghi chỉ số ("Sau khi triệu hồi sẽ tăng thêm năng lực của chủ nhân"): chỉ số cộng cho chủ khai tay.
+# 12 con Giáp - Chuột tăng cả Ngoại / Nội Công / Kháng (người dùng báo 2026-11-02); theo dõi Ngoại + Nội Công vì Đào Hoa tự làm Kháng chớp
+CHISOBAOTHUVATPHAM_MAP = {
+    CONGIAPCHUOT: ("Ngoại Công", "Nội Công"),
 }
 # Danh sách nhặt (VATPHAMKHONGNHATs / VATPHAMUUTIENNHATs / VATPHAMTUDONGNHATs / VATPHAMTUDONGNHATFARMs) đã chuyển thành luật nhặt
 # trong luattuido_xq.NHATMACDINH (sửa ở tab Hành trang)
@@ -1124,7 +1141,7 @@ THOIGIANCHOLUOTTOIDA = 2.0
 THOIGIANGIUKYNANGMUCTIEU = 2.0
 
 # Nhiều cửa sổ cùng phát nhạc nghe bị vọng: chỉ để tiếng cửa sổ có nhân vật ưu tiên cao nhất trong danh sách tổ đội tự động
-# (nhóm đầu, ID đứng trước), các cửa sổ khác tắt tiếng trong Volume Mixer của Windows. Thoát tool thì bật lại tiếng tất cả
+# (nhóm đầu, ID đứng trước), tính riêng từng bản Aegis / Niết Bàn, các cửa sổ khác tắt tiếng trong Volume Mixer của Windows. Thoát tool thì bật lại tiếng tất cả
 IS_CHIBATAMTHANHCUASOUUTIEN = True
 THOIGIANKIEMTRAAMTHANH = 2.
 
@@ -1352,6 +1369,14 @@ SOBUOCDUONGVONGCONGTHEM = 10
 KHOANGCACHGIUKETANCONG = 6.
 # Đối tượng ra đòn quay mặt về mình thì coi là đang tấn công mình trong chừng này giây (tư thế ra đòn nhấp nháy giữa các đòn)
 THOIGIANNHOKETANCONG = 2.
+# Máu thấp thì chạy trốn khỏi mọi kẻ đang tấn công mình (mọi phái, cả quái, không cần bật giữ khoảng cách): máu dưới NGUONGMAUCHAYTRON%
+# thì chạy, hồi trên NGUONGMAUHETCHAYTRON% mới quay lại đánh (mặc định, chỉnh ở giao diện theo nhân vật; ngưỡng chạy 0 = tắt).
+# Chạy tới khi cách kẻ gần nhất KHOANGCACHCHAYTRON ô (tầm phép thật ~12 ô). Lúc chạy kẻ tấn công đuổi theo (không ra đòn) nên tính
+# cả đối tượng thù địch đang chạy về phía mình, nhớ THOIGIANNHOKETANCONGCHAYTRON giây
+NGUONGMAUCHAYTRON = 15
+NGUONGMAUHETCHAYTRON = 30
+KHOANGCACHCHAYTRON = 14.
+THOIGIANNHOKETANCONGCHAYTRON = 6.
 # Tính lại điểm lùi giữ khoảng cách mỗi chừng này giây (quét đối tượng xung quanh)
 THOIGIANTINHGIUKHOANGCACH = 0.15
 # Lùi theo một hướng mà chừng này giây chưa nhích được 0.5 ô thì coi là kẹt tường, chặn hướng đó THOIGIANCHANHUONGLUI giây

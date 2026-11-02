@@ -88,11 +88,20 @@ class LoopDieuPhoiDiChuyen:
         while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():
             try:
                 self.step()
-            except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
-                print(f"[Loop DI CHUYỂN] Lỗi bộ nhớ: {err}")
-                time.sleep(1)
             except Exception as e:
-                print(f"[Loop DI CHUYỂN] Lỗi không xác định: {e}")
+                is_loibonho = isinstance(e, (pymem.exception.PymemError, pymem.exception.WinAPIError))
+                print(f"[Loop DI CHUYỂN] Lỗi {'bộ nhớ' if is_loibonho else 'không xác định'}: {e}")
+                # Sư môn / đi lại chạy ở vòng này: lỗi lặp lại làm nhân vật đứng im mà file log không thấy gì, ghi cả vào log nhân vật
+                # (mỗi lỗi khác nhau ghi 1 lần, lặp mỗi 0.05s thì log đầy)
+                vet = traceback.format_exc()
+                if vet != getattr(self, "_loidaghi", None):
+                    self._loidaghi = vet
+                    try:
+                        self.moitruong._inlog(f"[Loop DI CHUYỂN] Lỗi: {e}\n{vet}")
+                    except Exception:
+                        pass
+                if is_loibonho:
+                    time.sleep(1)
             time.sleep(0.05)
 
     def step(self):
@@ -181,7 +190,7 @@ class LoopChinh:
                     elif not self._guilenhchomenu(lenhs[0]):
                         break
 
-        if self.moitruong.get_idnguoichoi() in (29, 30, 31, 32, 273, 187):
+        if self.moitruong.get_idnguoichoi() in (29, 30, 31, 32, 273, 187, 9198):
             for tenvatpham in ("Túi Ngân Lượng", "Túi Kim Bảo", "Túi Quà Vô Song", "Túi Pháp Bảo", "Lễ Bao Khai Quốc", "Túi Linh Thạch cấp 1"):
                 if self.tactu.action_sudungvatphamhanhtrang(tenvatpham):
                     break

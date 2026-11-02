@@ -292,6 +292,8 @@ class CuaSo:
                     "_is_dilotrinhkhacbando": self.tactu._is_dilotrinhkhacbando,
                     "_is_giukhoangcachketancong": self.tactu._is_giukhoangcachketancong,
                     "_khoangcachgiuketancong": self.tactu._khoangcachgiuketancong,
+                    "_mauchaytron": self.tactu._mauchaytron,
+                    "_mauhetchaytron": self.tactu._mauhetchaytron,
                     "_is_giukhoangcachchimuctieupk": self.tactu._is_giukhoangcachchimuctieupk,
                     "_is_taphoa": self.tactu._is_taphoa,
                     "_is_timmuctieuchung": self.tactu._is_timmuctieuchung,
@@ -612,6 +614,16 @@ class CuaSo:
                 elif isinstance(cmd, str) and cmd.startswith("set_khoangcachgiuketancong:"):
                     try:
                         self.tactu.thietlap_khoangcachgiuketancong(float(cmd.split(":")[1]))
+                    except Exception:
+                        pass
+                elif isinstance(cmd, str) and cmd.startswith("set_mauchaytron:"):
+                    try:
+                        self.tactu.thietlap_mauchaytron(cmd.split(":")[1])
+                    except Exception:
+                        pass
+                elif isinstance(cmd, str) and cmd.startswith("set_mauhetchaytron:"):
+                    try:
+                        self.tactu.thietlap_mauhetchaytron(cmd.split(":")[1])
                     except Exception:
                         pass
                 elif cmd == "battat_tutimduongtheosau":

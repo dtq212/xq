@@ -31,7 +31,7 @@ import unicodedata
 from hangso_xq import *
 from tienich_xq import phatam, canhbao, taicauhinhphongyeu
 from giaodo_xq import taolenhgiao
-from tactu_langlyson_xq import CAPDOLAMKIMTOITHIEU, TENTHOYEU, SOBOSSPHONGYEU, THOIGIANTOITHIEUPY
+from tactu_langlyson_xq import CAPDOLAMKIMTOITHIEU, laytenthoyeu, SOBOSSPHONGYEU, THOIGIANTOITHIEUPY
 
 BANDO_BAKHAU = 162
 BANDO_THUYHOASON_KC = 82
@@ -326,6 +326,17 @@ class TacTuKeoCap:
         caps ={i: info["_keocap"].get("capdo") or 0 for i, info in gas.items()}
         capthap = min(caps.values())
         capketthuc = s["capketthuc"]
+        # Cấp đọc được lần cuối của mọi acc gà trong danh sách: acc gà out (dis / mất mạng) không còn trong gas, chỉ xét gas thì acc gà
+        # còn lại đã tới cấp kết thúc là tưởng xong (QuanSuMuMuu 26 out, còn DaiTuongQuan 39 -> báo xong, 2026-11-03)
+        capcuoi = s.setdefault("capcuoi", {})
+        capcuoi.update(caps)
+        offlines = [i for i in s["idgas"] if i not in gas and capcuoi.get(i, 0) < capketthuc]
+        if capthap >= capketthuc and offlines and s["giaidoan"] not in ("thuhoi", "xong"):
+            s["trangthai"] = "chờ acc gà out vào lại (" + ", ".join(f"ID {i} cấp {capcuoi[i]}" if i in capcuoi else f"ID {i}"
+                                                                for i in offlines) + f" chưa tới cấp {capketthuc})"
+            if self._is_trongphongyeu():
+                return self._buocphongyeuchinh(s, gas)
+            return None
         if s["giaidoan"] == "phongyeu" and self._is_trongphongyeu():
             # Đang giữa vòng Phong Yêu Kính: không bỏ ngang đi xuất sư / thu hồi đồ (từng tắt Phong Yêu Kính chạy bộ 12 cổng về Tân Thủ Thôn),
             # đánh hết vòng, ra Chu Quốc rồi mới xét (lúc đó Hồi Thành Phù được)
@@ -387,11 +398,10 @@ class TacTuKeoCap:
             return None
         if s.get("lotrinhbando") != idbai:
             s["lotrinhbando"] = idbai
-            if not self.tuchon_lotrinhmau(idbai):
-                # dexuat_lotrinhmau đủ vị trí quái thì chỉ lưu mẫu, không nạp (mẫu dò thì nạp luôn): nạp lại mẫu vừa lưu
-                is_dexuat = self.dexuat_lotrinhmau()
-                is_nap = is_dexuat and self.tuchon_lotrinhmau(idbai)
-                self._logkc(f"{tenbai} chưa có lộ trình mẫu: tự đề xuất " + ("và nạp" if is_nap else "được" if is_dexuat else "không được"))
+            # Không nạp lộ trình mẫu: bỏ điểm đánh đang có để lộ trình rỗng, bot tự dò bãi bằng điểm dò riêng (_dobandokhonglotrinh)
+            if self._diemdanhxungquanhs:
+                self.botoanbo_diemdanhxungquanh()
+            self._logkc(f"{tenbai}: dò bãi bằng điểm dò riêng, không dùng lộ trình mẫu")
             self._datkc(s, "_is_tudongdichuyendiemdanhxungquanh", True, "Tự động di chuyển điểm đánh xung quanh")
         s["trangthai"] = f"{tenbai}: đánh quái kéo acc gà tới cấp {captoi} (" + ", ".join(
             f"{gas[i].get('tennhanvat') or i} {c}" for i, c in sorted(caps.items(), key = lambda x: x[1])) + ")"
@@ -431,12 +441,12 @@ class TacTuKeoCap:
             s["vitrithoyeu"] = py["vitrithoyeu"]
         if self._langlyson:
             self.huy_langlyson()
-        diachi = moitruong.action_timkiemnhanvat(tennhanvat = TENTHOYEU)
+        diachi = moitruong.action_timkiemnhanvat(tennhanvat = laytenthoyeu(moitruong))
         if diachi:
             s["vitrithoyeu"] = moitruong.get_toado(diachi)
         x, y = s.get("vitrithoyeu") or moitruong.get_toado()
         s["trangthai"] = "thu hồi đồ Lam Kim: nói chuyện Thỏ Yêu ra khỏi Phong Yêu Kính"
-        return self._noichuyenlls(s, TENTHOYEU, x, y, is_chovankhi = False, luachon = 0)[1]
+        return self._noichuyenlls(s, laytenthoyeu(self.moitruong), x, y, is_chovankhi = False, luachon = 0)[1]
 
     def _moinhomkc(self, s, gas):
         # Acc chính làm trưởng nhóm, mời acc gà chưa ở trong nhóm (mỗi người mỗi GIANCACHMOINHOMKC giây)
@@ -633,6 +643,14 @@ class TacTuKeoCap:
                 s["idgive"] = idtruong
                 s["luctatgive"] = 0.
                 self._logkc(f"Đang trong Phong Yêu Kính: giữ {gas[idtruong].get('tennhanvat') or idtruong} (trưởng nhóm) làm người give")
+        if not s["idgive"]:
+            # Acc gà đã ở trong Phong Yêu Kính mà mình ở ngoài (mở lại bot, mình bị đưa ra): acc gà trong phó bản không đọc túi (codolamkim
+            # None) nên chờ mãi "đọc hành trang" => nhận nó làm người give, mình vào sau qua Tả Khâu Minh (QuanSuMuMuu 9286, 2026-11-03)
+            trongs = [i for i in sorted(gas) if gas[i].get("_phobanmuonbando") not in (None, "", TIENTOTENBANDOTAPKICHMONPHAI)]
+            if trongs:
+                s["idgive"] = trongs[0]
+                s["luctatgive"] = 0.
+                self._logkc(f"{gas[trongs[0]].get('tennhanvat') or trongs[0]} đang trong Phong Yêu Kính: giữ làm người give")
         if not s["idgive"]:
             cos = [i for i in sorted(gas) if gas[i]["_keocap"].get("codolamkim") and i != s.get("bogive")]
             if not cos:

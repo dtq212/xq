@@ -109,6 +109,19 @@ def read_bytes(process, address, n_bytes):
     return process.read_bytes(address, n_bytes)
 
 
+def read_chuoi(process, address, max_length):
+    # Chuỗi kết thúc bằng 0 (bytes, chưa decode), đọc từng khúc không vượt ranh giới trang 4KB: chuỗi nằm sát cuối vùng nhớ thì đọc
+    # liền max_length byte lỗi 299 (trang sau chưa cấp phát), dù chuỗi đã kết thúc trước đó
+    raw_data = b""
+    while len(raw_data) < max_length:
+        diachi = address + len(raw_data)
+        chunk = process.read_bytes(diachi, min(max_length - len(raw_data), 0x1000 - diachi % 0x1000))
+        if b"\0" in chunk:
+            return raw_data + chunk[:chunk.index(b"\0")]
+        raw_data += chunk
+    return raw_data
+
+
 def write_bytes(process, address, value, n_bytes):
     return process.write_bytes(address, value, n_bytes)
 
@@ -516,13 +529,13 @@ def _duongdandanhsachnhanvat():
 
 
 def taidanhsachnhanvat():
-    # Thứ tự (kéo thả) và nhân vật ghim trên danh sách nhân vật của giao diện, theo ID người chơi: {"thutu": [id...], "ghim": [id...]}
+    # Thứ tự (kéo thả) trên danh sách nhân vật của giao diện, theo ID người chơi: {"thutu": [id...]}
     try:
         with open(_duongdandanhsachnhanvat(), "r", encoding = "utf-8") as file:
             dulieu = json.load(file)
-        return {"thutu": [int(i) for i in dulieu.get("thutu", [])], "ghim": [int(i) for i in dulieu.get("ghim", [])]}
+        return {"thutu": [int(i) for i in dulieu.get("thutu", [])]}
     except Exception:
-        return {"thutu": [], "ghim": []}
+        return {"thutu": []}
 
 
 def luudanhsachnhanvat(dulieu):

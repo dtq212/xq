@@ -1,6 +1,8 @@
 {
   "luat": [
     {
+      "bat": true,
+      "is_bao": false,
       "hanhdong": "giu",
       "ghichu": "Danh sách không bán (cũ)",
       "ten": [
@@ -117,10 +119,10 @@
         "Bạch Kỳ",
         "Đương Quy",
         "Xuyên Bối",
-        "Đông Trùng Thảo"
+        "Đông Trùng Thảo",
+        "Đá Càn Khôn",
+        "12 con Giáp - Chuột"
       ],
-      "bat": true,
-      "is_bao": false,
       "tenchua": [],
       "loai": [],
       "mota": []

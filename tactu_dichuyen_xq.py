@@ -17,6 +17,10 @@ from thongbao_xq import baosuco
 
 # Việc tự động đứng chờ (không có đường...) liên tục chừng này giây thì phát âm + báo Telegram (_baodungcho)
 THOIGIANBAODUNGCHO = 60.
+# Bật lộ trình mà chưa có điểm nào: dò bản đồ như Phong Yêu Kính (_dobandokhonglotrinh), tới điểm trong chừng này ô / quá chừng này giây
+# thì sang điểm kế
+KHOANGCACHTOIDIEMDO = 3.
+THOIGIANMOIDIEMDO = 25.
 
 
 class TacTuDiChuyen:
@@ -28,9 +32,15 @@ class TacTuDiChuyen:
 
     def _laydanhsachketancong(self, x1, y1):
         # Đối tượng đang tấn công mình: thù địch, ở gần, đang ra đòn (tư thế đánh thường / ra phép / khựng sau đòn) và quay mặt về mình.
-        # Tư thế ra đòn nhấp nháy giữa các đòn nên nhớ THOIGIANNHOKETANCONG giây. Trả về [(x, y, khoảng cách)]
+        # Tư thế ra đòn nhấp nháy giữa các đòn nên nhớ THOIGIANNHOKETANCONG giây. Trả về [(x, y, khoảng cách)].
+        # Chạy trốn vì máu thấp: xét cả quái, xa hơn, tính cả kẻ đang chạy về phía mình (đuổi theo) và nhớ lâu hơn
         thoidiemhientai = time.time()
-        bankinhxet = self._khoangcachgiuketancong + 4.
+        is_chaytron = self._is_dangchaytron
+        bankinhxet = (KHOANGCACHCHAYTRON if is_chaytron else self._khoangcachgiuketancong) + 4.
+        thoigiannho = THOIGIANNHOKETANCONGCHAYTRON if is_chaytron else THOIGIANNHOKETANCONG
+        tuthetancongs = (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT, TUTHENHANVAT_DELAYSAUTANCONG)
+        if is_chaytron:
+            tuthetancongs += (TUTHENHANVAT_DICHUYEN,)
         tenchunhanphe_map = {}
         ketancongs = []
         idthaytaichos = set()
@@ -41,16 +51,16 @@ class TacTuDiChuyen:
             if khoangcach > bankinhxet:
                 continue
             # Chỉ mục tiêu PK: người chơi / bảo thú triệu hồi / bảo thú giang hồ (bỏ quái)
-            if self._is_giukhoangcachchimuctieupk and not (self.moitruong.get_is_nguoichoi(diachi) or self.moitruong.get_is_baothukynangtrieuhoi(diachi)
-                                                           or self.moitruong.get_is_baothugiangho(diachi)):
+            if self._is_giukhoangcachchimuctieupk and not is_chaytron and not (self.moitruong.get_is_nguoichoi(diachi)
+                                                                                or self.moitruong.get_is_baothukynangtrieuhoi(diachi)
+                                                                                or self.moitruong.get_is_baothugiangho(diachi)):
                 continue
             if not self._is_doituongthudich(diachi, tenchunhanphe_map):
                 continue
             iddoituong = self.moitruong.get_iddoituong(diachi)
-            if self.moitruong.get_idtuthenhanvat(diachi) in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT, TUTHENHANVAT_DELAYSAUTANCONG) \
-                    and self.moitruong.get_is_huongmatvediem(diachi, x1, y1):
+            if self.moitruong.get_idtuthenhanvat(diachi) in tuthetancongs and self.moitruong.get_is_huongmatvediem(diachi, x1, y1):
                 self._thoidiemketancong_map[iddoituong] = thoidiemhientai
-            if thoidiemhientai - self._thoidiemketancong_map.get(iddoituong, 0.) <= THOIGIANNHOKETANCONG:
+            if thoidiemhientai - self._thoidiemketancong_map.get(iddoituong, 0.) <= thoigiannho:
                 ketancongs.append((x, y, khoangcach))
 
         # Cảnh báo sớm từ tầm nhìn chung: đối tượng thù địch nhân vật khác cùng máy thấy mà mình chưa thấy (ngoài tầm nhìn của mình).
@@ -58,7 +68,7 @@ class TacTuDiChuyen:
         for iddoituong, (x, y, tuthe, huong, is_muctieupk, _) in self._laytamnhinchung().items():
             if iddoituong in idthaytaichos:
                 continue
-            if self._is_giukhoangcachchimuctieupk and not is_muctieupk:
+            if self._is_giukhoangcachchimuctieupk and not is_chaytron and not is_muctieupk:
                 continue
             khoangcach = math.dist((x1, y1), (x, y))
             if khoangcach > bankinhxet:
@@ -66,26 +76,29 @@ class TacTuDiChuyen:
             if tuthe in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT, TUTHENHANVAT_DELAYSAUTANCONG, TUTHENHANVAT_DICHUYEN) \
                     and tinh_is_huongmatvediem(x, y, huong, x1, y1):
                 self._thoidiemketancong_map[iddoituong] = thoidiemhientai
-            if thoidiemhientai - self._thoidiemketancong_map.get(iddoituong, 0.) <= THOIGIANNHOKETANCONG:
+            if thoidiemhientai - self._thoidiemketancong_map.get(iddoituong, 0.) <= thoigiannho:
                 ketancongs.append((x, y, khoangcach))
 
         if len(self._thoidiemketancong_map) > 256:
-            self._thoidiemketancong_map = donbangthoidiem(self._thoidiemketancong_map, THOIGIANNHOKETANCONG)
+            self._thoidiemketancong_map = donbangthoidiem(self._thoidiemketancong_map, max(THOIGIANNHOKETANCONG, THOIGIANNHOKETANCONGCHAYTRON))
         return ketancongs
 
     def _tinhyeucaugiukhoangcach(self):
         # Kẻ tấn công gần hơn khoảng cách cần giữ thì di chuyển, không đứng yên cho nó đánh: ưu tiên hướng ngược với các kẻ tấn công
         # (kẻ càng gần càng nặng ký), bị vùng cấm / kẹt tường / mép vùng theo sau chặn thì lệch 45°, 90°, 135° (chạy ngang cũng được,
         # miễn không lại gần hơn). Luôn ở trong vùng quanh người theo sau; không còn hướng nào hợp lệ thì thôi không lùi
+        # Chạy trốn vì máu thấp: giữ xa KHOANGCACHCHAYTRON ô, không đứng lại dùng kỹ năng quan trọng, không kẹp quanh người theo sau
+        is_chaytron = self._is_dangchaytron
+        khoangcachgiu = KHOANGCACHCHAYTRON if is_chaytron else self._khoangcachgiuketancong
         x1, y1 = self.moitruong.get_toado()
         ketancongs = self._laydanhsachketancong(x1, y1)
         if not ketancongs:
             return None
         gannhat = min(k[2] for k in ketancongs)
-        if gannhat >= self._khoangcachgiuketancong:
+        if gannhat >= khoangcachgiu:
             return None
         # Còn kỹ năng quan trọng dùng được thì đứng lại dùng, chỉ lùi khi rảnh
-        if not self._is_dangronggiukhoangcach():
+        if not is_chaytron and not self._is_dangronggiukhoangcach():
             return None
 
         vx = vy = 0.
@@ -101,9 +114,9 @@ class TacTuDiChuyen:
             goc = random.uniform(0, 2 * math.pi)
             vx, vy, dodai = math.cos(goc), math.sin(goc), 1.
         ux, uy = vx / dodai, vy / dodai
-        buoc = min(6., max(2., self._khoangcachgiuketancong - gannhat + 1.5))
+        buoc = min(6., max(2., khoangcachgiu - gannhat + 1.5))
 
-        toadotheosau = self._laytoadomuctieutheosau()
+        toadotheosau = None if is_chaytron else self._laytoadomuctieutheosau()
         bankinhtheosau = self._tinhtoanbankinhdungtancongtheosau() if toadotheosau else 0.
 
         # Hướng vừa lùi mà không nhích được (kẹt tường / vật cản: bot không có dữ liệu ô đi được) thì chặn hướng đó một lúc
@@ -210,8 +223,23 @@ class TacTuDiChuyen:
             return True
         return not self._is_cokynangquantrongdungduoc
 
+    def _capnhatchaytron(self):
+        # Máu dưới _mauchaytron% thì vào chế độ chạy trốn (mọi phái), hồi trên _mauhetchaytron% (không thấp hơn ngưỡng chạy) hoặc chết thì
+        # quay lại đánh. Ngưỡng chạy 0 = tắt
+        if self.moitruong.get_is_nhanvatdachet() or self._mauchaytron <= 0:
+            self._is_dangchaytron = False
+            return
+        mau = self.moitruong.get_phantramsinhlucconlai()
+        if not self._is_dangchaytron and 0 < mau < self._mauchaytron:
+            self._is_dangchaytron = True
+            self.moitruong._inlog(f"[CHẠY TRỐN] máu {mau}%: chạy xa khỏi mọi kẻ đang tấn công")
+        elif self._is_dangchaytron and mau > max(self._mauhetchaytron, self._mauchaytron):
+            self._is_dangchaytron = False
+            self.moitruong._inlog(f"[CHẠY TRỐN] máu {mau}%: quay lại đánh")
+
     def _capnhatyeucaugiukhoangcach(self):
-        if not self._is_giukhoangcachketancong or self.moitruong.get_is_nhanvatdachet():
+        self._capnhatchaytron()
+        if not (self._is_giukhoangcachketancong or self._is_dangchaytron) or self.moitruong.get_is_nhanvatdachet():
             self._yeucaugiukhoangcach = None
             self._luigiukhoangcachdangchay = None
             return
@@ -928,6 +956,16 @@ class TacTuDiChuyen:
         duongdi = timduongbando(idbandohientai, idbandodich, self.moitruong.get_toado())
         solanbo = len(duongdi) if duongdi is not None else None
         phuongan = layphuongandichuyen(idbandodich)
+        # Tín Vật về môn phái (2D "dGludmF0 1", Niết Bàn kỹ năng) là cách nhanh nhất (đích là môn phái / gần môn phái): chỉ Tín Vật, không
+        # Hồi Thành Phù / Xa Phu về Tân Thủ Thôn rồi phù (người dùng dặn 2026-11-02)
+        solantinvat = self.get_solantinvat(idbandodich)
+        if is_hoithanhphu and solantinvat is not None and idbandohientai != BANDOMONPHAI.get(self.moitruong.get_tenmonphai()) \
+                and (solanbo is None or solantinvat < solanbo):
+            lydo = self.get_lydokhonghoithanhphu(idbandodich)
+            if not lydo:
+                chaytiep = f", chạy tiếp {solantinvat} cổng" if solantinvat else ""
+                return {"loai": "hoithanhphu", "solan": solantinvat,
+                        "mota": f"Tín Vật về môn phái{chaytiep} ({ten}), thay vì chạy bộ {solanbo} cổng"}
         if idbandohientai in (BANDO_TANTHUTHON, BANDO_CHUQUOC):
             if phuongan and (solanbo is None or phuongan[3] < solanbo):
                 loainpc, _, idphutoi, solanphu = phuongan
@@ -968,13 +1006,14 @@ class TacTuDiChuyen:
         if self.moitruong.get_is_toadochuaondinh():
             return None
         loai = buoc["loai"]
+        if loai != "hoithanhphu":
+            # Lộ trình đã chọn đi cách khác (chạy bộ, phù, NPC...): thôi nói chuyện Xa Phu Niết Bàn, không thì vừa chạy tới cổng vừa nói
+            # chuyện Xa Phu, giành nhau mãi (TieuLyPhiDao ở Đường Môn 20:38)
+            self._xaphunietban = None
         if loai == "chaybo":
             return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (*buoc["cong"], idbandohientai), "khoangcachtoida": 0, "is_chitrongbando": True}
         if loai == "phu":
             return self._phutoibando(idbandodich, idbandohientai, nhanlog, buoc.get("phuongan"))
-        if loai != "hoithanhphu":
-            # Lộ trình đã chọn đi cách khác (vd. từ môn phái chạy bộ gần hơn): thôi nói chuyện Xa Phu Niết Bàn
-            self._xaphunietban = None
         if loai == "npc":
             return self._quanpcsangbando(buoc["npc"], buoc["idke"], idbandohientai, nhanlog)
         if loai == "hoithanhphu":
@@ -1085,9 +1124,20 @@ class TacTuDiChuyen:
         if loainpc == TANTHUTIENCO:
             self.action_batdauhoithoainpc([f"tallk {hex_id}# {b}" for b in buoc])
         else:
-            self.moitruong.action_thucthicaulenh2(f"tallk {hex_id}# goto.! {buoc} t{int(time.time())}", delay = 0.0)
+            self.moitruong.action_thucthicaulenh2(f"tallk {hex_id}# goto.! {self.get_diemdendichtram(buoc)} t{int(time.time())}", delay = 0.0)
             self.moitruong.action_ngatdichuyen()
         return None
+
+    def get_diemdendichtram(self, diemden):
+        # Điểm đến "goto.!" của Chủ Dịch Trạm: 2D chỉ nhận "Nguỵ" (dấu kiểu cũ), Niết Bàn không nhận "Nguỵ" (TieuLyPhiDao gửi 8 lần không
+        # đi). Niết Bàn thử "Ngụy" trước, lần sau đổi cách viết kia phòng khi đoán sai
+        if "Ngụy" not in diemden and "Nguỵ" not in diemden:
+            return diemden
+        kieumoi, kieucu = diemden.replace("Nguỵ", "Ngụy"), diemden.replace("Ngụy", "Nguỵ")
+        if not self.moitruong.is_nietban:
+            return kieucu
+        self._solanphunguy = getattr(self, "_solanphunguy", 0) + 1
+        return kieumoi if self._solanphunguy % 2 else kieucu
 
     def _quanpcsangbando(self, npc, idke, idbandohientai, nhanlog):
         # Sang idke bằng nói chuyện NPC (bando_xq.LOIDINPC_MAP): tới cạnh NPC, "look" mở menu, chọn lựa chọn đầu (trừ CLOSE), đứng yên
@@ -1402,19 +1452,20 @@ class TacTuDiChuyen:
                 self._thoidiemngatdichuyenroiphobans = [time.time() + 0.5, time.time() + 1.]
                 self._thoidiemroiphobanmuonbando = time.time()
 
-            # Chưa đặt điểm đánh mà bản đồ có lộ trình mẫu thì tự chọn mẫu chưa ai dùng (trùng với nhân vật khác cũng không chọn lại).
-            # Vừa ra khỏi phó bản mượn ID bản đồ thì chờ THOIGIANCHONAPLOTRINHROIPHOBAN: ID bản đồ đọc được còn là ID của phó bản
-            # (tên đổi trước), chọn ngay là nạp lại mẫu của phó bản rồi chạy lên bản đồ thật cùng ID
-            if not self._diemdanhxungquanhs and idbandohientai != BANDO_CHIENTRUONG and time.time() - self._thoidiemkiemtralotrinhgannhat > 5. \
-                    and time.time() - self._thoidiemroiphobanmuonbando > THOIGIANCHONAPLOTRINHROIPHOBAN:
-                self._thoidiemkiemtralotrinhgannhat = time.time()
-                self.tuchon_lotrinhmau(idbandohientai)
-
             diemdanhxungquanhs = self._diemdanhxungquanhs
 
+            # Chưa có điểm nào: không tự nạp lộ trình mẫu / lộ trình có sẵn của bản đồ nữa, dò bản đồ đang đứng như Phong Yêu Kính
+            # (không ghi gì vào lộ trình). Chiến trường vẫn đứng điểm của phe; thành / làng thì đứng chờ như cũ
             if not diemdanhxungquanhs:
-                key_map = idbandohientai if idbandohientai != BANDO_CHIENTRUONG else "{}_{}".format(idbandohientai, self.moitruong.get_idphechientruong())
-                diemdanhxungquanhs = DIEMDANHXUNGQUANH_MAP.get(key_map, [])
+                if idbandohientai == BANDO_CHIENTRUONG:
+                    diemdanhxungquanhs = DIEMDANHXUNGQUANH_MAP.get("{}_{}".format(idbandohientai, self.moitruong.get_idphechientruong()), [])
+                elif idbandohientai and idbandohientai not in (BANDO_TANTHUTHON, BANDO_CHUQUOC) and idbandohientai not in BANDO7QUOCGIAs:
+                    # Vừa ra khỏi phó bản mượn ID bản đồ: ID đọc được còn là của phó bản (tên đổi trước), chờ rồi mới tạo điểm dò
+                    if time.time() - self._thoidiemroiphobanmuonbando <= THOIGIANCHONAPLOTRINHROIPHOBAN:
+                        break
+                    yeucautudomoi = self._dobandokhonglotrinh(idbandohientai)
+                    if yeucautudomoi is not None:
+                        break
 
             if not diemdanhxungquanhs:
                 if time.time() - self._thoidiemphatamlacmapgannhat > 5.0:
@@ -1534,6 +1585,30 @@ class TacTuDiChuyen:
             break
 
         self._yeucautudo = yeucautudomoi
+
+    def _dobandokhonglotrinh(self, idbando):
+        # Đi lần lượt các điểm dò phủ vùng đi được của bản đồ đang đứng (_taodiemdo, như _dophongyeu), hết vòng thì đi lại từ đầu.
+        # Điểm dò giữ riêng ở _dobando, không đụng lộ trình điểm đánh / lộ trình mẫu. Ra / vào phó bản mượn ID bản đồ thì tạo lại.
+        # -> yêu cầu di chuyển, None nếu chưa đọc được bản đồ
+        is_phobanmuon = bool(self.moitruong.get_is_phobanmuonbando())
+        do = self._dobando
+        if not do or do["idbando"] != idbando or do["is_phobanmuon"] != is_phobanmuon:
+            diems = list(self._taodiemdo(idbando))
+            if not diems:
+                self._dobando = None
+                return None
+            toado = self.moitruong.get_toado()
+            i = min(range(len(diems)), key = lambda k: math.dist(diems[k], toado))
+            do = self._dobando = {"idbando": idbando, "is_phobanmuon": is_phobanmuon, "diems": diems, "i": i, "luc": time.time(),
+                                  "chieu": -1 if self._is_nguocchieulotrinh else 1}
+            print(f"[LỘ TRÌNH] Chưa có điểm đánh: dò {laytenbando(idbando)} {len(diems)} điểm")
+        x, y = do["diems"][do["i"]]
+        if self.moitruong.get_khoangcachdiem(x, y) <= KHOANGCACHTOIDIEMDO or time.time() - do["luc"] > THOIGIANMOIDIEMDO:
+            do["luc"] = time.time()
+            do["i"] = (do["i"] + do["chieu"]) % len(do["diems"])
+            x, y = do["diems"][do["i"]]
+        self._capnhatbuocdichuyen(f"Chưa có điểm đánh: dò bản đồ (điểm {do['i'] + 1}/{len(do['diems'])})")
+        return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x, y, idbando), "khoangcachtoida": 1.}
 
     def nap_lotrinhmau(self, idbando, tenmau, is_nguocchieu = False, is_tuchon = False, is_bosung = False):
         # is_bosung: nối điểm của mẫu vào cuối lộ trình đang có (bỏ điểm trùng), giữ nguyên điểm đang đi tới; không thì ghi đè
@@ -1728,7 +1803,8 @@ class TacTuDiChuyen:
         if self.moitruong.get_is_phobanmuonbando() and not is_roiphoban:
             return f"đang ở {self.moitruong.get_tenbandogame()}"
         nganluong = self.moitruong.get_nganluong()
-        if nganluong is not None and nganluong < GIAHOITHANHPHU and not self.get_is_vomonphai() and not self.moitruong.is_nietban:
+        if nganluong is not None and nganluong < GIAHOITHANHPHU and not self.get_is_vomonphai() and not self.moitruong.is_nietban \
+                and self.get_solantinvat(idbandodich) is None:
             return f"còn {nganluong} lượng, không đủ {GIAHOITHANHPHU} lượng Hồi Thành Phù"
         self._thoidiemhoithanhphus = [(t, d) for t, d in self._thoidiemhoithanhphus if time.time() - t < THOIGIANDEMHOITHANHPHU]
         # Chỉ đếm lần chưa tới được nơi (sau lần dùng chưa vào bản đồ đích): Danh Vọng đi đi về về Tề Quốc vài phút 1 lần, đếm cả lần đã
@@ -1748,11 +1824,19 @@ class TacTuDiChuyen:
                 print(f"[HỒI THÀNH PHÙ] Không dùng: {lydo}")
                 canhbao(self.moitruong, "Không dùng Hồi Thành Phù")
                 return False
-            if self.moitruong.is_nietban and self.moitruong.get_idbandohientai() == BANDOMONPHAI.get(self.moitruong.get_tenmonphai()) \
-                    and not self.moitruong.get_is_phobanmuonbando():
-                # Niết Bàn đã ở bản đồ môn phái: khỏi Tín Vật, nói chuyện Xa Phu về Tân Thủ Thôn luôn (action_xulyxaphunietban)
+            # Niết Bàn: có Hồi Thành Phù trong túi thì dùng; không có thì Tín Vật về môn phái rồi Xa Phu (người dùng dặn 2026-11-02)
+            # (về phái: đích là môn phái / gần môn phái thì chỉ Tín Vật, cả 2D lẫn Niết Bàn, không Hồi Thành Phù / Xa Phu)
+            is_tinvat = self.get_solantinvat(idbandodich) is not None
+            idhoithanhphu = self.moitruong.action_timkiemvatphamhanhtrang(HOITHANHPHU) if self.moitruong.is_nietban and not is_tinvat else 0
+            if not idhoithanhphu and not is_tinvat and self.moitruong.is_nietban \
+                    and self.moitruong.get_idbandohientai() == BANDOMONPHAI.get(self.moitruong.get_tenmonphai()) \
+                    and not self.moitruong.get_is_phobanmuonbando() \
+                    and any(self._timxaphunietban(self.moitruong.get_idbandohientai())):
+                # Niết Bàn đã ở bản đồ môn phái: khỏi Tín Vật (trong môn phái dùng không vận khí, từng gửi 3 lần liền bị coi là lặp rồi chạy
+                # bộ giành với Xa Phu), tới Xa Phu (thấy, hoặc vị trí đã biết) về Tân Thủ Thôn luôn (action_xulyxaphunietban)
                 if not self._xaphunietban:
-                    print(f"[HỒI THÀNH PHÙ] Niết Bàn: đang ở {laytenbando(self.moitruong.get_idbandohientai())}, nói chuyện {XAPHU} về Tân Thủ Thôn")
+                    self.moitruong._inlog(f"[HỒI THÀNH PHÙ] Niết Bàn: đang ở {laytenbando(self.moitruong.get_idbandohientai())}, "
+                                          f"nói chuyện {XAPHU} về Tân Thủ Thôn")
                     self._xaphunietban = time.time()
                 return True
             self._thoidiemhoithanhphus.append((time.time(), idbandodich))
@@ -1760,7 +1844,15 @@ class TacTuDiChuyen:
             # Hồi Thành Phù phải vận khí: ra chiêu / đánh thường / di chuyển là bị huỷ (từng vừa gửi xong vẫn đánh quái, huỷ 3 lần liền rồi bị
             # coi là lặp, chạy bộ 8 cổng). Đứng yên và khoá như triệu hồi bảo thú tới khi hết vận khí
             self.moitruong.action_ngatdichuyen()
-            if self.moitruong.is_nietban:
+            if idhoithanhphu:
+                self.moitruong._inlog(f"[HỒI THÀNH PHÙ] Niết Bàn: dùng {HOITHANHPHU} trong túi")
+                lenh = f"use {idhoithanhphu:x}#"
+            elif is_tinvat:
+                # Về phái: Tín Vật là tới nơi, không qua Xa Phu về Tân Thủ Thôn (bỏ cả cờ Xa Phu còn sót từ lần về thành trước)
+                lenh = LENHTINVAT_NIETBAN if self.moitruong.is_nietban else LENHHOIMONPHAI
+                self.moitruong._inlog(f"[HỒI THÀNH PHÙ] Tín Vật ('{lenh}') về môn phái, không qua {XAPHU}")
+                self._xaphunietban = None
+            elif self.moitruong.is_nietban:
                 # Niết Bàn không có Hồi Thành Phù (tinvat 1 / 2 chỉ Chiến Quốc 2D có): "Sử dụng tín vật" về môn phái, đứng cạnh Xa Phu,
                 # action_xulyxaphunietban nói chuyện "1. Chấp nhận" về Tân Thủ Thôn (người dùng dặn 2026-11-02)
                 self.moitruong._inlog(f"[HỒI THÀNH PHÙ] Niết Bàn: Tín Vật ('{LENHTINVAT_NIETBAN}') về môn phái rồi {XAPHU} về Tân Thủ Thôn")
@@ -1776,6 +1868,23 @@ class TacTuDiChuyen:
             self.moitruong.action_thucthicaulenh(lenh)
             return True
         return False
+
+    def get_solantinvat(self, idbandodich):
+        # Tín Vật về môn phái là cách nhanh nhất tới idbandodich (đích là môn phái, hoặc từ môn phái chạy bộ không nhiều cổng hơn từ Tân Thủ
+        # Thôn / phù) thì trả số cổng chạy tiếp sau Tín Vật, không thì None. Vô Môn Phái (Tín Vật về Tân Thủ Thôn): None
+        bandomonphai = BANDOMONPHAI.get(self.moitruong.get_tenmonphai())
+        if bandomonphai is None or idbandodich is None:
+            return None
+        if idbandodich == bandomonphai:
+            return 0
+        duongdi = timduongbando(bandomonphai, idbandodich)
+        if duongdi is None:
+            return None
+        phuongan = layphuongandichuyen(idbandodich)
+        duongtanthu = timduongbando(BANDO_TANTHUTHON, idbandodich)
+        if (phuongan and phuongan[3] < len(duongdi)) or (duongtanthu is not None and len(duongtanthu) < len(duongdi)):
+            return None
+        return len(duongdi)
 
     def get_is_vomonphai(self):
         # Chưa vào môn phái (môn phái không có bản đồ trong BANDOMONPHAI): Hồi Môn Phái về Tân Thủ Thôn
@@ -1793,13 +1902,29 @@ class TacTuDiChuyen:
             return
         if idbando != BANDOMONPHAI.get(moitruong.get_tenmonphai()):
             return
-        # Tên Xa Phu Niết Bàn chưa chắc: trên đầu có cả "Thị Giả" và "Xa Phu"
-        diachinpc = next((d for d in (moitruong.action_timkiemnhanvat(tennhanvat = t) for t in TENXAPHU_NIETBANs) if d), None)
-        tennpc = moitruong.get_tendoituong(diachinpc) if diachinpc else XAPHU
-        x, y = moitruong.get_toado(diachinpc) if diachinpc else moitruong.get_toado()
+        diachinpc, vitri = self._timxaphunietban(idbando)
+        if not diachinpc:
+            # Ngoài tầm nhìn (vd. vừa nhận nhiệm vụ ở Đường Bưu, cách Xa Phu ~15 ô): chạy tới vị trí đã biết
+            if vitri and not moitruong.get_is_dangvankhi():
+                moitruong.action_dichuyengiukhoangcachtoidadiem(*vitri, khoangcachtoida = 3.)
+            return
+        tennpc = moitruong.get_tendoituong(diachinpc)
+        x, y = moitruong.get_toado(diachinpc)
         yeucau = self._quanpcsangbando((x, y, tennpc), BANDO_TANTHUTHON, idbando, "[TÍN VẬT]")
-        if yeucau and diachinpc:
+        if yeucau:
             moitruong.action_dichuyengiukhoangcachtoida(diachinpc, khoangcachtoida = 0.)
+
+    def _timxaphunietban(self, idbando):
+        # Xa Phu Niết Bàn ở bản đồ môn phái -> (địa chỉ nếu đang thấy, (x, y) nếu biết vị trí). Tên chưa chắc: trên đầu có cả "Thị Giả" và
+        # "Xa Phu" (Đường Môn: "Đường Gia Đinh" ngoại hiệu Xa Phu)
+        diachinpc = next((d for d in (self.moitruong.action_timkiemnhanvat(tennhanvat = t) for t in TENXAPHU_NIETBANs) if d), None)
+        if diachinpc:
+            return diachinpc, self.moitruong.get_toado(diachinpc)
+        for t in TENXAPHU_NIETBANs:
+            vitri = self._sovitri.timnpc(t, self._thumucgame(), idbando)
+            if vitri:
+                return None, vitri[1:3]
+        return None, None
 
     def action_dichuyenlenbandofarm(self):
         # Đang ở Tân Thủ Thôn / Chu: phù tới bản đồ của điểm đánh đầu tiên bằng NPC của cách tốt nhất (_phutoibando), phù tới bản đồ gần

@@ -171,7 +171,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._vungtoiduoc_cache = None
         self._ketquasumon = ""
         self._sumon_npcgiao = ""
-        self._sovitri = SoVitri()
+        self._sovitri = SoVitri(moitruong.is_nietban)
         self._thoidiemghivitridoituong = 0.
         # Tự động đi Lăng Ly Sơn (tactu_langlyson_xq): việc đang làm (None = không), kết quả lần gần nhất cho giao diện
         self._langlyson = None
@@ -245,6 +245,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._ketquamocuahang = {}
         self._lucmocuahangmuabu_map = {}
         self._lechmuabudabao = set()
+        # Mua bù: desc ô cửa hàng trước khi mua (_kiemhangcuahang) {"<id NPC>|<ô>": số lần desc, lúc}
+        self._kiemcuahangmuabu = {}
         self._buocdichuyen = ("", 0.)
         # Việc tự động đứng chờ vì không đi tiếp được (_baodungcho): [nội dung, lúc bắt đầu kẹt, lần gọi gần nhất, đã báo]
         self._dungcho = ["", 0., 0., False]
@@ -262,13 +264,13 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         # Thời điểm bắt đầu nằm chết (0 = đang sống); chờ đủ THOIGIANCHOTRUOCKHIPHUCSINH mới phục sinh
         self._thoidiembatdauchet = 0.
         # Khi chạy theo lộ trình: quái phải cách một điểm đánh không quá bấy nhiêu ô mới được nhận làm mục tiêu/gom
-        self._bankinhdiemdanh = 18.
+        self._bankinhdiemdanh = 40.
 
         self._tenmuctieutancongs = set()
         self._tenmuctieukhongtancongs = set(TENMUCTIEUKHONGTANCONGs)
         self._tenvatphamnhats = set()
-        # Phẩm chất (màu tên, PHAMCHATVATPHAM_MAP) vật phẩm dưới đất được nhặt dù tên không nằm trong danh sách nhặt
-        self._phamchatnhats = set()
+        # Phẩm chất (màu tên, PHAMCHATVATPHAM_MAP) vật phẩm dưới đất được nhặt dù tên không nằm trong danh sách nhặt; mặc định nhặt mọi màu
+        self._phamchatnhats = set(PHAMCHATVATPHAM_MAP)
 
         self._thoidiemtamngungkhaithientichdia = time.time()
         self._thoidiemkiemtrahieuunggannhat = time.time()
@@ -345,7 +347,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         # Ô "Đi ngược chiều" trên giao diện: chiều ưu tiên khi tự chọn lộ trình mẫu (tuchon_lotrinhmau), lưu theo nhân vật
         self._is_nguocchieulotrinh = False
         self._is_lotrinhtuchon = False
-        self._thoidiemkiemtralotrinhgannhat = 0.
+        # Bật lộ trình mà chưa có điểm nào thì dò bản đồ như Phong Yêu Kính (_dobandokhonglotrinh): {idbando, is_phobanmuon, diems, i, luc,
+        # chieu}, giữ riêng, không tính vào lộ trình
+        self._dobando = None
         # Tạm ngưng toàn bộ hoạt động khi phát hiện người chơi ẩn thân xung quanh (đang di chuyển theo lộ trình điểm đánh)
         self._thoidiemhettamngung = 0.
         self._lydotamngung = ""
@@ -550,6 +554,11 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         # Yêu cầu lùi đang có (None = không cần lùi); tính lại mỗi THOIGIANTINHGIUKHOANGCACH giây trong action_xulyuutiendichuyen
         self._yeucaugiukhoangcach = None
         self._thoidiemtinhgiukhoangcachgannhat = 0.
+        # Đang chạy trốn vì máu thấp (dưới _mauchaytron%, trên _mauhetchaytron% mới quay lại đánh): mọi phái, không cần bật giữ khoảng cách.
+        # Hai ngưỡng chỉnh ở giao diện, lưu theo nhân vật; _mauchaytron = 0 là tắt
+        self._is_dangchaytron = False
+        self._mauchaytron = NGUONGMAUCHAYTRON
+        self._mauhetchaytron = NGUONGMAUHETCHAYTRON
         # id đối tượng -> lần gần nhất thấy nó ra đòn quay mặt về mình
         self._thoidiemketancong_map = {}
         # Vị trí quái đã thấy theo bản đồ để tự đề xuất lộ trình (dexuatlotrinh_xq): bảng của nhân vật đang chơi (ID _idnguoichoiviquai),
@@ -720,6 +729,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_is_tranhvungcam": self._is_tranhvungcam,
             "_is_giukhoangcachketancong": self._is_giukhoangcachketancong,
             "_khoangcachgiuketancong": self._khoangcachgiuketancong,
+            "_mauchaytron": self._mauchaytron,
+            "_mauhetchaytron": self._mauhetchaytron,
             "_is_giukhoangcachchimuctieupk": self._is_giukhoangcachchimuctieupk,
             "_is_taphoa": self._is_taphoa,
             "_is_timmuctieuchung": self._is_timmuctieuchung,
@@ -839,6 +850,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if "_is_tranhvungcam" in thietlap: self._is_tranhvungcam = thietlap["_is_tranhvungcam"]
             if "_is_giukhoangcachketancong" in thietlap: self._is_giukhoangcachketancong = thietlap["_is_giukhoangcachketancong"]
             if "_khoangcachgiuketancong" in thietlap: self.thietlap_khoangcachgiuketancong(thietlap["_khoangcachgiuketancong"])
+            if "_mauchaytron" in thietlap: self.thietlap_mauchaytron(thietlap["_mauchaytron"])
+            if "_mauhetchaytron" in thietlap: self.thietlap_mauhetchaytron(thietlap["_mauhetchaytron"])
             if "_is_giukhoangcachchimuctieupk" in thietlap: self._is_giukhoangcachchimuctieupk = thietlap["_is_giukhoangcachchimuctieupk"]
             if "_is_taphoa" in thietlap: self._is_taphoa = thietlap["_is_taphoa"]
             if "_is_timmuctieuchung" in thietlap: self._is_timmuctieuchung = thietlap["_is_timmuctieuchung"]
@@ -923,6 +936,13 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
 
     def thietlap_khoangcachgiuketancong(self, khoangcach):
         self._khoangcachgiuketancong = min(15., max(2., float(khoangcach)))
+
+    def thietlap_mauchaytron(self, phantram):
+        # 0 = tắt chạy trốn khi máu thấp
+        self._mauchaytron = min(90, max(0, int(float(phantram))))
+
+    def thietlap_mauhetchaytron(self, phantram):
+        self._mauhetchaytron = min(100, max(1, int(float(phantram))))
 
     def battat_sapxephanhtrang(self):
         if self._is_dangsapxephanhtrang:

@@ -530,8 +530,8 @@ class TacTuHoatDong:
 
     def _tudongquayso(self):
         # Cấp nhân vật tăng (bot tự tăng hay người chơi bấm) thì quay vòng số ở Bảo Điển, mỗi cấp tăng 1 lượt, chỉ khi cấp không quá
-        # CAPTOIDAQUAYSO (cao hơn thì bỏ lượt còn chờ). Từng lượt: gửi lần lượt LENHQUAYSOLENCAPs (máy chủ chọn món), Bảo Điển bật lên là
-        # đóng; trước lệnh cuối ("Khởi động Game") xoá tên món cũ, chờ máy chủ trả tên món (tối đa THOIGIANCHODONGVONGQUAY giây) rồi
+        # CAPTOIDAQUAYSO (cao hơn thì bỏ lượt còn chờ). Từng lượt: gửi lần lượt LENHQUAYSOLENCAPs (máy chủ chọn món), Bảo Điển để mở (người
+        # dùng xem phần thưởng); trước lệnh cuối ("Khởi động Game") xoá tên món cũ, chờ máy chủ trả tên món (tối đa THOIGIANCHODONGVONGQUAY giây) rồi
         # đóng vòng quay, mới tới lượt kế. Lần đầu đọc được cấp chỉ ghi nhớ
         moitruong = self.moitruong
         capdo = moitruong.get_capdonhanvat()
@@ -543,8 +543,6 @@ class TacTuHoatDong:
             if capdo > CAPTOIDAQUAYSO and self._soluotquaysocho:
                 moitruong._inlog(f"[QUAY SỐ] cấp {capdo} > {CAPTOIDAQUAYSO}: không quay được, bỏ {self._soluotquaysocho} lượt")
                 self._soluotquaysocho = 0
-        if (self._lenhquaysochos or self._thoidiemguiquayso) and moitruong.get_is_danghienbaodien():
-            moitruong.action_dongbaodien()
         danghien, tenmon = moitruong.get_vongquayso()
         if self._thoidiemguiquayso:
             if tenmon:
@@ -909,7 +907,7 @@ class TacTuHoatDong:
             self.moitruong.action_ngatdichuyen()
             timestamp = int(time.time())
             hex_id = hex(idnpc).replace("0x", "")
-            caulenh = f"tallk {hex_id}# goto.! {quocgiacanden} t{timestamp}"
+            caulenh = f"tallk {hex_id}# goto.! {self.get_diemdendichtram(quocgiacanden)} t{timestamp}"
             self.moitruong.action_thucthicaulenh2(caulenh, delay = 0.0)
             self.moitruong.action_ngatdichuyen()
             # Chờ chuyển bản đồ xong mới xét tiếp (trước đây sleep 5s chặn cả loop phụ)

@@ -22,8 +22,9 @@ from tienich_xq import duongdantaikhoan, duongdantaikhoantheomay, is_tieudecuaso
 
 # Mẫu regex, không ghi cứng số phiên bản: game cập nhật (2.01.07 -> 2.01.08...) hay đổi năm (ooo2026ooo) vẫn nhận ra cửa sổ
 LAUNCHER_TITLE = r"client \d+(\.\d+)+$"
-GAME_TITLE_LOGIN_SCREEN = r"Chien Quoc 2D --\S*-- v\.\d+(\.\d+)+"
-GAME_TITLE_PREFIX = "Chien Quoc 2D"
+# Màn hình đăng nhập Aegis / Niết Bàn (trong game tiêu đề có thêm "(ID)" nên không khớp)
+# Niết Bàn 1.01.93: màn đăng nhập "Chien Quoc Niet Ban.1.01.93" (bản cũ "Chien Quoc Niet Ban -- version: ...")
+GAME_TITLE_LOGIN_SCREEN = r"Chien Quoc 2D --\S*-- v\.\d+(\.\d+)+|Chien Quoc Niet Ban( -- version: |\.)\d+(\.\d+)+"
 
 DANH_SACH_CUA_SO_LOI = ["warning", "play"]
 
@@ -31,10 +32,13 @@ DANH_SACH_CUA_SO_LOI = ["warning", "play"]
 # vẫn không vào được thì thôi giữ chỗ, xử lý như client không đăng nhập (đóng, mở game mới)
 SOLANDANGNHAPLAICUASODIS = 2
 
-# Số client tối đa cùng lúc. Lúc mở, xq.exe đếm mọi tiến trình tên xq.exe (cả bản khác như Niết Bàn, cùng mã), quá 4 thì báo
-# "You can not run more client program!" và treo cả quy trình đăng nhập. Niết Bàn được DLL của nó nâng lên 7, Aegis vẫn 4: client bot
-# mở được vá lên số này (mogame), client mở tay qua play.exe vẫn bị giới hạn 4
+# Số client tối đa cùng lúc. Lúc mở, xq.exe đếm mọi tiến trình tên đúng "xq.exe" (so từng byte, cả bản khác như Niết Bàn, cùng mã),
+# quá 4 thì báo "You can not run more client program!" và treo cả quy trình đăng nhập. Niết Bàn được DLL của nó nâng lên 7, Aegis vẫn 4:
+# client bot mở được vá lên số này (mogame), client mở tay qua play.exe vẫn bị giới hạn 4. Đổi file exe Aegis thành "XQ.exe" thì không
+# bản nào đếm client Aegis nữa
 SOCLIENTTOIDA = 8
+# Niết Bàn không vá mã được (client không hợp lệ): giới hạn do DLL của nó đặt
+GIOIHANCLIENTNIETBAN = 7
 
 # Rớt khỏi game chừng này lần trong THOIGIANDEMBIDA giây thì coi như đang giành tài khoản với máy khác: tạm hoãn tự đăng nhập
 # tài khoản đó THOIGIANTAMHOAN giây (xem TuDongDangNhap._theodoiroigame)
@@ -150,8 +154,36 @@ def taikhoanbatchomaynay(cauhinh):
     return [taikhoan for taikhoan in cauhinh.get("taikhoans", []) if is_batchomaynay(taikhoan)]
 
 
+def _duongdanxq(duongdan):
+    # Đường dẫn ghi là play.exe thì đổi về xq.exe cùng thư mục: so cửa sổ / tiến trình theo đường dẫn xq.exe
+    if os.path.basename(duongdan).lower() == "play.exe":
+        return os.path.join(os.path.dirname(duongdan), "xq.exe")
+    return duongdan
+
+
 def duongdangamemaynay(cauhinh):
-    return cauhinh.get("duongdangames", {}).get(tenmaynay()) or cauhinh.get("duongdangame") or DUONGDANGAMEMACDINH
+    return _duongdanxq(cauhinh.get("duongdangames", {}).get(tenmaynay()) or cauhinh.get("duongdangame") or DUONGDANGAMEMACDINH)
+
+
+def duongdangamecua(taikhoan, cauhinh):
+    # Tài khoản có đường dẫn riêng (vd nhân vật bản Niết Bàn) thì dùng, trống thì dùng đường dẫn chung của máy
+    return _duongdanxq((taikhoan.get("duongdangame") or "").strip() or duongdangamemaynay(cauhinh))
+
+
+def _chuanhoaduongdan(duongdan):
+    return os.path.normcase(os.path.abspath(duongdan))
+
+
+def _duongdangamequanlys():
+    # Các xq.exe tự đăng nhập của máy này quản lý (đường dẫn chung + đường dẫn riêng của tài khoản bật cho máy này): chỉ đóng / kill
+    # client của các bản này, bản khác (mở tay) để nguyên
+    cauhinh = taicauhinhdangnhap()
+    return {_chuanhoaduongdan(duongdangamemaynay(cauhinh))} | {_chuanhoaduongdan(duongdangamecua(taikhoan, cauhinh))
+                                                              for taikhoan in taikhoanbatchomaynay(cauhinh)}
+
+
+def is_nietban(duongdangame):
+    return os.path.exists(os.path.join(os.path.dirname(duongdangame), "ChienQuocNietBan.dll"))
 
 
 def luucauhinhdangnhap(cauhinh):
@@ -218,9 +250,10 @@ def _diachigioihanclient(duongdangame):
     return _diachigioihanclients[khoa]
 
 
-def mogame(duongdangame, thumuc):
+def mogame(duongdangame, thumuc, is_vagioihan = True):
     # Mở thẳng "xq.exe ran" (lệnh play.exe dùng để vào game, bỏ qua launcher) ở trạng thái tạm dừng, vá giới hạn số client lên
-    # SOCLIENTTOIDA rồi mới cho chạy. Bỏ qua play.exe nên game có bản cập nhật thì phải tự mở play.exe một lần.
+    # SOCLIENTTOIDA rồi mới cho chạy (is_vagioihan, Niết Bàn thì không vá). Bỏ qua play.exe nên game có bản cập nhật thì phải tự mở
+    # play.exe một lần.
     # Tiến trình bot nằm trong Job "đóng là kill hết" (trochoi_xq._gantientrinhvaojob): game mở từ đây phải tách khỏi Job, không thì
     # tắt bot là game cũng tắt theo. Đang chạy trong Job khác không cho tách (vd Job của IDE) thì mở bình thường
     lenh = f'"{duongdangame}" ran'
@@ -232,15 +265,83 @@ def mogame(duongdangame, thumuc):
         hp, ht, pid, _ = win32process.CreateProcess(None, lenh, None, None, False, win32con.CREATE_SUSPENDED, None, thumuc,
                                                     win32process.STARTUPINFO())
     try:
-        diachi = _diachigioihanclient(duongdangame)
-        if diachi is None or not ctypes.windll.kernel32.WriteProcessMemory(int(hp), ctypes.c_void_p(diachi), bytes([SOCLIENTTOIDA]), 1,
-                                                                           None):
+        diachi = _diachigioihanclient(duongdangame) if is_vagioihan else None
+        if is_vagioihan and (diachi is None or not ctypes.windll.kernel32.WriteProcessMemory(int(hp), ctypes.c_void_p(diachi), bytes([SOCLIENTTOIDA]), 1,
+                                                                           None)):
             print("      ⚠️ Không vá được giới hạn số client: game vẫn chỉ cho chạy 4 xq.exe cùng lúc")
     finally:
         win32process.ResumeThread(ht)
         ht.Close()
         hp.Close()
     return pid
+
+
+class _STARTUPINFOEXW(ctypes.Structure):
+    _fields_ = [("cb", ctypes.c_ulong), ("lpReserved", ctypes.c_wchar_p), ("lpDesktop", ctypes.c_wchar_p), ("lpTitle", ctypes.c_wchar_p),
+                ("dwX", ctypes.c_ulong), ("dwY", ctypes.c_ulong), ("dwXSize", ctypes.c_ulong), ("dwYSize", ctypes.c_ulong),
+                ("dwXCountChars", ctypes.c_ulong), ("dwYCountChars", ctypes.c_ulong), ("dwFillAttribute", ctypes.c_ulong),
+                ("dwFlags", ctypes.c_ulong), ("wShowWindow", ctypes.c_ushort), ("cbReserved2", ctypes.c_ushort),
+                ("lpReserved2", ctypes.c_void_p), ("hStdInput", ctypes.c_void_p), ("hStdOutput", ctypes.c_void_p),
+                ("hStdError", ctypes.c_void_p), ("lpAttributeList", ctypes.c_void_p)]
+
+
+class _PROCESS_INFORMATION(ctypes.Structure):
+    _fields_ = [("hProcess", ctypes.c_void_p), ("hThread", ctypes.c_void_p), ("dwProcessId", ctypes.c_ulong), ("dwThreadId", ctypes.c_ulong)]
+
+
+def _mocon_explorer(duongdanexe, thumuc):
+    # Mở duongdanexe với tiến trình cha là explorer.exe của phiên này. False khi không làm được
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error = True)
+    kernel32.OpenProcess.restype = ctypes.c_void_p
+    pid_explorer = win32process.GetWindowThreadProcessId(ctypes.windll.user32.GetShellWindow())[1]
+    if not pid_explorer:
+        return False
+    hcha = kernel32.OpenProcess(0x0080, False, pid_explorer)  # PROCESS_CREATE_PROCESS
+    if not hcha:
+        return False
+    try:
+        kichthuoc = ctypes.c_size_t()
+        kernel32.InitializeProcThreadAttributeList(None, 1, 0, ctypes.byref(kichthuoc))
+        danhsach = ctypes.create_string_buffer(kichthuoc.value)
+        if not kernel32.InitializeProcThreadAttributeList(danhsach, 1, 0, ctypes.byref(kichthuoc)):
+            return False
+        try:
+            giatricha = ctypes.c_void_p(hcha)
+            # PROC_THREAD_ATTRIBUTE_PARENT_PROCESS
+            if not kernel32.UpdateProcThreadAttribute(danhsach, 0, ctypes.c_size_t(0x00020000), ctypes.byref(giatricha),
+                                                      ctypes.sizeof(giatricha), None, None):
+                return False
+            si = _STARTUPINFOEXW()
+            si.cb = ctypes.sizeof(si)
+            si.lpAttributeList = ctypes.cast(danhsach, ctypes.c_void_p)
+            pi = _PROCESS_INFORMATION()
+            lenh = ctypes.create_unicode_buffer(f'"{duongdanexe}"')
+            # EXTENDED_STARTUPINFO_PRESENT
+            if not kernel32.CreateProcessW(None, lenh, None, None, False, 0x00080000, None, thumuc, ctypes.byref(si), ctypes.byref(pi)):
+                return False
+            kernel32.CloseHandle(ctypes.c_void_p(pi.hThread))
+            kernel32.CloseHandle(ctypes.c_void_p(pi.hProcess))
+            return True
+        finally:
+            kernel32.DeleteProcThreadAttributeList(danhsach)
+    finally:
+        kernel32.CloseHandle(ctypes.c_void_p(hcha))
+
+
+def molauncher(thumuc):
+    # Niết Bàn từ 1.01.93 (ChienQuocNietBan.dll R4): xq.exe không do play.exe mở thì báo "launcher bắt buộc" và không vào được,
+    # nên mở play.exe rồi bấm Đăng nhập như launcher mở tay. play.exe do bot mở (cha là python) thì game vẫn tự thoát sau ~2s,
+    # do explorer mở (như bấm đúp) thì được: tạo tiến trình với cha là explorer (PROC_THREAD_ATTRIBUTE_PARENT_PROCESS), thư mục làm việc
+    # là thư mục game (chạy "explorer.exe play.exe" thì sai thư mục, play.exe không đọc được play.ini, hiện "client 0").
+    # Không còn explorer thì mở thẳng. Trả về cửa sổ launcher, 0 khi sau 20s chưa thấy
+    if not _mocon_explorer(os.path.join(thumuc, "play.exe"), thumuc):
+        subprocess.Popen([os.path.join(thumuc, "play.exe")], cwd = thumuc)
+    for _ in range(40):
+        time.sleep(0.5)
+        hwnd = timlauncherdangmo(thumuc)
+        if hwnd:
+            return hwnd
+    return 0
 
 
 def _dongcuaso(hwnd):
@@ -357,13 +458,14 @@ def laydanhsachnhanvatonlines():
     # "cuaso": {hwnd: ID người chơi} của các cửa sổ đang có nhân vật (để nhận ra cửa sổ đó khi bị dis về màn hình đăng nhập),
     # "tentheocuaso": {hwnd: tên đã chuẩn hoá} (nhận ra cửa sổ của tài khoản chưa điền ID / tự điền ID)
     online_chars = {"ten": set(), "id": set(), "cuaso": {}, "tentheocuaso": {}}
+    duongdans = _duongdangamequanlys()
 
     def callback(hwnd, _):
         if win32gui.IsWindowVisible(hwnd):
             title = win32gui.GetWindowText(hwnd)
-            if GAME_TITLE_PREFIX in title:
-                is_hung = kiemtravadongcuasotreo(hwnd)
-                if is_hung:
+            if is_tieudecuasogame(title):
+                # Chỉ kill cửa sổ đơ của bản tự đăng nhập quản lý
+                if _is_cuasoquanly(hwnd, duongdans) and kiemtravadongcuasotreo(hwnd):
                     return
 
                 try:
@@ -384,7 +486,16 @@ def laydanhsachnhanvatonlines():
     return online_chars
 
 
-def timlauncherdangmo():
+def _is_cuasoquanly(hwnd, duongdans):
+    # Cửa sổ của xq.exe nằm trong duongdans (_duongdangamequanlys)
+    try:
+        return _layduongdantientrinh(win32process.GetWindowThreadProcessId(hwnd)[1]) in duongdans
+    except pywintypes.error:
+        return False
+
+
+def timlauncherdangmo(thumucgame = None):
+    # thumucgame: chỉ nhận launcher (play.exe) của bản game trong thư mục này
     hwnd_found = 0
 
     def callback(hwnd, _):
@@ -392,6 +503,10 @@ def timlauncherdangmo():
         if win32gui.IsWindowVisible(hwnd):
             title = win32gui.GetWindowText(hwnd)
             if re.match(LAUNCHER_TITLE, title):
+                if thumucgame:
+                    duongdan = _layduongdantientrinh(win32process.GetWindowThreadProcessId(hwnd)[1])
+                    if not duongdan or os.path.dirname(duongdan) != _chuanhoaduongdan(thumucgame):
+                        return
                 hwnd_found = hwnd
 
     win32gui.EnumWindows(callback, None)
@@ -428,24 +543,27 @@ def _is_cuasodadangnhap(hwnd):
 def _is_cuasomanhinhdangnhap(hwnd):
     # Cửa sổ game đang ở màn hình đăng nhập (mới mở, hoặc bị dis về), chưa có nhân vật. Chỉ so tiền tố tiêu đề: trong game tiêu đề
     # là "Chien Quoc 2D (ID) -oo2026oo- ...", bị dis về màn chọn máy chủ có thể vẫn giữ tiêu đề đó chứ không đổi về tiêu đề đăng nhập
-    if not win32gui.IsWindow(hwnd) or not win32gui.IsWindowVisible(hwnd) or GAME_TITLE_PREFIX not in win32gui.GetWindowText(hwnd):
+    if not win32gui.IsWindow(hwnd) or not win32gui.IsWindowVisible(hwnd) or not is_tieudecuasogame(win32gui.GetWindowText(hwnd)):
         return False
     r = win32gui.GetWindowRect(hwnd)
     w, h = r[2] - r[0], r[3] - r[1]
     return 790 < w < 830 and 590 < h < 660 and not _is_cuasodadangnhap(hwnd)
 
 
-def timcuasogamedangbiket(boquas = ()):
+def timcuasogamedangbiket(boquas = (), duongdans = None, pid = None):
     # boquas: cửa sổ bị dis đang giữ chỗ cho nhân vật khác (đăng nhập lại ngay trong đó thì vào lại tại chỗ, đóng là mất chỗ phó bản)
+    # duongdans: chỉ cửa sổ của các xq.exe này; pid: chỉ cửa sổ của tiến trình này
     hwnd_found = 0
 
     def callback(hwnd, _):
         nonlocal hwnd_found
         if hwnd in boquas:
             return
+        if pid is not None and win32process.GetWindowThreadProcessId(hwnd)[1] != pid:
+            return
         if win32gui.IsWindowVisible(hwnd):
             title = win32gui.GetWindowText(hwnd)
-            if re.search(GAME_TITLE_LOGIN_SCREEN, title):
+            if re.search(GAME_TITLE_LOGIN_SCREEN, title) and (duongdans is None or _is_cuasoquanly(hwnd, duongdans)):
                 r = win32gui.GetWindowRect(hwnd)
                 w, h = r[2] - r[0], r[3] - r[1]
                 if 790 < w < 830 and 590 < h < 660 and not _is_cuasodadangnhap(hwnd):
@@ -460,8 +578,10 @@ def mogamevadangnhap(char_name, config, duongdangame, cuasogiuchos = ()):
     print(f"\n[ĐĂNG NHẬP] >>> BẮT ĐẦU QUY TRÌNH CHO: {char_name}")
     # Cửa sổ vừa bấm vào game, đang load: cũng không đóng / kill
     cuasogiuchos = set(cuasogiuchos) | laycuasodangvaogame()
+    is_nietbanmo = is_nietban(duongdangame)
+    gioihan = GIOIHANCLIENTNIETBAN if is_nietbanmo else SOCLIENTTOIDA
     try:
-        hwnd_game_stuck = timcuasogamedangbiket(cuasogiuchos)
+        hwnd_game_stuck = timcuasogamedangbiket(cuasogiuchos, duongdans = _duongdangamequanlys())
         if hwnd_game_stuck:
             print(f"   -> Phát hiện cửa sổ chờ (HWND: {hwnd_game_stuck}). Đang đóng...")
             try:
@@ -470,12 +590,12 @@ def mogamevadangnhap(char_name, config, duongdangame, cuasogiuchos = ()):
             except Exception as e:
                 print(f"   -> Lỗi khi đóng cửa sổ cũ: {e}")
 
-        if not giaiphongchoclient(cuasogiuchos):
-            print(f"   -> Đã đủ {SOCLIENTTOIDA} client mà không có client nào đóng được (đều đang chơi / giữ chỗ). Không mở thêm.")
+        if not giaiphongchoclient(cuasogiuchos, gioihan):
+            print(f"   -> Đã đủ {gioihan} client mà không có client nào đóng được (đều đang chơi / giữ chỗ). Không mở thêm.")
             return False
 
         hwnd_game = 0
-        hwnd_launcher = timlauncherdangmo()
+        hwnd_launcher = timlauncherdangmo(os.path.dirname(duongdangame))
         if hwnd_launcher:
             print(f"   -> Tìm thấy Launcher (HWND: {hwnd_launcher}).")
             if win32gui.IsIconic(hwnd_launcher):
@@ -484,7 +604,6 @@ def mogamevadangnhap(char_name, config, duongdangame, cuasogiuchos = ()):
             if not os.path.exists(duongdangame):
                 print(f"❌ Không tìm thấy file game: {duongdangame} (sửa \"Đường dẫn game\" ở thẻ Đăng nhập)")
                 return
-            print("   -> Mở file exe mới...")
             game_dir = os.path.dirname(duongdangame)
 
             dondepclientkhongdangnhap(cuasogiuchos = cuasogiuchos)
@@ -492,13 +611,23 @@ def mogamevadangnhap(char_name, config, duongdangame, cuasogiuchos = ()):
             max_retries = 3
             success_open = False
 
-            for attempt in range(max_retries):
-                print(f"      [Lần thử {attempt + 1}/{max_retries}] Đang chạy lệnh mở game...")
-                mogame(duongdangame, game_dir)
+            if is_nietbanmo:
+                print("   -> Mở launcher play.exe (Niết Bàn bắt buộc vào game qua launcher)...")
+                hwnd_launcher = molauncher(game_dir)
+                if not hwnd_launcher:
+                    print("❌ Lỗi: Launcher play.exe không hiện lên sau 20s!")
+                    return
+                print(f"   -> Launcher đã lên (HWND: {hwnd_launcher}).")
+            else:
+                print("   -> Mở file exe mới...")
 
-                # Mở thẳng vào game (không qua launcher): chờ cửa sổ đăng nhập tối đa 20s, kiểm tra mỗi 0.5s
+            for attempt in range(0 if is_nietbanmo else max_retries):
+                print(f"      [Lần thử {attempt + 1}/{max_retries}] Đang chạy lệnh mở game...")
+                pid = mogame(duongdangame, game_dir, is_vagioihan = not is_nietbanmo)
+
+                # Mở thẳng vào game (không qua launcher): chờ cửa sổ đăng nhập của chính tiến trình vừa mở tối đa 20s, kiểm tra mỗi 0.5s
                 for i in range(40):
-                    hwnd_game = timcuasogamedangbiket(cuasogiuchos)
+                    hwnd_game = timcuasogamedangbiket(cuasogiuchos, pid = pid)
                     if hwnd_game:
                         success_open = True
                         break
@@ -536,7 +665,7 @@ def mogamevadangnhap(char_name, config, duongdangame, cuasogiuchos = ()):
 
             for i in range(60):
                 time.sleep(1)
-                hwnd_game = timcuasogamedangbiket(cuasogiuchos)
+                hwnd_game = timcuasogamedangbiket(cuasogiuchos, duongdans = {_chuanhoaduongdan(duongdangame)})
                 if hwnd_game: break
                 # Click có thể bị launcher nuốt mất: bấm lại "Vào game" mỗi 15s
                 if (i + 1) % 15 == 0 and win32gui.IsWindow(hwnd_launcher):
@@ -644,11 +773,11 @@ def dondeptientrinhaovuabithoatgame(tuoitoithieu = TUOIXQAOTOITHIEU):
 
     win32gui.EnumWindows(callback, None)
 
-    # Chỉ dọn xq.exe của bản game tự đăng nhập quản lý: bản khác (vd Niết Bàn) cũng tên xq.exe, có thể đang ở màn hình có tiêu đề
+    # Chỉ dọn xq.exe của bản game tự đăng nhập quản lý: bản khác (mở tay) cũng tên xq.exe, có thể đang ở màn hình có tiêu đề
     # lạ (đăng nhập, chọn máy chủ...) mà không phải tiến trình ảo
-    duongdangame = os.path.normcase(os.path.abspath(duongdangamemaynay(taicauhinhdangnhap())))
+    duongdans = _duongdangamequanlys()
     ghost_pids = {pid for pid in _laypidxq() - valid_pids
-                  if _laytuoitientrinh(pid) >= tuoitoithieu and _layduongdantientrinh(pid) == duongdangame}
+                  if _laytuoitientrinh(pid) >= tuoitoithieu and _layduongdantientrinh(pid) in duongdans}
 
     if ghost_pids:
         print(f"[CLEANUP] Đang kiểm tra các tiến trình xq.exe bị treo ngầm...")
@@ -692,14 +821,16 @@ def donglauncher(hwnd_launcher):
     print(f"   ✅ Đã đóng launcher (PID: {pid}).")
 
 
-def _laypidxq():
+def _laypidxq(is_dunghoathuong = False):
+    # is_dunghoathuong: chỉ tiến trình tên đúng "xq.exe" chữ thường, đúng như kiểm tra số client của game (so từng byte). File exe
+    # Aegis đổi thành "XQ.exe" thì client Aegis không bị Niết Bàn (và chính Aegis) đếm
     xq_pids = set()
     try:
         output = subprocess.check_output(
             ['tasklist', '/FI', 'IMAGENAME eq xq.exe', '/FO', 'CSV', '/NH']
         ).decode('utf-8', errors = 'ignore')
         for row in csv.reader(output.splitlines()):
-            if len(row) > 1 and 'xq.exe' in row[0].lower():
+            if len(row) > 1 and (row[0] == 'xq.exe' if is_dunghoathuong else 'xq.exe' in row[0].lower()):
                 xq_pids.add(int(row[1]))
     except Exception as e:
         print(f"❌ Lỗi khi lấy danh sách tiến trình: {e}")
@@ -735,9 +866,10 @@ def dondepclientkhongdangnhap(tuoitoithieu = 120., cuasogiuchos = ()):
     # Bỏ qua client mới mở (< tuoitoithieu giây) vì có thể đang đăng nhập dở.
     pid_dangnhaps = set()
     pid_cuasogames = set()
+    duongdans = _duongdangamequanlys()
 
     def callback(hwnd, _):
-        if win32gui.IsWindowVisible(hwnd) and GAME_TITLE_PREFIX in win32gui.GetWindowText(hwnd):
+        if win32gui.IsWindowVisible(hwnd) and is_tieudecuasogame(win32gui.GetWindowText(hwnd)) and _is_cuasoquanly(hwnd, duongdans):
             _, pid = win32process.GetWindowThreadProcessId(hwnd)
             pid_cuasogames.add(pid)
             # Cửa sổ bị dis đang giữ chỗ: coi như đang đăng nhập, không kill
@@ -756,28 +888,30 @@ def dondepclientkhongdangnhap(tuoitoithieu = 120., cuasogiuchos = ()):
         chotientrinhthoat(pid_dakills)
 
 
-def giaiphongchoclient(cuasogiuchos = ()):
-    # Trước khi mở client mới: đã đủ SOCLIENTTOIDA tiến trình xq.exe (tính cả bản khác như Niết Bàn) thì kill client không có nhân vật
-    # (cửa sổ chờ, cửa sổ bị dis đã hết lượt thử...), trừ cửa sổ bị dis đang giữ chỗ. Chỉ kill cửa sổ "Chien Quoc 2D", bản khác chỉ chiếm
-    # suất. Không cần tuổi tối thiểu như dondepclientkhongdangnhap vì đằng nào cũng phải mở mới.
-    # Trả về False khi không giải phóng được chỗ (mở thêm sẽ thành client thứ SOCLIENTTOIDA + 1)
+def giaiphongchoclient(cuasogiuchos = (), gioihan = SOCLIENTTOIDA):
+    # Trước khi mở client mới: đã đủ gioihan tiến trình game đếm (tên đúng "xq.exe", mọi bản) thì kill client không có nhân vật
+    # (cửa sổ chờ, cửa sổ bị dis đã hết lượt thử...), trừ cửa sổ bị dis đang giữ chỗ. Chỉ kill cửa sổ của bản tự đăng nhập quản lý
+    # mà game có đếm, bản khác chỉ chiếm suất. Không cần tuổi tối thiểu như dondepclientkhongdangnhap vì đằng nào cũng phải mở mới.
+    # Trả về False khi không giải phóng được chỗ (mở thêm sẽ thành client thứ gioihan + 1)
     pidtheocuasos = {}
+    duongdans = _duongdangamequanlys()
 
     def callback(hwnd, _):
-        if win32gui.IsWindowVisible(hwnd) and GAME_TITLE_PREFIX in win32gui.GetWindowText(hwnd):
+        if win32gui.IsWindowVisible(hwnd) and is_tieudecuasogame(win32gui.GetWindowText(hwnd)) and _is_cuasoquanly(hwnd, duongdans):
             pidtheocuasos[hwnd] = win32process.GetWindowThreadProcessId(hwnd)[1]
 
     win32gui.EnumWindows(callback, None)
 
-    pids = set(pidtheocuasos.values())
-    socanbot = len(pids | _laypidxq()) - SOCLIENTTOIDA + 1
+    pid_demduocs = _laypidxq(is_dunghoathuong = True)
+    pids = set(pidtheocuasos.values()) & pid_demduocs
+    socanbot = len(pid_demduocs) - gioihan + 1
     if socanbot <= 0:
         return True
     pid_dangnhaps = {pid for hwnd, pid in pidtheocuasos.items() if hwnd in cuasogiuchos or _is_cuasodadangnhap(hwnd)}
     pid_cankills = sorted(pids - pid_dangnhaps)[:socanbot]
     pid_dakills = []
     for pid in pid_cankills:
-        print(f"   ⚠️ Đã đủ {SOCLIENTTOIDA} client, kill client không có nhân vật (PID: {pid}) để lấy chỗ...")
+        print(f"   ⚠️ Đã đủ {gioihan} client, kill client không có nhân vật (PID: {pid}) để lấy chỗ...")
         if _killtientrinh(pid):
             pid_dakills.append(pid)
     if pid_dakills:
@@ -815,6 +949,7 @@ def dichuyencuasotheovitri(hwnd, vitricuaso):
 
     toado_x, toado_y = toa_do_4_goc[index_goc]
 
+    _bokieuan(hwnd)
     try:
         win32gui.SetWindowPos(
             hwnd,
@@ -828,6 +963,93 @@ def dichuyencuasotheovitri(hwnd, vitricuaso):
         print(f"   -> [GIAO DIỆN] Đã ghim cửa sổ vào vị trí số {vitricuaso}.")
     except Exception as e:
         print(f"   ❌ Lỗi khi di chuyển cửa sổ: {e}")
+
+
+# Ẩn cửa sổ game: dời ra ngoài mọi màn hình + bỏ khỏi thanh taskbar / Alt+Tab (WS_EX_TOOLWINDOW). Không dùng SW_HIDE / thu nhỏ: bot
+# tìm cửa sổ game bằng IsWindowVisible, PrintWindow không chụp được cửa sổ thu nhỏ. {hwnd: (x, y)} chỗ cũ để hiện lại
+_vitritruockhian = {}
+
+
+def _xbenngoaimanhinh():
+    # Mép trái màn hình ảo (nhiều màn hình có thể âm) lùi thêm 1 khoảng xa hơn cả bề rộng cửa sổ game
+    return win32api.GetSystemMetrics(76) - 4000
+
+
+def is_cuasogamedaan(hwnd):
+    try:
+        return win32gui.GetWindowRect(hwnd)[2] <= _xbenngoaimanhinh() + 2000
+    except Exception:
+        return False
+
+
+def _doikieutaskbar(hwnd, is_an, x, y):
+    # Đổi WS_EX_TOOLWINDOW lúc cửa sổ đang hiện thì taskbar không cập nhật: ẩn thoáng qua, đổi kiểu + chỗ, hiện lại không kích hoạt
+    kieu = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
+    kieu = (kieu | win32con.WS_EX_TOOLWINDOW) & ~win32con.WS_EX_APPWINDOW if is_an else kieu & ~win32con.WS_EX_TOOLWINDOW
+    win32gui.ShowWindow(hwnd, win32con.SW_HIDE)
+    try:
+        win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, kieu)
+        win32gui.SetWindowPos(hwnd, 0, x, y, 0, 0, win32con.SWP_NOSIZE | win32con.SWP_NOZORDER | win32con.SWP_NOACTIVATE | win32con.SWP_FRAMECHANGED)
+    finally:
+        win32gui.ShowWindow(hwnd, win32con.SW_SHOWNOACTIVATE)
+
+
+def ancuasogame(hwnd):
+    try:
+        if not win32gui.IsWindow(hwnd) or is_cuasogamedaan(hwnd):
+            return
+        if win32gui.IsIconic(hwnd):
+            win32gui.ShowWindow(hwnd, win32con.SW_SHOWNOACTIVATE)
+        r = win32gui.GetWindowRect(hwnd)
+        _vitritruockhian[hwnd] = r[0], r[1]
+        _doikieutaskbar(hwnd, True, _xbenngoaimanhinh(), 0)
+    except Exception as e:
+        print(f"   ❌ Lỗi khi ẩn cửa sổ game: {e}")
+
+
+def hiencuasogame(hwnd):
+    # Không nhớ chỗ cũ (bot mở lại lúc game còn đang ẩn) thì đặt giữa màn hình
+    try:
+        if not win32gui.IsWindow(hwnd):
+            _vitritruockhian.pop(hwnd, None)
+            return
+        vitri = _vitritruockhian.pop(hwnd, None)
+        if vitri is None:
+            if not is_cuasogamedaan(hwnd):
+                return
+            r = win32gui.GetWindowRect(hwnd)
+            vitri = (win32api.GetSystemMetrics(0) - (r[2] - r[0])) // 2, (win32api.GetSystemMetrics(1) - 40 - (r[3] - r[1])) // 2
+        _doikieutaskbar(hwnd, False, *vitri)
+    except Exception as e:
+        print(f"   ❌ Lỗi khi hiện cửa sổ game: {e}")
+
+
+def focuscuasogame(hwnd):
+    # Đưa cửa sổ game lên trước (bấm đúp trên danh sách nhân vật): thu nhỏ thì phục hồi. Giao diện đang là cửa sổ trước nên Windows
+    # cho SetForegroundWindow; vẫn bị chặn thì nhấn Alt giả để mở khoá
+    try:
+        if not win32gui.IsWindow(hwnd):
+            return
+        if win32gui.IsIconic(hwnd):
+            win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+        try:
+            win32gui.SetForegroundWindow(hwnd)
+        except Exception:
+            win32api.keybd_event(win32con.VK_MENU, 0, 0, 0)
+            win32api.keybd_event(win32con.VK_MENU, 0, win32con.KEYEVENTF_KEYUP, 0)
+            win32gui.SetForegroundWindow(hwnd)
+    except Exception as e:
+        print(f"   ❌ Lỗi khi đưa cửa sổ game lên trước: {e}")
+
+
+def _bokieuan(hwnd):
+    # Đăng nhập (lại) cần cửa sổ trên màn hình và có lại nút taskbar; xong thì giao diện tự ẩn lại nếu đang bật Ẩn game
+    _vitritruockhian.pop(hwnd, None)
+    try:
+        if win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) & win32con.WS_EX_TOOLWINDOW:
+            _doikieutaskbar(hwnd, False, *win32gui.GetWindowRect(hwnd)[:2])
+    except Exception:
+        pass
 
 
 def _is_cuasocuataikhoan(taikhoan, idnguoichoi, tennhanvat):
@@ -1042,7 +1264,7 @@ class TuDongDangNhap:
             dangnhaptrongcuaso(hwnd_dis, ten, canhdangnhap)
             return
         self.trangthai = f"Đang đăng nhập {ten}..."
-        if mogamevadangnhap(ten, canhdangnhap, duongdangamemaynay(cauhinh), cuasogiuchos = set(cuasodis)) is False and cuasodis:
+        if mogamevadangnhap(ten, canhdangnhap, duongdangamecua(canhdangnhap, cauhinh), cuasogiuchos = set(cuasodis)) is False and cuasodis:
             # Đủ client mà chỗ nào cũng bị cửa sổ dis giữ (của nhân vật khác / không nhận ra của ai): bỏ giữ chỗ để lượt sau đóng được
             # một cửa sổ mà mở client mới, không thì kẹt mãi
             import html
@@ -1050,7 +1272,7 @@ class TuDongDangNhap:
             print(f"   -> Bỏ giữ chỗ {len(cuasodis)} cửa sổ bị dis để mở được client mới cho {ten}")
             for hwnd in cuasodis:
                 self._solandangnhaplaicuaso[hwnd] = SOLANDANGNHAPLAICUASODIS
-            guitinmay("dangnhap", f"⚠️ Đủ {SOCLIENTTOIDA} client đều là cửa sổ bị dis đang giữ chỗ, không mở thêm được để đăng nhập "
+            guitinmay("dangnhap", f"⚠️ Đủ client đều là cửa sổ bị dis đang giữ chỗ, không mở thêm được để đăng nhập "
                                   f"<b>{html.escape(ten)}</b>: bỏ giữ chỗ, đóng bớt cửa sổ dis rồi mở client mới", khoa = "kethetcho", giancach = 600.)
 
     def _tudienid(self, cauhinh, online):

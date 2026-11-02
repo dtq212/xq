@@ -20,7 +20,7 @@ from thongbao_xq import baosuco
 LYDOCATKHO_BANRAC = "banrac"
 LYDOCATKHO_LENHTAY = "lenhtay"
 KHOANGCACHQUANKHO = 3.
-# Các ô hành trang đầu bán rác cũng bỏ qua (ô dùng nhanh)
+# Các ô hành trang đầu bỏ qua (ô dùng nhanh)
 VITRICATKHODAUTIEN = 6
 GIANCACHBUOCCATKHO = 0.5
 # Gửi lệnh mở rương xong chờ chừng này giây cho game nạp dữ liệu rương; mở chừng ấy lần không thấy đổi rương thì bỏ

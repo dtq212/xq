@@ -46,17 +46,21 @@ NPCTYTHI = {"daohoanguyen": ("Thôn Trang Hộ Vệ", 43, 59), "camvequan": ("Th
 
 def tenthaythe(ten):
     # Tên NPC trong nhiệm vụ / danh hiệu trong game khác tên trên bản đồ nhỏ -> ([tên để thử, ...], bản đồ của nước hoặc None):
-    #   "Triệu Quốc Giám Ngục Quan" = "Quản Ngục" ở Triệu Quốc, "Sở Quốc Tổng Quản Vương Phủ" = "Sở Tổng Quản" ở Sở Quốc,
-    #   danh hiệu "Chủ Tiệm Trang Sức" = "Chủ Tiệm Kim Hoàn ..."
+    #   "Triệu Quốc Giám Ngục Quan" = "Quản Ngục" ở Triệu Quốc (Niết Bàn: "Triệu Quốc Quản Ngục Quan", cùng toạ độ),
+    #   "Sở Quốc Tổng Quản Vương Phủ" = "Sở Tổng Quản" ở Sở Quốc, danh hiệu "Chủ Tiệm Trang Sức" = "Chủ Tiệm Kim Hoàn ..."
     ten = (ten or "").strip()
-    m = re.match(r"(\S+) Quốc Giám Ngục", ten)
+    m = re.match(r"(\S+) Quốc Giám Ngục", ten, re.IGNORECASE)
     if m:
-        return [ten, "Quản Ngục"], timbandotheoten(m.group(1) + " Quốc")
+        return [ten, f"{m.group(1)} Quốc Quản Ngục Quan", "Quản Ngục"], timbandotheoten(m.group(1) + " Quốc")
     m = re.match(r"(\S+) Quốc Tổng Quản", ten)
     if m:
         return [ten, f"{m.group(1)} Tổng Quản"], timbandotheoten(m.group(1) + " Quốc")
     if chuanhoaten(ten).startswith(chuanhoaten("Chủ Tiệm Trang Sức")):
         return [ten, "Chủ Tiệm Kim Hoàn" + ten[len("Chủ Tiệm Trang Sức"):]], None
+    # "Đường Gia Tổng Quản" = "Đường Tổng Quản" trên bản đồ
+    m = re.match(r"(\S+) Gia (Tổng Quản.*)$", ten)
+    if m:
+        return [ten, f"{m.group(1)} {m.group(2)}"], None
     return [ten], None
 
 # Bản đồ của môn phái (Hồi môn phái "dGludmF0 1" về đây)
@@ -94,10 +98,12 @@ BANDOTHAMVIENG = {
     "Tề Vương": 10,
     "Hàn Vương": 20,
     "Triệu Vương": 30,
-    "Nguỵ Chiêu Vương": 40,
     "Ngụy Chiêu Vương": 40,
+    # Nhiệm vụ (Niết Bàn) ghi tên ngắn, không khớp tên đầy đủ có chữ giữa
+    "Ngụy Vương": 40,
     "Tần Vương": 50,
     "Sở Khảo Liệt Vương": 60,
+    "Sở Vương": 60,
     "Yên Vương": 70,
     "Chu Vương": 80,
     "Đại Tướng Quân": BANDO_CHUQUOC,
@@ -131,6 +137,27 @@ def boma(chuoi):
     return re.sub(r"\x1b.", "", chuoi or "")
 
 
+_SOCHUs = {"một": 1, "hai": 2, "ba": 3, "bốn": 4, "tư": 4, "năm": 5, "lăm": 5, "sáu": 6, "bảy": 7, "tám": 8, "chín": 9}
+# Số lượng trong nhiệm vụ: "5" hoặc chữ "năm", "mười", "mười hai", "hai mươi"...
+_MAUSO = r"\d+|(?:(?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín) mươi|mười)(?: (?:một|mốt|hai|ba|bốn|tư|năm|lăm|sáu|bảy|tám|chín))?|một|hai|ba|bốn|năm|sáu|bảy|tám|chín"
+
+
+def docso(chuoi):
+    # "5" / "năm" / "mười hai" / "hai mươi lăm" -> số nguyên
+    chuoi = " ".join((chuoi or "").lower().split())
+    if chuoi.isdigit():
+        return int(chuoi)
+    tus = chuoi.split()
+    if "mươi" in tus:
+        i = tus.index("mươi")
+        chuc, donvi = _SOCHUs[tus[i - 1]], tus[i + 1:]
+    elif tus and tus[0] == "mười":
+        chuc, donvi = 1, tus[1:]
+    else:
+        return _SOCHUs[tus[0]]
+    return chuc * 10 + ({"mốt": 1}.get(donvi[0]) or _SOCHUs[donvi[0]] if donvi else 0)
+
+
 def timbandotheoten(ten):
     ten = (ten or "").strip()
     if not ten:
@@ -161,10 +188,11 @@ def phantichnhiemvu(tenmuc, mota):
     ten = re.sub(r"\(\s*Xong\s*\)\s*$", "", tenmuc).strip()
     vanban = boma(mota).replace("\r", "")
     luot = re.search(r"Lượt thứ\s*(\d+)", vanban)
-    phans = re.split(r"(Mục đích nhiệm vụ|Mô tả nhiệm vụ)\s*[：:]", vanban)
+    # Có bản game ghi "Mục tiêu nhiệm vụ" / "Miêu tả nhiệm vụ" thay "Mục đích" / "Mô tả"
+    phans = re.split(r"(Mục đích nhiệm vụ|Mục tiêu nhiệm vụ|Mô tả nhiệm vụ|Miêu tả nhiệm vụ)\s*[：:]", vanban, flags = re.IGNORECASE)
     mucdich, motachitiet = "", ""
     for i in range(1, len(phans) - 1, 2):
-        if phans[i] == "Mục đích nhiệm vụ":
+        if chuanhoaten(phans[i]) in (chuanhoaten("Mục đích nhiệm vụ"), chuanhoaten("Mục tiêu nhiệm vụ")):
             mucdich = phans[i + 1]
         else:
             motachitiet = phans[i + 1]
@@ -207,18 +235,20 @@ def phantichnhiemvu(tenmuc, mota):
                           or [doithu.group(1).strip() if doithu else ten.split()[-1]],
                   toado = (int(toado.group(1)), int(toado.group(2))) if toado else None)
         return nv
-    if chuanhoaten(ten) == chuanhoaten("Hiệp Trợ Trị An"):
+    # Niết Bàn: mục "Hiệp trợ trị an nhiệm vụ", tên trong mô tả "Hiệp trợ trị an"
+    if chuanhoaten(ten).startswith(chuanhoaten("Hiệp Trợ Trị An")):
         nv["loai"] = LOAI_HIEPTRO
-        # Nước: "Tìm Triệu Quốc Giám Ngục Quan" / "Triệu Quốc Giám Ngục Quan gửi thư..."
-        m = re.search(r"(\S+ Quốc) Giám Ngục", mucdich + " " + motachitiet)
+        # Nước: "Tìm Triệu Quốc Giám Ngục Quan" / "Triệu Quốc Giám Ngục Quan gửi thư..." (Niết Bàn viết thường "Tề Quốc giám ngục quan")
+        m = re.search(r"(\S+ Quốc) Giám Ngục", mucdich + " " + motachitiet, re.IGNORECASE)
         nv["bando"] = timbandotheoten(m.group(1)) if m else None
         nv["giamnguc"] = f"{m.group(1)} Giám Ngục Quan" if m else "Quản Ngục"
-        m = re.match(r"Tìm (.+?)\.?$", mucdich)
+        m = re.match(r"Tìm (.+?)\.?$", mucdich, re.IGNORECASE)
         if m:
-            nv.update(buoc = "tim", npc = m.group(1).strip())
+            # Niết Bàn: "Tìm Tề Quốc giám ngục quan hỗ trợ duy trì trị an." -> NPC là phần Giám Ngục Quan
+            nv.update(buoc = "tim", npc = nv["giamnguc"] if "giám ngục" in m.group(1).lower() else m.group(1).strip())
             return nv
         nv["buoc"] = "diet"
-        nv["quai"] = tentiendo or (re.search(r"Tiêu diệt (.+?)(?: ngoài thành|\.|$)", mucdich) or [None, ""])[1].strip().title()
+        nv["quai"] = tentiendo or (re.search(r"Tiêu diệt (.+?)(?: ngoài thành|\.|$)", mucdich, re.IGNORECASE) or [None, ""])[1].strip().title()
         m = re.search(r"\((\d+)\s*,\s*(\d+)\)", motachitiet)
         nv["toado"] = (int(m.group(1)), int(m.group(2))) if m else None
         return nv
@@ -244,25 +274,34 @@ def phantichnhiemvu(tenmuc, mota):
                   detu = ten_xy[0] if ten_xy else (tentiendo or f"{tenphai} Đệ Tử"), vitridetu = ten_xy[1:] if ten_xy else None,
                   doithus = [t for t in (tentiendo, f"{tenphai} đệ tử", ten_xy[0] if ten_xy else None) if t])
         return nv
-    m = re.match(r"Đi tìm (.+?)\.?$", mucdich)
+    # "Đi tìm Thạch Sư" / "Đi tìm Đường Gia Tổng Quản hỏi thử, xem xem có thể giúp được chuyện gì không."
+    m = re.match(r"Đi tìm (.+?)(?:\s+hỏi thử\b.*|\s*,.*)?\.?$", mucdich)
     if m:
         nv.update(loai = LOAI_DENTIM, npc = m.group(1).strip())
         return nv
-    m = re.match(r"Thu thập (\d+) (?:cái |con |chiếc )?(.+?), và giao cho (.+?)\.?$", mucdich)
+    # Số lượng ghi bằng số hoặc chữ (Niết Bàn: "Thu thập năm cái Gân Bò , và giao cho Đường Gia Tổng Quản .")
+    m = re.match(rf"Thu thập ({_MAUSO}) (?:cái |con |chiếc )?(.+?)\s*, và giao cho (.+?)\s*\.?$", mucdich, re.IGNORECASE)
     if m:
-        nv.update(loai = LOAI_THUTHAP, soluong = int(m.group(1)), vatpham = m.group(2).strip(), npc = m.group(3).strip())
+        nv.update(loai = LOAI_THUTHAP, soluong = docso(m.group(1)), vatpham = m.group(2).strip(), npc = m.group(3).strip())
         # "Nghe nói ở Đông Hải Ngư Thôn đánh Binh Tôm sẽ có Càng Lớn"
         m2 = re.search(r"ở (.+?) đánh (.+?) (?:sẽ|thì|có thể) ", motachitiet)
         if m2:
             nv.update(bando = m2.group(1).strip(), quai = m2.group(2).strip())
+        else:
+            # Niết Bàn: "Nghe nói Giết Ngưu Đầu Quái ở Chân núi Đại Biệt có thể nhận được Gân Bò"
+            m2 = re.search(r"(?:Giết|đánh) (.+?) ở (.+?) (?:sẽ|thì|có thể) ", motachitiet, re.IGNORECASE)
+            if m2:
+                nv.update(bando = m2.group(2).strip(), quai = m2.group(1).strip())
         return nv
-    m = re.match(r"Thu mua (\d+) (?:cái |chiếc )?(.+?), và giao cho (.+?)\.?$", mucdich)
+    m = re.match(rf"Thu mua ({_MAUSO}) (?:cái |chiếc )?(.+?)\s*, và giao cho (.+?)\s*\.?$", mucdich, re.IGNORECASE)
     if m:
-        nv.update(loai = LOAI_THUMUA, soluong = int(m.group(1)), vatpham = m.group(2).strip(), npc = m.group(3).strip())
+        nv.update(loai = LOAI_THUMUA, soluong = docso(m.group(1)), vatpham = m.group(2).strip(), npc = m.group(3).strip())
         # "Thạch Sư nhờ ta đi Chủ Tiệm Vũ Khí Tề Quốc thu mua Thuý Mộc Kiếm"
-        m2 = re.search(r"đi (Chủ Tiệm .+?) (?:thu )?mua ", motachitiet)
+        # "Đường Gia Tổng Quản nhờ ta đi Chủ Tiệm Vũ Khí của Sở Quốc ta mua Thiết Mâu" -> "Chủ Tiệm Vũ Khí Sở Quốc"
+        # "Đường Gia Tổng Quản nhờ ta đi Chủ Tửu Lâu thu mua Khoai Lang" (không phải "Chủ Tiệm" vẫn là cửa hàng)
+        m2 = re.search(r"đi (Chủ (?:Tiệm|Tửu) .+?)(?: ta)? (?:thu )?mua ", motachitiet)
         if m2:
-            nv["cuahang"] = m2.group(1).strip()
+            nv["cuahang"] = re.sub(r"\s+của\s+", " ", m2.group(1).strip())
         return nv
     m = re.match(r"Thăm [Vv]iếng (.+?)\.?$", mucdich)
     if m:
@@ -271,19 +310,22 @@ def phantichnhiemvu(tenmuc, mota):
         if m2:
             nv["bando"] = m2.group(1).strip()
         return nv
-    m = re.match(r"Tăng lên (\d+) điểm Kinh nghiệm", mucdich, re.IGNORECASE)
+    # "Tăng lên N điểm ..." / "Sau khi nâng cao N điểm Tiềm năng, quay về bẩm báo sư phụ."
+    m = re.search(r"(?:Tăng lên|nâng cao) (\d+) điểm Kinh nghiệm", mucdich, re.IGNORECASE)
     if m:
         nv.update(loai = LOAI_LUYENTAP, can = int(m.group(1)))
         return nv
-    m = re.match(r"Tăng lên (\d+) điểm Tiềm Năng", mucdich, re.IGNORECASE)
+    m = re.search(r"(?:Tăng lên|nâng cao) (\d+) điểm Tiềm Năng", mucdich, re.IGNORECASE)
     if m:
         nv.update(loai = LOAI_DULICH, can = int(m.group(1)))
         return nv
-    m = re.match(r"Bắt (.+?) rồi trở về", mucdich)
+    # "Bắt Thuỷ Tặc rồi trở về" / Niết Bàn: "Bắt một con Ngưu Đầu Quái về đưa cho sư phụ."
+    m = re.match(r"Bắt (?:một con |1 con )?(.+?) (?:rồi trở về|về đưa cho)", mucdich)
     if m:
         nv.update(loai = LOAI_BATYEUQUAI, quai = m.group(1).strip())
-        # "Nghe nói ở Xích Bích có thể bắt được Thuỷ Tặc"
-        m2 = re.search(r"ở (.+?) (?:có thể )?bắt được", motachitiet)
+        # "Nghe nói ở Xích Bích có thể bắt được Thuỷ Tặc" / "Nghe nói Có thể bắt được Ngưu Đầu Quái ở Chân núi Đại Biệt , sao không..."
+        m2 = re.search(r"ở (.+?) (?:có thể )?bắt được", motachitiet, re.IGNORECASE) \
+             or re.search(rf"bắt được {re.escape(nv['quai'])} ở (.+?)\s*[,.]", motachitiet, re.IGNORECASE)
         if m2:
             nv["bando"] = m2.group(1).strip()
         return nv
@@ -428,11 +470,14 @@ def _taiquestlink(thumucgame):
 class SoVitri:
     # Vị trí NPC / quái bot thấy được, ghi theo từng nhân vật (_internal/vitridoituong/<ID>.json, nhiều cửa sổ không ghi đè nhau),
     # đọc thì gộp file của mọi nhân vật: {"npc": {tên: [bản đồ, x, y]}, "quai": {tên: {"<bản đồ>": [x, y]}},
-    # "cuahang": {"<bản đồ>|<tên / danh hiệu NPC>": {"luc": lúc đọc, "hang": [[ô, giá, tên], ...]}}} (hàng đọc được lần mở cửa hàng gần nhất),
+    # "cuahang": {"<bản đồ>|<tên / danh hiệu NPC>": {"luc": lúc đọc, "hang": [[ô, giá, tên], ...]}}} (hàng đọc được lần mở cửa hàng gần nhất,
+    # "nietban": true khi đọc ở bản Niết Bàn: hàng xếp khác Aegis, vd Chủ Tiệm Vũ Khí Ngụy Quốc ô 2 Aegis là Vân Mộng Kiếm, Niết Bàn là Huyền
+    # Mộc Kiếm cùng giá 6000 -> mua nhầm; chỉ gộp hàng cùng bản),
     # "dadi": {"<bản đồ>": [[x, y], ...]}} (ô nhân vật đã đứng ở bản đồ thành / môn phái: chắc chắn đi được, làm điểm di chuyển về sau)
-    def __init__(self):
+    def __init__(self, is_nietban = False):
         self._khoa = threading.Lock()
         self._idnguoichoi = None
+        self._is_nietban = is_nietban
         self._cuatoi = {"npc": {}, "quai": {}, "cuahang": {}, "dadi": {}}
         # Ô đã đi dạng {id bản đồ: set((x, y))} cho nhanh, lưu ra "dadi" lúc ghi file
         self._dadi = {}
@@ -441,13 +486,23 @@ class SoVitri:
         self._gop = None
         self._lucgop = 0.
 
-    def nap(self, idnguoichoi):
+    def nap(self, idnguoichoi, is_nietban = False):
         with self._khoa:
+            if is_nietban != self._is_nietban:
+                self._is_nietban = is_nietban
+                self._gop = None
             if idnguoichoi == self._idnguoichoi:
                 return
             self._luu()
             self._idnguoichoi = idnguoichoi
             self._cuatoi = self._docfile(os.path.join(_thumucvitri(), f"{idnguoichoi}.json"))
+            # Hàng ghi trước khi có cờ "nietban": nhân vật chỉ chơi 1 bản nên hàng trong file của mình là của bản này
+            for ch in self._cuatoi["cuahang"].values():
+                if bool(ch.get("nietban")) != is_nietban:
+                    ch.pop("nietban", None)
+                    if is_nietban:
+                        ch["nietban"] = True
+                    self._is_doi = True
             self._dadi = {int(b): {tuple(o) for o in dsos} for b, dsos in self._cuatoi["dadi"].items()}
             self._gop = None
 
@@ -482,7 +537,8 @@ class SoVitri:
         with self._khoa:
             for ten in tennpcs:
                 if ten:
-                    self._cuatoi["cuahang"][f"{idbando}|{ten}"] = {"luc": time.time(), "hang": [list(m) for m in hang]}
+                    self._cuatoi["cuahang"][f"{idbando}|{ten}"] = dict({"luc": time.time(), "hang": [list(m) for m in hang]},
+                                                                      **({"nietban": True} if self._is_nietban else {}))
             self._is_doi = True
 
     def ghidadi(self, idbando, x, y):
@@ -535,9 +591,9 @@ class SoVitri:
                     gop["npc"].update(dulieu["npc"])
                     for ten, theobando in dulieu["quai"].items():
                         gop["quai"].setdefault(ten, {}).update(theobando)
-                    # Cùng cửa hàng: lấy lần đọc mới nhất
+                    # Cùng cửa hàng: lấy lần đọc mới nhất của cùng bản (Niết Bàn / Aegis)
                     for khoa, ch in dulieu["cuahang"].items():
-                        if ch.get("luc", 0) >= gop["cuahang"].get(khoa, {}).get("luc", 0):
+                        if bool(ch.get("nietban")) == self._is_nietban and ch.get("luc", 0) >= gop["cuahang"].get(khoa, {}).get("luc", 0):
                             gop["cuahang"][khoa] = ch
                     for idbando, os_ in dulieu["dadi"].items():
                         gop["dadi"].setdefault(idbando, []).extend(os_)
