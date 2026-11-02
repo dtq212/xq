@@ -420,6 +420,13 @@ class TacTuLangLySon:
             idbando = moitruong.get_idbandohientai()
             s["diemvao"].setdefault(idbando, moitruong.get_toado())
             return self._buoctrongphongyeu(s, idbando, is_thanhvien = True)
+        if s["giaidoan"] == "vao" and s["phoban"] == "phongyeukinh" and not self._is_trongphongyeu() and not self._doiphobantv \
+                and self.get_is_thanhviendoiviec(s["phoban"]):
+            # Thành viên đội có tích Phong Yêu Kính mà chưa thấy trưởng đội (chưa online / bot mở lại tự bật lại): không tự give đi 1 mình,
+            # chờ trưởng đội online gọi đội (đang theo đội thì _buocvao lo tới Tả Khâu Minh chờ mời như cũ)
+            s["chedo"] = "thanhvien"
+            s["trangthai"] = f"thành viên đội: chờ trưởng đội {self._tenidnguoichoi(self.get_idtruongdoiviec(s['phoban']))} online (không tự vào)"
+            return None
         if s["giaidoan"] == "vao" and s["phoban"] == "phongyeukinh" and not self._is_trongphongyeu():
             # Phong Yêu Kính ngoài phó bản: người give (đứng đầu nhóm todoi, kể cả khi đang là thành viên nhóm người khác: tự rời) lập nhóm 1
             # người / give / mời; thành viên tới Tả Khâu Minh chờ mời rồi tự "look" vào (_buocvaophongyeu)
@@ -442,7 +449,7 @@ class TacTuLangLySon:
         if not (idbando in BUOCLANGLYSON_MAP or is_trongphongyeu) and self.get_is_thanhviendoiviec(s["phoban"]):
             # Thành viên đội phó bản ngoài phó bản mà không có nhóm / thành trưởng nhóm (trưởng đội dis): chờ trưởng đội mời, không tự vào
             s["chedo"] = "thanhvien"
-            s["trangthai"] = f"thành viên đội: chờ trưởng đội {self._tenidnguoichoi(self._doiphobantv['idtruong'])} lập nhóm (không tự vào)"
+            s["trangthai"] = f"thành viên đội: chờ trưởng đội {self._tenidnguoichoi(self.get_idtruongdoiviec(s['phoban']))} lập nhóm (không tự vào)"
             return None
         if idbando in BUOCLANGLYSON_MAP or is_trongphongyeu:
             self._ghithanhvienvong(s)

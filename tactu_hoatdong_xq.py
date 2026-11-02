@@ -525,30 +525,65 @@ class TacTuHoatDong:
             self.moitruong.action_chantangcapdo()
         else:
             self.moitruong.action_bochantangcapdo()
-        self._tudongtangcap()
         self._tudongquayso()
+        self._tudongtangcap()
 
     def _tudongquayso(self):
-        # Cấp nhân vật tăng (bot tự tăng hay người chơi bấm) thì quay vòng số ở Bảo Điển: gửi lần lượt LENHQUAYSOLENCAPs (mở Bảo Điển,
-        # mở vòng quay, "Khởi động Game"). Lần đầu đọc được cấp chỉ ghi nhớ, không quay
+        # Cấp nhân vật tăng (bot tự tăng hay người chơi bấm) thì quay vòng số ở Bảo Điển, mỗi cấp tăng 1 lượt, chỉ khi cấp không quá
+        # CAPTOIDAQUAYSO (cao hơn thì bỏ lượt còn chờ). Từng lượt: gửi lần lượt LENHQUAYSOLENCAPs (máy chủ chọn món), Bảo Điển bật lên là
+        # đóng; trước lệnh cuối ("Khởi động Game") xoá tên món cũ, chờ máy chủ trả tên món (tối đa THOIGIANCHODONGVONGQUAY giây) rồi
+        # đóng vòng quay, mới tới lượt kế. Lần đầu đọc được cấp chỉ ghi nhớ
         moitruong = self.moitruong
         capdo = moitruong.get_capdonhanvat()
         if capdo:
             if self._capdoquaysotruoc and capdo > self._capdoquaysotruoc:
-                self._lenhquaysochos = list(LENHQUAYSOLENCAPs)
-                moitruong._inlog(f"[QUAY SỐ] lên cấp {self._capdoquaysotruoc} -> {capdo}: quay vòng số")
+                self._soluotquaysocho += capdo - self._capdoquaysotruoc
+                moitruong._inlog(f"[QUAY SỐ] lên cấp {self._capdoquaysotruoc} -> {capdo}: còn {self._soluotquaysocho} lượt quay")
             self._capdoquaysotruoc = capdo
-        if not self._lenhquaysochos or time.time() - self._thoidiemlenhquayso < THOIGIANGIUALENHQUAYSO:
+            if capdo > CAPTOIDAQUAYSO and self._soluotquaysocho:
+                moitruong._inlog(f"[QUAY SỐ] cấp {capdo} > {CAPTOIDAQUAYSO}: không quay được, bỏ {self._soluotquaysocho} lượt")
+                self._soluotquaysocho = 0
+        if (self._lenhquaysochos or self._thoidiemguiquayso) and moitruong.get_is_danghienbaodien():
+            moitruong.action_dongbaodien()
+        danghien, tenmon = moitruong.get_vongquayso()
+        if self._thoidiemguiquayso:
+            if tenmon:
+                moitruong._inlog(f"[QUAY SỐ] máy chủ trả {tenmon}, còn {self._soluotquaysocho} lượt")
+            elif time.time() - self._thoidiemguiquayso >= THOIGIANCHODONGVONGQUAY:
+                moitruong._inlog(f"[QUAY SỐ] {THOIGIANCHODONGVONGQUAY:.0f}s không thấy kết quả, còn {self._soluotquaysocho} lượt")
+            else:
+                return
+            self._thoidiemguiquayso = 0.
+            if danghien:
+                moitruong.action_dongvongquayso()
             return
+        if not self._lenhquaysochos:
+            if not self._soluotquaysocho:
+                return
+            self._soluotquaysocho -= 1
+            self._lenhquaysochos = list(LENHQUAYSOLENCAPs)
+        if time.time() - self._thoidiemlenhquayso < THOIGIANGIUALENHQUAYSO:
+            return
+        caulenh = self._lenhquaysochos[0]
+        if not moitruong.action_thucthicaulenh(caulenh):
+            return
+        self._lenhquaysochos.pop(0)
         self._thoidiemlenhquayso = time.time()
-        if moitruong.action_thucthicaulenh(self._lenhquaysochos[0]):
-            self._lenhquaysochos.pop(0)
+        if not self._lenhquaysochos:
+            moitruong.action_xoamonvongquayso()
+            self._thoidiemguiquayso = time.time()
+
+    def _is_dangquayso(self):
+        # Còn lượt quay số chưa xong: tự tăng cấp chờ, không thì lên cấp liền bị dồn lượt
+        return bool(self._soluotquaysocho or self._lenhquaysochos or self._thoidiemguiquayso)
 
     def _tudongtangcap(self):
         # Tự tăng cấp tới _captudongtangcaptoida: kinh nghiệm hiện có >= kinh nghiệm cần thì gửi "gift upgrade" (nút Thăng Cấp ở bảng Nhân
         # Vật, dò bằng log [LỆNH GAME]). Gửi lệnh trực tiếp nên chạy được cả khi đang Chặn tăng cấp độ (chỉ chặn hộp hỏi lên cấp).
+        # Niết Bàn: "gift upgrade" chỉ làm máy chủ gửi hộp Yes/No hỏi lại, nút Xác Nhận gửi "gift ! upgrade" (dò 2026-11-02 ở hộp
+        # TG_CUASOYESNO + 0x7C) => gửi thẳng lệnh đó, không hiện hộp.
         # Mỗi lần gửi cách nhau THOIGIANGUILAITANGCAP giây (chờ máy chủ trừ kinh nghiệm / tăng cấp)
-        if not self._is_tudongtangcap or time.time() - self._thoidiemtudongtangcap < THOIGIANGUILAITANGCAP:
+        if not self._is_tudongtangcap or time.time() - self._thoidiemtudongtangcap < THOIGIANGUILAITANGCAP or self._is_dangquayso():
             return
         moitruong = self.moitruong
         capdo = moitruong.get_capdonhanvat()
@@ -556,8 +591,9 @@ class TacTuHoatDong:
         if not capdo or capdo >= self._captudongtangcaptoida or kinhnghiem is None or not kinhnghiemcan or kinhnghiem < kinhnghiemcan:
             return
         self._thoidiemtudongtangcap = time.time()
-        if moitruong.action_thucthicaulenh("gift upgrade"):
-            moitruong._inlog(f"[TĂNG CẤP] cấp {capdo}, kinh nghiệm {kinhnghiem} / {kinhnghiemcan}: gửi gift upgrade (tự tăng tới cấp {self._captudongtangcaptoida})")
+        caulenh = "gift ! upgrade" if moitruong.is_nietban else "gift upgrade"
+        if moitruong.action_thucthicaulenh(caulenh):
+            moitruong._inlog(f"[TĂNG CẤP] cấp {capdo}, kinh nghiệm {kinhnghiem} / {kinhnghiemcan}: gửi {caulenh} (tự tăng tới cấp {self._captudongtangcaptoida})")
             phatam(f"Tăng lên cấp {capdo + 1}", is_block = False)
 
     def action_tudongkhaikhoang(self):

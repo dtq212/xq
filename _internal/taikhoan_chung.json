@@ -25,7 +25,7 @@
             "server": 1,
             "char_index": 1,
             "vitricuaso": 1,
-            "maydangnhap": ""
+            "maydangnhap": "Admin-PC"
         },
         {
             "tennhanvat": "Ngọc",
@@ -36,7 +36,7 @@
             "server": 1,
             "char_index": 1,
             "vitricuaso": 2,
-            "maydangnhap": ""
+            "maydangnhap": "Admin-PC"
         },
         {
             "tennhanvat": "ThichVaCham",
@@ -47,7 +47,7 @@
             "server": 1,
             "char_index": 1,
             "vitricuaso": 3,
-            "maydangnhap": ""
+            "maydangnhap": "Admin-PC"
         },
         {
             "tennhanvat": "KNgaiVaCham",
@@ -58,7 +58,7 @@
             "server": 1,
             "char_index": 1,
             "vitricuaso": 4,
-            "maydangnhap": ""
+            "maydangnhap": "Admin-PC"
         },
         {
             "tennhanvat": "Mộc Lan",
@@ -154,8 +154,8 @@
             "group": 1,
             "server": 1,
             "char_index": 1,
-            "maydangnhap": "",
-            "vitricuaso": 3,
+            "maydangnhap": "Admin-PC",
+            "vitricuaso": 5,
             "user": "gadaica",
             "pass": "hateva"
         }

@@ -1917,7 +1917,7 @@ class GiaoDienHienThi:
             info = self.shared_data.get(self.get_selected_hwnd()) if self.get_selected_hwnd() else None
             taikhoan = {"tennhanvat": (info or {}).get("tennhanvat") or "", "idnguoichoi": (info or {}).get("idnguoichoi") or "", "group": 1,
                         "server": 1, "char_index": 1, "maydangnhap": tenmaynay(),
-                        "vitricuaso": next((v for v in range(1, 5) if v not in {t.get("vitricuaso") for t in taikhoanbatchomaynay(cauhinh)}), 1)}
+                        "vitricuaso": next((v for v in range(1, 6) if v not in {t.get("vitricuaso") for t in taikhoanbatchomaynay(cauhinh)}), 1)}
         else:
             taikhoan = dict(taikhoans[vitri])
         giatris = {k: ("" if taikhoan.get(k) is None else str(taikhoan.get(k))) for k in ("tennhanvat", "idnguoichoi", "user", "pass", "group", "server",
@@ -1925,7 +1925,7 @@ class GiaoDienHienThi:
         truongs = [("tennhanvat", "Tên nhân vật", None), ("idnguoichoi", "ID người chơi (cố định, ưu tiên để nhận ra)", None),
                    ("user", "Tài khoản", None), ("pass", "Mật khẩu", None),
                    ("group", "Cụm máy chủ", ["1", "2", "3", "4"]), ("server", "Máy chủ", ["1", "2"]),
-                   ("char_index", "Ô nhân vật (1-6)", ["1", "2", "3", "4", "5", "6"]), ("vitricuaso", "Vị trí cửa sổ (1-4)", ["1", "2", "3", "4"])]
+                   ("char_index", "Ô nhân vật (1-6)", ["1", "2", "3", "4", "5", "6"]), ("vitricuaso", "Vị trí cửa sổ (1-4 góc, 5 giữa)", ["1", "2", "3", "4", "5"])]
 
         def kiemtra(kq):
             if not kq["user"].strip() or not kq["pass"]:
@@ -1934,7 +1934,7 @@ class GiaoDienHienThi:
                 return "Cần ID người chơi hoặc tên nhân vật để biết nhân vật đã online chưa"
             if kq["idnguoichoi"].strip() and not kq["idnguoichoi"].strip().isdigit():
                 return "ID người chơi phải là số"
-            for t, toida in (("group", 4), ("server", 2), ("char_index", 6), ("vitricuaso", 4)):
+            for t, toida in (("group", 4), ("server", 2), ("char_index", 6), ("vitricuaso", 5)):
                 if not kq[t].strip().isdigit() or not 1 <= int(kq[t]) <= toida:
                     return f"Ô \"{dict((k, n) for k, n, _ in truongs)[t]}\" phải từ 1 tới {toida}"
             return None

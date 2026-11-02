@@ -553,10 +553,15 @@ THOIGIANGUILAITANCONGVATLY = 5.
 # Tự tăng cấp (TacTu._tudongtangcap): mặc định tăng tới cấp này, mỗi lần gửi "gift upgrade" cách nhau chừng này giây
 CAPTUDONGTANGCAPTOIDA = 60
 THOIGIANGUILAITANGCAP = 3.
-# Lên cấp thì tự quay vòng số ở Bảo Điển (TacTu._tudongquayso): lệnh dò bằng log [LỆNH GAME] khi người chơi tự bấm "Khởi động Game",
-# gửi lần lượt cách nhau chừng này giây (người chơi bấm cũng ~0.5s)
+# Lên cấp thì tự quay vòng số ở Bảo Điển (TacTu._tudongquayso): lệnh dò bằng log [LỆNH GAME] khi người chơi tự bấm "Khởi động Game".
+# Mỗi lượt gửi lần lượt (mở Bảo Điển, mở vòng quay, "Khởi động Game") cách nhau THOIGIANGIUALENHQUAYSO giây: gửi riêng
+# "zgdict rock start" thì máy chủ không quay (thử 2026-11-02). Máy chủ bật Bảo Điển / vòng quay lên thì bot đóng; chờ máy chủ trả tên
+# món tối đa THOIGIANCHODONGVONGQUAY giây rồi mới sang lượt kế; tự tăng cấp chờ quay hết lượt mới tăng tiếp
 LENHQUAYSOLENCAPs = ("zgdict open", "zgdict rock open", "zgdict rock start")
-THOIGIANGIUALENHQUAYSO = 0.6
+THOIGIANGIUALENHQUAYSO = 1.
+THOIGIANCHODONGVONGQUAY = 10.
+# Chỉ quay được khi cấp nhân vật không quá chừng này (người dùng dặn 2026-11-02): cấp cao hơn thì bỏ các lượt còn chờ
+CAPTOIDAQUAYSO = 29
 # Đào Hoa Nguyên chỉ "kill" (bật đánh thường) khi nguyên khí không quá chừng này: còn nguyên khí thì spam chiêu, đánh thường làm chiêu ra chậm.
 # 3 = chưa đủ 4 cho Nhất Quyền (để 2 thì nguyên khí 3 + mục tiêu đã có Trọng Thương / Lạc Kích không chiêu nào được dùng, đứng im ~1s)
 NGUYENKHITANCONGVATLYDAOHOA = 3

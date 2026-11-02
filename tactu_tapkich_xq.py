@@ -219,7 +219,7 @@ class TacTuTapKich:
             # Thành viên đội phó bản: không bao giờ tự dẫn đi vào (trưởng đội dis / nhóm tan mà mình thành trưởng nhóm / không có nhóm
             # thì chờ trưởng đội mời lại, trước từng tự nói chuyện NPC liên tục)
             s["chedo"] = "thanhvien"
-            idtruong = self._doiphobantv["idtruong"]
+            idtruong = self.get_idtruongdoiviec("tapkich")
             if moitruong.get_is_dangnamtrongnhom() and moitruong.get_idnguoichoitruongnhom() == idtruong:
                 s["trangthai"] = "thành viên đội: đi theo trưởng đội" + ("" if self._is_tudongtheosau else " (chưa bật Theo sau!)")
             else:

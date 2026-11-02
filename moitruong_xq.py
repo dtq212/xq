@@ -1579,6 +1579,37 @@ class MoiTruong:
         if self.get_hopxacnhannpc()[0]:
             self._goivtableanhien(DC.TG_CUASOYESNO, False)
 
+    def _get_diachivongquayso(self):
+        # Cửa sổ vòng quay số Bảo Điển (TG_VONGQUAYSO, client tạo sẵn, vtable 0x590378): + 0x34 đang hiện, + 0xA0 đang quay, + 0xBB tên
+        # món máy chủ trả về để hiện (vtable[1](1) xoá khi hiện lại). Ẩn / hiện bằng vtable[1] như hộp yes / no
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        return read_int(self.tientrinh, x + DC.TG_VONGQUAYSO) if x else 0
+
+    def get_vongquayso(self):
+        # -> (đang hiện, tên món máy chủ trả về), chưa có cửa sổ thì (False, "")
+        x = self._get_diachivongquayso()
+        if not x:
+            return False, ""
+        return read_boolean(self.tientrinh, x + 0x34), read_bytes(self.tientrinh, x + 0xBB, 0x20).split(b"\0")[0].decode("utf-8", "ignore").strip()
+
+    def action_xoamonvongquayso(self):
+        # Xoá tên món cũ trước khi quay, để biết máy chủ đã trả kết quả lượt mới (tên chỉ để hiện, không ảnh hưởng món nhận)
+        x = self._get_diachivongquayso()
+        if x:
+            write_bytes(self.tientrinh, x + 0xBB, b"\0" * 0x20, 0x20)
+
+    def action_dongvongquayso(self):
+        self._goivtableanhien(DC.TG_VONGQUAYSO, False)
+
+    def get_is_danghienbaodien(self):
+        # Cửa sổ Bảo Điển (TG_BAODIEN, "zgdict open"): + 0x34 đang hiện, ẩn / hiện bằng vtable[1]
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        x = read_int(self.tientrinh, x + DC.TG_BAODIEN) if x else 0
+        return read_boolean(self.tientrinh, x + 0x34) if x else False
+
+    def action_dongbaodien(self):
+        self._goivtableanhien(DC.TG_BAODIEN, False)
+
     def get_danhsachidnguoichoixungquanhs(self):
         danhsachidnguoichoixungquanhs = []
         for diachi in self._get_diachidoituongxungquanhs():
@@ -4026,7 +4057,11 @@ class MoiTruong:
         # Gói máy chủ bắt đầu vận khí ghi + 0xF8 timeGetTime lúc nhận, + 0xFC thời lượng (ms); gói kết thúc đổi + 0xD8 sang thành công /
         # thất bại rồi ẩn thanh. Dis giữa lúc vận khí thì gói kết thúc không tới, đăng nhập lại (cùng client) thanh đứng 100% mãi, game cũng
         # chặn thao tác vì vtable[0] (+ 0x34 đang hiện) => quá thời lượng thì đóng bằng vtable[1](0) (xq + 0xB4B40: tắt + 0x34, xoá trạng thái)
+        # Hiệu có dấu: game ghi + 0xF8 có thể mới hơn timeGetTime bot vừa đọc vài ms (game ghi xen giữa / độ phân giải timer khác),
+        # để không dấu thì ra ~4294967s => tưởng kẹt mà đóng thanh ngay lúc vừa vào vận khí (log 2026-11-02 Lôi Động Cửu Thiên)
         dachay = (ctypes.windll.winmm.timeGetTime() - read_int(self.tientrinh, x + 0xF8)) & 0xFFFFFFFF
+        if dachay >= 0x80000000:
+            return True
         if dachay <= (read_int(self.tientrinh, x + 0xFC) & 0xFFFFFFFF) + THOIGIANVANKHIKETTHEM * 1000:
             return True
         if time.time() - self._thoidiemdongvankhiket > 1.:

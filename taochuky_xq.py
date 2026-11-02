@@ -70,6 +70,8 @@ MUCTIEU = [
     ("TG_TIMDUONGCUCBO", 0xAE1178, "hang", "đối tượng tìm đường cục bộ"),
     ("TG_VANKHI", 0xADFDE8, "hang", "đối tượng vận khí"),
     ("TG_CUASOYESNO", 0xADFE10, "hang", "cửa sổ yes / no"),
+    ("TG_VONGQUAYSO", 0xADFE80, "hang", "cửa sổ vòng quay số Bảo Điển"),
+    ("TG_BAODIEN", 0xADFE7C, "hang", "cửa sổ Bảo Điển (\"zgdict open\")"),
     ("TG_ENTER", 0xADFD60, "hang", "khung chat (Enter)"),
     ("TG_TROCHUYEN", 0xADFDD8, "hang", "nội dung trò chuyện"),
     ("TG_KHUNGCHAT", 0xADFD64, "hang", "khung trò chuyện đang hiện (HAMTHEMDONGKHUNGCHAT thêm dòng vào đây)"),

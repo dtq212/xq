@@ -18,7 +18,7 @@
 import time
 
 from hangso_xq import *
-from tienich_xq import phatam, laydoiphoban, layidtaikhoans, laynhanvattodoitudongs
+from tienich_xq import phatam, laydoiphoban, laydoiphobans, layidtaikhoans, laynhanvattodoitudongs
 
 # Trưởng đội mất tín hiệu quá chừng này giây thì thành viên mới thôi theo đội (tạm về việc cá nhân)
 THOIGIANGIUDOIKHIMAT = 60.
@@ -227,8 +227,19 @@ class TacTuDoiPhoBan:
     def get_is_thanhviendoiviec(self, viec):
         # Mình là thành viên (không phải trưởng đội) đội phó bản đang làm viec: ngoài phó bản không tự dẫn đi (trưởng đội dis / nhóm tan
         # thì mình thành trưởng nhóm hoặc không có nhóm: chờ trưởng đội, không tự vào phó bản một mình / thay trưởng đội)
+        return bool(self.get_idtruongdoiviec(viec))
+
+    def get_idtruongdoiviec(self, viec):
+        # ID trưởng đội mình phải chờ cho viec (0 = không): đang theo đội làm viec, hoặc chưa thấy trưởng đội (chưa online / mất tín hiệu
+        # quá lâu / bot mở lại tự bật lại việc đã lưu) mà mình là thành viên (không phải người đầu) một đội có tích viec. Từng để thành
+        # viên tự đi Phong Yêu Kính riêng lẻ khi trưởng đội còn chưa online
         tv = self._doiphobantv
-        return bool(tv) and tv.get("viecdoi") == viec
+        if tv:
+            return tv["idtruong"] if tv.get("viecdoi") == viec else 0
+        if self._doiphoban:
+            return 0
+        idtoi = self.moitruong.get_idnguoichoi()
+        return next((d["thanhviens"][0] for d in laydoiphobans() if idtoi in d["thanhviens"][1:] and viec in d["chon"]), 0)
 
     def get_idnguoiquens(self):
         # Người quen (không báo người lạ, đồng đội: buff, không đánh): mình, nhân vật đang chạy bot (cùng máy / LAN), nhân vật trong file

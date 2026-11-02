@@ -406,8 +406,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._thoidiemtudongtangcap = 0.
         # Tự quay vòng số khi lên cấp: cấp lần trước thấy, các lệnh quay số còn chờ gửi, lần gửi gần nhất
         self._capdoquaysotruoc = 0
+        self._soluotquaysocho = 0
         self._lenhquaysochos = []
         self._thoidiemlenhquayso = 0.
+        self._thoidiemguiquayso = 0.
         self._idbandomuctieudangchon = 0
 
         self._idquaidangkeo = 0

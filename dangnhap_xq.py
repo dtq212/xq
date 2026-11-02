@@ -803,13 +803,14 @@ def dichuyencuasotheovitri(hwnd, vitricuaso):
     window_height = 630
     taskbar_height = 40
 
-    index_goc = (vitricuaso - 1) % 4
+    index_goc = (vitricuaso - 1) % 5
 
     toa_do_4_goc = [
         (0, 0),                                                                       # 1: Trái Trên
         (screen_width - window_width, 0),                                             # 2: Phải Trên
         (0, screen_height - window_height - taskbar_height),                          # 3: Trái Dưới
-        (screen_width - window_width, screen_height - window_height - taskbar_height)  # 4: Phải Dưới
+        (screen_width - window_width, screen_height - window_height - taskbar_height),  # 4: Phải Dưới
+        ((screen_width - window_width) // 2, (screen_height - window_height - taskbar_height) // 2)  # 5: Giữa màn hình
     ]
 
     toado_x, toado_y = toa_do_4_goc[index_goc]
