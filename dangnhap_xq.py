@@ -34,7 +34,7 @@ SOLANDANGNHAPLAICUASODIS = 2
 # Số client tối đa cùng lúc. Lúc mở, xq.exe đếm mọi tiến trình tên xq.exe (cả bản khác như Niết Bàn, cùng mã), quá 4 thì báo
 # "You can not run more client program!" và treo cả quy trình đăng nhập. Niết Bàn được DLL của nó nâng lên 7, Aegis vẫn 4: client bot
 # mở được vá lên số này (mogame), client mở tay qua play.exe vẫn bị giới hạn 4
-SOCLIENTTOIDA = 7
+SOCLIENTTOIDA = 8
 
 # Rớt khỏi game chừng này lần trong THOIGIANDEMBIDA giây thì coi như đang giành tài khoản với máy khác: tạm hoãn tự đăng nhập
 # tài khoản đó THOIGIANTAMHOAN giây (xem TuDongDangNhap._theodoiroigame)
