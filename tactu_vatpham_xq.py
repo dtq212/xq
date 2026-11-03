@@ -481,10 +481,12 @@ class TacTuVatPham:
             return
 
         # Luật nhặt ở tab Hành trang (luattuido_xq "nhat"), đọc 1 lần mỗi lượt; luật "chỉ khi về bán rác" chỉ xét khi bật Tự động về bán rác
+        # hoặc đang đi Phong Yêu Kính có bật "Nhặt và bán rác" (xong vòng bán ở Chu Quốc, tactu_langlyson_xq._banracphongyeu)
         dulieuluat = tailuat()
+        is_banrac = self._is_tudongvebanrac or self.get_is_nhatbanracphongyeu()
 
         def hanhdongnhat(tenvatphamkiemtra):
-            return timhanhdongnhat(tenvatphamkiemtra, self._is_tudongvebanrac, dulieuluat)
+            return timhanhdongnhat(tenvatphamkiemtra, is_banrac, dulieuluat)
 
         def kiemtradieukiennhat(tenvatphamkiemtra, diachikiemtra):
             hanhdong = hanhdongnhat(tenvatphamkiemtra)

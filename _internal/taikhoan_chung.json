@@ -1,69 +1,14 @@
 {
     "duongdangames": {
-        "Admin-PC": "E:\\Games\\ChienQuoc2D_Aegis\\xq.exe",
+        "Admin-PC": "E:\\Games\\ChienQuocNietBan_V4\\ChienQuocNietBan_V4\\play.exe",
         "LAPTOP-HAOPCFT6": "D:\\Games\\ChienQuoc2D_Aegis\\xq.exe",
         "Ngoc-PC": "E:\\Games\\ChienQuoc2D_Aegis\\xq.exe"
     },
     "taikhoans": [
         {
-            "tennhanvat": "ThiênĐạo",
-            "idnguoichoi": 273,
-            "group": 1,
-            "server": 1,
-            "char_index": 1,
-            "maydangnhap": "",
-            "vitricuaso": 1,
-            "user": "thiendao",
-            "pass": "hateva"
-        },
-        {
-            "tennhanvat": "Thọ",
-            "idnguoichoi": 29,
-            "user": "tholuumanh",
-            "pass": "hateva",
-            "group": 1,
-            "server": 1,
-            "char_index": 1,
-            "vitricuaso": 1,
-            "maydangnhap": ""
-        },
-        {
-            "tennhanvat": "Ngọc",
-            "idnguoichoi": 30,
-            "user": "ngoclasat",
-            "pass": "hateva",
-            "group": 1,
-            "server": 1,
-            "char_index": 1,
-            "vitricuaso": 2,
-            "maydangnhap": ""
-        },
-        {
-            "tennhanvat": "ThichVaCham",
-            "idnguoichoi": 31,
-            "user": "thichvacham",
-            "pass": "hateva",
-            "group": 1,
-            "server": 1,
-            "char_index": 1,
-            "vitricuaso": 3,
-            "maydangnhap": ""
-        },
-        {
-            "tennhanvat": "KNgaiVaCham",
-            "idnguoichoi": 32,
-            "user": "kngaivacham",
-            "pass": "hateva",
-            "group": 1,
-            "server": 1,
-            "char_index": 1,
-            "vitricuaso": 4,
-            "maydangnhap": ""
-        },
-        {
-            "tennhanvat": "Mộc Lan",
-            "idnguoichoi": 132,
-            "user": "moclan",
+            "tennhanvat": "MộcLan",
+            "idnguoichoi": 9301,
+            "user": "gacon1",
             "pass": "hateva",
             "group": 1,
             "server": 1,
@@ -73,8 +18,8 @@
         },
         {
             "tennhanvat": "tieuhac",
-            "idnguoichoi": 133,
-            "user": "tieuhac",
+            "idnguoichoi": 9302,
+            "user": "gacon2",
             "pass": "hateva",
             "group": 1,
             "server": 1,
@@ -84,8 +29,8 @@
         },
         {
             "tennhanvat": "Suong Chieu",
-            "idnguoichoi": 134,
-            "user": "suongchieu",
+            "idnguoichoi": 9303,
+            "user": "gacon3",
             "pass": "hateva",
             "group": 1,
             "server": 1,
@@ -95,8 +40,8 @@
         },
         {
             "tennhanvat": "BốBánhBao",
-            "idnguoichoi": 135,
-            "user": "bobanhbao",
+            "idnguoichoi": 9304,
+            "user": "gacon4",
             "pass": "hateva",
             "group": 1,
             "server": 1,
@@ -106,8 +51,8 @@
         },
         {
             "tennhanvat": "Hắc Phong",
-            "idnguoichoi": null,
-            "user": "hacphong",
+            "idnguoichoi": 9305,
+            "user": "gacon5",
             "pass": "hateva",
             "group": 1,
             "server": 1,
@@ -117,8 +62,8 @@
         },
         {
             "tennhanvat": "Lão Ngư",
-            "idnguoichoi": null,
-            "user": "laongu",
+            "idnguoichoi": 9306,
+            "user": "gacon6",
             "pass": "hateva",
             "group": 1,
             "server": 1,
@@ -128,8 +73,8 @@
         },
         {
             "tennhanvat": "TrangKhuyet",
-            "idnguoichoi": null,
-            "user": "trangkhuyet",
+            "idnguoichoi": 9307,
+            "user": "gacon7",
             "pass": "hateva",
             "group": 1,
             "server": 1,
@@ -139,25 +84,14 @@
         },
         {
             "tennhanvat": "Rùa Thần",
-            "idnguoichoi": null,
-            "user": "ruathan",
+            "idnguoichoi": 9308,
+            "user": "gacon8",
             "pass": "hateva",
             "group": 1,
             "server": 1,
             "char_index": 1,
             "vitricuaso": 4,
             "maydangnhap": "Ngoc-PC"
-        },
-        {
-            "tennhanvat": "GàĐạiCa",
-            "idnguoichoi": 187,
-            "group": 1,
-            "server": 1,
-            "char_index": 1,
-            "maydangnhap": "",
-            "vitricuaso": 5,
-            "user": "gadaica",
-            "pass": "hateva"
         },
         {
             "tennhanvat": "TieuLyPhiDao",
@@ -168,8 +102,7 @@
             "maydangnhap": "Admin-PC",
             "vitricuaso": 1,
             "user": "tieulyphidao",
-            "pass": "hateva",
-            "duongdangame": "E:\\Games\\ChienQuocNietBan_V4\\ChienQuocNietBan_V4\\play.exe"
+            "pass": "hateva"
         },
         {
             "tennhanvat": "DaiTuongQuan",
@@ -180,8 +113,7 @@
             "maydangnhap": "Admin-PC",
             "vitricuaso": 2,
             "user": "daituongquan",
-            "pass": "hateva",
-            "duongdangame": "E:\\Games\\ChienQuocNietBan_V4\\ChienQuocNietBan_V4\\xq.exe"
+            "pass": "hateva"
         },
         {
             "tennhanvat": "QuanSuMuMuu",
@@ -192,8 +124,7 @@
             "maydangnhap": "Admin-PC",
             "vitricuaso": 3,
             "user": "quansumumuu",
-            "pass": "hateva",
-            "duongdangame": "E:\\Games\\ChienQuocNietBan_V4\\ChienQuocNietBan_V4\\xq.exe"
+            "pass": "hateva"
         }
     ]
 }

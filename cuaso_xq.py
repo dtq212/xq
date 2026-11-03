@@ -333,6 +333,7 @@ class CuaSo:
                     "_langlysongiunhom": self.tactu.get_dsidgiunhomlanglyson(),
                     # Phong Yêu Kính: ID boss mình đã giết vòng này, người cùng nhóm cộng vào (boss chết xa họ vẫn được tính)
                     "_bossdagietphongyeu": self.tactu.get_bossdagietphongyeu(),
+                    "_dangdanhbossphongyeu": self.tactu.get_is_dangdanhbossphongyeu(),
                     # Phong Yêu Kính: người give hết đồ xin đồ Lam Kim ({"can": cấp tối thiểu}), thành viên báo còn đồ không ({"idgive", "co"})
                     "_pylamkim": self.tactu.get_pylamkimshare(),                    # Kéo cấp acc gà (tactu_keocap_xq): vai / giai đoạn / cấp cho cửa sổ cùng máy, trạng thái cho giao diện
                     "_keocap": self.tactu.get_keocapshare(),

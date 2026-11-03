@@ -656,15 +656,8 @@ class TacTuDanhVong:
         return None
 
     def _giaovukhi(self, s, nv, vitri, iddoituong, ten):
-        # Đồ giao NPC phải ở hành trang 1 (24 ô đầu): chuyển lên rồi give Tề Tổng Quản
+        # Give Tề Tổng Quản: lệnh give gõ thẳng nhận đồ ở túi nào cũng được (chỉ giao diện game mới bắt đưa lên hành trang 1)
         moitruong = self.moitruong
-        if vitri >= 24:
-            if time.time() - s.get("lucchuyentui", 0.) > 3.:
-                s["lucchuyentui"] = time.time()
-                self._logdv(f"Chuyển {ten} lên hành trang 1 để giao")
-                moitruong.action_thucthicaulenh(f"move {iddoituong:x}# to 1")
-            s["trangthai"] = f"chuyển {ten} lên hành trang 1"
-            return None
         diachi = self._timdoituongxungquanh(TETONGQUAN)
         manpc = f"{moitruong.get_iddoituong(diachi):x}#" if diachi else ""
         lenhgive = taolenhgiao(manpc, [(iddoituong, 1)], 0)[0]

@@ -3,6 +3,7 @@
 import math
 import random
 import time
+import unicodedata
 
 from hangso_xq import *
 from moitruong_xq import MoiTruong, DOUUTIEN_THAP, DOUUTIEN_KHANCAP, DOUUTIEN_CAO, SOLUONGDOITUONGXUNGQUANHTOIDA, tinh_is_huongmatvediem
@@ -80,8 +81,10 @@ class TacTuKyNang:
             for thoidiem, noidung in reversed(self.moitruong.get_lichsutrochuyen5s()):
                 if thoidiem < self._thoidiemguingattancongvatly:
                     break
-                if TENKYNANG_TUDONGCONGKICH in noidung:
-                    if "ngừng" in noidung:
+                # Niết Bàn viết thường: "Bạn đã ngừng " Tự động công kích "lại." -> so không phân biệt hoa thường
+                thuong = unicodedata.normalize("NFC", noidung).lower()
+                if TENKYNANG_TUDONGCONGKICH.lower() in thuong:
+                    if "ngừng" in thuong:
                         self._is_battudongtancongvatly = False
                         if IS_LOGCAULENH:
                             self.moitruong._inlog("[NGẮT ĐÁNH THƯỜNG] máy chủ báo đã ngừng")
@@ -716,14 +719,16 @@ class TacTuKyNang:
         danhsachuutien = [
             (VITRIKYNANG_ANTHANTHUAT, "sudungkynangkhongmuctieu", lambda: not is_anthan and diachimuctieu and is_muctieutienthanvodich and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and self.moitruong.get_is_kynangsansang(VITRIKYNANG_BISAT), 0, None, False),
             (VITRIKYNANG_BISAT, "sudungkynangmuctieu", lambda: is_anthan and diachimuctieu and is_muctieutienthanvodich and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
-            (VITRIKYNANG_MATAMTHUAT, "sudungkynangkhongmuctieu", lambda: not is_anthan and diachimuctieu and is_muctieugiukhoangcach and khoangcach <= KHOANGCACHLUIGIUKHOANGCACH and time.time() - self._thoidiemsudungnhiephonchamgannhat < 1., 0, None, False),
+            # Chiêu không mục tiêu vẫn gắn mục tiêu đang đánh nên dùng xong tạo yêu cầu đi tới khoảng cách yêu cầu: để 0 là chạy sát quái
+            # đánh cận chiến (Mê Tâm Thuật 3642 khi quái ngoài tầm => mọi lần "TIẾP CẬN CẬN CHIẾN ... giữ ≤0.0", 2026-11-03) => để tầm xa
+            (VITRIKYNANG_MATAMTHUAT, "sudungkynangkhongmuctieu", lambda: not is_anthan and diachimuctieu and is_muctieugiukhoangcach and khoangcach <= KHOANGCACHLUIGIUKHOANGCACH and time.time() - self._thoidiemsudungnhiephonchamgannhat < 1., self._khoangcachsudungkynangtamxa, None, False),
             (None, "dichuyengiukhoangcach", lambda: not is_bidaohoalacanh and diachimuctieu and is_muctieugiukhoangcach and khoangcach <= KHOANGCACHLUIGIUKHOANGCACH and (time.time() - self._thoidiemsudungmatamthuatgannhat < 0.5 or time.time() - self._thoidiemsudungamkichgannhat < 0.5 or time.time() - self._thoidiemsudungthichsatgannhat < 0.5), khoangcach + 3., None, False),
-            (VITRIKYNANG_LACTUYETVONGAN, "sudungkynangkhongmuctieu", lambda: not is_anthan and diachimuctieu and is_muctieupk and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_LACTUYETVONGAN,), True, is_hieuungcoloi = 1), 0, None, False),
+            (VITRIKYNANG_LACTUYETVONGAN, "sudungkynangkhongmuctieu", lambda: not is_anthan and diachimuctieu and is_muctieupk and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_LACTUYETVONGAN,), True, is_hieuungcoloi = 1), self._khoangcachsudungkynangtamxa, None, False),
             # "kill" bật Tự Động Công Kích (đánh thường tầm xa) như Đào Hoa: gửi khi mục tiêu trong tầm xa, không chiếm lượt (chiêu vẫn gửi
             # ngay lượt này), không chặn di chuyển / chạy lại gần (tầm yêu cầu + BUKHOANGCACHTAMXA). Đang ẩn thân thì để Bí Sát mở đòn.
             # Đang chạy (lùi giữ khoảng cách) thì không gửi: máy chủ tắt đánh thường khi đi, dừng lại là cờ đã reset nên gửi lại ngay
             (None, "tancongvatly", lambda: not is_anthan and diachimuctieu and idtuthenhanvat != TUTHENHANVAT_DICHUYEN and khoangcach <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa + BUKHOANGCACHTAMXA, None, False),
-            (VITRIKYNANG_MATAMTHUAT, "sudungkynangkhongmuctieu", lambda: not is_anthan and diachimuctieu and khoangcach > self._khoangcachsudungkynangtamxa, 0, None, False),
+            (VITRIKYNANG_MATAMTHUAT, "sudungkynangkhongmuctieu", lambda: not is_anthan and diachimuctieu and khoangcach > self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, False),
             (VITRIKYNANG_NHIEPHONCHAM, "sudungkynangmuctieu", lambda: not is_bituocvukhi and diachimuctieu and not is_muctieucomatamthuat and is_muctieupk and self.moitruong.get_is_cothegaychoang(diachicosothongtinnhanvat = diachimuctieu), self._khoangcachsudungkynangtamxa, None, True),
             (VITRIKYNANG_MANTHIENHOAVU, "sudungkynangmuctieu", lambda: not is_bituocvukhi and diachimuctieu and self._is_nhieumuctieugan5 and not is_muctieupk, self._khoangcachsudungkynangtamxa, None, True),
             (VITRIKYNANG_THAUCOTDINH, "sudungkynangmuctieu", lambda: not is_bituocvukhi and diachimuctieu and not is_muctieucomatamthuat and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THAUCOTDINH,), macdinh = False, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0), self._khoangcachsudungkynangtamxa, None, True),

@@ -29,7 +29,7 @@ import time
 import unicodedata
 
 from hangso_xq import *
-from tienich_xq import phatam, canhbao, taicauhinhphongyeu
+from tienich_xq import phatam, canhbao, taicauhinhphongyeu, taivitrithoyeu
 from giaodo_xq import taolenhgiao
 from tactu_langlyson_xq import CAPDOLAMKIMTOITHIEU, laytenthoyeu, SOBOSSPHONGYEU, THOIGIANTOITHIEUPY
 
@@ -444,6 +444,9 @@ class TacTuKeoCap:
         diachi = moitruong.action_timkiemnhanvat(tennhanvat = laytenthoyeu(moitruong))
         if diachi:
             s["vitrithoyeu"] = moitruong.get_toado(diachi)
+        if not s.get("vitrithoyeu"):
+            # Tắt bật lại giữa phó bản: toạ độ Thỏ Yêu đã lưu theo bản đồ (_vitrithoyeu)
+            s["vitrithoyeu"] = taivitrithoyeu(f"{'nietban' if moitruong.is_nietban else 'aegis'}|{moitruong.get_idbandohientai()}")
         x, y = s.get("vitrithoyeu") or moitruong.get_toado()
         s["trangthai"] = "thu hồi đồ Lam Kim: nói chuyện Thỏ Yêu ra khỏi Phong Yêu Kính"
         return self._noichuyenlls(s, laytenthoyeu(self.moitruong), x, y, is_chovankhi = False, luachon = 0)[1]

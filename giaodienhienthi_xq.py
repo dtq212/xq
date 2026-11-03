@@ -2872,7 +2872,8 @@ class GiaoDienHienThi:
         khung = ttk.Frame(nhom)
         khung.grid(row = 3, column = 0, sticky = tk.W, pady = (8, 0))
         ttk.Label(khung, text = "Đồ đem đốt vào Phong Yêu Kính (dùng chung mọi nhân vật trên máy):").grid(row = 0, column = 0, columnspan = 2, sticky = tk.W)
-        self._var_phongyeu = {k: tk.BooleanVar(value = cauhinh[k]) for k in ("is_lamkim", "is_hoangkim", "is_chichuagiamdinh", "is_laydothanhvien")}
+        self._var_phongyeu = {k: tk.BooleanVar(value = cauhinh[k]) for k in ("is_lamkim", "is_hoangkim", "is_chichuagiamdinh", "is_laydothanhvien",
+                                                                             "is_nhatbanrac")}
         hangmau = ttk.Frame(khung)
         hangmau.grid(row = 1, column = 0, columnspan = 2, sticky = tk.W, pady = (2, 0))
         for khoa, chu in (("is_lamkim", "Lam Kim (chữ xanh)"), ("is_hoangkim", "Hoàng Kim (chữ vàng)"), ("is_chichuagiamdinh", "Chỉ đồ Chưa giám định")):
@@ -2896,6 +2897,9 @@ class GiaoDienHienThi:
         ttk.Checkbutton(khung, text = "Người give hết đồ thì lấy đồ của thành viên cùng nhóm (thành viên tới give sang)",
                         variable = self._var_phongyeu["is_laydothanhvien"], command = self._luucauhinhphongyeu
                         ).grid(row = 5, column = 0, columnspan = 2, sticky = tk.W, pady = (2, 0))
+        ttk.Checkbutton(khung, text = "Nhặt và bán rác: nhặt cả luật \"Về bán rác\", xong về Chu Quốc bán ở Chủ Tiệm Y Dược (chừa Lam Kim / Hoàng Kim)",
+                        variable = self._var_phongyeu["is_nhatbanrac"], command = self._luucauhinhphongyeu
+                        ).grid(row = 6, column = 0, columnspan = 2, sticky = tk.W, pady = (2, 0))
         for su_kien in ("<FocusOut>", "<Return>"):
             spin.bind(su_kien, self._luucauhinhphongyeu)
 

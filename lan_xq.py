@@ -23,7 +23,7 @@ KHOACHIASELANS = (
     "tennhanvat", "idnguoichoi", "thoidiemcapnhat", "tenbando", "tenmonphai", "idtruongnhom", "thanhviennhoms", "x", "y", "status",
     "_is_tudongtheosau", "_is_tudongsudungkynang", "_lotrinhmaudangdung",
     "_thoidiemphathienanthan", "_thoigiantamngungphathien", "_tenanthanphathien",
-    "_is_danglanglyson", "_phobanlanglyson", "_khoathuonglanglyson", "_khoathuonglanglysondalanh", "_langlysonchothanhvien", "_langlysontattodoi", "_langlysongiunhom", "_bossdagietphongyeu", "_pylamkim",
+    "_is_danglanglyson", "_phobanlanglyson", "_khoathuonglanglyson", "_khoathuonglanglysondalanh", "_langlysonchothanhvien", "_langlysontattodoi", "_langlysongiunhom", "_bossdagietphongyeu", "_dangdanhbossphongyeu", "_pylamkim",
     "_is_dangsugia", "_sugianhiemvu", "_sugiachothanhvien", "_todoimotlan", "_is_dangtapkich",
     # Đội phó bản (tactu_doiphoban_xq): trưởng đội / thành viên ở máy khác
     "_doiphoban", "_doiphobanthanhvien",

@@ -73,6 +73,12 @@ SOBUOCCHUOIDUONGDITOIDA = 98
 GIANCACHGOIKHONGCATGOC = 1.
 THOIGIANGIATKHONGCATGOC = 4.
 SOLANGIATKHONGCATGOC = 2
+# Không học ô chặn trong các vòng này {bản đồ: [(x, y, bán kính)]}: chỗ đông NPC / người đứng là đất trống thật, "giật về" ở đó là do
+# bot khác cách đi chen nhau, không phải rào máy chủ. Quanh Tả Khâu Minh Chu Quốc (252, 160) từng học nhầm ~40 ô (cả (253, 160)): đội trưởng
+# Phong Yêu Kính không tìm ra đường, đi theo ô thường lách xuống (249, 158) giật giật mới give được
+VUNGKHONGHOCVATCAN_MAP = {80: [(252, 160, 10)]}
+# Ô bị chặn trong vùng trên thì né tạm chừng này giây (người chen nhau đi rồi thì ô lại thông)
+THOIGIANVATCANTAM = 60.
 # Mỗi ô trong khu vực cấm khai tay tính thêm chừng này bước khi tìm đường không cắt góc
 PHATKHUVUCCAMKHONGCATGOC = 20.
 
@@ -138,6 +144,8 @@ class MoiTruong:
         # Các ô thật gần đây [(lúc, ô)] và lần bị giật về theo (ô mốc, bước đầu) để bắt kiểu giật về ô mốc
         self._lichsukhongcatgoc = []
         self._giatkhongcatgoc = {}
+        # Ô bị chặn trong vùng không học vật cản (VUNGKHONGHOCVATCAN_MAP): chỉ né tạm {(bản đồ, x, y): hết hạn}, không ghi file
+        self._vatcantam = {}
         self._dulieutimduongcucbo = None
         self._buftimduongcucbo = None
         self._doituongtimduongcucbo = None
@@ -711,10 +719,12 @@ class MoiTruong:
             return False
 
         if self.get_is_nguoichoi(diachicosothongtinnhanvatmuctieudangchon):
-            idnguoichoi = self.get_idnguoichoi(diachicosothongtinnhanvatmuctieudangchon)
-            caulenh = "kill {}".format(idnguoichoi)
+            muctieu = str(self.get_idnguoichoi(diachicosothongtinnhanvatmuctieudangchon))
         else:
-            caulenh = "kill {}#".format(hex(self.get_iddoituong(diachicosothongtinnhanvatmuctieudangchon)).replace("0x", ""))
+            muctieu = "{:x}#".format(self.get_iddoituong(diachicosothongtinnhanvatmuctieudangchon))
+        # Niết Bàn Đường Môn: "kill" vẫn bắn từ xa (đo: bấm chuột trái client cũng gửi đúng "kill <id>#", đứng yên bắn ở 5 ô).
+        # Không dùng "pf2 15" (Tự Động Xạ Kích): gửi lần 2 là tắt
+        caulenh = "kill {}".format(muctieu)
 
         return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO)
 
@@ -1037,7 +1047,24 @@ class MoiTruong:
         if not IS_LOGLENHGAME:
             return False
         addr_at_hook = self.diachixq + DC.HAMGUILENH + 5
-        if read_bytes(self.tientrinh, addr_at_hook, 6) != bytes.fromhex("81 EC C8 00 00 00"):
+        mahook = read_bytes(self.tientrinh, addr_at_hook, 6)
+        if mahook[0] == 0xE9 and mahook[5] == 0x90:
+            # Hook của lần bot chạy trước vẫn còn trong game (vẫn ghi lệnh vào bộ đệm cũ): đọc lại địa chỉ bộ đệm từ "mov ebx, <bộ đệm>"
+            # trong kịch bản, không thì lần chạy sau không log được lệnh game nào (Niết Bàn 2026-11-03)
+            kichban = addr_at_hook + 5 + struct.unpack("<i", mahook[1:5])[0]
+            try:
+                ma = read_bytes(self.tientrinh, kichban, 16)
+            except Exception:
+                return False
+            vitri = ma.find(b"\xBB")
+            if vitri < 0 or vitri + 5 > len(ma):
+                return False
+            self._diachihamkichbanlenhgame = kichban
+            self._diachibodemlenhgame = struct.unpack("<I", ma[vitri + 1:vitri + 5])[0]
+            self._demdonglenhgamedadoc = read_int(self.tientrinh, self._diachibodemlenhgame)
+            self._inlog("[LỆNH GAME] dùng lại hook dò lệnh game của lần chạy trước")
+            return True
+        if mahook != bytes.fromhex("81 EC C8 00 00 00"):
             return False
 
         if not self._diachihamkichbanlenhgame:
@@ -1239,6 +1266,11 @@ class MoiTruong:
             return False
         phobanmuon = self.get_tenphobanmuonbando()
         return info.get("_phobanmuonbando", phobanmuon) == phobanmuon
+
+    def get_is_bandophongyeu(self):
+        # Phong Yêu Kính mượn ID 1 bản đồ ngẫu nhiên: chỉ nhận ra qua đầu tên bản đồ game
+        tenbandogame = self.get_tenbandogame()
+        return bool(tenbandogame) and unicodedata.normalize("NFC", tenbandogame).startswith(TIENTOTENBANDOPHONGYEU)
 
     def get_is_bandotapkichmonphai(self):
         # Tập Kích Môn Phái mượn ID 151 (Kênh Trịnh Quốc 1) nên chỉ nhận ra qua tên bản đồ game
@@ -3322,6 +3354,14 @@ class MoiTruong:
     def _ghivatcanhoc(self, that, ke, lydo):
         self._dichkhongcatgoc = None
         idbando = self.get_idbandohientai()
+        if any(math.dist(ke, (x, y)) <= r for x, y, r in VUNGKHONGHOCVATCAN_MAP.get(idbando, ())):
+            # Không ghi file nhưng vẫn né tạm: không nhớ gì thì tìm lại đúng đường cũ, húc mãi 1 chỗ (trưởng đội Phong Yêu Kính ra ở
+            # (248, 158) bị giật về khi bước sang (249, 158) / (250, 158) lặp mãi không tới được Tả Khâu Minh, 2026-11-03)
+            self._lucvuahockhongcatgoc = time.time()
+            self._vatcantam[(idbando, *ke)] = self._lucvuahockhongcatgoc + THOIGIANVATCANTAM
+            self._inlog(f"[ĐI KHÔNG CẮT GÓC] Ở {that} {lydo} {ke}: trong vùng không học vật cản ở bản đồ {idbando}, không ghi, "
+                        f"né tạm {THOIGIANVATCANTAM:.0f}s, tìm đường lại")
+            return True
         themvatcanhoc(idbando, *ke)
         self._lucvuahockhongcatgoc = time.time()
         self._inlog(f"[ĐI KHÔNG CẮT GÓC] Ở {that} {lydo} {ke} (máy chủ chặn, lưới client ghi đi được): ghi {ke} là vật cản ở bản đồ {idbando}, "
@@ -3350,10 +3390,14 @@ class MoiTruong:
             return None
         rong, cao = len(luoi), len(luoi[0])
         # Ô máy chủ chặn mà lưới client không ghi (bot học khi bị kéo về, _hockhongcatgoc)
-        hocs = taivatcanhoc(self.get_idbandohientai())
+        idbando = self.get_idbandohientai()
+        hocs = taivatcanhoc(idbando)
+        now = time.time()
+        self._vatcantam = {k: h for k, h in self._vatcantam.items() if h > now}
+        tams = {(x, y) for b, x, y in self._vatcantam if b == idbando}
 
         def trong(x, y):
-            return 0 <= x - ox < rong and 0 <= y - oy < cao and not luoi[x - ox][y - oy] and (x, y) not in hocs
+            return 0 <= x - ox < rong and 0 <= y - oy < cao and not luoi[x - ox][y - oy] and (x, y) not in hocs and (x, y) not in tams
 
         # Khu vực cấm khai tay (KHUVUCCAM_MAP: chỗ đi vào là kẹt, vd Tập Kích Môn Phái (103, 53), (96, 96)): mỗi ô trong đó tính thêm
         # PHATKHUVUCCAMKHONGCATGOC bước (né được thì né; đang đứng / đích ở trong thì vẫn đi ra / vào được)
@@ -3394,7 +3438,8 @@ class MoiTruong:
     def get_is_duongdicatvungcam(self, x1, y1, x2, y2):
         # Đường chạy thẳng (x1, y1) -> (x2, y2) có chạm vùng cấm của bản đồ hiện tại không (VUNGCAM_MAP: đi vào sẽ bị chuyển bản đồ)
         danhsachvungcam = VUNGCAM_MAP.get(self.get_idbandohientai())
-        if not danhsachvungcam:
+        # Phong Yêu Kính: cổng của bản đồ thật mượn ID không có tác dụng, không né
+        if not danhsachvungcam or self.get_is_bandophongyeu():
             return False
         dx, dy = x2 - x1, y2 - y1
         dodai2 = dx * dx + dy * dy

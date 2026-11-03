@@ -1265,10 +1265,19 @@ class TacTuDiChuyen:
         yeucau["khoangcachtoida"] = 0
         return yeucau
 
+    def _is_bovungcam(self):
+        # Phong Yêu Kính mượn ID bản đồ thật nhưng cổng / điểm chuyển tiếp trong đó không có tác dụng (người dùng, cả Aegis lẫn Niết Bàn):
+        # không né vùng cấm quanh cổng. Đọc tên bản đồ tốn nên nhớ 0.5s (gọi theo từng ô khi tạo điểm dò / xét đường chạy)
+        now = time.time()
+        if now - getattr(self, "_lucxetbovungcam", 0.) > 0.5:
+            self._lucxetbovungcam = now
+            self._is_bovungcamdem = self._is_trongphongyeu()
+        return self._is_bovungcamdem
+
     def _kiemtra_vungcam(self, x, y):
         # Vùng cấm trên bản đồ (VUNGCAM_MAP): đi vào sẽ bị dịch chuyển sang bản đồ khác
         danhsachvungcam = VUNGCAM_MAP.get(self.moitruong.get_idbandohientai())
-        if not danhsachvungcam:
+        if not danhsachvungcam or self._is_bovungcam():
             return False
         for vung in danhsachvungcam:
             if vung["type"] == "circle":
@@ -1281,7 +1290,7 @@ class TacTuDiChuyen:
 
     def _kiemtra_divaovungcam(self, x, y):
         # Nhân vật chạy thẳng tới điểm đích: chặn cả khi điểm đích nằm ngoài vùng cấm nhưng đường chạy cắt qua vùng cấm
-        if not self._is_tranhvungcam or not VUNGCAM_MAP.get(self.moitruong.get_idbandohientai()):
+        if not self._is_tranhvungcam or not VUNGCAM_MAP.get(self.moitruong.get_idbandohientai()) or self._is_bovungcam():
             return False
         if self._kiemtra_vungcam(x, y):
             return True

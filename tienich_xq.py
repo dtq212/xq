@@ -350,6 +350,40 @@ def luutiendophoban(idnguoichoi, tiendo):
         print(err)
 
 
+def _duongdanvitrithoyeu():
+    return os.path.join(os.path.dirname(_thumucthietlap()), "vitrithoyeu.json")
+
+
+# Toạ độ Thỏ Yêu trong Phong Yêu Kính theo bản ("aegis" / "nietban") + ID bản đồ mượn ({"nietban|134": [x, y]}), dùng chung mọi nhân vật:
+# tắt bot bật lại giữa phó bản (không còn chỗ vào, Thỏ Yêu ngoài tầm nhìn) vẫn biết đường về hỏi số quái / ra
+def taivitrithoyeu(khoa):
+    try:
+        with open(_duongdanvitrithoyeu(), "r", encoding = "utf-8") as file:
+            toado = json.load(file).get(khoa)
+        return tuple(toado) if toado else None
+    except Exception:
+        return None
+
+
+def luuvitrithoyeu(khoa, x, y):
+    filepath = _duongdanvitrithoyeu()
+    try:
+        try:
+            with open(filepath, "r", encoding = "utf-8") as file:
+                dulieu = json.load(file)
+        except (FileNotFoundError, ValueError):
+            dulieu = {}
+        if dulieu.get(khoa) == [x, y]:
+            return
+        dulieu[khoa] = [x, y]
+        filetam = filepath + ".tmp"
+        with open(filetam, "w", encoding = "utf-8") as file:
+            json.dump(dulieu, file, ensure_ascii = False)
+        thaythefile(filetam, filepath)
+    except Exception as err:
+        print(err)
+
+
 def themvatcanhoc(idbando, x, y):
     filepath = duongdanvatcanhoc()
     try:
@@ -412,9 +446,10 @@ def tainhomtodoitudongs():
 # Đồ đem đốt khi vào Phong Yêu Kính (tactu_langlyson_xq._phantichdolamkim), dùng chung mọi nhân vật trên máy, sửa ở giao diện:
 # màu tên được đốt (Lam Kim / Hoàng Kim), chỉ đồ Chưa giám định, cấp đồ >= cấp nhân vật - caphonnhanvat, tên chứa cụm trong "khongdot"
 # thì không bao giờ đốt, "chidot" không rỗng thì chỉ đốt món có tên chứa 1 cụm trong đó. is_laydothanhvien: người give hết đồ thì xin
-# thành viên cùng nhóm (cùng máy / LAN) còn đồ đúng điều kiện tới give sang thay vì dừng
+# thành viên cùng nhóm (cùng máy / LAN) còn đồ đúng điều kiện tới give sang thay vì dừng. is_nhatbanrac: trong phó bản nhặt cả luật
+# "chỉ khi về bán rác", ra Chu Quốc thì bán rác ở Chủ Tiệm Y Dược (chừa đồ Lam Kim / Hoàng Kim) rồi mới vào vòng sau
 CAUHINHPHONGYEU_MACDINH = {"is_lamkim": True, "is_hoangkim": False, "is_chichuagiamdinh": True, "caphonnhanvat": 25, "khongdot": [], "chidot": [],
-                           "is_laydothanhvien": True}
+                           "is_laydothanhvien": True, "is_nhatbanrac": False}
 _cauhinhphongyeu_cache = {"cauhinh": None, "thoidiemsua": None, "thoidiemkiemtra": 0.}
 
 
@@ -425,7 +460,7 @@ def duongdancauhinhphongyeu():
 def _chuanhoacauhinhphongyeu(cauhinh):
     ketqua = dict(CAUHINHPHONGYEU_MACDINH)
     if isinstance(cauhinh, dict):
-        for khoa in ("is_lamkim", "is_hoangkim", "is_chichuagiamdinh", "is_laydothanhvien"):
+        for khoa in ("is_lamkim", "is_hoangkim", "is_chichuagiamdinh", "is_laydothanhvien", "is_nhatbanrac"):
             if khoa in cauhinh:
                 ketqua[khoa] = bool(cauhinh[khoa])
         try:

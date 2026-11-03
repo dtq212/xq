@@ -838,6 +838,9 @@ BANDOPHOBANs = (BANDO_BATQUAITRAN, BANDO_THANHKIEU, BANDO_LANGLYSON1, BANDO_LANG
 # Phó bản mượn ID bản đồ ngoài, nhận ra qua đầu tên bản đồ game (tên chỉ 20 byte nên bị cắt): Phong Yêu Kính "Phó Bản Phong Y" (ID 1 bản đồ ngẫu nhiên, không bao giờ là Tân Thủ Thôn / quốc gia; vd 133
 # như Thần Bí Động 1), Tập Kích Môn Phái "Tập Kích Môn Ph" (ID 151 như Kênh Trịnh Quốc 1). Lộ trình nạp trong đó ra ngoài là tự bỏ
 TIENTOTENPHOBANMUONBANDOs = ("Phó Bản", "Tập Kích Môn", "Chiến Quốc Tr")
+# Đầu tên bản đồ Phong Yêu Kính (Aegis "Phó Bản Phong Y", Niết Bàn "Chiến Quốc Tr..."). Cổng của bản đồ thật mượn ID không có tác dụng
+# trong đó (người dùng): không né vùng cấm quanh cổng
+TIENTOTENBANDOPHONGYEU = ("Phó Bản Phong", "Chiến Quốc Tr")
 # Đầu tên bản đồ Tập Kích Môn Phái: gom quái tới khi mọi con thấy được đều đã gom 1 lần mới dừng đánh
 TIENTOTENBANDOTAPKICHMONPHAI = "Tập Kích Môn"
 # Vừa ra khỏi phó bản mượn ID bản đồ ngoài (Phong Yêu Kính): chờ chừng này giây mới tự chọn lộ trình mẫu (ID bản đồ đổi sau tên)

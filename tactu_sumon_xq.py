@@ -6,7 +6,7 @@
 #   Đi tìm Thạch Sư     : tới Thạch Sư nhận việc theo menu: Thu mua accept_task.1 -> .11, Thu thập accept_task.2 -> .21
 #   Thu thập            : tới bản đồ trong mô tả đánh mọi quái (quái có hạn, giết con khác thì con cần mới ra), nhặt vật phẩm; đủ số thì Hồi môn phái, tới Thạch Sư chọn "Hoàn thành" theo menu
 #   Mua sắm             : tới cửa hàng trong mô tả (NPC các nước có tên riêng, tên cửa hàng là danh hiệu), tra ô / giá theo tên món
-#                         (chưa biết thì mở cửa hàng đọc 1 lần rồi đóng), mua bằng lệnh buy; đủ thì đưa lên hành trang 1, give Thạch Sư
+#                         (chưa biết thì mở cửa hàng đọc 1 lần rồi đóng), mua bằng lệnh buy; đủ thì give Thạch Sư
 #   Thăm viếng          : tới NPC (chưởng môn / quân vương, bảng BANDOTHAMVIENG), "Hoàn thành nhiệm vụ"
 #   Luyện tập / Du lịch : farm theo lộ trình điểm đánh của nhân vật tới khi xong
 #   Bắt yêu quái        : có Dây Càn Khôn (hết thì về Chủ Tiệm Tạp Hóa mua), tới bản đồ, đứng gần quái dùng "pf2 51 <id>#"
@@ -518,7 +518,8 @@ class TacTuSuMon:
         luoi = self.moitruong.get_luoivatcanbando()
         if not luoi:
             return []
-        congs = [(x, y) for _, x, y, _, _ in (BANDOCONG_MAP.get(idbando) or ("", ()))[1]]
+        # Phong Yêu Kính: cổng của bản đồ thật mượn ID không có tác dụng, không tránh (_is_bovungcam cũng bỏ vùng cấm)
+        congs = [] if self._is_bovungcam() else [(x, y) for _, x, y, _, _ in (BANDOCONG_MAP.get(idbando) or ("", ()))[1]]
         return [tuple(d) for d in dexuatlotrinhdo(luoi, batdau or self.moitruong.get_toado(),
                                                   lambda x, y: any(math.dist((x, y), c) < 12 for c in congs) or self._kiemtra_vungcam(x, y),
                                                   canh = canh, tam = tam, bankinh = bankinh)]
@@ -1260,23 +1261,17 @@ class TacTuSuMon:
 
     def _buocthumua(self, s, nv, bandomonphai):
         # Chưa đủ món: tới cửa hàng trong mô tả (vd Chủ Tiệm Vũ Khí ở Tần Quốc, không ghi nước thì Tân Thủ Thôn), mở cửa hàng, tìm món
-        # theo tên lấy ô / giá rồi mua. Đủ rồi thì đưa lên hành trang 1 và give cho Thạch Sư
+        # theo tên lấy ô / giá rồi mua. Đủ rồi thì give cho Thạch Sư
         moitruong = self.moitruong
         ids = [(vitri, iddoituong) for tenxet, mons in moitruong.get_danhsachvatphamhanhtrang_map().items()
                if chuanhoaten(tenxet) == chuanhoaten(nv["vatpham"]) for vitri, iddoituong in mons if iddoituong]
         if self._demvatpham(nv["vatpham"]) < nv["soluong"]:
             return self._buocmuahang(s, nv)
-        # Đồ giao cho NPC phải nằm ở hành trang 1 (24 ô đầu); vừa mua mà túi chưa kịp có id thì chờ lượt sau
+        # Lệnh give gõ thẳng nhận đồ ở túi nào cũng được (chỉ giao diện game mới bắt đưa lên hành trang 1); vừa mua mà túi chưa kịp có
+        # id thì chờ lượt sau
         if not ids:
             return None
         vitri, iddoituong = ids[0]
-        if vitri >= 24:
-            if time.time() - s.get("lucchuyentui", 0.) > 3.:
-                s["lucchuyentui"] = time.time()
-                self.moitruong._inlog(f"[SƯ MÔN] Chuyển {nv['vatpham']} lên hành trang 1 để giao")
-                moitruong.action_thucthicaulenh(f"move {iddoituong:x}# to 1")
-            s["trangthai"] = f"chuyển {nv['vatpham']} lên hành trang 1"
-            return None
         diachi = self._timdoituongxungquanh(nv["npc"])
         manpc = f"{moitruong.get_iddoituong(diachi):x}#" if diachi else ""
         lenhgive = taolenhgiao(manpc, [(iddoituong, min(nv["soluong"], max(1, moitruong.get_soluongvatphamhanhtrang(vitri) or 1)))], 0)[0]
