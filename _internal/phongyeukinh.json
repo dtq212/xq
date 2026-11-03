@@ -1,9 +1,16 @@
 {
   "is_lamkim": true,
-  "is_hoangkim": true,
+  "is_hoangkim": false,
   "is_chichuagiamdinh": true,
   "caphonnhanvat": 25,
-  "khongdot": [],
+  "khongdot": [
+    "Tụ Tiễn",
+    "Kim Lũ Quyền Sáo",
+    "Huyền Văn Côn",
+    "Cự Nha Thương",
+    "Chân Vũ Kiếm",
+    "Âm Dương Kiếm"
+  ],
   "chidot": [],
   "is_laydothanhvien": true,
   "is_nhatbanrac": true

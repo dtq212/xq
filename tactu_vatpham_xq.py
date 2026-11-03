@@ -1620,7 +1620,7 @@ class TacTuVatPham:
             hanhdong = self._layhanhdongluat(tenvatphamhanhtrang, i)
             # Món khớp luật Cất kho (dù luật đứng dưới luật Bán) thì để dành đi cất, không bán
             if hanhdong in (None, HANHDONG_BAN) and not self._is_catkhovatpham(tenvatphamhanhtrang, i):
-                hangdoi.append("sell ! {}# {}# 30".format(hex(idnpc).replace("0x", ""), hex(iddoituongvatphamhanhtrang).replace("0x", "")))
+                hangdoi.append("sell ! {}# {}# 255".format(hex(idnpc).replace("0x", ""), hex(iddoituongvatphamhanhtrang).replace("0x", "")))
         self._hangdoibanrac = hangdoi
         self._thoidiemguibanractieptheo = 0.
 

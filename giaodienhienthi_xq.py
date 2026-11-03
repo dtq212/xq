@@ -27,6 +27,7 @@ from luattuido_xq import tailuat, luuluat, motaluat, TENHANHDONG, DIEUKIENs, TEN
     THAPNHATMACDINH, TENHANHDONGNHAT, DIEUKIENNHATs, NHAT_NHAT
 from hangso_xq import VIECHANG_MAP, VIECDOI_MAP, VIECCOVONGs, VIECRIENG_MAP
 from hangso_xq import CHUTIEMTAPHOA, CHUTUULAU, TENMONPHAI, PHAMCHATVATPHAM_MAP, CAPTUDONGTANGCAPTOIDA, PHANTRAMVESUADO, DANHHIEULAMMOI_KHONG, DANHHIEULAMMOI_AN
+from hangso_xq import CHEDOKYNANG_CODINH, CHEDOKYNANG_TUHOC, SOMAUTOITHIEUTUHOC, THOIGIANKEHOACHTUHOC
 from dieuphoi_xq import taicauhinhdieuphoi, luucauhinhdieuphoi, chuanhoacauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
 
 # Thanh taskbar gom cửa sổ theo AppUserModelID của tiến trình: chạy bằng python.exe thì mặc định là của Python nên hiện icon Python.
@@ -37,9 +38,6 @@ try:
 except (AttributeError, OSError):
     pass
 
-# Tạm ẩn các tùy chọn chưa dùng/không còn khả dụng (CN mở rộng, Khai khoáng, Đào tàng bảo đồ, Chiến trường).
-# Đổi thành True để hiện lại (tab "Khác"). Phím tắt của chúng vẫn hoạt động.
-HIEN_TUYCHON_CHUADUNG = False
 
 # Segoe UI 10 hẹp hơn Calibri 11 một chút nên các độ rộng cột / wraplength cũ vẫn đủ chỗ
 FONTCHU = "Segoe UI"
@@ -465,6 +463,7 @@ class GiaoDienHienThi:
             "diemdanhxungquanh": tk.BooleanVar(),
             "trieuhoibaothu": tk.BooleanVar(),
             "sudungkynangbaothu": tk.BooleanVar(),
+            "nguyenkhiquynguyen": tk.BooleanVar(),
             "tranhvungcam": tk.BooleanVar(value = True),
             "dilotrinhkhacbando": tk.BooleanVar(value = True),
             "giukhoangcachketancong": tk.BooleanVar(),
@@ -964,6 +963,7 @@ class GiaoDienHienThi:
         self._create_check(nhom, "Ưu tiên bảo thú Mao Sơn", self.vars["uutienmaoson"], "battat_uutienbaothukynangtrieuhoi", "Ctrl+Alt+S")
         self._create_check(nhom, "Tập hỏa: đánh mục tiêu của người mình theo sau (cùng máy)", self.vars["taphoa"], "battat_taphoa")
         self._create_check(nhom, "Hết mục tiêu thì tìm tới mục tiêu nhân vật khác cùng máy thấy", self.vars["timmuctieuchung"], "battat_timmuctieuchung")
+        self._create_check(nhom, "Đào Hoa: tự bật Nguyên Khí Quy Nguyên", self.vars["nguyenkhiquynguyen"], "battat_tudongbatnguyenkhiquynguyen")
 
         # Danh sách Tấn công / Bỏ qua và mục tiêu bot đang tự bỏ qua, ngay dưới các ô chọn mục tiêu
         self._taonhommuctieu(tab)
@@ -972,6 +972,115 @@ class GiaoDienHienThi:
 
         # Tầm đánh ít khi chỉnh: để cuối tab
         self._taonhomtamdanh(tab)
+        self._taonhomtuhockynang(tab)
+
+    def _taonhomtuhockynang(self, tab):
+        # Tình hình chế độ kỹ năng Tự học của nhân vật đang chọn (xem tactu_tuhockynang_xq.py): tổng quan, sát thương / giây cả trận theo
+        # chế độ, chuỗi chiêu đang định dùng với quái đang đánh, từng chiêu, hiệu ứng ảnh hưởng sát thương, lần đo gần nhất.
+        # Bot đo và lập kế hoạch ở cả chế độ Luật cố định nên bảng vẫn có số
+        nhom = self._taonhom(tab, "Tình hình Tự học kỹ năng (của nhân vật đang chọn)")
+        nhom.columnconfigure(0, weight = 1)
+        self.lbl_tuhoctongquan = ttk.Label(nhom, text = "", justify = tk.LEFT, wraplength = self._px(600))
+        self.lbl_tuhoctongquan.grid(row = 0, column = 0, columnspan = 2, sticky = tk.W)
+        self.lbl_tuhocdps = ttk.Label(nhom, text = "", justify = tk.LEFT, wraplength = self._px(600))
+        self.lbl_tuhocdps.grid(row = 1, column = 0, columnspan = 2, sticky = tk.W, pady = (2, 0))
+        self.lbl_tuhocchuoi = ttk.Label(nhom, text = "", justify = tk.LEFT, wraplength = self._px(600))
+        self.lbl_tuhocchuoi.grid(row = 2, column = 0, columnspan = 2, sticky = tk.W, pady = (2, 2))
+        khung = ttk.Frame(nhom)
+        khung.grid(row = 3, column = 0, columnspan = 2, sticky = tk.NSEW)
+        self.tree_tuhoc = BangCatChu(khung, columns = ("thutu", "ten", "dudoan", "goc", "khoa", "hoichieu", "gay", "solan", "trangthai"),
+                                     show = "headings", height = 7, selectmode = "none")
+        for cot, tieude, rong, canh in (("thutu", "Thứ tự", 45, tk.CENTER), ("ten", "Chiêu", 150, tk.W), ("dudoan", "Dự kiến lúc này", 95, tk.E),
+                                        ("goc", "Gốc/lần", 70, tk.E), ("khoa", "Ra chiêu", 60, tk.E), ("hoichieu", "Hồi chiêu", 65, tk.E),
+                                        ("gay", "Gây hiệu ứng", 120, tk.W), ("solan", "Mẫu", 45, tk.E), ("trangthai", "Trạng thái", 100, tk.W)):
+            self.tree_tuhoc.heading(cot, text = tieude)
+            self.tree_tuhoc.column(cot, width = self._px(rong), anchor = canh)
+        thanhcuon = ttk.Scrollbar(khung, orient = tk.VERTICAL, command = self.tree_tuhoc.yview)
+        self.tree_tuhoc.configure(yscrollcommand = thanhcuon.set)
+        self.tree_tuhoc.pack(side = tk.LEFT, fill = tk.BOTH, expand = True)
+        thanhcuon.pack(side = tk.RIGHT, fill = tk.Y)
+        self.lbl_tuhocanhhuong = ttk.Label(nhom, text = "", justify = tk.LEFT, wraplength = self._px(600))
+        self.lbl_tuhocanhhuong.grid(row = 4, column = 0, columnspan = 2, sticky = tk.W, pady = (4, 0))
+        self.lbl_tuhoclancuoi = ttk.Label(nhom, text = "", style = "Phu.TLabel", justify = tk.LEFT, wraplength = self._px(600))
+        self.lbl_tuhoclancuoi.grid(row = 5, column = 0, columnspan = 2, sticky = tk.W, pady = (2, 0))
+        ttk.Label(nhom, style = "Phu.TLabel", justify = tk.LEFT, wraplength = self._px(600),
+                  text = "Cách học: mỗi chiêu máy chủ nhận, bot ghi các số bay của chiêu đó cùng trạng thái lúc ra chiêu (hiệu ứng trên quái, "
+                         "buff trên mình), hiệu ứng mới chiêu gây ra, thời gian ra chiêu và nguyên khí. Từ đó học chiêu nào ra bao nhiêu trong "
+                         "trạng thái nào và hiệu ứng nào làm tăng / giảm sát thương. Mỗi lượt bot thử trước các chuỗi chiêu cho "
+                         f"{THOIGIANKEHOACHTUHOC:.0f} giây tới (theo hồi chiêu, nguyên khí, hiệu ứng còn hạn) và chọn chuỗi tổng sát thương lớn "
+                         f"nhất. Chiêu chưa đủ {SOMAUTOITHIEUTUHOC} mẫu được dùng thử. Điều kiện dùng chiêu (tầm, vật cản, giữ nguyên khí...), "
+                         "buff, di chuyển, đánh thường vẫn theo luật cố định.").grid(row = 6, column = 0, columnspan = 2, sticky = tk.W, pady = (4, 0))
+
+    def _capnhattuhockynang(self, info):
+        tinhhinh = info.get("_tinhhinhtuhoc") or {}
+        chedo = tinhhinh.get("chedo", info.get("_chedokynang", CHEDOKYNANG_CODINH))
+        if chedo == CHEDOKYNANG_TUHOC:
+            tongquan = "Đang dùng: Tự học - chiêu đánh theo chuỗi bot tự lập kế hoạch."
+            if tinhhinh.get("is_monphaikhonghoc"):
+                tongquan += " Riêng môn phái này vẫn đánh theo luật cố định, bot chỉ đo."
+        else:
+            tongquan = "Đang dùng: Luật cố định - đánh theo luật viết tay. Bot vẫn đo và lập kế hoạch để xem trước Tự học sẽ đánh thế nào."
+        tongquan += f" Đã đo {tinhhinh.get('somau', 0)} chiêu trên {tinhhinh.get('soquai', 0)} loại quái."
+        if self.lbl_tuhoctongquan.cget("text") != tongquan:
+            self.lbl_tuhoctongquan.config(text = tongquan)
+
+        tenquai = tinhhinh.get("tenquai")
+        cacdps = []
+        for ma, ten in ((CHEDOKYNANG_CODINH, "Luật cố định"), (CHEDOKYNANG_TUHOC, "Tự học")):
+            dps = (tinhhinh.get("dps") or {}).get(ma) or {}
+            tatca, quai = dps.get("tatca") or (None, 0), dps.get("quai") or (None, 0)
+            if not tatca[0]:
+                cacdps.append(f"{ten} chưa có")
+                continue
+            chu = f"{ten} {tatca[0]:,.0f}/s ({tatca[1]:.0f} con)"
+            if tenquai and quai[0]:
+                chu += f", với {tenquai} {quai[0]:,.0f}/s ({quai[1]:.0f} con)"
+            cacdps.append(chu)
+        chudps = "Sát thương/giây cả trận: " + " | ".join(cacdps)
+        if self.lbl_tuhocdps.cget("text") != chudps:
+            self.lbl_tuhocdps.config(text = chudps)
+
+        chuoi = tinhhinh.get("chuoi") or []
+        if chuoi:
+            chuchuoi = (f"Chuỗi định dùng với {tenquai} ({tinhhinh['giaytruoc']:.0f}s trước): " + " -> ".join(chuoi)
+                        + f"  (dự kiến {tinhhinh['tongchuoi']:,.0f} sát thương trong {tinhhinh['thoigianchuoi']:.1f}s)")
+        else:
+            chuchuoi = "Chưa có kế hoạch: chưa đánh quái nào từ lúc chạy bot"
+        if self.lbl_tuhocchuoi.cget("text") != chuchuoi:
+            self.lbl_tuhocchuoi.config(text = chuchuoi)
+
+        def so(giatri, dinhdang = "{:,.0f}"):
+            return dinhdang.format(giatri) if giatri is not None else "-"
+
+        tree = self.tree_tuhoc
+        dong = []
+        for c in tinhhinh.get("chieus") or []:
+            dong.append((c["thutu"] or "-", c["ten"], so(c["dudoan"]), so(c["goc"]), so(c["khoa"], "{:.2f}s"), so(c["hoichieu"], "{:.0f}s"),
+                         ", ".join(c["gay"]) or "-", so(c["tongsolan"], "{}"), c["trangthai"]))
+        cu = [tuple(str(v) for v in tree.item(iid, "values")) for iid in tree.get_children()]
+        if cu != [tuple(str(v) for v in d) for d in dong]:
+            tree.delete(*tree.get_children())
+            for d in dong:
+                tree.insert("", tk.END, values = d)
+
+        anhhuongs = tinhhinh.get("anhhuongs") or []
+        chuanhhuong = ("Hiệu ứng ảnh hưởng sát thương: " + "; ".join(f"{a['ten']} trên {a['tren']}: " + ", ".join(f"{ten} {pt:+.0f}%" for ten, pt in a["chieus"])
+                                                                     for a in anhhuongs)
+                       if anhhuongs else "Hiệu ứng ảnh hưởng sát thương: chưa đủ mẫu để thấy")
+        if self.lbl_tuhocanhhuong.cget("text") != chuanhhuong:
+            self.lbl_tuhocanhhuong.config(text = chuanhhuong)
+
+        lancuoi = tinhhinh.get("lancuoi")
+        if lancuoi:
+            satthuongs = lancuoi["satthuongs"]
+            chuso = " + ".join(f"{s:,}" for s in satthuongs) + (f" = {sum(satthuongs):,}" if len(satthuongs) > 1 else "")
+            gay = f", gây {', '.join(lancuoi['hieuungmoi'])}" if lancuoi.get("hieuungmoi") else ""
+            chulancuoi = (f"Lần đo gần nhất ({time.time() - lancuoi['thoidiem']:.0f}s trước): {lancuoi['ten']} -> {lancuoi['tenquai']}:"
+                          f" {chuso} trong {lancuoi['thoigiankhoa']:.2f}s{gay}")
+        else:
+            chulancuoi = "Chưa có lần đo nào từ lúc chạy bot"
+        if self.lbl_tuhoclancuoi.cget("text") != chulancuoi:
+            self.lbl_tuhoclancuoi.config(text = chulancuoi)
 
     def _taonhomgiukhoangcach(self, tab):
         # Giữ khoảng cách với đối tượng đang đánh mình (ra đòn và quay mặt về mình): lùi ra, chỉ buff / hồi máu, bỏ chiêu đánh
@@ -1076,6 +1185,23 @@ class GiaoDienHienThi:
         self.spin_phantramnoiluckhaithien.pack(side = tk.LEFT, padx = 4)
         self._ganspinboxapdung(self.spin_phantramnoiluckhaithien, on_khaithien_change)
         ttk.Label(hangkhaithien, text = "%", style = "Phu.TLabel").pack(side = tk.LEFT)
+
+        # Chế độ kỹ năng: Luật cố định (danh sách viết tay từng môn phái) / Tự học (cùng danh sách, chiêu đánh xếp lại theo sát thương đo
+        # bằng số bay, xem tactu_tuhockynang_xq.py). Lưu theo nhân vật
+        hangchedokynang = ttk.Frame(nhom)
+        hangchedokynang.grid(row = 2, column = 0, columnspan = 2, sticky = tk.W)
+        ttk.Label(hangchedokynang, text = "Chế độ kỹ năng:").pack(side = tk.LEFT)
+        self._chedokynang_map = {"Luật cố định": CHEDOKYNANG_CODINH, "Tự học": CHEDOKYNANG_TUHOC}
+
+        def on_chedokynang_change(event = None):
+            hwnd = self.get_selected_hwnd()
+            if hwnd:
+                self.command_dict[hwnd] = f"set_chedokynang:{self._chedokynang_map.get(self.cbo_chedokynang.get(), CHEDOKYNANG_CODINH)}"
+
+        self.cbo_chedokynang = ttk.Combobox(hangchedokynang, state = "readonly", width = 14, values = list(self._chedokynang_map))
+        self.cbo_chedokynang.set("Luật cố định")
+        self.cbo_chedokynang.pack(side = tk.LEFT, padx = 4)
+        self.cbo_chedokynang.bind("<<ComboboxSelected>>", on_chedokynang_change)
 
     def _taonhomnhiplenh(self, tab):
         nhom = self._taonhom(tab, "Nhịp lệnh (chung mọi nhân vật)")
@@ -2114,11 +2240,9 @@ class GiaoDienHienThi:
         self._luutaikhoan(cauhinh, chon = j)
 
     def _taotabkhac(self, tab):
-        # Tab Khác luôn hiện vì có Nhịp lệnh; các tuỳ chọn chưa dùng vẫn chỉ hiện khi bật HIEN_TUYCHON_CHUADUNG
+        # Nhịp lệnh và các tự động ít dùng (khai khoáng, đào tàng bảo đồ, chiến trường). Chiến trường không chạy khi đang tự đi phó bản
         self._taonhomnhiplenh(tab)
-        if not HIEN_TUYCHON_CHUADUNG:
-            return
-        nhom = self._taonhom(tab, "Tạm ẩn (chưa dùng)")
+        nhom = self._taonhom(tab, "Tự động khác")
         self._create_check(nhom, "Tự động khai khoáng", self.vars["khaikhoang"], "battat_tudongkhaikhoang")
         self._create_check(nhom, "Đào tàng bảo đồ", self.vars["daobaodo"], "battat_tudongdaotangbaodo")
         self._create_check(nhom, "Đi chiến trường", self.vars["chientruong"], "battat_tudongdichientruong")
@@ -2618,8 +2742,8 @@ class GiaoDienHienThi:
                       "Ranh Giới Đầm Lầy tới 35 → Phong Yêu Kính: acc gà có đồ Lam Kim give, acc chính dò đánh quái, acc gà đứng ở "
                       "Thỏ Yêu, đủ 85% quái thì ra mở vòng mới (bản đồ Tây Thành thì ra ngay) → mọi acc gà tới \"Kéo tới cấp\" thì dừng. "
                       "Đồ Lam Kim để ở acc chính: acc gà give hết đồ thì acc chính tự đưa (give) đồ đủ cấp cho acc gà khi đứng cạnh. "
-                      "Acc phụ (máy khác nối LAN hoặc cùng máy): chọn nhân vật đó bấm \"Làm acc phụ PYK\", nó tự tìm acc chính đang kéo "
-                      "cấp, chỉ vào Phong Yêu Kính dò đánh quái cùng acc chính (bật trước khi bấm kéo cấp nếu cùng máy, kẻo bị tính là acc gà). "
+                      "Acc phụ (máy khác nối LAN hoặc cùng máy): chọn nhân vật đó bấm \"Làm acc phụ\", nó tự tìm acc chính đang kéo "
+                      "cấp, vào nhóm theo sau acc chính ở bãi (cấp 1 → 35, nhóm còn chỗ sau acc gà) và vào Phong Yêu Kính dò đánh quái cùng acc chính (bật trước khi bấm kéo cấp nếu cùng máy, kẻo bị tính là acc gà). "
                       "Acc gà ở máy khác nối LAN: chọn nhân vật đó ở máy kia bấm \"Làm acc gà\", nó tự làm tân thủ rồi tự tìm acc chính "
                       "đang kéo cấp, acc chính tự thêm vào (đồ đệ ở máy khác thì gõ tên vào ô tên đồ đệ ở máy acc chính). "
                       "Nhận đồ đệ: acc gà xong tân thủ thì acc chính lập nhóm riêng với đồ đệ, Mạnh Tử (136, 143) \"2. Ta đem đệ tử đến làm "
@@ -2672,9 +2796,9 @@ class GiaoDienHienThi:
         self.btn_keocap.pack(side = tk.LEFT)
         self._gantooltip(self.btn_keocap, "Nhân vật đang chọn làm acc chính, kéo các acc gà (cửa sổ khác dưới \"Kéo tới cấp\") lên cấp. "
                                           "Đang kéo thì bấm để dừng cả nhóm")
-        self.btn_keocapphu = ttk.Button(hangnut, text = "🤝 Làm acc phụ PYK", command = self._battatkeocapphu)
+        self.btn_keocapphu = ttk.Button(hangnut, text = "🤝 Làm acc phụ", command = self._battatkeocapphu)
         self.btn_keocapphu.pack(side = tk.LEFT, padx = (8, 0))
-        self._gantooltip(self.btn_keocapphu, "Nhân vật đang chọn làm acc phụ: chỉ vào Phong Yêu Kính đánh quái cùng acc chính (tự tìm "
+        self._gantooltip(self.btn_keocapphu, "Nhân vật đang chọn làm acc phụ: theo sau acc chính ở bãi (cấp 1 → 35), vào Phong Yêu Kính đánh quái cùng acc chính (tự tìm "
                                              "qua LAN). Bấm lại để dừng")
         self.btn_keocapga = ttk.Button(hangnut, text = "🐥 Làm acc gà", command = self._battatkeocapga)
         self.btn_keocapga.pack(side = tk.LEFT, padx = (8, 0))
@@ -3034,7 +3158,7 @@ class GiaoDienHienThi:
         chunut = "⏹ Dừng kéo cấp" if vaitro in ("chinh", "ga") else "🐣 Bắt đầu kéo cấp"
         if self.btn_keocap.cget("text") != chunut:
             doichunut(self.btn_keocap, chunut)
-        chuphu = "⏹ Dừng acc phụ" if vaitro == "phu" else "🤝 Làm acc phụ PYK"
+        chuphu = "⏹ Dừng acc phụ" if vaitro == "phu" else "🤝 Làm acc phụ"
         if self.btn_keocapphu.cget("text") != chuphu:
             doichunut(self.btn_keocapphu, chuphu)
         chuga = "⏹ Dừng acc gà" if vaitro == "ga" else "🐥 Làm acc gà"
@@ -4148,6 +4272,7 @@ class GiaoDienHienThi:
                 ("timmuctieu", "_is_tudongtimkiemmuctieu"),
                 ("trieuhoibaothu", "_is_tudongtrieuhoibaothugiangho"),
                 ("sudungkynangbaothu", "_is_tudongsudungkynangbaothu"),
+                ("nguyenkhiquynguyen", "_is_tudongbatnguyenkhiquynguyen"),
                 ("tranhvungcam", "_is_tranhvungcam"),
                 ("dilotrinhkhacbando", "_is_dilotrinhkhacbando"),
                 ("giukhoangcachketancong", "_is_giukhoangcachketancong"),
@@ -4236,6 +4361,11 @@ class GiaoDienHienThi:
         if self.cbo_danhhieulammoi.get() != chudangdung:
             self.cbo_danhhieulammoi.set(chudangdung)
 
+        chedokynang = info.get("_chedokynang", CHEDOKYNANG_CODINH)
+        chuchedo = next((chu for chu, ma in self._chedokynang_map.items() if ma == chedokynang), "Luật cố định")
+        if self.cbo_chedokynang.get() != chuchedo:
+            self.cbo_chedokynang.set(chuchedo)
+
         if widgetdangfocus != getattr(self, 'spin_captangcaptoida', None):
             try:
                 cap_moi = int(info.get("_captudongtangcaptoida", CAPTUDONGTANGCAPTOIDA))
@@ -4270,6 +4400,7 @@ class GiaoDienHienThi:
 
         self._capnhatdanhsachmuctieu(hwnd_to_show, info)
         self._capnhatmuctieuboqua(info)
+        self._capnhattuhockynang(info)
         self._capnhatmuctieutheosau(hwnd_to_show, info)
 
         self._capnhatlotrinhmau(hwnd_to_show, info, idbando, tenbando)

@@ -89,7 +89,6 @@
         "Thiên Nguyên Đơn",
         "Thiên Nguyên Đan",
         "Hồi Bang Phù",
-        "Tinh Nguyên Đơn",
         "Đá Kim Cương",
         "Đế Kim Cương",
         "Chuôi Kim Cương",
@@ -194,6 +193,30 @@
       "ghichu": "Vứt tàng bảo đồ",
       "ten": [
         "Tàng Bảo Đồ"
+      ],
+      "tenchua": [],
+      "loai": [],
+      "mota": []
+    },
+    {
+      "bat": true,
+      "is_bao": false,
+      "hanhdong": "vut",
+      "ghichu": "",
+      "ten": [],
+      "tenchua": [
+        "Công thức"
+      ],
+      "loai": [],
+      "mota": []
+    },
+    {
+      "bat": true,
+      "is_bao": false,
+      "hanhdong": "ban",
+      "ghichu": "",
+      "ten": [
+        "Tinh Nguyên Đơn"
       ],
       "tenchua": [],
       "loai": [],
@@ -387,7 +410,10 @@
         "Nguyệt Hoàn",
         "Thạch Điêu Quyền Nhẫn",
         "Bổ Tâm Đan",
-        "Tái Tạo Hoàn"
+        "Tái Tạo Hoàn",
+        "An Thần Hoàn",
+        "Tạp Hóa Đơn",
+        "Tinh Nguyên Đơn"
       ],
       "tenchua": [],
       "chibanrac": false,
@@ -420,7 +446,9 @@
         "Phi Hành Phiến",
         "Núm Vú",
         "Hành Quân Tán",
-        "Yêu Bài"
+        "Yêu Bài",
+        "Bao Đựng Tên",
+        "Chuôi Đao"
       ],
       "tenchua": [],
       "chibanrac": true,

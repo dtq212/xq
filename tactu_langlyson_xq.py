@@ -1617,7 +1617,7 @@ class TacTuLangLySon:
                 continue
             if mota.startswith((MAMAULAMKIM, MAMAUHOANGKIM)):
                 continue
-            lenhs.append("sell ! {}# {}# 30".format(hex(idnpc).replace("0x", ""), hex(iddoituong).replace("0x", "")))
+            lenhs.append("sell ! {}# {}# 255".format(hex(idnpc).replace("0x", ""), hex(iddoituong).replace("0x", "")))
         if sodesc:
             s["trangthai"] = f"bán rác ở {tennpc}: đọc mô tả hành trang ({sodesc} ô, chừa đồ Lam Kim / Hoàng Kim)"
             return None

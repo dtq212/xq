@@ -19,8 +19,9 @@
 #   thuhoi  : mọi acc gà tới cấp kết thúc (người dùng dặn): trước khi xong, acc chính đứng yên (đang trong Phong Yêu Kính thì Thỏ Yêu về
 #           Chu Quốc), acc gà còn đồ Lam Kim tới cạnh give trả hết về acc chính; mọi acc gà báo đã trả (quá THOIGIANTHUHOIKC giây thì
 #           thôi) mới sang xong
-#   acc phụ (máy khác nối LAN, bật "Làm acc phụ"): tự nhận acc chính đang kéo cấp thấy qua LAN, chỉ vào Phong Yêu Kính làm thành viên dò
-#           đánh quái như acc chính; giai đoạn khác để bot chạy như thường
+#   acc phụ (máy khác nối LAN, bật "Làm acc phụ"): tự nhận acc chính đang kéo cấp thấy qua LAN; tập hợp / bãi (cấp 1 -> 35) vào nhóm
+#           acc chính (còn chỗ sau acc gà) và theo sau như acc gà (người dùng dặn 2026-11-03), Phong Yêu Kính làm thành viên dò đánh quái
+#           như acc chính. Không nhận thưởng tân thủ / vào bang, không tính cấp acc phụ khi chọn bãi / kết thúc
 # Acc gà Theo sau tự phù / chạy sang bản đồ của acc chính; không đủ tiền Hồi Thành Phù mà chạy bộ xa thì bộ tìm đường chung
 # (_lapbuocditoibando) hồi môn phái về Tân Thủ Thôn (chưa vào môn phái) rồi phù tiếp.
 # Mixin của TacTu (tactu_xq.py): chỉ chứa hàm, trạng thái (self._keocap...) khởi tạo trong TacTu.__init__
@@ -138,7 +139,7 @@ class TacTuKeoCap:
             self._keocap["tuychoncu"] = dict(tuychoncu)
         if muctieutheosaucu:
             self._keocap["muctieutheosaucu"] = tuple(muctieutheosaucu)
-        elif vaitro == "ga" and self._keocap["idchinh"] and self._idmuctieutheosau == self._keocap["idchinh"]:
+        elif vaitro in ("ga", "phu") and self._keocap["idchinh"] and self._idmuctieutheosau == self._keocap["idchinh"]:
             # Còn Theo sau acc chính sót từ lần kéo cấp trước (bản cũ không lưu ô gốc): coi như gốc là không theo sau ai
             self._keocap.setdefault("tuychoncu", {})["_is_tudongtheosau"] = False
             self._keocap["muctieutheosaucu"] = (0, "")
@@ -155,7 +156,7 @@ class TacTuKeoCap:
         mota = {"chinh": "acc chính, acc gà " + (", ".join(map(str, self._keocap["idgas"])) or "chưa có (chờ acc gà máy khác qua LAN)")
                          + (f", đồ đệ tên {self._keocap['tendode']}" if self._keocap["tendode"] else ""),
                 "ga": f"acc gà của {idchinh or 'acc chính tự tìm qua LAN'}",
-                "phu": f"acc phụ Phong Yêu Kính của {idchinh or 'acc chính tự tìm qua LAN'}"}[vaitro]
+                "phu": f"acc phụ (theo bãi + Phong Yêu Kính) của {idchinh or 'acc chính tự tìm qua LAN'}"}[vaitro]
         self._logkc(f"Bắt đầu kéo cấp ({mota})")
         phatam({"chinh": "Bắt đầu kéo cấp acc gà", "ga": "Bắt đầu kéo cấp, vai acc gà", "phu": "Bắt đầu kéo cấp, vai acc phụ"}[vaitro])
 
@@ -299,6 +300,22 @@ class TacTuKeoCap:
                 self._logkc(f"Thêm acc gà {info.get('tennhanvat') or ''} (ID {i}" + (f", máy {info['_tenmay']}" if info.get("_tenmay") else "") + ")")
         return {i: cuasos[i] for i in s["idgas"] if i in cuasos and cuasos[i]["_keocap"].get("vaitro") == "ga"}
 
+    def _layphukc(self, s):
+        # {ID acc phụ: info} các acc phụ online nhận mình làm acc chính
+        idtoi = self.moitruong.get_idnguoichoi()
+        phus = {i: info for i, info in self._laycuasokeocap().items()
+                if info["_keocap"].get("vaitro") == "phu" and info["_keocap"].get("idchinh") == idtoi}
+        if sorted(phus) != s.get("phus"):
+            self._logkc(f"Acc phụ: {', '.join(map(str, sorted(phus))) or 'không có'}")
+            s["phus"] = sorted(phus)
+        return phus
+
+    def _nhomkeocapkc(self, s, gas):
+        # Người acc chính mời vào nhóm ở tập hợp / bãi: acc gà trước, acc phụ lấp chỗ còn lại (nhóm tối đa SOLUONGTHANHVIENNHOMTOIDA)
+        phus = self._layphukc(s)
+        conlai = max(0, SOLUONGTHANHVIENNHOMTOIDA - 1 - len(gas))
+        return {**gas, **{i: phus[i] for i in sorted(phus)[:conlai]}}
+
     def _xulykeocapchinh(self, s):
         moitruong = self.moitruong
         now = time.time()
@@ -383,7 +400,8 @@ class TacTuKeoCap:
             self.huy_langlyson()
         if self._is_dangban():
             return None
-        self._moinhomkc(s, gas)
+        nhom = self._nhomkeocapkc(s, gas)
+        self._moinhomkc(s, nhom)
         self._moibangkc(s, gas, SOLANMOIBANGGIUACHUNG)
         tenbai = laytenbando(idbai)
         captoi = dict(BAIKEOCAPs)[idbai]
@@ -392,7 +410,7 @@ class TacTuKeoCap:
             s.pop("luctoibai", None)
             return self._ditoikc(s, idbai, None, f"tới {tenbai} (acc gà thấp nhất cấp {capthap}, cần {captoi})")
         s.setdefault("luctoibai", now)
-        chuatoi = [info.get("tennhanvat") or str(i) for i, info in gas.items() if info.get("tenbando") != idbai]
+        chuatoi = [info.get("tennhanvat") or str(i) for i, info in nhom.items() if info.get("tenbando") != idbai]
         if chuatoi and now - s["luctoibai"] < THOIGIANCHOGATOIBAI:
             s["trangthai"] = f"{tenbai}: chờ acc gà theo sang ({', '.join(chuatoi)}, còn {int(THOIGIANCHOGATOIBAI - (now - s['luctoibai']))}s)"
             return None
@@ -538,7 +556,9 @@ class TacTuKeoCap:
                 self._logkc(f"✅ Mạnh Tử hỏi đồ đệ đâu: {tendd} đã xuất sư")
                 phatam(f"Xong {ten}")
                 return None
-            if noidung and lenhs:
+            # Chỉ chọn hộp của Mạnh Tử: hộp khác hiện lúc đó (Niết Bàn "khai trừ <thành viên> ra khỏi nhóm" lúc lập nhóm riêng) mà chọn
+            # lựa chọn đầu là đá người khỏi nhóm
+            if noidung.strip().startswith(NPCMANHTU[0]) and lenhs:
                 self._logkc(f"Mạnh Tử: {noidung[:80]!r} -> chọn {lenhs[0]!r}")
                 moitruong.xoa_noidungcuasotuychon()
                 moitruong.action_thucthicaulenh(lenhs[0])
@@ -571,6 +591,12 @@ class TacTuKeoCap:
     def _moibangkc(self, s, gas, solantoida = None):
         # Mời acc gà chưa đồng ý vào bang ("org invite <ID>"), mỗi GIANCACHMOIBANGKC giây 1 người, mỗi người tối đa solantoida lần (None:
         # không giới hạn). -> [ID acc gà chưa vào bang]
+        # Acc chính chỉ là Bang Chúng (danh hiệu "<tên bang> Bang Chúng") thì không mời được: bỏ mời bang, coi như không ai chờ vào bang
+        if any(ten.endswith("Bang Chúng") for _, ten in self.moitruong.get_danhsachdanhhieu()):
+            if not s.get("bobangchung"):
+                s["bobangchung"] = True
+                self._logkc("Mình chỉ là Bang Chúng: không mời acc gà vào bang")
+            return []
         now = time.time()
         chuabangs = [i for i, info in gas.items() if not info["_keocap"].get("dabang")]
         solans = s.setdefault("solanmoibang", {})
@@ -599,7 +625,8 @@ class TacTuKeoCap:
         if chuaxongs:
             s["trangthai"] = f"tập hợp: chờ {', '.join(chuaxongs)} nhận thưởng tân thủ"
             return yeucau
-        self._moinhomkc(s, gas)
+        # Acc phụ cũng mời nhưng không chờ (chỉ chờ acc gà vào nhóm)
+        self._moinhomkc(s, self._nhomkeocapkc(s, gas))
         trongnhoms = set(moitruong.get_danhsachidnguoichoithanhviennhoms() or ()) if moitruong.get_is_dangnamtrongnhom() else set()
         chuabangs = self._moibangkc(s, gas)
         chuanhoms = [gas[i].get("tennhanvat") or str(i) for i in gas if i not in trongnhoms]
@@ -621,12 +648,7 @@ class TacTuKeoCap:
         if self._is_tudongtheosau:
             self._datkc(s, "_is_tudongtheosau", False, "Theo sau")
         idtoi = self.moitruong.get_idnguoichoi()
-        phus = sorted(i for i, info in self._laycuasokeocap().items()
-                      if info["_keocap"].get("vaitro") == "phu" and info["_keocap"].get("idchinh") == idtoi)
-        if phus != s.get("phus"):
-            self._logkc(f"Acc phụ Phong Yêu Kính: {', '.join(map(str, phus)) or 'không có'}")
-            s["phus"] = phus
-        s["nhompy"] = [idtoi, *sorted(gas), *phus]
+        s["nhompy"] = [idtoi, *sorted(gas), *sorted(self._layphukc(s))]
         yeucau = self._chuyendolamkimkc(s, gas)
         if yeucau is not False:
             return yeucau
@@ -684,21 +706,32 @@ class TacTuKeoCap:
         idnhan = s["idgive"] if s["idgive"] in gas else min(gas)
         nhan = gas[idnhan]
         if nhan["_keocap"].get("codolamkim") is not False:
-            s["chuyendo"] = 0
+            s.update(chuyendo = 0, is_tuidaynhan = False)
             return False
-        if now - s.get("lucdocdochinh", 0.) > GIANCACHDOCDOCHINHKC or s.get("dolamkimchinh") == "doc":
+        tennhan = nhan.get("tennhanvat") or str(idnhan)
+        if s.get("is_tuidaynhan"):
+            # Acc gà đầy túi giữa chừng (đã nhận được vài món): chờ nó đọc lại túi báo có đồ, đốt hết thì vòng sau đưa tiếp
+            if now - s.get("lucgiaodo", 0.) < THOIGIANCHONHANDOKC:
+                s["trangthai"] = f"Phong Yêu Kính: {tennhan} đầy túi, chờ nhận đồ Lam Kim đã đưa"
+                return None
+            self._logkc(f"⚠️ {tennhan} đầy túi mà quá {int(THOIGIANCHONHANDOKC)}s chưa báo có đồ Lam Kim: thôi đưa đồ, ném tay giúp")
+            s.update(bochuyendo = True, chuyendo = 0, is_tuidaynhan = False)
+            return False
+        # Give xong GIANCACHGIAODOKC giây thì đọc lại túi (xét món vừa give đã đi chưa) rồi mới give món kế
+        is_docsaugiao = s.get("lucdocdochinh", 0.) <= s.get("lucgiaodo", 0.) and now - s.get("lucgiaodo", 0.) >= GIANCACHGIAODOKC
+        if now - s.get("lucdocdochinh", 0.) > GIANCACHDOCDOCHINHKC or s.get("dolamkimchinh") == "doc" or is_docsaugiao:
             captoithieu = max(CAPDOLAMKIMTOITHIEU, (nhan["_keocap"].get("capdo") or 0) - taicauhinhphongyeu()["caphonnhanvat"])
             ds = self._chondolamkim(s, captoithieu = captoithieu, is_tatca = True)
             if ds != "doc":
                 s["lucdocdochinh"] = now
                 if s.get("dolamkimchinh") not in (None, "doc") and len(ds) < len(s["dolamkimchinh"]):
+                    s["sodagiaovong"] = s.get("sodagiaovong", 0) + len(s["dolamkimchinh"]) - len(ds)
                     s["solangiaodo"] = 0
             s["dolamkimchinh"] = ds
         ds = s.get("dolamkimchinh")
         if ds == "doc":
             s["trangthai"] = "Phong Yêu Kính: đọc túi mình tìm đồ Lam Kim đưa acc gà"
             return None
-        tennhan = nhan.get("tennhanvat") or str(idnhan)
         if not ds:
             if now - s.get("lucgiaodo", 0.) < THOIGIANCHONHANDOKC:
                 # Vừa đưa hết đồ: chờ acc gà đọc lại túi (không thì tưởng không ai còn đồ, dừng kéo cấp)
@@ -708,7 +741,7 @@ class TacTuKeoCap:
             return False
         if s.get("chuyendo") != idnhan:
             self._logkc(f"{tennhan} hết đồ Lam Kim, mình còn {len(ds)} món: chờ {tennhan} tới để đưa")
-            s.update(chuyendo = idnhan, solangiaodo = 0)
+            s.update(chuyendo = idnhan, solangiaodo = 0, sodagiaovong = 0)
         diachi = moitruong.action_timkiemnhanvat(idnguoichoi = idnhan)
         if not diachi:
             if not moitruong.get_is_cungbando(nhan):
@@ -721,19 +754,25 @@ class TacTuKeoCap:
             s["trangthai"] = f"Phong Yêu Kính: lại gần {tennhan} để đưa đồ Lam Kim"
             x, y = moitruong.get_toado(diachi)
             return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (round(x), round(y), moitruong.get_idbandohientai()), "khoangcachtoida": 1.}
-        if now - s.get("lucgiaodo", 0.) < GIANCACHGIAODOKC:
+        if now - s.get("lucgiaodo", 0.) < GIANCACHGIAODOKC or s.get("lucdocdochinh", 0.) <= s.get("lucgiaodo", 0.):
             return None
         if s.get("solangiaodo", 0) >= SOLANGIAODOKC:
+            if s.get("sodagiaovong"):
+                # Đã nhận được vài món rồi mới hỏng: acc gà đầy túi, để nó đốt số đã nhận
+                self._logkc(f"{tennhan} đầy túi: đã đưa {s['sodagiaovong']} món, mình còn {len(ds)} món, {tennhan} đốt hết thì đưa tiếp")
+                s.update(is_tuidaynhan = True, lucgiaodo = now)
+                return None
             self._logkc(f"⚠️ Give {SOLANGIAODOKC} lần mà đồ Lam Kim không giảm (đồ khoá / {tennhan} đầy túi?): thôi đưa đồ, ném tay giúp")
             s.update(bochuyendo = True, chuyendo = 0)
             return False
+        # Give từng món (cả lệnh nhiều món thì acc gà thiếu chỗ là hỏng hết); hỏng thì lần sau thử món khác (món đó có thể bị khoá)
+        mon = ds[s.get("solangiaodo", 0) % len(ds)]
         moitruong.action_ngatdichuyen()
-        for lenh in taolenhgiao(str(idnhan), [(mon[3], 1) for mon in ds], 0):
+        for lenh in taolenhgiao(str(idnhan), [(mon[3], 1)], 0):
             moitruong.action_thucthicaulenh(lenh)
-            self._logkc(f"Đưa đồ Lam Kim cho {tennhan}: {lenh}")
-        self._logkc(f"Đã gửi {len(ds)} món: " + ", ".join(f"{mon[4]} (cấp {mon[0]})" for mon in ds))
-        s.update(lucgiaodo = now, solangiaodo = s.get("solangiaodo", 0) + 1, lucdocdochinh = 0.)
-        s["trangthai"] = f"Phong Yêu Kính: đưa {len(ds)} món Lam Kim cho {tennhan}"
+            self._logkc(f"Đưa {mon[4]} (cấp {mon[0]}) cho {tennhan}: {lenh}")
+        s.update(lucgiaodo = now, solangiaodo = s.get("solangiaodo", 0) + 1)
+        s["trangthai"] = f"Phong Yêu Kính: đưa đồ Lam Kim cho {tennhan} (còn {len(ds)} món)"
         return None
 
     def _roinhomkhacgivekc(self, s):
@@ -832,6 +871,11 @@ class TacTuKeoCap:
             s["trangthai"] = "Phong Yêu Kính: " + ("mình give, " if s["idgive"] == moitruong.get_idnguoichoi() else "") + \
                              (self.get_trangthailanglyson() or "chờ bật")
             return False
+        return self._theosauchinhkc(s, chinh, giaidoan)
+
+    def _theosauchinhkc(self, s, chinh, giaidoan):
+        # Acc gà / acc phụ ngoài Phong Yêu Kính: vào nhóm acc chính, theo sau acc chính (tự tìm đường / phù sang bản đồ khác)
+        moitruong = self.moitruong
         if self._is_trongphongyeu():
             # Acc chính vừa mở lại bot (chưa tới giai đoạn Phong Yêu Kính): chờ, không tắt Phong Yêu Kính / rời nhóm (rời là bị đưa ra)
             s["trangthai"] = f"đang trong Phong Yêu Kính, chờ acc chính (đang {self._tengiaidoan(giaidoan)})"
@@ -839,7 +883,6 @@ class TacTuKeoCap:
         if self._langlyson:
             self.huy_langlyson()
         self._roinhomkhacchinhkc(s)
-        # Tập hợp / bãi: theo sau acc chính (tự tìm đường / phù sang bản đồ khác)
         if "muctieutheosaucu" not in s:
             s["muctieutheosaucu"] = (self._idmuctieutheosau, self._tenmuctieutheosau)
         if self._idmuctieutheosau != s["idchinh"]:
@@ -900,7 +943,7 @@ class TacTuKeoCap:
 
     # --- Acc phụ (máy khác nối LAN) -----------------------------------------------------------------------------------------------------
     def _xulykeocapphu(self, s):
-        # Chỉ vào Phong Yêu Kính làm thành viên dò đánh quái cùng acc chính; giai đoạn khác trả False để bot chạy như thường
+        # Tập hợp / bãi: vào nhóm, theo sau acc chính như acc gà (acc chính mời nếu nhóm còn chỗ); Phong Yêu Kính: thành viên dò đánh quái
         if not s["idchinh"]:
             chinhs = sorted(i for i, info in self._laycuasokeocap().items() if info["_keocap"].get("vaitro") == "chinh")
             if not chinhs:
@@ -911,6 +954,7 @@ class TacTuKeoCap:
         chinh = self._laychinh(s)
         if not chinh:
             s["trangthai"] = f"chờ acc chính (ID {s['idchinh']}) online"
+            self._tatsautheokc(s)
             return False
         giaidoan = chinh["_keocap"].get("giaidoan") or ""
         if giaidoan == "xong":
@@ -918,10 +962,8 @@ class TacTuKeoCap:
             return None
         s["giaidoan"] = giaidoan
         if giaidoan != "phongyeu":
-            if self._langlyson and self._langlyson["phoban"] == "phongyeukinh":
-                self.huy_langlyson()
-            s["trangthai"] = f"chờ acc chính tới Phong Yêu Kính (đang {self._tengiaidoan(giaidoan)})"
-            return False
+            self._dongykeocapga(s)
+            return self._theosauchinhkc(s, chinh, giaidoan)
         self._tatsautheokc(s)
         s["idgive"] = chinh["_keocap"].get("idgive") or 0
         if not s["idgive"]:
@@ -1058,8 +1100,10 @@ class TacTuKeoCap:
         moitruong = self.moitruong
         if chinh["_keocap"].get("iddode") != moitruong.get_idnguoichoi() or time.time() - s.get("lucxacnhansp", 0.) < 2.:
             return
+        # Aegis "Mạnh Tử:\n Bạn bằng lòng làm đồ đệ của <acc chính> không ?" -> "1. Xác nhận"; Niết Bàn có dấu cách đầu
+        # " Mạnh Tử :\n Ngươi chấp nhận làm đồ đệ của <acc chính> ?" -> "1.Chấp nhận" / "2.Rời khỏi" (vẫn lựa chọn đầu)
         noidung = moitruong.get_noidungcuasotuychon()
-        if not noidung.startswith(NPCMANHTU[0]):
+        if not noidung.strip().startswith(NPCMANHTU[0]):
             return
         lenhs = [l for l in moitruong.get_lenhcuasotuychons() if l.strip() and l.upper() != "CLOSE"]
         if not lenhs:

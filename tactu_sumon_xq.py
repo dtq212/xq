@@ -411,7 +411,10 @@ class TacTuSuMon:
             duongdi = timduongbando(idbandohientai, idbando, moitruong.get_toado())
             if idbando == bandomonphai and s["solanmonphai"] < SOLANHOIMONPHAI and (duongdi is None or len(duongdi) > 2):
                 now = time.time()
-                if now - s["lucmonphai"] > GIANCACHHOIMONPHAI and now - moitruong.get_thoidiemthaydoibandogannhat() >= 2.:
+                # Tín Vật còn hồi (giãn cách 60s): đứng chờ, không tính lần (3 lần cách 15s hết trong lúc hồi là bỏ, chạy bộ)
+                if moitruong.get_thoigianhoitinvatconlai():
+                    s["trangthai"] = f"chờ Tín Vật hồi {round(moitruong.get_thoigianhoitinvatconlai())}s để tới {nhan}"
+                elif now - s["lucmonphai"] > GIANCACHHOIMONPHAI and now - moitruong.get_thoidiemthaydoibandogannhat() >= 2.:
                     self.moitruong._inlog(f"[SƯ MÔN] Hồi môn phái để tới {nhan}")
                     moitruong.action_ngatdichuyen()
                     # Bỏ cờ Xa Phu còn sót từ lần về thành trước: về phái thì Tín Vật là xong

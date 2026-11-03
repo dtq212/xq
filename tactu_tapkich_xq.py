@@ -20,14 +20,23 @@ TENNPCTAPKICH = "Võ Lâm Bại Hoại"
 # Boss cuối trong phó bản: thấy rồi thì thôi đi dò, đứng đánh; khuất tầm nhìn mà cách chỗ thấy lần cuối quá chừng này ô thì quay lại đó
 TENBOSSTAPKICH = "Thủ Lĩnh Võ Lâm Bại Hoại"
 KHOANGCACHVEBOSSTAPKICH = 6.
-# Menu thứ 2 (mọi thành viên đều hiện): "Muốn vào không ?" 1. Dùng 5 Ngân Bảo gia tăng 50% kinh nghiệm 2. Tiến vào
-LOINPCVAOTAPKICH = "muốn vào không"
+# Menu thứ 2 (mọi thành viên đều hiện): "Muốn vào không ?" 1. Dùng 5 Ngân Bảo gia tăng 50% kinh nghiệm 2. Tiến vào; có bản ghi
+# "Hãy chọn cách tham gia" 1. Trả 5 Kim Bảo (Tăng thêm 50% điểm kinh nghiệm khi đánh quái) 2. Tự do đi vào
+LOINPCVAOTAPKICHs = ("muốn vào không", "chọn cách tham gia")
+# Menu "Hãy chọn cách tham gia" (Niết Bàn) chọn lựa chọn cuối "Tự do đi vào" (không tốn Kim Bảo, người dùng); menu khác chọn lựa chọn 1
+LOINPCVAOTUDO = "chọn cách tham gia"
+# Vừa đánh xong (vừa ra khỏi phó bản): "Các ngươi vừa khiêu chiến, hãy nghỉ ngơi 5 phút rồi quay lại gặp ta!" -> chờ rồi nói lại
+LOINPCNGHINGOI = "vừa khiêu chiến"
+THOIGIANNGHINGOITAPKICH = 5 * 60. + 10.
+# Trưởng nhóm chọn menu vào xong mà thành viên chưa chọn: "Xin đợi chọn người chơi khác!" (không có lựa chọn) -> đã chọn, chờ đưa vào
+LOINPCDOITHANHVIENCHON = "đợi chọn người chơi khác"
 # Thành viên chưa tới gần NPC: "Hãy gọi tất cả thành viên trong đội tới đây rồi muốn vào th..." (không có lựa chọn) -> chờ chừng này giây
 # rồi nói lại
 LOINPCGOITHANHVIEN = "gọi tất cả thành viên"
 GIANCACHCHOTHANHVIENTAPKICH = 5.
-# Con NPC đang bị đội khác đánh: "NPC đang cùng chiến đấu với người chơi" (chỉ có "Rời khỏi") -> bỏ qua con đó chừng này giây, tìm con khác
-LOINPCDANGCHIENDAU = "đang cùng chiến đấu"
+# Con NPC đang bị đội khác đánh: "NPC đang cùng chiến đấu với người chơi" (Niết Bàn: "Ta đang chiến đấu, ... (NPC này đang chiến đấu
+# với người khác)") (chỉ có "Rời khỏi") -> bỏ qua con đó chừng này giây, tìm con khác
+LOINPCDANGCHIENDAUs = ("đang cùng chiến đấu", "đang chiến đấu với người khác")
 THOIGIANBOQUANPCTAPKICH = 5 * 60.
 # Đứng cách NPC tối đa chừng này ô mới "look"; look xong chờ menu tối đa THOIGIANCHOMENUTAPKICH giây rồi look lại
 KHOANGCACHNOICHUYENTAPKICH = 3.
@@ -140,14 +149,15 @@ class TacTuTapKich:
             return
         if moitruong.get_is_danghiencuasotuychon() and not (self._tapkich and self._tapkich["hoithoai"]):
             noidung = moitruong.get_noidungcuasotuychon() or ""
-            if LOINPCVAOTAPKICH in noidung.lower():
+            if any(loi in noidung.lower() for loi in LOINPCVAOTAPKICHs):
                 lenhs = [l for l in moitruong.get_lenhcuasotuychons() if l.strip() and l.upper() != "CLOSE"]
                 if lenhs:
+                    lenh = self._chonlenhvaotapkich(noidung, lenhs)
                     self._lucchonmenutapkich = self._lucchonvaotapkich = now
                     moitruong.action_ngatdichuyen()
                     moitruong.xoa_noidungcuasotuychon()
-                    moitruong.action_thucthicaulenh(lenhs[0])
-                    self._logtk(f"Menu vào phó bản: chọn lựa chọn 1 (Dùng 5 Ngân Bảo) ({lenhs[0]!r})")
+                    moitruong.action_thucthicaulenh(lenh)
+                    self._logtk(f"Menu vào phó bản: chọn {lenh!r}")
                     return
         hop = moitruong.get_hopxacnhannpc()
         # Hộp mời / xin vào nhóm ("team ...") không phải của Tập Kích
@@ -158,6 +168,11 @@ class TacTuTapKich:
             moitruong.action_thucthicaulenh(hop[1])
             moitruong.action_donghopxacnhannpc()
             self._logtk(f"Hộp xác nhận (mua Lễ Bao): bấm Xác Nhận ({hop[1]!r}), đóng hộp")
+
+    @staticmethod
+    def _chonlenhvaotapkich(noidung, lenhs):
+        # Menu vào: "Hãy chọn cách tham gia" -> lựa chọn cuối "Tự do đi vào"; "Muốn vào không ?" -> lựa chọn 1
+        return lenhs[-1] if LOINPCVAOTUDO in noidung.lower() else lenhs[0]
 
     # --- Vòng chính ------------------------------------------------------------------------------------------------------------------
     def _xulytapkich(self):
@@ -191,7 +206,7 @@ class TacTuTapKich:
         if is_trongphoban:
             if not s["davao"]:
                 s.update(davao = True, hoithoai = None, lucchon = 0., solanloi = 0, do = None, vitriboss = None)
-                self._logtk(f"Đã vào phó bản (vòng {s['sovong'] + 1})")
+                self._logtk(f"Đã vào phó bản (vòng {s['sovong'] + 1}, tên bản đồ game {moitruong.get_tenbandogame()!r})")
             s["chedo"] = "danhquai"
             self._batdanhquaitapkich(s)
             # Thủ Lĩnh là con cuối: thấy rồi thì thôi đi dò, đứng đánh; khuất tầm nhìn thì quay về chỗ thấy lần cuối
@@ -259,7 +274,7 @@ class TacTuTapKich:
                 return None
             self._logtk(f"Chọn vào {THOIGIANCHOVAOTAPKICH:.0f}s chưa được đưa vào phó bản, nói chuyện lại (lần {s['solanloi'] + 1})")
         if now < s.get("lucthulai", 0.):
-            s["trangthai"] = f"chờ thành viên tới gần {TENNPCTAPKICH} ({int(s['lucthulai'] - now)}s)"
+            s["trangthai"] = f"chờ rồi nói lại {TENNPCTAPKICH} ({int(s['lucthulai'] - now)}s)"
             return None
         h = s["hoithoai"]
         boquas = s.setdefault("boqua", {})
@@ -274,7 +289,7 @@ class TacTuTapKich:
         ketqua, yeucau = self._noichuyentapkich(s, diachinpc, idnpc)
         if ketqua == "xong":
             s["lucchon"] = self._lucchonvaotapkich = time.time()
-            self._logtk("Đã chọn \"Bớt nói nhảm\" -> \"Dùng 5 Ngân Bảo\", chờ được đưa vào phó bản")
+            self._logtk("Đã chọn menu vào, chờ được đưa vào phó bản")
         elif ketqua == "dangchiendau":
             s["boqua"][idnpc] = time.time() + THOIGIANBOQUANPCTAPKICH
             self._logtk(f"{TENNPCTAPKICH} (id {idnpc:x}) đang chiến đấu với người chơi khác: bỏ qua {THOIGIANBOQUANPCTAPKICH / 60:.0f} phút, "
@@ -282,6 +297,9 @@ class TacTuTapKich:
         elif ketqua == "chothanhvien":
             s["lucthulai"] = time.time() + GIANCACHCHOTHANHVIENTAPKICH
             self._logtk(f"NPC bảo gọi đủ thành viên tới: chờ {GIANCACHCHOTHANHVIENTAPKICH:.0f}s rồi nói lại")
+        elif ketqua == "nghingoi":
+            s["lucthulai"] = time.time() + THOIGIANNGHINGOITAPKICH
+            self._logtk(f"NPC bảo vừa khiêu chiến, nghỉ 5 phút: chờ {THOIGIANNGHINGOITAPKICH:.0f}s rồi nói lại")
         return yeucau
 
     def _noichuyentapkich(self, s, diachinpc, idnpc):
@@ -319,21 +337,35 @@ class TacTuTapKich:
             if moitruong.get_is_danghiencuasotuychon():
                 moitruong.set_is_danghiencuasotuychon(False)
             return "chothanhvien", None
-        if LOINPCDANGCHIENDAU in thuong:
+        if LOINPCNGHINGOI in thuong:
+            s["hoithoai"] = None
+            moitruong.xoa_noidungcuasotuychon()
+            if moitruong.get_is_danghiencuasotuychon():
+                moitruong.set_is_danghiencuasotuychon(False)
+            return "nghingoi", None
+        if any(loi in thuong for loi in LOINPCDANGCHIENDAUs):
             s["hoithoai"] = None
             moitruong.xoa_noidungcuasotuychon()
             if moitruong.get_is_danghiencuasotuychon():
                 moitruong.set_is_danghiencuasotuychon(False)
             return "dangchiendau", None
+        if LOINPCDOITHANHVIENCHON in thuong:
+            # Mình đã chọn vào (lượt trước chưa nhận ra menu), thành viên chưa chọn: thôi look lại, chờ đưa vào
+            s["hoithoai"] = None
+            moitruong.xoa_noidungcuasotuychon()
+            if moitruong.get_is_danghiencuasotuychon():
+                moitruong.set_is_danghiencuasotuychon(False)
+            return "xong", None
         if not lenhs:
             moitruong.xoa_noidungcuasotuychon()
             h.update(buoc = "look", luc = now)
             return None, None
+        lenh = self._chonlenhvaotapkich(noidung, lenhs)
         moitruong.action_ngatdichuyen()
         moitruong.xoa_noidungcuasotuychon()
-        moitruong.action_thucthicaulenh(lenhs[0])
-        self._logtk(f"{TENNPCTAPKICH}: chọn lựa chọn 1 ({lenhs[0]!r})")
-        if LOINPCVAOTAPKICH in thuong:
+        moitruong.action_thucthicaulenh(lenh)
+        self._logtk(f"{TENNPCTAPKICH}: chọn {lenh!r}")
+        if any(loi in thuong for loi in LOINPCVAOTAPKICHs):
             s["hoithoai"] = None
             return "xong", None
         # Menu 1 xong: chờ menu "Muốn vào không ?"

@@ -6,7 +6,9 @@
       "thanhviens": [
         9198,
         9176,
-        9286
+        9286,
+        9324,
+        9325
       ],
       "thutu": [
         "sugia",
@@ -18,8 +20,10 @@
       "chon": [
         "phongyeukinh"
       ],
-      "vong": {},
-      "phai": ""
+      "vong": {
+        "tapkich": 1
+      },
+      "phai": "conluan"
     }
   ]
 }

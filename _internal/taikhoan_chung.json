@@ -125,6 +125,40 @@
             "vitricuaso": 3,
             "user": "quansumumuu",
             "pass": "hateva"
+        },
+        {
+            "tennhanvat": "DocCoCauBai",
+            "idnguoichoi": 9324,
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "maydangnhap": "Admin-PC",
+            "vitricuaso": 4,
+            "user": "doccocaubai",
+            "pass": "hateva"
+        },
+        {
+            "tennhanvat": "VoLamCaoThu",
+            "idnguoichoi": 9325,
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "maydangnhap": "Admin-PC",
+            "vitricuaso": 5,
+            "user": "volamcaothu",
+            "pass": "hateva"
+        },
+        {
+            "tennhanvat": "GàĐạiCa",
+            "idnguoichoi": 187,
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "maydangnhap": "",
+            "vitricuaso": 1,
+            "user": "gadaica",
+            "pass": "hateva",
+            "duongdangame": "E:\\Games\\ChienQuoc2D_Aegis\\xq.exe"
         }
     ]
 }

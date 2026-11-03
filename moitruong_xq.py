@@ -73,12 +73,6 @@ SOBUOCCHUOIDUONGDITOIDA = 98
 GIANCACHGOIKHONGCATGOC = 1.
 THOIGIANGIATKHONGCATGOC = 4.
 SOLANGIATKHONGCATGOC = 2
-# Không học ô chặn trong các vòng này {bản đồ: [(x, y, bán kính)]}: chỗ đông NPC / người đứng là đất trống thật, "giật về" ở đó là do
-# bot khác cách đi chen nhau, không phải rào máy chủ. Quanh Tả Khâu Minh Chu Quốc (252, 160) từng học nhầm ~40 ô (cả (253, 160)): đội trưởng
-# Phong Yêu Kính không tìm ra đường, đi theo ô thường lách xuống (249, 158) giật giật mới give được
-VUNGKHONGHOCVATCAN_MAP = {80: [(252, 160, 10)]}
-# Ô bị chặn trong vùng trên thì né tạm chừng này giây (người chen nhau đi rồi thì ô lại thông)
-THOIGIANVATCANTAM = 60.
 # Mỗi ô trong khu vực cấm khai tay tính thêm chừng này bước khi tìm đường không cắt góc
 PHATKHUVUCCAMKHONGCATGOC = 20.
 
@@ -144,8 +138,6 @@ class MoiTruong:
         # Các ô thật gần đây [(lúc, ô)] và lần bị giật về theo (ô mốc, bước đầu) để bắt kiểu giật về ô mốc
         self._lichsukhongcatgoc = []
         self._giatkhongcatgoc = {}
-        # Ô bị chặn trong vùng không học vật cản (VUNGKHONGHOCVATCAN_MAP): chỉ né tạm {(bản đồ, x, y): hết hạn}, không ghi file
-        self._vatcantam = {}
         self._dulieutimduongcucbo = None
         self._buftimduongcucbo = None
         self._doituongtimduongcucbo = None
@@ -167,6 +159,8 @@ class MoiTruong:
         self._chovankhi = None
         # Lệnh vừa ghi vào game gần nhất: (câu lệnh, time.time(), timeGetTime) để khớp lệnh vận khí đã gửi trước khi đăng ký chờ
         self._lenhguigannhat = None
+        # Lúc Tín Vật vào vận khí gần nhất (get_thoigianhoitinvatconlai)
+        self._thoidiemtinvatgannhat = 0.
         self._thoidiemdongvankhiket = 0.
         # Khoá vận khí triệu hồi bảo thú (action_khoavankhitrieuhoi): None hoặc {"batdau", "toida", "caulenhduocpheps"}
         self._khoavankhitrieuhoi = None
@@ -1187,7 +1181,8 @@ class MoiTruong:
             muc = read_bytes(self.tientrinh, x + DC.KDK_DANHSACHDANHHIEU + i * KICHTHUOCMUCDANHHIEU, KICHTHUOCMUCDANHHIEU)
             ma = muc[:6].split(b"\0")[0].decode("ascii", "ignore").strip()
             if not ma:
-                break
+                # Mục trống có thể nằm giữa danh sách (đo 2026-11-03: TieuLyPhiDao mục 0 trống, danh hiệu ở mục 1-4): bỏ qua, đừng dừng
+                continue
             ten = re.sub(r"\x1b.", "", muc[6:].split(b"\0")[0].decode("utf-8", "ignore")).strip()
             if ma not in (m for m, _ in danhsach):
                 danhsach.append((ma, ten or ma))
@@ -1248,14 +1243,18 @@ class MoiTruong:
         if not tenbandogame:
             return None
         tenbandogame = unicodedata.normalize("NFC", tenbandogame)
-        return tenbandogame.startswith(TIENTOTENPHOBANMUONBANDOs) and self.get_idbandohientai() not in BANDOPHOBANs
+        idbando = self.get_idbandohientai()
+        return (tenbandogame.startswith(TIENTOTENPHOBANMUONBANDOs) or self._is_tentapkich(tenbandogame, idbando)) and idbando not in BANDOPHOBANs
 
     def get_tenphobanmuonbando(self):
         # Đầu tên phó bản mượn ID bản đồ ngoài đang ở ("Phó Bản" / "Tập Kích Môn"), "" nếu ở bản đồ thật hoặc chưa đọc được tên.
         # Chia sẻ qua shared_data ("_phobanmuonbando") để cửa sổ khác phân biệt Phong Yêu Kính với bản đồ thật cùng ID
         tenbandogame = unicodedata.normalize("NFC", self.get_tenbandogame() or "")
-        if not tenbandogame or self.get_idbandohientai() in BANDOPHOBANs:
+        idbando = self.get_idbandohientai()
+        if not tenbandogame or idbando in BANDOPHOBANs:
             return ""
+        if self._is_tentapkich(tenbandogame, idbando):
+            return TIENTOTENBANDOTAPKICHMONPHAI
         return next((tiento for tiento in TIENTOTENPHOBANMUONBANDOs if tenbandogame.startswith(tiento)), "")
 
     def get_is_cungbando(self, info, idbando = None):
@@ -1275,7 +1274,15 @@ class MoiTruong:
     def get_is_bandotapkichmonphai(self):
         # Tập Kích Môn Phái mượn ID 151 (Kênh Trịnh Quốc 1) nên chỉ nhận ra qua tên bản đồ game
         tenbandogame = self.get_tenbandogame()
-        return bool(tenbandogame) and unicodedata.normalize("NFC", tenbandogame).startswith(TIENTOTENBANDOTAPKICHMONPHAI)
+        return bool(tenbandogame) and self._is_tentapkich(unicodedata.normalize("NFC", tenbandogame), self.get_idbandohientai())
+
+    @staticmethod
+    def _is_tentapkich(tenbandogame, idbando):
+        # Aegis tên "Tập Kích Môn Ph..."; Niết Bàn tên khác (chưa biết) nhưng vẫn mượn ID 151: ở ID 151 mà tên không phải Kênh Trịnh Quốc
+        # thì cũng là Tập Kích
+        if tenbandogame.startswith(TIENTOTENBANDOTAPKICHMONPHAI):
+            return True
+        return idbando == BANDO_KENHTRINHQUOC1 and not tenbandogame.startswith(TIENTOTENBANDOKENHTRINHQUOC)
 
     def get_diempk(self):
         x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
@@ -1621,17 +1628,22 @@ class MoiTruong:
             self._goivtableanhien(DC.TG_CUASOYESNO, False)
 
     def _get_diachivongquayso(self):
-        # Cửa sổ vòng quay số Bảo Điển (TG_VONGQUAYSO, client tạo sẵn, vtable 0x590378): + 0x34 đang hiện, + 0xA0 đang quay, + 0xBB tên
-        # món máy chủ trả về để hiện (vtable[1](1) xoá khi hiện lại). Ẩn / hiện bằng vtable[1] như hộp yes / no
+        # Cửa sổ vòng quay số Bảo Điển (TG_VONGQUAYSO, client tạo sẵn, vtable 0x590378): + 0x34 đang hiện, + 0xA0 đang quay, + 0xA2 hoạt
+        # ảnh đã dừng ở món trúng, + 0xA3 còn đồ chờ cộng vào túi, + 0x9C số món chờ, món chờ từ + 0xAE (mỗi món 0x1F4 byte, + 0xBB tên món
+        # đầu). Ẩn / hiện bằng vtable[1] như hộp yes / no (hiện lại thì xoá danh sách món chờ).
+        # Gói "thêm vật phẩm" tới khi vòng quay đang hiện, chưa dừng (+ 0xA2 = 0) mà + 0xA3 = 1 thì client KHÔNG cộng vào túi ngay mà giữ ở
+        # danh sách món chờ (xq + 0x1B58), tới khi hoạt ảnh (vẽ ở vtable[2]) quay tới món trúng mới cộng (xq + 0x11DB60) rồi tắt + 0xA3.
+        # Đóng cửa sổ khi + 0xA3 còn 1 thì hoạt ảnh dừng, đồ máy chủ đã ghi nhận mà túi client không có (đầy túi lúc nào không biết)
         x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         return read_int(self.tientrinh, x + DC.TG_VONGQUAYSO) if x else 0
 
     def get_vongquayso(self):
-        # -> (đang hiện, tên món máy chủ trả về), chưa có cửa sổ thì (False, "")
+        # -> (đang hiện, tên món máy chủ trả về, còn đồ chờ cộng vào túi), chưa có cửa sổ thì (False, "", False)
         x = self._get_diachivongquayso()
         if not x:
-            return False, ""
-        return read_boolean(self.tientrinh, x + 0x34), read_bytes(self.tientrinh, x + 0xBB, 0x20).split(b"\0")[0].decode("utf-8", "ignore").strip()
+            return False, "", False
+        return (read_boolean(self.tientrinh, x + 0x34), read_bytes(self.tientrinh, x + 0xBB, 0x20).split(b"\0")[0].decode("utf-8", "ignore").strip(),
+                read_boolean(self.tientrinh, x + 0xA3))
 
     def action_xoamonvongquayso(self):
         # Xoá tên món cũ trước khi quay, để biết máy chủ đã trả kết quả lượt mới (tên chỉ để hiện, không ảnh hưởng món nhận)
@@ -2449,6 +2461,19 @@ class MoiTruong:
         if not vitri or not diachicosothongtinkynang:
             return None
         return read_bytes(self.tientrinh, diachicosothongtinkynang + (14 * vitri[1] + vitri[0]) * DC.KN_KICHTHUOC + DC.KN_ID, DC.KN_KICHTHUOC)
+
+    def get_tenkynangtheoid(self, idkynang):
+        # Tên đầy đủ lấy ở dòng tiêu đề mô tả trong ô kỹ năng ("\x1bC Giao Long Nhập Hải (Cấp 3)", chỉ có khi game đã lấy mô tả); chưa có
+        # thì lấy tên ở + KN_ID + 0x8 (cố định 0x14 byte, tên dài bị cắt, có khi dính "(Cấp"). Không có trên bảng thì None
+        dulieu = self._docokynangtheoid(idkynang)
+        if not dulieu:
+            return None
+        noidung = unicodedata.normalize("NFC", dulieu.replace(b"\x00", b"\n").decode("utf-8", "ignore"))
+        tieude = re.search(r"\x1bC\s*([^\n\x1b]+?)\s*\(Cấp", noidung)
+        if tieude:
+            return tieude.group(1)
+        ten = unicodedata.normalize("NFC", dulieu[0x8:0x8 + 0x14].split(b"\x00")[0].decode("utf-8", "ignore"))
+        return ten.split("(")[0].strip() or None
 
     def get_is_kynangdahoc(self, idkynang):
         # Ô kỹ năng + KN_ID + OFFSET_KYNANGDAHOC = 3 khi đã học, 0 khi chưa (game dựa vào đây để bôi mờ chiêu chưa học). Đo trên Vân Mộng
@@ -3354,14 +3379,6 @@ class MoiTruong:
     def _ghivatcanhoc(self, that, ke, lydo):
         self._dichkhongcatgoc = None
         idbando = self.get_idbandohientai()
-        if any(math.dist(ke, (x, y)) <= r for x, y, r in VUNGKHONGHOCVATCAN_MAP.get(idbando, ())):
-            # Không ghi file nhưng vẫn né tạm: không nhớ gì thì tìm lại đúng đường cũ, húc mãi 1 chỗ (trưởng đội Phong Yêu Kính ra ở
-            # (248, 158) bị giật về khi bước sang (249, 158) / (250, 158) lặp mãi không tới được Tả Khâu Minh, 2026-11-03)
-            self._lucvuahockhongcatgoc = time.time()
-            self._vatcantam[(idbando, *ke)] = self._lucvuahockhongcatgoc + THOIGIANVATCANTAM
-            self._inlog(f"[ĐI KHÔNG CẮT GÓC] Ở {that} {lydo} {ke}: trong vùng không học vật cản ở bản đồ {idbando}, không ghi, "
-                        f"né tạm {THOIGIANVATCANTAM:.0f}s, tìm đường lại")
-            return True
         themvatcanhoc(idbando, *ke)
         self._lucvuahockhongcatgoc = time.time()
         self._inlog(f"[ĐI KHÔNG CẮT GÓC] Ở {that} {lydo} {ke} (máy chủ chặn, lưới client ghi đi được): ghi {ke} là vật cản ở bản đồ {idbando}, "
@@ -3392,12 +3409,9 @@ class MoiTruong:
         # Ô máy chủ chặn mà lưới client không ghi (bot học khi bị kéo về, _hockhongcatgoc)
         idbando = self.get_idbandohientai()
         hocs = taivatcanhoc(idbando)
-        now = time.time()
-        self._vatcantam = {k: h for k, h in self._vatcantam.items() if h > now}
-        tams = {(x, y) for b, x, y in self._vatcantam if b == idbando}
 
         def trong(x, y):
-            return 0 <= x - ox < rong and 0 <= y - oy < cao and not luoi[x - ox][y - oy] and (x, y) not in hocs and (x, y) not in tams
+            return 0 <= x - ox < rong and 0 <= y - oy < cao and not luoi[x - ox][y - oy] and (x, y) not in hocs
 
         # Khu vực cấm khai tay (KHUVUCCAM_MAP: chỗ đi vào là kẹt, vd Tập Kích Môn Phái (103, 53), (96, 96)): mỗi ô trong đó tính thêm
         # PHATKHUVUCCAMKHONGCATGOC bước (né được thì né; đang đứng / đích ở trong thì vẫn đi ra / vào được)
@@ -3999,6 +4013,7 @@ class MoiTruong:
             # Luồng xử lý lệnh đã ghi lệnh vào game trước khi kịp đăng ký chờ
             cho["guitgt"], cho["gui"] = lenhgui[2], lenhgui[1]
         self._chovankhi = cho
+        return cho
 
     def _danhdauguilenhvankhi(self, caulenh):
         # Gọi ngay sau khi ghi lệnh vào game (luồng xử lý lệnh)
@@ -4022,7 +4037,11 @@ class MoiTruong:
             return
         self._ketthucchovankhi(cho, "lệnh bị bỏ trước khi gửi")
 
-    def _ketthucchovankhi(self, cho, lydo):
+    def _ketthucchovankhi(self, cho, lydo, is_vao = False):
+        # Đánh dấu vào cho ("ketthuc", "vao") để nơi giữ cho biết lệnh có vào vận khí không (Hồi Thành Phù không vào thì không đếm lần)
+        cho["ketthuc"], cho["vao"] = True, is_vao
+        if is_vao and is_lenhtinvat(cho["caulenh"]):
+            self._thoidiemtinvatgannhat = time.time()
         if self._chovankhi is cho:
             self._chovankhi = None
             self._inlog(f"[CHỜ VẬN KHÍ] {cho['ten']} '{cho['caulenh']}': {lydo}")
@@ -4049,7 +4068,7 @@ class MoiTruong:
         thanh = self._docthanhvankhi()
         if thanh and thanh[0] != TRANGTHAIVANKHI_KHONGVANKHI and ((thanh[1] - cho["guitgt"]) & 0xFFFFFFFF) < 0x80000000:
             ten = read_string(self.tientrinh, thanh[2] + 0xE0).strip()
-            return self._ketthucchovankhi(cho, f"vào vận khí '{ten}' sau {round(dagui * 1000)}ms")
+            return self._ketthucchovankhi(cho, f"vào vận khí '{ten}' sau {round(dagui * 1000)}ms", is_vao = True)
         if not cho["chapnhan"] and cho["vitrikynang"] is not None:
             idtuthe = self.get_idtuthenhanvat()
             if idtuthe in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT) or not self.get_is_kynangsansang(cho["vitrikynang"]):
@@ -4060,6 +4079,10 @@ class MoiTruong:
         if dagui < THOIGIANCHOVAOVANKHI:
             return True
         return self._ketthucchovankhi(cho, f"quá {THOIGIANCHOVAOVANKHI}s không thấy thanh vận khí")
+
+    def get_thoigianhoitinvatconlai(self):
+        # Số giây Tín Vật còn hồi (THOIGIANHOITINVAT tính từ lần bot dùng gần nhất vào vận khí), 0 = dùng được
+        return max(0., THOIGIANHOITINVAT - (time.time() - self._thoidiemtinvatgannhat))
 
     def action_huychovankhi(self):
         # Bỏ khoảng chờ vận khí (action_chovankhi) khi chủ động ngắt vận khí để di chuyển / dùng chiêu khác.
@@ -4078,8 +4101,9 @@ class MoiTruong:
             "caulenhduocpheps": set(caulenhduocpheps),
             "ten": ten,
         }
-        self.action_chovankhi(vitrikynang, next(iter(caulenhduocpheps), None), ten = ten)
+        cho = self.action_chovankhi(vitrikynang, next(iter(caulenhduocpheps), None), ten = ten)
         self._inlog(f"[KHOÁ VẬN KHÍ {ten}] bắt đầu, cho phép {sorted(caulenhduocpheps)}")
+        return cho
 
     def get_is_dangxuatchieu(self):
         # Đang xuất chiêu (tư thế tấn công vật lý 6 / phép 9; 11 chỉ còn khi bot tự ghi) hoặc chưa hết THOIGIANKHUNGSAUXUATCHIEU giây

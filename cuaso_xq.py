@@ -275,6 +275,8 @@ class CuaSo:
                     "_danhhieulammoi": self.tactu._danhhieulammoi,
                     "_danhsachdanhhieu": self.tactu.get_danhsachdanhhieu(),
                     "_phantramnoiluckhaithientichdia": self.tactu._phantramnoiluckhaithientichdia,
+                    "_chedokynang": self.tactu._chedokynang,
+                    "_tinhhinhtuhoc": self.tactu.get_tinhhinhtuhoc(),
 
                     "_is_tudongdichuyendiemdanhxungquanh": self.tactu._is_tudongdichuyendiemdanhxungquanh,
                     "_diemdanhxungquanhs": self.tactu._diemdanhxungquanhs,
@@ -288,6 +290,7 @@ class CuaSo:
                     "_is_tudongtrieuhoibaothugiangho": self.tactu._is_tudongtrieuhoibaothugiangho,
 
                     "_is_tudongsudungkynangbaothu": self.tactu._is_tudongsudungkynangbaothu,
+                    "_is_tudongbatnguyenkhiquynguyen": self.tactu._is_tudongbatnguyenkhiquynguyen,
                     "_is_tranhvungcam": self.tactu._is_tranhvungcam,
                     "_is_dilotrinhkhacbando": self.tactu._is_dilotrinhkhacbando,
                     "_is_giukhoangcachketancong": self.tactu._is_giukhoangcachketancong,
@@ -545,6 +548,8 @@ class CuaSo:
                         self.tactu.thietlap_muctieutheosau(int(idmuctieu), tenmuctieu)
                     except Exception as e:
                         print(f"Lỗi khi chọn người theo sau: {e}")
+                elif isinstance(cmd, str) and cmd.startswith("set_chedokynang:"):
+                    self.tactu.thietlap_chedokynang(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_danhhieulammoi:"):
                     self.tactu.thietlap_danhhieulammoi(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_khoangcachsudungkynangtamxa:"):
@@ -705,6 +710,8 @@ class CuaSo:
                     self.tactu.battat_tudongdaotangbaodo()
                 elif cmd == "battat_tudongsudungkynangbaothu":
                     self.tactu.battat_tudongsudungkynangbaothu()
+                elif cmd == "battat_tudongbatnguyenkhiquynguyen":
+                    self.tactu.battat_tudongbatnguyenkhiquynguyen()
                 elif cmd == "action_test":
                     self.tactu.action_test()
                 self.command_dict[self.idcuaso] = None

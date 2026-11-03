@@ -532,7 +532,8 @@ class TacTuHoatDong:
         # Cấp nhân vật tăng (bot tự tăng hay người chơi bấm) thì quay vòng số ở Bảo Điển, mỗi cấp tăng 1 lượt, chỉ khi cấp không quá
         # CAPTOIDAQUAYSO (cao hơn thì bỏ lượt còn chờ). Từng lượt: gửi lần lượt LENHQUAYSOLENCAPs (máy chủ chọn món), Bảo Điển để mở (người
         # dùng xem phần thưởng); trước lệnh cuối ("Khởi động Game") xoá tên món cũ, chờ máy chủ trả tên món (tối đa THOIGIANCHODONGVONGQUAY giây) rồi
-        # đóng vòng quay, mới tới lượt kế. Lần đầu đọc được cấp chỉ ghi nhớ
+        # đóng vòng quay, mới tới lượt kế. Còn đồ chờ cộng vào túi (hoạt ảnh chưa quay tới món trúng) thì chưa đóng, chưa quay lượt kế: đóng
+        # hay hiện lại cửa sổ lúc đó là client mất đồ (máy chủ vẫn ghi nhận, phải thoát game vào lại). Lần đầu đọc được cấp chỉ ghi nhớ
         moitruong = self.moitruong
         capdo = moitruong.get_capdonhanvat()
         if capdo:
@@ -543,8 +544,16 @@ class TacTuHoatDong:
             if capdo > CAPTOIDAQUAYSO and self._soluotquaysocho:
                 moitruong._inlog(f"[QUAY SỐ] cấp {capdo} > {CAPTOIDAQUAYSO}: không quay được, bỏ {self._soluotquaysocho} lượt")
                 self._soluotquaysocho = 0
-        danghien, tenmon = moitruong.get_vongquayso()
+        danghien, tenmon, is_chocongdo = moitruong.get_vongquayso()
         if self._thoidiemguiquayso:
+            if is_chocongdo:
+                if danghien and time.time() - self._thoidiemguiquayso < THOIGIANCHOCONGDOVONGQUAY:
+                    return
+                # Quá lâu hoặc cửa sổ đã bị đóng: không đóng nữa (để hoạt ảnh tự chạy nốt nếu còn hiện), lượt kế chờ đồ cộng xong
+                moitruong._inlog(f"[QUAY SỐ] {tenmon or 'món trúng'} chưa được cộng vào túi client (cửa sổ {'còn' if danghien else 'đã'} "
+                                 f"{'hiện' if danghien else 'đóng'}), còn {self._soluotquaysocho} lượt")
+                self._thoidiemguiquayso = 0.
+                return
             if tenmon:
                 moitruong._inlog(f"[QUAY SỐ] máy chủ trả {tenmon}, còn {self._soluotquaysocho} lượt")
             elif time.time() - self._thoidiemguiquayso >= THOIGIANCHODONGVONGQUAY:
@@ -556,7 +565,8 @@ class TacTuHoatDong:
                 moitruong.action_dongvongquayso()
             return
         if not self._lenhquaysochos:
-            if not self._soluotquaysocho:
+            # Lượt trước còn đồ chờ cộng: "zgdict rock open" hiện lại cửa sổ sẽ xoá danh sách món chờ
+            if not self._soluotquaysocho or (danghien and is_chocongdo):
                 return
             self._soluotquaysocho -= 1
             self._lenhquaysochos = list(LENHQUAYSOLENCAPs)
@@ -743,6 +753,11 @@ class TacTuHoatDong:
             return
 
         if time.time() - self._thoidiemdichientruonggannhat < 0.5:
+            return
+
+        # Đang tự đi phó bản (tactu_langlyson_xq): không kéo về Trương Quả Lão (Chu Quốc (245, 158)), không thì giành đường với phó bản
+        # (trưởng đội Phong Yêu Kính ra cạnh Tả Khâu Minh đi bán rác ở Chủ Tiệm Y Dược bị kéo qua kéo lại tại chỗ 2 phút, 2026-11-03)
+        if self.get_is_danglanglyson():
             return
 
         idbandohientai = self.moitruong.get_idbandohientai()

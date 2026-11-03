@@ -93,6 +93,15 @@ LENHHOIMONPHAI = "dGludmF0 1"
 # Niết Bàn không có tinvat 1 / 2: kỹ năng "Sử dụng tín vật" (thẻ Cơ Bản, id 61, đọc bảng kỹ năng 2026-11-02) về môn phái, đứng cạnh
 # Xa Phu, nói chuyện "1. Chấp nhận" về Tân Thủ Thôn; quá THOIGIANXAPHUNIETBAN giây chưa về được thì thôi
 LENHTINVAT_NIETBAN = "pf2 61"
+# Tín Vật (Niết Bàn "pf2 61", 2D "dGludmF0 ...") giãn cách 60s (người dùng dặn 2026-11-03): gửi trong lúc hồi thì game không vận khí,
+# đừng tưởng là không dùng được. Tính từ lúc vào vận khí, dư 2s
+THOIGIANHOITINVAT = 62.
+
+
+def is_lenhtinvat(caulenh):
+    return bool(caulenh) and (caulenh == LENHTINVAT_NIETBAN or caulenh.startswith("dGludmF0 "))
+
+
 TENXAPHU_NIETBANs = ("Xa Phu", "Thị Giả")
 THOIGIANXAPHUNIETBAN = 90.
 GIAPHUTANTHUTIENCO = 500
@@ -320,6 +329,8 @@ TUTHENHANVAT_NGOI = 4
 TUTHENHANVAT_TANCONGVATLY = 6
 TUTHENHANVAT_TANCONGPHEPTHUAT = 9
 TUTHENHANVAT_DELAYSAUTANCONG = 11
+# Tư thế lỗi: dính chiêu boss Kính Ma Hổ Dực (PYK, hiệu ứng 2114) thì kẹt ở đây, mất hình, client không tự bước (không gửi go) => ghi về đứng im
+TUTHENHANVAT_LOI = 15
 
 LOAIMUCTIEU_QUAIVATHOACNPC = 0
 LOAIMUCTIEU_NGUOICHOIKHACNHOM = 1
@@ -514,6 +525,7 @@ KYNANGCHOPHEPTHEONHANVAT_MAP = {
 }
 VITRIKYNANG_THANTUEPHAPCHU = 4171
 
+VITRIKYNANG_MANGXAXUATDONG = 2410
 VITRIKYNANG_GIAOLONGNHAPHAI = 2411
 VITRIKYNANG_TRUCDAOHOANGLONG = 2414
 VITRIKYNANG_THIENLYTATSAT = 2413
@@ -572,6 +584,8 @@ THOIGIANGUILAITANGCAP = 3.
 LENHQUAYSOLENCAPs = ("zgdict open", "zgdict rock open", "zgdict rock start")
 THOIGIANGIUALENHQUAYSO = 1.
 THOIGIANCHODONGVONGQUAY = 10.
+# Có kết quả rồi thì chờ hoạt ảnh quay tới món trúng (client mới cộng đồ vào túi) tối đa chừng này giây tính từ "Khởi động Game"
+THOIGIANCHOCONGDOVONGQUAY = 30.
 # Chỉ quay được khi cấp nhân vật không quá chừng này (người dùng dặn 2026-11-02): cấp cao hơn thì bỏ các lượt còn chờ
 CAPTOIDAQUAYSO = 29
 # Đào Hoa Nguyên chỉ "kill" (bật đánh thường) khi nguyên khí không quá chừng này: còn nguyên khí thì spam chiêu, đánh thường làm chiêu ra chậm.
@@ -685,6 +699,13 @@ HIEUUNGKYNANG_KIMSUBOPHAP = 2422
 HIEUUNGKYNANG_NGULOIAPDINH = 2516
 HIEUUNGKYNANG_SINHTUTHANLUC = 3484
 HIEUUNGKYNANG_THIENNGUYENDON = 298
+# Cấm Vệ Quân (mô tả đọc 2026-11-03, cấp 54, thương): Luân Hồi Vạn Chuyển game chỉ cho dùng khi Khí Huyết dưới 70% (trừ hao 2%);
+# nguyên khí từ mức này trở lên mới lót thêm Mãng Xà Xuất Động sau Giao Long Nhập Hải
+PHANTRAMSINHLUCLUANHOIVANCHUYEN = 68
+# "kill" Cấm Vệ Quân (_guikillcamvequan): đứng im có mục tiêu quá chừng này giây là đánh thường đã tắt, gửi lại; 2 lần gửi cách nhau tối thiểu
+THOIGIANDUNGIMGUILAIKILLCAMVEQUAN = 0.3
+THOIGIANCHOGUILAIKILLCAMVEQUAN = 1.
+NGUYENKHIDUCAMVEQUAN = 8
 
 HIEUUNGKYNANG_NGUYENKHIQUYNGUYEN = 3172
 HIEUUNGKYNANG_HOTHEKIMCANG = 3173
@@ -843,6 +864,8 @@ TIENTOTENPHOBANMUONBANDOs = ("Phó Bản", "Tập Kích Môn", "Chiến Quốc T
 TIENTOTENBANDOPHONGYEU = ("Phó Bản Phong", "Chiến Quốc Tr")
 # Đầu tên bản đồ Tập Kích Môn Phái: gom quái tới khi mọi con thấy được đều đã gom 1 lần mới dừng đánh
 TIENTOTENBANDOTAPKICHMONPHAI = "Tập Kích Môn"
+# Tên bản đồ thật ID 151: Niết Bàn đặt tên phó bản Tập Kích khác, ở ID 151 mà tên không bắt đầu bằng chữ này thì là Tập Kích
+TIENTOTENBANDOKENHTRINHQUOC = "Kênh Trịnh"
 # Vừa ra khỏi phó bản mượn ID bản đồ ngoài (Phong Yêu Kính): chờ chừng này giây mới tự chọn lộ trình mẫu (ID bản đồ đổi sau tên)
 THOIGIANCHONAPLOTRINHROIPHOBAN = 1.5
 
@@ -1158,6 +1181,10 @@ CAPDOTOITHIEUTETHANTUONG = 60
 PHANTRAMSINHLUCTETHANTUONG = 25
 # Mệnh Tế hồi cho cả nhóm trong 21x21 ô quanh bản thân (10 ô mỗi phía)
 KHOANGCACHHIEUQUAMENHTE = 10
+# Thực tế xa quá thì đồng đội không được hồi: chỉ Mệnh Tế khi đồng đội cần hồi trong KHOANGCACHSUDUNGMENHTE ô,
+# đồng đội cần hồi ở xa hơn (trong KHOANGCACHTIMTHANHVIENMENHTE ô) thì tiếp cận tới KHOANGCACHSUDUNGMENHTE ô rồi mới dùng
+KHOANGCACHSUDUNGMENHTE = 8
+KHOANGCACHTIMTHANHVIENMENHTE = 18
 
 # Bảo thú kỹ năng triệu hồi xa nhân vật quá KHOANGCACHGOIBAOTHUVE ô thì gọi theo sau, tới khi về trong KHOANGCACHBAOTHUDAVE ô mới cho đánh tiếp
 KHOANGCACHGOIBAOTHUVE = 18.
@@ -1171,6 +1198,53 @@ THOIGIANGOIBAOTHUVE = 0.5
 # cho game kịp chuyển tư thế (nếu không sẽ gửi tiếp chiêu khác, cắt ngang chiêu vừa gửi). Phải ngắn hơn 1 vòng bot (~0.123s):
 # 0.15 làm cứ gửi 1 vòng lại bỏ 1 vòng => spam chiêu thực tế 0.25s/lần (đo log 2026-10-28), lúc server nhận bị làm tròn theo 0.25s
 THOIGIANCHOPHANUNGLENH = 0.1
+
+# Chế độ kỹ năng (tactu_tuhockynang_xq.py): Luật cố định = danh sách ưu tiên viết tay; Tự học = cùng danh sách, chiêu đánh mục tiêu xếp
+# lại theo chuỗi chiêu bộ lập kế hoạch chọn. Đo bằng số bay: số mới trên mục tiêu tính cho chiêu đã nhận gần nhất gửi cách >=
+# THOIGIANTRESOBAYTUHOC giây (máy chủ trả chậm), mỗi chiêu nhận số bay tối đa THOIGIANCUASOSOBAYTUHOC giây; chỉ tính chiêu máy chủ đã nhận
+# (vào hồi chiêu / sang tư thế TUTHEXUATCHIEUTUHOCs). Client chỉ hiện số bay của chính mình nên đánh nhóm vẫn đo được
+CHEDOKYNANG_CODINH = "codinh"
+CHEDOKYNANG_TUHOC = "tuhoc"
+THOIGIANTRESOBAYTUHOC = 0.3
+THOIGIANCUASOSOBAYTUHOC = 1.5
+THOIGIANKHOAMACDINHTUHOC = 0.7
+THOIGIANKHOATOITHIEUTUHOC = 0.25
+TUTHEXUATCHIEUTUHOCs = (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT, TUTHENHANVAT_DELAYSAUTANCONG)
+# Số liệu: phiên bản tệp (đổi thì học lại từ đầu), giữ SOMAUTOIDATUHOC chiêu đo gần nhất, SOTRANTOIDATUHOC con mỗi loại quái / chế độ
+# cho sát thương / giây cả trận (con đánh dưới THOIGIANTRANTOITHIEUTUHOC giây không tính)
+PHIENBANTUHOC = 2
+SOMAUTOIDATUHOC = 4000
+SOTRANTOIDATUHOC = 300
+THOIGIANTRANTOITHIEUTUHOC = 1.5
+# Học: mỗi THOIGIANHOCLAITUHOC giây khi có mẫu mới. Chiêu chưa đủ SOMAUTOITHIEUTUHOC mẫu coi như mạnh nhất đã biết (để dùng thử),
+# chưa biết chiêu nào thì SATTHUONGMACDINHTUHOC. Ảnh hưởng hiệu ứng chỉ xét hiệu ứng có >= SOMAUHIEUUNGTUHOC mẫu có và không có nó,
+# kéo về 0 với độ mạnh LAMDAHIEUUNGTUHOC. Chiêu "gây" hiệu ứng khi nó xuất hiện mới sau chiêu >= TILEGAYHIEUUNGTUHOC số lần;
+# hiệu ứng chưa đo được thời gian tồn tại thì coi THOIGIANHIEUUNGMACDINHTUHOC giây, chiêu không ghi hồi chiêu thì THOIGIANHOIMACDINHTUHOC
+SOMAUTOITHIEUTUHOC = 5
+SATTHUONGMACDINHTUHOC = 500.
+SOMAUHIEUUNGTUHOC = 8
+LAMDAHIEUUNGTUHOC = 3.
+TILEGAYHIEUUNGTUHOC = 0.5
+THOIGIANHIEUUNGMACDINHTUHOC = 5.
+THOIGIANHOIMACDINHTUHOC = 1.
+THOIGIANHOCLAITUHOC = 30.
+# Hiệu ứng mới do chiêu gây ra: so hiệu ứng trên quái lúc gửi với lúc này giây sau (hoặc lúc gửi chiêu kế nếu sớm hơn)
+THOIGIANDOHIEUUNGMOITUHOC = 0.6
+# Lập kế hoạch: chuỗi chiêu cho THOIGIANKEHOACHTUHOC giây tới, tìm chùm rộng DORONGCHUMTUHOC, tối đa SOBUOCTOIDATUHOC chiêu, tính lại
+# mỗi THOIGIANTINHKEHOACHTUHOC giây (chế độ Luật cố định: mỗi giây, chỉ để hiện ở giao diện)
+THOIGIANKEHOACHTUHOC = 8.
+# Sát thương dự kiến ra sau t giây nhân GIAMDANTUHOC ** t: cùng tổng thì chuỗi ra sát thương lớn sớm hơn được chọn
+GIAMDANTUHOC = 0.93
+DORONGCHUMTUHOC = 12
+SOBUOCTOIDATUHOC = 8
+THOIGIANTINHKEHOACHTUHOC = 0.25
+THOIGIANLUUTUHOC = 60.
+THOIGIANLOGTUHOC = 300.
+IS_LOGTUHOC = True
+# Chiêu vẫn giữ chỗ viết tay ở chế độ Tự học (để trống: bộ lập kế hoạch tự học cả phá giáp / khống chế qua ảnh hưởng hiệu ứng)
+CHIEUGIULUATTUHOCs = ()
+# Môn phái vẫn dùng luật cố định ở chế độ Tự học (để trống: chế độ do người dùng chọn quyết định)
+MONPHAIKHONGTUHOCs = ()
 # Côn Luân Đằng Vân Giá Vũ: lướt xong máy chủ không nhận chiêu ~2s (log 273 2026-10-30: <1s sau lướt 64% chiêu không ra, 1-2s 53%,
 # >3s 16%) => trong ngần này giây không gửi chiêu (tránh khoá chống spam oan), đi bộ vào gần hơn tầm xa KHOANGCACHGANTHEMSAULUOT ô.
 # Khi đánh chỉ lướt lúc mục tiêu xa hơn tầm xa + KHOANGCACHLUOTTHEMKHITANCONG ô (đi bộ ngần đó ô ~ bằng thời gian chờ sau lướt),
@@ -1439,4 +1513,3 @@ VIECCOVONGs = ("tapkich", "langlyson", "thanhkieu", "phongyeukinh")
 # Việc riêng hiện cuối bảng hàng việc (bấm Làm ngay / thiết lập chung một chỗ) nhưng không chạy theo hàng việc
 VIECRIENG_MAP = {"matac": "Mã Tặc", "keocap": "Kéo cấp acc gà"}
 
-MOCSINHLUCSUDUNGNGUYENKHIQUYNGUYEN = 2000

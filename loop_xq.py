@@ -8,7 +8,7 @@ import unicodedata
 
 import pymem.exception
 
-from hangso_xq import IS_BOKHUNGSAUTANCONG, CHUKYBOKHUNGSAUTANCONG, THOIGIANCHOBOKHUNGSAUTANCONG, TUTHENHANVAT_DELAYSAUTANCONG, CHUKYGIUOTRONGHANHTRANG
+from hangso_xq import IS_BOKHUNGSAUTANCONG, CHUKYBOKHUNGSAUTANCONG, THOIGIANCHOBOKHUNGSAUTANCONG, TUTHENHANVAT_DELAYSAUTANCONG, TUTHENHANVAT_LOI, CHUKYGIUOTRONGHANHTRANG
 from hangso_xq import BANDO_BANGPHAI, TRUONGPHONGTIENSINH, RUONGDUTRU
 from hangso_xq import BANDO_CHIENTRUONG, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, BANDO_YENTRUONGTHANH3, BANDO_YENTRUONGTHANH2, BANDO_YENTRUONGTHANH1, TANGBAODO, LAMCAU, HACCAU, HIEUUNGKYNANG_TRONGTHUONG
 from moitruong_xq import MoiTruong
@@ -418,10 +418,17 @@ class LoopBoKhungSauTanCong:
         self.stop = stop
         # Lúc nhân vật bắt đầu vào tư thế khựng sau đòn (0 = không đang khựng)
         self.thoidiembatdaukhung = 0.
+        # Lần log gần nhất khi ghi bỏ tư thế lỗi (TUTHENHANVAT_LOI): luồng chạy 0.02s/lượt, game ghi lại liên tục thì khỏi tràn log
+        self.thoidiemlogtuthelo = 0.
 
     def loop(self):
         while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():
             try:
+                if self.moitruong.get_is_nhanvattontai() and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_LOI:
+                    self.moitruong.set_idtuthenhanvat(TUTHENHANVAT_DUNGIM)
+                    if time.time() - self.thoidiemlogtuthelo > 5:
+                        self.thoidiemlogtuthelo = time.time()
+                        self.moitruong._inlog("[BỎ TƯ THẾ LỖI] tư thế 15 => ghi về đứng im")
                 if IS_BOKHUNGSAUTANCONG and self.moitruong.get_is_nhanvattontai() and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DELAYSAUTANCONG:
                     if not self.thoidiembatdaukhung:
                         self.thoidiembatdaukhung = time.time()
