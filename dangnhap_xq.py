@@ -36,9 +36,9 @@ SOLANDANGNHAPLAICUASODIS = 2
 # quá 4 thì báo "You can not run more client program!" và treo cả quy trình đăng nhập. Niết Bàn được DLL của nó nâng lên 7, Aegis vẫn 4:
 # client bot mở được vá lên số này (mogame), client mở tay qua play.exe vẫn bị giới hạn 4. Đổi file exe Aegis thành "XQ.exe" thì không
 # bản nào đếm client Aegis nữa
-SOCLIENTTOIDA = 8
+SOCLIENTTOIDA = 20
 # Niết Bàn không vá mã được (client không hợp lệ): giới hạn do DLL của nó đặt
-GIOIHANCLIENTNIETBAN = 7
+GIOIHANCLIENTNIETBAN = 20
 
 # Rớt khỏi game chừng này lần trong THOIGIANDEMBIDA giây thì coi như đang giành tài khoản với máy khác: tạm hoãn tự đăng nhập
 # tài khoản đó THOIGIANTAMHOAN giây (xem TuDongDangNhap._theodoiroigame)
