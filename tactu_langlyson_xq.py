@@ -38,7 +38,7 @@ from giaodo_xq import taolenhgiao
 from luattuido_xq import HANHDONG_BAN
 from thongbao_xq import baosuco
 from tienich_xq import phatam, taicauhinhphongyeu, CAUHINHPHONGYEU_MACDINH, taitiendophoban, luutiendophoban, taivitrithoyeu, \
-    luuvitrithoyeu
+    luuvitrithoyeu, taibossphongyeu, luubossphongyeu
 
 BANDO_THUYHOASON = 82
 NPCVAOLANGLYSON = ("Đào Vong Khổ Dịch", 137, 117)
@@ -118,6 +118,11 @@ TUBOSSPHONGYEUs = ("Vương Tàn Phách", "Kính Ma", "Oan hồn", "Oan Hồn")
 TUKHONGPHAIBOSSPY = "Quốc"
 # Đọc boss các thành viên khác đã giết (shared_data, cả máy khác nối LAN) mỗi chừng này giây
 GIANCACHDOCBOSSPY = 1.
+# Boss đã giết lưu ra file (taibossphongyeu) mỗi chừng này giây khi ở trong phó bản (và ngay khi có boss mới); mở lại bot giữa phó bản
+# (2026-11-04 07:32 mở lại cả nhóm sau boss 1 -> về 0/2, boss 2 chỉ thành 1/2) thì lấy lại nếu lần lưu cuối chưa quá THOIGIANGIUBOSSPY
+# giây, cùng bản đồ (lâu hơn thì có thể đã sang vòng khác)
+GIANCACHLUUBOSSPY = 20.
+THOIGIANGIUBOSSPY = 180.
 # Chọn "ta muốn đi" / "ta muốn vào" xong chờ được đưa vào tối đa chừng này giây rồi mới hỏi lại Tả Khâu Minh (không give thêm)
 THOIGIANCHOVAOPHONGYEU = 30.
 GIANCACHCHONMENUPHONGYEU = 2.
@@ -148,6 +153,11 @@ GIANCACHDOCDOTHANHVIENPY = 3.
 GIANCACHGIAODOPY = 4.
 SOLANGIAODOPY = 3
 KHOANGCACHGIAODOPY = 3.
+# Người give còn đồ: trước khi chọn món đốt báo cấp món thấp nhất ("_pylamkim" {"can", "capthap"}), thành viên còn đồ đốt được cấp thấp
+# hơn thì give sang (luôn đốt món thấp nhất cả nhóm). Chờ mọi thành viên báo không còn đồ thấp hơn, ít nhất THOIGIANCHODOTHAPTOITHIEUPY
+# giây (thành viên kịp đọc báo), quá THOIGIANCHODOTHAPPY giây thì thôi, đốt món mình đang có
+THOIGIANCHODOTHAPPY = 60.
+THOIGIANCHODOTHAPTOITHIEUPY = 3.
 KHOANGCACHTOIDIEMPY = 3.
 THOIGIANMOIDIEMPY = 25.
 # "Nhặt và bán rác" (cấu hình Phong Yêu Kính): ra Chu Quốc thì tới Chủ Tiệm Y Dược (gần Tả Khâu Minh nhất) bán rác trước khi vào vòng sau,
@@ -155,6 +165,11 @@ THOIGIANMOIDIEMPY = 25.
 NPCBANRACPY = ("Chủ Tiệm Y Dược", 250, 176)
 KHOANGCACHBANRACPY = 3.
 THOIGIANBANRACPY = 120.
+# Món luôn bán khi bán rác Phong Yêu Kính (kể cả tên màu, không có luật Bán), trừ khi khớp luật Giữ / Vứt / Cất kho của người dùng
+TENLUONBANPYs = ("Tinh Nguyên Đơn",)
+# Bán rác xong mà hành trang còn ít hơn chừng này ô trống thì bán thêm đồ Lam Kim (chữ xanh) cho đủ, không thì vào phó bản đầy túi
+# không nhặt được (2026-11-04). Không bao giờ bán thêm đồ Hoàng Kim / có sao / luật Giữ / Cất kho
+SOOTRONGTOITHIEUPY = 6
 # Chia vùng dò: tính lại người cùng dò mỗi chừng này giây (người rớt / vào sau thì chia lại đoạn)
 GIANCACHCHIAVUNGPY = 3.
 # Phó bản tự đi được: bandovao tầng đầu, bandonpc + npc nơi vào / nhận thưởng. luachonvao None: vào bằng lối đi NPC (LOIDINPC_MAP, lựa
@@ -205,6 +220,8 @@ KHOANGCACHNPCXONG = 20.
 LUACHONRANPCXONG = 0
 # Giết xong boss cuối chờ chừng này giây (nhặt đồ) rồi mới Hồi Thành Phù ra
 THOIGIANCHORA = 8.
+# Phong Yêu Kính đủ điều kiện ra: chờ ít nhất THOIGIANCHORA, còn món đang nhặt (Tự động nhặt) thì chờ tiếp tới tối đa chừng này giây
+THOIGIANCHONHATDOTOIDAPY = 40.
 # Boss cuối đã chết mà chưa đọc được tin "hoàn thành phó bản" (tin có thể không vào khung trò chuyện): chờ tối đa chừng này giây rồi mới ra
 THOIGIANCHOTINHOANTHANH = 15.
 # Nói chuyện NPC trong phó bản: chờ menu, chọn rồi chờ vận khí bắt đầu tối đa chừng này giây, không thì nói lại; quá SOLANTHUNOICHUYEN
@@ -217,6 +234,8 @@ THOIGIANCHOMENULLS = 3.
 THOIGIANCHOVANKHILLS = 5.
 SOLANTHUNOICHUYEN = 3
 GIANCACHROINHOM = 5.
+# Ra Phong Yêu Kính bằng giải tán nhóm: quá chừng này giây vẫn còn trong phó bản thì nói chuyện Thỏ Yêu như cũ
+THOIGIANGIAITANRAPY = 20.
 # Trưởng nhóm lĩnh xong chờ thành viên cùng máy tự lĩnh tối đa chừng này giây rồi mới giải tán tổ đội
 THOIGIANCHOTHANHVIENLANH = 120.
 # Giải tán tổ đội cũ: tạm tắt Tổ đội tự động ở mọi người, chờ hết người trong nhóm cũ tối đa chừng này giây rồi bật lại
@@ -460,7 +479,8 @@ class TacTuLangLySon:
             return None
         s["chedo"] = "dichuyen"
         if s["phoban"] == "phongyeukinh" and self._is_trongphongyeu() and taicauhinhphongyeu()["is_nhatbanrac"]:
-            # Đã vào Phong Yêu Kính có nhặt đồ: ra tới Chu Quốc thì bán rác trước khi vào vòng sau (_banracphongyeu)
+            # Đã vào Phong Yêu Kính, bật Bán rác ở cấu hình Phong Yêu Kính: ra tới Chu Quốc thì bán rác trước khi vào vòng sau
+            # (_banracphongyeu)
             s["canbanracpy"] = True
         if s["giaidoan"] == "vao" and moitruong.get_is_dangnamtrongnhom() and not moitruong.get_is_truongnhom() \
                 and s["phoban"] == "phongyeukinh" and not self._is_tudongtheosau and self._is_trongphongyeu():
@@ -1225,7 +1245,7 @@ class TacTuLangLySon:
                  lucchodoi = 0., lucmoi = {}, diemvao = {}, daxongphoban = False, davao = False)
         # Phong Yêu Kính: vòng mới được give món mới
         for khoa in ("py", "giao", "dagive", "dolamkim", "lucchonvaopy", "solanvaolaipy","dadescpy",
-                     "lucdagive", "lucnhom1", "is_boranpcxong"):
+                     "lucdagive", "lucnhom1", "is_boranpcxong", "lucgiaitanpy"):
             s.pop(khoa, None)
         self._logpb(s, f"Có tổ đội mới, bắt đầu vòng {s['sovong'] + 1}")
         return None
@@ -1249,7 +1269,10 @@ class TacTuLangLySon:
         if "đã Phong Ấn" in dongs[0] or "Khoá" in dongs[0] or "Khóa" in dongs[0]:
             return None
         # Chỉ đồ chưa giám định: đồ có sao (★) cũng là đồ đã làm gì đó, bỏ luôn; tắt thì đốt cả đồ đã giám định
-        if cauhinh["is_chichuagiamdinh"] and ("Chưa giám định" not in sach or "★" in sach):
+        if cauhinh["is_chichuagiamdinh"] and "Chưa giám định" not in sach:
+            return None
+        # Đồ có sao (★, đã ép) không bao giờ đem đốt, kể cả khi tắt "chỉ chưa giám định"
+        if "★" in sach:
             return None
         tenthuong = dongs[0].lower()
         if any(unicodedata.normalize("NFC", t).lower() in tenthuong for t in cauhinh["khongdot"]):
@@ -1319,6 +1342,7 @@ class TacTuLangLySon:
         tennpc, x, y = cauhinh["npc"]
         tengive = self._laytencungmay(idgive) or idgive
         s.pop("py", None)
+        self._xoabosspy()
         s["diemvao"] = {}
         s.update(momophongyeu = False, lathanhvien = True)
         yeucau = self._dualamkimchonguoigive(s, idgive)
@@ -1360,7 +1384,40 @@ class TacTuLangLySon:
             return None
         if s.get("candolamkim") is not None:
             return {"can": s["candolamkim"]}
+        if s.get("capthapgive"):
+            return s["capthapgive"]
         return s.get("pylamkim")
+
+    def _chodothapthanhvien(self, s, chon):
+        # Người give đã có món đốt được (chon): báo cấp món đó, chờ thành viên có đồ cấp thấp hơn give sang. -> True khi còn chờ
+        now = time.time()
+        ten = self._tenpb(s)
+        thanhviens = self._laynhompy()[1]
+        if not thanhviens:
+            return False
+        s["capthapgive"] = {"can": self._laycapdolamkimtoithieu(), "capthap": chon[0]}
+        batdau = s.setdefault("lucchodothap", now)
+        if now - batdau > THOIGIANCHODOTHAPPY:
+            if not s.get("dalogchodothap"):
+                s["dalogchodothap"] = True
+                self._logpb(s, f"Chờ {int(THOIGIANCHODOTHAPPY)}s thành viên đưa đồ cấp thấp hơn chưa xong: đốt món đang có (cấp {chon[0]})")
+            return False
+        idtoi = self.moitruong.get_idnguoichoi()
+        chos = []
+        for idtv in thanhviens:
+            info = self._laythongtinnguoichoi(idtv)
+            if not info:
+                continue
+            bao = info.get("_pylamkim") or {}
+            if not info.get("_is_danglanglyson") or (bao.get("idgive") == idtoi and bao.get("co") is False and bao.get("capthap") == chon[0]):
+                # Không chạy Phong Yêu Kính thì không chờ; đã báo không còn đồ thấp hơn. Chưa báo (đang bán rác, đang về Chu Quốc) thì chờ
+                continue
+            chos.append(info.get("tennhanvat") or f"ID {idtv}")
+        if chos or now - batdau < THOIGIANCHODOTHAPTOITHIEUPY:
+            s["trangthai"] = f"vào {ten}: món thấp nhất của mình cấp {chon[0]}, chờ " + (f"{', '.join(chos)} " if chos else "thành viên ") + \
+                             "xem có đồ cấp thấp hơn đưa sang"
+            return True
+        return False
 
     def _laythongtinnguoichoi(self, idnguoichoi):
         # shared_data của người chơi idnguoichoi (cùng máy / LAN, còn cập nhật), không có thì None
@@ -1423,31 +1480,39 @@ class TacTuLangLySon:
         # đang lo đưa đồ, False khi không cần (để đi tiếp như thành viên thường)
         moitruong = self.moitruong
         now = time.time()
+        # Người give còn đồ thì báo thêm "capthap" (cấp món thấp nhất của nó, _chodothapthanhvien): chỉ đưa món cấp thấp hơn, kể cả khi kéo
+        # cấp (hết đồ hẳn thì khi kéo cấp acc chính tự lo đưa đồ)
         info = self._laythongtinnguoichoi(idgive)
-        can = ((info or {}).get("_pylamkim") or {}).get("can")
-        if can is None or self._keocap:
+        baogive = (info or {}).get("_pylamkim") or {}
+        can, capthap = baogive.get("can"), baogive.get("capthap")
+        if can is None or (self._keocap and capthap is None):
             s.pop("pylamkim", None)
             s.pop("duado", None)
             return False
         bao = s.setdefault("pylamkim", {"idgive": idgive, "co": None})
         d = s.get("duado")
-        if not d or d["idgive"] != idgive:
-            d = s["duado"] = {"idgive": idgive, "lucdoc": 0., "ds": None, "lucgive": 0., "solan": 0, "somon": None}
-            bao.update(idgive = idgive, co = None)
+        if not d or d["idgive"] != idgive or d.get("capthap") != capthap:
+            d = s["duado"] = {"idgive": idgive, "lucdoc": 0., "ds": None, "lucgive": 0., "solan": 0, "somon": None, "capthap": capthap}
+            bao.update(idgive = idgive, co = None, capthap = capthap)
         if bao["co"] is False:
             return False
         if now - d["lucdoc"] > GIANCACHDOCDOTHANHVIENPY or d["ds"] == "doc":
             ds = self._chondolamkim(s, captoithieu = can, is_tatca = True)
             if ds != "doc":
                 d["lucdoc"] = now
+                if capthap is not None:
+                    ds = [mon for mon in ds if mon[0] < capthap]
             d["ds"] = ds
         ds = d["ds"]
         tengive = info.get("tennhanvat") or str(idgive)
+        yeucaudo = f"đồ Lam Kim cấp {can}-{capthap - 1}" if capthap is not None else f"đồ Lam Kim (cấp ≥ {can})"
         if ds == "doc":
-            s["trangthai"] = f"thành viên: {tengive} hết đồ, đọc túi tìm đồ Lam Kim (cấp ≥ {can})"
+            s["trangthai"] = f"thành viên: {tengive} " + ("cần đồ thấp hơn cấp " + str(capthap) if capthap is not None else "hết đồ") + \
+                             f", đọc túi tìm {yeucaudo}"
             return None
         if not ds:
-            self._logpb(s, f"{tengive} xin đồ Lam Kim (cấp ≥ {can}): mình " + ("đã đưa hết" if d["somon"] else "không có"))
+            if capthap is None or d["somon"]:
+                self._logpb(s, f"{tengive} xin {yeucaudo}: mình " + ("đã đưa hết" if d["somon"] else "không có"))
             bao["co"] = False
             return False
         if d["somon"] is not None and len(ds) < d["somon"]:
@@ -1552,10 +1617,15 @@ class TacTuLangLySon:
             return None
         return self._giaophongyeu(s, tennpc, x, y)
 
-    def get_is_nhatbanracphongyeu(self):
-        # Đang đi Phong Yêu Kính có bật "Nhặt và bán rác": luật nhặt "chỉ khi về bán rác" cũng xét như khi bật Tự động về bán rác
+    def get_is_dangphongyeukinh(self):
+        # Đang tự đi Phong Yêu Kính: bán rác do _banracphongyeu lo (ra Chu Quốc bán ở Chủ Tiệm Y Dược), luồng Về bán rác thường
+        # (Hồi Thành Phù về Tân Thủ Thôn) phải nghỉ, không thì túi đầy trong phó bản là về thành mất phó bản
         s = self._langlyson
-        return bool(s) and s["phoban"] == "phongyeukinh" and taicauhinhphongyeu()["is_nhatbanrac"]
+        return bool(s) and s["phoban"] == "phongyeukinh"
+
+    def get_is_nhatbanracphongyeu(self):
+        # Đang đi Phong Yêu Kính có bật Bán rác (cấu hình Phong Yêu Kính): luật nhặt "chỉ khi về bán rác" cũng xét
+        return self.get_is_dangphongyeukinh() and taicauhinhphongyeu()["is_nhatbanrac"]
 
     def _banracphongyeu(self, s):
         # Ra Chu Quốc sau vòng Phong Yêu Kính: tới Chủ Tiệm Y Dược bán rác. Bán theo luật túi đồ như Về bán rác (không khớp luật nào / luật
@@ -1575,7 +1645,7 @@ class TacTuLangLySon:
             return False
 
         if not taicauhinhphongyeu()["is_nhatbanrac"]:
-            return xong("Đã tắt Nhặt và bán rác, thôi bán")
+            return xong("Đã tắt Bán rác (cấu hình Phong Yêu Kính), thôi bán")
         if b["somon"] is not None:
             if self.get_is_dangbanrac() or now < self._thoidiemguibanractieptheo:
                 s["trangthai"] = f"bán rác ở {tennpc}: còn {len(self._hangdoibanrac)}/{b['somon']} món"
@@ -1591,10 +1661,19 @@ class TacTuLangLySon:
         idnpc = moitruong.get_iddoituong(diachinpc)
         if not idnpc or idnpc <= 0:
             return None
-        lenhs, sodesc, soguidesc = [], 0, 0
+        lenhs, sodesc, soguidesc, boquas = [], 0, 0, []
+        # Đồ Lam Kim đang chừa, bán thêm khi thiếu ô trống: (thứ tự ưu tiên, ô, id, tên). Món không đem đốt được bán trước; món đem đốt
+        # được thì bán món cấp / giá cao trước, chừa món cấp thấp cho _chondolamkim đem đốt
+        lamkims = []
+        cauhinh = taicauhinhphongyeu()
+        captoithieu = self._laycapdolamkimtoithieu()
+        vitrimos = set(moitruong.get_danhsachvitrimohanhtrang())
+        sootrong = 0
         for vitri in range(min(moitruong.get_soluongvatphamhanhtrangtoida() + 1, VITRITRANGBIDAUTIEN)):
             iddoituong = moitruong.get_iddoituongvatphamhanhtrang(vitri)
             if not iddoituong or iddoituong <= 0:
+                if vitri in vitrimos:
+                    sootrong += 1
                 continue
             ten = moitruong.get_tenvatphamhanhtrang(vitri)
             if not ten:
@@ -1614,13 +1693,49 @@ class TacTuLangLySon:
                         soguidesc += 1
                         b["dadesc"][(vitri, iddoituong)] = (now, solan + 1)
                         moitruong.get_motavatphamhanhtrang(vitri, thoigianchotoida = 0., is_napmoi = True)
+                else:
+                    boquas.append(f"{ten} (mô tả không khớp tên)")
                 continue
-            if mota.startswith((MAMAULAMKIM, MAMAUHOANGKIM)):
+            # Không luật nào khớp: chừa mọi món tên màu Lam Kim / Hoàng Kim (đồ đem đốt, đồ quý). Người dùng đặt luật Bán thì bán (vd Tinh
+            # Nguyên Đơn tên màu), chỉ chừa món đem đốt được
+            # Đồ đã ép sao (★) không bao giờ bán, kể cả luật Bán / tên luôn bán / bán thêm Lam Kim (Ngọc Thần Bảo Kiếm 6★ bị bán ở đây
+            # 2026-11-04)
+            if "★" in mota:
+                boquas.append(f"{ten} (đồ có sao)")
+                continue
+            dodot = self._phantichdolamkim(mota, ten, cauhinh)
+            # Ưu tiên bán thêm: 0 = Lam Kim không đem đốt được (kể cả cấp dưới mức đốt), 1 = đem đốt được (cấp / giá cao bán trước)
+            uutien = (1, -dodot[0], -dodot[1]) if dodot and dodot[0] >= captoithieu else (0, 0, 0)
+            if hanhdong == HANHDONG_BAN and dodot:
+                boquas.append(f"{ten} (luật Bán nhưng là đồ đem đốt)")
+                if mota.startswith(MAMAULAMKIM):
+                    lamkims.append((uutien, vitri, iddoituong, ten))
+                continue
+            is_luonban = unicodedata.normalize("NFC", ten).strip() in TENLUONBANPYs
+            if hanhdong is None and not is_luonban and mota.startswith((MAMAULAMKIM, MAMAUHOANGKIM)):
+                boquas.append(f"{ten} (tên màu Lam Kim / Hoàng Kim)")
+                if mota.startswith(MAMAULAMKIM):
+                    lamkims.append((uutien, vitri, iddoituong, ten))
                 continue
             lenhs.append("sell ! {}# {}# 255".format(hex(idnpc).replace("0x", ""), hex(iddoituong).replace("0x", "")))
         if sodesc:
             s["trangthai"] = f"bán rác ở {tennpc}: đọc mô tả hành trang ({sodesc} ô, chừa đồ Lam Kim / Hoàng Kim)"
             return None
+        # Bán xong vẫn còn dưới SOOTRONGTOITHIEUPY ô trống: bán thêm đồ Lam Kim đang chừa cho đủ
+        thieu = SOOTRONGTOITHIEUPY - sootrong - len(lenhs)
+        banthems = []
+        if thieu > 0:
+            for _, vitri, iddoituong, ten in sorted(lamkims)[:thieu]:
+                banthems.append(ten)
+                lenhs.append("sell ! {}# {}# 255".format(hex(idnpc).replace("0x", ""), hex(iddoituong).replace("0x", "")))
+            if banthems:
+                self._logpb(s, f"Bán rác: còn {sootrong + len(lenhs) - len(banthems)} ô trống (< {SOOTRONGTOITHIEUPY}), bán thêm "
+                               f"{len(banthems)} món Lam Kim: " + ", ".join(banthems))
+            if len(banthems) < thieu:
+                self._logpb(s, f"⚠️ Bán rác: hết đồ bán được, chỉ còn {sootrong + len(lenhs)} ô trống (cần {SOOTRONGTOITHIEUPY}); "
+                               "còn lại là đồ Giữ / Cất kho / Hoàng Kim / có sao")
+        if boquas:
+            self._logpb(s, f"Bán rác: chừa {len(boquas)} món: " + ", ".join(boquas))
         if not lenhs:
             return xong(f"Không có rác để bán ở {tennpc}")
         b["somon"] = len(lenhs)
@@ -1728,6 +1843,8 @@ class TacTuLangLySon:
             if s.pop("candolamkim", None) is not None:
                 self._logpb(s, "Đã có đồ Lam Kim (thành viên đưa sang), thôi xin đồ")
             s.pop("lucxindo", None)
+            if self._chodothapthanhvien(s, chon):
+                return None
             cap, gia, vitri, iddoituong, tendo = chon
             # Đọc lại mô tả mới của chính ô này cho chắc rồi mới nhận (mô tả cũ có thể là của món trước ở ô đó)
             moitruong.get_motavatphamhanhtrang(vitri, is_napmoi = True)
@@ -1735,6 +1852,8 @@ class TacTuLangLySon:
                 self._logpb(s, f"{tendo} (ô {vitri}) mô tả mới không còn đúng đồ Lam Kim, chọn lại")
                 return None
             d = s["dolamkim"] = {"vitri": vitri, "id": iddoituong, "ten": tendo, "cap": cap}
+            for khoa in ("capthapgive", "lucchodothap", "dalogchodothap"):
+                s.pop(khoa, None)
             self._logpb(s, f"Chọn đồ đem đốt: {tendo} (cấp {cap}, giá bán {gia}, ô {vitri})")
         # Lệnh give gõ thẳng nhận đồ ở túi nào cũng được (chỉ giao diện game mới bắt đưa lên hành trang 1), không chuyển túi
         diachinpc = moitruong.action_timkiemnhanvat(tennhanvat = tennpc)
@@ -1776,6 +1895,11 @@ class TacTuLangLySon:
             moitruong.action_thucthicaulenh(lenhs[0])
             self._logpb(s, f"Đốt {d['ten']} (cấp {d['cap']}): chọn {lenhs[0]!r}, chờ menu vào")
             s.update(dagive = True, lucchonvaopy = now, lucdagive = now, giao = None, dolamkim = None, solanvaolaipy = 0, momophongyeu = False)
+            # Đốt đồ là mở phó bản mới: bỏ boss / điểm dò / toạ độ Thỏ Yêu vòng trước (ra tay hoặc tắt bật lại giữa phó bản thì không qua
+            # bước đổi tổ đội nên không ai xoá: Laotsezu vào bản đồ 41 vẫn đi tới chỗ Thỏ Yêu của bản đồ 131 vòng trước)
+            s.pop("py", None)
+            self._xoabosspy()
+            s["diemvao"] = {}
             return None
         # Lời lạ: không xác nhận gì, đóng menu, thử lại sau
         if moitruong.get_is_danghiencuasotuychon():
@@ -1828,6 +1952,7 @@ class TacTuLangLySon:
             if is_loimenuvaophongyeu(thuong) and not moitruong.get_is_truongnhom():
                 # Thành viên vào vòng mới: bỏ boss đã giết / điểm dò của vòng trước (thành viên không qua bước đổi tổ đội nên không ai xoá)
                 s.pop("py", None)
+                self._xoabosspy()
                 s["diemvao"] = {}
 
     def get_bossdagietphongyeu(self):
@@ -1881,18 +2006,48 @@ class TacTuLangLySon:
                     py["boss"] = None
                 self._logpb(s, f"{info.get('tennhanvat') or info.get('idnguoichoi')} đã giết boss ({len(py['bossdagiet'])}/{SOBOSSPHONGYEU})")
 
+    def _luubosspy(self, py, idbando):
+        # Ghi boss đã giết ra file khi đổi hoặc mỗi GIANCACHLUUBOSSPY giây (giữ "luc" mới để _khoiphucbosspy biết vẫn là vòng này)
+        now = time.time()
+        bosss = sorted(py["bossdagiet"])
+        if bosss == py.get("bossdaluu") and now - py.get("lucluuboss", 0.) < GIANCACHLUUBOSSPY:
+            return
+        py.update(bossdaluu = bosss, lucluuboss = now)
+        luubossphongyeu(self.moitruong.get_idnguoichoi(), {"idbando": idbando, "lucvao": py["lucvao"], "bossdagiet": bosss, "luc": now})
+
+    def _khoiphucbosspy(self, s, py, idbando):
+        # Vừa tạo py trong phó bản (mở lại bot): lấy lại boss đã giết / lúc vào từ file nếu cùng bản đồ và lưu chưa quá THOIGIANGIUBOSSPY
+        dulieu = taibossphongyeu(self.moitruong.get_idnguoichoi())
+        if not isinstance(dulieu, dict) or dulieu.get("idbando") != idbando or time.time() - float(dulieu.get("luc") or 0.) > THOIGIANGIUBOSSPY:
+            return
+        bosss = set(dulieu.get("bossdagiet") or ())
+        py["lucvao"] = min(py["lucvao"], float(dulieu.get("lucvao") or py["lucvao"]))
+        if bosss:
+            py["bossdagiet"] |= bosss
+            self._logpb(s, f"Bật lại giữa phó bản: lấy lại {len(py['bossdagiet'])}/{SOBOSSPHONGYEU} boss đã giết, vào lúc "
+                           f"{time.strftime('%H:%M:%S', time.localtime(py['lucvao']))}")
+
+    def _xoabosspy(self):
+        # Sang vòng mới: bỏ boss đã lưu của vòng trước
+        luubossphongyeu(self.moitruong.get_idnguoichoi(), None)
+
     def _vitrithoyeu(self, s, py, idbando):
         # Thỏ Yêu đứng ở chỗ vào: thấy thì nhớ toạ độ thật (cả ra file theo bản đồ), chưa thấy thì toạ độ đã lưu, rồi chỗ vào, không biết
         # cả 3 thì chỗ đang đứng (từng tắt bật lại giữa phó bản là lấy chỗ đang đứng làm chỗ Thỏ Yêu, đi hỏi số quái không tới)
+        # Toạ độ nhớ gắn với bản đồ: khác bản đồ (sót từ vòng trước) thì bỏ
         khoa = f"{'nietban' if self.moitruong.is_nietban else 'aegis'}|{idbando}"
+        if py.get("bandothoyeu") != idbando:
+            py.pop("vitrithoyeu", None)
         diachi = self.moitruong.action_timkiemnhanvat(tennhanvat = laytenthoyeu(self.moitruong))
         if diachi:
             x, y = self.moitruong.get_toado(diachi)
             if idbando and py.get("vitrithoyeu") != (x, y):
                 luuvitrithoyeu(khoa, int(round(x)), int(round(y)))
             py["vitrithoyeu"] = (x, y)
+            py["bandothoyeu"] = idbando
         if not py.get("vitrithoyeu") and idbando:
             py["vitrithoyeu"] = taivitrithoyeu(khoa)
+            py["bandothoyeu"] = idbando
         return py.get("vitrithoyeu") or s["diemvao"].get(idbando) or self.moitruong.get_toado()
 
     def _timbossphongyeu(self, py):
@@ -1913,6 +2068,18 @@ class TacTuLangLySon:
             return diachi
         return None
 
+    def _chonhatdoroipy(self, s):
+        # Đủ điều kiện ra Phong Yêu Kính: True khi còn phải chờ nhặt đồ (đồ boss / quái vừa rơi). Chờ ít nhất THOIGIANCHORA giây, sau
+        # đó còn món đang nhặt (tactu_vatpham_xq.action_tudongnhatvatpham) thì chờ tiếp, tối đa THOIGIANCHONHATDOTOIDAPY giây
+        now = time.time()
+        luc = s.setdefault("lucxongboss", now)
+        if now - luc < THOIGIANCHORA:
+            return True
+        if self._is_tudongnhatvatpham and self._diachicosovatphamdangnhat and now - luc < THOIGIANCHONHATDOTOIDAPY:
+            return True
+        s.pop("lucxongboss", None)
+        return False
+
     @staticmethod
     def _taopy(s):
         return s.setdefault("py", {"do": None, "bossdagiet": set(), "boss": None, "soluotdo": 0, "hoisoquai": None, "lucvao": time.time()})
@@ -1924,23 +2091,27 @@ class TacTuLangLySon:
         moitruong = self.moitruong
         now = time.time()
         tenpb = self._tenpb(s)
+        is_pymoi = "py" not in s
         py = self._taopy(s)
-        if not py.get("vitrithoyeu"):
+        if is_pymoi:
+            self._khoiphucbosspy(s, py, idbando)
+        if not py.get("vitrithoyeu") or py.get("bandothoyeu") != idbando:
             # Vừa vào Thỏ Yêu đứng ngay cạnh: nhớ toạ độ (tuỳ bản đồ) để lúc hỏi số quái / ra quay về đúng chỗ
             self._vitrithoyeu(s, py, idbando)
         s["chedo"] = "danhquai"
         self._batdanhquailanglyson(s)
         self._congbossnguoikhac(s, py)
+        self._luubosspy(py, idbando)
         if not is_thanhvien:
             # Người give: thành viên nào chưa vào nhóm thì vẫn mời tiếp (vào sau tự "look" Tả Khâu Minh vào phó bản)
             self._moithanhvienpy(s)
         if not is_thanhvien and idbando in BANDOBOQUAPHONGYEUs and s.get("raboqua") != s["sovong"]:
-            # Bản đồ khó đi (Tây Thành...): ra ngay mở bản đồ khác, kể cả acc gà đủ CAPDANHDUBOSSPY khi kéo cấp
+            # Bản đồ khó đi (Tây Thành...): ra ngay mở bản đồ khác, kể cả khi kéo cấp
             s["raboqua"] = s["sovong"]
             self._logpb(s, f"Bản đồ {idbando} (khó đi): ra mở bản đồ khác")
             s.update(giaidoan = "nhanthuong", hoithoai = None)
             return None
-        # Kéo cấp: acc gà đứng yên ở Thỏ Yêu, người give ra khi đủ số quái (tactu_keocap_xq)
+        # Kéo cấp: acc gà không tự đánh thì đứng yên ở Thỏ Yêu, người give ra khi đã diệt boss và hết quái (tactu_keocap_xq)
         yeucaukeocap = self._buoctrongphongyeukeocap(s, py, idbando, is_thanhvien)
         if yeucaukeocap is not False:
             return yeucaukeocap
@@ -1964,11 +2135,9 @@ class TacTuLangLySon:
             if is_thanhvien:
                 s["trangthai"] = f"{tenpb}: xong {len(py['bossdagiet'])} boss, chờ trưởng nhóm giải tán nhóm"
                 return None
-            luc = s.setdefault("lucxongboss", now)
-            if now - luc < THOIGIANCHORA:
+            if self._chonhatdoroipy(s):
                 s["trangthai"] = f"{tenpb}: xong {len(py['bossdagiet'])} boss, chờ nhặt đồ rồi về Chu Quốc"
                 return None
-            s.pop("lucxongboss", None)
             s.update(giaidoan = "nhanthuong", hoithoai = None)
             self._logpb(s, f"Xong phó bản ({len(py['bossdagiet'])}/{SOBOSSPHONGYEU} boss"
                            + (f", đã dò {py['soluotdo']} lượt bản đồ, {py.get('lydora')}" if is_hetluot else "")
@@ -2139,13 +2308,39 @@ class TacTuLangLySon:
         self._capnhatbuocdichuyen(f"{self._tenpb(s)}: {nhan}")
         return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x, y, idbando), "khoangcachtoida": 1.}
 
+    def _giaitanraphongyeu(self, s):
+        # Ra Phong Yêu Kính bằng rời nhóm: trưởng nhóm rời nhóm (= giải tán) thì game đưa CẢ NHÓM (cả trưởng nhóm) ra Chu Quốc, thành
+        # viên rời nhóm thì chỉ mình bị đưa ra; khỏi chạy về Thỏ Yêu. -> True khi đang rời nhóm / chờ đổi bản đồ; False khi không làm
+        # được (không ở trong nhóm, đã thử quá THOIGIANGIAITANRAPY giây vẫn còn trong phó bản) thì dùng Thỏ Yêu như cũ
+        moitruong = self.moitruong
+        now = time.time()
+        luc = s.get("lucgiaitanpy")
+        if luc is not None and luc < moitruong.get_thoidiemthaydoibandogannhat():
+            # Lần rời nhóm trước đã ra rồi (đổi bản đồ sau đó): lần này là phó bản mới
+            luc = None
+        if luc is None:
+            if not moitruong.get_is_dangnamtrongnhom():
+                return False
+            s["lucgiaitanpy"] = luc = now
+            moitruong._inlog("[PHONG YÊU KÍNH] " + ("Giải tán nhóm để cả nhóm" if moitruong.get_is_truongnhom() else "Rời nhóm để")
+                             + " ra khỏi Phong Yêu Kính")
+        if now - luc > THOIGIANGIAITANRAPY:
+            return False
+        if moitruong.get_is_dangnamtrongnhom():
+            moitruong.action_thoatkhoinhom(delay = GIANCACHROINHOM)
+        s["trangthai"] = f"giải tán nhóm để ra khỏi Phong Yêu Kính (còn {int(THOIGIANGIAITANRAPY - (now - luc))}s)"
+        return True
+
     def _buocraphongyeu(self, s):
-        # Xong Phong Yêu Kính: Thỏ Yêu "1. Ta muốn về Chu Quốc" (ra cạnh Tả Khâu Minh). Ra rồi thì xong vòng, không có thưởng phải lĩnh:
-        # sang đổi tổ đội luôn (giải tán tổ đội thì thành viên còn trong phó bản cũng bị đưa ra Chu Quốc (285, 177))
+        # Xong Phong Yêu Kính: trưởng nhóm giải tán nhóm (cả nhóm bị đưa ra Chu Quốc), không được thì Thỏ Yêu "1. Ta muốn về Chu Quốc"
+        # (ra cạnh Tả Khâu Minh). Ra rồi thì xong vòng, không có thưởng phải lĩnh: sang đổi tổ đội luôn
         if self._is_trongphongyeu():
+            if self._giaitanraphongyeu(s):
+                return None
             x, y = self._vitrithoyeu(s, self._taopy(s), self.moitruong.get_idbandohientai())
             s["trangthai"] = f"xong {self._tenpb(s)}, nói chuyện Thỏ Yêu về Chu Quốc"
             return self._noichuyenlls(s, laytenthoyeu(self.moitruong), x, y, is_chovankhi = False, luachon = 0)[1]
+        s.pop("lucgiaitanpy", None)
         s["sovong"] += 1
         s["sothanhvien"] = len(s["thanhviens"]) + 1
         self._logpb(s, f"Xong vòng {s['sovong']} ({int((time.time() - s['lucbatdauvong']) // 60)} phút), đổi tổ đội")

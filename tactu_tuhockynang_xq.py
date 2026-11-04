@@ -112,6 +112,7 @@ class TacTuTuHocKyNang:
             # Bot gửi lại chiêu tới khi máy chủ nhận (mỗi lượt ~0.1s): lần gửi trước chưa được nhận thì bỏ, chỉ giữ lần gửi mới nhất
             danhsach.pop()
         is_hople = self._is_muctieuhoplehoc(diachimuctieu)
+        self._ghiboquatuhoc(moitruong.get_idkynang(vitrikynang), thoidiemhientai)
         danhsach.append({
             "vitri": vitrikynang, "idkynang": moitruong.get_idkynang(vitrikynang), "diachi": diachimuctieu, "idmuctieu": idmuctieu,
             "tenquai": moitruong.get_tendoituong(diachimuctieu), "thoidiem": thoidiemhientai, "satthuongs": [],
@@ -121,6 +122,30 @@ class TacTuTuHocKyNang:
             "hieuungmuctieu": self._idhieuungs(diachimuctieu) if is_hople else [], "hieuungminh": self._idhieuungs() if is_hople else [],
             "nguyenkhi": moitruong.get_nguyenkhiconlai() or 0, "hieuungsau": None,
         })
+
+    def _ghiboquatuhoc(self, idkynang, thoidiemhientai):
+        # Chế độ Tự học: chiêu đứng đầu chuỗi đang sẵn sàng mà bot lại gửi chiêu idkynang => luật viết tay chặn chiêu đầu chuỗi; bị chặn đủ
+        # SOLANBOQUATUHOC lần kéo dài THOIGIANBOQUATUHOC giây thì bỏ nó khỏi bộ lập kế hoạch một lúc (xem THOIGIANBOCHIEUTUHOC)
+        self._boquatuhoc.pop(idkynang, None)
+        self._chieubotuhoc.pop(idkynang, None)
+        kehoach = self._kehoachtuhoc
+        if self._chedokynang != CHEDOKYNANG_TUHOC or not kehoach or not kehoach["giatri"] or thoidiemhientai - kehoach["thoidiem"] > 2.:
+            return
+        dau = max(kehoach["giatri"], key = kehoach["giatri"].get)
+        if dau == idkynang or not self.moitruong.get_is_kynangsansang(dau):
+            self._boquatuhoc.pop(dau, None)
+            return
+        dem = self._boquatuhoc.setdefault(dau, [thoidiemhientai, 0])
+        dem[1] += 1
+        if dem[1] >= SOLANBOQUATUHOC and thoidiemhientai - dem[0] >= THOIGIANBOQUATUHOC:
+            del self._boquatuhoc[dau]
+            is_dahoc = (self._mohinhtuhoc or {}).get("solan", {}).get(dau, 0) >= SOMAUTOITHIEUTUHOC
+            thoigian = THOIGIANBOCHIEUTUHOC if is_dahoc else THOIGIANBOCHIEUCHUAHOCTUHOC
+            self._chieubotuhoc[dau] = thoidiemhientai + thoigian
+            self._thoidiemkehoachtuhoc = 0.
+            if IS_LOGTUHOC:
+                self.moitruong._inlog(f"[TỰ HỌC CHIÊU] {self._tenchieututhoc(dau)} đứng đầu chuỗi, sẵn sàng mà luật không cho dùng"
+                                      f" => bỏ khỏi kế hoạch {thoigian:.0f}s")
 
     def _chuphieuungsautuhoc(self, chieu):
         # Hiệu ứng mới trên quái sau chiêu (so với lúc gửi), chụp 1 lần: chiêu đã nhận và còn đúng con đó
@@ -180,7 +205,7 @@ class TacTuTuHocKyNang:
                 if thoidiemhientai - chieu["thoidiem"] >= THOIGIANDOHIEUUNGMOITUHOC:
                     self._chuphieuungsautuhoc(chieu)
             danhans = [c for c in danhsach if c["is_danhan"]]
-            for so in sobaymois:
+            for so in self._locsobaychieututhoc(sobaymois):
                 if danhans:
                     chieu = next((c for c in reversed(danhans) if thoidiemhientai - c["thoidiem"] >= THOIGIANTRESOBAYTUHOC), danhans[0])
                     chieu["satthuongs"].append(so)
@@ -210,6 +235,15 @@ class TacTuTuHocKyNang:
             return []
         (giatricu, demcu), (giatri, dem) = cu[1], sobay
         return [giatri[i] for i in range(10) if giatri[i] > 0 and (giatri[i] != giatricu[i] or dem[i] < demcu[i])]
+
+    def _locsobaychieututhoc(self, sobaymois):
+        # Bỏ số bay nhỏ (sát thương theo thời gian của hiệu ứng, xem TILESOBAYNHOTUHOC) khỏi số tính cho chiêu; chưa đủ 20 số thì giữ hết
+        gan = self._sobaygantuhoc
+        nguong = TILESOBAYNHOTUHOC * float(np.median(gan)) if len(gan) >= 20 else 0.
+        gan.extend(sobaymois)
+        if len(gan) > SOSOBAYGANTUHOC:
+            del gan[:len(gan) - SOSOBAYGANTUHOC]
+        return [so for so in sobaymois if so >= nguong]
 
     def _theodoihieuungtuhoc(self, diachimuctieu, idmuctieu, thoidiemhientai):
         # Hiệu ứng trên quái không có thời gian còn lại (client chỉ ghi 1): ghi lúc xuất hiện, lúc mất thì cộng thời gian tồn tại vào
@@ -323,7 +357,14 @@ class TacTuTuHocKyNang:
         self._thoidiemhoctuhoc = thoidiemhientai
         self._somaumoituhoc = 0
         maus = [m for m in dulieu["maus"] if m[2] > 0]
-        mohinh = {"goc": {}, "quai": {}, "hieuung": {}, "khoa": {}, "nguyenkhi": {}, "gay": {}, "solan": {}, "solanquai": {}}
+        # Mẫu chỉ có số bay nhỏ (chiêu trượt, chỉ thấy sát thương theo thời gian của hiệu ứng - mẫu ghi trước khi có
+        # _locsobaychieututhoc) thì bỏ: nhỏ hơn TILESOBAYNHOTUHOC trung vị của chính chiêu đó
+        trungvi = {}
+        for m in maus:
+            trungvi.setdefault(m[0], []).append(m[2])
+        trungvi = {i: float(np.median(v)) for i, v in trungvi.items()}
+        maus = [m for m in maus if m[2] >= TILESOBAYNHOTUHOC * trungvi[m[0]]]
+        mohinh ={"goc": {}, "quai": {}, "hieuung": {}, "khoa": {}, "nguyenkhi": {}, "gay": {}, "solan": {}, "solanquai": {}}
         if maus:
             idchieus = sorted({m[0] for m in maus})
             tenquais = sorted({m[1] for m in maus})
@@ -497,7 +538,7 @@ class TacTuTuHocKyNang:
             for item in danhsachuutien:
                 if item[0] and item[1] == "sudungkynangmuctieu" and item[0] not in CHIEUGIULUATTUHOCs and (len(item) < 5 or item[4] is None):
                     idkynang = moitruong.get_idkynang(item[0])
-                    if idkynang and idkynang not in idkynangs:
+                    if idkynang and idkynang not in idkynangs and thoidiemhientai >= self._chieubotuhoc.get(idkynang, 0.):
                         idkynangs.append(idkynang)
             kehoach = self._lapkehoachtuhoc(idkynangs, diachimuctieu, thoidiemhientai) if idkynangs else None
             if kehoach:

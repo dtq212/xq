@@ -199,6 +199,9 @@ THOIGIANVANKHILOIDONGCUUTHIEN = 6.
 THOIGIANPHONGVUKINHTHIEN = 8.
 # Mao Sơn: có cụm quái quanh mục tiêu mà mục tiêu xa hơn chừng này thì chạy vào (dừng cách ~1 ô) để ra Lôi Động Cửu Thiên trúng cả cụm
 KHOANGCACHTIEPCANLOIDONGCUUTHIEN = 2.
+# Chiêu vận khí diện rộng (Lôi Động Cửu Thiên / Lôi Long Quyết) chỉ dùng / chạy vào cụm khi có từ chừng này quái trở lên: ít hơn thì
+# đánh chiêu đơn mục tiêu nhanh hơn là tiếp cận rồi đứng vận khí 6s (người dùng 2026-11-04)
+SOLUONGQUAITOITHIEUCHIEUVANKHI = 5
 
 KHOANGCACHTOIDAHOPLE = 255.
 # Tầm cận chiến thật (bot tự học, 01/11/2026): 1 ô theo max(|dx|, |dy|) => ô kề, tính cả ô chéo
@@ -296,10 +299,22 @@ KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN = 9.
 # rồi mới ra Ngự Kiếm Phi Tiên, để trúng cả cụm quái quanh mục tiêu (chiêu đánh quanh bản thân 9 ô)
 KHOANGCACHTIEPCANNGUKIEMPHITIEN = 4.
 KHOANGCACHHIEUQUAKYNANGKHAITHIENTICHDIA = 6.0
+# Khai Thiên Tịch Địa góc xấu: xét chỗ đứng trong chừng này ô quanh mình, chỗ nào trúng thêm từ SOMUCTIEUTANGDOICHOKHAITHIEN mục tiêu
+# thì đi tới đó rồi mới ra chiêu; chỗ đã chốt giữ tối đa THOIGIANGIUCHODOIKHAITHIEN giây (không tới được thì thôi, ra chiêu tại chỗ)
+QUANGDOICHOKHAITHIEN = 3
+SOMUCTIEUTANGDOICHOKHAITHIEN = 2
+THOIGIANGIUCHODOIKHAITHIEN = 2.5
+# Sau Khai Thiên rộng giữ mục tiêu cũ tối đa bấy nhiêu giây chờ Lưu Tinh Truy Mạng lướt về (log: Lưu Tinh nối sau ~0.6-0.9s)
+THOIGIANKHOAMUCTIEULUUTINH = 3.
+# Đo hiệu quả Khai Thiên Tịch Địa: đọc lại máu quái bấy nhiêu giây sau khi game nhận chiêu (lướt xong + số bay)
+THOIGIANDOKHAITHIEN = 1.2
 KHOANGCACHNHATDO = KHOANGCACHTOANMANHINH
 # Vừa mất mục tiêu chưa quá bấy nhiêu giây thì chưa đi nhặt đồ, chờ chọn con kế (món trong tầm nhặt tại chỗ vẫn nhặt luôn, món Nhặt ưu
 # tiên / đồ sư môn không phải chờ): tránh vừa giết xong con này đã chạy đi nhặt rồi lại quay về đánh con kế
 THOIGIANCHOMUCTIEUKETRUOCKHINHATDO = 2.
+# Lượt kỹ năng không ra yêu cầu tấn công mà vẫn chọn đúng con vừa đánh, nó chưa chết: luồng di chuyển giữ yêu cầu cũ tối đa bấy nhiêu
+# giây (không Đi dạo / Tìm mục tiêu chung chạy đi chỗ khác rồi quay lại đánh)
+THOIGIANGIUYEUCAUTANCONG = 1.5
 # Có món cần đi nhặt mà chờ (bận đánh) quá bấy nhiêu giây thì đi nhặt luôn dù còn mục tiêu: quái ra liên tục vẫn nhặt được
 THOIGIANCHONHATDOTOIDA = 6.
 
@@ -314,8 +329,8 @@ THOIGIANTAMNGUNGNGUOILA = 60.
 # Tín hiệu "vừa thấy ẩn thân" của nhân vật khác cùng bản đồ còn hiệu lực trong bấy nhiêu giây (nhân vật thấy sẽ làm mới liên tục mỗi 0.5s)
 THOIGIANCHIASEANTHAN = 3.
 
-SOLUONGTHANHVIENNHOMTOIDA = 5
-SOLUONGTHANHVIENNHOMTOIDATHUCTE = 5
+SOLUONGTHANHVIENNHOMTOIDA = 9
+SOLUONGTHANHVIENNHOMTOIDATHUCTE = 9
 # Tổ đội 1 lần (Ctrl+Alt+T): mời thành viên tối đa chừng này giây rồi thôi
 THOIGIANTODOIMOTLAN = 90.
 # Tổ đội 1 lần mời lần lượt từng người: người đang mời quá chừng này giây chưa vào thì mời người kế (lượt sau mời lại)
@@ -868,6 +883,13 @@ TIENTOTENBANDOTAPKICHMONPHAI = "Tập Kích Môn"
 TIENTOTENBANDOKENHTRINHQUOC = "Kênh Trịnh"
 # Vừa ra khỏi phó bản mượn ID bản đồ ngoài (Phong Yêu Kính): chờ chừng này giây mới tự chọn lộ trình mẫu (ID bản đồ đổi sau tên)
 THOIGIANCHONAPLOTRINHROIPHOBAN = 1.5
+# Vừa ra khỏi phó bản mượn ID: ID đọc được còn là ID mượn (Thanh Khê 1...) thì chờ tối đa chừng này giây, không tìm đường / Hồi Thành Phù
+# (ra Phong Yêu Kính là về Chu Quốc, tưởng đang ở Thanh Khê nên Tín Vật về phái rồi Xa Phu - QuanSuMuMuu 2026-11-04 07:40)
+THOIGIANCHOIDROIPHOBANMUON = 8.
+# Đã đổi sang ID bản đồ thật: chờ thêm chừng này giây cho toạ độ / tên ổn định
+THOIGIANCHOSAUROIPHOBANMUON = 2.
+# Số hành động gần nhất giữ lại (cũng là số dòng bảng Lịch sử hành động cuối tab Khác)
+SOLICHSUHANHDONG = 20
 
 BANDO_MADAPHO = 211
 BANDO_CUTHUDAO = 549
@@ -1238,6 +1260,18 @@ GIAMDANTUHOC = 0.93
 DORONGCHUMTUHOC = 12
 SOBUOCTOIDATUHOC = 8
 THOIGIANTINHKEHOACHTUHOC = 0.25
+# Số bay nhỏ hơn TILESOBAYNHOTUHOC * trung vị SOSOBAYGANTUHOC số bay gần nhất là sát thương theo thời gian của hiệu ứng (Thấu Cốt Đinh /
+# chảy máu ra đều 25-29, log 9198 2026-11-04) chứ không phải đòn của chiêu vừa gửi: vẫn cộng vào trận, không tính cho chiêu
+TILESOBAYNHOTUHOC = 0.15
+SOSOBAYGANTUHOC = 200
+# Chiêu đứng đầu chuỗi, đang sẵn sàng mà bot gửi chiêu khác (luật viết tay chặn: điều kiện không hợp, chưa học...) ít nhất
+# SOLANBOQUATUHOC lần trong THOIGIANBOQUATUHOC giây => bỏ khỏi bộ lập kế hoạch THOIGIANBOCHIEUTUHOC giây (chiêu chưa có mẫu:
+# THOIGIANBOCHIEUCHUAHOCTUHOC; chiêu đã có mẫu bỏ ngắn vì có thể chỉ tạm bị chặn: xa quá tầm...), tránh chuỗi toàn chiêu không
+# dùng được (log 9325 2026-11-04: Phong Ma Quyết -> Mê Tung Quyền ...)
+SOLANBOQUATUHOC = 3
+THOIGIANBOQUATUHOC = 3.
+THOIGIANBOCHIEUTUHOC = 15.
+THOIGIANBOCHIEUCHUAHOCTUHOC = 600.
 THOIGIANLUUTUHOC = 60.
 THOIGIANLOGTUHOC = 300.
 IS_LOGTUHOC = True

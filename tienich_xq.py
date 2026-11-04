@@ -350,6 +350,37 @@ def luutiendophoban(idnguoichoi, tiendo):
         print(err)
 
 
+def _duongdanbossphongyeu(idnguoichoi):
+    # Mỗi nhân vật 1 file (nhiều cửa sổ ghi cùng lúc không đè nhau)
+    return os.path.join(os.path.dirname(_thumucthietlap()), "bossphongyeu", f"{idnguoichoi}.json")
+
+
+def taibossphongyeu(idnguoichoi):
+    # Boss Phong Yêu Kính đã giết vòng đang đánh (tactu_langlyson_xq lưu để mở lại bot giữa phó bản không mất số boss)
+    try:
+        with open(_duongdanbossphongyeu(idnguoichoi), "r", encoding = "utf-8") as file:
+            return json.load(file)
+    except Exception:
+        return None
+
+
+def luubossphongyeu(idnguoichoi, dulieu):
+    # dulieu None: xoá
+    filepath = _duongdanbossphongyeu(idnguoichoi)
+    try:
+        if dulieu is None:
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            return
+        os.makedirs(os.path.dirname(filepath), exist_ok = True)
+        filetam = filepath + ".tmp"
+        with open(filetam, "w", encoding = "utf-8") as file:
+            json.dump(dulieu, file, ensure_ascii = False)
+        thaythefile(filetam, filepath)
+    except Exception as err:
+        print(err)
+
+
 def _duongdanvitrithoyeu():
     return os.path.join(os.path.dirname(_thumucthietlap()), "vitrithoyeu.json")
 
@@ -447,9 +478,16 @@ def tainhomtodoitudongs():
 # màu tên được đốt (Lam Kim / Hoàng Kim), chỉ đồ Chưa giám định, cấp đồ >= cấp nhân vật - caphonnhanvat, tên chứa cụm trong "khongdot"
 # thì không bao giờ đốt, "chidot" không rỗng thì chỉ đốt món có tên chứa 1 cụm trong đó. is_laydothanhvien: người give hết đồ thì xin
 # thành viên cùng nhóm (cùng máy / LAN) còn đồ đúng điều kiện tới give sang thay vì dừng. is_nhatbanrac: trong phó bản nhặt cả luật
-# "chỉ khi về bán rác", ra Chu Quốc thì bán rác ở Chủ Tiệm Y Dược (chừa đồ Lam Kim / Hoàng Kim) rồi mới vào vòng sau
+# "chỉ khi về bán rác", ra Chu Quốc thì bán rác ở Chủ Tiệm Y Dược (chừa đồ Lam Kim / Hoàng Kim) rồi mới vào vòng sau; tách hẳn khỏi ô
+# "Tự động về bán rác" tab Hành trang (tactu_langlyson_xq._banracphongyeu)
+# dieukienrakeocap: khi kéo cấp, người give (acc gà) ra Phong Yêu Kính mở vòng mới theo 1 trong các kiểu cố định DIEUKIENRAPYKEOCAPs:
+# (khoá, nhãn giao diện, số boss phải diệt, có chờ hết quái không). Game báo hoàn thành phó bản thì coi như đủ boss. Không có kiểu
+# "2 boss rồi chờ hết quái": boss 2 chỉ ra khi đã hết quái (người dùng dặn). Khoá lạ (bản lưu cũ "2boss_hetquai") thì về kiểu đầu
+DIEUKIENRAPYKEOCAPs = (("2boss", "Diệt đủ 2 boss là ra ngay", 2, False),
+                       ("1boss_hetquai", "Diệt 1 boss rồi chờ hết quái (kiểu cũ)", 1, True),
+                       ("1boss", "Diệt 1 boss là ra ngay", 1, False))
 CAUHINHPHONGYEU_MACDINH = {"is_lamkim": True, "is_hoangkim": False, "is_chichuagiamdinh": True, "caphonnhanvat": 25, "khongdot": [], "chidot": [],
-                           "is_laydothanhvien": True, "is_nhatbanrac": False}
+                           "is_laydothanhvien": True, "is_nhatbanrac": False, "dieukienrakeocap": "2boss"}
 _cauhinhphongyeu_cache = {"cauhinh": None, "thoidiemsua": None, "thoidiemkiemtra": 0.}
 
 
@@ -469,7 +507,18 @@ def _chuanhoacauhinhphongyeu(cauhinh):
             pass
         for khoa in ("khongdot", "chidot"):
             ketqua[khoa] = [str(t).strip() for t in cauhinh.get(khoa) or [] if str(t).strip()]
+        if cauhinh.get("dieukienrakeocap") in [d[0] for d in DIEUKIENRAPYKEOCAPs]:
+            ketqua["dieukienrakeocap"] = cauhinh["dieukienrakeocap"]
     return ketqua
+
+
+def laydieukienrapykeocap(cauhinh = None):
+    # -> (số boss phải diệt, có chờ hết quái không) theo cấu hình Phong Yêu Kính
+    khoa = (cauhinh or taicauhinhphongyeu())["dieukienrakeocap"]
+    for d in DIEUKIENRAPYKEOCAPs:
+        if d[0] == khoa:
+            return d[2], d[3]
+    return DIEUKIENRAPYKEOCAPs[0][2], DIEUKIENRAPYKEOCAPs[0][3]
 
 
 def taicauhinhphongyeu():

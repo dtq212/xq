@@ -73,6 +73,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._bonhotoadomuctieutheosau = (0., False)
         self._is_tudongtimkiemmuctieu = True
         self._is_tudongsudungkynang = True
+        # Chỉ dùng Tự động tấn công (tab Chiến đấu): chỉ đánh thường bằng "kill", không dùng chiêu nào (đỡ tốn nội lực)
+        self._is_chidungtudongtancong = False
         self._is_tudongsudungvatpham = True
         self._is_tudongnhatvatpham = True
         self._is_chidanhnguoichoi = False
@@ -95,12 +97,15 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._is_nhieumuctieugan3 = False
         self._is_nhieumuctieugan5 = False
         self._is_nhieumuctieugan7 = False
-        self._is_nhieumuctieugan9 = False
+        self._is_nhieumuctieugan8 = False
         self._is_nhieumuctieuganbanthan3 = False
         self._is_nhieumuctieuganbanthan5 = False
         self._is_nhieumuctieuganbanthan7 = False
         self._is_nhieumuctieuganbanthan9 = False
         self._soluongnhieumuctieu = 2
+        # Số quái đếm được trong 3 ô quanh bản thân / quanh mục tiêu (chiêu vận khí diện rộng cần SOLUONGQUAITOITHIEUCHIEUVANKHI)
+        self._somuctieuganbanthan3 = 0
+        self._somuctieugan3 = 0
         self._soluongquaigomtoithieu = 3
         self._is_tudonggomquai = False
         self._is_danggomquai = False
@@ -168,6 +173,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._thoidiemdochieuungtuhoc = 0.
         self._kehoachtuhoc = None
         self._thoidiemkehoachtuhoc = 0.
+        self._sobaygantuhoc = []
+        self._boquatuhoc = {}
+        self._chieubotuhoc = {}
         # Côn Luân: hết mốc này mới gửi chiêu sau khi lướt Đằng Vân Giá Vũ (xem THOIGIANKHOACHIEUSAULUOT)
         self._thoidiemhetkhoachieusauluot = 0.
         # Tầm đánh thực tế của nhân vật (học từ lần tiếp cận mục tiêu gần nhất), mặc định tầm xa đã trừ hao
@@ -276,6 +284,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         # Mua bù: desc ô cửa hàng trước khi mua (_kiemhangcuahang) {"<id NPC>|<ô>": số lần desc, lúc}
         self._kiemcuahangmuabu = {}
         self._buocdichuyen = ("", 0.)
+        # Hành động hiện tại (chữ, nguồn, lúc) và lịch sử [(lúc bắt đầu, chữ, nguồn, khoá)] cho dòng "Đang điều khiển" (ghi_hanhdong)
+        self._hanhdong = ("", "", 0.)
+        self._lichsuhanhdong = []
         # Việc tự động đứng chờ vì không đi tiếp được (_baodungcho): [nội dung, lúc bắt đầu kẹt, lần gọi gần nhất, đã báo]
         self._dungcho = ["", 0., 0., False]
         # Các lần Hồi Thành Phù gần đây (chặn lặp tốn tiền, get_lydokhonghoithanhphu)
@@ -409,6 +420,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._yeucaunhatvatpham = None
         self._yeucautheosau = None
         self._yeucautancong = None
+        # Bản đã xuất cho luồng di chuyển (xem action_tudongsudungkynang)
+        self._yeucautancongxuat = None
+        self._thoidiemxuatyeucautancong = 0.
+        self._is_giuyeucautancongcu = False
         self._yeucautudo = None
 
         # Kỹ năng vừa gửi cần ngắt di chuyển: hạn chờ nhân vật vào tư thế xuất chiêu (0 = không chờ), xem action_ngatdichuyenkhixuatchieu
@@ -561,6 +576,16 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
 
         self._is_khaithientichdiasansang = False
         self._is_luutinhtruymangsansang = False
+        # Toạ độ các mục tiêu hợp lệ quanh mình (tactu_muctieu cập nhật mỗi lượt chọn mục tiêu)
+        self._toadomuctieuhoples = []
+        self._diachimuctieuhoples = []
+        # Đo Khai Thiên Tịch Địa (_internal/khaithien/<id>.jsonl): lần ra chiêu đang chờ đo máu quái, lần lấy góc vừa xong
+        self._dokhaithien = None
+        self._laygockhaithien = None
+        # Chỗ đứng đang đi tới để Khai Thiên Tịch Địa có góc rộng hơn: {"diachimuctieu", "toado", "sotrung", "hethan"} hoặc None
+        self._chodoikhaithien = None
+        # Mục tiêu giữ từ lúc ra Khai Thiên rộng tới khi Lưu Tinh Truy Mạng lướt về nó: {"diachimuctieu", "hethan"} hoặc None
+        self._khoamuctieuluutinh = None
 
         self._is_dangchaybukhoangcach = False
         self._thoidiemvohieuquadichuyennhatvatpham = 0.0
@@ -721,6 +746,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             "_tenmuctieutheosau": self._tenmuctieutheosau,
             "_is_tudongtimkiemmuctieu": self._is_tudongtimkiemmuctieu,
             "_is_tudongsudungkynang": self._is_tudongsudungkynang,
+            "_is_chidungtudongtancong": self._is_chidungtudongtancong,
             "_is_uutienmuctieupk": self._is_uutienmuctieupk,
             "_is_tudongsudungvatpham": self._is_tudongsudungvatpham,
             "_is_tudongnhatvatpham": self._is_tudongnhatvatpham,
@@ -844,6 +870,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             if "_tenmuctieutheosau" in thietlap: self._tenmuctieutheosau = thietlap["_tenmuctieutheosau"] or ""
             # _is_tudongtimkiemmuctieu không nạp lại: giao diện đã ẩn ô này, lỡ lưu tắt thì không bật lại được -> luôn bật khi khởi động
             if "_is_tudongsudungkynang" in thietlap: self._is_tudongsudungkynang = thietlap["_is_tudongsudungkynang"]
+            if "_is_chidungtudongtancong" in thietlap: self._is_chidungtudongtancong = bool(thietlap["_is_chidungtudongtancong"])
             if "_is_uutienmuctieupk" in thietlap: self._is_uutienmuctieupk = thietlap["_is_uutienmuctieupk"]
             if "_is_tudongsudungvatpham" in thietlap: self._is_tudongsudungvatpham = thietlap["_is_tudongsudungvatpham"]
             if "_is_tudongnhatvatpham" in thietlap: self._is_tudongnhatvatpham = thietlap["_is_tudongnhatvatpham"]
@@ -1085,6 +1112,13 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             phatam("Bật tự động sử dụng kỹ năng")
         else:
             phatam("Tắt tự động sử dụng kỹ năng")
+
+    def battat_chidungtudongtancong(self):
+        self._is_chidungtudongtancong = not self._is_chidungtudongtancong
+        if self._is_chidungtudongtancong:
+            phatam("Bật chỉ dùng tự động tấn công")
+        else:
+            phatam("Tắt chỉ dùng tự động tấn công")
 
     def battat_is_tudongtangcap(self):
         self._is_tudongtangcap = not self._is_tudongtangcap

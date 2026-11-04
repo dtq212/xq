@@ -8,7 +8,8 @@
         9176,
         9286,
         9324,
-        9325
+        9325,
+        9500
       ],
       "thutu": [
         "sugia",
@@ -17,9 +18,7 @@
         "thanhkieu",
         "phongyeukinh"
       ],
-      "chon": [
-        "phongyeukinh"
-      ],
+      "chon": [],
       "vong": {
         "tapkich": 1
       },

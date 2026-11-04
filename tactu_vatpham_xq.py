@@ -345,11 +345,11 @@ class TacTuVatPham:
                 hoinoilucs = []
                 if is_hoiphucpk or is_hoiphucphoban:
                     if phantramnoilucconlai < nguongphantramhoiphuc and noilucmatdi > 3000:
-                        hoinoilucs = [PHUCDUOC, LONGTIENTHAO, THILUYENDON, HOATTAMDON, ANTHANHOAN, ]
+                        hoinoilucs = [PHUCDUOC, LONGTIENTHAO, THILUYENDON, HOATTAMDON, ]
                         if is_hoiphucphoban:
                             hoinoilucs.reverse()
                 elif phantramnoilucconlai <= 75:
-                    hoinoilucs = [ANTHANHOAN, ]
+                    hoinoilucs = []
                 if self._sudungvatphamhoi(hoinoilucs, co):
                     self._thoidiemsudungvatphamhoinoilucgannhat = time.time()
 
@@ -481,9 +481,10 @@ class TacTuVatPham:
             return
 
         # Luật nhặt ở tab Hành trang (luattuido_xq "nhat"), đọc 1 lần mỗi lượt; luật "chỉ khi về bán rác" chỉ xét khi bật Tự động về bán rác
-        # hoặc đang đi Phong Yêu Kính có bật "Nhặt và bán rác" (xong vòng bán ở Chu Quốc, tactu_langlyson_xq._banracphongyeu)
+        # (ngoài Phong Yêu Kính) hoặc đang đi Phong Yêu Kính có bật Bán rác ở cấu hình Phong Yêu Kính (xong vòng bán ở Chu Quốc,
+        # tactu_langlyson_xq._banracphongyeu). Trong Phong Yêu Kính ô Tự động về bán rác không tính: hai luồng bán tách riêng
         dulieuluat = tailuat()
-        is_banrac = self._is_tudongvebanrac or self.get_is_nhatbanracphongyeu()
+        is_banrac = self.get_is_nhatbanracphongyeu() if self.get_is_dangphongyeukinh() else self._is_tudongvebanrac
 
         def hanhdongnhat(tenvatphamkiemtra):
             return timhanhdongnhat(tenvatphamkiemtra, is_banrac, dulieuluat)
@@ -879,6 +880,11 @@ class TacTuVatPham:
                 continue
             # Món trong bảng Cất kho thì để dành đi cất, không vứt
             if self._layhanhdongluat(tens[i], i) != HANHDONG_VUT or self._is_catkhovatpham(tens[i], i):
+                continue
+            # Đồ đã ép sao thì không vứt dù khớp luật Vứt (chỉ xem mô tả có sẵn, chưa có thì gửi desc, lượt sau xét lại)
+            if self._is_dosaokhongban(i, tens[i], is_docmoi = False):
+                if not self.moitruong.get_motathovatphamhanhtrangcosan(i):
+                    self.moitruong.get_motavatphamhanhtrang(i, thoigianchotoida = 0.)
                 continue
             soluong = max(1, self.moitruong.get_soluongvatphamhanhtrang(i) or 1)
             print(f"[VỨT THEO LUẬT] {self.moitruong.get_tendoituong()}: vứt {soluong} {tens[i]} ở ô {i}")
@@ -1588,6 +1594,24 @@ class TacTuVatPham:
                         self._thoidiemxepchongvatphamgannhat = time.time()
                 break
 
+    def _is_dosaokhongban(self, vitri, ten, is_docmoi = True):
+        # Món đã ép sao (mô tả có ★, vd Ngọc Thần Bảo Kiếm 6★ bị bán rác ở PYK 2026-11-04) thì không bao giờ bán / vứt, kể cả không khớp
+        # luật nào. Mô tả giữ theo ô (có thể còn của món trước): dòng tên phải khớp tên ô, không thì desc lại (is_docmoi). Chưa đọc được
+        # mô tả thì coi như cần giữ (thà sót rác còn hơn bán nhầm đồ quý). -> True = không được bán / vứt
+        tenchuan = unicodedata.normalize("NFC", re.sub(r"\x1b.", "", ten or "")).strip()
+
+        def khoptheoten(mota):
+            sach = unicodedata.normalize("NFC", re.sub(r"\x1b.", "", mota or ""))
+            dongs = [d.strip() for d in sach.split("\n") if d.strip()]
+            return sach if dongs and tenchuan and dongs[0].startswith(tenchuan) else None
+
+        sach = khoptheoten(self.moitruong.get_motathovatphamhanhtrangcosan(vitri))
+        if sach is None and is_docmoi:
+            sach = khoptheoten(self.moitruong.get_motavatphamhanhtrang(vitri, thoigianchotoida = 1., is_napmoi = True) or "")
+        if sach is None:
+            return True
+        return "★" in sach
+
     def action_tudongbanrac(self):
         diachi_npc = self.moitruong.action_timkiemnhanvat(CHUTIEMTAPHOA)
         if not diachi_npc:
@@ -1620,6 +1644,9 @@ class TacTuVatPham:
             hanhdong = self._layhanhdongluat(tenvatphamhanhtrang, i)
             # Món khớp luật Cất kho (dù luật đứng dưới luật Bán) thì để dành đi cất, không bán
             if hanhdong in (None, HANHDONG_BAN) and not self._is_catkhovatpham(tenvatphamhanhtrang, i):
+                if self._is_dosaokhongban(i, tenvatphamhanhtrang):
+                    print(f"[BÁN RÁC] {self.moitruong.get_tendoituong()}: chừa {tenvatphamhanhtrang} ở ô {i} (đồ có sao / chưa đọc được mô tả)")
+                    continue
                 hangdoi.append("sell ! {}# {}# 255".format(hex(idnpc).replace("0x", ""), hex(iddoituongvatphamhanhtrang).replace("0x", "")))
         self._hangdoibanrac = hangdoi
         self._thoidiemguibanractieptheo = 0.
@@ -1706,7 +1733,8 @@ class TacTuVatPham:
         return False
 
     def action_tudongxulyvebanrac(self):
-        if not self._is_tudongvebanrac and not self._is_tudongvesuado:
+        # Đang tự đi Phong Yêu Kính: bán rác ở Chu Quốc giữa các vòng (tactu_langlyson_xq._banracphongyeu), không Hồi Thành Phù về
+        if (not self._is_tudongvebanrac and not self._is_tudongvesuado) or self.get_is_dangphongyeukinh():
             self._trangthaiveban = 0
             return
 

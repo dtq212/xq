@@ -12,8 +12,8 @@
 #           cấp đích thì sang bãi kế: Ba Khâu -> 10, Thuý Hoa Sơn -> 20, Cự Lộc -> 30, Ranh Giới Đầm Lầy -> 35
 #   phongyeu: Phong Yêu Kính (tactu_langlyson_xq) tới khi mọi acc gà cấp CAPKETTHUC: người give (lập nhóm, đốt đồ) là 1 ACC GÀ có đồ Lam
 #           Kim (quái theo cấp người mở thì acc gà mới có kinh nghiệm), acc chính là thành viên dò bản đồ đánh quái. Trong phó bản acc gà
-#           đứng yên cạnh Truyền Tống Thỏ Yêu; người give hỏi Thỏ Yêu số quái mỗi GIANCACHHOITHOYEU giây, đủ TILERAPHONGYEU thì ra mở vòng
-#           mới. Bản đồ mượn ID Tây Thành (khó đi) thì ra ngay mở bản đồ khác
+#           bật "Tự động sử dụng kỹ năng" thì dò đánh như mọi người, tắt thì đứng yên cạnh Truyền Tống Thỏ Yêu; người give ra mở vòng mới
+#           theo "Điều kiện thoát" ở cấu hình Phong Yêu Kính (mặc định đủ 2 boss là ra). Bản đồ mượn ID Tây Thành (khó đi) thì ra ngay mở bản đồ khác
 #           Đồ Lam Kim để ở acc chính: ngoài phó bản, acc gà nhận đồ (người give, không thì ID nhỏ nhất) hết đồ thì acc chính đứng yên, acc
 #           gà đó tới cạnh, acc chính "give <ID acc gà> <đồ>#1 ... $0" (chuyển thẳng, không cần đồng ý, như giao đồ) mọi món đủ cấp acc gà
 #   thuhoi  : mọi acc gà tới cấp kết thúc (người dùng dặn): trước khi xong, acc chính đứng yên (đang trong Phong Yêu Kính thì Thỏ Yêu về
@@ -30,9 +30,9 @@ import time
 import unicodedata
 
 from hangso_xq import *
-from tienich_xq import phatam, canhbao, taicauhinhphongyeu, taivitrithoyeu
+from tienich_xq import phatam, canhbao, taicauhinhphongyeu, taivitrithoyeu, laydieukienrapykeocap
 from giaodo_xq import taolenhgiao
-from tactu_langlyson_xq import CAPDOLAMKIMTOITHIEU, laytenthoyeu, SOBOSSPHONGYEU, THOIGIANTOITHIEUPY
+from tactu_langlyson_xq import CAPDOLAMKIMTOITHIEU, laytenthoyeu, SOBOSSPHONGYEU, THOIGIANTOITHIEUPY, THOIGIANTOIDAPY
 
 BANDO_BAKHAU = 162
 BANDO_THUYHOASON_KC = 82
@@ -68,10 +68,9 @@ CAPKETTHUCKEOCAP = 60
 CAPTOIDANHANDODE = 30
 # Đồ đệ tới cấp này là xuất sư được (người dùng dặn): xuất sư ngay, không chờ mọi acc gà tới cấp kết thúc, xong kéo tiếp như thường
 CAPXUATSU = 60
-TILERAPHONGYEU = 0.85
-# Người give (acc gà) từ cấp này: vẫn đứng ở Thỏ Yêu nhưng không ra sớm theo số quái, chờ acc chính / acc phụ giết đủ boss mới ra
-CAPDANHDUBOSSPY = 60
-GIANCACHHOITHOYEU = 60.
+# Người give (acc gà) ra Phong Yêu Kính theo "Điều kiện thoát" ở cấu hình Phong Yêu Kính (tienich_xq.DIEUKIENRAPYKEOCAPs: số boss,
+# có chờ hết quái); hết quái = không thành viên nào (cùng bản đồ) còn mục tiêu liền chừng này giây; ở quá THOIGIANTOIDAPY thì thôi chờ
+THOIGIANHETMUCTIEUPYKC = 10.
 KHOANGCACHNOICHUYENKC = 3.
 THOIGIANCHOMENUKC = 3.
 SOLANTHUMENUKC = 3
@@ -139,7 +138,7 @@ class TacTuKeoCap:
             self._keocap["tuychoncu"] = dict(tuychoncu)
         if muctieutheosaucu:
             self._keocap["muctieutheosaucu"] = tuple(muctieutheosaucu)
-        elif vaitro in ("ga", "phu") and self._keocap["idchinh"] and self._idmuctieutheosau == self._keocap["idchinh"]:
+        elif vaitro == "ga" and self._keocap["idchinh"] and self._idmuctieutheosau == self._keocap["idchinh"]:
             # Còn Theo sau acc chính sót từ lần kéo cấp trước (bản cũ không lưu ô gốc): coi như gốc là không theo sau ai
             self._keocap.setdefault("tuychoncu", {})["_is_tudongtheosau"] = False
             self._keocap["muctieutheosaucu"] = (0, "")
@@ -452,13 +451,16 @@ class TacTuKeoCap:
         return None
 
     def _raphongyeukc(self, s):
-        # Thu hồi đồ mà đang trong Phong Yêu Kính: tắt Phong Yêu Kính, nói chuyện Thỏ Yêu "1. Ta muốn về Chu Quốc" (ra cạnh Tả Khâu Minh)
+        # Ra khỏi Phong Yêu Kính: tắt Phong Yêu Kính; trưởng nhóm giải tán nhóm (cả nhóm bị đưa ra Chu Quốc), không được (thành viên /
+        # quá thời gian) thì nói chuyện Thỏ Yêu "1. Ta muốn về Chu Quốc" (ra cạnh Tả Khâu Minh)
         moitruong = self.moitruong
         py = (self._langlyson or {}).get("py") or {}
-        if py.get("vitrithoyeu"):
+        if py.get("vitrithoyeu") and py.get("bandothoyeu") == moitruong.get_idbandohientai():
             s["vitrithoyeu"] = py["vitrithoyeu"]
         if self._langlyson:
             self.huy_langlyson()
+        if self._giaitanraphongyeu(s):
+            return None
         diachi = moitruong.action_timkiemnhanvat(tennhanvat = laytenthoyeu(moitruong))
         if diachi:
             s["vitrithoyeu"] = moitruong.get_toado(diachi)
@@ -806,7 +808,11 @@ class TacTuKeoCap:
 
     def _xulykeocapga(self, s):
         moitruong = self.moitruong
-        self._datkc(s, "_is_tudongtangcap", True, "Tự tăng cấp")
+        # Tăng cấp theo ô "Tự tăng cấp tới cấp" của người dùng, kéo cấp không tự bật/đổi nữa; bản lưu cũ đã đổi thì trả lại ngay
+        tuychoncu = s.get("tuychoncu") or {}
+        for thuoctinh in ("_is_tudongtangcap", "_captudongtangcaptoida"):
+            if thuoctinh in tuychoncu:
+                setattr(self, thuoctinh, tuychoncu.pop(thuoctinh))
         if not s["idchinh"]:
             # Bật "Làm acc gà" (máy khác nối LAN): tự nhận acc chính đang kéo cấp; acc chính thấy mình báo idchinh là nó thì thêm vào
             # danh sách acc gà. Chưa thấy thì vẫn làm tân thủ (không cần acc chính), xong thì chờ
@@ -823,9 +829,6 @@ class TacTuKeoCap:
         chinh = self._laychinh(s)
         if chinh:
             s["capketthuc"] = int(chinh["_keocap"].get("capketthuc") or CAPKETTHUCKEOCAP)
-        if self._captudongtangcaptoida < s["capketthuc"]:
-            s.setdefault("tuychoncu", {}).setdefault("_captudongtangcaptoida", self._captudongtangcaptoida)
-            self._captudongtangcaptoida = s["capketthuc"]
         self._dongykeocapga(s)
         if not s["xongtanthu"]:
             self._tatsautheokc(s)
@@ -887,6 +890,11 @@ class TacTuKeoCap:
             s["muctieutheosaucu"] = (self._idmuctieutheosau, self._tenmuctieutheosau)
         if self._idmuctieutheosau != s["idchinh"]:
             self.thietlap_muctieutheosau(s["idchinh"], chinh.get("tennhanvat") or "")
+        if s["vaitro"] == "phu":
+            # Acc phụ: Theo sau / Tự tìm đường theo sau theo ô của người dùng (_xulykeocapphu)
+            s["trangthai"] = (f"theo sau {chinh.get('tennhanvat') or s['idchinh']}" if self._is_tudongtheosau else "không theo sau (ô Theo sau đang tắt)") \
+                + f" ({self._tengiaidoan(giaidoan)}, cấp {moitruong.get_capdonhanvat()})"
+            return False
         self._datkc(s, "_is_tudongtheosau", True, "Theo sau")
         self._datkc(s, "_is_tutimduongtheosau", True, "Tự tìm đường theo sau")
         s["trangthai"] = f"theo sau {chinh.get('tennhanvat') or s['idchinh']} ({self._tengiaidoan(giaidoan)}, cấp {moitruong.get_capdonhanvat()})"
@@ -951,10 +959,12 @@ class TacTuKeoCap:
                 return False
             s["idchinh"] = chinhs[0]
             self._logkc(f"Làm acc phụ cho acc chính ID {s['idchinh']}" + (f" (thấy {len(chinhs)} acc chính, lấy ID nhỏ nhất)" if len(chinhs) > 1 else ""))
+        # Acc phụ: Theo sau / Tự tìm đường theo sau luôn theo ô của người dùng (kể cả Phong Yêu Kính: bật thì Theo sau lo như cũ, tắt thì
+        # tự dò đánh); bản lưu cũ kéo cấp đã đổi thì trả lại một lần
+        self._traluatheosauphukc(s)
         chinh = self._laychinh(s)
         if not chinh:
             s["trangthai"] = f"chờ acc chính (ID {s['idchinh']}) online"
-            self._tatsautheokc(s)
             return False
         giaidoan = chinh["_keocap"].get("giaidoan") or ""
         if giaidoan == "xong":
@@ -964,7 +974,6 @@ class TacTuKeoCap:
         if giaidoan != "phongyeu":
             self._dongykeocapga(s)
             return self._theosauchinhkc(s, chinh, giaidoan)
-        self._tatsautheokc(s)
         s["idgive"] = chinh["_keocap"].get("idgive") or 0
         if not s["idgive"]:
             s["trangthai"] = "Phong Yêu Kính: chờ acc chính chọn người give"
@@ -973,6 +982,12 @@ class TacTuKeoCap:
         self._batpykc(s)
         s["trangthai"] = f"Phong Yêu Kính: phụ đánh ({self.get_trangthailanglyson() or 'chờ bật'})"
         return False
+
+    def _traluatheosauphukc(self, s):
+        tuychoncu = s.get("tuychoncu") or {}
+        for thuoctinh in ("_is_tudongtheosau", "_is_tutimduongtheosau"):
+            if thuoctinh in tuychoncu:
+                setattr(self, thuoctinh, tuychoncu.pop(thuoctinh))
 
     def _tatsautheokc(self, s):
         if self._is_tudongtheosau:
@@ -1249,44 +1264,86 @@ class TacTuKeoCap:
         return s["idgive"], [i for i in ids if i != s["idgive"]]
 
     def _buoctrongphongyeukeocap(self, s, py, idbando, is_thanhvien):
-        # Trong Phong Yêu Kính khi kéo cấp, acc gà không đi đâu: đứng cạnh Thỏ Yêu (đứng đâu cũng có kinh nghiệm), không đánh. Người give
-        # hỏi Thỏ Yêu số quái mỗi GIANCACHHOITHOYEU giây, đủ TILERAPHONGYEU thì ra (vòng mới); bản đồ Tây Thành thì _buoctrongphongyeu ra ngay.
-        # -> yêu cầu di chuyển / None, False khi không phải acc gà kéo cấp (Phong Yêu Kính làm như cũ)
+        # Trong Phong Yêu Kính khi kéo cấp, acc gà tắt "Tự động sử dụng kỹ năng" không đi đâu: đứng cạnh Thỏ Yêu (đứng đâu cũng có kinh
+        # nghiệm), không đánh; bật thì dò đánh như thường. Người give ra (vòng mới) khi đã diệt boss và hết quái; bản đồ Tây Thành thì
+        # _buoctrongphongyeu ra ngay. -> yêu cầu di chuyển / None, False khi để Phong Yêu Kính làm như cũ (không phải acc gà, acc gà đánh quái)
         kc = self._keocap
         if not kc or kc["vaitro"] != "ga":
             return False
         now = time.time()
-        s["chedo"] = "cho"
         tenpb = self._tenpb(s)
-        if not is_thanhvien:
-            # Người give đủ CAPDANHDUBOSSPY (người dùng dặn): vẫn đứng ở Thỏ Yêu nhưng không ra sớm theo số quái, chờ acc chính / acc phụ
-            # giết đủ boss (_congbossnguoikhac cộng boss người khác giết) hoặc game báo hoàn thành mới ra
-            is_danhduboss = (self.moitruong.get_capdonhanvat() or 0) >= CAPDANHDUBOSSPY
-            if is_danhduboss and (s["daxongphoban"] or (len(py["bossdagiet"]) >= SOBOSSPHONGYEU and now - py["lucvao"] >= THOIGIANTOITHIEUPY)):
-                self._logpb(s, f"Xong {len(py['bossdagiet'])}/{SOBOSSPHONGYEU} boss: ra mở vòng mới")
-                s.update(giaidoan = "nhanthuong", hoithoai = None)
-                return None
-            if py["hoisoquai"]:
-                return self._hoisoquaiphongyeu(s, py)
-            soquai, socan = py.get("soquai"), py.get("soquaican")
-            if is_danhduboss:
-                tiendo = f"{soquai}/{socan} quái, " if soquai is not None and socan else ""
-                s["trangthai"] = f"{tenpb}: acc gà đứng ở Thỏ Yêu chờ đủ boss ({tiendo}boss {len(py['bossdagiet'])}/{SOBOSSPHONGYEU})"
-            elif soquai is not None and socan and soquai >= socan * TILERAPHONGYEU:
-                self._logpb(s, f"Đã đánh {soquai}/{socan} quái (≥ {TILERAPHONGYEU:.0%}): ra mở vòng mới")
-                s.update(giaidoan = "nhanthuong", hoithoai = None)
-                return None
-            if now - py.get("luchoithoyeu", py["lucvao"]) > GIANCACHHOITHOYEU:
-                py["luchoithoyeu"] = now
-                py["hoisoquai"] = now
-                return None
-            if not is_danhduboss:
-                tiendo = f"{soquai}/{socan} quái" if soquai is not None and socan else "chưa hỏi số quái"
-                s["trangthai"] = f"{tenpb}: acc gà đứng ở Thỏ Yêu chờ quái ({tiendo}, ra khi ≥ {TILERAPHONGYEU:.0%})"
-        else:
+        # Bật "Tự động sử dụng kỹ năng" (người dùng dặn 2026-11-04): không đứng ở Thỏ Yêu, dò lộ trình đánh quái như thành viên thường
+        # (người give thì như trưởng nhóm), chỉ thêm điều kiện ra sớm của kéo cấp
+        is_danhquai = self._is_tudongsudungkynang
+        if is_thanhvien:
+            if is_danhquai:
+                return False
             py["hoisoquai"] = None
+            s["chedo"] = "cho"
             s["trangthai"] = f"{tenpb}: acc gà đứng ở Thỏ Yêu hưởng kinh nghiệm"
+            return self._dungthoyeukc(s, py, idbando)
+        # Người give: ra theo "Điều kiện thoát" trong cấu hình Phong Yêu Kính (tienich_xq.DIEUKIENRAPYKEOCAPs, mặc định đủ 2 boss là ra
+        # ngay): đã diệt đủ số boss (mình hay người cùng nhóm giết, _congbossnguoikhac) hoặc game báo hoàn thành, không xét số
+        # quái Thỏ Yêu; kiểu chờ hết quái thì chờ tới khi không thành viên nào còn mục tiêu mới ra. Boss đếm chỉ tin sau
+        # THOIGIANTOITHIEUPY giây (vừa vào thì có thể là số boss vòng cũ)
+        sobossra, is_chohetquai = laydieukienrapykeocap()
+        comuctieus = self._thanhviencomuctieupykc(py)
+        if is_danhquai and self.moitruong.get_iddoituongmuctieudangchon():
+            comuctieus.insert(0, "mình")
+            py["luccomuctieu"] = now
+        is_quagio = now - py["lucvao"] >= THOIGIANTOIDAPY
+        is_hetmuctieu = not is_chohetquai or (not comuctieus and now - py.get("luccomuctieu", 0.) >= THOIGIANHETMUCTIEUPYKC)
+        if not is_hetmuctieu and is_quagio:
+            is_hetmuctieu = True
+            if not py.get("dalogquagiomuctieu"):
+                py["dalogquagiomuctieu"] = True
+                self._logpb(s, f"Ở quá {THOIGIANTOIDAPY / 60:.0f} phút: không chờ thành viên hết mục tiêu nữa")
+        is_duboss = s["daxongphoban"] or (len(py["bossdagiet"]) >= sobossra and now - py["lucvao"] >= THOIGIANTOITHIEUPY)
+        is_raquagio = not is_danhquai and not is_duboss and is_quagio and not self._nguoikhacdanhbosspy() and not comuctieus
+        if (is_duboss and is_hetmuctieu) or is_raquagio:
+            # Đủ điều kiện ra: chờ nhặt xong đồ rơi đã (đứng tại chỗ, không kéo về Thỏ Yêu cho việc nhặt đồ khỏi bị giành)
+            if self._chonhatdoroipy(s):
+                s["trangthai"] = f"{tenpb}: đủ điều kiện ra ({len(py['bossdagiet'])}/{sobossra} boss), chờ nhặt đồ"
+                return None
+        else:
+            s.pop("lucxongboss", None)
+        if is_duboss and is_hetmuctieu:
+            self._logpb(s, f"Đã diệt {len(py['bossdagiet'])}/{sobossra} boss" + (", hết quái" if is_chohetquai else "") + ": ra mở vòng mới")
+            s.update(giaidoan = "nhanthuong", hoithoai = None)
+            return None
+        if is_raquagio:
+            # Acc gà đứng ở Thỏ Yêu không tự dò: ở quá THOIGIANTOIDAPY mà chưa đủ boss, không ai đánh boss / còn mục tiêu (boss sau không
+            # ra) thì thôi, ra mở vòng mới cho khỏi kẹt (người đánh quái thì _buoctrongphongyeu tự ra theo lượt dò)
+            self._logpb(s, f"Ở quá {THOIGIANTOIDAPY / 60:.0f} phút mới diệt {len(py['bossdagiet'])}/{sobossra} boss, "
+                           "không ai còn đánh: ra mở vòng mới")
+            s.update(giaidoan = "nhanthuong", hoithoai = None)
+            return None
+        if is_danhquai:
+            # Để _buoctrongphongyeu dò đánh như trưởng nhóm (đủ boss / hết lượt dò thì nó cũng tự ra)
+            return False
+        py["hoisoquai"] = None
+        s["chedo"] = "cho"
+        if is_duboss:
+            s["trangthai"] = f"{tenpb}: đã diệt {len(py['bossdagiet'])} boss, chờ hết quái " \
+                             f"({', '.join(comuctieus) if comuctieus else 'vừa hết mục tiêu'} đang đánh)"
+        else:
+            s["trangthai"] = f"{tenpb}: acc gà đứng ở Thỏ Yêu chờ diệt boss (boss {len(py['bossdagiet'])}/{sobossra})"
+        return self._dungthoyeukc(s, py, idbando)
+
+    def _dungthoyeukc(self, s, py, idbando):
         x, y = self._vitrithoyeu(s, py, idbando)
         if self.moitruong.get_khoangcachdiem(x, y) > KHOANGCACHNOICHUYENKC:
             return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x, y, idbando), "khoangcachtoida": 1.}
         return None
+
+    def _thanhviencomuctieupykc(self, py):
+        # Tên thành viên nhóm Phong Yêu Kính (cùng máy / LAN, cùng bản đồ) đang có mục tiêu trong game; có người thì nhớ lúc đó vào
+        # py["luccomuctieu"] (giữa 2 con quái mục tiêu về 0 một lúc, chờ THOIGIANHETMUCTIEUPYKC giây mới coi là hết quái)
+        tens = []
+        for idtv in self._laynhompy()[1]:
+            info = self._laythongtinnguoichoi(idtv)
+            if info and info.get("iddoituongmuctieu") and self.moitruong.get_is_cungbando(info):
+                tens.append(info.get("tennhanvat") or f"ID {idtv}")
+        if tens:
+            py["luccomuctieu"] = time.time()
+        return tens

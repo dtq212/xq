@@ -60,6 +60,7 @@ class TacTuHoatDong:
         self.moitruong.action_ngatdichuyen()
         self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
         self._yeucautancong = None
+        self._yeucautancongxuat = None
         self._yeucaunhatvatpham = None
         self._yeucaugomquai = None
         self._yeucautudo = None
@@ -932,6 +933,7 @@ class TacTuHoatDong:
         self._yeucaunhatvatpham = None
         self._yeucautheosau = None
         self._yeucautancong = None
+        self._yeucautancongxuat = None
         self._yeucautudo = None
         self._yeucaugomquai = None
         self._yeucaukhaikhoang = None

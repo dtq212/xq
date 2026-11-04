@@ -1,5 +1,12 @@
 {
-  "chedotoi": true,
+  "chedotoi": false,
   "ghim": false,
-  "angame": []
+  "angame": [
+    9176,
+    9198,
+    9286,
+    9324,
+    9325,
+    9500
+  ]
 }

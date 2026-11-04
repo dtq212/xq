@@ -326,6 +326,15 @@ class LoopPhu:
             except Exception as e:
                 traceback.print_exc()
                 print(f"[Loop PHỤ] Lỗi không xác định: {e}")
+                # Kéo cấp / phó bản / bán rác chạy ở vòng này: lỗi lặp lại làm nhân vật đứng im mà file log không thấy gì, ghi cả vào log
+                # nhân vật (mỗi lỗi khác nhau ghi 1 lần, lặp mỗi 0.5s thì log đầy)
+                vet = traceback.format_exc()
+                if vet != getattr(self, "_loidaghi", None):
+                    self._loidaghi = vet
+                    try:
+                        self.moitruong._inlog(f"[Loop PHỤ] Lỗi: {e}\n{vet}")
+                    except Exception:
+                        pass
             if self.giamsat:
                 self.giamsat.danhdau("phụ")
             time.sleep(0.5)

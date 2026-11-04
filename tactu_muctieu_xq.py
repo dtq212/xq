@@ -511,14 +511,28 @@ class TacTuMucTieu:
             # Chừa thêm một khoảng: ngưỡng này trùng chỗ dừng khi theo nhóm nên lệch chút xíu (trưởng nhóm đang đi) là không chọn được mục tiêu
             if khoangcachtoibanthanvatheosau > khoangcachtoidatheosau + DUKHOANGCACHTHEOSAUCHONMUCTIEU:
                 # Không đếm lượt này: xoá kết quả đếm cũ để không dùng chiêu diện rộng theo số quái của lượt trước khi đang chạy về
-                self._is_nhieumuctieugan3 = self._is_nhieumuctieugan5 = self._is_nhieumuctieugan7 = self._is_nhieumuctieugan9 = False
+                self._is_nhieumuctieugan3 = self._is_nhieumuctieugan5 = self._is_nhieumuctieugan7 = self._is_nhieumuctieugan8 = False
                 self._is_nhieumuctieuganbanthan3 = self._is_nhieumuctieuganbanthan5 = self._is_nhieumuctieuganbanthan7 = self._is_nhieumuctieuganbanthan9 = False
+                self._somuctieuganbanthan3 = self._somuctieugan3 = 0
+                self._toadomuctieuhoples = []
+                self._diachimuctieuhoples = []
                 return
+
+        # Thục Sơn đang đi lấy góc cho Khai Thiên Tịch Địa đánh mục tiêu hiện tại (_thudungkhaithientichdiadanh): giữ nguyên mục tiêu đó
+        # tới khi ra chiêu / bỏ chỗ đứng (tối đa THOIGIANGIUCHODOIKHAITHIEN giây), không đổi sang con khác gần hơn dọc đường (người dùng
+        # 2026-11-04: đi lấy góc đánh X tới gần Y lại đổi sang Y thì đi vô ích). Mục tiêu hết hợp lệ / chết thì vẫn bỏ như thường (ở trên)
+        # Cũng giữ từ lúc ra Khai Thiên rộng (rơi xa) tới khi Lưu Tinh Truy Mạng lướt về đúng mục tiêu đó (_khoamuctieuluutinh), không
+        # đổi sang con gần chỗ rơi hơn (người dùng 2026-11-04)
+        chodoikhaithien = getattr(self, "_chodoikhaithien", None)
+        khoaluutinh = getattr(self, "_khoamuctieuluutinh", None)
+        is_khoamuctieukhaithien = bool(muctieuhientai) and any(
+            k and k["diachimuctieu"] == muctieuhientai["diachi"] and time.time() <= k.get("hethan", time.time())
+            for k in (chodoikhaithien, khoaluutinh))
 
         # Tập hỏa: người mình theo sau chạy cùng máy thì đánh đúng mục tiêu họ đang chọn (dữ liệu chia sẻ). Khác máy, hoặc mục tiêu đó
         # không hợp lệ với mình (chưa thấy, mới xuất hiện chưa đủ 1s, ngoài vùng quanh người theo sau, đang hoà bình mà là mục tiêu PK...)
         # thì chọn mục tiêu gần người theo sau nhất (xem _is_uutienhon)
-        if self._is_taphoa and is_anhhuongboimuctieutheosau:
+        if self._is_taphoa and is_anhhuongboimuctieutheosau and not is_khoamuctieukhaithien:
             diachitaphoa = self._laymuctieutaphoa()
             thongtin = diachitaphoa and self._kiemtramuctieuhople(diachitaphoa, is_dongdoi = False)
             if thongtin:
@@ -603,6 +617,7 @@ class TacTuMucTieu:
         # Ứng viên tốt nhì: làm mục tiêu dự phòng khi trước đó không có mục tiêu hiện tại
         muctieutotnhi = None
         toadomuctieuhoples = []
+        diachimuctieuhoples = []
 
         iii = 0
         while True:
@@ -627,6 +642,7 @@ class TacTuMucTieu:
             # trúng mọi con đứng quanh mình, kể cả con không được chọn làm mục tiêu. Lọc trước thì người theo sau
             # khoảng cách ngắn chỉ đếm được con trong ~1.5 ô quanh trưởng nhóm nên gần như không bao giờ đủ số lượng
             toadomuctieuhoples.append(toadomuctieuxemxet)
+            diachimuctieuhoples.append(diachicosothongtinnhanvatmuctieuxemxet)
 
             # Chiêu diện rộng cũng xét theo ô max(|dx|, |dy|) như tầm đánh
             khoangcachdem = khoangcachtamdanh(toadomuctieuxemxet, toadobanthan)
@@ -647,6 +663,9 @@ class TacTuMucTieu:
 
             # Mục tiêu hiện tại đã là điểm xuất phát của muctieutotnhat, không so lại với chính nó
             if muctieuhientai and diachicosothongtinnhanvatmuctieuxemxet == muctieuhientai["diachi"]:
+                continue
+            # Đang đi lấy góc Khai Thiên: vẫn đếm / lưu toạ độ con này (tính hình chữ nhật) nhưng không cho nó thay mục tiêu
+            if is_khoamuctieukhaithien:
                 continue
 
             if not muctieutotnhat or _is_uutienhon(thongtinmuctieuxemxet, muctieutotnhat):
@@ -675,24 +694,29 @@ class TacTuMucTieu:
         demmuctieugan3 = 0
         demmuctieugan5 = 0
         demmuctieugan7 = 0
-        demmuctieugan9 = 0
+        demmuctieugan8 = 0
 
         toadotamdem = muctieutotnhat["toado"] if muctieutotnhat else toadobanthan
         for toadomuctieuhople in toadomuctieuhoples:
             khoangcachtoitamdem = khoangcachtamdanh(toadomuctieuhople, toadotamdem)
-            if khoangcachtoitamdem <= 9.0:
+            if khoangcachtoitamdem <= 8.0:
                 if khoangcachtoitamdem <= 3.0:
                     demmuctieugan3 += 1
                 if khoangcachtoitamdem <= 5.0:
                     demmuctieugan5 += 1
                 if khoangcachtoitamdem <= 7.0:
                     demmuctieugan7 += 1
-                demmuctieugan9 += 1
+                demmuctieugan8 += 1
 
+        self._somuctieugan3 = demmuctieugan3
+        self._somuctieuganbanthan3 = demmuctieuganbanthan3
+        # Toạ độ mọi mục tiêu hợp lệ quanh mình: Khai Thiên Tịch Địa chọn điểm rơi trúng nhiều con nhất (_chondiemkhaithientichdia)
+        self._toadomuctieuhoples = toadomuctieuhoples
+        self._diachimuctieuhoples = diachimuctieuhoples
         self._is_nhieumuctieugan3 = demmuctieugan3 >= self._soluongnhieumuctieu
         self._is_nhieumuctieugan5 = demmuctieugan5 >= self._soluongnhieumuctieu
         self._is_nhieumuctieugan7 = demmuctieugan7 >= self._soluongnhieumuctieu
-        self._is_nhieumuctieugan9 = demmuctieugan9 >= self._soluongnhieumuctieu
+        self._is_nhieumuctieugan8 = demmuctieugan8 >= self._soluongnhieumuctieu
 
         self._is_nhieumuctieuganbanthan3 = demmuctieuganbanthan3 >= self._soluongnhieumuctieu
         self._is_nhieumuctieuganbanthan5 = demmuctieuganbanthan5 >= self._soluongnhieumuctieu

@@ -241,6 +241,9 @@ class MoiTruong:
         self._toadolantruoc = None
         self._toadobandocu = None
         self._lucvaobando = {}
+        # Lần cuối thấy mình còn ở phó bản mượn ID bản đồ ngoài (Phong Yêu Kính, Tập Kích) và ID mượn đó (get_is_vuaroiphobanmuonbando)
+        self._thoidiemophobanmuonbando = 0.
+        self._idbandophobanmuon = None
         self._idbandohientai = False
         self._thoidiemcohieuungtienthanvodichgannhat = 0.
         self._thoidiemcohieuunglactuyetvongan = 0.
@@ -1266,6 +1269,16 @@ class MoiTruong:
         phobanmuon = self.get_tenphobanmuonbando()
         return info.get("_phobanmuonbando", phobanmuon) == phobanmuon
 
+    def get_is_vuaroiphobanmuonbando(self):
+        # Vừa ra khỏi phó bản mượn ID bản đồ ngoài: tên đổi trước, ID còn là ID mượn vài giây => tưởng đang ở bản đồ thật cùng ID (ra Phong
+        # Yêu Kính về Chu Quốc mà tưởng ở Thanh Khê 1, theo sau / tìm đường Tín Vật về phái - QuanSuMuMuu 2026-11-04). True thì chờ
+        if not self._thoidiemophobanmuonbando or self.get_is_phobanmuonbando():
+            return False
+        daqua = time.time() - self._thoidiemophobanmuonbando
+        if self._idbandohientai == self._idbandophobanmuon:
+            return daqua < THOIGIANCHOIDROIPHOBANMUON
+        return time.time() - self._thoidiemthaydoibandogannhat < THOIGIANCHOSAUROIPHOBANMUON and daqua < THOIGIANCHOIDROIPHOBANMUON
+
     def get_is_bandophongyeu(self):
         # Phong Yêu Kính mượn ID 1 bản đồ ngẫu nhiên: chỉ nhận ra qua đầu tên bản đồ game
         tenbandogame = self.get_tenbandogame()
@@ -1735,6 +1748,9 @@ class MoiTruong:
                 self._inlog(f"[TÌM ĐƯỜNG] Đã sang bản đồ {idbandohientai}: huỷ đích tìm đường còn ở bản đồ cũ {self._idbandohientai}")
         self._idbandohientai = idbandohientai
         self._toadolantruoc = toado
+        if idbandohientai and self.get_is_phobanmuonbando():
+            self._thoidiemophobanmuonbando = time.time()
+            self._idbandophobanmuon = idbandohientai
 
         idtuthenhanvat = self.get_idtuthenhanvat()
         if idtuthenhanvat != TUTHENHANVAT_DUNGIM or self.get_is_dangvankhi():
@@ -3118,6 +3134,10 @@ class MoiTruong:
             luoi.append(hang)
         return luoi
 
+    def get_luoivatcanvung(self, x1, y1, x2, y2):
+        # Lưới vật cản vùng [x1, x2] x [y1, y2]: luoi[x - x1][y - y1], khác 0 là vật cản. None khi chưa đọc được
+        return self._get_luoivatcan(int(x1), int(y1), int(x2), int(y2))
+
     def get_luoivatcanbando(self):
         # Cả lưới vật cản của bản đồ hiện tại: luoi[x][y] (mỗi cột x 1 lần đọc, bản đồ 304 x 228 là 304 lần)
         thongtingame = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
@@ -4141,6 +4161,10 @@ class MoiTruong:
         except Exception:
             return None
         return struct.unpack("<10i", dulieu[:40]), struct.unpack("<10i", dulieu[80:120])
+
+    def get_sobaydoituong(self, diachi):
+        # ((10 giá trị), (10 bộ đếm)) số bay trên đầu đối tượng, chỉ là sát thương do chính mình gây ra (xem _docsobaydoituong); None khi lỗi
+        return self._docsobaydoituong(diachi)
 
     def _is_muctieudatrungchieu(self):
         # Mục tiêu đã hiện số bay mới so với lúc gửi chiêu (chiêu đánh: mất máu, chiêu hồi: hồi máu). Nhớ lại kết quả (số bay mờ đi sau ~1s)

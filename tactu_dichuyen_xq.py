@@ -2,6 +2,8 @@
 # Mixin của TacTu (tactu_xq.py): chỉ chứa hàm, trạng thái (self._...) khởi tạo trong TacTu.__init__
 import math
 import random
+import re
+import sys
 import time
 
 from hangso_xq import *
@@ -331,7 +333,7 @@ class TacTuDiChuyen:
         # Vừa mất mục tiêu (giết xong, chưa chọn con kế) chưa quá THOIGIANCHOMUCTIEUKETRUOCKHINHATDO giây thì chưa đi nhặt đồ, chờ chọn con
         # kế; món trong tầm nhặt tại chỗ (tactu_vatpham "get x y") vẫn nhặt luôn vì không cần di chuyển. Đang có mục tiêu thì giữ như cũ
         # (nhặt món gần hơn mục tiêu)
-        is_comuctieu = bool(diachimuctieudangchon or (self._yeucautancong and self._yeucautancong.get("diachimuctieu")))
+        is_comuctieu = bool(diachimuctieudangchon or (self._yeucautancongxuat and self._yeucautancongxuat.get("diachimuctieu")))
         if is_comuctieu:
             self._thoidiemcomuctieugannhat = time.time()
         self._is_vuamatmuctieu = not is_comuctieu and time.time() - self._thoidiemcomuctieugannhat < THOIGIANCHOMUCTIEUKETRUOCKHINHATDO
@@ -358,8 +360,8 @@ class TacTuDiChuyen:
         if is_yeucaunhatvatpham and not is_muctieupk and self._is_tudongvebanrac:
             khoangcachnhatvatpham = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat) if self._diachicosovatphamdangnhat else KHOANGCACHTOIDAHOPLE
             khoangcachtancong = KHOANGCACHTOIDAHOPLE
-            if self._yeucautancong and self._yeucautancong.get("diachimuctieu"):
-                khoangcachtancong = self.moitruong.get_khoangcach(self._yeucautancong.get("diachimuctieu"))
+            if self._yeucautancongxuat and self._yeucautancongxuat.get("diachimuctieu"):
+                khoangcachtancong = self.moitruong.get_khoangcach(self._yeucautancongxuat.get("diachimuctieu"))
             elif diachimuctieudangchon:
                 khoangcachtancong = self.moitruong.get_khoangcach(diachimuctieudangchon)
 
@@ -395,8 +397,8 @@ class TacTuDiChuyen:
         elif is_yeucaunhatvatphamcholau:
             yeucauduocchon = self._yeucaunhatvatpham
             lydochon = "NHẶT ĐỒ (CHỜ QUÁ LÂU)"
-        elif self._yeucautancong:
-            yeucauduocchon = self._yeucautancong
+        elif self._yeucautancongxuat:
+            yeucauduocchon = self._yeucautancongxuat
             lydochon = "TẤN CÔNG"
         elif is_yeucaunhatvatpham and not is_muctieupk:
             yeucauduocchon = self._yeucaunhatvatpham
@@ -431,7 +433,7 @@ class TacTuDiChuyen:
             print(f"[DEBUG-MOVE] Quyết định: {lydochon} | Đích: {msg_dich} | Mục tiêu: {msg_diachimuctieudanggom}")
 
         if yeucauduocchon and yeucauduocchon.get("yeucau") == YEUCAUDICHUYENTANCONG and is_anhhuongboimuctieutheosau:
-            # Sao chép để việc cắt tọa độ theo trưởng nhóm không ghi đè vào self._yeucautancong
+            # Sao chép để việc cắt tọa độ theo trưởng nhóm không ghi đè vào self._yeucautancongxuat
             yeucauduocchon = dict(yeucauduocchon)
             x_theosau, y_theosau = self._laytoadomuctieutheosau() or (0, 0)
 
@@ -465,6 +467,7 @@ class TacTuDiChuyen:
                         yeucauduocchon["khoangcachtoida"] = 0
 
         self._logdichuyen(lydochon, yeucauduocchon)
+        self._ghihanhdongdichuyen(lydochon, yeucauduocchon)
 
         iddoituongmuctieudanggom = 0
         if yeucauduocchon:
@@ -944,6 +947,10 @@ class TacTuDiChuyen:
             if lydo:
                 return {"loai": "khongduong", "solan": None, "mota": f"Đang ở {self.moitruong.get_tenbandogame()}, không chạy bộ ra: {lydo}"}
             return {"loai": "hoithanhphu", "solan": 0, "is_roiphoban": True, "mota": f"Hồi Thành Phù ra khỏi {self.moitruong.get_tenbandogame()} (tới {ten})"}
+        if self.moitruong.get_is_vuaroiphobanmuonbando():
+            # Vừa ra khỏi Phong Yêu Kính / Tập Kích: ID còn là ID mượn (Thanh Khê 1...) mà thật ra đã ở Chu Quốc => tính đường từ bản đồ sai,
+            # Tín Vật về phái rồi Xa Phu (QuanSuMuMuu 2026-11-04 07:40). Chờ ID bản đồ thật
+            return {"loai": "cho", "solan": None, "mota": f"Vừa ra khỏi phó bản, chờ bản đồ ổn định rồi mới tới {ten}"}
         if idbandohientai == idbandodich:
             return {"loai": "toinoi", "mota": f"Đã ở {ten}", "solan": 0}
         # is_roiphoban: đang ở phó bản mà đích ở ngoài, không chạy bộ ra được (Lăng Ly Sơn xong, người được theo sau đã ra) thì Hồi Thành Phù
@@ -1018,6 +1025,8 @@ class TacTuDiChuyen:
         if self.moitruong.get_is_toadochuaondinh():
             return None
         loai = buoc["loai"]
+        if loai == "cho":
+            return None
         if loai != "hoithanhphu":
             # Lộ trình đã chọn đi cách khác (chạy bộ, phù, NPC...): thôi nói chuyện Xa Phu Niết Bàn, không thì vừa chạy tới cổng vừa nói
             # chuyện Xa Phu, giành nhau mãi (TieuLyPhiDao ở Đường Môn 20:38)
@@ -1033,10 +1042,98 @@ class TacTuDiChuyen:
                     and time.time() - self._thoidiemsudunghoithanhphugannhat > 12.:
                 print(f"{nhanlog} => {buoc['mota']}")
                 self.moitruong.action_ngatdichuyen()
-                self.action_sudunghoithanhphu(idbandodich, is_roiphoban = buoc.get("is_roiphoban", False))
+                self.action_sudunghoithanhphu(idbandodich, is_roiphoban = buoc.get("is_roiphoban", False),
+                                              nguon = f"{nhanlog}: {buoc['mota']} (đang ở {laytenbando(idbandohientai)})")
             return None
         # Đã tới bản đồ đích / không có đường trong dữ liệu cổng: đi thẳng tới điểm đích (client tự tìm đường)
         return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (*toadodich, idbandodich), "khoangcachtoida": 0} if toadodich else None
+
+    def ghi_hanhdong(self, hanhdong, nguon, khoa = None):
+        # Hành động hiện tại + nguồn (việc nào sinh ra) cho dòng dưới "Đang điều khiển"; đổi khoá (mặc định chữ + nguồn) thì thêm 1 dòng
+        # lịch sử, cùng khoá thì chỉ cập nhật chữ (toạ độ đổi liên tục) mà giữ lúc bắt đầu
+        now = time.time()
+        self._hanhdong = (hanhdong, nguon, now)
+        khoa = khoa if khoa is not None else (hanhdong, nguon)
+        if self._lichsuhanhdong and self._lichsuhanhdong[-1][3] == khoa:
+            self._lichsuhanhdong[-1] = (self._lichsuhanhdong[-1][0], hanhdong, nguon, khoa)
+            return
+        self._lichsuhanhdong.append((now, hanhdong, nguon, khoa))
+        del self._lichsuhanhdong[:-SOLICHSUHANHDONG]
+        self.moitruong._inlog(f"[HÀNH ĐỘNG] {hanhdong} ← {nguon}")
+
+    def get_lichsuhanhdong(self):
+        return [(t, h, n) for t, h, n, _ in reversed(self._lichsuhanhdong)]
+
+    def _nguonyeucautudo(self):
+        # Việc đang sinh ra _yeucautudo (đi tới bản đồ, giao đồ, sư môn, Phong Yêu Kính...), theo đúng thứ tự xét trong vòng di chuyển
+        if self._idbandocandi:
+            return f"Đi tới bản đồ {laytenbando(self._idbandocandi)} (bấm tay)"
+        for is_dang, ten in ((self.get_is_danggiaodo, "Giao đồ"), (self.get_is_dangcatkho, "Cất kho"), (self.get_is_dangsumon, "Sư môn"),
+                             (self.get_is_dangkeocap, "Kéo cấp"), (self.get_is_danglanglyson, None), (self.get_is_dangsugia, "Sư Gia"),
+                             (self.get_is_dangtapkich, "Tập Kích"), (self.get_is_matacdichuyen, "Mã Tặc"),
+                             (self.get_is_danhvongdichuyen, "Danh Vọng")):
+            try:
+                if not is_dang():
+                    continue
+            except Exception:
+                continue
+            if ten == "Kéo cấp":
+                return f"Kéo cấp: {(getattr(self, '_keocap', None) or {}).get('trangthai') or '-'}"
+            if ten is None:
+                return self.get_trangthailanglyson() or "Phó bản tự động"
+            return ten
+        if self._diemdanhxungquanhhientai:
+            return f"Lộ trình điểm đánh #{self._iddiemdanhxungquanhhientai + 1}"
+        return "Đi dạo / dò bản đồ"
+
+    def _ghihanhdongdichuyen(self, lydochon, yeucau):
+        try:
+            muctieu = ""
+            diachi = yeucau.get("diachimuctieu") if yeucau else None
+            if diachi:
+                muctieu = self.moitruong.get_tendoituong(diachi) or ""
+            dich = yeucau.get("toadodich") if yeucau else None
+            chodich = f" ({round(dich[0])}, {round(dich[1])})" if dich else ""
+            buoc = self.get_buocdichuyen()
+            theosau = self._tenmuctieutheosau or (f"ID {self._idmuctieutheosau}" if self._idmuctieutheosau else "?")
+            if lydochon == "KHÔNG CÓ" and self.moitruong.get_is_dangvankhi():
+                # Đang vận khí (Hồi Thành Phù / Tín Vật / triệu hồi): giữ hành động đã ghi lúc bắt đầu vận khí
+                return
+            if lydochon == "KHÔNG CÓ":
+                hanhdong, nguon = "Đứng yên", buoc or "không có việc cần di chuyển"
+            elif lydochon == "TẤN CÔNG":
+                khoangcach = self.moitruong.get_khoangcach(diachi) if diachi else None
+                toida = yeucau.get("khoangcachtoida")
+                is_tiepcan = khoangcach is not None and toida is not None and khoangcach > toida + 0.5
+                hanhdong = f"{'Tiếp cận để tấn công' if is_tiepcan else 'Tấn công'} {muctieu or 'mục tiêu'}{chodich}"
+                nguon = "Tự động sử dụng kỹ năng (mục tiêu đang chọn)"
+            elif lydochon == "GIỮ KHOẢNG CÁCH":
+                hanhdong, nguon = f"Lùi giữ khoảng cách{f' với {muctieu}' if muctieu else ''}{chodich}", "Giữ khoảng cách kẻ tấn công"
+            elif lydochon == "THEO SAU":
+                hanhdong, nguon = f"Đi theo {theosau}{chodich}", "Tự động theo sau"
+            elif lydochon == "THEO SAU SANG BẢN ĐỒ KHÁC":
+                hanhdong, nguon = buoc or f"Sang bản đồ khác{chodich}", f"Tự tìm đường theo sau {theosau}"
+            elif lydochon == "ĐI TỚI BẢN ĐỒ" or lydochon == "ĐI DẠO (TỰ DO)":
+                hanhdong, nguon = (buoc or f"Di chuyển tới{chodich or ' ?'}"), self._nguonyeucautudo()
+            elif lydochon.startswith("NHẶT ĐỒ"):
+                ten = ""
+                if self._diachicosovatphamdangnhat:
+                    try:
+                        ten = self.moitruong.get_tendoituong(self._diachicosovatphamdangnhat) or ""
+                    except Exception:
+                        ten = ""
+                hanhdong, nguon = f"Đi nhặt {ten or 'vật phẩm'}{chodich}", f"Nhặt đồ ({lydochon.lower()})"
+            elif lydochon == "TÌM MỤC TIÊU CHUNG":
+                hanhdong, nguon = f"Tới mục tiêu {muctieu or ''}{chodich}".replace("  ", " "), "Hết mục tiêu, tìm mục tiêu nhân vật khác cùng máy thấy"
+            else:
+                hanhdong, nguon = f"{lydochon.capitalize()} {muctieu}{chodich}".strip(), lydochon.capitalize()
+            # Khoá không gồm toạ độ: đi theo / tiếp cận cùng một mục tiêu chỉ là 1 dòng lịch sử
+            # Bỏ số khỏi nguồn: "dò đánh quái (điểm 1/23)" -> "(điểm 2/23)" không thành dòng mới, không đẩy mất dòng quan trọng
+            khoa = (lydochon, muctieu, re.sub(r"\d+", "#", nguon)
+                    if lydochon in ("ĐI TỚI BẢN ĐỒ", "ĐI DẠO (TỰ DO)", "KHÔNG CÓ", "THEO SAU SANG BẢN ĐỒ KHÁC") else "")
+            self.ghi_hanhdong(hanhdong, nguon, khoa)
+        except Exception:
+            pass
 
     def _capnhatbuocdichuyen(self, mota):
         # Bước di chuyển tiếp theo hiện trên giao diện (get_buocdichuyen), tự hết hạn khi không ai cập nhật nữa
@@ -1839,7 +1936,16 @@ class TacTuDiChuyen:
             return f"đã Hồi Thành Phù {solan} lần{noi} trong {round(THOIGIANDEMHOITHANHPHU / 60)} phút (có thể đang lặp)"
         return None
 
-    def action_sudunghoithanhphu(self, idbandodich = None, is_roiphoban = False):
+    def action_sudunghoithanhphu(self, idbandodich = None, is_roiphoban = False, nguon = None):
+        # nguon: việc gọi (hiện ở lịch sử hành động); không truyền thì lấy tên hàm gọi
+        if nguon is None:
+            try:
+                nguon = f"hàm {sys._getframe(1).f_code.co_name}"
+            except Exception:
+                nguon = "?"
+        # Vừa ra khỏi phó bản mượn ID (ID còn là ID mượn): chưa biết đang ở đâu thật, không về thành (get_is_vuaroiphobanmuonbando)
+        if self.moitruong.get_is_vuaroiphobanmuonbando():
+            return False
         if time.time() - self._thoidiemsudunghoithanhphugannhat > 6.:
             self._thoidiemsudunghoithanhphugannhat = time.time()
             lydo = self.get_lydokhonghoithanhphu(idbandodich, is_roiphoban)
@@ -1895,6 +2001,8 @@ class TacTuDiChuyen:
                 return True
             cho = self.moitruong.action_khoavankhitrieuhoi((lenh,), ten = "HỒI THÀNH PHÙ")
             self._thoidiemhoithanhphus.append((thoidiemdung, idbandodich, cho))
+            loai = "Tín Vật" if is_lenhtinvat(lenh) else "Hồi Thành Phù"
+            self.ghi_hanhdong(f"{loai} ('{lenh}'){f' để tới {laytenbando(idbandodich)}' if idbandodich else ''}", nguon)
             self.moitruong.action_thucthicaulenh(lenh)
             return True
         return False

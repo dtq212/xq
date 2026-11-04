@@ -246,6 +246,7 @@ class CuaSo:
                     "_is_dangtodoimotlan": bool(self.tactu._todoimotlan),
                     "_trangthaitodoimotlan": self.tactu._trangthaitodoimotlan,
                     "_is_tudongsudungkynang": self.tactu._is_tudongsudungkynang,
+                    "_is_chidungtudongtancong": self.tactu._is_chidungtudongtancong,
                     "_is_uutienmuctieupk": self.tactu._is_uutienmuctieupk,
                     "_is_tudongtimkiemmuctieu": self.tactu._is_tudongtimkiemmuctieu,
                     "_is_tudonggomquai": self.tactu._is_tudonggomquai,
@@ -308,6 +309,9 @@ class CuaSo:
                     "_is_nguocchieulotrinh": self.tactu._is_nguocchieulotrinh,
                     "_solanthayquaibando": self.tactu.get_solanthayquaibando(),
                     "_buocdichuyen": self.tactu.get_buocdichuyen(),
+                    # Hành động hiện tại (chữ, nguồn) và lịch sử [(lúc, chữ, nguồn)] mới nhất trước: dòng dưới "Đang điều khiển"
+                    "_hanhdong": self.tactu._hanhdong[:2],
+                    "_lichsuhanhdong": self.tactu.get_lichsuhanhdong(),
                     "_idbandocandi": self.tactu._idbandocandi,
                     # Điểm đánh lộ trình đang đi tới [x, y, id bản đồ, số thứ tự, tổng số điểm] (cột "Đang đi tới" trên Telegram)
                     "_diemdanhdangden": self._laydiemdanhdangden(),
@@ -669,6 +673,8 @@ class CuaSo:
                     self.tactu.huy_todoimotlan()
                 elif cmd == "battat_tudongsudungkynang":
                     self.tactu.battat_is_tudongsudungkynang()
+                elif cmd == "battat_chidungtudongtancong":
+                    self.tactu.battat_chidungtudongtancong()
                 elif cmd == "them_tenmuctieutancong":
                     self.tactu.them_tenmuctieutancong(self.moitruong.get_tennhanvatchichuot())
                 elif cmd == "them_tenmuctieukhongtancong":
