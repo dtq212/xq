@@ -1,7 +1,8 @@
 # Bot game xq (Python 3.8, Windows)
 
 Bot tự động cho client game `xq.exe` (bản Aegis và Niết Bàn, cùng mã exe). Đọc/ghi bộ nhớ tiến trình
-bằng Pymem, gửi lệnh game qua hook, giao diện Tkinter. Trả lời người dùng bằng tiếng Việt.
+bằng Pymem, gửi lệnh game qua hook, giao diện Tkinter.
+**Luôn trả lời bằng tiếng Việt** (cả recap, ghi chú, và sau khi ngữ cảnh bị tóm tắt).
 
 ## Chạy
 - `chaybot.bat` → `python -X utf8 trochoi_xq.py` (Python 3.8: không dùng `match`, `list[int]`, `X | None`).
@@ -51,8 +52,11 @@ log theo ID người chơi ở `_internal/log/<id>.log`. Mọi thứ theo nhân 
 ## Quy ước
 - Tên biến/hàm tiếng Việt không dấu viết liền (`get_sinhlucconlai`, `action_sudungkynang`); bool bắt đầu `is_`.
 - Chú thích tiếng Việt có dấu, đặt trên hằng số/hàm, ghi cả lý do và số đo thực tế.
-- Trước khi viết heuristic mới, tìm hàm có sẵn trong game/`MoiTruong`/`tienich_xq`.
-- File mới phải `git add` (không tự commit).
+- Trước khi viết heuristic mới, grep hàm hạ tầng có sẵn (`get_`/`_tim`/`_doc` trong `moitruong_xq.py`):
+  A* `_timduongkhongcatgoc` / `get_sobuocduongtoi`, `_get_luoivatcan`, `vatcanhoc.json`, `action_dikhongcatgoc`...
+- File mới tạo phải `git add` ngay, không commit/push trừ khi được bảo. Repo lỗi "dubious ownership":
+  `git -c safe.directory=* add -- <file>`. Không add file chứa mật khẩu mới khi chưa hỏi, không add file trạng thái
+  bot ghi liên tục (vd `_internal/tiendophoban.json`, đã .gitignore); gặp loại này thì hỏi.
 
 ## Mẹo đọc code (tiết kiệm token)
 - `moitruong_xq.py`, `giaodienhienthi_xq.py`, `tactu_kynang_xq.py`, `tactu_langlyson_xq.py`, `tactu_dichuyen_xq.py`
