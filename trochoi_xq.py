@@ -88,7 +88,7 @@ class TroChoiManager:
         # Bán ngân lượng theo chuyển khoản (bannganluong_xq): chỉ máy chạy nhân vật bán mới hỏi SePay
         BanNganLuong(self.shared_data, self.command_dict).batdau()
         if self.cauhinhlan:
-            DongBoLan(self.cauhinhlan, self.shared_data, self.shared_data_lan).batdau()
+            DongBoLan(self.cauhinhlan, self.shared_data, self.shared_data_lan, self.dieuphoi_giukynangs, self.dieuphoi_khoa).batdau()
 
         root = tk.Tk()
         gui = GiaoDienHienThi(root, self.shared_data, self.command_dict, self.dieuphoi_trangthai, self.dangnhap, self.shared_data_lan)

@@ -60,6 +60,12 @@ MUCTIEU = [
     ("VA_TUTHEDELAY2", 0x1B377, "ma", "mov [esi+0x11B8], 0x0B (tư thế delay sau tấn công)"),
     ("HOOK_TROCHUYEN", 0x5964, "ma", "chỗ hook đọc nội dung trò chuyện (6 byte)"),
     ("HOOK_TINHETHONG", 0x2B63, "ma", "chỗ hook gói 0x3E chỉ in vào khung tin hệ thống (trả lời \"desc user\"), 6 byte"),
+    ("HOOK_VEDANHHIEU", 0x1D0A8, "ma", "call HAMVECHU vẽ danh hiệu đối tượng (+0x1134) phía trên tên, 5 byte, ebx = đối tượng"),
+    ("HOOK_VEDANHHIEU2", 0x9C34F, "ma", "call HAMVECHU vẽ danh hiệu nhân vật mình (ebx = đối tượng)"),
+    ("HOOK_VEDANHHIEU3", 0x9CF52, "ma", "call HAMVECHU vẽ danh hiệu người chơi khác (edi = đối tượng)"),
+    ("HAMVECHU", 0x95BA0, "ma", "vẽ 1 dòng chữ: thiscall ecx = [BIENVECHU], (surface, chữ, x, y, màu, 0), ret 0x18; không xử lý xuống dòng"),
+    ("BIENVECHU", 0x380B34, "bien", "con trỏ bộ vẽ chữ (ecx của HAMVECHU)"),
+    ("HAMDORONGCHU", 0x22090, "ma", "độ rộng (pixel) 1 dòng chữ: thiscall (ecx không dùng), (chữ), ret 4; game nhớ ở +0x112C tên / +0x1130 danh hiệu"),
     # Offset trong cấu trúc ("hang": hằng số nằm trong lệnh). TG_: trong [THONGTINGAME]; TD_: trong cấu trúc tìm đường [TG + TG_TIMDUONG];
     # KN_: bảng kỹ năng [TG + TG_KYNANG]; HT_: hành trang [TG + TG_HANHTRANG]; NV_: nhân vật / đối tượng; KDK_: trong [KHOIDIEUKHIEN]
     ("TG_TIMDUONG", 0xADFDEC, "hang", "cấu trúc tìm đường / bản đồ"),

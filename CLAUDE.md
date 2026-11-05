@@ -43,7 +43,9 @@ bằng Pymem, gửi lệnh game qua hook, giao diện Tkinter.
 `dangnhap_xq` tự đăng nhập lại · `giamsat_xq` watchdog kẹt · `dieuphoi_xq` chia lượt giữa các cửa sổ ·
 `lan_xq` chia sẻ dữ liệu qua LAN · `thongbao_xq` Telegram · `thongke_xq` thống kê farm ·
 `dexuatlotrinh_xq` đề xuất điểm đánh · `amthanh_xq` tắt tiếng theo tiến trình · `bannganluong_xq` bán ngân lượng ·
-`dosatthuong_xq`/`phantichsatthuong_xq` công cụ đo sát thương (chạy tay).
+`dosatthuong_xq`/`phantichsatthuong_xq` công cụ đo sát thương (chạy tay) · `congthucsatthuong_xq` công thức sát thương đo được ·
+`sosanhbuild_xq` (so build, mặc thử đồ) / `domuctieu_xq` (dự đoán máu tối đa, Kháng mục tiêu): chạy từ tab Khác ·
+`uocluongmuctieu_xq` luồng trong bot ước Khí Huyết tối đa / Kháng mục tiêu đang chọn, hiện ở đầu tab Chiến đấu.
 
 ## Dữ liệu `_internal/`
 Cấu hình JSON (`giaodien.json`, `luattuido.json`, `lotrinh.json`, `todoi.json`, `taikhoan_*.json`...),

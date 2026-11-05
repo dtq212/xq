@@ -475,6 +475,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._thoidiemkiemtravesuado = 0.  # lần desc đồ đang mặc gần nhất để xét về sửa; đặt về tương lai khi vừa về sửa
         self._thoidiemtruyvandobenvesua = 0.  # > 0: đã desc, đang chờ máy chủ trả mô tả để đọc độ bền
         self._trangthaiveban = 0  # 0: Idle, 1: Đang về, 2: Đang đi shop, 3: Đang bán, 4: Đang quay lại
+        # Mao Sơn đã học Xuyên Không Hành thì về bán bằng chiêu; chưa học thì phù + chạy bộ như phái khác. Chốt lúc rảnh (trạng thái 0)
+        # để giữa chừng (chuyển bản đồ đọc hụt bảng kỹ năng) không nhảy sang luồng kia
+        self._is_vebanxuyenkhonghanh = False
         self._thoidiemchuyentrangthai = 0.
 
         self._thoidiemhoithanhphu = 0.  # Timer cho việc hồi thành phù
@@ -626,12 +629,19 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         # Hết mục tiêu thì đi tới mục tiêu nhân vật khác cùng máy thấy (_timmuctieuchung): tùy chọn, yêu cầu di chuyển,
         # (id, lúc bắt đầu) mục tiêu đang đi tới, id -> thời điểm hết bỏ qua
         self._is_timmuctieuchung = True
+        # Ghi thông tin ước lượng (Khí Huyết / Kháng / Công) lên mục tiêu đang chọn trong client (danhhieumuctieu_xq): CHEDOHIENMUCTIEU_*
+        self._chedohienthongtinmuctieugame = CHEDOHIENMUCTIEU_TAT
+        self._mauhienthongtinmuctieugame = MAUHIENMUCTIEU_THEOMAU
         self._yeucautimmuctieuchung = None
         self._muctieuchungdangtim = None
         self._thoidiemhetboquamuctieuchung_map = {}
         # Hướng đang lùi (8 hướng) + lúc / chỗ bắt đầu đo để phát hiện kẹt tường; hướng -> thời điểm hết chặn
         self._luigiukhoangcachdangchay = None
         self._thoidiemhetchanhuonglui_map = {}
+        # Chạy trốn theo đường tính sẵn (moitruong.get_duongchaytron): đường đang chạy {dich, chuoihuong, batdau, bando, thoidiemtinh,
+        # mocnhich, thoidiemnhich}; đích vừa kẹt -> thời điểm hết bỏ qua
+        self._duongchaytron = None
+        self._dichchaytronbiket_map = {}
         # Còn kỹ năng quan trọng dùng được không (xét trong danh sách kỹ năng của phái, xem _capnhatkynangquantrong)
         self._is_cokynangquantrongdungduoc = False
         self._thoidiemxetkynangquantronggannhat = 0.
@@ -643,6 +653,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._diachidoituongcanbuffthucgiapmaoson = None
         self._diachidoituongcanbuffthuctammaoson = None
         self._diachidoituongcanbuffammanhapthemaoson = None
+        # Dấu hiệu lực Thực Cốt / Thực Giáp / Thực Tâm bot này đã gửi Manager: (hiệu ứng, ID mục tiêu) -> thời điểm hết hiệu lực
+        # (_danhdauhieulucbuff, khỏi hỏi Manager mỗi lượt quét)
+        self._dauhieulucbuffs = {}
 
         # Đổi pháp bảo khi máu thấp: lúc ra lệnh đổi gần nhất, tên pháp bảo đang đeo trước khi đổi (None = không đang đổi,
         # "" = trước đó không đeo), % máu lúc đổi, lần thử đeo lại gần nhất
@@ -656,6 +669,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._baothutrieuhoimaoson = BAOTHUTRIEUHOI_TUDONG
         # id món đã desc mà không ra mô tả: _napmotadotrieuhoi không hỏi lại
         self._idnapmotathatbais = set()
+        # Huỷ nhiệm vụ Sư Môn / Danh Vọng thất bại / quá thời gian (TacTuSuMon.action_huynhiemvuthatbai, TacTuDanhVong.action_huynhiemvuhong)
+        self._luchuynhiemvu = 0.
+        self._lucxethuynhiemvu = 0.
         self._bodotruoctrieuhoi = None
         self._hangdoideodotrieuhoi = []
         self._thoidiemdoidotrieuhoigannhat = 0.
@@ -739,6 +755,11 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         # Lưu theo ID người chơi (cố định, còn tên nhân vật thì có thể đổi)
         if not idnguoichoi or idnguoichoi <= 0:
             return
+        # Việc đang chạy vì là thành viên đội phó bản (trưởng đội ra lệnh) / Phong Yêu Kính do kéo cấp bật: không lưu "đang chạy". Mở lại
+        # bot thì đội / kéo cấp còn thì tự bật lại; đội đã xoá / giải tán thì thôi. Lưu thì mở lại bot tự đi một mình dù không ai bảo
+        # (2026-11-04: Ngọc tắt bot giữa lúc theo đội PYK, đội xoá rồi, 13 tiếng sau mở lên tự lập nhóm 1 người vào PYK)
+        # Trưởng đội cũng vậy: _doiphoban lưu riêng, mở lại thì đội tự bật việc (2026-11-04: Thọ trưởng đội PYK cũng tự đi một mình)
+        viecngoai = (self._doiphobantv or {}).get("viec") or (self._doiphoban or {}).get("viec") or ("phongyeukinh" if self._keocap else "")
 
         thietlap = {
             "_is_tudongtheosau": self._is_tudongtheosau,
@@ -792,6 +813,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             "_is_giukhoangcachchimuctieupk": self._is_giukhoangcachchimuctieupk,
             "_is_taphoa": self._is_taphoa,
             "_is_timmuctieuchung": self._is_timmuctieuchung,
+            "_chedohienthongtinmuctieugame": self._chedohienthongtinmuctieugame,
+            "_mauhienthongtinmuctieugame": self._mauhienthongtinmuctieugame,
             "_is_tutimduongtheosau": self._is_tutimduongtheosau,
             "_is_doidokhitrieuhoi": self._is_doidokhitrieuhoi,
             "_bodotrieuhoi": self._bodotrieuhoi,
@@ -810,15 +833,18 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             # Sư môn đang bật: dis / mở lại bot vào lại thì tự bật tiếp (bấm Dừng, xong 20 lần, lỗi dừng thì là False)
             "_is_dangsumon": bool(self._sumon),
             # Sư Gia đang bật: như sư môn, dis / mở lại bot thì tự bật tiếp (bấm Dừng, đủ số lần trong ngày, lỗi dừng thì là False)
-            "_is_dangsugia": bool(self._sugia),
+            "_is_dangsugia": bool(self._sugia) and viecngoai != "sugia",
             # Tập Kích đang bật: như sư môn, dis / mở lại bot thì tự bật tiếp với môn phái đã chọn (bấm Dừng, lỗi dừng thì là False)
-            "_is_dangtapkich": bool(self._tapkich),
+            "_is_dangtapkich": bool(self._tapkich) and viecngoai != "tapkich",
             # Đoạt Bảo Mã Tặc đang bật: dis / mở lại bot thì tự bật tiếp
             "_is_dangmatac": bool(self._matac),
             # Danh Vọng đang bật: dis / mở lại bot thì tự bật tiếp
             "_is_dangdanhvong": bool(self._danhvong),
             # Phó bản đang đi ("langlyson" / "thanhkieu", "" = không): dis / mở lại bot thì tự bật tiếp
-            "_phobandanglanglyson": self.get_phobanlanglyson(),
+            "_phobandanglanglyson": "" if self.get_phobanlanglyson() == viecngoai else self.get_phobanlanglyson(),
+            # Bản lưu từ lúc đã tách việc của đội / kéo cấp (viecngoai). Bản cũ hơn không có khoá này: cờ Sư Gia / Tập Kích / phó bản trong
+            # đó có thể do đội bật nên bỏ qua (mất một lần tự bật lại việc bấm tay, còn hơn tự đi phó bản một mình)
+            "_phienluuviec": 2,
             # Kéo cấp acc gà đang bật (vai, acc chính / acc gà): dis / mở lại bot thì tự bật tiếp
             "_keocap": self.get_keocapluu(),
             # Bảo thú vật phẩm (tên, có / không, dấu vân tay, chỉ số lúc đó): mở lại bot khỏi dùng vật phẩm xét lại (tactu_vatpham_xq)
@@ -916,6 +942,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             if "_is_giukhoangcachchimuctieupk" in thietlap: self._is_giukhoangcachchimuctieupk = thietlap["_is_giukhoangcachchimuctieupk"]
             if "_is_taphoa" in thietlap: self._is_taphoa = thietlap["_is_taphoa"]
             if "_is_timmuctieuchung" in thietlap: self._is_timmuctieuchung = thietlap["_is_timmuctieuchung"]
+            if "_chedohienthongtinmuctieugame" in thietlap: self.thietlap_chedohienthongtinmuctieugame(thietlap["_chedohienthongtinmuctieugame"])
+            if "_mauhienthongtinmuctieugame" in thietlap: self.thietlap_mauhienthongtinmuctieugame(thietlap["_mauhienthongtinmuctieugame"])
             if "_is_tutimduongtheosau" in thietlap: self._is_tutimduongtheosau = thietlap["_is_tutimduongtheosau"]
             if "_is_doidokhitrieuhoi" in thietlap: self._is_doidokhitrieuhoi = thietlap["_is_doidokhitrieuhoi"]
             if "_bodotrieuhoi" in thietlap: self._bodotrieuhoi = list(thietlap["_bodotrieuhoi"])
@@ -934,15 +962,16 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
                     self._ketquahangviec = hangviec["ketqua"]
             if thietlap.get("_is_dangsumon") and not self._sumon:
                 self.batdau_sumon()
-            if thietlap.get("_is_dangsugia") and not self._sugia:
+            is_luuviecmoi = thietlap.get("_phienluuviec") == 2
+            if is_luuviecmoi and thietlap.get("_is_dangsugia") and not self._sugia:
                 self.batdau_sugia()
-            if thietlap.get("_is_dangtapkich") and not self._tapkich:
+            if is_luuviecmoi and thietlap.get("_is_dangtapkich") and not self._tapkich:
                 self.batdau_tapkich()
             if thietlap.get("_is_dangmatac") and not self._matac:
                 self.batdau_matac()
             if thietlap.get("_is_dangdanhvong") and not self._danhvong:
                 self.batdau_danhvong()
-            if thietlap.get("_phobandanglanglyson") and not self._langlyson:
+            if is_luuviecmoi and thietlap.get("_phobandanglanglyson") and not self._langlyson:
                 self.batdau_langlyson(thietlap["_phobandanglanglyson"])
             if isinstance(thietlap.get("_keocap"), dict) and not self._keocap:
                 self.batdau_keocap(**thietlap["_keocap"])
@@ -971,6 +1000,14 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             phatam("Bật giữ khoảng cách với kẻ tấn công")
         else:
             phatam("Tắt giữ khoảng cách với kẻ tấn công")
+
+    def thietlap_mauhienthongtinmuctieugame(self, mau):
+        mau = str(mau).strip()
+        self._mauhienthongtinmuctieugame = mau if mau in MAUHIENMUCTIEU_MAP.values() else MAUHIENMUCTIEU_THEOMAU
+
+    def thietlap_chedohienthongtinmuctieugame(self, chedo):
+        chedo = str(chedo).strip()
+        self._chedohienthongtinmuctieugame = chedo if chedo in (CHEDOHIENMUCTIEU_DANHHIEU, CHEDOHIENMUCTIEU_TEN) else CHEDOHIENMUCTIEU_TAT
 
     def battat_timmuctieuchung(self):
         self._is_timmuctieuchung = not self._is_timmuctieuchung

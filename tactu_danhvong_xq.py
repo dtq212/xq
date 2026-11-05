@@ -19,7 +19,7 @@ import unicodedata
 
 from hangso_xq import *
 from giaodo_xq import taolenhgiao
-from nhiemvu_xq import chuanhoaten, boma, timbandotheoten, laydiemluoi, _thumucgoc
+from nhiemvu_xq import chuanhoaten, boma, timbandotheoten, laydiemluoi, _thumucgoc, is_nhiemvuthatbai, laynhiemvusumon, MUCSUMON
 from thongbao_xq import baosuco
 from tienich_xq import phatam, canhbao, thaythefile
 from tactu_sumon_xq import THOIGIANCHOTRUYNA, KHOANGCACHTOICHAMTRUYNA
@@ -143,7 +143,7 @@ def phantichdanhvong(tenmuc, mota):
     luot = re.search(r"lượt thứ\s*(\d+)", vanban, re.IGNORECASE)
     conlai = re.search(r"còn lại\s*(\d+)\s*phút", vanban, re.IGNORECASE)
     nv = {"ten": ten, "is_xong": is_xong, "luot": int(luot.group(1)) if luot else 0, "conlai": int(conlai.group(1)) if conlai else None,
-          "loai": None, "mota": vanban}
+          "loai": None, "mota": vanban, "is_thatbai": not is_xong and is_nhiemvuthatbai(vanban)}
     nv["khoa"] = f"{nv['luot']}|{ten}"
     m = re.search(r"trang bị môn phái\s+(.+?)\s+cấp\s*(\d+)", vanban, re.IGNORECASE)
     if m:
@@ -257,6 +257,22 @@ class TacTuDanhVong:
         self._ghiketthucviec("danhvong", noidung)
         baosuco(self.moitruong, "sumon", noidung, khoa = f"danhvong|{s['batdau']}" if s else None, giancach = 0.)
         canhbao(self.moitruong, "Lỗi nhiệm vụ Danh Vọng") if loi else phatam("Kết thúc nhiệm vụ Danh Vọng")
+
+    def action_huynhiemvuhong(self):
+        # Gọi mỗi vòng điều phối di chuyển, kể cả khi KHÔNG đang làm Sư Môn / Danh Vọng (vd Danh Vọng đã dừng vì hết tiền, nhiệm vụ để đó
+        # tới "Đã Quá Thời Gian", người dùng 2026-11-05): nhiệm vụ Sư Môn / Danh Vọng thất bại / quá thời gian thì huỷ. Đọc cửa sổ nhiệm vụ
+        # cách nhau GIANCACHXINNHIEMVU giây
+        if time.time() - self._lucxethuynhiemvu <= GIANCACHXINNHIEMVU:
+            return
+        self._lucxethuynhiemvu = time.time()
+        mucs = self.moitruong.get_danhsachmucnhiemvu()
+        if not mucs:
+            return
+        for tenmuccha, laynv in ((MUCSUMON, laynhiemvusumon), (MUCDANHVONG, laynhiemvudanhvong)):
+            nv = laynv(mucs)
+            if nv and nv["is_thatbai"]:
+                self.action_huynhiemvuthatbai(None, tenmuccha, nv, lambda chu: self.moitruong._inlog(f"[HUỶ NHIỆM VỤ] {chu}"))
+                return
 
     # --- Vòng chính ------------------------------------------------------------------------------------------------------------------
     def _xulydanhvong(self):
@@ -377,6 +393,12 @@ class TacTuDanhVong:
                 return None
         else:
             s.pop("luctrongmota", None)
+        # Nhiệm vụ thất bại / quá thời gian: huỷ rồi về nhận lượt mới, không đi làm nữa. Không tính là đã trả (bỏ khoá đang nhận)
+        if nv and nv["is_thatbai"]:
+            s["khoadangnhan"] = None
+            s["trangthai"] = f"huỷ {nv['ten']} (thất bại / quá thời gian)"
+            self.action_huynhiemvuthatbai(s, MUCDANHVONG, nv, self._logdv)
+            return None
         # Nhiệm vụ đang nhận đổi / mất: đã trả xong lượt trước
         if s["khoadangnhan"] and (not nv or nv["khoa"] != s["khoadangnhan"]):
             s["soluotxong"] += 1

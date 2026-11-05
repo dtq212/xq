@@ -1738,12 +1738,18 @@ class TacTuVatPham:
             self._trangthaiveban = 0
             return
 
-        tenmonphai = self.moitruong.get_tenmonphai()
+        # Chỉ chốt luồng khi đang rảnh; Mao Sơn chưa học Xuyên Không Hành thì đi Hồi Thành Phù + chạy bộ như phái khác
+        if self._trangthaiveban == 0:
+            self._is_vebanxuyenkhonghanh = self._is_coxuyenkhonghanh()
 
-        if tenmonphai == "maoson":
+        if self._is_vebanxuyenkhonghanh:
             self._action_xulyvebanrac_maoson()
         else:
             self._action_xulyvebanrac_phaikhac()
+
+    def _is_coxuyenkhonghanh(self):
+        # Mao Sơn đã học Xuyên Không Hành (pf 4182) mới về bán / quay lại bãi bằng chiêu
+        return self.moitruong.get_tenmonphai() == "maoson" and self.moitruong.get_is_kynangdahoc(VITRIKYNANG_XUYENKHONGHANH)
 
     def _action_xulyvebanrac_maoson(self):
         if not self._is_tudongvebanrac and not self._is_tudongvesuado:

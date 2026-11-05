@@ -1,6 +1,6 @@
 {
     "duongdangames": {
-        "Admin-PC": "E:\\Games\\ChienQuocNietBan_V4\\ChienQuocNietBan_V4\\play.exe",
+        "Admin-PC": "E:\\Games\\ChienQuoc2D_Aegis\\xq.exe",
         "LAPTOP-HAOPCFT6": "D:\\Games\\ChienQuoc2D_Aegis\\xq.exe",
         "Ngoc-PC": "E:\\Games\\ChienQuoc2D_Aegis\\xq.exe"
     },
@@ -99,7 +99,7 @@
             "group": 1,
             "server": 1,
             "char_index": 1,
-            "maydangnhap": "Admin-PC",
+            "maydangnhap": "",
             "vitricuaso": 1,
             "user": "tieulyphidao",
             "pass": "hateva"
@@ -110,7 +110,7 @@
             "group": 1,
             "server": 1,
             "char_index": 1,
-            "maydangnhap": "Admin-PC",
+            "maydangnhap": "",
             "vitricuaso": 2,
             "user": "daituongquan",
             "pass": "hateva"
@@ -121,7 +121,7 @@
             "group": 1,
             "server": 1,
             "char_index": 1,
-            "maydangnhap": "Admin-PC",
+            "maydangnhap": "",
             "vitricuaso": 3,
             "user": "quansumumuu",
             "pass": "hateva"
@@ -132,7 +132,7 @@
             "group": 1,
             "server": 1,
             "char_index": 1,
-            "maydangnhap": "Admin-PC",
+            "maydangnhap": "",
             "vitricuaso": 4,
             "user": "doccocaubai",
             "pass": "hateva"
@@ -143,7 +143,7 @@
             "group": 1,
             "server": 1,
             "char_index": 1,
-            "maydangnhap": "Admin-PC",
+            "maydangnhap": "",
             "vitricuaso": 5,
             "user": "volamcaothu",
             "pass": "hateva"
@@ -154,9 +154,76 @@
             "group": 1,
             "server": 1,
             "char_index": 1,
-            "maydangnhap": "Admin-PC",
+            "maydangnhap": "",
             "vitricuaso": 5,
             "user": "laotsezu",
+            "pass": "hateva"
+        },
+        {
+            "tennhanvat": "Thỏ",
+            "idnguoichoi": 342,
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "maydangnhap": "Admin-PC",
+            "vitricuaso": 1,
+            "user": "tholuumanh",
+            "pass": "hateva",
+            "duongdangame": "E:\\Games\\ChienQuoc2D_Aegis\\xq.exe"
+        },
+        {
+            "tennhanvat": "Ngốc",
+            "idnguoichoi": 347,
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "maydangnhap": "Admin-PC",
+            "vitricuaso": 2,
+            "user": "ngoclasat",
+            "pass": "hateva"
+        },
+        {
+            "tennhanvat": "Thik",
+            "idnguoichoi": 354,
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "maydangnhap": "Admin-PC",
+            "vitricuaso": 3,
+            "user": "thichvacham",
+            "pass": "hateva"
+        },
+        {
+            "tennhanvat": "Kng",
+            "idnguoichoi": 359,
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "maydangnhap": "Admin-PC",
+            "vitricuaso": 4,
+            "user": "kngaivacham",
+            "pass": "hateva"
+        },
+        {
+            "tennhanvat": "Gạ",
+            "idnguoichoi": 364,
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "maydangnhap": "Admin-PC",
+            "vitricuaso": 5,
+            "user": "gadaica",
+            "pass": "hateva"
+        },
+        {
+            "tennhanvat": "ThiênĐạo",
+            "idnguoichoi": 273,
+            "group": 1,
+            "server": 1,
+            "char_index": 1,
+            "maydangnhap": "",
+            "vitricuaso": 5,
+            "user": "thiendao",
             "pass": "hateva"
         }
     ]

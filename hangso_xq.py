@@ -93,9 +93,12 @@ LENHHOIMONPHAI = "dGludmF0 1"
 # Niết Bàn không có tinvat 1 / 2: kỹ năng "Sử dụng tín vật" (thẻ Cơ Bản, id 61, đọc bảng kỹ năng 2026-11-02) về môn phái, đứng cạnh
 # Xa Phu, nói chuyện "1. Chấp nhận" về Tân Thủ Thôn; quá THOIGIANXAPHUNIETBAN giây chưa về được thì thôi
 LENHTINVAT_NIETBAN = "pf2 61"
-# Tín Vật (Niết Bàn "pf2 61", 2D "dGludmF0 ...") giãn cách 60s (người dùng dặn 2026-11-03): gửi trong lúc hồi thì game không vận khí,
-# đừng tưởng là không dùng được. Tính từ lúc vào vận khí, dư 2s
+# Tín Vật Niết Bàn ("pf2 61") giãn cách 60s (người dùng dặn 2026-11-03): gửi trong lúc hồi thì game không vận khí,
+# đừng tưởng là không dùng được. Tính từ lúc vào vận khí, dư 2s. Aegis ("dGludmF0 ...") không hồi, không chờ (2026-11-05)
 THOIGIANHOITINVAT = 62.
+
+# Số thẻ Giang Hồ trong cửa sổ nhiệm vụ (số đầu của "quest intro / giveup <thẻ> <nhóm> <loại>"; Cốt Truyện là 2)
+THENHIEMVUGIANGHO = 1
 
 
 def is_lenhtinvat(caulenh):
@@ -977,9 +980,11 @@ CHISONHANVAT_MAP = {
     "Bạo Kích": (0x15BC,),
 }
 # Bảo thú vật phẩm mà mô tả không ghi chỉ số ("Sau khi triệu hồi sẽ tăng thêm năng lực của chủ nhân"): chỉ số cộng cho chủ khai tay.
-# 12 con Giáp - Chuột tăng cả Ngoại / Nội Công / Kháng (người dùng báo 2026-11-02); theo dõi Ngoại + Nội Công vì Đào Hoa tự làm Kháng chớp
+# 12 con Giáp - Chuột tăng cả Ngoại / Nội Công / Kháng (người dùng báo 2026-11-02); theo dõi Ngoại + Nội Công vì Đào Hoa tự làm Kháng chớp.
+# Thần Thú - Chuột cũng tăng cả 4 chỉ số, mô tả không ghi chỉ số nên bot báo "chưa biết chỉ số" (người dùng báo 2026-11-05)
 CHISOBAOTHUVATPHAM_MAP = {
     CONGIAPCHUOT: ("Ngoại Công", "Nội Công"),
+    THANTHUCHUOT: ("Ngoại Công", "Nội Công"),
 }
 # Danh sách nhặt (VATPHAMKHONGNHATs / VATPHAMUUTIENNHATs / VATPHAMTUDONGNHATs / VATPHAMTUDONGNHATFARMs) đã chuyển thành luật nhặt
 # trong luattuido_xq.NHATMACDINH (sửa ở tab Hành trang)
@@ -1014,6 +1019,30 @@ SOLUONGXEPCHONGTOIDA_MAP = {
 # làm máy chủ gửi lại trạng thái nhân vật => client cập nhật toạ độ thật. Chọn ở giao diện theo nhân vật, mặc định không dùng
 DANHHIEULAMMOI_KHONG = ""
 DANHHIEULAMMOI_AN = "hide"
+# Hiện thông tin ước lượng mục tiêu đang chọn ngay trong game (danhhieumuctieu_xq): tắt / ghi đè danh hiệu (+0x1134) / nối vào đuôi tên
+# (+0x10AC). Bật theo từng cửa sổ ở đầu tab Chiến đấu
+CHEDOHIENMUCTIEU_TAT = ""
+CHEDOHIENMUCTIEU_DANHHIEU = "danhhieu"
+CHEDOHIENMUCTIEU_TEN = "ten"
+# Mã màu chữ của game: ESC + 1 chữ cái, bảng ở hàm vẽ chữ xq+0x892BE (dò file xq.exe 2026-11-05, màu 0xRRGGBB): B 0000FF, C 00FFFF,
+# G 00FF00, K 7F7F7F, M FF00FF, N màu mặc định, R FF0000, W FFFFFF, Y FFFF00, b 00007F, c 007F7F, g 007F00, m 7F007F, p F076FC,
+# r 7F0000, w BFBFBF, y 7F7F00. "Theo % máu" (MAUHIENMUCTIEU_THEOMAU): phần Khí Huyết xanh lá / vàng / đỏ theo NGUONGMAUHIENMUCTIEU, còn lại trắng
+MAUHIENMUCTIEU_THEOMAU = "*"
+MAUHIENMUCTIEU_MAP = {"Theo % máu": MAUHIENMUCTIEU_THEOMAU, "Trắng": "W", "Xanh lơ": "C", "Vàng": "Y", "Xanh lá": "G", "Đỏ": "R",
+                      "Hồng": "p", "Tím": "M", "Xám nhạt": "w"}
+# % máu: > ô đầu xanh lá, > ô sau vàng, còn lại đỏ
+NGUONGMAUHIENMUCTIEU = (60, 30)
+# Hook vẽ thêm dòng trên danh hiệu (MoiTruong.action_thietlaphookvedanhhieu): số dòng tối đa, byte mỗi dòng, khoảng cách dòng (px,
+# game vẽ tên ở y - 0x0E, danh hiệu ở y - 0x1C => 14)
+SODONGVEDANHHIEU = 4
+KICHTHUOCDONGVEDANHHIEU = 0x80
+KHOANGCACHDONGCHU = 14
+# Số đối tượng hook vẽ thêm dòng cùng lúc (ô 0 mục tiêu đang chọn; thôi hiện đệ vì "desc npc" lúc được lúc không, 2026-11-05)
+SODOITUONGVEDANHHIEU = 1
+KICHTHUOCKHOIVEDANHHIEU = 8 + SODONGVEDANHHIEU * KICHTHUOCDONGVEDANHHIEU
+# Vùng mã hook; 0x10 byte cuối: dấu hiệu + 5 byte gốc ở chỗ hook (lần chạy bot sau lấy lại, không nối chồng)
+KICHTHUOCKICHBANVEDANHHIEU = 0x200
+DAUHIEUKICHBANVEDANHHIEU = b"XQDH"
 # Danh sách danh hiệu đang có ở KDK_DANHSACHDANHHIEU: mỗi mục KICHTHUOCMUCDANHHIEU byte (mã +0, tên +6), đọc tối đa SODANHHIEUTOIDA mục
 KICHTHUOCMUCDANHHIEU = 0x42
 SODANHHIEUTOIDA = 16
@@ -1207,6 +1236,12 @@ KHOANGCACHHIEUQUAMENHTE = 10
 # đồng đội cần hồi ở xa hơn (trong KHOANGCACHTIMTHANHVIENMENHTE ô) thì tiếp cận tới KHOANGCACHSUDUNGMENHTE ô rồi mới dùng
 KHOANGCACHSUDUNGMENHTE = 8
 KHOANGCACHTIMTHANHVIENMENHTE = 18
+# Ngưỡng % sinh lực để Mệnh Tế / Huyết Tế: (mọi bảo thú, bảo thú không phải Cương Thi / Thần Tướng).
+# Lăng Ly Sơn / Thành Kiều quái dồn sát thương nhanh nên tế sớm (35/65); nơi khác (Phong Yêu Kính, farm) 35/65 tế quá vội
+# khi mới mất chút máu (người dùng 2026-11-04) nên dùng lại 25/50
+PHANTRAMSINHLUCTEBAOTHU = (25, 50)
+PHANTRAMSINHLUCTEBAOTHU_LANGLYSON = (35, 65)
+BANDOTEBAOTHUSOMs = (BANDO_THANHKIEU, BANDO_LANGLYSON1, BANDO_LANGLYSON2, BANDO_LANGLYSON3)
 
 # Bảo thú kỹ năng triệu hồi xa nhân vật quá KHOANGCACHGOIBAOTHUVE ô thì gọi theo sau, tới khi về trong KHOANGCACHBAOTHUDAVE ô mới cho đánh tiếp
 KHOANGCACHGOIBAOTHUVE = 18.
@@ -1488,6 +1523,11 @@ NGUONGMAUCHAYTRON = 15
 NGUONGMAUHETCHAYTRON = 30
 KHOANGCACHCHAYTRON = 14.
 THOIGIANNHOKETANCONGCHAYTRON = 6.
+# Chạy trốn theo đường tính trên lưới vật cản (moitruong.get_duongchaytron): tính lại đường mỗi chừng này giây; đang chạy mà chừng này
+# giây không nhích được 0.5 ô (không bị giữ đứng yên) thì coi đích là kẹt, bỏ đích đó THOIGIANBOQUADICHCHAYTRONKET giây
+THOIGIANTINHLAIDUONGCHAYTRON = 0.6
+THOIGIANKETDUONGCHAYTRON = 1.2
+THOIGIANBOQUADICHCHAYTRONKET = 8.
 # Tính lại điểm lùi giữ khoảng cách mỗi chừng này giây (quét đối tượng xung quanh)
 THOIGIANTINHGIUKHOANGCACH = 0.15
 # Lùi theo một hướng mà chừng này giây chưa nhích được 0.5 ô thì coi là kẹt tường, chặn hướng đó THOIGIANCHANHUONGLUI giây
@@ -1517,6 +1557,14 @@ HIEUUNGGIUCHOKYNANG_MAP = {
     "maoson": {VITRIKYNANG_THUCCOT: HIEUUNGKYNANG_THUCCOT, VITRIKYNANG_THUCGIAP: HIEUUNGKYNANG_THUCGIAP, VITRIKYNANG_THUCTAM: HIEUUNGKYNANG_THUCTAM},
     "thucsonkiem": {VITRIKYNANG_LANGKHONGCHIHUYET: HIEUUNGKYNANG_CHOANG},
 }
+# Thực Cốt / Thực Giáp / Thực Tâm lên 1 mục tiêu dù buff bao nhiêu lần cũng chỉ có tác dụng 1 lần trong 120s (người dùng 2026-11-04,
+# 6 acc Mao Sơn qua LAN cứ hết icon là buff lại vô ích). Bot nào thấy hiệu ứng dính trên mục tiêu thì đánh dấu, trong chừng này giây
+# (tính từ lúc thấy dính) mọi bot (cùng máy và qua LAN) không buff lại hiệu ứng đó lên mục tiêu đó, chọn mục tiêu khác
+THOIGIANHIEULUCBUFFMAOSON_MAP = {HIEUUNGKYNANG_THUCCOT: 120., HIEUUNGKYNANG_THUCGIAP: 120., HIEUUNGKYNANG_THUCTAM: 120.}
+# Mệnh Tế hồi cả nhóm: 1 bot Mao Sơn vừa Mệnh Tế cho những người thấp máu quanh nó thì bot khác (cùng máy / LAN) không Mệnh Tế cho
+# chính những người đó trong chừng này giây (chờ máu hồi hiện ra rồi mới xét lại). Còn người thấp máu chưa ai lo thì vẫn Mệnh Tế
+KHOAGIUCHO_MENHTE = "menhte"
+THOIGIANGIUMENHTE = 2.5
 # Kết quả xét kỹ năng quan trọng (tính trong danh sách kỹ năng của phái) cũ hơn chừng này giây thì coi như rảnh
 THOIGIANHIEULUCKYNANGQUANTRONG = 0.5
 YEUCAUDICHUYENKHAIKHOANG = 100

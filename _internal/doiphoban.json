@@ -1,15 +1,14 @@
 {
   "dois": [
     {
-      "ma": "1793644777791",
-      "ten": "PYK",
+      "ma": "1793890395986",
+      "ten": "1",
       "thanhviens": [
-        9198,
-        9176,
-        9286,
-        9324,
-        9325,
-        9500
+        364,
+        342,
+        354,
+        359,
+        347
       ],
       "thutu": [
         "sugia",
@@ -18,11 +17,11 @@
         "thanhkieu",
         "phongyeukinh"
       ],
-      "chon": [],
-      "vong": {
-        "tapkich": 1
-      },
-      "phai": "conluan"
+      "chon": [
+        "phongyeukinh"
+      ],
+      "vong": {},
+      "phai": ""
     }
   ]
 }

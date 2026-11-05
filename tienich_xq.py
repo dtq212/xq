@@ -126,6 +126,12 @@ def write_bytes(process, address, value, n_bytes):
     return process.write_bytes(address, value, n_bytes)
 
 
+# Bot nối thông tin ước lượng vào đuôi tên mục tiêu đang chọn trong client (danhhieumuctieu_xq): " <ESC>Y| KH ...". read_string bỏ mã
+# màu nên còn " | ..."; MoiTruong._get_tenthucte cắt từ DAUNOITENMUCTIEU để lọc / so tên vẫn đúng tên gốc
+DAUNOITENMUCTIEU = " |"
+DAUNOITENMUCTIEU_BYTES = b" Y| "
+
+
 def read_string(process, address, max_length = 2048):
     try:
         initial_size = 256
@@ -381,6 +387,63 @@ def luubossphongyeu(idnguoichoi, dulieu):
         print(err)
 
 
+def duongdanthongtinnguoichoi():
+    # Khí Huyết tối đa / Ngoại Kháng / Nội Kháng ước lượng của người chơi khác (uocluongmuctieu_xq), giao diện gộp mọi cửa sổ rồi ghi:
+    # {"<ID người chơi>": {"ten", "khihuyet": {"giatri", "mautut", "luc"}, "ngoaikhang" / "noikhang": {"giatri", "sodon", "luc"}}}
+    return os.path.join(os.path.dirname(_thumucthietlap()), "thongtinnguoichoi.json")
+
+
+def taithongtinnguoichoi():
+    try:
+        with open(duongdanthongtinnguoichoi(), "r", encoding = "utf-8") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return {}
+    except Exception as err:
+        print(f"Lỗi đọc thông tin người chơi: {err}")
+        return {}
+
+
+def luuthongtinnguoichoi(dulieu):
+    filepath = duongdanthongtinnguoichoi()
+    try:
+        os.makedirs(os.path.dirname(filepath), exist_ok = True)
+        filetam = filepath + ".tmp"
+        with open(filetam, "w", encoding = "utf-8") as file:
+            json.dump(dulieu, file, ensure_ascii = False, indent = 1)
+        thaythefile(filetam, filepath)
+    except Exception as err:
+        print(f"Lỗi lưu thông tin người chơi: {err}")
+
+
+def duongdanthongtinquai():
+    # Chỉ số quái đã đo chắc theo tên + cấp (uocluongmuctieu_xq.capnhatkhoquai), giao diện ghi, bot đọc
+    return os.path.join(os.path.dirname(_thumucthietlap()), "thongtinquai.json")
+
+
+def taithongtinquai():
+    try:
+        with open(duongdanthongtinquai(), "r", encoding = "utf-8") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return {}
+    except Exception as err:
+        print(f"Lỗi đọc thông tin quái: {err}")
+        return {}
+
+
+def luuthongtinquai(dulieu):
+    filepath = duongdanthongtinquai()
+    try:
+        os.makedirs(os.path.dirname(filepath), exist_ok = True)
+        filetam = filepath + ".tmp"
+        with open(filetam, "w", encoding = "utf-8") as file:
+            json.dump(dulieu, file, ensure_ascii = False, indent = 1)
+        thaythefile(filetam, filepath)
+    except Exception as err:
+        print(f"Lỗi lưu thông tin quái: {err}")
+
+
 def _duongdanvitrithoyeu():
     return os.path.join(os.path.dirname(_thumucthietlap()), "vitrithoyeu.json")
 
@@ -480,8 +543,9 @@ def tainhomtodoitudongs():
 # thành viên cùng nhóm (cùng máy / LAN) còn đồ đúng điều kiện tới give sang thay vì dừng. is_nhatbanrac: trong phó bản nhặt cả luật
 # "chỉ khi về bán rác", ra Chu Quốc thì bán rác ở Chủ Tiệm Y Dược (chừa đồ Lam Kim / Hoàng Kim) rồi mới vào vòng sau; tách hẳn khỏi ô
 # "Tự động về bán rác" tab Hành trang (tactu_langlyson_xq._banracphongyeu)
-# dieukienrakeocap: khi kéo cấp, người give (acc gà) ra Phong Yêu Kính mở vòng mới theo 1 trong các kiểu cố định DIEUKIENRAPYKEOCAPs:
-# (khoá, nhãn giao diện, số boss phải diệt, có chờ hết quái không). Game báo hoàn thành phó bản thì coi như đủ boss. Không có kiểu
+# dieukienrakeocap (giữ tên khoá cũ cho file đã lưu): người give ra Phong Yêu Kính mở vòng mới theo 1 trong các kiểu cố định
+# DIEUKIENRAPYKEOCAPs: (khoá, nhãn giao diện, số boss phải diệt, có chờ hết quái không). Áp dụng cả kéo cấp lẫn Phong Yêu Kính
+# thường (người dùng dặn 2026-11-05: chọn 1 boss mà PYK thường vẫn chờ 2 boss). Game báo hoàn thành phó bản thì coi như đủ boss. Không có kiểu
 # "2 boss rồi chờ hết quái": boss 2 chỉ ra khi đã hết quái (người dùng dặn). Khoá lạ (bản lưu cũ "2boss_hetquai") thì về kiểu đầu
 DIEUKIENRAPYKEOCAPs = (("2boss", "Diệt đủ 2 boss là ra ngay", 2, False),
                        ("1boss_hetquai", "Diệt 1 boss rồi chờ hết quái (kiểu cũ)", 1, True),

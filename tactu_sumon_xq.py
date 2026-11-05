@@ -781,6 +781,21 @@ class TacTuSuMon:
         hoithoai["buocs"].pop(0)
         hoithoai["luc"] = now
 
+    def action_huynhiemvuthatbai(self, s, tenmuccha, nv, ghilog):
+        # Huỷ nhiệm vụ đầu tiên dưới mục cha tenmuccha (dùng chung Sư Môn / Danh Vọng): "quest giveup <mã>" như nút "Hủy Bỏ" + xác nhận
+        # (mã như "quest intro", xem moitruong.get_manhiemvu). Game giãn cách giữa 2 lần huỷ: gửi lại cách nhau GIANCACHXINNHIEMVU giây
+        # tới khi nhiệm vụ biến khỏi cửa sổ; kèm "quest list" để cửa sổ cập nhật. Mốc giãn cách chung với action_huynhiemvuhong (s không dùng)
+        if time.time() - self._luchuynhiemvu <= GIANCACHXINNHIEMVU:
+            return
+        self._luchuynhiemvu = time.time()
+        ma = self.moitruong.get_manhiemvu(tenmuccha)
+        if not ma:
+            ghilog(f"Nhiệm vụ {nv['ten']} thất bại / quá thời gian nhưng không đọc được mã để huỷ")
+            return
+        ghilog(f"Nhiệm vụ {nv['ten']} thất bại / quá thời gian: gửi \"quest giveup {ma[0]} {ma[1]} {ma[2]}\"")
+        self.moitruong.action_thucthicaulenh(f"quest giveup {ma[0]} {ma[1]} {ma[2]}")
+        self.moitruong.action_thucthicaulenh("quest list")
+
     # --- Vòng chính ------------------------------------------------------------------------------------------------------------------
     def _xulysumon(self):
         # Gọi thay lộ trình điểm đánh khi đang làm sư môn -> yêu cầu di chuyển hoặc None. Chế độ "farm" thì lộ trình điểm đánh chạy tiếp
@@ -833,6 +848,13 @@ class TacTuSuMon:
                 return None
         else:
             s.pop("luctrongmota", None)
+        # Nhiệm vụ thất bại / quá thời gian (Truy Bắt Thích Khách quá hạn 60 phút): huỷ rồi về nhận lượt mới, không đi làm nữa.
+        # Không tính là đã trả (bỏ lượt đang nhận)
+        if nv and nv["is_thatbai"]:
+            s["luotdangnhan"] = 0
+            s["trangthai"] = f"huỷ {nv['ten']} (thất bại / quá thời gian)"
+            self.action_huynhiemvuthatbai(s, MUCSUMON, nv, lambda chu: moitruong._inlog(f"[SƯ MÔN] {chu}"))
+            return None
         # Lượt đang nhận đổi (trả xong / sang lượt mới): đếm số lượt phiên này đã trả. Giới hạn trong ngày xét lúc nhận nhiệm vụ mới theo
         # số NPC báo (bước "demsolan"); "Lượt thứ" trong tên nhiệm vụ chỉ là thứ tự trong chuỗi (lặp lại), không phải số lần trong ngày
         if s["luotdangnhan"] and (not nv or nv["luot"] != s["luotdangnhan"]):

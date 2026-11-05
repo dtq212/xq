@@ -247,10 +247,22 @@ class DieuPhoiLuot:
         return hetluot
 
 
-class GiuKyNangMucTieu:
-    """Giữ chỗ chiêu khống chế trên 1 mục tiêu giữa các process bot, để 2 nhân vật không cùng gửi 1 hiệu ứng lên 1 mục tiêu.
+# Loại chỗ trong GiuKyNangMucTieu: GIUCHO = bot vừa gửi chiêu (chờ hiệu ứng hiện, THOIGIANGIUKYNANGMUCTIEU giây);
+# HIEULUC = hiệu ứng đã dính, trong khoảng này gửi lại cũng vô ích (vd Thực Cốt / Thực Giáp / Thực Tâm 120s) nên mọi bot kể cả bot giữ đều không gửi
+LOAIGIU_GIUCHO = "giu"
+LOAIGIU_HIEULUC = "hieuluc"
 
-    giukynangs (dict qua Manager): (hiệu ứng, ID mục tiêu) -> (hwnd bot giữ, thời điểm hết hạn).
+
+def _loaigiu(dangiu):
+    # Giá trị cũ 2 phần tử (chủ, hết hạn) coi như giữ chỗ
+    return dangiu[2] if len(dangiu) > 2 else LOAIGIU_GIUCHO
+
+
+class GiuKyNangMucTieu:
+    """Giữ chỗ chiêu trên 1 mục tiêu giữa các process bot (và qua LAN, xem lan_xq), để nhiều nhân vật không cùng gửi 1 hiệu ứng lên 1 mục tiêu.
+
+    giukynangs (dict qua Manager): (hiệu ứng, ID mục tiêu) -> (chủ, thời điểm hết hạn, loại LOAIGIU_*).
+    Chủ là hwnd bot máy này (int) hoặc "<tên máy>|<hwnd>" (chuỗi) với chỗ của máy khác trong LAN do DongBoLan ghi vào.
     ID mục tiêu là ID máy chủ (ID người chơi / ID đối tượng) nên mọi cửa sổ game thấy giống nhau.
     """
 
@@ -262,25 +274,53 @@ class GiuKyNangMucTieu:
         self.khoa = khoa
         self.giukynangs = giukynangs
 
+    def _is_bichan(self, dangiu, thoidiemhientai):
+        if not dangiu or dangiu[1] <= thoidiemhientai:
+            return False
+        return _loaigiu(dangiu) == LOAIGIU_HIEULUC or dangiu[0] != self.idcuaso
+
+    def _donhethan(self, thoidiemhientai):
+        if len(self.giukynangs) > self.SOLUONGTOIDA:
+            for k, v in list(self.giukynangs.items()):
+                if v[1] <= thoidiemhientai:
+                    self.giukynangs.pop(k, None)
+
     def thugiu(self, hieuung, idmuctieu, thoigian = THOIGIANGIUKYNANGMUCTIEU):
-        # True: được gửi (chưa ai giữ, chỗ cũ hết hạn, hoặc chính bot này giữ) và đã giữ chỗ. False: bot khác đang giữ
-        khoa = (hieuung, idmuctieu)
+        # True: được gửi (chưa ai giữ, chỗ cũ hết hạn, hoặc chính bot này giữ) và đã giữ chỗ. False: bot khác đang giữ / hiệu ứng còn hiệu lực
+        return bool(self.thugiumotphan(((hieuung, idmuctieu),), thoigian))
+
+    def thugiumotphan(self, khoas, thoigian = THOIGIANGIUKYNANGMUCTIEU):
+        # Giữ các khoá (hiệu ứng, ID mục tiêu) chưa bị chặn, trả về danh sách đã giữ (rỗng = mọi khoá đều có bot khác lo)
         thoidiemhientai = time.time()
         with self.khoa:
-            dangiu = self.giukynangs.get(khoa)
-            if dangiu and dangiu[0] != self.idcuaso and dangiu[1] > thoidiemhientai:
-                return False
-            if len(self.giukynangs) > self.SOLUONGTOIDA:
-                for k, (_, hethan) in list(self.giukynangs.items()):
-                    if hethan <= thoidiemhientai:
-                        self.giukynangs.pop(k, None)
-            self.giukynangs[khoa] = (self.idcuaso, thoidiemhientai + thoigian)
-        return True
+            trongs = [k for k in khoas if not self._is_bichan(self.giukynangs.get(k), thoidiemhientai)]
+            if trongs:
+                self._donhethan(thoidiemhientai)
+                self.giukynangs.update({k: (self.idcuaso, thoidiemhientai + thoigian, LOAIGIU_GIUCHO) for k in trongs})
+        return trongs
 
     def bogiu(self, hieuung, idmuctieu):
         # Giữ chỗ mà rốt cuộc không gửi được chiêu (còn xa phải chạy lại, kỹ năng bị khoá...) thì trả lại cho bot khác
         khoa = (hieuung, idmuctieu)
         with self.khoa:
             dangiu = self.giukynangs.get(khoa)
-            if dangiu and dangiu[0] == self.idcuaso:
+            if dangiu and dangiu[0] == self.idcuaso and _loaigiu(dangiu) == LOAIGIU_GIUCHO:
                 self.giukynangs.pop(khoa, None)
+
+    def danhdauhieuluc(self, hieuung, idmuctieu, thoigian):
+        # Hiệu ứng vừa thấy dính trên mục tiêu: chặn mọi bot gửi lại trong thoigian giây (không kéo dài dấu đang còn).
+        # Trả về thời điểm hết hiệu lực (của dấu mới hoặc dấu đang có)
+        khoa = (hieuung, idmuctieu)
+        thoidiemhientai = time.time()
+        with self.khoa:
+            dangiu = self.giukynangs.get(khoa)
+            if dangiu and dangiu[1] > thoidiemhientai and _loaigiu(dangiu) == LOAIGIU_HIEULUC:
+                return dangiu[1]
+            self._donhethan(thoidiemhientai)
+            self.giukynangs[khoa] = (self.idcuaso, thoidiemhientai + thoigian, LOAIGIU_HIEULUC)
+        return thoidiemhientai + thoigian
+
+    def laykhoabichan(self):
+        # Tập khoá (hiệu ứng, ID mục tiêu) bot này không nên gửi lúc này (1 lần đọc Manager, dùng khi lọc nhiều mục tiêu)
+        thoidiemhientai = time.time()
+        return {k for k, v in self.giukynangs.copy().items() if self._is_bichan(v, thoidiemhientai)}

@@ -167,7 +167,25 @@ def timbandotheoten(ten):
     # Nhiệm vụ ghi "Khốn Ma Trận tầng 2" = bản đồ "Khốn Ma Trận 2"
     ten = re.sub(r"\s+tầng\s*(\d+)$", r" \1", ten, flags = re.IGNORECASE)
     # Bản đồ nhiều tầng mà nhiệm vụ không ghi tầng ("Cầu Cửu Khúc" = "Cầu Cửu Khúc 1")
-    return layidbandotheoten(ten) or layidbandotheoten(ten + " 1")
+    idbando = layidbandotheoten(ten) or layidbandotheoten(ten + " 1")
+    if idbando:
+        return idbando
+    # Nhiệm vụ gọi tắt tên bản đồ: "Nghe nói ở Mã Lăng đánh Phi Tặc sẽ có Núm Vú" (sư môn Thu Thập, Dược Đồng) là Mã Lăng Đạo
+    # (người dùng xác nhận 2026-11-05)
+    tendaydu = next((v for k, v in TENBANDOGOITAT.items() if chuanhoaten(k) == chuanhoaten(ten)), None)
+    return layidbandotheoten(tendaydu) if tendaydu else None
+
+
+# Tên bản đồ nhiệm vụ gọi tắt -> tên đầy đủ trong bản đồ game
+TENBANDOGOITAT = {"Mã Lăng": "Mã Lăng Đạo"}
+
+
+def is_nhiemvuthatbai(vanban):
+    # Nhiệm vụ hỏng, làm tiếp vô ích -> phải huỷ ("quest giveup"): quá hạn thì mô tả có "(Nhiệm vụ thất bại)" (Truy Bắt Thích Khách
+    # hạn 60 phút, ảnh 2026-11-05) hoặc cả mô tả chỉ còn "Đã Quá Thời Gian" (Danh Vọng Trang Bị Quân Đội)
+    # (bỏ dấu câu trước: chuanhoaten dồn dấu thanh về cuối từ, "bại)" thành "bai)̣" không khớp "bại")
+    vanban = chuanhoaten(re.sub(r"[^\w\s]", " ", boma(vanban or "")))
+    return any(chuanhoaten(c) in vanban for c in ("Nhiệm vụ thất bại", "Đã Quá Thời Gian"))
 
 
 def laynhiemvusumon(mucs):
@@ -207,7 +225,7 @@ def phantichnhiemvu(tenmuc, mota):
     mucdich = " ".join(mucdich.split())
     motachitiet = " ".join(motachitiet.split())
     nv = {"ten": ten, "is_xong": is_xong, "luot": int(luot.group(1)) if luot else 0, "loai": LOAI_KHONGRO, "mucdich": mucdich,
-          "mota": motachitiet, "tiendo": tiendo, "tiendos": tiendos}
+          "mota": motachitiet, "tiendo": tiendo, "tiendos": tiendos, "is_thatbai": not is_xong and is_nhiemvuthatbai(vanban)}
 
     if chuanhoaten(ten) in (chuanhoaten("Truy Bắt Thích Khách"), chuanhoaten("Truy Sát Phản Đồ")):
         nv["loai"] = LOAI_TRUYBAT
@@ -227,7 +245,8 @@ def phantichnhiemvu(tenmuc, mota):
                 or re.search(r"(?:tới|ở|đến) (\S+ Quốc)", mucdich))
         nuoc = nuoc.group(1) if nuoc else next((n for n in re.findall(r"(\S+ Quốc)", mucdich) + re.findall(r"(\S+ Quốc)", motachitiet)[::-1]
                                                 if n != nuoctongquan), None)
-        toado = re.search(rf"{re.escape(nuoc)}\s*\((\d+)\s*,\s*(\d+)\)" if nuoc else r"$^", motachitiet) \
+        # Không có tên nước thì bỏ bước tìm theo nước (mẫu cũ r"$^" khớp mô tả rỗng mà không có nhóm => group(1) lỗi "no such group")
+        toado = (re.search(rf"{re.escape(nuoc)}\s*\((\d+)\s*,\s*(\d+)\)", motachitiet) if nuoc else None) \
                 or re.search(r"\((\d+)\s*,\s*(\d+)\)", motachitiet)
         doithu = re.search(r"(?:báo|nói) rằng ([^.,]+?) (?:đang|đã) (?:ở|trốn|chạy)", motachitiet)
         nv.update(buoc = "diet", bando = timbandotheoten(nuoc) if nuoc else None,

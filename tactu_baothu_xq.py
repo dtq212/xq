@@ -59,7 +59,18 @@ class TacTuBaoThu:
                     # Nhận bảo thú giang hồ theo ID, không đoán theo tên: trước đây tên có "(...)" là triệu hồi, còn lại là giang hồ,
                     # lượt nào đọc tên hụt (rỗng/chưa tải) thì bảo thú triệu hồi bị coi là giang hồ và bị ra lệnh Chờ đợi ("pet ...# 3")
                     # Tên ô bảo thú triệu hồi luôn có dạng "Cương Thi ( ... )": có "(" thì chắc chắn không phải giang hồ
-                    is_baothugiangho = is_datrieuhoibaothugiangho and iddoituongbaothu == iddoituongbaothugiangho and "(" not in (self.moitruong.get_tendoituongbaothu(sothutu) or "")
+                    tenbaothu = self.moitruong.get_tendoituongbaothu(sothutu) or ""
+                    is_baothugiangho = is_datrieuhoibaothugiangho and iddoituongbaothu == iddoituongbaothugiangho and "(" not in tenbaothu
+
+                    # Bảo thú gọi bằng vật phẩm (Thần Thú - Chuột, Song Tử, Thuỷ Bình...) cũng nằm ở các ô này nhưng không có % sinh lực / nội lực
+                    # (+0x1D4 / +0x1D8 luôn 0, đo 2026-11-05 trên Thần Thú - Chuột) => trước đây bị coi là bảo thú triệu hồi "hết máu, hết nội lực"
+                    # nên Mao Sơn buff Lưu Huyết Thuật / Di Tinh Đại Pháp liên tục dù đệ chưa mất giọt máu nào. Bỏ qua hẳn: không buff, không ra lệnh
+                    # (bảo thú triệu hồi còn sống không bao giờ 0% cả máu lẫn nội lực; tên triệu hồi luôn có "(")
+                    if not is_baothugiangho and "(" not in tenbaothu and (
+                            tenbaothu in BAOTHUVATPHAMs
+                            or (not self.moitruong.get_phantramsinhlucconlaidoituongbaothukynangtrieuhoi(sothutu)
+                                and not self.moitruong.get_phantramnoilucconlaidoituongbaothukynangtrieuhoi(sothutu))):
+                        continue
                     is_baothukynangtrieuhoi = not is_baothugiangho
 
                     toadodoituongbaothu = self.moitruong.get_toadodoituongbaothu(sothutu)

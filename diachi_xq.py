@@ -64,6 +64,12 @@ CHUKY = {
     "VA_TUTHEDELAY2": ("ma", "3B C2 74 0A 83 F8 09 74 05 83 F8 07 75 16 C7 86 B8 11 00 00 0B 00 00 00", 14, 0x1b377),  # mov [esi+0x11B8], 0x0B (tư thế delay sau tấn công)
     "HOOK_TROCHUYEN": ("ma", "55 8B 8A D8 FD AD 00", 1, 0x5964),  # chỗ hook đọc nội dung trò chuyện (6 byte)
     "HOOK_TINHETHONG": ("ma", "55 8B 89 64 FD AD 00", 1, 0x2b63),  # chỗ hook gói 0x3E chỉ in vào khung tin hệ thống (trả lời "desc user"), 6 byte
+    "HOOK_VEDANHHIEU": ("ma", "50 56 E8 ?? ?? ?? ?? 8B 53 20", 2, 0x1d0a8),  # call HAMVECHU vẽ danh hiệu đối tượng (+0x1134) phía trên tên, 5 byte, ebx = đối tượng
+    "HOOK_VEDANHHIEU2": ("ma", "81 C1 34 11 00 00 99 2B C2 8B D5 D1 F8 2B D0 52 51 8B 0D ?? ?? ?? ?? 56 ?? ?? ?? ?? ??", 24, 0x9c34f),  # call HAMVECHU vẽ danh hiệu nhân vật mình (ebx = đối tượng)
+    "HOOK_VEDANHHIEU3": ("ma", "8D 87 34 11 00 00 51 8B 0D ?? ?? ?? ?? 50 56 ?? ?? ?? ?? ?? 80 7F 29 80", 15, 0x9cf52),  # call HAMVECHU vẽ danh hiệu người chơi khác (edi = đối tượng)
+    "HAMVECHU": ("goi", "50 56 E8 ?? ?? ?? ?? 8B 53 20", 3, 0x95ba0),  # vẽ 1 dòng chữ: thiscall ecx = [BIENVECHU], (surface, chữ, x, y, màu, 0), ret 0x18; không xử lý xuống dòng
+    "BIENVECHU": ("bien", "56 56 89 72 60 A1 ?? ?? ?? ??", 6, 0x380b34),  # con trỏ bộ vẽ chữ (ecx của HAMVECHU)
+    "HAMDORONGCHU": ("goi", "75 1A 50 8B CB E8 ?? ?? ?? ??", 6, 0x22090),  # độ rộng (pixel) 1 dòng chữ: thiscall (ecx không dùng), (chữ), ret 4; game nhớ ở +0x112C tên / +0x1130 danh hiệu
     "TG_TIMDUONG": ("hang", [('33 F6 39 B2 ?? ?? ?? ?? 75 42', 4), ('8B 1D ?? ?? ?? ?? 8B 93 ?? ?? ?? ?? 3B D6', 8), ('C7 05 ?? ?? ?? ?? 00 00 00 00 8B 96 ?? ?? ?? ??', 12)], None, 0xadfdec),  # cấu trúc tìm đường / bản đồ
     "TG_HANHTRANG": ("hang", [('8A 55 06 8B 0D ?? ?? ?? ?? 52 50 8B 89 ?? ?? ?? ??', 13), ('8B 88 ?? ?? ?? ?? 89 5C 24 18', 2), ('8A 55 02 51 8B 88 ?? ?? ?? ??', 6)], None, 0xadfd78),  # hành trang (id, tên, số lượng, mô tả vật phẩm)
     "TG_KYNANG": ("hang", [('83 C4 1C 8B 15 ?? ?? ?? ?? 8B 82 ?? ?? ?? ??', 11), ('83 C5 04 F3 AB 8B 15 ?? ?? ?? ?? 68 F3 01 00 00 55 8B 82 ?? ?? ?? ??', 19), ('8B B9 ?? ?? ?? ?? 8B 84 2F 60 FF FF FF', 2)], None, 0xadfe18),  # bảng kỹ năng

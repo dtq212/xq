@@ -38,7 +38,7 @@ from giaodo_xq import taolenhgiao
 from luattuido_xq import HANHDONG_BAN
 from thongbao_xq import baosuco
 from tienich_xq import phatam, taicauhinhphongyeu, CAUHINHPHONGYEU_MACDINH, taitiendophoban, luutiendophoban, taivitrithoyeu, \
-    luuvitrithoyeu, taibossphongyeu, luubossphongyeu
+    luuvitrithoyeu, taibossphongyeu, luubossphongyeu, laydieukienrapykeocap
 
 BANDO_THUYHOASON = 82
 NPCVAOLANGLYSON = ("Đào Vong Khổ Dịch", 137, 117)
@@ -108,6 +108,7 @@ CAPDOLAMKIMTOITHIEU = 15
 SODESCMOILUOT = 3
 THOIGIANCHODESCPY = 3.
 SOLANDESCPY = 3
+# Số boss tối đa một vòng (game); số boss phải diệt mới ra thì theo "Điều kiện thoát" cấu hình (tienich_xq.laydieukienrapykeocap)
 SOBOSSPHONGYEU = 2
 # Tên boss có đuôi cấp, vd "Trịnh Vương Tàn Phách (cấp 96)" (85%, "<nước> Vương Tàn Phách"), "Hổ Cảnh Kính Ma (cấp 97)" / "Long Nha Kính Ma (cấp 101)" / "Kính Ma Khuyển Thần (cấp 101)" (100%, còn có thể
 # gặp tên khác: thêm vào đây). Quái thường có chữ "Quốc": "Trịnh Quốc Kính Yêu", "Ngô Quốc Kính Ma" (cũng chứa "Kính Ma", từng bị nhận
@@ -142,6 +143,9 @@ THOIGIANCHOMOIPY = 90.
 # (từng cứ 2 lượt là ra: ra khi mới 1/2 boss, bỏ ngang boss thành viên đang đánh)
 SOLUOTDORAPHONGYEU = 2
 THOIGIANTOIDAPY = 30 * 60.
+# Điều kiện thoát kiểu "chờ hết quái" (PYK thường): mình và thành viên không ai còn mục tiêu liền chừng này giây là hết quái
+# (như THOIGIANHETMUCTIEUPYKC của kéo cấp; không import từ tactu_keocap_xq vì file đó import file này)
+THOIGIANHETMUCTIEUPY = 10.
 # Thỏ Yêu đứng xa (bản đồ lớn) đi tới mất cả phút: 40s từng hết giờ giữa đường, không hỏi được
 THOIGIANHOISOQUAI = 120.
 # Người give hết đồ (cấu hình is_laydothanhvien): báo xin đồ qua shared_data ("_pylamkim"), thành viên ngoài phó bản còn đồ đúng điều kiện
@@ -393,10 +397,12 @@ class TacTuLangLySon:
             self._logpb(s, noidung)
             baosuco(self.moitruong, "langlyson", noidung, khoa = f"{s['batdau']}|{khoa}", giancach = 0.)
 
-    def _batdanhquailanglyson(self, s):
+    def _batdanhquailanglyson(self, s, boqua = ()):
         # Ô cần cho đánh quái (cùng bộ với sư môn) người dùng quên bật thì đổi giúp, dừng thì trả lại. "Chỉ đánh người chơi" của người
-        # dùng giữ nguyên trong phó bản
+        # dùng giữ nguyên trong phó bản; boqua: các ô không đổi (giữ theo người dùng)
         for thuoctinh, giatri, ten in self._TUYCHONDANHQUAI:
+            if thuoctinh in boqua:
+                continue
             if thuoctinh != "_is_chidanhnguoichoi" and getattr(self, thuoctinh) != giatri:
                 s.setdefault("tuychoncu", {}).setdefault(thuoctinh, getattr(self, thuoctinh))
                 setattr(self, thuoctinh, giatri)
@@ -2004,7 +2010,7 @@ class TacTuLangLySon:
                 py["bossdagiet"] |= moi
                 if py["boss"] and py["boss"]["id"] in moi:
                     py["boss"] = None
-                self._logpb(s, f"{info.get('tennhanvat') or info.get('idnguoichoi')} đã giết boss ({len(py['bossdagiet'])}/{SOBOSSPHONGYEU})")
+                self._logpb(s, f"{info.get('tennhanvat') or info.get('idnguoichoi')} đã giết boss ({len(py['bossdagiet'])}/{laydieukienrapykeocap()[0]})")
 
     def _luubosspy(self, py, idbando):
         # Ghi boss đã giết ra file khi đổi hoặc mỗi GIANCACHLUUBOSSPY giây (giữ "luc" mới để _khoiphucbosspy biết vẫn là vòng này)
@@ -2024,7 +2030,7 @@ class TacTuLangLySon:
         py["lucvao"] = min(py["lucvao"], float(dulieu.get("lucvao") or py["lucvao"]))
         if bosss:
             py["bossdagiet"] |= bosss
-            self._logpb(s, f"Bật lại giữa phó bản: lấy lại {len(py['bossdagiet'])}/{SOBOSSPHONGYEU} boss đã giết, vào lúc "
+            self._logpb(s, f"Bật lại giữa phó bản: lấy lại {len(py['bossdagiet'])}/{laydieukienrapykeocap()[0]} boss đã giết, vào lúc "
                            f"{time.strftime('%H:%M:%S', time.localtime(py['lucvao']))}")
 
     def _xoabosspy(self):
@@ -2086,7 +2092,7 @@ class TacTuLangLySon:
 
     def _buoctrongphongyeu(self, s, idbando, is_thanhvien = False):
         # Trong Phong Yêu Kính: thấy boss thì đánh boss, không thì dò khắp bản đồ đánh mọi quái; hết 1 lượt dò thì hỏi Thỏ Yêu số quái.
-        # Giết đủ SOBOSSPHONGYEU boss (hoặc game báo hoàn thành) thì chờ nhặt đồ rồi sang ra (_buocraphongyeu).
+        # Giết đủ số boss theo "Điều kiện thoát" (hoặc game báo hoàn thành) thì chờ nhặt đồ rồi sang ra (_buocraphongyeu).
         # is_thanhvien: thành viên cũng dò / đánh như vậy nhưng không hỏi Thỏ Yêu, không tự ra, xong thì chờ trưởng nhóm giải tán nhóm
         moitruong = self.moitruong
         now = time.time()
@@ -2099,7 +2105,8 @@ class TacTuLangLySon:
             # Vừa vào Thỏ Yêu đứng ngay cạnh: nhớ toạ độ (tuỳ bản đồ) để lúc hỏi số quái / ra quay về đúng chỗ
             self._vitrithoyeu(s, py, idbando)
         s["chedo"] = "danhquai"
-        self._batdanhquailanglyson(s)
+        # Phong Yêu Kính không tự bật "Tự động sử dụng kỹ năng" (người dùng dặn 2026-11-04): tắt thì đứng ở Thỏ Yêu, không dò đánh quái
+        self._batdanhquailanglyson(s, boqua = ("_is_tudongsudungkynang",))
         self._congbossnguoikhac(s, py)
         self._luubosspy(py, idbando)
         if not is_thanhvien:
@@ -2129,8 +2136,16 @@ class TacTuLangLySon:
                 else:
                     is_hetluot = True
                     py["lydora"] = "đủ quái, dò thêm 1 lượt không thấy boss" if is_duquai else f"quá {THOIGIANTOIDAPY / 60:.0f} phút"
-        # Đủ boss mà mới vào chưa tới THOIGIANTOITHIEUPY giây thì không tin (boss chỉ ra khi đã đánh 85% quái): chắc là số boss cũ
-        is_duboss = len(py["bossdagiet"]) >= SOBOSSPHONGYEU and now - py["lucvao"] >= THOIGIANTOITHIEUPY
+        # Đủ boss mà mới vào chưa tới THOIGIANTOITHIEUPY giây thì không tin (boss chỉ ra khi đã đánh 85% quái): chắc là số boss cũ.
+        # Số boss phải diệt theo "Điều kiện thoát" cấu hình Phong Yêu Kính (như kéo cấp, người dùng dặn 2026-11-05); kiểu "chờ hết quái"
+        # thì đủ boss rồi còn chờ mình và thành viên không ai còn mục tiêu liền THOIGIANHETMUCTIEUPY giây (quá THOIGIANTOIDAPY thì thôi)
+        sobossra, is_chohetquai = laydieukienrapykeocap()
+        is_duboss = len(py["bossdagiet"]) >= sobossra and now - py["lucvao"] >= THOIGIANTOITHIEUPY
+        if is_duboss and is_chohetquai and not is_thanhvien and now - py["lucvao"] < THOIGIANTOIDAPY:
+            if moitruong.get_iddoituongmuctieudangchon() or self._thanhviencomuctieupykc(py) or "luccomuctieu" not in py:
+                py["luccomuctieu"] = now
+            if now - py["luccomuctieu"] < THOIGIANHETMUCTIEUPY:
+                is_duboss = False
         if is_duboss or s["daxongphoban"] or is_hetluot:
             if is_thanhvien:
                 s["trangthai"] = f"{tenpb}: xong {len(py['bossdagiet'])} boss, chờ trưởng nhóm giải tán nhóm"
@@ -2139,10 +2154,12 @@ class TacTuLangLySon:
                 s["trangthai"] = f"{tenpb}: xong {len(py['bossdagiet'])} boss, chờ nhặt đồ rồi về Chu Quốc"
                 return None
             s.update(giaidoan = "nhanthuong", hoithoai = None)
-            self._logpb(s, f"Xong phó bản ({len(py['bossdagiet'])}/{SOBOSSPHONGYEU} boss"
+            self._logpb(s, f"Xong phó bản ({len(py['bossdagiet'])}/{laydieukienrapykeocap()[0]} boss"
                            + (f", đã dò {py['soluotdo']} lượt bản đồ, {py.get('lydora')}" if is_hetluot else "")
                            + "), nói chuyện Thỏ Yêu về Chu Quốc")
             return None
+        if not self._is_tudongsudungkynang:
+            return self._dungthoyeupy(s, py, idbando, is_thanhvien)
         diachi = self._timbossphongyeu(py)
         boss = py["boss"]
         if diachi:
@@ -2151,7 +2168,7 @@ class TacTuLangLySon:
                 boss = py["boss"] = {"id": idboss, "ten": moitruong.get_tendoituong(diachi), "lucgan": 0.}
                 self._logpb(s, f"Thấy boss {boss['ten']} ở {moitruong.get_toado(diachi)}")
             boss.update(vitri = moitruong.get_toado(diachi), lucgan = 0.)
-            s["trangthai"] = f"{tenpb}: đánh boss {boss['ten']} (đã giết {len(py['bossdagiet'])}/{SOBOSSPHONGYEU})"
+            s["trangthai"] = f"{tenpb}: đánh boss {boss['ten']} (đã giết {len(py['bossdagiet'])}/{laydieukienrapykeocap()[0]})"
             self._capnhatbuocdichuyen(f"{tenpb}: đánh boss {boss['ten']}")
             if moitruong.get_khoangcach(diachi) > KHOANGCACHTOIBOSS:
                 return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (*boss["vitri"], idbando), "khoangcachtoida": 1.}
@@ -2169,7 +2186,7 @@ class TacTuLangLySon:
                 return None
             py["bossdagiet"].add(boss["id"])
             py["boss"] = None
-            self._logpb(s, f"Đã giết boss {boss['ten']} ({len(py['bossdagiet'])}/{SOBOSSPHONGYEU})")
+            self._logpb(s, f"Đã giết boss {boss['ten']} ({len(py['bossdagiet'])}/{laydieukienrapykeocap()[0]})")
             return None
         if py["hoisoquai"]:
             if is_thanhvien:
@@ -2177,6 +2194,22 @@ class TacTuLangLySon:
             else:
                 return self._hoisoquaiphongyeu(s, py)
         return self._dophongyeu(s, py, idbando)
+
+    def _dungthoyeupy(self, s, py, idbando, is_thanhvien):
+        # Tắt "Tự động sử dụng kỹ năng": đứng cạnh Thỏ Yêu, không dò lộ trình / đuổi boss / hỏi số quái. Trưởng nhóm không dò nên không
+        # ra theo lượt dò: ở quá THOIGIANTOIDAPY giây mà không ai còn đánh boss / còn mục tiêu thì ra mở vòng mới (đủ boss thì ra như cũ)
+        tenpb = self._tenpb(s)
+        py["hoisoquai"] = None
+        py["boss"] = None
+        s["chedo"] = "cho"
+        if not is_thanhvien and time.time() - py["lucvao"] >= THOIGIANTOIDAPY and not self._nguoikhacdanhbosspy() \
+                and not self._thanhviencomuctieupykc(py):
+            self._logpb(s, f"Không bật Tự động sử dụng kỹ năng, ở quá {THOIGIANTOIDAPY / 60:.0f} phút mới diệt "
+                           f"{len(py['bossdagiet'])}/{laydieukienrapykeocap()[0]} boss, không ai còn đánh: ra mở vòng mới")
+            s.update(giaidoan = "nhanthuong", hoithoai = None)
+            return None
+        s["trangthai"] = f"{tenpb}: không bật Tự động sử dụng kỹ năng, đứng ở Thỏ Yêu (boss {len(py['bossdagiet'])}/{laydieukienrapykeocap()[0]})"
+        return self._dungthoyeukc(s, py, idbando)
 
     def _hoisoquaiphongyeu(self, s, py):
         # Về Thỏ Yêu "2. Hiện tại chúng ta đánh được bao nhiêu quái?" -> "Hiện tại nhóm đã đánh được N quái vật. Muốn phát hiện Boss phải
@@ -2301,9 +2334,9 @@ class TacTuLangLySon:
             if is_hetluot:
                 py["soluotdo"] += 1
                 py["hoisoquai"] = time.time()
-                self._logpb(s, f"Dò xong lượt {py['soluotdo']}, đã giết {len(py['bossdagiet'])}/{SOBOSSPHONGYEU} boss")
+                self._logpb(s, f"Dò xong lượt {py['soluotdo']}, đã giết {len(py['bossdagiet'])}/{laydieukienrapykeocap()[0]} boss")
             x, y = do["diems"][do["i"]]
-        nhan = f"dò đánh quái (điểm {do['i'] + 1}/{len(do['diems'])}, boss {len(py['bossdagiet'])}/{SOBOSSPHONGYEU})"
+        nhan = f"dò đánh quái (điểm {do['i'] + 1}/{len(do['diems'])}, boss {len(py['bossdagiet'])}/{laydieukienrapykeocap()[0]})"
         s["trangthai"] = f"{self._tenpb(s)}: {nhan}"
         self._capnhatbuocdichuyen(f"{self._tenpb(s)}: {nhan}")
         return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x, y, idbando), "khoangcachtoida": 1.}

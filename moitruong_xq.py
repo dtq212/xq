@@ -1,6 +1,7 @@
 import ctypes
 import heapq
 import queue
+from collections import deque
 import re
 import struct
 import threading
@@ -75,6 +76,15 @@ THOIGIANGIATKHONGCATGOC = 4.
 SOLANGIATKHONGCATGOC = 2
 # Mỗi ô trong khu vực cấm khai tay tính thêm chừng này bước khi tìm đường không cắt góc
 PHATKHUVUCCAMKHONGCATGOC = 20.
+# Chạy trốn theo đường tính sẵn (get_duongchaytron): xét lưới vật cản trong ô vuông bán kính BANKINHLUOICHAYTRON quanh mình, chọn đích
+# cách SOBUOCDICHCHAYTRONTOITHIEU..SOBUOCDICHCHAYTRONTOIDA bước (đích không sát mép lưới để còn đếm được khoảng trống phía sau nó)
+BANKINHLUOICHAYTRON = 40
+SOBUOCDICHCHAYTRONTOITHIEU = 4
+SOBUOCDICHCHAYTRONTOIDA = 24
+# Đích cũ còn an toàn và điểm kém đích tốt nhất không quá chừng này thì giữ đích cũ (không đổi hướng qua lại)
+DIEMGIUDICHCHAYTRON = 3.
+# Cùng đích mà chuỗi đang đi chưa hết thì chừng này giây mới ghi lại chuỗi mới (đường né kẻ địch vừa đổi chỗ)
+THOIGIANGHILAICHAYTRON = 1.2
 
 
 class MoiTruong:
@@ -135,6 +145,9 @@ class MoiTruong:
         self._kettiendokhongcatgoc = None
         self._lucvuahockhongcatgoc = 0.
         self._lucgoikhongcatgoc = 0.
+        # Đích / lúc ghi chuỗi gần nhất của action_dichuoihuongchaytron (chạy trốn theo đường tính sẵn)
+        self._dichchaytrondaghi = None
+        self._thoidiemghichaytron = 0.
         # Các ô thật gần đây [(lúc, ô)] và lần bị giật về theo (ô mốc, bước đầu) để bắt kiểu giật về ô mốc
         self._lichsukhongcatgoc = []
         self._giatkhongcatgoc = {}
@@ -320,6 +333,8 @@ class MoiTruong:
         self._diachihamkichbantinhethong = False
         # Hàm + bộ đệm chuỗi của action_themdongkhungchat
         self._diachithemdongkhungchat = False
+        # Vùng dữ liệu của hook vẽ thêm dòng trên danh hiệu (action_thietlaphookvedanhhieu), 0 = chưa đặt
+        self._diachidulieuvedanhhieu = 0
 
         # Hook dò lệnh game tự gửi (action_thietlaphooklenhgame): bộ đệm vòng, đã đọc tới đâu, lệnh bot vừa gửi (để không log trùng)
         self._diachibodemlenhgame = False
@@ -1003,6 +1018,180 @@ class MoiTruong:
 
         return True
 
+    def action_thietlaphookvedanhhieu(self):
+        # Game vẽ danh hiệu (+0x1134) phía trên tên bằng 1 lần gọi HAMVECHU, hàm này KHÔNG xử lý xuống dòng => chèn mã ở chỗ gọi. Có 3
+        # chỗ (dò 2026-11-05): HOOK_VEDANHHIEU xq+0x1D0A8 quái / NPC (ebx = đối tượng), HOOK_VEDANHHIEU2 xq+0x9C34F nhân vật mình (ebx),
+        # HOOK_VEDANHHIEU3 xq+0x9CF52 người chơi khác (edi) - trước chỉ hook chỗ đầu nên mục tiêu là người chơi không hiện dòng thêm.
+        # Dữ liệu chung: SODOITUONGVEDANHHIEU khối KICHTHUOCKHOIVEDANHHIEU byte, mỗi khối [+0] đối tượng, [+4] số dòng, dòng i ở +8 +
+        # i * KICHTHUOCDONGVEDANHHIEU. Đối tượng đang vẽ trùng khối nào thì vẽ thêm các dòng của khối đó lên trên danh hiệu, mỗi dòng
+        # cao KHOANGCACHDONGCHU px, canh giữa theo độ rộng HAMDORONGCHU như game canh danh hiệu (+0x1130). Rồi vẽ danh hiệu như cũ.
+        # Tham số HAMVECHU (thiscall ecx = [BIENVECHU], ret 0x18): surface, chữ, x, y, màu, 0. Chỉ ở client này, không gửi gì lên máy chủ.
+        # Bản Aegis có chienquoc2d.dll (bộ vẽ chữ tiếng Việt) đã thay các call này bằng "jmp <đoạn nối của DLL>": pushfd, pushad, gọi
+        # f(ecx gốc, đối tượng, &6 tham số, tâm ngang) (cdecl; "53 50 52 51 E8 rel32"), bỏ 6 tham số rồi nhảy về sau lệnh. f tự canh
+        # giữa theo tâm (chỗ 1: edi, chỗ 2 / 3: ebp). Khi đó chèn nối tiếp: jmp sang mã mình, vẽ dòng thêm bằng f, rồi nhảy vào đoạn nối.
+        # Mã mình đánh dấu DAUHIEUKICHBANVEDANHHIEU + 5 byte gốc ở cuối vùng => lần chạy bot sau nhận ra, lấy lại byte gốc (không nối chồng)
+        # -> địa chỉ vùng dữ liệu, 0 nếu không đặt được chỗ nào
+        if self._diachidulieuvedanhhieu:
+            return self._diachidulieuvedanhhieu
+        dulieu = self.tientrinh.allocate(SODOITUONGVEDANHHIEU * KICHTHUOCKHOIVEDANHHIEU)
+        for k in range(SODOITUONGVEDANHHIEU):
+            write_bytes(self.tientrinh, dulieu + k * KICHTHUOCKHOIVEDANHHIEU, b"\0" * 8, 8)
+        # (chỗ hook, ô pushad của thanh ghi đối tượng, ô pushad của tâm ngang): ô pushad edi 0, ebp 8, ebx 0x10
+        chohooks = ((DC.HOOK_VEDANHHIEU, 0x10, 0), (DC.HOOK_VEDANHHIEU2, 0x10, 8), (DC.HOOK_VEDANHHIEU3, 0, 8))
+        dadat = []
+        for chohook, odoituong, otam in chohooks:
+            try:
+                kieu = self._dathookvedanhhieu(self.diachixq + chohook, dulieu, odoituong, otam)
+            except Exception as err:
+                kieu = None
+                self._inlog(f"[DANH HIỆU] lỗi đặt hook ở xq+{chohook:#x}: {err}")
+            if kieu:
+                dadat.append(f"xq+{chohook:#x} {kieu}")
+        if not dadat:
+            return 0
+        self._diachidulieuvedanhhieu = dulieu
+        self._inlog(f"[DANH HIỆU] đã đặt hook vẽ thêm dòng trên danh hiệu: {', '.join(dadat)}")
+        return dulieu
+
+    def _dathookvedanhhieu(self, diachihook, dulieu, odoituong, otam):
+        # Đặt 1 chỗ hook (xem action_thietlaphookvedanhhieu) -> "call gốc" / "nối sau chienquoc2d.dll", None nếu không đặt được
+        hamvechu = self.diachixq + DC.HAMVECHU
+        mahook = read_bytes(self.tientrinh, diachihook, 5)
+        if mahook[0] in (0xE8, 0xE9):
+            dich = diachihook + 5 + struct.unpack("<i", mahook[1:5])[0]
+            try:
+                danhdau = read_bytes(self.tientrinh, dich + KICHTHUOCKICHBANVEDANHHIEU - 0x10, 9)
+            except Exception:
+                danhdau = b""
+            if danhdau[:4] == DAUHIEUKICHBANVEDANHHIEU:
+                mahook = danhdau[4:9]
+            elif mahook[0] == 0xE8 and dich != hamvechu:
+                # Kịch bản bản cũ (chưa đánh dấu) trỏ call vào nó: gốc là call HAMVECHU
+                mahook = b"\xE8" + struct.pack("<i", hamvechu - (diachihook + 5))
+        if mahook[0] == 0xE8:
+            # Lệnh gốc: call HAMVECHU (không có DLL) -> mã mình được call: tham số gốc từ [ebp + 0x24] (sau pushad + địa chỉ trở về)
+            is_dll, dichcuoi, base, hamdll = False, hamvechu, 0x24, 0
+        elif mahook[0] == 0xE9:
+            dichcuoi = diachihook + 5 + struct.unpack("<i", mahook[1:5])[0]
+            try:
+                noidll = read_bytes(self.tientrinh, dichcuoi, 0x28)
+            except Exception:
+                noidll = b""
+            vitri = noidll.find(bytes.fromhex("53505251E8"))
+            if noidll[:6] != bytes.fromhex("9C608D442424") or vitri < 0:
+                self._inlog(f"[DANH HIỆU] chỗ vẽ danh hiệu bị chèn lạ: {mahook.hex(' ')} -> {noidll.hex(' ')}")
+                return None
+            is_dll, base = True, 0x20
+            hamdll = dichcuoi + vitri + 9 + struct.unpack("<i", noidll[vitri + 5:vitri + 9])[0]
+        else:
+            self._inlog(f"[DANH HIỆU] chỗ vẽ danh hiệu không phải lệnh call / jmp: {mahook.hex(' ')}")
+            return None
+        kichban = self.tientrinh.allocate(KICHTHUOCKICHBANVEDANHHIEU)
+        # ebx = đối tượng (lấy từ ô pushad của thanh ghi gốc); [ebp - 4] khối của đối tượng, [ebp - 8] tâm ngang danh hiệu; tham số gốc
+        # (surface, chữ, x, y, màu, 0) từ [ebp + base]
+        if is_dll:
+            # f(ecx = [BIENVECHU], đối tượng, &tham số, tâm ngang gốc), cdecl: tự dọn 4 + 6 tham số
+            goive = f"""
+            mov eax, esp
+            push dword ptr [ebp + {otam}]
+            push eax
+            push ebx
+            push dword ptr [{self.diachixq + DC.BIENVECHU}]
+            mov eax, {hamdll}
+            call eax
+            add esp, 0x28
+            """
+        else:
+            goive = f"""
+            mov ecx, dword ptr [{self.diachixq + DC.BIENVECHU}]
+            mov eax, {hamvechu}
+            call eax
+            """
+        asm_script = f"""
+            pushad
+            mov ebp, esp
+            mov ebx, dword ptr [ebp + {odoituong}]
+            mov eax, {dulieu}
+            mov ecx, {SODOITUONGVEDANHHIEU}
+        tim:
+            cmp ebx, dword ptr [eax]
+            je thay
+            add eax, {KICHTHUOCKHOIVEDANHHIEU}
+            dec ecx
+            jnz tim
+            jmp xong
+        thay:
+            push eax
+            mov edx, dword ptr [ebx + 0x1130]
+            sar edx, 1
+            add edx, dword ptr [ebp + {base + 8}]
+            push edx
+            xor esi, esi
+        lap:
+            mov eax, dword ptr [ebp - 4]
+            cmp esi, dword ptr [eax + 4]
+            jge xong
+            mov edi, esi
+            imul edi, edi, {KICHTHUOCDONGVEDANHHIEU}
+            add edi, eax
+            add edi, 8
+            push edi
+            mov ecx, ebx
+            mov eax, {self.diachixq + DC.HAMDORONGCHU}
+            call eax
+            sar eax, 1
+            mov edx, dword ptr [ebp - 8]
+            sub edx, eax
+            push dword ptr [ebp + {base + 0x14}]
+            push dword ptr [ebp + {base + 0x10}]
+            lea eax, [esi + 1]
+            imul eax, eax, {KHOANGCACHDONGCHU}
+            mov ecx, dword ptr [ebp + {base + 0xC}]
+            sub ecx, eax
+            push ecx
+            push edx
+            push edi
+            push dword ptr [ebp + {base}]
+            {goive}
+            inc esi
+            jmp lap
+        xong:
+            mov esp, ebp
+            popad
+        goc:
+            push {dichcuoi}
+            ret
+        """
+        encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+        if not encoding or len(encoding) > KICHTHUOCKICHBANVEDANHHIEU - 0x10:
+            self._inlog("[DANH HIỆU] lỗi dịch mã hook vẽ danh hiệu")
+            return None
+        write_bytes(self.tientrinh, kichban, bytes(encoding), len(encoding))
+        write_bytes(self.tientrinh, kichban + KICHTHUOCKICHBANVEDANHHIEU - 0x10, DAUHIEUKICHBANVEDANHHIEU + mahook, 9)
+        lenhmoi = (b"\xE9" if is_dll else b"\xE8") + struct.pack("<i", kichban - (diachihook + 5))
+        write_bytes(self.tientrinh, diachihook, lenhmoi, 5)
+        return "nối sau chienquoc2d.dll" if is_dll else "call gốc"
+
+    def action_ghidongvedanhhieu(self, diachidoituong, dongs, okhoi = 0):
+        # Đặt các dòng vẽ thêm trên danh hiệu của diachidoituong vào khối okhoi (0 mục tiêu, 1-3 đệ; dongs: bytes, dòng 0 sát danh hiệu,
+        # tối đa SODONGVEDANHHIEU); diachidoituong 0 / dongs rỗng = thôi vẽ. Ghi chữ trước, số dòng và đối tượng sau để game không đọc
+        # ô đang ghi dở
+        dulieu = self.action_thietlaphookvedanhhieu()
+        if not dulieu or not 0 <= okhoi < SODOITUONGVEDANHHIEU:
+            return False
+        khoi = dulieu + okhoi * KICHTHUOCKHOIVEDANHHIEU
+        dongs = [d[:KICHTHUOCDONGVEDANHHIEU - 1] for d in (dongs or [])][:SODONGVEDANHHIEU]
+        if not diachidoituong or not dongs:
+            write_bytes(self.tientrinh, khoi, b"\0" * 8, 8)
+            return True
+        if read_int(self.tientrinh, khoi) != diachidoituong:
+            write_int(self.tientrinh, khoi + 4, 0)
+        for i, dong in enumerate(dongs):
+            write_bytes(self.tientrinh, khoi + 8 + i * KICHTHUOCDONGVEDANHHIEU, dong + b"\0", len(dong) + 1)
+        write_int(self.tientrinh, khoi + 4, len(dongs))
+        write_int(self.tientrinh, khoi, diachidoituong)
+        return True
+
     def action_themdongkhungchat(self, noidung):
         # In dòng chữ của bot vào khung trò chuyện của client (chỉ hiện ở máy này, không gửi gì lên máy chủ): gọi đúng hàm game dùng khi
         # nhận tin trò chuyện / tin hệ thống, [TG + TG_KHUNGCHAT]->HAMTHEMDONGKHUNGCHAT(chuỗi UTF-8, 0) (thiscall, ret 8).
@@ -1402,6 +1591,9 @@ class MoiTruong:
         if daluu and thoidiemhientai - daluu[0] < THOIGIANNHOTENDOITUONG:
             return daluu[1]
         ten = read_string(self.tientrinh, diachicosothongtinnhanvat + DC.NV_TEN)
+        # Bỏ phần thông tin bot tự nối vào đuôi tên mục tiêu (danhhieumuctieu_xq)
+        if ten and DAUNOITENMUCTIEU in ten:
+            ten = ten.split(DAUNOITENMUCTIEU)[0].strip()
         if len(self._tendoituong_map) > 1024:
             self._tendoituong_map = {k: v for k, v in list(self._tendoituong_map.items()) if thoidiemhientai - v[0] < THOIGIANNHOTENDOITUONG}
         self._tendoituong_map[diachicosothongtinnhanvat] = (thoidiemhientai, ten)
@@ -2092,6 +2284,31 @@ class MoiTruong:
                 self._thoidiemhoibangphaiganhat = thoidiemhientai
             return
 
+    def action_hoithongtinnguoichoimuctieu(self, diachicosothongtinnhanvat):
+        # "desc user <ID>" cho riêng 1 người chơi (mục tiêu đang chọn, uocluongmuctieu_xq) để biết môn phái / bang phái, kể cả khi không
+        # bật PK bang (action_hoibangphai chỉ chạy lúc đó). Cùng giãn cách / chờ trả lời / tầm hỏi / thời gian làm mới với action_hoibangphai
+        thoidiemhientai = time.time()
+        if thoidiemhientai - self._thoidiemhoibangphaiganhat < GIANCACHHOIBANGPHAI:
+            return False
+        if self._yeucaubangphai and thoidiemhientai - self._yeucaubangphai[2] < THOIGIANCHOTRALOIBANGPHAI:
+            return False
+        idnguoichoi = self.get_idnguoichoi(diachicosothongtinnhanvat)
+        if not idnguoichoi or idnguoichoi < 0 or self.get_khoangcach(diachicosothongtinnhanvat) > KHOANGCACHHOIBANGPHAI:
+            return False
+        thongtin = self._bangphainguoichoi_map.get(idnguoichoi)
+        if thongtin and thoidiemhientai - thongtin[1] < THOIGIANLAMMOIBANGPHAI:
+            return False
+        if self.action_thucthicaulenh("desc user {}".format(idnguoichoi), douutien = DOUUTIEN_THAP):
+            self._yeucaubangphai = (idnguoichoi, self.get_tendoituong(diachicosothongtinnhanvat), thoidiemhientai)
+            self._thoidiemhoibangphaiganhat = thoidiemhientai
+            return True
+        return False
+
+    def get_thongtinnguoichoi(self, idnguoichoi):
+        # (tên môn phái hiển thị, tên bang) theo lần "desc user" gần nhất: None = chưa biết, bang "" = không có bang
+        ma = self._monphainguoichoi_map.get(idnguoichoi)
+        return (TENMONPHAI.get(ma, ma) if ma else None), self.get_bangphai(idnguoichoi)
+
     def _xulydongthongtinnguoichoi(self, noidung):
         # Trả lời "desc user": " Danh tính: <tên> ( .. )", " Môn phái: ...", " Quốc gia: ...", " Bang phái: <tên bang>", " Ngoại hiệu: ...",
         # " Điểm PK: ..." cả khối nối "\n" trong 1 tin (xq + 0xC9AF0 nhận cả khối rồi mới tách dòng). Không có dòng Bang phái tới Ngoại hiệu /
@@ -2395,6 +2612,12 @@ class MoiTruong:
         if not diachicosothongtinnhanvat:
             return False
         return self.get_idloainhanvat(diachicosothongtinnhanvat) in (LOAIMUCTIEU_NGUOICHOIKHACNHOM, LOAIMUCTIEU_NGUOICHOICUNGNHOM)
+
+    def get_is_quai(self, diachicosothongtinnhanvat):
+        # Lớp +0x29 == 0x82 (xem get_is_npc)
+        if not diachicosothongtinnhanvat:
+            return False
+        return read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0x29) == 0x82
 
     def get_is_npc(self, diachicosothongtinnhanvat):
         # Lớp đối tượng +0x29 (gói tin xuất hiện): < 0x80 người chơi, 0x80 NPC, 0x82 quái, 0xA0 / 0xA1 bảo thú. Game nhận NPC đúng
@@ -2961,7 +3184,11 @@ class MoiTruong:
     def get_manhiemvu(self, tenmuccha):
         # Mã của mục con đầu tiên dưới mục cha tenmuccha ("Nhiệm Vụ Sư Môn") để gửi "quest intro <a> <b> <c>" (xin mô tả, như bấm vào dòng
         # đó; mẫu lệnh trong xq.exe, cùng mã với nút "Hủy Bỏ" ở 0x4BADBB): a = [Q+0x1854], b / c = word [Q+dòng*4+0x1858] / [+0x185A],
-        # dòng tính như danh sách tên +0x90 (sư môn: 1 1000 <loại>, Thu Thập 5, Truy Bắt Thích Khách 13). -> (a, b, c) hoặc None
+        # dòng tính như danh sách tên +0x90 (sư môn: 1 1000 <loại>, Thu Thập 5, Truy Bắt Thích Khách 13). -> (a, b, c) hoặc None.
+        # a là thẻ đang chọn của cửa sổ (1 Giang Hồ, 2 Cốt Truyện "quest intro 2 8000 ..."). Sư Môn / Danh Vọng / Sư Gia đều ở thẻ
+        # Giang Hồ nên luôn gửi a = THENHIEMVUGIANGHO: đăng nhập lại mà cửa sổ còn ở thẻ Cốt Truyện thì [Q+0x1854] = 2, gửi
+        # "quest intro 2 1000 4" 4 lần không ra mô tả, sư môn dừng "chưa biết làm nhiệm vụ này: Mua Sắm" (acc 364, 2026-11-05 21:05);
+        # bấm tay ở thẻ Giang Hồ game gửi "quest intro 1 1000 4"
         x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
         x = read_int(self.tientrinh, x + DC.TG_NHIEMVU) if x else 0
         if not x:
@@ -2977,7 +3204,7 @@ class MoiTruong:
                 continue
             if is_trongmuc:
                 nhom, loai = struct.unpack("<hh", read_bytes(self.tientrinh, x + 0x1858 + dong * 4, 4))
-                return read_int(self.tientrinh, x + 0x1854), nhom, loai
+                return THENHIEMVUGIANGHO, nhom, loai
         return None
 
     def get_cuahangdangmo(self):
@@ -3324,8 +3551,13 @@ class MoiTruong:
 
     def _layokhuvuccam(self, xa, ya, xb, yb):
         # Các ô trong vùng [xa, xb] x [ya, yb] thuộc khu vực cấm khai tay của bản đồ hiện tại (KHUVUCCAM_MAP, không tính vòng quanh cổng)
+        return self._layotrongvung(KHUVUCCAM_MAP.get(self.get_idbandohientai(), ()), xa, ya, xb, yb)
+
+    @staticmethod
+    def _layotrongvung(danhsachvung, xa, ya, xb, yb):
+        # Các ô trong vùng [xa, xb] x [ya, yb] nằm trong danh sách vùng {"type": "circle"/"line", ...} (KHUVUCCAM_MAP, VUNGCAM_MAP)
         os_ = set()
-        for vung in KHUVUCCAM_MAP.get(self.get_idbandohientai(), ()):
+        for vung in danhsachvung:
             if vung["type"] == "circle":
                 r = vung["r"]
                 for x in range(max(xa, math.floor(vung["x"] - r)), min(xb, math.ceil(vung["x"] + r)) + 1):
@@ -3468,6 +3700,193 @@ class MoiTruong:
             dich, kytu = truoc[dich]
             kytus.append(kytu)
         return b"".join(reversed(kytus))
+
+    def get_duongchaytron(self, ketancongs, dichcu = None, dichboquas = (), is_tranhvungcam = True):
+        # Tính đường chạy trốn trên lưới vật cản (thay cho kiểu cũ mỗi 0.15s nhích 2-6 ô theo hướng ngược kẻ địch, hay lùi vào góc chết):
+        #  1. BFS từ mọi kẻ tấn công ketancongs [(x, y, _)]: số bước nó cần để tới từng ô (kẻ địch được lách chéo qua góc: tính bi quan).
+        #     Mỗi bước thẳng hay chéo đều mất 1 nhịp "go" (2 ô / 0.5s), tầm đánh tính theo ô vuông => BFS đơn vị là đúng thời gian
+        #  2. BFS từ ô mình (không lách chéo qua góc như máy chủ) chỉ mở rộng sang ô mình tới TRƯỚC mọi kẻ địch (bước của mình < bước của
+        #     nó): đường đi ra không bao giờ cắt ngang qua trước mặt kẻ địch
+        #  3. Chấm điểm các ô tới được cách 4..24 bước: xa kẻ địch (bước đi + ô vuông), độ thoáng 7x7 quanh ô, và "khoảng trống phía sau"
+        #     (số ô an toàn đi tiếp được qua ô đó trong cây BFS) => góc chết / túi cụt ít ô phía sau bị điểm thấp, đường mở rộng điểm cao
+        # dichcu: đích đang chạy, còn an toàn và điểm không kém quá DIEMGIUDICHCHAYTRON thì giữ. dichboquas: đích vừa kẹt (máy chủ chặn)
+        # -> {"dich", "chuoihuong", "batdau", "sobuoc", "buocke", "diem"} hoặc None (bị vây kín / chưa đọc được lưới)
+        diachinhanvat = self.get_diachicosothongtinnhanvat1()
+        if not diachinhanvat or not ketancongs:
+            return None
+        x1, y1 = struct.unpack("<ii", read_bytes(self.tientrinh, diachinhanvat + 0x18, 8))
+        r = BANKINHLUOICHAYTRON
+        n = 2 * r + 1
+        ox, oy = x1 - r, y1 - r
+        luoi = self._get_luoivatcan(ox, oy, x1 + r, y1 + r)
+        if not luoi:
+            return None
+        idbando = self.get_idbandohientai()
+        hocs = taivatcanhoc(idbando)
+        cams = self._layokhuvuccam(ox, oy, ox + n - 1, oy + n - 1)
+        if is_tranhvungcam and not self.get_is_bandophongyeu():
+            cams |= self._layotrongvung(VUNGCAM_MAP.get(idbando, ()), ox, oy, ox + n - 1, oy + n - 1)
+        tran = self._toadotrandolacanh
+        trong = bytearray(n * n)
+        for i in range(n):
+            cot = luoi[i]
+            x = ox + i
+            for j in range(n):
+                if cot[j]:
+                    continue
+                o = (x, oy + j)
+                if o in hocs or o in cams or (tran and math.dist(tran, o) > BANKINHTRANDOLACANH):
+                    continue
+                trong[i * n + j] = 1
+        batdau = r * n + r
+        trong[batdau] = 1
+        lancans = [(dx, dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy]
+        vocuc = 1 << 20
+
+        # 1. Số bước kẻ địch tới từng ô
+        buocke = [vocuc] * (n * n)
+        hang = deque()
+        toadokes = []
+        for x, y, _ in ketancongs:
+            i, j = round(x) - ox, round(y) - oy
+            toadokes.append((round(x), round(y)))
+            if 0 <= i < n and 0 <= j < n and buocke[i * n + j]:
+                buocke[i * n + j] = 0
+                hang.append(i * n + j)
+        while hang:
+            k = hang.popleft()
+            i, j = divmod(k, n)
+            d = buocke[k] + 1
+            for dx, dy in lancans:
+                ni, nj = i + dx, j + dy
+                if 0 <= ni < n and 0 <= nj < n:
+                    nk = ni * n + nj
+                    if trong[nk] and buocke[nk] > d:
+                        buocke[nk] = d
+                        hang.append(nk)
+
+        # 2. Vùng mình tới trước kẻ địch
+        buocminh = [-1] * (n * n)
+        cha = [-1] * (n * n)
+        buocminh[batdau] = 0
+        thutu = [batdau]
+        hang = deque([batdau])
+        while hang:
+            k = hang.popleft()
+            i, j = divmod(k, n)
+            d = buocminh[k] + 1
+            for dx, dy in lancans:
+                ni, nj = i + dx, j + dy
+                if not (0 <= ni < n and 0 <= nj < n):
+                    continue
+                nk = ni * n + nj
+                if not trong[nk] or buocminh[nk] >= 0 or d >= buocke[nk]:
+                    continue
+                if dx and dy and not (trong[(i + dx) * n + j] and trong[i * n + j + dy]):
+                    continue
+                buocminh[nk] = d
+                cha[nk] = k
+                hang.append(nk)
+                thutu.append(nk)
+        if len(thutu) <= 1:
+            return None
+        # Khoảng trống phía sau: kích thước cây con trong cây BFS
+        socon = [1] * (n * n)
+        for k in reversed(thutu):
+            if cha[k] >= 0:
+                socon[cha[k]] += socon[k]
+        # Độ thoáng: tỉ lệ ô trống trong 7x7 quanh ô (tổng tiền tố 2 chiều)
+        tong = [0] * ((n + 1) * (n + 1))
+        for i in range(n):
+            dong = 0
+            for j in range(n):
+                dong += trong[i * n + j]
+                tong[(i + 1) * (n + 1) + j + 1] = tong[i * (n + 1) + j + 1] + dong
+
+        def dothoang(i, j):
+            a, b, c, d = max(0, i - 3), max(0, j - 3), min(n, i + 4), min(n, j + 4)
+            return (tong[c * (n + 1) + d] - tong[a * (n + 1) + d] - tong[c * (n + 1) + b] + tong[a * (n + 1) + b]) / 49.
+
+        def chamdiem(k):
+            i, j = divmod(k, n)
+            x, y = ox + i, oy + j
+            oke = min(min(max(abs(x - kx), abs(y - ky)) for kx, ky in toadokes), 25)
+            # Bước đi của kẻ địch, khoảng ô vuông (đánh xa), khoảng dẫn trước khi tới nơi, độ thoáng, khoảng trống phía sau
+            return min(buocke[k], 30) + 0.5 * oke + 0.5 * min(buocke[k] - buocminh[k], 20) + 8. * dothoang(i, j) \
+                + 2. * math.log2(1 + min(socon[k], 256)) - 0.1 * buocminh[k]
+
+        tot, diemtot = None, None
+        for sobuoctoithieu in (SOBUOCDICHCHAYTRONTOITHIEU, 1):
+            for k in thutu:
+                if not sobuoctoithieu <= buocminh[k] <= SOBUOCDICHCHAYTRONTOIDA:
+                    continue
+                i, j = divmod(k, n)
+                if any(max(abs(ox + i - bx), abs(oy + j - by)) <= 2 for bx, by in dichboquas):
+                    continue
+                diem = chamdiem(k)
+                if diemtot is None or diem > diemtot:
+                    tot, diemtot = k, diem
+            if tot is not None:
+                break
+        if tot is None:
+            return None
+        if dichcu:
+            i, j = dichcu[0] - ox, dichcu[1] - oy
+            if 0 <= i < n and 0 <= j < n:
+                k = i * n + j
+                if buocminh[k] >= 1 and buocminh[k] <= SOBUOCDICHCHAYTRONTOIDA + 10:
+                    diem = chamdiem(k)
+                    if diem >= diemtot - DIEMGIUDICHCHAYTRON:
+                        tot, diemtot = k, diem
+        kytu_map = {v: kt.encode() for kt, v in HUONGTIMDUONG_MAP.items()}
+        kytus = []
+        k = tot
+        while cha[k] >= 0:
+            p = cha[k]
+            kytus.append(kytu_map[(k // n - p // n, k % n - p % n)])
+            k = p
+        return {
+            "dich": (ox + tot // n, oy + tot % n),
+            "chuoihuong": b"".join(reversed(kytus)),
+            "batdau": (x1, y1),
+            "sobuoc": buocminh[tot],
+            "buocke": buocke[tot] if buocke[tot] < vocuc else None,
+            "diem": round(diemtot, 1),
+        }
+
+    def action_dichuoihuongchaytron(self, duong):
+        # Đi theo chuỗi hướng get_duongchaytron vừa tính (ghi thẳng như action_dikhongcatgoc). Cùng đích mà chuỗi chưa hết thì
+        # THOIGIANGHILAICHAYTRON giây mới ghi lại. -> True đang đi; False bị chặn (vận khí, xuất chiêu, chưa tới lượt);
+        # None: ô bắt đầu của chuỗi không còn đúng ô mình (đã đi tiếp), nơi gọi tính lại đường
+        if self._is_vohieuhoadichuyen or self.get_is_khoavankhitrieuhoi() or self.get_is_dangxuatchieu():
+            return False
+        diachinhanvat = self.get_diachicosothongtinnhanvat1()
+        if not diachinhanvat or not duong or not duong.get("chuoihuong"):
+            return False
+        now = time.time()
+        if self._dichchaytrondaghi == duong["dich"] and self.get_idlenhdichuyen() and now - self._thoidiemghichaytron < THOIGIANGHILAICHAYTRON:
+            return True
+        x1, y1 = struct.unpack("<ii", read_bytes(self.tientrinh, diachinhanvat + 0x18, 8))
+        if (x1, y1) != tuple(duong["batdau"]):
+            return None
+        if not self._get_is_duocbatdaudichuyen():
+            return False
+        chuoihuong = duong["chuoihuong"][:SOBUOCCHUOIDUONGDITOIDA]
+        self.action_ngungtudongtimduong()
+        self._dichkhongcatgoc = None
+        self._dichdioogannhat = None
+        khoidieukhien = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
+        if khoidieukhien:
+            write_bytes(self.tientrinh, khoidieukhien + DC.KDK_DICHCLICK, bytes(8), 8)
+        write_bytes(self.tientrinh, self.diachixq + DC.CHUOIDUONGDI, b"\0" + chuoihuong + bytes(99 - len(chuoihuong)), 100)
+        self.set_idlenhdichuyen(1)
+        self._thoidiemdichuyengannhat = now
+        self._thoidiemboquadichuyencungtoadogannhat = now
+        if IS_LOGDICHUYEN and self._dichchaytrondaghi != duong["dich"]:
+            self._inlog(f"[CHẠY TRỐN] {(x1, y1)} -> {duong['dich']}: {len(chuoihuong)} bước")
+        self._dichchaytrondaghi = duong["dich"]
+        self._thoidiemghichaytron = now
+        return True
 
     def get_is_duongdicatvungcam(self, x1, y1, x2, y2):
         # Đường chạy thẳng (x1, y1) -> (x2, y2) có chạm vùng cấm của bản đồ hiện tại không (VUNGCAM_MAP: đi vào sẽ bị chuyển bản đồ)
@@ -4101,8 +4520,11 @@ class MoiTruong:
         return self._ketthucchovankhi(cho, f"quá {THOIGIANCHOVAOVANKHI}s không thấy thanh vận khí")
 
     def get_thoigianhoitinvatconlai(self):
-        # Số giây Tín Vật còn hồi (THOIGIANHOITINVAT tính từ lần bot dùng gần nhất vào vận khí), 0 = dùng được
-        return max(0., THOIGIANHOITINVAT - (time.time() - self._thoidiemtinvatgannhat))
+        # Số giây Tín Vật còn hồi (THOIGIANHOITINVAT tính từ lần bot dùng gần nhất vào vận khí), 0 = dùng được.
+        # Chỉ Niết Bàn có giãn cách 60s; Aegis dùng liền không cần chờ (người dùng dặn 2026-11-05)
+        if not self.is_nietban:
+            return 0.
+        return max(0.,THOIGIANHOITINVAT - (time.time() - self._thoidiemtinvatgannhat))
 
     def action_huychovankhi(self):
         # Bỏ khoảng chờ vận khí (action_chovankhi) khi chủ động ngắt vận khí để di chuyển / dùng chiêu khác.

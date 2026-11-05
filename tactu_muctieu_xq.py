@@ -906,6 +906,8 @@ class TacTuMucTieu:
             # Bản đồ không PK (thành Ngụy Quốc...) vẫn xét nhưng chỉ dùng lên boss trong TENBOSSBUFFMAOSONs (Trộm Bảo / Bảo Hộp Phi Tặc xuất hiện trong thành)
             is_bandokhongpk = idbandohientai in BANDOKHONGPKs
             diachimuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+            # Chỗ giữ / dấu hiệu lực Thực Cốt - Giáp - Tâm của mọi bot, đọc 1 lần mỗi lượt quét
+            khoabichan = self._get_khoagiuchobichan()
             i = -1
             while True:
                 i += 1
@@ -940,15 +942,19 @@ class TacTuMucTieu:
                 is_chibuffthuccot = not is_nguoichoi and not is_baothu and tendoituong == "Phá Thiên Yêu" \
                     and diachicosothongtindoituongmuctieuxemxet != diachimuctieudangchon
 
-                if khoangcach < khoangcachthuccotgannhat and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCCOT,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtindoituongmuctieuxemxet, is_hieuungcoloi = 0):
+                # Thực Cốt / Thực Giáp / Thực Tâm: chỉ có tác dụng 1 lần mỗi 120s trên 1 mục tiêu, nên ngoài mục tiêu chưa dính hiệu ứng
+                # còn bỏ mục tiêu bot khác (cùng máy / LAN) vừa buff hoặc đã dính trong 120s qua (_is_canbuffmaoson), chọn mục tiêu gần kế tiếp
+                idmuctieugiucho = self._get_idmuctieugiucho(diachicosothongtindoituongmuctieuxemxet)
+
+                if self._is_canbuffmaoson(diachicosothongtindoituongmuctieuxemxet, HIEUUNGKYNANG_THUCCOT, idmuctieugiucho, khoabichan) and khoangcach < khoangcachthuccotgannhat:
                     diachidoituongcanbuffthuccot = diachicosothongtindoituongmuctieuxemxet
                     khoangcachthuccotgannhat = khoangcach
 
-                if not is_chibuffthuccot and khoangcach < khoangcachthucgiapgannhat and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCGIAP,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtindoituongmuctieuxemxet, is_hieuungcoloi = 0):
+                if not is_chibuffthuccot and self._is_canbuffmaoson(diachicosothongtindoituongmuctieuxemxet, HIEUUNGKYNANG_THUCGIAP, idmuctieugiucho, khoabichan) and khoangcach < khoangcachthucgiapgannhat:
                     diachidoituongcanbuffthucgiap = diachicosothongtindoituongmuctieuxemxet
                     khoangcachthucgiapgannhat = khoangcach
 
-                if not is_chibuffthuccot and khoangcach < khoangcachthuctamgannhat and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCTAM,), macdinh = False, diachicosothongtinnhanvat = diachicosothongtindoituongmuctieuxemxet, is_hieuungcoloi = 0):
+                if not is_chibuffthuccot and self._is_canbuffmaoson(diachicosothongtindoituongmuctieuxemxet, HIEUUNGKYNANG_THUCTAM, idmuctieugiucho, khoabichan) and khoangcach < khoangcachthuctamgannhat:
                     diachidoituongcanbuffthuctam = diachicosothongtindoituongmuctieuxemxet
                     khoangcachthuctamgannhat = khoangcach
 

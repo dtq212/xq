@@ -97,6 +97,11 @@ class TacTuDiChuyen:
         if not ketancongs:
             return None
         gannhat = min(k[2] for k in ketancongs)
+        if is_chaytron:
+            # Máu thấp: chạy theo đường tính trên lưới vật cản (né góc chết); bị vây kín / không đọc được lưới thì lùi kiểu cũ bên dưới
+            yeucau = self._tinhyeucauchaytrontheoduong(x1, y1, ketancongs, gannhat >= khoangcachgiu)
+            if yeucau is not False:
+                return yeucau
         if gannhat >= khoangcachgiu:
             return None
         # Còn kỹ năng quan trọng dùng được thì đứng lại dùng, chỉ lùi khi rảnh
@@ -165,8 +170,7 @@ class TacTuDiChuyen:
         if not dangchay:
             return
         thoidiemhientai = time.time()
-        if self.moitruong.get_is_dangvankhi() or self.moitruong.get_is_nhanvatbichoang() or self.moitruong.get_is_nhanvatbibatdong() or self.moitruong.get_is_bigiutrongtrando() or thoidiemhientai - self._thoidiemtamngungdichuyensudungkynang < 0. \
-                or (thoidiemhientai < self._thoidiemhetgiuchieudangra and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_TANCONGPHEPTHUAT):
+        if self._is_dangbigiudungyen():
             dangchay["batdau"], dangchay["toado"] = thoidiemhientai, (x1, y1)
             return
         if thoidiemhientai - dangchay["batdau"] < THOIGIANKETLUIGIUKHOANGCACH:
@@ -178,6 +182,56 @@ class TacTuDiChuyen:
         else:
             # Vẫn nhích được: đo tiếp từ chỗ mới
             dangchay["batdau"], dangchay["toado"] = thoidiemhientai, (x1, y1)
+
+    def _is_dangbigiudungyen(self):
+        # Bị giữ đứng yên không do vật cản (vận khí, choáng, Bất Động, Trận Pháp Lạc Ảnh, đang ra chiêu): không tính là kẹt
+        thoidiemhientai = time.time()
+        return self.moitruong.get_is_dangvankhi() or self.moitruong.get_is_nhanvatbichoang() or self.moitruong.get_is_nhanvatbibatdong() \
+            or self.moitruong.get_is_bigiutrongtrando() or thoidiemhientai - self._thoidiemtamngungdichuyensudungkynang < 0. \
+            or (thoidiemhientai < self._thoidiemhetgiuchieudangra and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_TANCONGPHEPTHUAT)
+
+    def _tinhyeucauchaytrontheoduong(self, x1, y1, ketancongs, is_daduxa):
+        # Chạy trốn có kế hoạch: chọn 1 đích an toàn trên lưới vật cản (moitruong.get_duongchaytron: tới trước kẻ địch, xa nó, thoáng, còn
+        # chỗ chạy tiếp phía sau => không chui vào góc chết), giữ đích đó và đi một mạch theo chuỗi hướng, mỗi THOIGIANTINHLAIDUONGCHAYTRON
+        # giây tính lại (kẻ địch chặn đường thì đổi đích / đổi đường). Tới đích mà vẫn bị đuổi thì chọn đích kế.
+        # is_daduxa: kẻ gần nhất đã cách đủ KHOANGCACHCHAYTRON: đang có đường thì chạy nốt tới đích, chưa có thì thôi (không chạy-dừng-chạy).
+        # -> yêu cầu di chuyển, None (không cần chạy), False (không tính được đường: dùng kiểu lùi cũ)
+        thoidiemhientai = time.time()
+        idbando = self.moitruong.get_idbandohientai()
+        duong = self._duongchaytron
+        if duong and duong["bando"] != idbando:
+            duong = None
+        if duong:
+            if math.dist((x1, y1), duong["dich"]) <= 1.5:
+                # Tới đích
+                duong = None
+            elif math.dist((x1, y1), duong["mocnhich"]) >= 0.5 or self._is_dangbigiudungyen():
+                duong["mocnhich"], duong["thoidiemnhich"] = (x1, y1), thoidiemhientai
+            elif thoidiemhientai - duong["thoidiemnhich"] > THOIGIANKETDUONGCHAYTRON:
+                self._dichchaytronbiket_map[duong["dich"]] = thoidiemhientai + THOIGIANBOQUADICHCHAYTRONKET
+                self.moitruong._inlog(f"[CHẠY TRỐN] kẹt tại {(x1, y1)} khi chạy tới {duong['dich']}, bỏ đích này {THOIGIANBOQUADICHCHAYTRONKET:.0f}s")
+                duong = None
+        if is_daduxa:
+            self._duongchaytron = duong
+            return {"yeucau": YEUCAUDICHUYENGIUKHOANGCACH, "toadodich": duong["dich"], "khoangcachtoida": 0, "duongchaytron": duong} if duong else None
+        if not duong or thoidiemhientai - duong["thoidiemtinh"] >= THOIGIANTINHLAIDUONGCHAYTRON:
+            self._dichchaytronbiket_map = {d: t for d, t in self._dichchaytronbiket_map.items() if t > thoidiemhientai}
+            ketqua = self.moitruong.get_duongchaytron(ketancongs, dichcu = duong["dich"] if duong else None,
+                                                     dichboquas = list(self._dichchaytronbiket_map),
+                                                     is_tranhvungcam = self._is_tranhvungcam and not self._is_bovungcam())
+            if not ketqua or not ketqua["chuoihuong"]:
+                self._duongchaytron = None
+                return False
+            if not duong or duong["dich"] != ketqua["dich"]:
+                self.moitruong._inlog(f"[CHẠY TRỐN] {(x1, y1)} -> đích {ketqua['dich']} ({ketqua['sobuoc']} bước, kẻ địch cần "
+                                      f"{ketqua['buocke'] if ketqua['buocke'] is not None else 'không tới được'} bước, điểm {ketqua['diem']}, "
+                                      f"{len(ketancongs)} kẻ tấn công)")
+                mocnhich, thoidiemnhich = (x1, y1), thoidiemhientai
+            else:
+                mocnhich, thoidiemnhich = duong["mocnhich"], duong["thoidiemnhich"]
+            duong = dict(ketqua, bando = idbando, thoidiemtinh = thoidiemhientai, mocnhich = mocnhich, thoidiemnhich = thoidiemnhich)
+        self._duongchaytron = duong
+        return {"yeucau": YEUCAUDICHUYENGIUKHOANGCACH, "toadodich": duong["dich"], "khoangcachtoida": 0, "duongchaytron": duong}
 
     def _lammoitheodoitiepcan(self):
         # Bị giữ đứng yên không do vật cản (choáng, Bất Động, vận khí, ra chiêu...): đo "không gần thêm" lại từ lúc hết bị giữ,
@@ -241,9 +295,12 @@ class TacTuDiChuyen:
 
     def _capnhatyeucaugiukhoangcach(self):
         self._capnhatchaytron()
+        if not self._is_dangchaytron:
+            self._duongchaytron = None
         if not (self._is_giukhoangcachketancong or self._is_dangchaytron) or self.moitruong.get_is_nhanvatdachet():
             self._yeucaugiukhoangcach = None
             self._luigiukhoangcachdangchay = None
+            self._duongchaytron = None
             return
         if time.time() - self._thoidiemtinhgiukhoangcachgannhat < THOIGIANTINHGIUKHOANGCACH:
             return
@@ -256,6 +313,7 @@ class TacTuDiChuyen:
         # Không lùi nữa thì bỏ mốc đo kẹt: lần lùi sau (có khi cùng hướng, cùng chỗ đứng) đo lại từ đầu, không báo kẹt nhầm
         if not self._yeucaugiukhoangcach:
             self._luigiukhoangcachdangchay = None
+            self._duongchaytron = None
 
     def action_xulyuutiendichuyen(self):
         idtuthenhanvat = self.moitruong.get_idtuthenhanvat()
@@ -589,6 +647,14 @@ class TacTuDiChuyen:
                     # bỏ, không tìm đường quay lại cổng vừa đi qua
                     elif not yeucauduocchon.get("is_chitrongbando"):
                         self._tudongtimduongtungbando(*toadodich[:3])
+                return
+
+            duongchaytron = yeucauduocchon.get("duongchaytron")
+            if duongchaytron:
+                # Chạy trốn theo đường tính sẵn: đi đúng chuỗi hướng (không lướt / không để tìm đường của game chọn đường khác cắt qua kẻ địch)
+                if self.moitruong.action_dichuoihuongchaytron(duongchaytron) is None:
+                    # Đã đi khỏi ô bắt đầu của chuỗi: lượt sau tính lại đường từ chỗ mới
+                    duongchaytron["thoidiemtinh"] = 0.
                 return
 
             toadodich = yeucauduocchon.get("toadodich")
@@ -1107,6 +1173,8 @@ class TacTuDiChuyen:
                 is_tiepcan = khoangcach is not None and toida is not None and khoangcach > toida + 0.5
                 hanhdong = f"{'Tiếp cận để tấn công' if is_tiepcan else 'Tấn công'} {muctieu or 'mục tiêu'}{chodich}"
                 nguon = "Tự động sử dụng kỹ năng (mục tiêu đang chọn)"
+            elif lydochon == "GIỮ KHOẢNG CÁCH" and yeucau and yeucau.get("duongchaytron"):
+                hanhdong, nguon = f"Chạy trốn theo đường tính sẵn{chodich}", "Máu thấp: chạy xa kẻ tấn công"
             elif lydochon == "GIỮ KHOẢNG CÁCH":
                 hanhdong, nguon = f"Lùi giữ khoảng cách{f' với {muctieu}' if muctieu else ''}{chodich}", "Giữ khoảng cách kẻ tấn công"
             elif lydochon == "THEO SAU":
@@ -1478,6 +1546,7 @@ class TacTuDiChuyen:
             self._yeucautudo = None
             return
         self.action_ghivitridoituong()
+        self.action_huynhiemvuhong()
         if self.get_is_dangsumon():
             yeucau = self._xulysumon()
             if not self.get_is_sumonfarm():
@@ -1587,8 +1656,9 @@ class TacTuDiChuyen:
 
             if not diemdanhxungquanhs:
                 if time.time() - self._thoidiemphatamlacmapgannhat > 5.0:
-                    # Xuyên Không Hành chỉ dùng khi bật tự động về bán rác (sau khi bán xong quay lại bãi)
-                    if self.moitruong.get_tenmonphai() == "maoson" and self._is_tudongvebanrac:
+                    # Xuyên Không Hành chỉ dùng khi bật tự động về bán rác (sau khi bán xong quay lại bãi) và đã học chiêu;
+                    # chưa học thì như phái khác: Hồi Thành Phù rồi đi lộ trình
+                    if self._is_tudongvebanrac and self._is_coxuyenkhonghanh():
                         print("[AUTO-MOVE] Bản đồ không có trong cấu hình. Mao Sơn dùng Xuyên Không Hành bay lên.")
                         self.moitruong.action_ngatdichuyen()
                         self.moitruong.action_thucthicaulenh("pf 4182.2")

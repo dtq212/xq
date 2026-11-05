@@ -114,7 +114,9 @@
         "Xuyên Bối",
         "Đông Trùng Thảo",
         "Đá Càn Khôn",
-        "12 con Giáp - Chuột"
+        "12 con Giáp - Chuột",
+        "Chiến Quốc Lệnh x3",
+        "Nữ Nhi Y"
       ],
       "tenchua": [],
       "loai": [],
@@ -192,36 +194,6 @@
       "tenchua": [],
       "loai": [],
       "mota": []
-    },
-    {
-      "bat": true,
-      "is_bao": false,
-      "hanhdong": "vut",
-      "ghichu": "",
-      "ten": [],
-      "tenchua": [
-        "Công thức"
-      ],
-      "loai": [],
-      "mota": []
-    },
-    {
-      "bat": true,
-      "is_bao": false,
-      "hanhdong": "ban",
-      "ghichu": "",
-      "ten": [
-        "Tinh Nguyên Đơn",
-        "Kim Đao",
-        "Ngọc Kiếm",
-        "Xích Anh Thương",
-        "Nguyệt Hoàn",
-        "Cổ Phương Côn",
-        "Thạch Điêu Quyền Nhẫn"
-      ],
-      "tenchua": [],
-      "loai": [],
-      "mota": []
     }
   ],
   "muabu": [
@@ -253,7 +225,7 @@
       "vatpham": "Bùa Giấy",
       "tencuahang": "",
       "npc": "Chủ Tiệm Tạp Hóa",
-      "xepchong": 100,
+      "xepchong": 999,
       "duoi": 999,
       "muatoi": 999,
       "thapnhat": 0,
@@ -372,6 +344,16 @@
   ],
   "is_catkhosauban": true,
   "nhat": [
+    {
+      "bat": true,
+      "hanhdong": "uutien",
+      "ten": [
+        "Lễ Bao Khai Quốc"
+      ],
+      "tenchua": [],
+      "chibanrac": false,
+      "ghichu": ""
+    },
     {
       "bat": true,
       "hanhdong": "nhat",

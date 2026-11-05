@@ -1256,11 +1256,68 @@ class TacTuKyNang:
             return None, True
         if not self._thugiukynangmuctieu(hieuung, idmuctieu):
             return None, False
-        return (hieuung, idmuctieu), True
+        return [(hieuung, idmuctieu)], True
 
     def _bogiuchokynangphai(self, giucho):
-        if giucho:
-            self._bogiukynangmuctieu(*giucho)
+        # giucho: danh sách (hiệu ứng, ID mục tiêu) đã giữ
+        for hieuung, idmuctieu in giucho or ():
+            self._bogiukynangmuctieu(hieuung, idmuctieu)
+
+    def _thugiumenhte(self, idcanhois):
+        # Mệnh Tế: giữ chỗ cho từng người cần hồi (bản thân / đồng đội, theo ID _get_idmuctieugiucho) quanh mình. Mọi người này đều
+        # vừa được bot khác Mệnh Tế (THOIGIANGIUMENHTE giây) thì không dùng. Trả về (chỗ đã giữ, có được dùng không)
+        giukynang = self.moitruong.giukynang
+        idmuctieus = [i for i in idcanhois if i and i[1]]
+        if not giukynang or not idmuctieus:
+            return None, True
+        try:
+            trongs = giukynang.thugiumotphan([(KHOAGIUCHO_MENHTE, i) for i in idmuctieus], THOIGIANGIUMENHTE)
+        except Exception:
+            return None, True
+        return trongs, bool(trongs)
+
+    def _get_khoagiuchobichan(self):
+        # Tập (hiệu ứng, ID mục tiêu) bot khác đang giữ / còn hiệu lực, cộng dấu hiệu lực bot này nhớ (khi chạy không có Manager)
+        thoidiemhientai = time.time()
+        khoas = {k for k, hethan in self._dauhieulucbuffs.items() if hethan > thoidiemhientai}
+        giukynang = self.moitruong.giukynang
+        if giukynang:
+            try:
+                khoas |= giukynang.laykhoabichan()
+            except Exception:
+                pass
+        return khoas
+
+    def _is_canbuffmaoson(self, diachi, hieuung, idmuctieu, khoabichan):
+        # Mục tiêu nên buff hiệu ứng này: chưa dính (đang dính thì đánh dấu hiệu lực cho mọi bot), không bị bot khác giữ / còn hiệu lực
+        if self.moitruong.get_is_cohieuungs((hieuung,), macdinh = False, diachicosothongtinnhanvat = diachi, is_hieuungcoloi = 0):
+            self._danhdauhieulucbuff(hieuung, idmuctieu)
+            return False
+        return not idmuctieu or (hieuung, idmuctieu) not in khoabichan
+
+    def _danhdauhieulucbuff(self, hieuung, idmuctieu):
+        # Thấy hiệu ứng (THOIGIANHIEULUCBUFFMAOSON_MAP) đã dính trên mục tiêu: đánh dấu cho mọi bot không buff lại tới hết hiệu lực.
+        # Nhớ thời điểm hết hạn ở _dauhieulucbuffs để khỏi hỏi Manager mỗi lượt quét
+        thoigian = THOIGIANHIEULUCBUFFMAOSON_MAP.get(hieuung)
+        if not thoigian or not idmuctieu:
+            return
+        khoa = (hieuung, idmuctieu)
+        thoidiemhientai = time.time()
+        if self._dauhieulucbuffs.get(khoa, 0) > thoidiemhientai:
+            return
+        hethan = thoidiemhientai + thoigian
+        giukynang = self.moitruong.giukynang
+        if giukynang:
+            try:
+                hethan = giukynang.danhdauhieuluc(hieuung, idmuctieu, thoigian)
+            except Exception:
+                pass
+        if len(self._dauhieulucbuffs) > 200:
+            self._dauhieulucbuffs = {k: v for k, v in self._dauhieulucbuffs.items() if v > thoidiemhientai}
+        self._dauhieulucbuffs[khoa] = hethan
+        if hethan > thoidiemhientai + 1.:
+            print("{}: hiệu ứng {} đã dính trên {}, không buff lại trong {:.0f}s".format(
+                self.moitruong.get_tendoituong(), hieuung, idmuctieu, hethan - thoidiemhientai))
 
     def _get_idmuctieugiucho(self, diachimuctieu):
         # ID máy chủ của mục tiêu (mọi cửa sổ game thấy giống nhau, khác địa chỉ bộ nhớ): người chơi theo ID người chơi, còn lại theo ID đối tượng
@@ -1795,11 +1852,13 @@ class TacTuKyNang:
         baothukynangtrieuhois = self._get_baothukynangtrieuhois()
         is_cobaothukynangtrieuhoi = bool(baothukynangtrieuhois)
         is_cobaothusaphet = any(phantram < PHANTRAMSINHLUCTETHANTUONG for _, phantram in baothukynangtrieuhois)
-        # Mệnh Tế / Huyết Tế: người cần hồi dưới 25% máu thì tế mọi bảo thú triệu hồi,
-        # dưới 50% máu thì chỉ tế khi bảo thú triệu hồi không phải Cương Thi / Thần Tướng
+        # Mệnh Tế / Huyết Tế: người cần hồi dưới nguongmoi% máu thì tế mọi bảo thú triệu hồi,
+        # dưới nguongthuong% máu thì chỉ tế khi bảo thú triệu hồi không phải Cương Thi / Thần Tướng
+        # (Lăng Ly Sơn / Thành Kiều tế sớm hơn, xem PHANTRAMSINHLUCTEBAOTHU_LANGLYSON)
         is_khongphaicuongthithantuong = is_cobaothukynangtrieuhoi and all(
             not ten.startswith((CUONGTHI.lower(), THANTUONG.lower())) for ten, _ in baothukynangtrieuhois)
-        is_cantebaothu = lambda phantram: is_cobaothukynangtrieuhoi and (phantram < 35 or (phantram < 65 and is_khongphaicuongthithantuong))
+        nguongmoi, nguongthuong = PHANTRAMSINHLUCTEBAOTHU_LANGLYSON if idbandohientai in BANDOTEBAOTHUSOMs else PHANTRAMSINHLUCTEBAOTHU
+        is_cantebaothu = lambda phantram: is_cobaothukynangtrieuhoi and (phantram < nguongmoi or (phantram < nguongthuong and is_khongphaicuongthithantuong))
         # Mệnh Tế hồi cả nhóm nên xét cả máu đồng đội: chỉ dùng khi đồng đội trong KHOANGCACHSUDUNGMENHTE ô (xa hơn thì thực tế không được hồi),
         # đồng đội cần hồi ở xa hơn (tới KHOANGCACHTIMTHANHVIENMENHTE ô) thì tiếp cận người thấp máu nhất trong số đó trước
         thanhviennhoms = self._get_thanhviennhomgans(KHOANGCACHTIMTHANHVIENMENHTE) if is_cobaothukynangtrieuhoi else []
@@ -1869,8 +1928,17 @@ class TacTuKyNang:
             if vitrikynang and not self._is_kynangdungduoc(vitrikynang):
                 continue
             target_use = target if target else diachimuctieu
-            # Bot khác cùng máy vừa gửi cùng chiêu (Thực Cốt / Thực Giáp / Thực Tâm) lên mục tiêu này thì dùng chiêu tiếp theo
-            giucho, is_duocgui = self._thugiuchokynangphai("maoson", vitrikynang, loaikynang, target_use)
+            # Bot khác (cùng máy / LAN) vừa gửi cùng chiêu (Thực Cốt / Thực Giáp / Thực Tâm) lên mục tiêu này, hoặc hiệu ứng còn hiệu lực
+            # 120s (THOIGIANHIEULUCBUFFMAOSON_MAP), thì dùng chiêu tiếp theo
+            if vitrikynang == VITRIKYNANG_MENHTE and loaikynang == "sudungkynangkhongmuctieu":
+                # Mệnh Tế: chỉ dùng khi còn người thấp máu quanh mình chưa được bot Mao Sơn khác vừa Mệnh Tế (6 acc cùng tế 1 lúc rất phí)
+                idcanhois = [self._get_idmuctieugiucho(tv[2]) for tv in thanhviennhomgans if is_cantebaothu(tv[0])]
+                if is_cantebaothu(phantramsinhlucconlai):
+                    # Bản thân: khoá theo ID người chơi như bot khác thấy mình (thành viên nhóm)
+                    idcanhois.append(("nguoichoi", self.moitruong.get_idnguoichoi()))
+                giucho, is_duocgui = self._thugiumenhte(idcanhois)
+            else:
+                giucho, is_duocgui = self._thugiuchokynangphai("maoson", vitrikynang, loaikynang, target_use)
             if not is_duocgui:
                 continue
             is_ok, is_break = self.action_xulyuutiensudungkynang(

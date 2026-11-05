@@ -13,9 +13,13 @@ import threading
 import time
 from multiprocessing.managers import BaseManager
 
+from dieuphoi_xq import LOAIGIU_GIUCHO, _loaigiu
 from tienich_xq import _thumucthietlap, tenmaynay
 
 CHUKYDONGBOLAN = 0.25
+# Giữ chỗ chiêu (GiuKyNangMucTieu) gửi kèm info từng cửa sổ dưới khoá này: [(hiệu ứng, ID mục tiêu, hết hạn, loại)].
+# Máy nhận ghi vào dict giữ chỗ của mình với chủ "<tên máy>|<hwnd>" (chuỗi) nên bot máy đó không gửi trùng, và không gửi ngược lại
+KHOAGIUKYNANGLAN = "_giukynang"
 # Máy không gửi lên quá chừng này giây thì bỏ dữ liệu của nó (bot đọc cũng tự bỏ cửa sổ quá 5 giây)
 THOIGIANGIUDULIEULAN = 10.
 # Chỉ gửi những khoá bot máy khác đọc (tactu_*, thongke_xq), không gửi phần riêng cho giao diện (lịch sử cất kho, thống kê...)
@@ -92,10 +96,13 @@ def _doigio(info, lech):
 
 class DongBoLan:
     # Luồng đồng bộ chạy trong tiến trình chính (trochoi_xq): shared_data máy này <-> HubLan <-> shared_data_lan
-    def __init__(self, cauhinh, shared_data, shared_data_lan):
+    def __init__(self, cauhinh, shared_data, shared_data_lan, giukynangs = None, khoagiukynang = None):
         self.cauhinh = cauhinh
         self.shared_data = shared_data
         self.shared_data_lan = shared_data_lan
+        # dict giữ chỗ chiêu của máy này (dieuphoi_giukynangs) và khoá Manager dùng chung với GiuKyNangMucTieu
+        self.giukynangs = giukynangs if khoagiukynang is not None else None
+        self.khoagiukynang = khoagiukynang
         self.tenmay = tenmaynay()
         self.is_maychu = self.tenmay == cauhinh["maychu"]
         self._hub = None
@@ -133,17 +140,66 @@ class DongBoLan:
             self._loicuoi = thongbao
             print(f"[LAN] Lỗi đồng bộ: {thongbao}")
 
+    def _ganggiukynang(self, dulieu):
+        # Gắn chỗ giữ chiêu của bot máy này (chủ là hwnd, không phải chỗ nhận từ máy khác) vào info cửa sổ giữ nó
+        if self.giukynangs is None:
+            return
+        now = time.time()
+        for (hieuung, idmuctieu), v in self.giukynangs.copy().items():
+            if isinstance(v[0], str) or v[1] <= now or v[0] not in dulieu:
+                continue
+            dulieu[v[0]].setdefault(KHOAGIUKYNANGLAN, []).append((hieuung, idmuctieu, v[1], _loaigiu(v)))
+
+    def _hopnhatgiukynang(self, nhans):
+        # nhans: {(hiệu ứng, ID mục tiêu): (chủ "<máy>|<hwnd>", hết hạn theo giờ máy này, loại)} của mọi máy khác
+        if self.giukynangs is None:
+            return
+        now = time.time()
+        with self.khoagiukynang:
+            hientai = self.giukynangs.copy()
+            capnhat = {}
+            for khoa, v in nhans.items():
+                if v[1] <= now:
+                    continue
+                cu = hientai.get(khoa)
+                if cu and cu[1] > now:
+                    loaicu = _loaigiu(cu)
+                    # Dấu hiệu lực đang có thì không kéo dài; bot máy này đang giữ chỗ thì để nó gửi (máy kia thấy chỗ này ở lượt sau)
+                    if loaicu != LOAIGIU_GIUCHO or (v[2] == LOAIGIU_GIUCHO and not isinstance(cu[0], str)):
+                        continue
+                    # Giá trị gần như cũ (chỉ lệch do đổi giờ) thì khỏi ghi lại
+                    if cu[0] == v[0] and loaicu == v[2] and abs(cu[1] - v[1]) < 0.5:
+                        continue
+                capnhat[khoa] = v
+            # Chỗ giữ của máy khác mà máy đó đã bỏ (gửi không thành) / hết hạn thì xoá; dấu hiệu lực máy khác giữ tới hết hạn
+            xoas = [k for k, v in hientai.items() if isinstance(v[0], str) and k not in capnhat
+                    and (v[1] <= now or (_loaigiu(v) == LOAIGIU_GIUCHO and k not in nhans))]
+            if capnhat:
+                self.giukynangs.update(capnhat)
+            for k in xoas:
+                self.giukynangs.pop(k, None)
+
     def _loop(self):
         while True:
             try:
                 dulieu = {hwnd: _locinfo(info) for hwnd, info in dict(self.shared_data.items()).items() if isinstance(info, dict)}
+                self._ganggiukynang(dulieu)
                 maykhacs = self._layhub().traodoi(self.tenmay, time.time(), dulieu)
                 now = time.time()
                 moi = {}
+                giukynangnhans = {}
                 for tenmay, tuoi, thoidiemgui, dl in maykhacs:
                     lech = (now - tuoi) - thoidiemgui
                     for hwnd, info in dl.items():
-                        moi[f"{tenmay}|{hwnd}"] = {**_doigio(info, lech), "_tenmay": tenmay}
+                        info = dict(info)
+                        chu = f"{tenmay}|{hwnd}"
+                        for hieuung, idmuctieu, hethan, loai in info.pop(KHOAGIUKYNANGLAN, None) or ():
+                            khoa = (hieuung, idmuctieu)
+                            # Hai máy cùng có dấu: hiệu lực thắng giữ chỗ
+                            if khoa not in giukynangnhans or giukynangnhans[khoa][2] == LOAIGIU_GIUCHO:
+                                giukynangnhans[khoa] = (chu, hethan + lech, loai)
+                        moi[chu] = {**_doigio(info, lech), "_tenmay": tenmay}
+                self._hopnhatgiukynang(giukynangnhans)
                 for khoa in [k for k in self.shared_data_lan.keys() if k not in moi]:
                     self.shared_data_lan.pop(khoa, None)
                 if moi:

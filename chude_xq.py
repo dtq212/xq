@@ -28,6 +28,7 @@ BANGMAU_SANG = {
     "nen_tamngung": "#fff4cc",
     "nen_tat": "#eceff3",
     "nen_canhbao": "#fde8e8",
+    "nen_thongbao": "#e8f0fe",  # khối hành động hiện tại kiểu alert-info
     "nen_goiy": "#fffbe6",
     "chu_goiy": "#262626",
     "nen_phim": "#e6eaf0",
@@ -63,6 +64,7 @@ BANGMAU_TOI = {
     "nen_tamngung": "#45391a",
     "nen_tat": "#262a31",
     "nen_canhbao": "#4a2024",
+    "nen_thongbao": "#1b2944",
     "nen_goiy": "#2c313c",
     "chu_goiy": "#eef1f6",
     "nen_phim": "#30353f",
