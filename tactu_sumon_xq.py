@@ -414,7 +414,8 @@ class TacTuSuMon:
                 # Tín Vật còn hồi (giãn cách 60s): đứng chờ, không tính lần (3 lần cách 15s hết trong lúc hồi là bỏ, chạy bộ)
                 if moitruong.get_thoigianhoitinvatconlai():
                     s["trangthai"] = f"chờ Tín Vật hồi {round(moitruong.get_thoigianhoitinvatconlai())}s để tới {nhan}"
-                elif now - s["lucmonphai"] > GIANCACHHOIMONPHAI and now - moitruong.get_thoidiemthaydoibandogannhat() >= 2.:
+                elif now - s["lucmonphai"] > GIANCACHHOIMONPHAI and now - moitruong.get_thoidiemthaydoibandogannhat() >= 2. \
+                        and self.action_thugiuhoithanh(LENHTINVAT_NIETBAN if moitruong.is_nietban else LENHHOIMONPHAI):
                     self.moitruong._inlog(f"[SƯ MÔN] Hồi môn phái để tới {nhan}")
                     moitruong.action_ngatdichuyen()
                     # Bỏ cờ Xa Phu còn sót từ lần về thành trước: về phái thì Tín Vật là xong

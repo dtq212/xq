@@ -480,6 +480,7 @@ class GiaoDienHienThi:
             "mauchaytron": tk.IntVar(value = NGUONGMAUCHAYTRON),
             "mauhetchaytron": tk.IntVar(value = NGUONGMAUHETCHAYTRON),
             "tutimduongtheosau": tk.BooleanVar(),
+            "diquocgiatanthutienco": tk.BooleanVar(value = True),
             "doidotrieuhoi": tk.BooleanVar(),
         }
         # Phẩm chất (màu tên) vật phẩm dưới đất được nhặt: {mã phẩm chất: biến}
@@ -1500,6 +1501,17 @@ class GiaoDienHienThi:
         self._gantooltip(ttk.Button(nhom, text = "Dừng", width = 6, command = lambda: on_ditoibando(0)), "Dừng đi tới bản đồ").grid(row = 0, column = 2, padx = (4, 0))
         self.lbl_buocdichuyen = tk.Label(nhom, text = "Bước tiếp theo: -", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = 320)
         self.lbl_buocdichuyen.grid(row = 1, column = 0, columnspan = 3, sticky = tk.W, pady = (4, 0))
+        # Tới quốc gia: Tín Vật về môn phái, Tân Thủ Tiên Cô phù lên bản đồ gần (Cự Lộc, Mã Đạp Hồ...) rồi chạy sang, thay Hồi Thành Phù
+        def on_diquocgia():
+            hwnd = self.get_selected_hwnd()
+            if hwnd:
+                self.command_dict[hwnd] = "battat_diquocgiatanthutienco"
+        self._gantooltip(ttk.Checkbutton(nhom, text = "Đi quốc gia bằng Tân Thủ Tiên Cô", variable = self.vars["diquocgiatanthutienco"],
+                                         command = on_diquocgia),
+                         "Tới 8 quốc gia: thay vì Hồi Thành Phù, Tín Vật về môn phái, nói chuyện Tân Thủ Tiên Cô trong môn phái phù lên bản đồ "
+                         "gần quốc gia rồi chạy sang (Triệu: Cự Lộc, Tề: Mã Đạp Hồ, Ngụy: Vô Định Hà 1, Yên: Trác Lộc, "
+                         "Sở: Chân Núi Đại Biệt, Hàn: Tương Lăng, Chu: Thủ Dương Sơn, Tần: Kênh Trịnh Quốc 1)").grid(
+            row = 2, column = 0, columnspan = 3, sticky = tk.W, pady = (4, 0))
 
         # Lộ trình mẫu: chọn mẫu (của bất kỳ bản đồ nào) rồi Nạp, hoặc để bot Tự chọn mẫu chưa nhân vật nào dùng
         nhom = self._taonhom(tab, "Lộ trình mẫu")
@@ -4755,6 +4767,7 @@ class GiaoDienHienThi:
                 ("taphoa", "_is_taphoa"),
                 ("timmuctieuchung", "_is_timmuctieuchung"),
                 ("tutimduongtheosau", "_is_tutimduongtheosau"),
+                ("diquocgiatanthutienco", "_is_diquocgiatanthutienco"),
                 ("doidotrieuhoi", "_is_doidokhitrieuhoi"),
                 ("khaikhoang", "_is_tudongkhaikhoang"),
                 ("chientruong", "_is_tudongdichientruong"),

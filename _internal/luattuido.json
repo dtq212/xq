@@ -200,15 +200,15 @@
   "muabu": [
     {
       "vatpham": "Trận Kì",
+      "tencuahang": "",
       "npc": "Chủ Tiệm Tạp Hóa",
+      "xepchong": 1999,
       "duoi": 1999,
       "muatoi": 1999,
+      "thapnhat": -1,
       "monphai": "vanmongcoc",
-      "bat": true,
       "chikhi": "",
-      "tencuahang": "",
-      "xepchong": 100,
-      "thapnhat": -1
+      "bat": true
     },
     {
       "vatpham": "Đậu Nành",
@@ -437,7 +437,8 @@
         "Rắn",
         "Chân Gấu",
         "Lam Ma Lệ",
-        "Hạt Lạc Hoàn"
+        "Hạt Lạc Hoàn",
+        "Xương Cá"
       ],
       "tenchua": [],
       "chibanrac": true,

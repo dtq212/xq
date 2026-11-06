@@ -41,7 +41,7 @@ THUOCTINHTHIETLAPs = (
     "_danhhieulammoi", "_phantramnoiluckhaithientichdia", "_chedokynang", "_is_tudongtrieuhoibaothugiangho", "_is_tudongsudungkynangbaothu",
     "_is_tudongbatnguyenkhiquynguyen", "_is_tranhvungcam", "_is_giukhoangcachketancong", "_khoangcachgiuketancong", "_mauchaytron",
     "_mauhetchaytron", "_is_giukhoangcachchimuctieupk", "_is_taphoa", "_is_timmuctieuchung", "_chedohienthongtinmuctieugame",
-    "_mauhienthongtinmuctieugame", "_is_tutimduongtheosau", "_is_doidokhitrieuhoi", "_bodotrieuhoi", "_baothutrieuhoimaoson",
+    "_mauhienthongtinmuctieugame", "_is_tutimduongtheosau", "_is_diquocgiatanthutienco", "_is_doidokhitrieuhoi", "_bodotrieuhoi", "_baothutrieuhoimaoson",
     "_sumon_npcgiao", "_tapkich_phai", "_matac_bandos", "_is_tubatmatac", "_hangviec_thutu", "_hangviec_chon",
 )
 
@@ -343,6 +343,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._thoidiemsudungvatphamhoisinhlucgannhat = time.time()
         self._thoidiemsudungthanhtamdangannhat = time.time()
         self._thoidiemsudunghoithanhphugannhat = time.time()
+        # Lần log gần nhất "chờ nhân vật khác về thành" (action_thugiuhoithanh), khỏi log mỗi vòng
+        self._thoidiemlogchohoithanh = 0.
         self._thoidiemxepchongvatphamgannhat = time.time()
         # Xếp chồng tự nhận biết (_get_soluongneuxepchongduoc): số lớn nhất từng thấy 1 ô theo tên; lần gộp đang chờ kết quả
         # (id nguồn, id đích, số lượng nguồn, số lượng đích, lúc chuyển) và các cặp id đã biết không gộp được (khác trạng thái khoá)
@@ -437,6 +439,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._thoidiemdungimkiemtraket = 0.
         # Tiếp cận quái không gần thêm được (vật cản lớn): [id quái, khoảng cách gần nhất đã tới, lúc gần thêm gần nhất]
         self._theodoitiepcan = None
+        # Lần gần nhất có quái trong tầm đánh (không còn phải đi tới): quá THOIGIANHETQUAIGANDIVONG giây thì cho đi vòng cả bản đồ
+        self._thoidiemtoiduocmuctieugannhat = time.time()
+        # Quái đang đi vòng cả bản đồ tới (vách đá dài): [id quái, số bước, lúc bắt đầu] hoặc None
+        self._muctieuvongxa = None
 
         self._yeucaunhatvatpham = None
         self._yeucautheosau = None
@@ -669,6 +675,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         # Theo sau: người được theo sau ở bản đồ khác => tự tìm đường tới bản đồ đó (phù / Hồi Thành Phù / chạy bộ như Đi tới bản đồ).
         # Tắt thì chỉ theo sau trong cùng bản đồ
         self._is_tutimduongtheosau = True
+        # Đi quốc gia bằng Tân Thủ Tiên Cô: tới quốc gia thì Tín Vật về môn phái, Tân Thủ Tiên Cô phù lên bản đồ gần rồi chạy sang, thay
+        # cho Hồi Thành Phù (BANDOGANQUOCGIA_TANTHUTIENCO, _lapbuocquocgiatanthutienco). Mặc định bật (người dùng dặn 2026-11-06)
+        self._is_diquocgiatanthutienco = True
 
         self._diachidoituongcanbuffthuccotmaoson = None
         self._diachidoituongcanbuffthucgiapmaoson = None
@@ -857,6 +866,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             "_chedohienthongtinmuctieugame": self._chedohienthongtinmuctieugame,
             "_mauhienthongtinmuctieugame": self._mauhienthongtinmuctieugame,
             "_is_tutimduongtheosau": self._is_tutimduongtheosau,
+            "_is_diquocgiatanthutienco": self._is_diquocgiatanthutienco,
             "_is_doidokhitrieuhoi": self._is_doidokhitrieuhoi,
             "_bodotrieuhoi": self._bodotrieuhoi,
             "_baothutrieuhoimaoson": self._baothutrieuhoimaoson,
@@ -986,6 +996,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             if "_chedohienthongtinmuctieugame" in thietlap: self.thietlap_chedohienthongtinmuctieugame(thietlap["_chedohienthongtinmuctieugame"])
             if "_mauhienthongtinmuctieugame" in thietlap: self.thietlap_mauhienthongtinmuctieugame(thietlap["_mauhienthongtinmuctieugame"])
             if "_is_tutimduongtheosau" in thietlap: self._is_tutimduongtheosau = thietlap["_is_tutimduongtheosau"]
+            if "_is_diquocgiatanthutienco" in thietlap: self._is_diquocgiatanthutienco = thietlap["_is_diquocgiatanthutienco"]
             if "_is_doidokhitrieuhoi" in thietlap: self._is_doidokhitrieuhoi = thietlap["_is_doidokhitrieuhoi"]
             if "_bodotrieuhoi" in thietlap: self._bodotrieuhoi = list(thietlap["_bodotrieuhoi"])
             if thietlap.get("_baothutrieuhoimaoson") in BAOTHUTRIEUHOIMAOSONs: self._baothutrieuhoimaoson = thietlap["_baothutrieuhoimaoson"]
@@ -1107,6 +1118,13 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             phatam("Bật tự tìm đường tới người được theo sau")
         else:
             phatam("Tắt tự tìm đường tới người được theo sau")
+
+    def battat_diquocgiatanthutienco(self):
+        self._is_diquocgiatanthutienco = not self._is_diquocgiatanthutienco
+        if self._is_diquocgiatanthutienco:
+            phatam("Bật đi quốc gia bằng Tân Thủ Tiên Cô")
+        else:
+            phatam("Tắt đi quốc gia bằng Tân Thủ Tiên Cô")
 
     def battat_tudongsudungkynangbaothu(self):
         self._is_tudongsudungkynangbaothu = not self._is_tudongsudungkynangbaothu

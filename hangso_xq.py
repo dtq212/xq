@@ -114,6 +114,14 @@ NGANLUONGGIULAI = GIAHOITHANHPHU + GIAPHUTANTHUTIENCO
 # Tối đa bấy nhiêu lần Hồi Thành Phù trong THOIGIANDEMHOITHANHPHU giây: quá thì coi như đang lặp, ngưng dùng (mỗi lần 1.500 lượng)
 SOLANHOITHANHPHUTOIDA = 3
 THOIGIANDEMHOITHANHPHU = 600.
+# Không bao giờ để 2 nhân vật (các cửa sổ cùng máy) Hồi Thành Phù / Tín Vật / Hồi Môn Phái cùng lúc: rất lộ (người dùng dặn 2026-11-06).
+# Bot dùng giữ chỗ chung (dieuphoi_xq.GiuHoiThanh) suốt lúc chờ + vận khí (tối đa THOIGIANKHOAVANKHITRIEUHOITOIDA), hết vận khí
+# thì giữ thêm ngẫu nhiên trong khoảng này (giây) rồi bot khác mới được dùng, khỏi thấy các nhân vật biến mất nối đuôi nhau
+KHOANGNGHIHOITHANHGIUACACBOT = (6., 15.)
+# Giữ chỗ lúc vừa gửi lệnh: phủ cả chờ vào vận khí + vận khí (phòng bot chết giữa chừng thì chỗ tự hết hạn)
+THOIGIANGIUHOITHANHTOIDA = 25.
+# Tên khoá vận khí (action_khoavankhitrieuhoi) là về thành: hết khoá thì nhả giữ chỗ GiuHoiThanh
+TENKHOAVANKHIHOITHANHs = ("HỒI THÀNH PHÙ", "TÍN VẬT")
 
 # Sắp xếp hành trang: thuốc dồn về cuối túi cuối cùng, trước nó là đồ có "[Có thể sử dụng]" trong mô tả. So theo đầu tên nên
 # bản "... Luyện Chế" (và tên bị cắt ngắn) cũng tính
@@ -216,10 +224,10 @@ KHOANGCACHSUDUNGKYNANGCANCHIEN = 1.
 KHOANGCACHLUIGIUKHOANGCACH = 3.
 # Đang theo sau: mình ra xa trưởng nhóm quá vùng đứng đánh chừng này ô (trưởng nhóm đang đi) thì chưa chọn mục tiêu, chạy về trước
 DUKHOANGCACHTHEOSAUCHONMUCTIEU = 1.5
-KHOANGCACHSUDUNGKYNANGTAMXA = 9.  # 12.
-# Tầm xa 9 ô đã là con số trừ hao lệch tọa độ client - server (tầm thật ~12 ô), nên không trừ thêm nhiều nữa:
-# - lọc mục tiêu quanh người theo sau dùng tầm xa - TRUHAOTAMXACHONMUCTIEU (dùng trọn 9 ô)
-# - đứng đánh lâu / đang chạy bù thì tầm yêu cầu giảm BUKHOANGCACHTAMXA ô (đánh ở ~8 ô), chạy vào tầm thì dừng ở tầm xa - BU - 1 (~7 ô)
+KHOANGCACHSUDUNGKYNANGTAMXA = 8.  # 9., 12.
+# Tầm xa 8 ô đã là con số trừ hao lệch tọa độ client - server (tầm thật ~12 ô), nên không trừ thêm nhiều nữa:
+# - lọc mục tiêu quanh người theo sau dùng tầm xa - TRUHAOTAMXACHONMUCTIEU (dùng trọn 8 ô)
+# - đứng đánh lâu / đang chạy bù thì tầm yêu cầu giảm BUKHOANGCACHTAMXA ô (đánh ở ~7 ô), chạy vào tầm thì dừng ở tầm xa - BU - 1 (~6 ô)
 TRUHAOTAMXACHONMUCTIEU = 0.
 BUKHOANGCACHTAMXA = 1.
 # Tầm xa tự học (TacTu._capnhattamxa): ô tầm xa trên giao diện là tầm TỐI ĐA (tầm thật ~12), bot dùng tầm hiện tại. Chiêu nhắm mục tiêu
@@ -1151,10 +1159,8 @@ KHUVUCCAM_MAP = {
         {"type": "line", "x1": 132, "y1": 159, "x2": 160, "y2": 139, "r": 9.0},
         {"type": "line", "x1": 131, "y1": 111, "x2": 160, "y2": 139, "r": 9.0},
     ],
-    BANDO_MALANGDAO: [
-        {"type": "line", "x1": 116, "y1": 116, "x2": 145, "y2": 150, "r": 9.0},
-        {"type": "line", "x1": 93, "y1": 96, "x2": 124, "y2": 118, "r": 9.0},
-    ],
+    # Mã Lăng Đạo: bỏ 2 vùng cấm tầng trên vách đá (116, 116)-(145, 150), (93, 96)-(124, 118) bán kính 9 (2026-11-06): đã có đi vòng
+    # cả bản đồ khi hết quái gần (THOIGIANHETQUAIGANDIVONG). Còn quái gần thì quái tầng trên vẫn bị bỏ vì đường vòng xa như cũ
     BANDO_KENHTRINHQUOC1: [
         {"type": "circle", "x": 108, "y": 57, "r": 6.0},
         # Phó bản Tập Kích Môn Phái dùng chung bản đồ (id vẫn là 151): đi vào 2 chỗ này bị kẹt không đi tiếp được, phải lùi tay
@@ -1446,6 +1452,20 @@ DUONGUUTIENs = (
     (BANDO_CHUQUOC, lambda x, y: x < 200, 81),
 )
 
+# Tuỳ chọn "Đi quốc gia bằng Tân Thủ Tiên Cô" (mặc định bật, người dùng dặn 2026-11-06): tới quốc gia thì thay vì Hồi Thành Phù về Tân Thủ
+# Thôn, Tín Vật về môn phái, nói chuyện Tân Thủ Tiên Cô trong môn phái phù lên bản đồ gần quốc gia rồi chạy 1 cổng sang.
+# Quốc gia -> bản đồ phù tới (đều có trong menu Tân Thủ Tiên Cô, cách quốc gia 1 cổng; kiểm tra bằng timduongbando 2026-11-06)
+BANDOGANQUOCGIA_TANTHUTIENCO = {
+    BANDO_TRIEUQUOC: 131,  # Cự Lộc
+    BANDO_TEQUOC: 211,     # Mã Đạp Hồ
+    BANDO_NGUYQUOC: 42,    # Vô Định Hà 1
+    BANDO_YENQUOC: 271,    # Trác Lộc
+    BANDO_SOQUOC: 261,     # Chân Núi Đại Biệt
+    BANDO_HANQUOC: 21,     # Tương Lăng
+    BANDO_CHUQUOC: 81,     # Thủ Dương Sơn
+    BANDO_TANQUOC: 151,    # Kênh Trịnh Quốc 1
+}
+
 
 def layduonguutien(idbandodich, toadodich):
     # -> phương án dạng layphuongandichuyen (Tân Thủ Tiên Cô, bước, bản đồ phù tới, số cổng chạy tiếp) hoặc None
@@ -1513,6 +1533,16 @@ THOIGIANBOQUAMUCTIEUKHONGTIEPCAN = 60.
 # HESODUONGVONGTOIDA lần khoảng cách thẳng + SOBUOCDUONGVONGCONGTHEM bước (phải vòng rất xa qua bên kia vật cản) thì bỏ qua luôn
 HESODUONGVONGTOIDA = 2.
 SOBUOCDUONGVONGCONGTHEM = 10
+# Hết quái gần: vách đá dài (Mã Lăng Đạo, 2026-11-06) quái tầng dưới chết thì mọc lại tầng trên, khung tìm đường ±25 ô không thấy đường
+# vòng nên quái tầng trên luôn bị bỏ => đứng chờ. Đã THOIGIANHETQUAIGANDIVONG giây không vào tầm đánh được con quái nào mà quái vừa chọn bị
+# bỏ vì vật cản thì tìm đường trên cả bản đồ (moitruong.get_sobuocduongtoi is_cabando), không quá SOBUOCDIVONGXATOIDA bước thì đi vòng
+# tới nó. Đi vòng tối đa sobuoc * THOIGIANMOIBUOCDIVONG * 1.5 + 10 giây (client gửi "go" 2 bước / 0.5s), quá thì bỏ như thường
+THOIGIANHETQUAIGANDIVONG = 15.
+SOBUOCDIVONGXATOIDA = 300
+THOIGIANMOIBUOCDIVONG = 0.25
+# Lưới cả bản đồ (A* cả bản đồ) nhớ chừng này giây; đi vòng mà đích nhích không quá LECHDICHCABANDO ô thì đi hết chuỗi rồi mới tìm lại
+THOIGIANNHOLUOICABANDO = 30.
+LECHDICHCABANDO = 6.
 
 # Giữ khoảng cách với đối tượng đang tấn công mình (tùy chọn trên giao diện, hay bật cho Mao Sơn / Vân Mộng Cốc khi giao tranh)
 KHOANGCACHGIUKETANCONG = 6.

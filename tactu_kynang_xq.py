@@ -740,6 +740,13 @@ class TacTuKyNang:
         if self._is_chidungtudongtancong and vitrikynang is not None and loaikynang.startswith("sudungkynang"):
             return False, False
 
+        # Tân Thủ Thôn / Chu Quốc (BANDOKHONGTANCONGs) là thành an toàn: không buff bản thân / đồng đội (Hộ Thể Kim Cang, Tiểu Chu Thiên,
+        # Trấn Cổ Thần Uy, Phong Ấn Thuật...) và không chạy lại gần đồng đội để buff. Chiêu đánh ở đây vốn đã không có mục tiêu
+        # (action_tudongtimkiemmuctieu bỏ chọn) nên chặn mọi kỹ năng thật là đủ, gồm cả buff dạng "khongmuctieu" / "muctieu"
+        if ((vitrikynang is not None and loaikynang.startswith("sudungkynang")) or loaikynang == "dichuyentiepcanbuff") \
+                and self.moitruong.get_idbandohientai() in BANDOKHONGTANCONGs:
+            return False, False
+
         if self._yeucaugiukhoangcach and (loaikynang in ("sudungkynangmuctieu", "tancongvatly", "sudungkynangphudau")
                                           or loaikynang.startswith("dichuyen") or vitrikynang in (VITRIKYNANG_LOIDONGCUUTHIEN, VITRIKYNANG_LOILONGQUYET)):
             return False, False
@@ -1175,10 +1182,12 @@ class TacTuKyNang:
         # (mục tiêu đã có Lạc Kích thì Ba Động: chậm + 40% rối loạn) -> Mê Tung -> Đào Hoa Lạc Ảnh; xoay vòng Nhất Quyền -> Thốn Kình
         # -> Lạc Kích / Ba Động. Đại Hải chỉ dùng khi nhiều mục tiêu (choáng 1s với 1 người không đáng 4 nguyên khí)
         danhsachuutien = [
-            (VITRIKYNANG_TRANCOTHANUY, "sudungkynangkhongmuctieu", lambda: diachimuctieu and not is_nhuongbuff and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRANCOTHANUY,), True, is_hieuungcoloi = 1), 0, None, False, False),
+            # Trấn Cổ Thần Uy / Kim Chung Tráo: buff duy trì, không cần có mục tiêu (người dùng dặn 2026-11-06); ở Tân Thủ Thôn / Chu Quốc
+            # đã bị chặn chung trong action_xulyuutiensudungkynang (BANDOKHONGTANCONGs)
+            (VITRIKYNANG_TRANCOTHANUY, "sudungkynangkhongmuctieu", lambda: not is_nhuongbuff and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRANCOTHANUY,), True, is_hieuungcoloi = 1), 0, None, False, False),
             # Không tự bật tâm pháp (Dã Tính / Kim Cương): người chơi tự chọn (bỏ tự bật Dã Tính 2026-10-28).
-            # Kim Chung Tráo: như Trấn Cổ, chỉ dùng khi có mục tiêu; game không cho dùng khi đang Dã Tính nên bỏ qua lúc đó
-            (VITRIKYNANG_KIMTRUNGCHAO, "sudungkynangkhongmuctieu", lambda: diachimuctieu and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_DATINCUONGLUC,), True, is_hieuungcoloi = 1) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KIMTRUNGCHAO,), True, is_hieuungcoloi = 1), 0, None, False, False),
+            # Kim Chung Tráo: game không cho dùng khi đang Dã Tính nên bỏ qua lúc đó
+            (VITRIKYNANG_KIMTRUNGCHAO, "sudungkynangkhongmuctieu", lambda: not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_DATINCUONGLUC,), True, is_hieuungcoloi = 1) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KIMTRUNGCHAO,), True, is_hieuungcoloi = 1), 0, None, False, False),
             # Hộ Thể Kim Cang: Niết Bàn sửa chỉ còn tác dụng 15s mà hồi 30s, không đáng dùng (người dùng dặn 2026-11-04) => chỉ dùng ở Aegis
             (VIRIKYNANG_HOTHEKIMCANG, "sudungkynanglenbanthan", lambda: not is_nietban and not is_nhuongbuff and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_HOTHEKIMCANG,), True, is_hieuungcoloi = 1), 0, None, False, False),
             # Nguyên Khí Quy Nguyên: bật / làm mới theo tin server ở _lammoinguyenkhiquynguyen (gọi trước danh sách)

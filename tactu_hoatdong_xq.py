@@ -76,7 +76,12 @@ class TacTuHoatDong:
             return
         self._thoidiemkiemtraanthangannhat = thoidiemhientai
 
-        phathien = self._quetnguoichoibatthuong()
+        # Tân Thủ Thôn / Chu Quốc (BANDOKHONGTANCONGs) là thành an toàn, đông người qua lại: thấy người lạ hay ẩn thân cũng không tạm ngưng,
+        # và không quét/công bố (nhân vật khác chỉ ngưng theo khi cùng bản đồ, mà cùng bản đồ thì cũng đang ở đây)
+        if self.moitruong.get_idbandohientai() in BANDOKHONGTANCONGs:
+            return
+
+        phathien =self._quetnguoichoibatthuong()
         if phathien:
             # Chỉ công bố phát hiện trực tiếp (không công bố trạng thái tạm ngưng) để các nhân vật không gia hạn lẫn nhau mãi
             self._thoidiemphathienanthan = thoidiemhientai

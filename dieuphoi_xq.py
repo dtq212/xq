@@ -4,7 +4,8 @@ import random
 import threading
 import time
 
-from hangso_xq import IDKYNANGVANKHIs, IS_XOAYVONGLENHGIUACACBOT, KHOANGGIULUOTLENH, THOIGIANNHUONGLUOTKHIRANH, IS_XOAYVONGBATDAUDICHUYEN, KHOANGNGHIBATDAUDICHUYEN, THOIGIANCHOLUOTTOIDA, THOIGIANGIUKYNANGMUCTIEU
+from hangso_xq import IDKYNANGVANKHIs, IS_XOAYVONGLENHGIUACACBOT, KHOANGGIULUOTLENH, THOIGIANNHUONGLUOTKHIRANH, IS_XOAYVONGBATDAUDICHUYEN, KHOANGNGHIBATDAUDICHUYEN, THOIGIANCHOLUOTTOIDA, THOIGIANGIUKYNANGMUCTIEU, \
+    KHOANGNGHIHOITHANHGIUACACBOT, THOIGIANGIUHOITHANHTOIDA
 from tienich_xq import _thumucthietlap
 
 # Bot đăng ký chờ lượt mà quá lâu không làm mới (process đã chết) thì bỏ qua
@@ -324,3 +325,53 @@ class GiuKyNangMucTieu:
         # Tập khoá (hiệu ứng, ID mục tiêu) bot này không nên gửi lúc này (1 lần đọc Manager, dùng khi lọc nhiều mục tiêu)
         thoidiemhientai = time.time()
         return {k for k, v in self.giukynangs.copy().items() if self._is_bichan(v, thoidiemhientai)}
+
+
+# Khoá trong DieuPhoiLuot.trangthai (dict qua Manager) của GiuHoiThanh: (hwnd bot đang giữ, thời điểm hết hạn)
+KHOAGIUHOITHANH = "hoithanh_giu"
+
+
+class GiuHoiThanh:
+    """Chỉ 1 bot (cửa sổ game cùng máy) được Hồi Thành Phù / Tín Vật / Hồi Môn Phái tại 1 thời điểm (người dùng dặn 2026-11-06:
+    2 nhân vật cùng biến mất 1 lúc rất lộ).
+
+    Dùng chung khoá + dict trangthai của DieuPhoiLuot: trangthai[KHOAGIUHOITHANH] = (hwnd, hết hạn). Bot gửi lệnh thì giữ
+    THOIGIANGIUHOITHANHTOIDA giây (phủ chờ + vận khí), hết vận khí thì rút lại còn khoảng nghỉ ngẫu nhiên KHOANGNGHIHOITHANHGIUACACBOT.
+    Bot chết giữa chừng thì chỗ tự hết hạn.
+    """
+
+    def __init__(self, idcuaso, khoa, trangthai):
+        self.idcuaso = idcuaso
+        self.khoa = khoa
+        self.trangthai = trangthai
+
+    def get_botdanggiu(self):
+        # -> (hwnd bot khác đang giữ, số giây còn lại) hoặc None (trống / chính mình giữ)
+        try:
+            dangiu = self.trangthai.get(KHOAGIUHOITHANH)
+        except Exception:
+            return None
+        thoidiemhientai = time.time()
+        if not dangiu or dangiu[1] <= thoidiemhientai or dangiu[0] == self.idcuaso:
+            return None
+        return dangiu[0], dangiu[1] - thoidiemhientai
+
+    def thugiu(self, thoigian = THOIGIANGIUHOITHANHTOIDA):
+        # True: đã giữ chỗ (trống / hết hạn / chính mình giữ), được gửi lệnh. False: bot khác đang Hồi Thành / vừa Hồi Thành xong
+        thoidiemhientai = time.time()
+        with self.khoa:
+            dangiu = self.trangthai.get(KHOAGIUHOITHANH)
+            if dangiu and dangiu[1] > thoidiemhientai and dangiu[0] != self.idcuaso:
+                return False
+            self.trangthai[KHOAGIUHOITHANH] = (self.idcuaso, thoidiemhientai + thoigian)
+        return True
+
+    def ketthuc(self, is_davao = True):
+        # Hết vận khí (hoặc lệnh không vào vận khí): giữ thêm khoảng nghỉ ngẫu nhiên rồi nhường. Không vào vận khí (nhân vật không biến
+        # mất) thì nghỉ ngắn hơn
+        nghitoithieu, nghitoida = KHOANGNGHIHOITHANHGIUACACBOT
+        nghi = random.uniform(nghitoithieu, nghitoida) if is_davao else random.uniform(1., 3.)
+        with self.khoa:
+            dangiu = self.trangthai.get(KHOAGIUHOITHANH)
+            if dangiu and dangiu[0] == self.idcuaso:
+                self.trangthai[KHOAGIUHOITHANH] = (self.idcuaso, min(dangiu[1], time.time() + nghi) if not is_davao else time.time() + nghi)

@@ -14,7 +14,7 @@ from loop_xq import (
     LoopBoKhungSauTanCong,
     LoopGiuOTrongHanhTrang
 )
-from dieuphoi_xq import DieuPhoiLuot, GiuKyNangMucTieu, KENH_LENH, KENH_DICHUYEN
+from dieuphoi_xq import DieuPhoiLuot, GiuKyNangMucTieu, GiuHoiThanh, KENH_LENH, KENH_DICHUYEN
 from lan_xq import DuLieuNhieuMay
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
@@ -140,6 +140,8 @@ class CuaSo:
             self.moitruong.dieuphoidichuyen = DieuPhoiLuot(idcuaso, dieuphoi_khoa, dieuphoi_trangthai, dieuphoi_dangchos, KENH_DICHUYEN)
             if dieuphoi_giukynangs is not None:
                 self.moitruong.giukynang = GiuKyNangMucTieu(idcuaso, dieuphoi_khoa, dieuphoi_giukynangs)
+            # Không bao giờ 2 nhân vật Hồi Thành Phù / Tín Vật cùng lúc
+            self.moitruong.giuhoithanh = GiuHoiThanh(idcuaso, dieuphoi_khoa, dieuphoi_trangthai)
         self.moitruong.action_thietlaphooknoidungtrochuyen()
         self.moitruong.action_thietlaphooklenhgame()
         self.tactu = TacTu(self.moitruong)
@@ -344,6 +346,7 @@ class CuaSo:
                     "_chedohienthongtinmuctieugame": self.tactu._chedohienthongtinmuctieugame,
                     "_mauhienthongtinmuctieugame": self.tactu._mauhienthongtinmuctieugame,
                     "_is_tutimduongtheosau": self.tactu._is_tutimduongtheosau,
+                    "_is_diquocgiatanthutienco": self.tactu._is_diquocgiatanthutienco,
                     "_is_dangsapxephanhtrang": self.tactu._is_dangsapxephanhtrang,
                     "_is_doidokhitrieuhoi": self.tactu._is_doidokhitrieuhoi,
                     "_tenbodotrieuhoi": [mon["ten"] for mon in self.tactu._bodotrieuhoi],
@@ -717,6 +720,8 @@ class CuaSo:
                         pass
                 elif cmd == "battat_tutimduongtheosau":
                     self.tactu.battat_tutimduongtheosau()
+                elif cmd == "battat_diquocgiatanthutienco":
+                    self.tactu.battat_diquocgiatanthutienco()
                 elif cmd == "battat_sapxephanhtrang":
                     self.tactu.battat_sapxephanhtrang()
                 elif cmd == "battat_doidokhitrieuhoi":

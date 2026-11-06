@@ -158,6 +158,9 @@ class MoiTruong:
         self._oditduoc_cache = {}
         # (bản đồ, từ x, từ y, tới x, tới y) -> lúc thấy đoạn cụt (action_dichuyenoo): khỏi tìm đường lại liên tục cùng 1 đoạn
         self._doancut_cache = {}
+        # (bản đồ, lúc đọc, lưới cả bản đồ) cho A* cả bản đồ (_timduongkhongcatgoc lechtoida = None): lưới tĩnh theo bản đồ, khỏi đọc
+        # lại ~300 cột mỗi lần tìm
+        self._luoicabando_cache = None
         # (bản đồ, x, y, tầm) -> (lúc chọn, ô tới được trong tầm hoặc None) (_chondichtoiduoc)
         self._dichtoiduoc_cache = {}
         self._diembanthong = None
@@ -305,6 +308,8 @@ class MoiTruong:
         self.dieuphoidichuyen = None
         # Giữ chỗ chiêu khống chế trên mục tiêu giữa các bot (GiuKyNangMucTieu, CuaSo gán vào), None thì không giữ
         self.giukynang = None
+        # Giữ chỗ Hồi Thành Phù / Tín Vật giữa các bot (GiuHoiThanh, CuaSo gán vào): không bao giờ 2 nhân vật cùng về thành 1 lúc
+        self.giuhoithanh = None
 
         self.thoidiemmuctieuanthangannhat_map = {}
         self.thoidiemmuctieuxuathiengannhat_map = {}
@@ -3498,7 +3503,9 @@ class MoiTruong:
         self._thoidiemboquadichuyencungtoadogannhat = time.time()
         return True
 
-    def action_dikhongcatgoc(self, x2, y2, khoangcachtoida = 0.):
+    def action_dikhongcatgoc(self, x2, y2, khoangcachtoida = 0., is_cabando = False):
+        # is_cabando: tìm đường trên cả bản đồ (đi vòng vách đá dài tới quái tầng bên kia). Đích (quái lang thang) nhích không quá
+        # LECHDICHCABANDO ô thì đi hết chuỗi đang có rồi mới tìm lại (mỗi lần tìm cả bản đồ tốn tới ~1s)
         # Đi tới (x2, y2) cùng bản đồ theo đường bot tự tìm trên lưới vật cản, KHÔNG đi chéo qua khe giữa 2 vật cản chỉ chạm góc (chéo chỉ
         # khi 2 ô kề đều trống), rồi ghi chuỗi hướng như action_dichuyenoo. Chu Quốc có rào xếp chéo thành khối 2x2 chạm góc (quanh Từ Phúc
         # (345, 159)): tìm đường của client / game lách chéo qua khe đó mà máy chủ không cho đi => húc rào giật giật. Không tìm được đường
@@ -3522,9 +3529,10 @@ class MoiTruong:
         # Đang đi chuỗi tới đúng đích này thì để client đi tiếp (hết chuỗi 99 bước thì lần gọi sau tìm tiếp). Đích nhích ít (theo sau người
         # đang đi) thì 1.5s mới tìm lại: ghi lại chuỗi mỗi lượt làm đứt nhịp gửi "go", đi khựng
         if self._dichkhongcatgoc and self.get_idlenhdichuyen() and (self._dichkhongcatgoc == (x2, y2) or (
-                math.dist(self._dichkhongcatgoc, (x2, y2)) <= 3 and now - self._thoidiemdichuyengannhat < 1.5)):
+                math.dist(self._dichkhongcatgoc, (x2, y2)) <= 3 and now - self._thoidiemdichuyengannhat < 1.5)
+                or (is_cabando and math.dist(self._dichkhongcatgoc, (x2, y2)) <= LECHDICHCABANDO)):
             return True
-        chuoihuong = self._timduongkhongcatgoc(x1, y1, x2, y2, khoangcachtoida)
+        chuoihuong = self._timduongkhongcatgoc(x1, y1, x2, y2, khoangcachtoida, lechtoida = None if is_cabando else 25)
         if chuoihuong:
             self._duongkhongcatgoc = [(x1, y1)]
             for kytu in chuoihuong[:SOBUOCCHUOIDUONGDITOIDA].decode():
@@ -3637,9 +3645,10 @@ class MoiTruong:
                     f"tìm đường khác")
         return True
 
-    def get_sobuocduongtoi(self, x2, y2, khoangcachtoida = 0.):
+    def get_sobuocduongtoi(self, x2, y2, khoangcachtoida = 0., is_cabando = False):
         # Số bước đi bộ (theo lưới vật cản + ô học được, như action_dikhongcatgoc) từ chỗ mình tới cách (x2, y2) không quá khoangcachtoida.
-        # 0: đã trong tầm, None: không có đường (bị vật cản bao kín) / chưa đọc được
+        # is_cabando: tìm trên cả bản đồ thay vì khung ±25 ô quanh 2 điểm (chậm hơn, ~0.1-1s).
+        # 0: đã trong tầm, None: không có đường (bị vật cản bao kín / khác vùng liên thông) / chưa đọc được
         diachinhanvat = self.get_diachicosothongtinnhanvat1()
         if not diachinhanvat:
             return None
@@ -3647,14 +3656,29 @@ class MoiTruong:
         x2, y2 = round(x2), round(y2)
         if math.dist((x1, y1), (x2, y2)) <= max(1., khoangcachtoida):
             return 0
-        chuoihuong = self._timduongkhongcatgoc(x1, y1, x2, y2, max(1., khoangcachtoida))
+        chuoihuong = self._timduongkhongcatgoc(x1, y1, x2, y2, max(1., khoangcachtoida), lechtoida = None if is_cabando else 25)
         return len(chuoihuong) if chuoihuong else None
+
+    def _get_luoicabando(self):
+        # Lưới vật cản cả bản đồ hiện tại (luoi[x][y]), nhớ THOIGIANNHOLUOICABANDO giây theo bản đồ
+        idbando = self.get_idbandohientai()
+        cache = self._luoicabando_cache
+        if cache and cache[0] == idbando and time.time() - cache[1] < THOIGIANNHOLUOICABANDO:
+            return cache[2]
+        luoi = self.get_luoivatcanbando()
+        self._luoicabando_cache = (idbando, time.time(), luoi) if luoi else None
+        return luoi
 
     def _timduongkhongcatgoc(self, x1, y1, x2, y2, khoangcachtoida = 0., lechtoida = 25):
         # A* trên lưới vật cản vùng bao 2 điểm (thêm lechtoida ô mỗi bên), 8 hướng nhưng chéo chỉ khi 2 ô kề đều trống. Tới ô cách đích
-        # không quá khoangcachtoida (0: đúng ô đích) là xong. -> chuỗi hướng (bytes "1".."8", HUONGTIMDUONG_MAP) hoặc None
-        ox, oy = min(x1, x2) - lechtoida, min(y1, y2) - lechtoida
-        luoi = self._get_luoivatcan(ox, oy, max(x1, x2) + lechtoida, max(y1, y2) + lechtoida)
+        # không quá khoangcachtoida (0: đúng ô đích) là xong. lechtoida = None: tìm trên cả bản đồ (vách đá dài ở Mã Lăng Đạo: đường vòng
+        # lên tầng trên nằm ngoài khung ±25 ô). -> chuỗi hướng (bytes "1".."8", HUONGTIMDUONG_MAP) hoặc None
+        if lechtoida is None:
+            ox, oy = 0, 0
+            luoi = self._get_luoicabando()
+        else:
+            ox, oy = min(x1, x2) - lechtoida, min(y1, y2) - lechtoida
+            luoi = self._get_luoivatcan(ox, oy, max(x1, x2) + lechtoida, max(y1, y2) + lechtoida)
         if not luoi:
             return None
         rong, cao = len(luoi), len(luoi[0])
@@ -4544,6 +4568,7 @@ class MoiTruong:
             "ten": ten,
         }
         cho = self.action_chovankhi(vitrikynang, next(iter(caulenhduocpheps), None), ten = ten)
+        self._khoavankhitrieuhoi["cho"] = cho
         self._inlog(f"[KHOÁ VẬN KHÍ {ten}] bắt đầu, cho phép {sorted(caulenhduocpheps)}")
         return cho
 
@@ -4623,6 +4648,13 @@ class MoiTruong:
             return True
         self._khoavankhitrieuhoi = None
         self._inlog(f"[KHOÁ VẬN KHÍ {khoa.get('ten', 'TRIỆU HỒI')}] kết thúc sau {round(thoidiemhientai - khoa['batdau'], 1)}s")
+        if khoa.get("ten") in TENKHOAVANKHIHOITHANHs and self.giuhoithanh is not None:
+            # Hết vận khí về thành: giữ chỗ thêm khoảng nghỉ ngẫu nhiên rồi mới nhường bot khác (GiuHoiThanh)
+            cho = khoa.get("cho")
+            try:
+                self.giuhoithanh.ketthuc(is_davao = bool(cho.get("vao")) if cho else True)
+            except Exception as err:
+                self._inlog(f"[HỒI THÀNH PHÙ] Lỗi nhả giữ chỗ: {err}")
         return False
 
     def get_is_khoavankhitrieuhoibaothu(self):
