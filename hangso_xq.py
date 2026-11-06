@@ -205,6 +205,9 @@ KHOANGCACHTIEPCANLOIDONGCUUTHIEN = 2.
 # Chiêu vận khí diện rộng (Lôi Động Cửu Thiên / Lôi Long Quyết) chỉ dùng / chạy vào cụm khi có từ chừng này quái trở lên: ít hơn thì
 # đánh chiêu đơn mục tiêu nhanh hơn là tiếp cận rồi đứng vận khí 6s (người dùng 2026-11-04)
 SOLUONGQUAITOITHIEUCHIEUVANKHI = 5
+# Riêng Lôi Động Cửu Thiên (Mao Sơn): từ 3 quái đã coi là đông, ra chiêu / chạy vào cụm (người dùng 2026-11-06);
+# Lôi Long Quyết (Côn Luân) vẫn theo SOLUONGQUAITOITHIEUCHIEUVANKHI
+SOLUONGQUAITOITHIEULOIDONGCUUTHIEN = 3
 
 KHOANGCACHTOIDAHOPLE = 255.
 # Tầm cận chiến thật (bot tự học, 01/11/2026): 1 ô theo max(|dx|, |dy|) => ô kề, tính cả ô chéo

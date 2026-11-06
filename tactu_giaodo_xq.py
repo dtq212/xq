@@ -4,12 +4,14 @@
 #             (bước 4 của _xulydangbanrac, di chuyển trực tiếp như cất kho); người nhận rời đi thì thôi, yêu cầu quay về chờ
 #   "tay"   : bấm "Về giao ngay" / Telegram /vegiao: về Tân Thủ Thôn (phù / Hồi Thành Phù / chạy bộ như "Đi tới bản đồ"), tới Chủ Tiệm Tạp
 #             Hóa chờ người nhận tối đa THOIGIANCHONGUOINHAN giây; trong lúc đó không chọn quái, lộ trình điểm đánh tạm dừng
+# Yêu cầu cố định ("is_codinh"): kết thúc lượt (xong / lỗi) thì xoá trạng thái lượt, quay về chờ lần sau; lưu theo ID người chơi
+# (giaodo_xq.luucodinh), tải lại khi biết ID (get_hangchogiaodo) nên tắt / mở bot vẫn còn.
 # Giao: lại gần người nhận trong KHOANGCACHGIAODO ô rồi gửi lệnh give, kiểm tra ngân lượng / túi đồ đã giảm; xong bot tự quay lại việc cũ.
 # Mixin của TacTu (tactu_xq.py): chỉ chứa hàm, trạng thái (self._...) khởi tạo trong TacTu.__init__
 import time
 
 from hangso_xq import *
-from giaodo_xq import chiamon, taolenhgiao, motayeucau
+from giaodo_xq import chiamon, taolenhgiao, motayeucau, taicodinh, luucodinh
 from moitruong_xq import DOUUTIEN_KHANCAP
 from thongbao_xq import baosuco
 
@@ -20,6 +22,11 @@ THOIGIANCHONGUOINHAN = 600.
 THOIGIANKIEMTRAGIAODO = 3.
 SOLANGUIGIAODO = 3
 TRANGTHAICHOGIAO = "chưa giao (để dành: lần về bán rác gặp người nhận / bấm Về giao)"
+TRANGTHAICHOCODINH = "cố định – chờ lượt (về bán rác gặp người nhận / bấm Về giao)"
+# Trạng thái theo lượt của một yêu cầu: yêu cầu cố định xong lượt thì xoá hết để lượt sau tính lại từ đầu
+TRUONGTHEOLUOTs = ("lucgui", "truocgiao", "tienthucte", "vatphamthucte", "luctoi")
+# Lỗi lượt của yêu cầu cố định không đáng báo Telegram (lượt nào cũng có thể gặp, báo sẽ dồn tin)
+LOIIMLANGCODINHs = ("không có gì để giao", "không có ", "không đủ ", "chờ ")
 KICHHOAT_TAY = "tay"
 KICHHOAT_BANRAC = "banrac"
 
@@ -33,8 +40,11 @@ class TacTuGiaoDo:
         # Đơn bán ngân lượng (bannganluong_xq, "is_ban"): về giao ngay, chờ người nhận không giới hạn; cùng id đã có thì bỏ (đưa lại trùng)
         if any(y["id"] == yeucau["id"] for y in self._hangchogiaodo):
             return
-        yeucau = dict(yeucau, trangthai = TRANGTHAICHOGIAO, solangui = 0, kichhoat = KICHHOAT_TAY if yeucau.get("is_ban") else None)
+        yeucau = dict(yeucau, trangthai = TRANGTHAICHOCODINH if yeucau.get("is_codinh") else TRANGTHAICHOGIAO, solangui = 0,
+                      kichhoat = KICHHOAT_TAY if yeucau.get("is_ban") else None)
         self._hangchogiaodo.append(yeucau)
+        if yeucau.get("is_codinh"):
+            self._luugiaodocodinh()
         print(f"[GIAO ĐỒ] Thêm yêu cầu giao {yeucau['nguoinhan']}: {motayeucau(yeucau)}"
               f"{' (bán ngân lượng: về Tiệm Tạp Hóa chờ)' if yeucau.get('is_ban') else ' (để dành tới lần về bán rác gặp người nhận / bấm Về giao)'}")
 
@@ -45,7 +55,35 @@ class TacTuGiaoDo:
         return self.moitruong.action_timkiemnhanvat(tennhanvat = yeucau["nguoinhan"])
 
     def huy_giaodo(self, idyeucau):
+        is_codinh = any(y["id"] == idyeucau and y.get("is_codinh") for y in self._hangchogiaodo)
         self._hangchogiaodo = [y for y in self._hangchogiaodo if y["id"] != idyeucau]
+        if is_codinh:
+            self._luugiaodocodinh()
+
+    def _luugiaodocodinh(self):
+        idtoi = self._idgiaodocodinh or self.moitruong.get_idnguoichoi()
+        if idtoi:
+            luucodinh(idtoi, self._hangchogiaodo)
+
+    def _taigiaodocodinh(self):
+        # Lần đầu đọc được ID người chơi (hoặc đổi nhân vật): nạp yêu cầu cố định đã lưu, bỏ yêu cầu cố định của nhân vật cũ
+        try:
+            idtoi = self.moitruong.get_idnguoichoi()
+        except Exception:
+            # Màn đăng nhập / mất kết nối: chưa đọc được ID thì để lần sau
+            return
+        if not idtoi or idtoi == self._idgiaodocodinh:
+            return
+        coidinhcu = self._idgiaodocodinh is not None
+        self._idgiaodocodinh = idtoi
+        dacos = [y for y in self._hangchogiaodo if not (coidinhcu and y.get("is_codinh"))]
+        for y in taicodinh(idtoi):
+            if not any(d["id"] == y["id"] for d in dacos):
+                dacos.append(dict(y, trangthai = TRANGTHAICHOCODINH, solangui = 0, kichhoat = None))
+        self._hangchogiaodo = dacos
+        # Yêu cầu cố định thêm trước khi biết ID thì giờ mới lưu được
+        if any(y.get("is_codinh") for y in dacos):
+            self._luugiaodocodinh()
 
     def kichhoat_giaodo(self):
         # Nút "Về giao ngay" / Telegram /vegiao: mọi yêu cầu đang chờ của nhân vật này về giao ngay
@@ -83,15 +121,17 @@ class TacTuGiaoDo:
         # Quy trình bán rác dừng giữa chừng: yêu cầu đang giao trong chuyến bán rác quay về chờ
         for yeucau in self._hangchogiaodo:
             if _is_chuaxong(yeucau) and yeucau.get("kichhoat") == KICHHOAT_BANRAC and not yeucau.get("lucgui"):
-                yeucau["kichhoat"], yeucau["trangthai"] = None, TRANGTHAICHOGIAO
+                yeucau["kichhoat"], yeucau["trangthai"] = None, TRANGTHAICHOCODINH if yeucau.get("is_codinh") else TRANGTHAICHOGIAO
 
     def get_hangchogiaodo(self):
         # Cho giao diện / Telegram: mọi yêu cầu, kể cả vừa xong / lỗi (giữ lại 10 yêu cầu đã kết thúc gần nhất)
+        self._taigiaodocodinh()
         ketthucs = [y for y in self._hangchogiaodo if y["trangthai"] in ("xong", "lỗi")]
         if len(ketthucs) > 10:
             bo = {y["id"] for y in ketthucs[:-10]}
             self._hangchogiaodo = [y for y in self._hangchogiaodo if y["id"] not in bo]
-        return [{k: y.get(k) for k in ("id", "nguoinhan", "tien", "giulaitien", "vatphams", "tienthucte", "vatphamthucte", "trangthai", "ghichu")}
+        return [{k: y.get(k) for k in ("id", "nguoinhan", "tien", "giulaitien", "vatphams", "tienthucte", "vatphamthucte", "trangthai", "ghichu",
+                                       "is_codinh")}
                 for y in self._hangchogiaodo]
 
     def _ketthucgiaodo(self, yeucau, is_thanhcong, ghichu):
@@ -100,6 +140,14 @@ class TacTuGiaoDo:
         # Xong thì báo số đã giao thật (tiền "giữ lại" / đồ "hết" đã quy ra số)
         mota = motayeucau(yeucau, is_thucte = is_thanhcong)
         print(f"[GIAO ĐỒ] {'Xong' if is_thanhcong else 'Lỗi'}: giao {yeucau['nguoinhan']} {mota} – {ghichu}")
+        if yeucau.get("is_codinh"):
+            # Cố định: không kết thúc, xoá trạng thái lượt rồi chờ lượt sau; ghi kết quả lượt vừa rồi vào trạng thái
+            for k in TRUONGTHEOLUOTs:
+                yeucau.pop(k, None)
+            yeucau["solangui"], yeucau["kichhoat"] = 0, None
+            yeucau["trangthai"] = f"{TRANGTHAICHOCODINH} · lượt trước {time.strftime('%H:%M')}: " +                                   (f"đã giao {mota}" if is_thanhcong else f"lỗi – {ghichu}")
+            if not is_thanhcong and ghichu.startswith(LOIIMLANGCODINHs):
+                return
         baosuco(self.moitruong, "giaodo", f"{'✅ Đã giao' if is_thanhcong else '❌ Không giao được'} cho {yeucau['nguoinhan']}: {mota}"
                                           f"{'' if is_thanhcong else ' – ' + ghichu}", khoa = yeucau["id"], giancach = 0.)
 
@@ -134,7 +182,7 @@ class TacTuGiaoDo:
             if kichhoat == KICHHOAT_BANRAC and not yeucau.get("lucgui"):
                 # Giao ké chuyến bán rác: người nhận đã đi khỏi thì không chờ, để lần sau
                 print(f"[GIAO ĐỒ] Không thấy {yeucau['nguoinhan']}, bỏ qua (để dành tới lần về bán rác sau)")
-                yeucau["kichhoat"], yeucau["trangthai"] = None, TRANGTHAICHOGIAO
+                yeucau["kichhoat"], yeucau["trangthai"] = None, TRANGTHAICHOCODINH if yeucau.get("is_codinh") else TRANGTHAICHOGIAO
                 return None
             if not yeucau.get("is_ban") and now - yeucau["luctoi"] > THOIGIANCHONGUOINHAN:
                 self._ketthucgiaodo(yeucau, False, f"chờ {int(THOIGIANCHONGUOINHAN // 60)} phút ở Tân Thủ Thôn không thấy {yeucau['nguoinhan']}")

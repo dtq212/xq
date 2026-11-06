@@ -1695,6 +1695,11 @@ class TacTuDiChuyen:
 
                 if not found_on_current_map:
                     best_index = 0
+                else:
+                    # Nhiều bot cùng bắt đầu một chỗ: bot ID lớn lấy điểm kế không nằm trong vùng bot ID nhỏ hơn
+                    idxkhongtrung = self._chondiemkhongtrungdongdoi(best_index, diemdanhxungquanhs, idbandohientai)
+                    if idxkhongtrung is not None:
+                        best_index = idxkhongtrung
 
                 self._iddiemdanhxungquanhhientai = best_index
                 self._diemdanhxungquanhhientai = diemdanhxungquanhs[best_index]
@@ -1711,8 +1716,15 @@ class TacTuDiChuyen:
                 if dist_to_target <= 4.0:
                     canchuyendendiemtieptheo = True
                 elif time.time() - self._thoidiembatdaudendiem > 1.0 and self._is_diemtrongvungdongdoiuutien(target_point[0], target_point[1], self._laytoadodongdoikhacnhom()):
-                    # Điểm đánh đang nằm trong vùng của nhân vật ưu tiên hơn => bỏ qua, đi điểm khác cho khỏi sát rạt nhau
-                    canchuyendendiemtieptheo = True
+                    # Điểm đánh đang nằm trong vùng (chỗ đứng / điểm đang tới) của nhân vật ưu tiên hơn => nhảy thẳng tới điểm xuôi lộ trình
+                    # đầu tiên ngoài vùng; không còn điểm nào ngoài vùng thì giữ điểm này (trước nhảy từng điểm mỗi giây, chạy qua chạy lại)
+                    idxkhongtrung = self._chondiemkhongtrungdongdoi(self._iddiemdanhxungquanhhientai, diemdanhxungquanhs, idbandohientai)
+                    if idxkhongtrung is not None and idxkhongtrung != self._iddiemdanhxungquanhhientai:
+                        print(f"[LỘ TRÌNH] Điểm #{self._iddiemdanhxungquanhhientai + 1} trong vùng bot ưu tiên hơn -> sang điểm #{idxkhongtrung + 1}")
+                        self._iddiemdanhxungquanhhientai = idxkhongtrung
+                        self._diemdanhxungquanhhientai = diemdanhxungquanhs[idxkhongtrung]
+                        self._thoidiembatdaudendiem = time.time()
+                        target_map = self._diemdanhxungquanhhientai[2]
                 else:
                     if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
                         if time.time() - self.moitruong.get_thoidiemtuthenhanvatdungimgannhat() > 3.0:
@@ -1730,6 +1742,10 @@ class TacTuDiChuyen:
                     if self._sodiemdadilotrinhdo >= len(diemdanhxungquanhs) and self._chuyensanglotrinhdexuat():
                         break
                 next_index = (self._iddiemdanhxungquanhhientai + 1) % len(diemdanhxungquanhs)
+                # Bỏ qua các điểm bot ID nhỏ hơn đang đứng / đang tới (bot ID nhỏ nhất đi lộ trình bình thường, bot sau rải ra phía trước)
+                idxkhongtrung = self._chondiemkhongtrungdongdoi(next_index, diemdanhxungquanhs, idbandohientai)
+                if idxkhongtrung is not None:
+                    next_index = idxkhongtrung
 
                 self._iddiemdanhxungquanhhientai = next_index
                 self._diemdanhxungquanhhientai = diemdanhxungquanhs[next_index]

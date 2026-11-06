@@ -4,10 +4,15 @@
 #   Tiền: "giulaitien" khác None = giao hết, chừa lại chừng đó (tính lúc giao, sau khi đã trừ tiền phù / Hồi Thành Phù dọc đường);
 #         None = giao đúng "tien"
 #   Đồ: số lượng TATCA = giao hết món đó, chừa lại "giữ lại" cái (thường 0)
+#   "is_codinh": yêu cầu cố định – giao xong (hay không có gì để giao) không mất mà quay về chờ lượt sau; lưu theo ID người giao ở
+#   _internal/giaodocodinh/<ID>.json nên tắt/mở bot vẫn còn, chỉ mất khi bấm Huỷ
 # Lệnh game: give <người nhận> <id món>#<số> x6 $<tiền>
 #   người nhận là người chơi: ID người chơi (thập phân, không "#", như "team + <id>"); đối tượng khác: id đối tượng hệ 16 kèm "#"
 #   6 ô vật phẩm: id đối tượng hệ 16 "#" số lượng, ô trống "0#0"; nhiều hơn 6 món / chồng thì tách thành nhiều lệnh (tiền ở lệnh đầu)
+import json
+import os
 import re
+import sys
 import time
 import uuid
 
@@ -18,17 +23,48 @@ CHUHETs = ("hết", "het", "tất cả", "tatca", "tat ca", "all", "*")
 CHUGIULAIs = ("giữ", "giu", "chừa", "chua", "để lại", "de lai", "-")
 
 
-def taoyeucau(nguoinhan, tien = 0, vatphams = (), giulaitien = None):
-    return {"id": uuid.uuid4().hex[:8], "nguoinhan": str(nguoinhan).strip(), "tien": max(0, int(tien or 0)),
+# Trường của yêu cầu cố định được lưu ra file (trạng thái theo lượt thì không lưu)
+TRUONGCODINHs = ("id", "nguoinhan", "tien", "giulaitien", "vatphams", "is_codinh", "luctao")
+
+
+def taoyeucau(nguoinhan, tien = 0, vatphams = (), giulaitien = None, is_codinh = False):
+    return {"id": uuid.uuid4().hex[:8], "nguoinhan": str(nguoinhan).strip(), "tien": max(0, int(tien or 0)), "is_codinh": bool(is_codinh),
             "giulaitien": None if giulaitien is None else max(0, int(giulaitien)),
             "vatphams": [[str(v[0]).strip(), int(v[1]) if int(v[1]) == TATCA else max(1, int(v[1])), max(0, int(v[2]) if len(v) > 2 else 0)]
                          for v in vatphams if str(v[0]).strip()], "luctao": time.time()}
 
 
+def _duongdancodinh(idnguoichoi):
+    thumucgoc = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(thumucgoc, "_internal", "giaodocodinh", f"{int(idnguoichoi)}.json")
+
+
+def taicodinh(idnguoichoi):
+    # Yêu cầu cố định đã lưu của người giao (ID người chơi) -> danh sách yêu cầu; lỗi / chưa có thì []
+    try:
+        with open(_duongdancodinh(idnguoichoi), encoding = "utf-8") as f:
+            dulieu = json.load(f)
+        return [dict(y, is_codinh = True) for y in dulieu if isinstance(y, dict) and y.get("id") and y.get("nguoinhan")]
+    except (OSError, ValueError):
+        return []
+
+
+def luucodinh(idnguoichoi, yeucaus):
+    # Ghi đè danh sách yêu cầu cố định của người giao (mỗi ID 1 file riêng nên các tiến trình bot không ghi đè nhau)
+    duongdan = _duongdancodinh(idnguoichoi)
+    try:
+        os.makedirs(os.path.dirname(duongdan), exist_ok = True)
+        tam = duongdan + ".tmp"
+        with open(tam, "w", encoding = "utf-8") as f:
+            json.dump([{k: y.get(k) for k in TRUONGCODINHs} for y in yeucaus if y.get("is_codinh")], f, ensure_ascii = False, indent = 1)
+        os.replace(tam, duongdan)
+    except OSError as e:
+        print(f"[GIAO ĐỒ] Không lưu được yêu cầu cố định: {e}")
+
+
 def guiyeucau(command_dict, hwnd, yeucau):
     # Gửi yêu cầu cho bot của cửa sổ hwnd qua command_dict (mỗi cửa sổ chỉ 1 lệnh chờ): bot chưa nhận lệnh giao trước thì gộp chung
     # thành danh sách, kẻo yêu cầu sau đè mất yêu cầu trước (cuaso_xq nhận cả 1 yêu cầu lẫn danh sách)
-    import json
     cu = command_dict.get(hwnd)
     yeucaus = []
     if isinstance(cu, str) and cu.startswith("giaodo:"):

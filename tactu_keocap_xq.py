@@ -118,7 +118,8 @@ def _chuanhoa(ten):
 class TacTuKeoCap:
     # --- Bật / tắt, trạng thái cho giao diện ---------------------------------------------------------------------------------------
     def batdau_keocap(self, vaitro, idchinh = 0, idgas = (), dabang = False, xongtanthu = False, tuychoncu = None, muctieutheosaucu = None,
-                      iddode = 0, dabaisu = False, daxuatsu = False, capketthuc = CAPKETTHUCKEOCAP, tendode = "", **_):
+                      iddode = 0, dabaisu = False, daxuatsu = False, capketthuc = CAPKETTHUCKEOCAP, tendode = "", moibang = True, **_):
+        # moibang (acc chính, ô "Mời acc gà vào bang" trên giao diện): tắt khi acc chính không có bang / không muốn mời -> bỏ hẳn bước mời bang
         # iddode (acc chính): ID acc gà nhận làm đồ đệ (0 = không); dabaisu / daxuatsu: đã xong (mở lại bot giữa chừng)
         # tendode (acc chính): đồ đệ là acc gà máy khác (chưa biết ID lúc bấm): thấy acc gà tên này qua LAN thì lấy ID nó
         # capketthuc (acc chính, người dùng chọn trên giao diện): mọi acc gà tới cấp này thì xong; acc gà đọc theo acc chính
@@ -132,7 +133,8 @@ class TacTuKeoCap:
                         "lucmoibang": {}, "idgive": 0, "luctatgive": 0., "lucbatpy": 0., "codolamkim": None, "lucdocdo": 0., "dadescpy": {},
                         "dathuhoi": False}
         self._keocap.update(iddode = int(iddode or 0), dabaisu = bool(dabaisu), daxuatsu = bool(daxuatsu),
-                            capketthuc = int(capketthuc or CAPKETTHUCKEOCAP), tendode = "" if iddode else _chuanhoa(tendode))
+                            capketthuc = int(capketthuc or CAPKETTHUCKEOCAP), tendode = "" if iddode else _chuanhoa(tendode),
+                            moibang = bool(moibang))
         # Mở lại bot giữa chừng: ô gốc của người dùng lưu từ lần trước (get_keocapluu)
         if tuychoncu:
             self._keocap["tuychoncu"] = dict(tuychoncu)
@@ -153,7 +155,8 @@ class TacTuKeoCap:
             self._keocap["tanthu"] = "vatpham"
             self._logkc(f"Đã cấp {capdo}: bỏ bước trả nhiệm vụ / nhập code, chỉ dùng thưởng tân thủ còn trong túi")
         mota = {"chinh": "acc chính, acc gà " + (", ".join(map(str, self._keocap["idgas"])) or "chưa có (chờ acc gà máy khác qua LAN)")
-                         + (f", đồ đệ tên {self._keocap['tendode']}" if self._keocap["tendode"] else ""),
+                         + (f", đồ đệ tên {self._keocap['tendode']}" if self._keocap["tendode"] else "")
+                         + ("" if self._keocap["moibang"] else ", không mời bang"),
                 "ga": f"acc gà của {idchinh or 'acc chính tự tìm qua LAN'}",
                 "phu": f"acc phụ (theo bãi + Phong Yêu Kính) của {idchinh or 'acc chính tự tìm qua LAN'}"}[vaitro]
         self._logkc(f"Bắt đầu kéo cấp ({mota})")
@@ -206,7 +209,7 @@ class TacTuKeoCap:
         # chính) là gốc, xong kéo cấp "trả lại" đúng Theo sau đó, acc mới vào cùng cửa sổ tự chạy theo acc chính (gacon7_3 2026-11-01)
         luu = {"vaitro": s["vaitro"], "idchinh": s["idchinh"], "idgas": s["idgas"], "dabang": s["dabang"], "xongtanthu": s["xongtanthu"],
                "tuychoncu": dict(s.get("tuychoncu") or {}), "iddode": s["iddode"], "dabaisu": s["dabaisu"], "daxuatsu": s["daxuatsu"],
-               "capketthuc": s["capketthuc"], "tendode": s.get("tendode") or ""}
+               "capketthuc": s["capketthuc"], "tendode": s.get("tendode") or "", "moibang": s.get("moibang", True)}
         if "muctieutheosaucu" in s:
             luu["muctieutheosaucu"] = tuple(s["muctieutheosaucu"])
         return luu
@@ -593,6 +596,9 @@ class TacTuKeoCap:
     def _moibangkc(self, s, gas, solantoida = None):
         # Mời acc gà chưa đồng ý vào bang ("org invite <ID>"), mỗi GIANCACHMOIBANGKC giây 1 người, mỗi người tối đa solantoida lần (None:
         # không giới hạn). -> [ID acc gà chưa vào bang]
+        # Người dùng tắt ô "Mời acc gà vào bang" (acc chính không có bang): không mời, không ai chờ vào bang
+        if not s.get("moibang", True):
+            return []
         # Acc chính chỉ là Bang Chúng (danh hiệu "<tên bang> Bang Chúng") thì không mời được: bỏ mời bang, coi như không ai chờ vào bang
         if any(ten.endswith("Bang Chúng") for _, ten in self.moitruong.get_danhsachdanhhieu()):
             if not s.get("bobangchung"):

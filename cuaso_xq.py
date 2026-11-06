@@ -529,13 +529,16 @@ class CuaSo:
                     self.tactu.huy_langlyson()
                 elif isinstance(cmd, str) and cmd.startswith("keocapchinh:"):
                     # Kéo cấp acc gà (tactu_keocap_xq), vai acc chính:
-                    # keocapchinh:<ID acc gà>,<ID acc gà>...[;<ID đồ đệ>[;<cấp kết thúc>[;<tên đồ đệ máy khác>]]] (danh sách acc gà có thể trống)
+                    # keocapchinh:<ID acc gà>,<ID acc gà>...[;<ID đồ đệ>[;<cấp kết thúc>[;<tên đồ đệ máy khác>[;<mời bang 1/0>]]]]
+                    # (danh sách acc gà có thể trống; thiếu cờ mời bang = mời như cũ)
                     dsga, _, conlai = cmd.split(":", 1)[1].partition(";")
                     iddode, _, conlai = conlai.partition(";")
-                    capketthuc, _, tendode = conlai.partition(";")
+                    capketthuc, _, conlai = conlai.partition(";")
+                    tendode, _, moibang = conlai.partition(";")
                     self.tactu.batdau_keocap("chinh", idgas = [int(i) for i in dsga.split(",") if i.strip().isdigit()],
                                              iddode = int(iddode) if iddode.strip().isdigit() else 0,
-                                             capketthuc = int(capketthuc) if capketthuc.strip().isdigit() else 0, tendode = tendode)
+                                             capketthuc = int(capketthuc) if capketthuc.strip().isdigit() else 0, tendode = tendode,
+                                             moibang = moibang.strip() != "0")
                 elif isinstance(cmd, str) and cmd.startswith("keocapga:"):
                     # Vai acc gà: keocapga:<ID acc chính> (0 = tự tìm acc chính cùng máy / qua LAN, nút "Làm acc gà")
                     self.tactu.batdau_keocap("ga", idchinh = int(cmd.split(":", 1)[1]))
@@ -544,6 +547,11 @@ class CuaSo:
                     self.tactu.batdau_keocap("phu")
                 elif cmd == "huykeocap":
                     self.tactu.huy_keocap()
+                elif cmd == "resetthietlap":
+                    # Nút "Reset cấu hình" (cạnh nút Ghim): mọi tuỳ chọn nhân vật này về mặc định, ghi file ngay
+                    self.tactu.resetthietlap()
+                    if self.idnguoichoi:
+                        self.tactu.luuthietlap(self.idnguoichoi)
                 elif cmd == "sugia":
                     # Nhiệm vụ Sư Gia (tactu_sugia_xq) bật / tắt từ giao diện
                     self.tactu.batdau_sugia()

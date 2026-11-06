@@ -1265,20 +1265,79 @@ class TacTuMucTieu:
     def _is_nhuongquaichodongdoi(self, toadoquai, khoangcachtoiquai, dongdois):
         # dongdois: [(tọa độ, id người chơi)] từ _laytoadodongdoikhacnhom
         # - Đồng đội ID nhỏ hơn được ưu tiên: mình tránh hẳn mọi quái trong vùng BANKINHVUNGNHUONGQUAIDONGDOI quanh nó
-        #   (chỉ một bên nhường nên không có chuyện cả hai cùng nhường rồi cùng đứng im)
-        # - Còn lại: quái ở sát đồng đội (<= 9) và gần nó hơn mình thì để cho nó
+        # - Còn lại: quái ở sát đồng đội (<= 9) và gần nó hơn mình thì để cho nó, TRỪ KHI chính nó cũng nhường con này (có nhân vật ID nhỏ
+        #   hơn nó, kể cả mình, đứng trong vùng). Trước đây thiếu điều kiện này: bot ID nhỏ nhường quái gần bot ID lớn, bot ID lớn nhường
+        #   vì quái trong vùng bot ID nhỏ => không ai đánh, 4 bot cùng lộ trình đứng nhường nhau (2026-11-06)
         idbanthan = self.moitruong.get_idnguoichoi()
         for toadodongdoi, iddongdoi in dongdois:
             khoangcachdongdoi = math.dist(toadoquai, toadodongdoi)
             if iddongdoi < idbanthan and khoangcachdongdoi <= BANKINHVUNGNHUONGQUAIDONGDOI:
                 return True
             if khoangcachdongdoi <= 9.0 and khoangcachdongdoi < khoangcachtoiquai:
+                is_donglaicungnhuong = (idbanthan < iddongdoi and khoangcachtoiquai <= BANKINHVUNGNHUONGQUAIDONGDOI) or any(
+                    idkhac < iddongdoi and math.dist(toadoquai, toadokhac) <= BANKINHVUNGNHUONGQUAIDONGDOI
+                    for toadokhac, idkhac in dongdois if idkhac != iddongdoi)
+                if not is_donglaicungnhuong:
+                    return True
+        return False
+
+    def _laybotcungbando(self):
+        # Nhân vật cùng máy (shared_data) cùng bản đồ, trong danh sách người quen, không theo sau ai: [(id, tọa độ, điểm đánh đang tới (x, y)
+        # hoặc None khi không đi lộ trình)]. Đọc shared_data tốn (proxy Manager) nên nhớ 1s
+        thoidiem, ketqua = self._bonhobotcungbando
+        if time.time() - thoidiem < 1.:
+            return ketqua
+        ketqua = []
+        idbanthan = self.moitruong.get_idnguoichoi()
+        idbando = self.moitruong.get_idbandohientai()
+        idnguoiquens = self.get_idnguoiquens()
+        try:
+            danhsach = list(self.shared_data.values()) if self.shared_data is not None else []
+        except Exception:
+            danhsach = []
+        for info in danhsach:
+            if not isinstance(info, dict) or info.get("_is_tudongtheosau"):
+                continue
+            idnguoichoi = info.get("idnguoichoi")
+            if not idnguoichoi or idnguoichoi == idbanthan or idnguoichoi not in idnguoiquens:
+                continue
+            if time.time() - info.get("thoidiemcapnhat", 0.) > 5. or not self.moitruong.get_is_cungbando(info, idbando):
+                continue
+            diem = info.get("_diemdanhdangden")
+            diemden = (diem[0], diem[1]) if diem and len(diem) >= 3 and diem[2] == idbando else None
+            ketqua.append((idnguoichoi, (info.get("x", 0), info.get("y", 0)), diemden))
+        self._bonhobotcungbando = (time.time(), ketqua)
+        return ketqua
+
+    def _is_diemtrongvungdongdoiuutien(self, x, y, dongdois):
+        # Điểm đánh (x, y) bị nhân vật ID nhỏ hơn giữ: nằm trong BANKINHVUNGNHUONGQUAIDONGDOI quanh chỗ nó đứng (thấy trên màn hình hoặc
+        # shared_data) hoặc quanh điểm đánh nó đang đi tới. Tính cả điểm đang tới để các bot cùng lộ trình rải ra dọc lộ trình thay vì
+        # cùng chạy một điểm rồi dồn cục (trước chỉ tính chỗ đứng: bot đi trước tới điểm kế, bot sau cũng nhảy điểm kế => sát rạt nhau)
+        idbanthan = self.moitruong.get_idnguoichoi()
+        if any(iddongdoi < idbanthan and math.dist((x, y), toadodongdoi) <= BANKINHVUNGNHUONGQUAIDONGDOI for toadodongdoi, iddongdoi in dongdois):
+            return True
+        for idbot, toadobot, diemden in self._laybotcungbando():
+            if idbot >= idbanthan:
+                continue
+            if math.dist((x, y), toadobot) <= BANKINHVUNGNHUONGQUAIDONGDOI:
+                return True
+            if diemden and math.dist((x, y), diemden) <= BANKINHVUNGNHUONGQUAIDONGDOI:
                 return True
         return False
 
-    def _is_diemtrongvungdongdoiuutien(self, x, y, dongdois):
-        idbanthan = self.moitruong.get_idnguoichoi()
-        return any(iddongdoi < idbanthan and math.dist((x, y), toadodongdoi) <= BANKINHVUNGNHUONGQUAIDONGDOI for toadodongdoi, iddongdoi in dongdois)
+    def _chondiemkhongtrungdongdoi(self, idxbatdau, diemdanhxungquanhs, idbando):
+        # Từ điểm idxbatdau đi xuôi lộ trình, lấy điểm đầu tiên không nằm trong vùng nhân vật ID nhỏ hơn (điểm ở bản đồ khác coi như được).
+        # Không có điểm nào thì trả None (đứng điểm hiện tại, khỏi nhảy điểm liên tục mỗi giây)
+        dongdois = self._laytoadodongdoikhacnhom()
+        if not dongdois and not self._laybotcungbando():
+            return idxbatdau
+        sodiem = len(diemdanhxungquanhs)
+        for buoc in range(sodiem):
+            idx = (idxbatdau + buoc) % sodiem
+            diem = diemdanhxungquanhs[idx]
+            if diem[2] != idbando or not self._is_diemtrongvungdongdoiuutien(diem[0], diem[1], dongdois):
+                return idx
+        return None
 
     def _layidthanhviendangtheosau(self, idthanhviennhoms):
         # Thành viên cùng nhóm (trừ trưởng nhóm) chạy cùng máy và đang bật tự động theo sau; máy khác thì không biết nên coi như không theo

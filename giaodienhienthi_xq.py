@@ -587,6 +587,21 @@ class GiaoDienHienThi:
         self.nut_ghim.configure(text = self._chunutghim())
         luucaidatgiaodien(dict(taicaidatgiaodien(), ghim = self.is_ghim))
 
+    def _resetthietlap(self):
+        # Nút "Reset cấu hình": bot của nhân vật đang chọn trả tuỳ chọn về mặc định (TacTu.resetthietlap), giao diện tự cập nhật theo shared_data
+        hwnd = self.get_selected_hwnd()
+        if not hwnd:
+            hopthoai.showwarning("Reset cấu hình", "Chọn nhân vật trong danh sách trước", parent = self._chahopthoai())
+            return
+        info = self.shared_data.get(hwnd) or {}
+        ten = info.get("tennhanvat") or "nhân vật đang chọn"
+        if not hopthoai.askyesno("Reset cấu hình", f"Trả mọi tuỳ chọn của {ten} (ID {info.get('idnguoichoi')}) về mặc định?\n\n"
+                                                   "Gồm các ô tích, khoảng cách, theo sau, lộ trình điểm đánh, danh sách mục tiêu / vật phẩm nhặt, "
+                                                   "chế độ kỹ năng, hàng việc...\nViệc đang chạy (sư môn, phó bản, đội, kéo cấp) và ô Bật bot giữ nguyên.",
+                                 parent = self._chahopthoai()):
+            return
+        self.command_dict[int(hwnd)] = "resetthietlap"
+
     def _chunutghim(self):
         return "📌 Bỏ ghim" if self.is_ghim else "📌 Ghim"
 
@@ -773,6 +788,9 @@ class GiaoDienHienThi:
         self.nut_ghim = ttk.Button(frame, text = self._chunutghim(), style = "Nho.TButton", command = self._doighim)
         self.nut_ghim.pack(side = tk.RIGHT, anchor = tk.N, padx = (8, 0))
         self._gantooltip(self.nut_ghim, "Ghim: cửa sổ Foxia (cả cửa sổ thiết lập việc) luôn nổi trên các cửa sổ khác. Bấm lại để bỏ ghim")
+        nut_reset = ttk.Button(frame, text = "↺ Reset cấu hình", style = "Nho.TButton", command = self._resetthietlap)
+        nut_reset.pack(side = tk.RIGHT, anchor = tk.N, padx = (8, 0))
+        self._gantooltip(nut_reset, "Trả mọi tuỳ chọn của nhân vật đang chọn về mặc định (không dừng việc đang chạy)")
         ttk.Label(frame, text = "Bật/tắt Foxia: Ctrl+W", style = "Phim.TLabel").pack(side = tk.RIGHT, anchor = tk.N, pady = (2, 0))
         self.lbl_dangdieukhien = ttk.Label(frame, text = "Chưa có nhân vật", style = "Tieude.TLabel")
         self.lbl_dangdieukhien.pack(anchor = tk.W)
@@ -2822,7 +2840,7 @@ class GiaoDienHienThi:
         hangnut.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
         self._gantooltip(ttk.Button(hangnut, text = "Thêm", command = self._themgiaodo), "Thêm yêu cầu giao tiền / đồ").pack(side = tk.LEFT, padx = (0, 4))
         self._gantooltip(ttk.Button(hangnut, text = "Huỷ / bỏ dòng", command = self._huygiaodo),
-                         "Huỷ yêu cầu giao đang chọn (dòng đã xong / lỗi thì bỏ khỏi bảng)").pack(side = tk.LEFT)
+                         "Huỷ yêu cầu giao đang chọn (dòng đã xong / lỗi thì bỏ khỏi bảng; dòng 📌 cố định thì xoá hẳn)").pack(side = tk.LEFT)
         self._gantooltip(ttk.Button(hangnut, text = "🚚 Về giao ngay", command = self._vegiaongay),
                          "Người giao của dòng đang chọn (không chọn dòng = nhân vật đang chọn) về Tiệm Tạp Hóa giao ngay").pack(side = tk.LEFT, padx = (8, 4))
         self._gantooltip(ttk.Button(hangnut, text = "Cả máy về giao", command = lambda: self._vegiaongay(is_tatca = True)),
@@ -2831,7 +2849,9 @@ class GiaoDienHienThi:
                                    "thì bỏ qua, không chờ, để lần sau), hoặc bấm Về giao ngay (nhân vật của dòng đang chọn) / Cả máy về giao: về Tiệm Tạp Hóa chờ người "
                                    "nhận tối đa 10 phút. Người giao phải đang chạy Foxia trên máy này; \"Tất cả nhân vật trên máy\" thì mỗi nhân vật "
                                    "(trừ người nhận) 1 yêu cầu. Đồ ghi mỗi dòng 1 món, dạng \"Tên x số lượng\". Đứng cách người nhận tối đa 3 ô "
-                                   "mới giao; giao xong kiểm tra ngân lượng / túi đồ đã giảm rồi báo Telegram.")
+                                   "mới giao; giao xong kiểm tra ngân lượng / túi đồ đã giảm rồi báo Telegram. Đánh dấu 📌 Cố định thì giao xong yêu cầu "
+                                   "không mất mà quay về chờ lượt sau (vd mỗi lần về bán rác gặp người nhận là giao hết chừa 10k), "
+                                   "tắt / mở Foxia vẫn còn; muốn bỏ thì bấm Huỷ.")
         self._giaododanghien = None
 
     def _taonhomphobanchung(self, tab):
@@ -3191,7 +3211,12 @@ class GiaoDienHienThi:
         self.str_keocapdode = tk.StringVar(value = "")
         self.cbo_keocapdode = ttk.Combobox(hangdode, textvariable = self.str_keocapdode, width = 20, values = [])
         self.cbo_keocapdode.pack(side = tk.LEFT, padx = (6, 0))
-        # Lưu 3 ô này ra _internal/keocap.json mỗi khi đổi, mở lại bot thì nạp lại (trước đây mở lại là mất)
+        # Mời acc gà vào bang: tắt khi acc chính không có bang (không mời, không chờ acc gà vào bang ở Tân Thủ Thôn)
+        self.var_keocapmoibang = tk.BooleanVar(value = True)
+        chk_moibang = ttk.Checkbutton(nhom, text = "Mời acc gà vào bang", variable = self.var_keocapmoibang)
+        chk_moibang.grid(row = 2, column = 0, sticky = tk.W, pady = (4, 0))
+        self._gantooltip(chk_moibang, "Acc chính mời acc gà vào bang (org invite) lúc tập hợp ở Tân Thủ Thôn. Bỏ chọn khi acc chính không có bang")
+        # Lưu các ô này ra _internal/keocap.json mỗi khi đổi, mở lại bot thì nạp lại (trước đây mở lại là mất)
         daluu = taigiaodienkeocap()
         try:
             self.var_keocapcapketthuc.set(int(daluu.get("capketthuc", 60)))
@@ -3199,10 +3224,11 @@ class GiaoDienHienThi:
             pass
         self.var_keocapnhandode.set(bool(daluu.get("nhandode")))
         self.str_keocapdode.set(str(daluu.get("tendode") or ""))
-        for bien in (self.var_keocapcapketthuc, self.var_keocapnhandode, self.str_keocapdode):
+        self.var_keocapmoibang.set(bool(daluu.get("moibang", True)))
+        for bien in (self.var_keocapcapketthuc, self.var_keocapnhandode, self.str_keocapdode, self.var_keocapmoibang):
             bien.trace_add("write", self._luugiaodienkeocap)
         self.lbl_keocap =tk.Label(nhom, text = "", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(560))
-        self.lbl_keocap.grid(row = 2, column = 0, sticky = tk.W, pady = (4, 0))
+        self.lbl_keocap.grid(row = 3, column = 0, sticky = tk.W, pady = (4, 0))
 
         # Đoạt Bảo Mã Tặc (tactu_matac_xq) cho nhân vật đang chọn
         nhom = self._popupviecs["matac"]["noidung"]
@@ -3471,11 +3497,12 @@ class GiaoDienHienThi:
                             f"\"Làm acc gà\" rồi mới bái sư)")
         ds = "\n".join(f"  • {i.get('tennhanvat')} (ID {i.get('idnguoichoi')}, cấp {i.get('capdo')})" for _, i in gas) \
             or "  (không có cửa sổ cùng máy dưới cấp này)"
+        moibang = bool(self.var_keocapmoibang.get())
         if not hopthoai.askyesno("Kéo cấp", f"Acc chính: {info.get('tennhanvat')} (ID {idchinh})\nAcc gà cùng máy:\n{ds}{dongdode}\n"
-                                              f"Kéo tới cấp: {capketthuc}\n\nAcc gà ở máy khác nối LAN: chọn nhân vật đó ở máy kia bấm "
+                                              f"Kéo tới cấp: {capketthuc}\nMời acc gà vào bang: {'có' if moibang else 'không'}\n\nAcc gà ở máy khác nối LAN: chọn nhân vật đó ở máy kia bấm "
                                               f"\"Làm acc gà\" (bấm trước hay sau đều được).\n\nBắt đầu kéo cấp?", parent = self._chahopthoai()):
             return
-        self.command_dict[int(hwnd)] = "keocapchinh:" + ",".join(str(i["idnguoichoi"]) for _, i in gas) + f";{iddode or ''};{capketthuc};{tendodelan}"
+        self.command_dict[int(hwnd)] = "keocapchinh:" + ",".join(str(i["idnguoichoi"]) for _, i in gas) + f";{iddode or ''};{capketthuc};{tendodelan};{int(moibang)}"
         for h, _ in gas:
             self.command_dict[h] = f"keocapga:{idchinh}"
 
@@ -3489,7 +3516,7 @@ class GiaoDienHienThi:
 
     def _luugiaodienkeocap(self, *_):
         dulieu = {"capketthuc": self._laycapketthuckeocap() or 60, "nhandode": bool(self.var_keocapnhandode.get()),
-                  "tendode": self.str_keocapdode.get().strip()}
+                  "tendode": self.str_keocapdode.get().strip(), "moibang": bool(self.var_keocapmoibang.get())}
         if dulieu != getattr(self, "_giaodienkeocapdaluu", None):
             self._giaodienkeocapdaluu = dulieu
             luugiaodienkeocap(dulieu)
@@ -4067,7 +4094,8 @@ class GiaoDienHienThi:
             for y in info.get("_hangchogiaodo") or []:
                 trangthai = y["trangthai"] + (f" ({y['ghichu']})" if y.get("ghichu") and y["trangthai"] == "lỗi" else "")
                 tag = y["trangthai"] if y["trangthai"] in ("xong", "lỗi") else "dangchay"
-                hangs.append((f"{hwnd}|{y['id']}", (info.get("tennhanvat") or "?", y["nguoinhan"], motayeucau(y), trangthai), tag))
+                hangs.append((f"{hwnd}|{y['id']}", (info.get("tennhanvat") or "?", y["nguoinhan"], ("📌 " if y.get("is_codinh") else "") + motayeucau(y),
+                                                     trangthai), tag))
         if hangs == self._giaododanghien:
             return
         self._giaododanghien = hangs
@@ -4090,7 +4118,8 @@ class GiaoDienHienThi:
         # "Tất cả nhân vật trên máy": mỗi nhân vật (trừ chính người nhận) 1 yêu cầu riêng
         TATCA = "Tất cả nhân vật trên máy"
         truongs = [("nguoigiao", "Người giao (nhân vật trên máy này)", [TATCA] + sorted(cacnhanvat)), ("nguoinhan", "Người nhận", tenbiet),
-                   ("tien", "Ngân lượng: giữ 10k = giao hết chừa 10k · hết · 500k", None), ("vatphams", "Vật phẩm", None)]
+                   ("tien", "Ngân lượng: giữ 10k = giao hết chừa 10k · hết · 500k", None), ("vatphams", "Vật phẩm", None),
+                   ("is_codinh", "📌 Cố định: giao xong vẫn giữ, chờ lượt sau (lưu theo nhân vật, chỉ mất khi bấm Huỷ)", None)]
 
         def kiemtra(kq):
             if kq["nguoigiao"] not in cacnhanvat and kq["nguoigiao"] != TATCA:
@@ -4106,13 +4135,14 @@ class GiaoDienHienThi:
                 return "Chưa có tiền hay đồ nào để giao"
             return None
 
-        kq = self._hopthoaituido("Giao tiền / đồ", truongs, {"nguoigiao": nguoigiao or "", "tien": "giữ 10k", "vatphams": []}, kiemtra, nhieudongs = {"vatphams": "mỗi dòng 1 món: Tên x 50 / x hết / x giữ 20"})
+        kq = self._hopthoaituido("Giao tiền / đồ", truongs, {"nguoigiao": nguoigiao or "", "tien": "giữ 10k", "vatphams": [], "is_codinh": False}, kiemtra, nhieudongs = {"vatphams": "mỗi dòng 1 món: Tên x 50 / x hết / x giữ 20"})
         if not kq:
             return
         tien, giulai = doctien(kq["tien"])
         nguoigiaos = [ten for ten in cacnhanvat if ten != kq["nguoinhan"].strip()] if kq["nguoigiao"] == TATCA else [kq["nguoigiao"]]
         for ten in nguoigiaos:
-            guiyeucau(self.command_dict, cacnhanvat[ten], taoyeucau(kq["nguoinhan"], tien, docvatphams(kq["vatphams"]), giulaitien = giulai))
+            guiyeucau(self.command_dict, cacnhanvat[ten], taoyeucau(kq["nguoinhan"], tien, docvatphams(kq["vatphams"]), giulaitien = giulai,
+                                                                   is_codinh = kq.get("is_codinh")))
 
     def _vegiaongay(self, is_tatca = False):
         # Yêu cầu giao đang chờ của nhân vật (dòng đang chọn trong bảng giao, không thì nhân vật đang chọn ở danh sách trên; is_tatca: mọi
@@ -4274,7 +4304,7 @@ class GiaoDienHienThi:
             dong, cot = divmod(thutu, 2)
             o_ = ttk.Frame(khung)
             o_.grid(row = dong, column = cot, sticky = tk.NSEW, padx = (0, 10) if cot == 0 else (0, 0), pady = (0, 8))
-            if khoa in ("bat", "is_bao", "chibanrac"):
+            if khoa in ("bat", "is_bao", "chibanrac", "is_codinh"):
                 bien[khoa] = tk.BooleanVar(value = bool(giatris.get(khoa, khoa == "bat")))
                 ttk.Checkbutton(o_, text = nhan, variable = bien[khoa]).pack(anchor = tk.W, pady = (2, 0))
                 continue

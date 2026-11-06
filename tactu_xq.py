@@ -1,4 +1,5 @@
 import os
+import copy
 import time
 import pymem
 
@@ -27,6 +28,22 @@ from tactu_keocap_xq import TacTuKeoCap
 from tactu_hangviec_xq import TacTuHangViec
 from tactu_doiphoban_xq import TacTuDoiPhoBan
 from nhiemvu_xq import SoVitri
+
+# Tuỳ chọn người dùng mà nút "Reset cấu hình" trả về mặc định (cùng các khoá luuthietlap lưu, trừ việc đang chạy / kết quả / ô "Bật" bot)
+THUOCTINHTHIETLAPs = (
+    "_is_tudongtheosau", "_idmuctieutheosau", "_tenmuctieutheosau", "_is_tudongtimkiemmuctieu", "_is_tudongsudungkynang",
+    "_is_chidungtudongtancong", "_is_uutienmuctieupk", "_is_tudongsudungvatpham", "_is_tudongnhatvatpham", "_is_chidanhnguoichoi",
+    "_is_tudongtodoi", "_is_thucsondao", "_is_chantangcapdo", "_is_tudongtangcap", "_captudongtangcaptoida",
+    "_is_tudongdichuyendiemdanhxungquanh", "_diemdanhxungquanhs", "_is_lotrinhphobanmuonbando", "_is_dilotrinhkhacbando",
+    "_lotrinhmaudangdung", "_is_nguocchieulotrinh", "_is_tudonggomquai", "_is_tudongvebanrac", "_is_tudongvesuado", "_phantramvesuado",
+    "_is_tudongdichientruong", "_is_tudongkhaikhoang", "_is_tudongdaotangbaodo", "_tenmuctieutancongs", "_is_uutienbaothukynangtrieuhoi",
+    "_tenmuctieukhongtancongs", "_tenvatphamnhats", "_phamchatnhats", "_khoangcachtoidatheosau", "_bankinhdiemdanh", "_tamxatoida",
+    "_danhhieulammoi", "_phantramnoiluckhaithientichdia", "_chedokynang", "_is_tudongtrieuhoibaothugiangho", "_is_tudongsudungkynangbaothu",
+    "_is_tudongbatnguyenkhiquynguyen", "_is_tranhvungcam", "_is_giukhoangcachketancong", "_khoangcachgiuketancong", "_mauchaytron",
+    "_mauhetchaytron", "_is_giukhoangcachchimuctieupk", "_is_taphoa", "_is_timmuctieuchung", "_chedohienthongtinmuctieugame",
+    "_mauhienthongtinmuctieugame", "_is_tutimduongtheosau", "_is_doidokhitrieuhoi", "_bodotrieuhoi", "_baothutrieuhoimaoson",
+    "_sumon_npcgiao", "_tapkich_phai", "_matac_bandos", "_is_tubatmatac", "_hangviec_thutu", "_hangviec_chon",
+)
 
 
 # Các nhóm việc nằm ở các file tactu_*_xq.py (mixin), TacTu giữ trạng thái (__init__), lưu / nạp thiết lập và các lệnh bật / tắt
@@ -193,6 +210,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._idbandocandi = 0
         # Hàng chờ giao tiền / đồ (tactu_giaodo_xq): [yêu cầu giaodo_xq kèm trạng thái]
         self._hangchogiaodo = []
+        # ID người chơi đã nạp yêu cầu giao cố định (giaodo_xq.taicodinh); None = chưa nạp
+        self._idgiaodocodinh = None
         # Việc cất kho đang làm (tactu_catkho_xq, None = không) và kết quả lần gần nhất cho giao diện
         self._catkho = None
         self._ketquacatkho = ""
@@ -275,6 +294,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._giaitandaxuly = None
         self._bonhodoiphoban = (0., [])
         self._bonhonguoiquen = (0., frozenset())
+        # Nhân vật cùng máy cùng bản đồ đang đi lộ trình [(id, tọa độ, điểm đánh đang tới (x, y) hoặc None)], nhớ 1s (tactu_muctieu_xq)
+        self._bonhobotcungbando = (0., [])
         # Mở cửa hàng để đọc hàng (tactu_sumon_xq.batdau_mocuahang): việc đang làm (None = không), kết quả theo (bản đồ, tên NPC);
         # Mua bù: lần mở cửa hàng gần nhất theo NPC, các lệch ô / giá giữa luật và cửa hàng đã báo
         self._mocuahang = None
@@ -744,6 +765,26 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._diachidoituongcanbuffphonganthuatvanmongcoc = None
         self._diachidoituongcanbuffhuyenquangthiemanhvanmongcoc = None
         self._thoidiemsudungtusamdongannhat = 0.
+
+        # Giá trị mặc định của các tuỳ chọn người dùng (chụp lúc khởi tạo, trước khi nạp thiết lập): nút "Reset cấu hình" trả về các giá trị này
+        self._thietlapmacdinh = copy.deepcopy({k: getattr(self, k) for k in THUOCTINHTHIETLAPs})
+
+    def resetthietlap(self):
+        # Nút "Reset cấu hình" trên giao diện: trả mọi tuỳ chọn của nhân vật về mặc định (luuthietlap mỗi giây ghi xuống file).
+        # Không đụng việc đang chạy (sư môn, phó bản, đội, kéo cấp...), ô "Bật" bot, kết quả trong ngày
+        for k, v in self._thietlapmacdinh.items():
+            setattr(self, k, copy.deepcopy(v))
+        # Tầm xa tính lại tầm đang dùng theo tầm tối đa mặc định
+        self.thietlap_khoangcachsudungkynangtamxa(self._tamxatoida)
+        self._yeucaugiukhoangcach = None
+        # Việc đang tạm đổi ô nào thì lúc xong sẽ trả về giá trị gốc: đổi giá trị gốc thành mặc định để không trả lại cấu hình cũ
+        for s in (self._sumon, self._sugia, self._tapkich, self._matac, self._danhvong, self._langlyson, self._keocap):
+            tuychoncu = (s or {}).get("tuychoncu")
+            if tuychoncu:
+                for k in list(tuychoncu):
+                    if k in self._thietlapmacdinh:
+                        tuychoncu[k] = copy.deepcopy(self._thietlapmacdinh[k])
+        phatam("Đã reset cấu hình về mặc định")
 
     def __del__(self):
         try:

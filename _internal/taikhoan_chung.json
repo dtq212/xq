@@ -94,69 +94,14 @@
             "maydangnhap": ""
         },
         {
-            "tennhanvat": "TieuLyPhiDao",
-            "idnguoichoi": 9198,
+            "tennhanvat": "Gạ",
+            "idnguoichoi": 364,
             "group": 1,
             "server": 1,
             "char_index": 1,
-            "maydangnhap": "",
-            "vitricuaso": 1,
-            "user": "tieulyphidao",
-            "pass": "hateva"
-        },
-        {
-            "tennhanvat": "DaiTuongQuan",
-            "idnguoichoi": 9176,
-            "group": 1,
-            "server": 1,
-            "char_index": 1,
-            "maydangnhap": "",
-            "vitricuaso": 2,
-            "user": "daituongquan",
-            "pass": "hateva"
-        },
-        {
-            "tennhanvat": "QuanSuMuMuu",
-            "idnguoichoi": 9286,
-            "group": 1,
-            "server": 1,
-            "char_index": 1,
-            "maydangnhap": "",
-            "vitricuaso": 3,
-            "user": "quansumumuu",
-            "pass": "hateva"
-        },
-        {
-            "tennhanvat": "DocCoCauBai",
-            "idnguoichoi": 9324,
-            "group": 1,
-            "server": 1,
-            "char_index": 1,
-            "maydangnhap": "",
-            "vitricuaso": 4,
-            "user": "doccocaubai",
-            "pass": "hateva"
-        },
-        {
-            "tennhanvat": "VoLamCaoThu",
-            "idnguoichoi": 9325,
-            "group": 1,
-            "server": 1,
-            "char_index": 1,
-            "maydangnhap": "",
+            "maydangnhap": "Admin-PC",
             "vitricuaso": 5,
-            "user": "volamcaothu",
-            "pass": "hateva"
-        },
-        {
-            "tennhanvat": "Laotsezu",
-            "idnguoichoi": 9500,
-            "group": 1,
-            "server": 1,
-            "char_index": 1,
-            "maydangnhap": "",
-            "vitricuaso": 5,
-            "user": "laotsezu",
+            "user": "gadaica",
             "pass": "hateva"
         },
         {
@@ -202,17 +147,6 @@
             "maydangnhap": "Admin-PC",
             "vitricuaso": 4,
             "user": "kngaivacham",
-            "pass": "hateva"
-        },
-        {
-            "tennhanvat": "Gạ",
-            "idnguoichoi": 364,
-            "group": 1,
-            "server": 1,
-            "char_index": 1,
-            "maydangnhap": "Admin-PC",
-            "vitricuaso": 5,
-            "user": "gadaica",
             "pass": "hateva"
         },
         {
