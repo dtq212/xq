@@ -351,6 +351,57 @@ class TacTuMucTieu:
         self._theodoitrungchieu = None
         return True
 
+    def _boquamuctieuvatcan(self, iddoituong, lydo, diachimuctieu = 0):
+        # Bỏ qua mục tiêu do vật cản: tối đa THOIGIANBOQUAMUCTIEUKHONGTIEPCAN giây, nhớ vị trí để _kiemtrahetboquavatcan gỡ sớm khi
+        # quái / mình đã đi chỗ khác (_idmuctieubiloi_map tự xoá sau 120s: lùi mốc để hết đúng hạn)
+        thoidiemhientai = time.time()
+        self._idmuctieubiloi_map[iddoituong] = thoidiemhientai - (120. - THOIGIANBOQUAMUCTIEUKHONGTIEPCAN)
+        self._ghimuctieuboqua(iddoituong, lydo)
+        toadoquai = None
+        if diachimuctieu and self.moitruong.get_iddoituong(diachimuctieu) == iddoituong:
+            toadoquai = self.moitruong.get_toado(diachimuctieu)
+        else:
+            for diachi in self.moitruong._get_diachidoituongxungquanhs():
+                if self.moitruong.get_iddoituong(diachi) == iddoituong:
+                    toadoquai = self.moitruong.get_toado(diachi)
+                    break
+        self._vitriboquavatcan_map[iddoituong] = (toadoquai, self.moitruong.get_toado(), thoidiemhientai)
+
+    def _kiemtrahetboquavatcan(self):
+        # Quái bị bỏ qua do vật cản đã đi xa chỗ cũ, hoặc mình đã đi xa chỗ cũ => đường giữa hai bên đã khác, thôi bỏ qua để xét lại
+        thoidiemhientai = time.time()
+        if not self._vitriboquavatcan_map or thoidiemhientai - self._thoidiemkiemtrahetboquavatcan < THOIGIANKIEMTRAHETBOQUAVATCAN:
+            return
+        self._thoidiemkiemtrahetboquavatcan = thoidiemhientai
+        # Chép dict trước khi duyệt: luồng khác đang thêm / xoá
+        vitris = self._vitriboquavatcan_map.copy()
+        idcanxets = [k for k, v in vitris.items() if thoidiemhientai - v[2] >= THOIGIANBOQUAVATCANTOITHIEU]
+        if not idcanxets:
+            return
+        toadobanthan = self.moitruong.get_toado()
+        toadoquais = {}
+        for diachi in self.moitruong._get_diachidoituongxungquanhs():
+            iddoituong = self.moitruong.get_iddoituong(diachi)
+            if iddoituong in vitris:
+                toadoquais[iddoituong] = self.moitruong.get_toado(diachi)
+        for iddoituong in idcanxets:
+            toadoquaicu, toadobanthancu, _ = vitris[iddoituong]
+            if iddoituong not in self._idmuctieubiloi_map:
+                # Đã hết hạn / giao diện xoá
+                self._vitriboquavatcan_map.pop(iddoituong, None)
+                continue
+            lydo = None
+            toadoquai = toadoquais.get(iddoituong)
+            if toadoquai and toadoquaicu and math.dist(toadoquai, toadoquaicu) >= KHOANGCACHHETBOQUAVATCAN:
+                lydo = f"quái đã đi {math.dist(toadoquai, toadoquaicu):.1f} ô"
+            elif toadoquai and math.dist(toadobanthan, toadobanthancu) >= KHOANGCACHHETBOQUAVATCANBANTHAN:
+                lydo = f"mình đã đi {math.dist(toadobanthan, toadobanthancu):.1f} ô"
+            if lydo:
+                print(f"[VẬT CẢN] Thôi bỏ qua {hex(iddoituong)} sau {thoidiemhientai - vitris[iddoituong][2]:.1f}s: {lydo}")
+                self._idmuctieubiloi_map.pop(iddoituong, None)
+                self._thongtinmuctieuboqua_map.pop(iddoituong, None)
+                self._vitriboquavatcan_map.pop(iddoituong, None)
+
     def _ghimuctieuboqua(self, iddoituong, lydo, ten = None):
         # Ghi tên / lý do mục tiêu vừa bị bỏ qua cho giao diện; không biết tên thì tìm trong đối tượng xung quanh
         if ten is None:
@@ -434,6 +485,7 @@ class TacTuMucTieu:
         idcanxoas = [k for k, v in self._idmuctieubiloi_map.items() if thoidiemhientai - v > 120]
         for k in idcanxoas:
             del self._idmuctieubiloi_map[k]
+        self._kiemtrahetboquavatcan()
         self._thoidiemthaymuctieu_map = {k: v for k, v in self._thoidiemthaymuctieu_map.items() if thoidiemhientai - v[1] <= THOIGIANMATDAUMUCTIEU}
 
         diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
@@ -1249,9 +1301,8 @@ class TacTuMucTieu:
         return thoidiemhientai - self._thoidiemgomcaithiengannhat > 2.5
 
     def _boquaquaibichan(self, idquai):
-        print(f"[GOM] Quái {hex(idquai)} bị chặn (tường/vật cản) -> Bỏ qua 120s")
-        self._idmuctieubiloi_map[idquai] = time.time()
-        self._ghimuctieuboqua(idquai, "Gom: bị chặn")
+        print(f"[GOM] Quái {hex(idquai)} bị chặn (tường/vật cản) -> Bỏ qua tối đa {THOIGIANBOQUAMUCTIEUKHONGTIEPCAN:.0f}s")
+        self._boquamuctieuvatcan(idquai, "Gom: bị chặn")
         self._danhsachidquaidagom.discard(idquai)
         if self._idquaidautien == idquai:
             self._idquaidautien = 0

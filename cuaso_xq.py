@@ -295,6 +295,7 @@ class CuaSo:
                     "_is_tudongvebanrac": self.tactu._is_tudongvebanrac,
                     "_is_tudongvesuado": self.tactu._is_tudongvesuado,
                     "_phantramvesuado": self.tactu._phantramvesuado,
+                    "_idbandoquaylaibanrac": self.tactu._idbandoquaylaibanrac,
                     "_is_tudongkhaikhoang": self.tactu._is_tudongkhaikhoang,
                     "_is_tudongdichientruong": self.tactu._is_tudongdichientruong,
                     "_is_tudongdaotangbaodo": self.tactu._is_tudongdaotangbaodo,
@@ -792,6 +793,8 @@ class CuaSo:
                         self.tactu.thietlap_phantramvesuado(cmd.split(":")[1])
                     except Exception:
                         pass
+                elif isinstance(cmd, str) and cmd.startswith("set_bandoquaylaibanrac:"):
+                    self.tactu.thietlap_bandoquaylaibanrac(cmd.split(":")[1])
                 elif cmd == "battat_tudongdichientruong":
                     self.tactu.battat_is_tudongdichientruong()
                 elif cmd == "battat_uutienbaothukynangtrieuhoi":

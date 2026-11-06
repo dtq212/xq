@@ -107,6 +107,8 @@ class LoopDieuPhoiDiChuyen:
     def step(self):
         if not self.moitruong.get_is_nhanvattontai() or self.moitruong.get_is_dangmatketnoi():
             return
+        # Sau lag giờ máy chủ của client bị tụt => máy chủ từ chối mọi bước đi: sửa ngay (chạy cả lúc bot tạm ngưng / người chơi tự đi)
+        self.moitruong.action_suagiomaychu()
         if self.tactu.get_is_dangtamngung():
             return
         # Tính đích theo nhóm ngay trước khi di chuyển (để ở loop chính thì phải chờ cả lượt dùng kỹ năng, đích bị cũ nên chạy theo vị trí trưởng nhóm từ lâu)

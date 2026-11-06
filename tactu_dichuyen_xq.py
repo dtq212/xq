@@ -576,8 +576,8 @@ class TacTuDiChuyen:
                     sobuocxa = self.moitruong.get_sobuocduongtoi(*self.moitruong.get_toado(diachimuctieudanggom),
                                                                  yeucauduocchon.get("khoangcachtoida", 0.), is_cabando = True)
                     if sobuocxa and sobuocxa <= SOBUOCDIVONGXATOIDA:
-                        print(f"[DEBUG-MOVE] Tiếp cận QUÁI {hex(iddoituongmuctieudanggom)}: {lydo}, nhưng {hetquaigan:.0f}s không có quái gần "
-                              f"=> đi vòng cả bản đồ {sobuocxa} bước ({khoangcachquai:.1f} ô đường thẳng)")
+                        self.moitruong._inlog(f"[ĐI VÒNG] Quái {hex(iddoituongmuctieudanggom)}: {lydo}, nhưng {hetquaigan:.0f}s không có quái "
+                                              f"gần => đi vòng cả bản đồ {sobuocxa} bước ({khoangcachquai:.1f} ô đường thẳng)")
                         self._muctieuvongxa = [iddoituongmuctieudanggom, sobuocxa, time.time()]
                         lydo = None
                     elif sobuocxa:
@@ -598,9 +598,10 @@ class TacTuDiChuyen:
             if lydo:
                 print(f"[DEBUG-MOVE] Tiếp cận QUÁI {hex(iddoituongmuctieudanggom)}: {lydo}, vật cản. "
                       f"Bỏ qua {THOIGIANBOQUAMUCTIEUKHONGTIEPCAN:.0f}s.")
-                # _idmuctieubiloi_map tự xoá sau 120s: lùi mốc để hết bỏ qua sau đúng THOIGIANBOQUAMUCTIEUKHONGTIEPCAN giây
-                self._idmuctieubiloi_map[iddoituongmuctieudanggom] = time.time() - (120. - THOIGIANBOQUAMUCTIEUKHONGTIEPCAN)
-                self._ghimuctieuboqua(iddoituongmuctieudanggom, "Vật cản, không tới gần được")
+                if self.moitruong.get_idbandohientai() in BANDOBOTTUTIMDUONGs:
+                    self.moitruong._inlog(f"[ĐI VÒNG] Bỏ quái {hex(iddoituongmuctieudanggom)} {THOIGIANBOQUAMUCTIEUKHONGTIEPCAN:.0f}s: {lydo}")
+                # Quái / mình đi xa chỗ cũ thì gỡ sớm (_kiemtrahetboquavatcan)
+                self._boquamuctieuvatcan(iddoituongmuctieudanggom, "Vật cản, không tới gần được", diachimuctieudanggom)
                 self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
                 self._theodoitiepcan = None
                 self._idmuctieudangtheokiemtraket = 0
@@ -608,9 +609,17 @@ class TacTuDiChuyen:
                 return
         elif not is_candichuyendendich:
             self._theodoitiepcan = None
-            if iddoituongmuctieudanggom > 0:
-                self._thoidiemtoiduocmuctieugannhat = time.time()
-                self._muctieuvongxa = None
+            if iddoituongmuctieudanggom > 0 and diachimuctieudanggom:
+                # Chỉ tính "có quái gần" khi quái trong tầm đó đi bộ tới được (khung ±25 ô): chiêu đánh xa (tầm ~14) thấy quái bên kia vách
+                # là trong tầm, mốc này cứ bị đặt lại nên không bao giờ đủ THOIGIANHETQUAIGANDIVONG để đi vòng (log 418 2026-11-06). Mỗi
+                # con chỉ tìm đường 1 lần
+                kiemtra = self._kiemtratoiduocmuctieu
+                if not kiemtra or kiemtra[0] != iddoituongmuctieudanggom:
+                    sobuoc = self.moitruong.get_sobuocduongtoi(*self.moitruong.get_toado(diachimuctieudanggom), 1.)
+                    kiemtra = self._kiemtratoiduocmuctieu = (iddoituongmuctieudanggom, sobuoc is not None)
+                if kiemtra[1]:
+                    self._thoidiemtoiduocmuctieugannhat = time.time()
+                    self._muctieuvongxa = None
 
         if iddoituongmuctieudanggom > 0:
             if iddoituongmuctieudanggom != self._idmuctieudangtheokiemtraket or not is_candichuyendendich or idtuthenhanvat != TUTHENHANVAT_DUNGIM:
@@ -632,9 +641,9 @@ class TacTuDiChuyen:
 
                         if is_quai:
                             if not is_anhhuongboimuctieutheosau:
-                                print(f"[DEBUG-MOVE] KẸT TƯỜNG/GÓC LAG khi đến QUÁI {hex(iddoituongmuctieudanggom)}. Blacklist 120s.")
-                                self._idmuctieubiloi_map[iddoituongmuctieudanggom] = time.time()
-                                self._ghimuctieuboqua(iddoituongmuctieudanggom, "Kẹt tường khi tới")
+                                print(f"[DEBUG-MOVE] KẸT TƯỜNG/GÓC LAG khi đến QUÁI {hex(iddoituongmuctieudanggom)}. "
+                                      f"Bỏ qua tối đa {THOIGIANBOQUAMUCTIEUKHONGTIEPCAN:.0f}s.")
+                                self._boquamuctieuvatcan(iddoituongmuctieudanggom, "Kẹt tường khi tới", diachimuctieudanggom)
                         else:
                             print(f"[DEBUG-MOVE] KẸT khi di chuyển. Reset hành động.")
 
@@ -750,7 +759,7 @@ class TacTuDiChuyen:
         # Bản đồ hiện tại có chỗ đi vào là bị máy chủ giật lại: khu vực cấm khai tay (KHUVUCCAM_MAP) hoặc ô bot đã học là chặn
         # (moitruong.action_dikhongcatgoc). Ở đó mọi kiểu đi tới điểm đều dùng đường bot tự tìm
         idbando = self.moitruong.get_idbandohientai()
-        return idbando in KHUVUCCAM_MAP or bool(util_taivatcanhoc(idbando))
+        return idbando in KHUVUCCAM_MAP or idbando in BANDOBOTTUTIMDUONGs or bool(util_taivatcanhoc(idbando))
 
     def action_tudongtheosau(self):
         self._yeucautheosau = None

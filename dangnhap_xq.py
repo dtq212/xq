@@ -26,7 +26,13 @@ LAUNCHER_TITLE = r"client \d+(\.\d+)+$"
 # Niết Bàn 1.01.93: màn đăng nhập "Chien Quoc Niet Ban.1.01.93" (bản cũ "Chien Quoc Niet Ban -- version: ...")
 GAME_TITLE_LOGIN_SCREEN = r"Chien Quoc 2D --\S*-- v\.\d+(\.\d+)+|Chien Quoc Niet Ban( -- version: |\.)\d+(\.\d+)+"
 
-DANH_SACH_CUA_SO_LOI = ["warning", "play"]
+# Hộp lỗi do chienquoc2d.dll hiện lúc mở client: xác thực client qua HTTPS (auth_http, chỉ thử 1 lần) mà mạng chậm / đứt thì hiện
+# "Loi Ket Noi HTTPS" ("Loi Mang (5): WinINet 12002, buoc HttpSendRequest, lan 1/1. Ket noi qua cham / timeout"), máy chủ xác thực
+# trả lỗi thì "Bao Mat Client"; hộp đứng chờ bấm OK, client treo không vào được (gặp 2026-11-06 lúc lag mạng)
+CUA_SO_LOI_MANG = ["loi ket noi https", "bao mat client"]
+DANH_SACH_CUA_SO_LOI = ["warning", "play"] + CUA_SO_LOI_MANG
+# Gặp hộp lỗi mạng khi mở client: chờ bấy nhiêu giây cho mạng ổn rồi mới mở lại (mở lại ngay cũng lỗi y vậy)
+THOIGIANCHOMANGLOI = 30.
 
 # Cửa sổ bị dis về màn hình đăng nhập: thử đăng nhập lại ngay trong nó tối đa bấy nhiêu lần (vào lại tại chỗ, không mất chỗ phó bản),
 # vẫn không vào được thì thôi giữ chỗ, xử lý như client không đăng nhập (đóng, mở game mới)
@@ -645,6 +651,9 @@ def mogamevadangnhap(char_name, config, duongdangame, cuasogiuchos = ()):
                         dondeptientrinhaovuabithoatgame(tuoitoithieu = 0.)
                         dondepclientkhongdangnhap(tuoitoithieu = 0., cuasogiuchos = cuasogiuchos)
 
+                        if title_error.strip().lower() in CUA_SO_LOI_MANG:
+                            print(f"      -> Lỗi mạng khi xác thực client: chờ {THOIGIANCHOMANGLOI:.0f}s cho mạng ổn rồi mới mở lại")
+                            time.sleep(THOIGIANCHOMANGLOI)
                         break
 
                     time.sleep(0.5)

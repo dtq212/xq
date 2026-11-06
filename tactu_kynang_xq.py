@@ -1050,6 +1050,13 @@ class TacTuKyNang:
         if self._is_kynangnhiephonchamsansang and not is_kynangnhiephonchamsansang:
             self._thoidiemsudungnhiephonchamgannhat = time.time()
         self._is_kynangnhiephonchamsansang = is_kynangnhiephonchamsansang
+
+        # Thấu Cốt Đinh chuyển sẵn sàng -> hồi trong 3s sau lần gửi = đã ra chiêu lên mục tiêu lúc gửi (chỉ dựa cờ hồi thì
+        # hồi chiêu chung do chiêu khác cũng bị nhận nhầm)
+        is_kynangthaucotdinhsansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_THAUCOTDINH)
+        if self._is_kynangthaucotdinhsansang and not is_kynangthaucotdinhsansang and time.time() - self._thoidiemguithaucotdinh < 3.:
+            self._idmuctieuthaucotdinhdaxuatchieu = self._idmuctieuguithaucotdinh
+        self._is_kynangthaucotdinhsansang = is_kynangthaucotdinhsansang
         diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
 
         is_muctieusudungphapluc = diachimuctieu and self.moitruong.get_idloaivukhi(diachimuctieu) in (IDLOAIVUKHI_KIEM, IDLOAIVUKHI_AMKHI)
@@ -1081,6 +1088,13 @@ class TacTuKyNang:
         is_duongbanbichan = bool(diachimuctieu) and khoangcach <= self._khoangcachsudungkynangtamxa + BUKHOANGCACHTAMXA \
             and self.moitruong.get_is_doanthangcovatcan(*self.moitruong.get_toado(), *self.moitruong.get_toado(diachimuctieu))
 
+        # Chỉ bật Tự Động Công Kích khi Thấu Cốt Đinh đã ra chiêu lên mục tiêu này (hoặc mục tiêu đang dính Thấu Cốt Đinh); chưa học
+        # Thấu Cốt Đinh thì không chặn
+        iddoituongmuctieu = self.moitruong.get_iddoituong(diachimuctieu) if diachimuctieu else None
+        is_dathaucotdinh = not self.moitruong._giaivitrikynang(VITRIKYNANG_THAUCOTDINH) \
+            or (iddoituongmuctieu is not None and iddoituongmuctieu == self._idmuctieuthaucotdinhdaxuatchieu) \
+            or (bool(diachimuctieu) and self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THAUCOTDINH,), macdinh = False, diachicosothongtinnhanvat = diachimuctieu, is_hieuungcoloi = 0))
+
         danhsachuutien = [
             (VITRIKYNANG_ANTHANTHUAT, "sudungkynangkhongmuctieu", lambda: not is_anthan and diachimuctieu and is_muctieutienthanvodich and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN and self.moitruong.get_is_kynangsansang(VITRIKYNANG_BISAT), 0, None, False),
             (VITRIKYNANG_BISAT, "sudungkynangmuctieu", lambda: is_anthan and diachimuctieu and is_muctieutienthanvodich and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
@@ -1092,7 +1106,8 @@ class TacTuKyNang:
             # "kill" bật Tự Động Công Kích (đánh thường tầm xa) như Đào Hoa: gửi khi mục tiêu trong tầm xa, không chiếm lượt (chiêu vẫn gửi
             # ngay lượt này), không chặn di chuyển / chạy lại gần (tầm yêu cầu + BUKHOANGCACHTAMXA). Đang ẩn thân thì để Bí Sát mở đòn.
             # Đang chạy (lùi giữ khoảng cách) thì không gửi: máy chủ tắt đánh thường khi đi, dừng lại là cờ đã reset nên gửi lại ngay
-            (None, "tancongvatly", lambda: not is_anthan and diachimuctieu and idtuthenhanvat != TUTHENHANVAT_DICHUYEN and khoangcach <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa + BUKHOANGCACHTAMXA, None, False),
+            # Chờ Thấu Cốt Đinh ra chiêu lên mục tiêu trước (is_dathaucotdinh)
+            (None, "tancongvatly", lambda: not is_anthan and diachimuctieu and is_dathaucotdinh and idtuthenhanvat != TUTHENHANVAT_DICHUYEN and khoangcach <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa + BUKHOANGCACHTAMXA, None, False),
             (VITRIKYNANG_MATAMTHUAT, "sudungkynangkhongmuctieu", lambda: not is_anthan and diachimuctieu and khoangcach > self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, False),
             (VITRIKYNANG_NHIEPHONCHAM, "sudungkynangmuctieu", lambda: not is_bituocvukhi and diachimuctieu and not is_muctieucomatamthuat and is_muctieupk and self.moitruong.get_is_cothegaychoang(diachicosothongtinnhanvat = diachimuctieu), self._khoangcachsudungkynangtamxa, None, True),
             (VITRIKYNANG_MANTHIENHOAVU, "sudungkynangmuctieu", lambda: not is_bituocvukhi and diachimuctieu and self._is_nhieumuctieugan5 and not is_muctieupk, self._khoangcachsudungkynangtamxa, None, True),
@@ -1135,6 +1150,9 @@ class TacTuKyNang:
                 khoangcachyeucau = khoangcachyeucau,
                 is_yeucaukhongdichuyen = is_yeucaukhongdichuyen
             )
+            if is_ok and vitrikynang == VITRIKYNANG_THAUCOTDINH and target:
+                self._thoidiemguithaucotdinh = time.time()
+                self._idmuctieuguithaucotdinh = self.moitruong.get_iddoituong(target)
             if is_break:
                 return
 

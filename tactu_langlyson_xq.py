@@ -71,7 +71,7 @@ def laytenthoyeu(moitruong):
 
 
 # Phong Yêu Kính mượn ID các bản đồ này (khó đi, người dùng dặn): người give ra ngay mở bản đồ khác (cả khi kéo cấp). 521 Tây Thành
-BANDOBOQUAPHONGYEUs = (521, 503, 510, 512)
+BANDOBOQUAPHONGYEUs = (521, 503, 510, 512, 514)
 # Menu sau khi give, có 2 kiểu, chỉ chọn lựa chọn 1 khi lời có đủ các cụm của 1 kiểu:
 #   - "Sau khi đem trang bị này thiêu đốt làm chất xúc tác thì có thể tiến vào Phong Yêu Kính..." -> "1. Đúng vậy, ta muốn đi"
 #   - "Ta có thể đem trang bị này đốt đi, để làm chất xúc tác, ngươi muốn như vậy phải không ?" -> "1. Xác nhận"; trưởng nhóm thấy "Xin đợi

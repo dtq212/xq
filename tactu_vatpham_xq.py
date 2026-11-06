@@ -1747,6 +1747,32 @@ class TacTuVatPham:
         else:
             self._action_xulyvebanrac_phaikhac()
 
+    def _ghibandolucveban(self):
+        # Gọi lúc bắt đầu về (trạng thái 0 -> 1): nhớ bản đồ đang đánh để quay lại. Đang ở thành / phó bản thì giữ bản đồ đã ghi trước đó
+        idbando = self.moitruong.get_idbandohientai()
+        if idbando and idbando not in (BANDO_TANTHUTHON, BANDO_CHUQUOC) and idbando not in BANDOPHOBANs:
+            self._idbandolucveban = idbando
+
+    def _get_idbandoquaylaibanrac(self):
+        # Bản đồ quay lại sau khi bán theo ô "Quay lại" (tab Hành trang) -> id bản đồ, 0 = không biết đi đâu
+        if self._idbandoquaylaibanrac > 0:
+            return self._idbandoquaylaibanrac
+        if self._idbandoquaylaibanrac == BANDOQUAYLAI_THEOLOTRINH and self._diemdanhxungquanhs and len(self._diemdanhxungquanhs[0]) >= 3:
+            return self._diemdanhxungquanhs[0][2]
+        # "Bản đồ lúc về", hoặc theo lộ trình mà chưa có lộ trình (bot đang dò bản đồ): về bản đồ đang đứng lúc bắt đầu về
+        return self._idbandolucveban
+
+    def _is_quaylaitheolotrinh(self):
+        return self._idbandoquaylaibanrac == BANDOQUAYLAI_THEOLOTRINH and bool(self._diemdanhxungquanhs)
+
+    def _batdauquaylaibando(self, idbando):
+        # Quay lại bản đồ không theo lộ trình: giao cho "Đi tới bản đồ" (phù / chạy bộ / Hồi Thành Phù từng bản đồ, tới nơi thì dừng),
+        # tới nơi mà không có lộ trình thì bot tự dò bản đồ (_dobandokhonglotrinh)
+        print(f"[AUTO-SELL] Quay lại {laytenbando(idbando)}")
+        self._idbandocandi = int(idbando)
+        self._trangthaiveban = 0
+        self._yeucautudo = None
+
     def _is_coxuyenkhonghanh(self):
         # Mao Sơn đã học Xuyên Không Hành (pf 4182) mới về bán / quay lại bãi bằng chiêu
         return self.moitruong.get_tenmonphai() == "maoson" and self.moitruong.get_is_kynangdahoc(VITRIKYNANG_XUYENKHONGHANH)
@@ -1769,8 +1795,9 @@ class TacTuVatPham:
 
             diachi_npc = self.moitruong.action_timkiemnhanvat(chutiemtaphoa)
             is_dangganchutiemtaphoa = False
-            # Chỉ bật về sửa đồ thì không tự bán / quay lại bãi khi đứng cạnh tiệm
-            if diachi_npc and self._is_tudongvebanrac:
+            # Chỉ bật về sửa đồ thì không tự bán / quay lại bãi khi đứng cạnh tiệm; đang Đi tới bản đồ (vừa bán xong, quay lại bản đồ
+            # chọn sẵn) thì không xét lại
+            if diachi_npc and self._is_tudongvebanrac and not self._idbandocandi:
                 if self.moitruong.get_khoangcach(diachi_npc) <= 3.0:
                     is_dangganchutiemtaphoa = True
 
@@ -1785,6 +1812,7 @@ class TacTuVatPham:
                     self._thoidiemchuyentrangthai = time.time()
 
             elif self._is_canve():
+                self._ghibandolucveban()
                 self._trangthaiveban = 1
                 self._thoidiemchuyentrangthai = time.time()
 
@@ -1825,6 +1853,12 @@ class TacTuVatPham:
                 self._thoidiemchuyentrangthai = time.time()
 
         elif self._trangthaiveban == 4:
+            # Chọn sẵn bản đồ quay lại khác bản đồ lúc về: Xuyên Không Hành (Quay lại) chỉ về chỗ cũ, nên đi bằng phù / chạy bộ
+            if self._idbandoquaylaibanrac > 0 and self._idbandoquaylaibanrac != self._idbandolucveban:
+                self._diachicosokhaikhoang = 0
+                self._thoidiemphatamlacmapgannhat = time.time()
+                self._batdauquaylaibando(self._idbandoquaylaibanrac)
+                return
             if not self.moitruong.get_is_kynangsansang(VITRIKYNANG_XUYENKHONGHANH):
                 print("[AUTO-SELL] Xuyên không hành (Quay lại) thành công. Kết thúc quy trình.")
                 self._trangthaiveban = 0
@@ -1844,10 +1878,11 @@ class TacTuVatPham:
         if self._trangthaiveban == 0:
             diachinpc = self.moitruong.action_timkiemnhanvat(tennhanvat = CHUTIEMTAPHOA)
 
-            # Chỉ bật về sửa đồ thì không tự bán / quay lại bãi khi đứng cạnh tiệm
-            if self._is_tudongvebanrac and diachinpc and self.moitruong.get_khoangcach(diachinpc) <= 3.0:
+            # Chỉ bật về sửa đồ thì không tự bán / quay lại bãi khi đứng cạnh tiệm; đang Đi tới bản đồ (vừa bán xong, quay lại bản đồ
+            # chọn sẵn / lúc về) thì không xét lại, không thì lượt nào cũng đặt lại việc đi
+            if self._is_tudongvebanrac and not self._idbandocandi and diachinpc and self.moitruong.get_khoangcach(diachinpc) <= 3.0:
                 if not self.moitruong.get_is_dayhanhtrang():
-                    if self._diemdanhxungquanhs:
+                    if self._get_idbandoquaylaibanrac():
                         print("[AUTO-SELL] Đứng cạnh NPC và túi đã gọn. Tiếp tục quay lại bãi farm.")
                         self._trangthaiveban = 4
                         return
@@ -1857,6 +1892,7 @@ class TacTuVatPham:
                     return
             if self._is_canve():
                 print("[AUTO-SELL] Hành trang đầy / cần mua bù / cần sửa đồ. Bắt đầu quy trình về bán.")
+                self._ghibandolucveban()
                 self._trangthaiveban = 1
                 self._thoidiemhoithanhphu = 0
 
@@ -1910,9 +1946,14 @@ class TacTuVatPham:
                 self._trangthaiveban = 4
 
         elif self._trangthaiveban == 4:
-            if not self._diemdanhxungquanhs:
-                print("[AUTO-SELL] Lỗi: Không có danh sách điểm đánh!")
+            idbandodich = self._get_idbandoquaylaibanrac()
+            if not idbandodich:
+                print("[AUTO-SELL] Lỗi: Không biết quay lại bản đồ nào (chưa có lộ trình, chưa chọn bản đồ quay lại)!")
                 self._trangthaiveban = 0
+                return
+            if not self._is_quaylaitheolotrinh():
+                # Bản đồ chọn sẵn / bản đồ lúc về: đi tới bản đồ đó, tới nơi thì đánh theo lộ trình nếu có, không thì tự dò bản đồ
+                self._batdauquaylaibando(idbandodich)
                 return
             self.action_dichuyenlenbandofarm()
             danhsachbandohople = [diem[2] for diem in self._diemdanhxungquanhs if len(diem) >= 3]

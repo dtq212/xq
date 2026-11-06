@@ -161,6 +161,11 @@ class MoiTruong:
         # (bản đồ, lúc đọc, lưới cả bản đồ) cho A* cả bản đồ (_timduongkhongcatgoc lechtoida = None): lưới tĩnh theo bản đồ, khỏi đọc
         # lại ~300 cột mỗi lần tìm
         self._luoicabando_cache = None
+        # action_dikhongcatgoc: chuỗi đang đi là đường tìm trên cả bản đồ; (bản đồ, từ, tới) -> lúc thấy không có đường
+        self._is_duongcabando = False
+        self._khongduongkhongcatgoc_cache = {}
+        # Bản đồ đã ghi lưới ra file khi cả bản đồ không có đường (_ghiluoikhongduong)
+        self._dadghiluoi = set()
         # (bản đồ, x, y, tầm) -> (lúc chọn, ô tới được trong tầm hoặc None) (_chondichtoiduoc)
         self._dichtoiduoc_cache = {}
         self._diembanthong = None
@@ -346,6 +351,14 @@ class MoiTruong:
         self._diachihamkichbanlenhgame = False
         self._demdonglenhgamedadoc = 0
         self._lenhbotganday = {}
+        # Sửa giờ máy chủ của client sau lag (action_suagiomaychu): độ lệch giờ máy chủ - giờ máy mình lúc mạng tốt, lần đồng bộ đã
+        # xét (giờ máy mình lúc đồng bộ), số lần đồng bộ liền nhau cùng tụt (đủ SOLANDONGBOTUTGIOMAYCHU thì tin là giờ thật), lúc đọc
+        # gần nhất, lúc vừa sửa giờ gần nhất (get_is_vuasuagiomaychu)
+        self._dolechgiomaychutot = None
+        self._landongbogiomaychu = 0
+        self._solandongbotutgiomaychu = 0
+        self._thoidiemsuagiomaychu = 0.
+        self._thoidiemvuasuagiomaychu = 0.
 
     def __del__(self):
         def safe_free_old(flag_name, addr_name):
@@ -1327,6 +1340,53 @@ class MoiTruong:
             caulenh = o.decode("utf-8", errors = "replace")
             if caulenh and caulenh.rstrip("\r\n") not in self._lenhbotganday:
                 self._inlog(f"[LỆNH GAME] {caulenh}  (hex: {o.hex(' ')})")
+
+    def action_suagiomaychu(self):
+        # Nguyên nhân "khoá di chuyển oan" sau lag (dò 2026-11-06 trên Gạ 364): lệnh go client gửi kèm giờ máy chủ client ước, tính ở
+        # xq + 0x95660 = time() + [TG + TG_GIOMAYCHU] - [TG + TG_GIOMAYMINH] (giờ máy chủ / giờ máy mình ở lần đồng bộ gần nhất). Lag thì gói
+        # đồng bộ tới trễ nên giờ máy chủ bị ước lùi (Gạ lùi 37s rồi 43s, Thỏ 21s); máy chủ từ chối mọi lệnh go mang giờ cũ => client bước
+        # rồi bị kéo về, vẫn đánh được. Phải chờ lần đồng bộ sau (~5 phút) mới hết: Gạ đồng bộ lại lúc 22:02:22 (lệch -43 -> 0) thì
+        # 22:02:23 đi được ngay. Sửa: nhớ độ lệch lúc mạng tốt, độ lệch tụt >= NGUONGLUIGIOMAYCHULAGMANG giây thì ghi lại TG_GIOMAYCHU
+        # cho đúng độ lệch cũ. Máy chủ đổi giờ thật (SOLANDONGBOTUTGIOMAYCHU lần đồng bộ liền nhau cùng tụt) thì nhận giờ mới.
+        # Đọc thẳng bộ nhớ, không cần hook nên chạy cả Niết Bàn. -> True khi vừa sửa
+        now = time.time()
+        if now - self._thoidiemsuagiomaychu < 0.2:
+            return False
+        self._thoidiemsuagiomaychu = now
+        thongtingame = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        if not thongtingame:
+            return False
+        giomaychu = read_int(self.tientrinh, thongtingame + DC.TG_GIOMAYCHU)
+        giomayminh = read_int(self.tientrinh, thongtingame + DC.TG_GIOMAYMINH)
+        if giomaychu <= 1e9 or giomayminh <= 1e9:
+            return False
+        dolech = giomaychu - giomayminh
+        tot = self._dolechgiomaychutot
+        is_dongbomoi = giomayminh != self._landongbogiomaychu
+        self._landongbogiomaychu = giomayminh
+        if tot is None or tot - dolech < NGUONGLUIGIOMAYCHULAGMANG:
+            # Mạng tốt / giờ tiến lên: nhận làm độ lệch chuẩn
+            self._dolechgiomaychutot = dolech
+            self._solandongbotutgiomaychu = 0
+            return False
+        if is_dongbomoi:
+            self._solandongbotutgiomaychu += 1
+            if self._solandongbotutgiomaychu >= SOLANDONGBOTUTGIOMAYCHU:
+                self._inlog(f"[LAG MẠNG] giờ máy chủ {self._solandongbotutgiomaychu} lần đồng bộ liền đều lệch {dolech}s (trước {tot}s): "
+                            f"nhận là giờ thật của máy chủ, không sửa nữa")
+                self._dolechgiomaychutot = dolech
+                self._solandongbotutgiomaychu = 0
+                return False
+        write_int(self.tientrinh, thongtingame + DC.TG_GIOMAYCHU, giomayminh + tot)
+        self._thoidiemvuasuagiomaychu = now
+        self._inlog(f"[LAG MẠNG] giờ máy chủ của client tụt {tot - dolech}s (lệch {dolech}s, lúc mạng tốt {tot}s): máy chủ sẽ từ chối "
+                    f"lệnh go mang giờ cũ (khoá di chuyển) => ghi lại giờ máy chủ cho đúng độ lệch {tot}s")
+        return True
+
+    def get_is_vuasuagiomaychu(self):
+        # Vừa sửa giờ máy chủ sau lag chưa quá THOIGIANKHONGHOCVATCANSAULAG giây: lệnh go gửi trước lúc sửa mang giờ cũ nên bị kéo về,
+        # không phải vật cản => _hockhongcatgoc không học (vatcanhoc.json dùng chung mọi cửa sổ, học nhầm thì kẹt lâu dài)
+        return time.time() - self._thoidiemvuasuagiomaychu < THOIGIANKHONGHOCVATCANSAULAG
 
     def get_sinhlucconlai(self):
         x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
@@ -3530,9 +3590,28 @@ class MoiTruong:
         # đang đi) thì 1.5s mới tìm lại: ghi lại chuỗi mỗi lượt làm đứt nhịp gửi "go", đi khựng
         if self._dichkhongcatgoc and self.get_idlenhdichuyen() and (self._dichkhongcatgoc == (x2, y2) or (
                 math.dist(self._dichkhongcatgoc, (x2, y2)) <= 3 and now - self._thoidiemdichuyengannhat < 1.5)
-                or (is_cabando and math.dist(self._dichkhongcatgoc, (x2, y2)) <= LECHDICHCABANDO)):
+                or ((is_cabando or self._is_duongcabando) and math.dist(self._dichkhongcatgoc, (x2, y2)) <= LECHDICHCABANDO)):
             return True
-        chuoihuong = self._timduongkhongcatgoc(x1, y1, x2, y2, khoangcachtoida, lechtoida = None if is_cabando else 25)
+        # Đoạn vừa thấy không có đường (cả khung ±25 ô lẫn cả bản đồ): khỏi tìm lại mỗi lượt (0.1s), đi như action_dioochangtoidich
+        khoadoan = (self.get_idbandohientai(), x1, y1, x2, y2)
+        if now - self._khongduongkhongcatgoc_cache.get(khoadoan, 0.) < THOIGIANNHOKHONGDUONGCABANDO:
+            return self.action_dioochangtoidich(x2, y2, khoangcachtoida)
+        if is_cabando:
+            chuoihuong = self._timduongcabando(x1, y1, x2, y2, khoangcachtoida)
+        else:
+            chuoihuong = self._timduongkhongcatgoc(x1, y1, x2, y2, khoangcachtoida)
+        self._is_duongcabando = is_cabando
+        if not chuoihuong and not is_cabando:
+            # Khung ±25 ô không ra đường (vách đá dài Mã Lăng Đạo: điểm lộ trình / quái bên kia vách, log 418 2026-11-06 "(139, 125) ->
+            # (164, 146) không ra đường" mỗi 0.1s, tìm đường của game chạy tới chân vách rồi "Hoàn tất tự động tìm đường"): tìm cả bản đồ
+            chuoihuong = self._timduongcabando(x1, y1, x2, y2, khoangcachtoida)
+            self._is_duongcabando = bool(chuoihuong)
+            if chuoihuong and IS_LOGDICHUYEN:
+                self._inlog(f"[ĐI KHÔNG CẮT GÓC] {(x1, y1)} -> {(x2, y2)} khung ±25 ô không ra đường, cả bản đồ {len(chuoihuong)} bước")
+        if not chuoihuong:
+            if len(self._khongduongkhongcatgoc_cache) > 256:
+                self._khongduongkhongcatgoc_cache.clear()
+            self._khongduongkhongcatgoc_cache[khoadoan] = now
         if chuoihuong:
             self._duongkhongcatgoc = [(x1, y1)]
             for kytu in chuoihuong[:SOBUOCCHUOIDUONGDITOIDA].decode():
@@ -3591,6 +3670,12 @@ class MoiTruong:
         # Chỉ đứng yên mà không lệch (đang ra chiêu / đánh quái) thì không học: từng học nhầm gần 50 ô ở Kênh Trịnh Quốc 1 lúc gom quái.
         # -> True: vừa học / đang chờ client về đúng ô thật (lượt này không ghi chuỗi)
         that = tuple(round(v) for v in self.get_toado())
+        if self.get_is_vuasuagiomaychu():
+            # Vừa sửa giờ máy chủ sau lag: bị kéo về là do lệnh go mang giờ cũ, không phải vật cản => không học, xoá tiến độ dở
+            self._lichsukhongcatgoc.clear()
+            self._kettiendokhongcatgoc = [that, now, None]
+            self._lucgoikhongcatgoc = now
+            return False
         tiendo = self._kettiendokhongcatgoc
         is_lientuc = now - self._lucgoikhongcatgoc <= GIANCACHGOIKHONGCATGOC
         self._lucgoikhongcatgoc = now
@@ -3656,7 +3741,10 @@ class MoiTruong:
         x2, y2 = round(x2), round(y2)
         if math.dist((x1, y1), (x2, y2)) <= max(1., khoangcachtoida):
             return 0
-        chuoihuong = self._timduongkhongcatgoc(x1, y1, x2, y2, max(1., khoangcachtoida), lechtoida = None if is_cabando else 25)
+        if is_cabando:
+            chuoihuong = self._timduongcabando(x1, y1, x2, y2, max(1., khoangcachtoida))
+        else:
+            chuoihuong = self._timduongkhongcatgoc(x1, y1, x2, y2, max(1., khoangcachtoida))
         return len(chuoihuong) if chuoihuong else None
 
     def _get_luoicabando(self):
@@ -3669,7 +3757,37 @@ class MoiTruong:
         self._luoicabando_cache = (idbando, time.time(), luoi) if luoi else None
         return luoi
 
-    def _timduongkhongcatgoc(self, x1, y1, x2, y2, khoangcachtoida = 0., lechtoida = 25):
+    def _timduongcabando(self, x1, y1, x2, y2, khoangcachtoida = 0.):
+        # A* cả bản đồ: không cắt góc trước, không ra thì cho đi chéo qua khe 2 vật cản chạm góc (cầu thang chéo tây Mã Lăng Đạo lên tầng
+        # trên, 2026-11-06: không cắt góc thì báo "khác vùng liên thông" dù có cầu thang). Vẫn không ra: ghi lưới ra file để xem
+        chuoihuong = self._timduongkhongcatgoc(x1, y1, x2, y2, khoangcachtoida, lechtoida = None)
+        if chuoihuong:
+            return chuoihuong
+        chuoihuong = self._timduongkhongcatgoc(x1, y1, x2, y2, khoangcachtoida, lechtoida = None, is_chocatgoc = True)
+        if chuoihuong:
+            self._inlog(f"[ĐI VÒNG] {(x1, y1)} -> {(x2, y2)}: phải đi chéo qua khe góc, {len(chuoihuong)} bước")
+            return chuoihuong
+        self._ghiluoikhongduong(x1, y1, x2, y2)
+        return None
+
+    def _ghiluoikhongduong(self, x1, y1, x2, y2):
+        # Mỗi bản đồ 1 lần: ghi lưới vật cản + ô học + 2 đầu đoạn không có đường ra _internal/luoi_<bản đồ>.json để xem vì sao
+        idbando = self.get_idbandohientai()
+        if idbando in self._dadghiluoi:
+            return
+        self._dadghiluoi.add(idbando)
+        luoi = self._get_luoicabando()
+        if not luoi:
+            return
+        try:
+            duongdan = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_internal", f"luoi_{idbando}.json")
+            with open(duongdan, "w", encoding = "utf-8") as f:
+                json.dump({"tu": [x1, y1], "toi": [x2, y2], "hoc": sorted(taivatcanhoc(idbando)), "luoi": luoi}, f)
+            self._inlog(f"[ĐI VÒNG] {(x1, y1)} -> {(x2, y2)} cả bản đồ không có đường: đã ghi lưới vào {duongdan}")
+        except Exception as e:
+            self._inlog(f"[ĐI VÒNG] Không ghi được lưới: {e}")
+
+    def _timduongkhongcatgoc(self, x1, y1, x2, y2, khoangcachtoida = 0., lechtoida = 25, is_chocatgoc = False):
         # A* trên lưới vật cản vùng bao 2 điểm (thêm lechtoida ô mỗi bên), 8 hướng nhưng chéo chỉ khi 2 ô kề đều trống. Tới ô cách đích
         # không quá khoangcachtoida (0: đúng ô đích) là xong. lechtoida = None: tìm trên cả bản đồ (vách đá dài ở Mã Lăng Đạo: đường vòng
         # lên tầng trên nằm ngoài khung ±25 ô). -> chuỗi hướng (bytes "1".."8", HUONGTIMDUONG_MAP) hoặc None
@@ -3710,7 +3828,7 @@ class MoiTruong:
             x, y = o
             for dx, dy, kytu in huongs:
                 nx, ny = x + dx, y + dy
-                if not trong(nx, ny) or (dx and dy and not (trong(x + dx, y) and trong(x, y + dy))):
+                if not trong(nx, ny) or (dx and dy and not is_chocatgoc and not (trong(x + dx, y) and trong(x, y + dy))):
                     continue
                 ng = g + (1.4142 if dx and dy else 1.) + (PHATKHUVUCCAMKHONGCATGOC if (nx, ny) in cams else 0.)
                 if ng < gs.get((nx, ny), float("inf")):

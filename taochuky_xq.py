@@ -73,6 +73,8 @@ MUCTIEU = [
     ("TG_KYNANG", 0xADFE18, "hang", "bảng kỹ năng"),
     ("TG_TUIHANHTRANG", 0xADFE0C, "hang", "túi hành trang (số ô mở mỗi túi)"),
     ("TG_MOCTUGUILENH", 0xADFC5C, "hang", "mốc client được tự gửi lệnh (timeGetTime)"),
+    ("TG_GIOMAYCHU", 0xAECE10, "hang", "giờ máy chủ (giây) lần đồng bộ gần nhất; giờ kèm lệnh go = time() + TG_GIOMAYCHU - TG_GIOMAYMINH"),
+    ("TG_GIOMAYMINH", 0xAECE18, "hang", "time() máy mình lúc đồng bộ giờ máy chủ (TG_GIOMAYCHU)"),
     ("TG_TIMDUONGCUCBO", 0xAE1178, "hang", "đối tượng tìm đường cục bộ"),
     ("TG_VANKHI", 0xADFDE8, "hang", "đối tượng vận khí"),
     ("TG_CUASOYESNO", 0xADFE10, "hang", "cửa sổ yes / no"),

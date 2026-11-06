@@ -36,7 +36,7 @@ THUOCTINHTHIETLAPs = (
     "_is_tudongtodoi", "_is_thucsondao", "_is_chantangcapdo", "_is_tudongtangcap", "_captudongtangcaptoida",
     "_is_tudongdichuyendiemdanhxungquanh", "_diemdanhxungquanhs", "_is_lotrinhphobanmuonbando", "_is_dilotrinhkhacbando",
     "_lotrinhmaudangdung", "_is_nguocchieulotrinh", "_is_tudonggomquai", "_is_tudongvebanrac", "_is_tudongvesuado", "_phantramvesuado",
-    "_is_tudongdichientruong", "_is_tudongkhaikhoang", "_is_tudongdaotangbaodo", "_tenmuctieutancongs", "_is_uutienbaothukynangtrieuhoi",
+    "_idbandoquaylaibanrac", "_is_tudongdichientruong", "_is_tudongkhaikhoang", "_is_tudongdaotangbaodo", "_tenmuctieutancongs", "_is_uutienbaothukynangtrieuhoi",
     "_tenmuctieukhongtancongs", "_tenvatphamnhats", "_phamchatnhats", "_khoangcachtoidatheosau", "_bankinhdiemdanh", "_tamxatoida",
     "_danhhieulammoi", "_phantramnoiluckhaithientichdia", "_chedokynang", "_is_tudongtrieuhoibaothugiangho", "_is_tudongsudungkynangbaothu",
     "_is_tudongbatnguyenkhiquynguyen", "_is_tranhvungcam", "_is_giukhoangcachketancong", "_khoangcachgiuketancong", "_mauchaytron",
@@ -430,6 +430,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._thoidiemloggomquai = 0.
 
         self._idmuctieubiloi_map = {}
+        # id -> (toạ độ quái, toạ độ mình, thời điểm) lúc bỏ qua do vật cản: ai đi xa chỗ cũ thì thôi bỏ qua (_kiemtrahetboquavatcan)
+        self._vitriboquavatcan_map = {}
+        self._thoidiemkiemtrahetboquavatcan = 0.
         # id -> (tên, lý do) mục tiêu đang bị bỏ qua, để giao diện hiện danh sách (get_danhsachmuctieuboqua)
         self._thongtinmuctieuboqua_map = {}
         self._thoidiemthaymuctieu_map = {}
@@ -443,6 +446,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._thoidiemtoiduocmuctieugannhat = time.time()
         # Quái đang đi vòng cả bản đồ tới (vách đá dài): [id quái, số bước, lúc bắt đầu] hoặc None
         self._muctieuvongxa = None
+        # (id quái, đi bộ tới được không) của quái trong tầm gần nhất: tìm đường 1 lần mỗi con
+        self._kiemtratoiduocmuctieu = None
 
         self._yeucaunhatvatpham = None
         self._yeucautheosau = None
@@ -502,6 +507,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._thoidiemkiemtravesuado = 0.  # lần desc đồ đang mặc gần nhất để xét về sửa; đặt về tương lai khi vừa về sửa
         self._thoidiemtruyvandobenvesua = 0.  # > 0: đã desc, đang chờ máy chủ trả mô tả để đọc độ bền
         self._trangthaiveban = 0  # 0: Idle, 1: Đang về, 2: Đang đi shop, 3: Đang bán, 4: Đang quay lại
+        # Bản đồ quay lại sau khi bán (xem BANDOQUAYLAI_*); _idbandolucveban: bản đồ đang đứng lúc bắt đầu về (0 = chưa ghi, không lưu
+        # file) để quay lại khi chọn "Bản đồ lúc về" hoặc theo lộ trình mà không có lộ trình (bot đang dò bản đồ)
+        self._idbandoquaylaibanrac = BANDOQUAYLAI_THEOLOTRINH
+        self._idbandolucveban = 0
         # Mao Sơn đã học Xuyên Không Hành thì về bán bằng chiêu; chưa học thì phù + chạy bộ như phái khác. Chốt lúc rảnh (trạng thái 0)
         # để giữa chừng (chuyển bản đồ đọc hụt bảng kỹ năng) không nhảy sang luồng kia
         self._is_vebanxuyenkhonghanh = False
@@ -573,6 +582,12 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
 
         self._thoidiemsudungnhiephonchamgannhat = False
         self._is_kynangnhiephonchamsansang = False
+
+        # Đường Môn: chỉ "kill" (Tự Động Công Kích) khi Thấu Cốt Đinh đã ra chiêu lên mục tiêu đang đánh
+        self._is_kynangthaucotdinhsansang = False
+        self._thoidiemguithaucotdinh = 0.
+        self._idmuctieuguithaucotdinh = None
+        self._idmuctieuthaucotdinhdaxuatchieu = None
 
         self._thoidiembattathieuungphapbaogannhat = 0.
 
@@ -837,6 +852,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             "_is_tudongvebanrac": self._is_tudongvebanrac,
             "_is_tudongvesuado": self._is_tudongvesuado,
             "_phantramvesuado": self._phantramvesuado,
+            "_idbandoquaylaibanrac": self._idbandoquaylaibanrac,
             "_is_tudongdichientruong": self._is_tudongdichientruong,
             "_is_tudongkhaikhoang": self._is_tudongkhaikhoang,
             "_is_tudongdaotangbaodo": self._is_tudongdaotangbaodo,
@@ -967,6 +983,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             if "_is_tudongvebanrac" in thietlap: self._is_tudongvebanrac = thietlap["_is_tudongvebanrac"]
             if "_is_tudongvesuado" in thietlap: self._is_tudongvesuado = thietlap["_is_tudongvesuado"]
             if "_phantramvesuado" in thietlap: self.thietlap_phantramvesuado(thietlap["_phantramvesuado"])
+            if "_idbandoquaylaibanrac" in thietlap: self.thietlap_bandoquaylaibanrac(thietlap["_idbandoquaylaibanrac"])
             if "_is_tudongdichientruong" in thietlap: self._is_tudongdichientruong = thietlap["_is_tudongdichientruong"]
             if "_is_tudongkhaikhoang" in thietlap: self._is_tudongkhaikhoang = thietlap["_is_tudongkhaikhoang"]
             if "_is_tudongdaotangbaodo" in thietlap: self._is_tudongdaotangbaodo = thietlap["_is_tudongdaotangbaodo"]
@@ -1305,6 +1322,13 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
 
     def thietlap_phantramvesuado(self, phantram):
         self._phantramvesuado = min(99, max(1, int(float(phantram))))
+
+    def thietlap_bandoquaylaibanrac(self, idbando):
+        try:
+            idbando = int(float(idbando))
+        except (TypeError, ValueError):
+            idbando = BANDOQUAYLAI_THEOLOTRINH
+        self._idbandoquaylaibanrac = idbando if idbando > 0 or idbando == BANDOQUAYLAI_LUCVE else BANDOQUAYLAI_THEOLOTRINH
 
     def battat_tudongdaotangbaodo(self):
         self._is_tudongdaotangbaodo = not self._is_tudongdaotangbaodo

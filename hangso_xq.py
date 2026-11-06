@@ -795,6 +795,11 @@ VITRITRANGBI_PHAPBAO = VITRITRANGBIDAUTIEN + 6
 VITRITRANGBISUADUOCs = tuple(range(VITRITRANGBIDAUTIEN, VITRITRANGBI_PHAPBAO))
 # Tự về sửa đồ (tab Hành trang): mặc định về khi có món sửa được còn dưới chừng này % độ bền
 PHANTRAMVESUADO = 20
+# Bản đồ quay lại sau khi về bán rác / sửa đồ (tab Hành trang, _idbandoquaylaibanrac): > 0 là id bản đồ chọn sẵn (phù tới đó, không
+# có lộ trình thì bot tự dò bản đồ); THEOLOTRINH = bản đồ của điểm đánh đầu tiên (không có lộ trình thì về bản đồ lúc về);
+# LUCVE = luôn về bản đồ đang đứng lúc bắt đầu về bán
+BANDOQUAYLAI_THEOLOTRINH = 0
+BANDOQUAYLAI_LUCVE = -1
 # Mao Sơn bật "đổi đồ khi triệu hồi": trong lúc vận khí gọi bảo thú triệu hồi thì đeo "bộ đồ triệu hồi" đã ghi (thường là đồ tấn công),
 # vận khí xong mặc lại bộ cũ. Bộ đồ ghi từ đồ đang mặc ở các ô trang bị này (nón, hạng liên, vũ khí, áo, yêu đới, giày, pháp bảo;
 # không ngọc / cánh / ngoại trang). Loại theo ô nên không cần mô tả để biết món nào được ghi
@@ -1159,7 +1164,7 @@ KHUVUCCAM_MAP = {
         {"type": "line", "x1": 132, "y1": 159, "x2": 160, "y2": 139, "r": 9.0},
         {"type": "line", "x1": 131, "y1": 111, "x2": 160, "y2": 139, "r": 9.0},
     ],
-    # Mã Lăng Đạo: bỏ 2 vùng cấm tầng trên vách đá (116, 116)-(145, 150), (93, 96)-(124, 118) bán kính 9 (2026-11-06): đã có đi vòng
+    # Mã Lăng Đạo: bỏ 2 vùng cấm tầng trên vách đá (vẫn đi bằng đường bot tự tìm, xem BANDOBOTTUTIMDUONGs) (116, 116)-(145, 150), (93, 96)-(124, 118) bán kính 9 (2026-11-06): đã có đi vòng
     # cả bản đồ khi hết quái gần (THOIGIANHETQUAIGANDIVONG). Còn quái gần thì quái tầng trên vẫn bị bỏ vì đường vòng xa như cũ
     BANDO_KENHTRINHQUOC1: [
         {"type": "circle", "x": 108, "y": 57, "r": 6.0},
@@ -1168,6 +1173,10 @@ KHUVUCCAM_MAP = {
         {"type": "circle", "x": 96, "y": 96, "r": 3.0},
     ],
 }
+# Bản đồ luôn đi bằng đường bot tự tìm trên lưới vật cản (moitruong.action_dikhongcatgoc) dù không có khu vực cấm: Mã Lăng Đạo vách đá
+# dài, tìm đường của client / game tới quái bên kia vách chạy tới chân vách rồi đứng ("Hoàn tất tự động tìm đường" liên tục, 2026-11-06).
+# Trước đây có khu vực cấm nên bản đồ này đã đi kiểu này
+BANDOBOTTUTIMDUONGs = {BANDO_MALANGDAO}
 VUNGCAM_MAP = {
     idbando: [{"type": "circle", "x": x, "y": y, "r": BANKINHVUNGCAMCONG} for _, x, y, _, _ in BANDOCONG_MAP.get(idbando, ("", ()))[1]]
              + KHUVUCCAM_MAP.get(idbando, [])
@@ -1347,6 +1356,16 @@ THOIGIANKHUNGSAUXUATCHIEU = 1.
 # Trong lúc xuất chiêu / khựng, mỗi vòng đẩy mốc "được tự gửi lệnh" của client lên trước chừng này giây để client không tự
 # bước (MoiTruong.action_chandichuyen); phải dài hơn chu kỳ LoopGiuOTrongHanhTrang
 THOIGIANCHANTUDICHUYENCLIENT = 0.15
+# Lag mạng làm gói đồng bộ giờ máy chủ tới trễ: giờ client kèm lệnh go bị lùi (đo 21s, 37s, 43s), máy chủ từ chối mọi bước đi tới lần
+# đồng bộ sau (~5 phút) => khoá di chuyển oan. MoiTruong.action_suagiomaychu: độ lệch giờ máy chủ tụt >= NGUONGLUIGIOMAYCHULAGMANG
+# giây so với lúc mạng tốt thì ghi lại cho đúng
+NGUONGLUIGIOMAYCHULAGMANG = 3
+# Giờ máy chủ của client tụt mà bấy nhiêu lần đồng bộ liền nhau đều tụt như vậy thì tin là máy chủ đổi giờ thật, không sửa nữa
+# (lag chỉ làm 1 lần đồng bộ tới trễ; đồng bộ ~5 phút / lần)
+SOLANDONGBOTUTGIOMAYCHU = 2
+# Vừa sửa giờ máy chủ chưa quá bấy nhiêu giây thì không học vật cản (MoiTruong.get_is_vuasuagiomaychu): bị kéo về là do lệnh go
+# gửi trước lúc sửa mang giờ cũ
+THOIGIANKHONGHOCVATCANSAULAG = 10.
 # Người chơi giữ chuột trái trên cửa sổ game quá THOIGIANGIUCHUOTTOITHIEU giây (kéo nhân vật đi, click thường không tính):
 # bot ngưng tấn công / di chuyển, nhả chuột rồi còn ngưng thêm THOIGIANNGUNGSAUNHACHUOT giây để nhân vật kịp đi tiếp theo
 # click cuối (MoiTruong.get_is_dangclickchuottrai)
@@ -1528,7 +1547,18 @@ THOIGIANBOQUAMUCTIEUKHONGTRUNG = 60.
 # KHOANGCACHTIEPCANGANTHEM ô thì bỏ qua quái đó THOIGIANBOQUAMUCTIEUKHONGTIEPCAN giây
 THOIGIANTIEPCANKHONGGANTHEM = 6.
 KHOANGCACHTIEPCANGANTHEM = 1.
-THOIGIANBOQUAMUCTIEUKHONGTIEPCAN = 60.
+THOIGIANBOQUAMUCTIEUKHONGTIEPCAN = 30.
+
+# Bỏ qua do vật cản (không tới gần được, kẹt tường khi tới, gom bị chặn) chỉ đúng với vị trí lúc đó: quái đi lang thang / mình
+# đổi chỗ thì 2-3s sau giữa hai bên có thể không còn vật cản. Nhớ toạ độ quái và mình lúc bỏ qua; sau ít nhất
+# THOIGIANBOQUAVATCANTOITHIEU giây mà quái hoặc mình đã đi xa chỗ cũ >= KHOANGCACHHETBOQUAVATCAN ô thì thôi bỏ qua để xét lại
+# (lần tiếp cận mới tìm đường lại từ đầu, vẫn bị chắn thì bỏ qua tiếp với vị trí mới). Không ai di chuyển thì hết sau
+# THOIGIANBOQUAMUCTIEUKHONGTIEPCAN giây như cũ. Kiểm tra mỗi THOIGIANKIEMTRAHETBOQUAVATCAN giây (đọc toạ độ đối tượng xung quanh)
+THOIGIANBOQUAVATCANTOITHIEU = 2.
+KHOANGCACHHETBOQUAVATCAN = 3.
+# Mình đi xa chỗ cũ thì cần xa hơn: bỏ con bị chắn đi đánh con khác vài ô đã gỡ thì dễ quay lại đúng con bị chắn, chạy qua chạy lại
+KHOANGCACHHETBOQUAVATCANBANTHAN = 6.
+THOIGIANKIEMTRAHETBOQUAVATCAN = 0.5
 # Bắt đầu tiếp cận 1 quái thì tìm đường trên lưới vật cản trước (moitruong.get_sobuocduongtoi): không có đường, hoặc đường dài hơn
 # HESODUONGVONGTOIDA lần khoảng cách thẳng + SOBUOCDUONGVONGCONGTHEM bước (phải vòng rất xa qua bên kia vật cản) thì bỏ qua luôn
 HESODUONGVONGTOIDA = 2.
@@ -1542,6 +1572,8 @@ SOBUOCDIVONGXATOIDA = 300
 THOIGIANMOIBUOCDIVONG = 0.25
 # Lưới cả bản đồ (A* cả bản đồ) nhớ chừng này giây; đi vòng mà đích nhích không quá LECHDICHCABANDO ô thì đi hết chuỗi rồi mới tìm lại
 THOIGIANNHOLUOICABANDO = 30.
+# action_dikhongcatgoc thấy (từ, tới) không có đường cả trên cả bản đồ thì nhớ chừng này giây (mỗi lần tìm cả bản đồ tốn tới ~1s)
+THOIGIANNHOKHONGDUONGCABANDO = 10.
 LECHDICHCABANDO = 6.
 
 # Giữ khoảng cách với đối tượng đang tấn công mình (tùy chọn trên giao diện, hay bật cho Mao Sơn / Vân Mộng Cốc khi giao tranh)

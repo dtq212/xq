@@ -28,7 +28,7 @@ from thongke_xq import taithongke, gopthongke
 from luattuido_xq import tailuat, luuluat, motaluat, TENHANHDONG, DIEUKIENs, TENDIEUKIEN, TRUONGMUABU, TENTRUONGMUABU, TENCHIKHI, CHIKHI_LUON, XEPCHONGMACDINH, \
     THAPNHATMACDINH, TENHANHDONGNHAT, DIEUKIENNHATs, NHAT_NHAT
 from hangso_xq import VIECHANG_MAP, VIECDOI_MAP, VIECCOVONGs, VIECRIENG_MAP
-from hangso_xq import CHUTIEMTAPHOA, CHUTUULAU, TENMONPHAI, PHAMCHATVATPHAM_MAP, CAPTUDONGTANGCAPTOIDA, PHANTRAMVESUADO, DANHHIEULAMMOI_KHONG, DANHHIEULAMMOI_AN
+from hangso_xq import CHUTIEMTAPHOA, CHUTUULAU, TENMONPHAI, PHAMCHATVATPHAM_MAP, CAPTUDONGTANGCAPTOIDA, PHANTRAMVESUADO, BANDOQUAYLAI_THEOLOTRINH, BANDOQUAYLAI_LUCVE, DANHHIEULAMMOI_KHONG, DANHHIEULAMMOI_AN
 from hangso_xq import CHEDOHIENMUCTIEU_TAT, CHEDOHIENMUCTIEU_DANHHIEU, CHEDOHIENMUCTIEU_TEN, MAUHIENMUCTIEU_MAP, MAUHIENMUCTIEU_THEOMAU
 from hangso_xq import CHEDOKYNANG_CODINH, CHEDOKYNANG_TUHOC, SOMAUTOITHIEUTUHOC, THOIGIANKEHOACHTUHOC, SOLICHSUHANHDONG
 from dieuphoi_xq import taicauhinhdieuphoi, luucauhinhdieuphoi, chuanhoacauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
@@ -55,6 +55,9 @@ MAUCHU_DO = BANGMAU_SANG["do"]
 MAUCHU_LUC = BANGMAU_SANG["luc"]
 
 TEN_MUCTIEUMACDINH = "(Trưởng nhóm)"
+# Hai lựa chọn đầu của ô "Quay lại sau khi bán" (tab Hành trang), còn lại là tên bản đồ
+CHU_QUAYLAITHEOLOTRINH = "Theo lộ trình"
+CHU_QUAYLAILUCVE = "Bản đồ lúc về"
 # Máu dưới chừng này % thì dòng nhân vật hiện màu đỏ
 NGUONGMAUTHAP = 40
 
@@ -993,7 +996,6 @@ class GiaoDienHienThi:
             ttk.Label(parent, text = phimtat, style = "Phim.TLabel").grid(row = dong, column = 1, sticky = tk.E, padx = (8, 0))
 
     def _taotabchiendau(self, tab):
-        self._taonhomthongtinmuctieu(tab)
         nhom = self._taonhom(tab, "Tự động")
         self._create_check(nhom, "Tự động sử dụng kỹ năng", self.vars["sudungkynang"], "battat_tudongsudungkynang", "Ctrl+F")
         # Chỉ đánh thường ("kill") cho đỡ tốn nội lực: không dùng chiêu nào, kể cả buff / triệu hồi / chiêu lướt; thuốc vẫn dùng
@@ -1014,6 +1016,8 @@ class GiaoDienHienThi:
 
         # Tầm đánh ít khi chỉnh: để cuối tab
         self._taonhomtamdanh(tab)
+        # Mục tiêu đang chọn (Khí Huyết / Kháng ước lượng) ngay dưới Tầm đánh
+        self._taonhomthongtinmuctieu(tab)
         self._taonhomtuhockynang(tab)
 
     def _taonhomtuhockynang(self, tab):
@@ -2303,7 +2307,7 @@ class GiaoDienHienThi:
         self._taonhomlichsuhanhdong(tab)
 
     def _taonhomthongtinmuctieu(self, tab):
-        # Đầu tab Chiến đấu: mục tiêu nhân vật đang chọn đang nhắm + Khí Huyết tối đa / Ngoại Kháng / Nội Kháng ước lượng từ sát thương
+        # Tab Chiến đấu, dưới nhóm Tầm đánh: mục tiêu nhân vật đang chọn đang nhắm + Khí Huyết tối đa / Ngoại Kháng / Nội Kháng ước lượng từ sát thương
         # các nhân vật của mình gây ra (uocluongmuctieu_xq, gộp mọi cửa sổ cùng đánh mục tiêu này). Cập nhật trong _capnhatthongtinmuctieu.
         # Đừng đặt tên _taonhommuctieu: trùng hàm bảng Danh sách mục tiêu (Tấn công / Bỏ qua) thì định nghĩa sau đè mất hàm kia
         nhom = self._taonhom(tab, "Mục tiêu đang chọn")
@@ -2683,6 +2687,34 @@ class GiaoDienHienThi:
         self.spin_phantramvesuado.pack(side = tk.LEFT, padx = 4)
         self._ganspinboxapdung(self.spin_phantramvesuado, on_phantramvesuado_change)
         ttk.Label(hangvesuado, text = "% (không về khi đang ở phó bản)", style = "Phu.TLabel").pack(side = tk.LEFT)
+
+        # Bản đồ quay lại sau khi bán / sửa (BANDOQUAYLAI_*): theo lộ trình (mặc định), bản đồ lúc về, hoặc chọn 1 bản đồ (tới nơi không có
+        # lộ trình thì bot tự dò bản đồ). Danh sách bản đồ dùng chung với ô "Đi tới bản đồ" (tab Di chuyển, tạo trước tab này)
+        hangquaylai = ttk.Frame(nhom)
+        hangquaylai.grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W, pady = (4, 0))
+        ttk.Label(hangquaylai, text = "Quay lại sau khi bán:").pack(side = tk.LEFT)
+        self._idbandoquaylaitheohienthi = {CHU_QUAYLAITHEOLOTRINH: BANDOQUAYLAI_THEOLOTRINH, CHU_QUAYLAILUCVE: BANDOQUAYLAI_LUCVE}
+        self._idbandoquaylaitheohienthi.update(getattr(self, "_idbandotheohienthi", {}))
+        self._hienthitheoidbandoquaylai = {v: k for k, v in self._idbandoquaylaitheohienthi.items()}
+        self.str_bandoquaylai = tk.StringVar(value = CHU_QUAYLAITHEOLOTRINH)
+        self.cbo_bandoquaylai = ttk.Combobox(hangquaylai, textvariable = self.str_bandoquaylai, values = list(self._idbandoquaylaitheohienthi),
+                                             state = "readonly", height = 20, width = 34)
+        self.cbo_bandoquaylai.pack(side = tk.LEFT, padx = 4)
+        self._bandoquaylaichoxacnhan = None
+
+        def on_bandoquaylai_change(_event = None):
+            hwnd = self.get_selected_hwnd()
+            idbando = self._idbandoquaylaitheohienthi.get(self.str_bandoquaylai.get())
+            if hwnd and idbando is not None:
+                self.command_dict[hwnd] = f"set_bandoquaylaibanrac:{idbando}"
+                self._bandoquaylaichoxacnhan = (hwnd, idbando, time.time())
+
+        self.cbo_bandoquaylai.bind("<<ComboboxSelected>>", on_bandoquaylai_change)
+        self._gantooltip(self.cbo_bandoquaylai,
+                         "Bán / sửa xong thì đi đâu:\n- Theo lộ trình: bản đồ điểm đánh đầu tiên; chưa có lộ trình thì về bản đồ lúc về\n"
+                         "- Bản đồ lúc về: bản đồ đang đánh khi bắt đầu về bán\n"
+                         "- Chọn 1 bản đồ: phù / chạy tới đó; không có lộ trình thì bot tự dò bản đồ\n"
+                         "Mao Sơn có Xuyên Không Hành: chỉ dùng chiêu khi quay lại chỗ cũ")
 
         # Bấm 1 lần: bot gộp chồng và xếp vật phẩm theo tên trong từng túi; đang xếp thì bấm lại để dừng
         def on_sapxephanhtrang():
@@ -4876,6 +4908,18 @@ class GiaoDienHienThi:
                     self.vars["phantramvesuado"].set(phantram_moi)
             except tk.TclError:
                 pass
+
+        # Bản đồ quay lại sau khi bán: vừa chọn thì chờ bot nhận (tối đa 3s) rồi mới nạp lại từ bot, không thì ô nhảy về giá trị cũ
+        cbo_quaylai = getattr(self, 'cbo_bandoquaylai', None)
+        if cbo_quaylai is not None:
+            idbando_moi = info.get("_idbandoquaylaibanrac", BANDOQUAYLAI_THEOLOTRINH)
+            cho = self._bandoquaylaichoxacnhan
+            if cho and (cho[0] != self.get_selected_hwnd() or cho[1] == idbando_moi or time.time() - cho[2] > 3.):
+                self._bandoquaylaichoxacnhan = cho = None
+            if not cho:
+                chu = self._hienthitheoidbandoquaylai.get(idbando_moi) or (laytenbando(idbando_moi) if idbando_moi else CHU_QUAYLAITHEOLOTRINH)
+                if self.str_bandoquaylai.get() != chu:
+                    self.str_bandoquaylai.set(chu)
 
         if widgetdangfocus != getattr(self, 'spin_phantramnoiluckhaithien', None):
             try:
