@@ -815,6 +815,10 @@ class GiaoDienHienThi:
         self.txt_hanhdong.configure(state = tk.DISABLED)
         self.txt_hanhdong.bind("<Configure>", self._chinhcaohanhdong, add = "+")
         self._khoahanhdong = None
+        # Dòng Nguồn chỉ 1 dòng (cắt "…" theo bề ngang, dài thì xuống dòng làm khối cao lên / thấp xuống, giật giao diện): rê chuột vào
+        # khối hiện đủ hành động + nguồn
+        self._hanhdongday = ("", "")
+        self._gantooltip(self.txt_hanhdong, lambda: f"{self._hanhdongday[0] or 'Chưa có hành động'}\nNguồn: {self._hanhdongday[1] or '-'}")
 
         # Dòng cảnh báo tạm ngưng (chỉ hiện khi phát hiện người chơi ẩn thân) + nút bật lại
         self.frame_tamngung = tk.Frame(frame, bg = self._mau["nen_canhbao"], highlightbackground = MAUCHU_DO, highlightthickness = 1)
@@ -1513,9 +1517,9 @@ class GiaoDienHienThi:
                 self.command_dict[hwnd] = "battat_diquocgiatanthutienco"
         self._gantooltip(ttk.Checkbutton(nhom, text = "Đi quốc gia bằng Tân Thủ Tiên Cô", variable = self.vars["diquocgiatanthutienco"],
                                          command = on_diquocgia),
-                         "Tới 8 quốc gia: thay vì Hồi Thành Phù, Tín Vật về môn phái, nói chuyện Tân Thủ Tiên Cô trong môn phái phù lên bản đồ "
+                         "Tới 7 quốc gia (trừ Chu Quốc, Tân Thủ Thôn: đi như cũ): thay vì Hồi Thành Phù, Tín Vật về môn phái, nói chuyện Tân Thủ Tiên Cô trong môn phái phù lên bản đồ "
                          "gần quốc gia rồi chạy sang (Triệu: Cự Lộc, Tề: Mã Đạp Hồ, Ngụy: Vô Định Hà 1, Yên: Trác Lộc, "
-                         "Sở: Chân Núi Đại Biệt, Hàn: Tương Lăng, Chu: Thủ Dương Sơn, Tần: Kênh Trịnh Quốc 1)").grid(
+                         "Sở: Chân Núi Đại Biệt, Hàn: Tương Lăng, Tần: Kênh Trịnh Quốc 1)").grid(
             row = 2, column = 0, columnspan = 3, sticky = tk.W, pady = (4, 0))
 
         # Lộ trình mẫu: chọn mẫu (của bất kỳ bản đồ nào) rồi Nạp, hoặc để bot Tự chọn mẫu chưa nhân vật nào dùng
@@ -1625,7 +1629,8 @@ class GiaoDienHienThi:
         ttk.Label(nhom, text = "Nhấp đúp một mẫu để nạp. Bản đồ đang đứng hiện chữ xanh ở đầu bảng.", style = "Phu.TLabel").grid(
             row = 5, column = 0, columnspan = 2, sticky = tk.W, pady = (4, 0))
 
-        # Điểm đánh hiện tại: bảng, điểm đang đi tới tô xanh
+        # Điểm đánh hiện tại: bảng, điểm đang đi tới tô xanh. Lộ trình ẩn (chưa có điểm đánh) thì hiện các điểm dò bản đồ.
+        # Chia vùng bot cùng máy: cột Vùng ghi điểm thuộc nhân vật nào, điểm vùng mình chữ lục, vùng bot khác chữ mờ
         nhom = self._taonhom(tab, "Điểm đánh của nhân vật")
         nhom.pack_configure(fill = tk.BOTH, expand = True)
         nhom.rowconfigure(1, weight = 1)
@@ -1634,10 +1639,14 @@ class GiaoDienHienThi:
 
         khungds = ttk.Frame(nhom)
         khungds.grid(row = 1, column = 0, columnspan = 2, sticky = tk.NSEW, pady = (2, 4))
-        self.tree_diemdanh = BangCatChu(khungds, columns = ("stt", "x", "y", "bando"), show = "headings", height = 6, selectmode = "browse")
-        for col, text, width, anchor in (("stt", "#", 40, tk.CENTER), ("x", "X", 60, tk.CENTER), ("y", "Y", 60, tk.CENTER), ("bando", "Bản đồ", 250, tk.W)):
+        self.tree_diemdanh = BangCatChu(khungds, columns = ("stt", "x", "y", "bando", "vung"), show = "headings", height = 6, selectmode = "browse")
+        for col, text, width, anchor in (("stt", "#", 40, tk.CENTER), ("x", "X", 60, tk.CENTER), ("y", "Y", 60, tk.CENTER),
+                                         ("bando", "Bản đồ", 170, tk.W), ("vung", "Vùng", 150, tk.W)):
             self.tree_diemdanh.heading(col, text = text)
-            self.tree_diemdanh.column(col, width = self._px(width), anchor = anchor, stretch = col == "bando")
+            self.tree_diemdanh.column(col, width = self._px(width), anchor = anchor, stretch = col in ("bando", "vung"))
+        self.tree_diemdanh.tag_configure("vungminh", foreground = MAUCHU_LUC)
+        self.tree_diemdanh.tag_configure("vungkhac", foreground = MAUCHU_PHU)
+        # Cấu hình sau cùng để điểm đang tới (luôn trong vùng mình) vẫn tô xanh đậm
         self.tree_diemdanh.tag_configure("dangden", foreground = MAUCHU_XANH, font = (FONTCHU, COCHU, "bold"))
         thanhcuon = ttk.Scrollbar(khungds, orient = tk.VERTICAL, command = self.tree_diemdanh.yview)
         self.tree_diemdanh.configure(yscrollcommand = thanhcuon.set)
@@ -4736,12 +4745,13 @@ class GiaoDienHienThi:
     _NHANHANHDONG = re.compile(r"(?P<dem>\b(?P<da>\d+)/(?P<can>\d+)\b)|(?P<toado>\(\d+,\s*\d+\))|(?<=\bở )(?P<bando>[^:·,;()\d]+[^:·,;()\d\s])")
 
     def _hienthihanhdong(self, hanhdong, nguon):
-        # Vẽ lại chỉ khi chữ hoặc chế độ sáng/tối đổi (bảng điều khiển cập nhật liên tục, tránh nháy)
-        khoa = (hanhdong, nguon, self.is_chedotoi)
+        # Vẽ lại chỉ khi chữ, chế độ sáng/tối hoặc bề ngang đổi (bảng điều khiển cập nhật liên tục, tránh nháy)
+        o, mau = self.txt_hanhdong, self._mau
+        self._hanhdongday = (hanhdong, nguon)
+        khoa = (hanhdong, nguon, self.is_chedotoi, o.winfo_width())
         if khoa == self._khoahanhdong:
             return
         self._khoahanhdong = khoa
-        o, mau = self.txt_hanhdong, self._mau
         # Màu tag tk.Text không được _domau đổi theo chế độ nên đặt lại mỗi lần vẽ
         for tag, mauchu, kieu in (("dau", "xanh", "bold"), ("thuong", "chu", ""), ("du", "luc", "bold"), ("thieu", "vang", "bold"),
                                   ("toado", "chinh", "bold"), ("bando", "chu", "bold"), ("nguon", "chu_mo", ""), ("mo", "chu_mo", "italic")):
@@ -4768,14 +4778,35 @@ class GiaoDienHienThi:
                 o.insert(tk.END, kq.group(), tag)
                 vitri = kq.end()
             o.insert(tk.END, hanhdong[vitri:], "thuong")
-            # Nguồn xuống dòng riêng bên dưới (người dùng: mỗi cái một dòng nhìn gọn hơn)
-            o.insert(tk.END, f"\nNguồn: {nguon or '-'}", "nguon")
+            # Nguồn xuống dòng riêng bên dưới (người dùng: mỗi cái một dòng nhìn gọn hơn), cắt vừa 1 dòng, đủ chữ xem ở tooltip
+            o.insert(tk.END, "\n" + self._catmotdong(f"Nguồn: {nguon or '-'}", (FONTCHU, COCHU - 1), o.winfo_width() - 8), "nguon")
         o.configure(state = tk.DISABLED)
         self._chinhcaohanhdong()
+
+    @staticmethod
+    def _catmotdong(chu, font, rong):
+        # Cắt chữ cho vừa `rong` px (thêm "…"), chưa biết bề ngang (widget chưa hiện, <= 1) thì để nguyên
+        if rong <= 1:
+            return chu
+        do = tkfont.Font(font = font)
+        if do.measure(chu) <= rong:
+            return chu
+        thap, cao = 0, len(chu)
+        while thap < cao:
+            giua = (thap + cao + 1) // 2
+            if do.measure(chu[:giua].rstrip() + "…") <= rong:
+                thap = giua
+            else:
+                cao = giua - 1
+        return chu[:thap].rstrip() + "…"
 
     def _chinhcaohanhdong(self, event = None):
         # Cao theo số dòng hiển thị (hành động dài tự xuống dòng + dòng nguồn), 2-4 dòng; gọi lại khi đổi bề ngang cửa sổ
         o = self.txt_hanhdong
+        if event is not None and self._khoahanhdong and self._khoahanhdong[3] != o.winfo_width():
+            # Đổi bề ngang: cắt lại dòng Nguồn theo bề ngang mới (_hienthihanhdong gọi lại hàm này sau khi vẽ)
+            self._hienthihanhdong(*self._hanhdongday)
+            return
         try:
             o.update_idletasks()
             dem = o.count("1.0", "end-1c", "displaylines")
@@ -4862,7 +4893,8 @@ class GiaoDienHienThi:
         if not choxacnhan and "_is_chiavunglotrinh" in info and self.var_chiavunglotrinh.get() != bool(info["_is_chiavunglotrinh"]):
             self.var_chiavunglotrinh.set(bool(info["_is_chiavunglotrinh"]))
         vunglotrinh = info.get("_vunglotrinh")
-        chuvung = f"(vùng {vunglotrinh[0]}/{vunglotrinh[1]}: #{vunglotrinh[2]}-#{vunglotrinh[3]})" if vunglotrinh else ""
+        chuvung = f"(vùng {vunglotrinh['stt']}/{vunglotrinh['tong']}: điểm {vunglotrinh['dau'] + 1}-{vunglotrinh['cuoi'] + 1})" \
+            if isinstance(vunglotrinh, dict) else ""
         if self.lbl_vunglotrinh.cget("text") != chuvung:
             self.lbl_vunglotrinh.config(text = chuvung)
         tenbodos = info.get("_tenbodotrieuhoi") or []
@@ -5119,16 +5151,52 @@ class GiaoDienHienThi:
     def _capnhatdiemdanh(self, info):
         diemdanhs = [tuple(d) for d in info.get("_diemdanhxungquanhs", [])]
         dangden = (info.get("_diemdanhdangden") or [None] * 4)[3]
-        if (diemdanhs, dangden) == self._diemdanhdanghienthi:
+        # Lộ trình ẩn: bảng hiện điểm dò bản đồ bot đang đi. Trong Phong Yêu Kính: vòng dò của phó bản (tự chia vùng, không theo ô Chia vùng)
+        dophongyeu = info.get("_dophongyeu")
+        is_phongyeu = isinstance(dophongyeu, dict) and bool(dophongyeu.get("diems"))
+        is_do = not diemdanhs and (is_phongyeu or bool(info.get("_diemdobando")))
+        vung = info.get("_vunglotrinh")
+        if is_do and is_phongyeu:
+            diemdanhs = [tuple(d) for d in dophongyeu["diems"]]
+            dangden = dophongyeu.get("i")
+            vung = dophongyeu.get("vung")
+        elif is_do:
+            diemdanhs = [tuple(d) for d in info["_diemdobando"]]
+            dangden = info.get("_iddiemdobando")
+        if not isinstance(vung, dict) or (not (is_do and is_phongyeu) and bool(vung.get("is_do")) != is_do):
+            vung = None
+        # Điểm i -> (stt vùng, tên nhân vật giữ vùng)
+        chuvungs = {}
+        for stt, ten, dau, cuoi in (vung or {}).get("cacvung", []):
+            for i in range(dau, cuoi + 1):
+                chuvungs[i] = (stt, ten)
+        khoa = (diemdanhs, dangden, is_do, repr(vung))
+        if khoa == self._diemdanhdanghienthi:
             return
-        self._diemdanhdanghienthi = (diemdanhs, dangden)
+        self._diemdanhdanghienthi = khoa
         self.tree_diemdanh.delete(*self.tree_diemdanh.get_children())
         for i, d in enumerate(diemdanhs):
-            self.tree_diemdanh.insert("", tk.END, iid = str(i), tags = ("dangden",) if i == dangden else (),
-                                      values = (f"▶ {i + 1}" if i == dangden else i + 1, d[0], d[1], laytenbando(d[2]) if len(d) >= 3 else ""))
+            the = []
+            chuvung = ""
+            if i in chuvungs:
+                stt, ten = chuvungs[i]
+                chuvung = f"{stt}. {ten}"
+                the.append("vungminh" if stt == vung["stt"] else "vungkhac")
+            if i == dangden:
+                the.append("dangden")
+            self.tree_diemdanh.insert("", tk.END, iid = str(i), tags = tuple(the),
+                                      values = (f"▶ {i + 1}" if i == dangden else i + 1, d[0], d[1], laytenbando(d[2]) if len(d) >= 3 else "",
+                                                chuvung))
         if dangden is not None and self.tree_diemdanh.exists(str(dangden)):
             self.tree_diemdanh.see(str(dangden))
         if diemdanhs:
-            self.lbl_sodiem.config(text = f"{len(diemdanhs)} điểm" + (f" · đang đi tới điểm {dangden + 1}" if dangden is not None else ""))
+            chu = f"{('Phong Yêu Kính (vòng dò): ' if is_phongyeu else 'Lộ trình ẩn (dò bản đồ): ') if is_do else ''}{len(diemdanhs)} điểm"
+            if dangden is not None:
+                chu += f" · đang đi tới điểm {dangden + 1}"
+            if vung:
+                chu += f" · chia vùng {vung['stt']}/{vung['tong']}: mình giữ điểm {vung['dau'] + 1}-{vung['cuoi'] + 1}"
+            elif is_do and is_phongyeu and dophongyeu.get("lydo"):
+                chu += f" · không chia vùng ({dophongyeu['lydo']})"
+            self.lbl_sodiem.config(text = chu)
         else:
             self.lbl_sodiem.config(text = "Trống – nạp mẫu hoặc thêm điểm bên dưới")

@@ -426,6 +426,8 @@ class TacTuSuMon:
                         moitruong.action_khoavankhitrieuhoi((LENHTINVAT_NIETBAN,), ten = "TÍN VẬT")
                         moitruong.action_thucthicaulenh(LENHTINVAT_NIETBAN)
                     else:
+                        # Khoá vận khí để hết vận khí còn nhả giữ chỗ Hồi Thành (GiuHoiThanh.ketthuc); không khoá thì bot khác chờ đủ 25s
+                        moitruong.action_khoavankhitrieuhoi((LENHHOIMONPHAI,), ten = "HỒI THÀNH PHÙ")
                         moitruong.action_thucthicaulenh(LENHHOIMONPHAI)
                     s["lucmonphai"] = now
                     s["solanmonphai"] += 1

@@ -356,6 +356,11 @@ class CuaSo:
                     # Chia vùng lộ trình giữa các bot cùng máy: bot khác chỉ tính mình vào khi mình cũng bật; vùng đang giữ để hiện giao diện
                     "_is_chiavunglotrinh": self.tactu._is_chiavunglotrinh,
                     "_vunglotrinh": self.tactu.get_vunglotrinhshare(),
+                    # Vòng dò bản đồ của lộ trình ẩn (chưa có điểm đánh) khi bật Chia vùng, để bot cùng máy chia vùng cả lộ trình ẩn
+                    "_diemdobando": self.tactu.get_diemdobandoshare(),
+                    "_iddiemdobando": self.tactu.get_iddiemdobandoshare(),
+                    # Vòng dò Phong Yêu Kính (tự chia vùng theo người cùng dò) để bảng điểm đánh hiện điểm nào thuộc ai
+                    "_dophongyeu": self.tactu.get_dophongyeushare(),
                     "_solanthayquaibando": self.tactu.get_solanthayquaibando(),
                     "_buocdichuyen": self.tactu.get_buocdichuyen(),
                     # Hành động hiện tại (chữ, nguồn) và lịch sử [(lúc, chữ, nguồn)] mới nhất trước: dòng dưới "Đang điều khiển"

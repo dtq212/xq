@@ -2,7 +2,8 @@
 # Chạy sau mỗi lần về bán rác (bước sau sửa đồ của _xulydangbanrac, nếu bật "is_catkhosauban") và khi bấm tay / Telegram (/catkho):
 # về Tân Thủ Thôn như giao đồ, trong lúc đó không chọn quái, lộ trình điểm đánh tạm dừng.
 # Lệnh game (7e# = id đối tượng Quản Khố hệ 16, tìm theo tên):
-#   mở rương  : pawn 7e# <rương>                         (rương từ 1)
+# Lệnh tay khi đang ở Chu Quốc: cất luôn ở Chu chỗ Chủ Tiệm Sửa Chữa (X_KHO_CHU, Y_KHO_CHU), không Hồi Thành Phù về Tân Thủ Thôn.
+#   mở rương  : pawn 7e# <rương>                        (rương từ 1)
 #   cất vào   : pawn + 7e# <id món>#<số lượng> <ô rương>   (ô từ 1; ô đang có cùng món thì gộp chồng; số lượng nhỏ hơn chồng = cất 1 phần)
 # Đọc rương đang mở bằng moitruong.get_khodangmo (chỉ rương vừa mở có dữ liệu). Mỗi món: cất vào rương luật chỉ định (đầy thì bỏ món
 # đó, báo), luật để tự động thì rương đang mở còn chỗ / rương kế, hết rương thì báo kho đầy; trong rương ưu tiên gộp chồng cùng tên,
@@ -131,7 +132,9 @@ class TacTuCatKho:
         noidung = "\n".join(phans)
         print(f"[CẤT KHO] {noidung.replace(chr(10), ' | ')}")
         self._ketquacatkho = f"{time.strftime('%H:%M')} {noidung.splitlines()[0]}"
-        if viec["dacat"] or bo or loi or viec["lydo"] == LYDOCATKHO_LENHTAY:
+        # Cất xong bình thường thì chỉ ghi log, không gửi Telegram (người dùng thấy quá nhiều);
+        # vẫn gửi khi có món không cất được, có lỗi, hoặc cất theo lệnh tay
+        if bo or loi or viec["lydo"] == LYDOCATKHO_LENHTAY:
             baosuco(self.moitruong, "catkho", noidung, khoa = viec["id"], giancach = 0.)
         return "lỗi" if loi else "xong"
 
@@ -172,10 +175,20 @@ class TacTuCatKho:
         if not mons:
             return self._ketthuccatkho(viec)
 
+        # Chu Quốc: cất ở chỗ Chủ Tiệm Sửa Chữa (X_KHO_CHU, Y_KHO_CHU); thấy Quản Khố thì dùng Quản Khố, không thì gửi lệnh pawn cho
+        # Chủ Tiệm Sửa Chữa
+        tennpc = QUANKHO
         diachinpc = moitruong.action_timkiemnhanvat(tennhanvat = QUANKHO)
+        if moitruong.get_idbandohientai() == BANDO_CHUQUOC:
+            xmacdinh, ymacdinh = X_KHO_CHU, Y_KHO_CHU
+            if not diachinpc:
+                tennpc = CHUTIEMSUACHUA
+                diachinpc = moitruong.action_timkiemnhanvat(tennhanvat = CHUTIEMSUACHUA)
+        else:
+            xmacdinh, ymacdinh = X_QUANKHO_TANTHUTHON, Y_QUANKHO_TANTHUTHON
         if not diachinpc or moitruong.get_khoangcach(diachinpc) > KHOANGCACHQUANKHO:
-            viec["trangthai"] = "đang tới Quản Khố"
-            x, y = moitruong.get_toado(diachinpc) if diachinpc else (X_QUANKHO_TANTHUTHON, Y_QUANKHO_TANTHUTHON)
+            viec["trangthai"] = f"đang tới {tennpc}"
+            x, y = moitruong.get_toado(diachinpc) if diachinpc else (xmacdinh, ymacdinh)
             return "dichuyen", round(x), round(y)
         moitruong.action_ngatdichuyen()
         manpc = f"{moitruong.get_iddoituong(diachinpc):x}#"
@@ -281,7 +294,9 @@ class TacTuCatKho:
         moitruong = self.moitruong
         if moitruong.get_is_nhanvatdachet() or moitruong.get_is_dangvankhi() or self.get_is_danghoithoainpc() or self._trangthaiveban != 0:
             return None
-        if moitruong.get_idbandohientai() != BANDO_TANTHUTHON:
+        idbando = moitruong.get_idbandohientai()
+        # Đang ở Chu Quốc thì cất luôn ở Chu (chạy bộ tới Chủ Tiệm Sửa Chữa), không phù về Tân Thủ Thôn
+        if idbando not in (BANDO_TANTHUTHON, BANDO_CHUQUOC):
             viec["trangthai"] = "đang về Tân Thủ Thôn"
             if time.time() - viec["batdau"] > THOIGIANCATKHOLENHTAYTOIDA:
                 self._ketthuccatkho(viec, f"quá {int(THOIGIANCATKHOLENHTAYTOIDA // 60)} phút chưa về tới Tân Thủ Thôn")
@@ -291,5 +306,5 @@ class TacTuCatKho:
                 return self._thuchienbuocditoibando(buoc, BANDO_TANTHUTHON, None, "[CẤT KHO] Tân Thủ Thôn")
         kq = self._buoccatkho(viec)
         if isinstance(kq, tuple):
-            return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (kq[1], kq[2], BANDO_TANTHUTHON), "khoangcachtoida": KHOANGCACHQUANKHO - 1}
+            return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (kq[1], kq[2], idbando), "khoangcachtoida": KHOANGCACHQUANKHO - 1}
         return None

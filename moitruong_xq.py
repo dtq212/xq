@@ -1459,6 +1459,19 @@ class MoiTruong:
         x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         return read_int(self.tientrinh, x + DC.KDK_KINHNGHIEM + 0x28) if x else None
 
+    def get_thuoctinhtiemnang(self):
+        # 5 ô thuộc tính tiềm năng (bảng Nhân Vật, ô 4 = Nại lực) ở KDK+0x1518..0x1528, đo 2026-11-05; None khi chưa đọc được
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
+        if not x:
+            return None
+        giatris = [read_int(self.tientrinh, x + 0x1518 + 4 * i) for i in range(5)]
+        return None if any(g is None or g is False for g in giatris) else giatris
+
+    def get_diemtiemnangconlai(self):
+        # Điểm tiềm năng chưa cộng KDK+0x1598 (acc gà = 4 × cấp), None khi chưa đọc được
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
+        return read_int(self.tientrinh, x + 0x1598) if x else None
+
     def get_soluongvatphamhanhtrangtheoten(self):
         # {tên: tổng số lượng} của cả hành trang trong 2 lần đọc; món không xếp chồng (số lượng 0) tính là 1
         soluongo = self.get_soluongvatphamhanhtrangtoida() + 1
@@ -2156,10 +2169,13 @@ class MoiTruong:
         return read_int(self.tientrinh, self.diachixq + DC.NHANVATDANGCHICHUOT)
 
     def get_is_cothegaychoang(self, diachicosothongtinnhanvat, thoigiangiancach = 2.0):
-        if not diachicosothongtinnhanvat or not self.get_is_nguoichoi(diachicosothongtinnhanvat): return False
+        if not diachicosothongtinnhanvat:
+            return False
         idnguoichoi = self.get_idnguoichoi(diachicosothongtinnhanvat)
-        if idnguoichoi <= 0: return True
-        if self.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), False, diachicosothongtinnhanvat, is_hieuungcoloi = 0): return False
+        if idnguoichoi <= 0:
+            return True
+        if self.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), False, diachicosothongtinnhanvat, is_hieuungcoloi = 0):
+            return False
         thoidiembichoanggannhat = self._thoidiemmuctieubichoanggannhat_map.get(idnguoichoi, 0)
         return time.time() - thoidiembichoanggannhat >= thoigiangiancach
 

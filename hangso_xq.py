@@ -116,8 +116,9 @@ SOLANHOITHANHPHUTOIDA = 3
 THOIGIANDEMHOITHANHPHU = 600.
 # Không bao giờ để 2 nhân vật (các cửa sổ cùng máy) Hồi Thành Phù / Tín Vật / Hồi Môn Phái cùng lúc: rất lộ (người dùng dặn 2026-11-06).
 # Bot dùng giữ chỗ chung (dieuphoi_xq.GiuHoiThanh) suốt lúc chờ + vận khí (tối đa THOIGIANKHOAVANKHITRIEUHOITOIDA), hết vận khí
-# thì giữ thêm ngẫu nhiên trong khoảng này (giây) rồi bot khác mới được dùng, khỏi thấy các nhân vật biến mất nối đuôi nhau
-KHOANGNGHIHOITHANHGIUACACBOT = (6., 15.)
+# thì giữ thêm ngẫu nhiên trong khoảng này (giây) rồi bot khác mới được dùng. Người dùng dặn 2026-11-07: chỉ cần cách nhau 5s
+# (6-15s cũ cộng vận khí làm 3-4 bot xếp hàng về thành rất chậm)
+KHOANGNGHIHOITHANHGIUACACBOT = (5., 5.)
 # Giữ chỗ lúc vừa gửi lệnh: phủ cả chờ vào vận khí + vận khí (phòng bot chết giữa chừng thì chỗ tự hết hạn)
 THOIGIANGIUHOITHANHTOIDA = 25.
 # Tên khoá vận khí (action_khoavankhitrieuhoi) là về thành: hết khoá thì nhả giữ chỗ GiuHoiThanh
@@ -440,10 +441,8 @@ VITRIKYNANG_NGUKIEMTHUAT = 2310
 VITRIKYNANG_TIENNHANCHILO = 2311
 VITRIKYNANG_VANKIEMXUYENTAM = 2312
 VITRIKYNANG_VANVUTIEUDIEU = 2315
-VITRIKYNANG_VANVUTIEUDIEU = 2313
 VITRIKYNANG_BANGTAMTHUC = 2313
 VITRIKYNANG_LANGKHONGCHIHUYET = 2314
-VITRIKYNANG_LANGKHONGCHIHUYET = 2315
 VITRIKYNANG_NGUKIEMPHITIEN = 2316
 
 VITRIKYNANG_TIENKHI = 3252
@@ -928,6 +927,9 @@ Y_CHUTIEMTAPHOA_TANTHUTHON = 145
 
 X_QUANKHO_TANTHUTHON = 103
 Y_QUANKHO_TANTHUTHON = 127
+# Đang ở Chu Quốc thì cất kho ở đây luôn (chỗ Chủ Tiệm Sửa Chữa), không Hồi Thành Phù về Tân Thủ Thôn
+X_KHO_CHU = 234
+Y_KHO_CHU = 185
 # Mỗi rương kho 7 x 7 ô
 SOOMOIRUONGKHO = 49
 
@@ -1478,6 +1480,8 @@ DUONGUUTIENs = (
 # Tuỳ chọn "Đi quốc gia bằng Tân Thủ Tiên Cô" (mặc định bật, người dùng dặn 2026-11-06): tới quốc gia thì thay vì Hồi Thành Phù về Tân Thủ
 # Thôn, Tín Vật về môn phái, nói chuyện Tân Thủ Tiên Cô trong môn phái phù lên bản đồ gần quốc gia rồi chạy 1 cổng sang.
 # Quốc gia -> bản đồ phù tới (đều có trong menu Tân Thủ Tiên Cô, cách quốc gia 1 cổng; kiểm tra bằng timduongbando 2026-11-06)
+# Không có Chu Quốc và Tân Thủ Thôn (người dùng dặn 2026-11-07): tới hai nơi này đi như cũ (Hồi Thành Phù, Chủ Dịch Trạm,
+# đường ưu tiên Thủ Dương Sơn của DUONGUUTIENs vẫn giữ)
 BANDOGANQUOCGIA_TANTHUTIENCO = {
     BANDO_TRIEUQUOC: 131,  # Cự Lộc
     BANDO_TEQUOC: 211,     # Mã Đạp Hồ
@@ -1485,7 +1489,6 @@ BANDOGANQUOCGIA_TANTHUTIENCO = {
     BANDO_YENQUOC: 271,    # Trác Lộc
     BANDO_SOQUOC: 261,     # Chân Núi Đại Biệt
     BANDO_HANQUOC: 21,     # Tương Lăng
-    BANDO_CHUQUOC: 81,     # Thủ Dương Sơn
     BANDO_TANQUOC: 151,    # Kênh Trịnh Quốc 1
 }
 
