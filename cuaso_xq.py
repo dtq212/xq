@@ -353,6 +353,9 @@ class CuaSo:
                     "_tenbodotrieuhoi": [mon["ten"] for mon in self.tactu._bodotrieuhoi],
                     "_baothutrieuhoimaoson": self.tactu._baothutrieuhoimaoson,
                     "_is_nguocchieulotrinh": self.tactu._is_nguocchieulotrinh,
+                    # Chia vùng lộ trình giữa các bot cùng máy: bot khác chỉ tính mình vào khi mình cũng bật; vùng đang giữ để hiện giao diện
+                    "_is_chiavunglotrinh": self.tactu._is_chiavunglotrinh,
+                    "_vunglotrinh": self.tactu.get_vunglotrinhshare(),
                     "_solanthayquaibando": self.tactu.get_solanthayquaibando(),
                     "_buocdichuyen": self.tactu.get_buocdichuyen(),
                     # Hành động hiện tại (chữ, nguồn) và lịch sử [(lúc, chữ, nguồn)] mới nhất trước: dòng dưới "Đang điều khiển"
@@ -492,6 +495,8 @@ class CuaSo:
                     self.tactu.tuchon_lotrinhmau()
                 elif isinstance(cmd, str) and cmd.startswith("set_nguocchieulotrinh:"):
                     self.tactu.thietlap_nguocchieulotrinh(cmd.split(":", 1)[1] == "1")
+                elif isinstance(cmd, str) and cmd.startswith("set_chiavunglotrinh:"):
+                    self.tactu.thietlap_chiavunglotrinh(cmd.split(":", 1)[1] == "1")
                 elif cmd == "tieptuchoatdong":
                     self.tactu.tieptuchoatdong()
                 elif isinstance(cmd, str) and cmd.startswith("set_tatbot:"):

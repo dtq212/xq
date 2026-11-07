@@ -14,7 +14,7 @@ from dexuatlotrinh_xq import taiviquai as util_taiviquai, luuviquai as util_luuv
 from bando_xq import timduongbando, laynpcloidi
 from dexuatlotrinh_xq import THOIGIANGHIVITRIQUAI, THOIGIANLUUVITRIQUAI, SOLANTHAYQUAITOITHIEU, TENMAUDEXUAT, TENMAUDO, dexuatlotrinhdo
 from nhiemvu_xq import _laydiemcong as nhiemvu_laydiemcong, KHOANGCACHTRANHCONG, BANDOMONPHAI
-from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, donbangthoidiem
+from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, donbangthoidiem, khoangcachtamdanh
 from thongbao_xq import baosuco
 
 # Việc tự động đứng chờ (không có đường...) liên tục chừng này giây thì phát âm + báo Telegram (_baodungcho)
@@ -1594,7 +1594,10 @@ class TacTuDiChuyen:
         diemcungbandos = [d for d in self._diemdanhxungquanhs if len(d) >= 3 and d[2] == idbandohientai]
         if not diemcungbandos:
             return True
-        return any(math.dist((x, y), (d[0], d[1])) <= self._bankinhdiemdanh for d in diemcungbandos)
+        if not any(math.dist((x, y), (d[0], d[1])) <= self._bankinhdiemdanh for d in diemcungbandos):
+            return False
+        # Chia vùng với bot cùng máy: chỉ đánh quái thuộc vùng mình (điểm đánh gần quái nhất nằm trong đoạn của mình)
+        return self._is_trongvunglotrinh(x, y)
 
     def _nhacbandokhongcodiemdanh(self):
         # Đang bật lộ trình mà bản đồ hiện tại không có điểm đánh nào: mọi mục tiêu bị bỏ qua mà không báo gì thì dễ tưởng đang đánh,
@@ -1774,6 +1777,16 @@ class TacTuDiChuyen:
                         self._thoidiemphatamlacmapgannhat = time.time()
                 break
 
+            # Chia vùng với bot cùng máy cùng lộ trình: điểm đang tới không thuộc vùng mình (mới chia / chia lại) thì vào điểm gần nhất
+            # trong vùng; khi chia vùng không nhường điểm theo ID nữa
+            vung = self._layvunglotrinh() if diemdanhxungquanhs is self._diemdanhxungquanhs else None
+            if vung and idbandohientai and (self._iddiemdanhxungquanhhientai not in vung["tapchiso"] or not self._diemdanhxungquanhhientai):
+                idxvung = self._chondiemtrongvung(vung, idbandohientai)
+                print(f"[LỘ TRÌNH] Vùng {vung['stt'] + 1}/{vung['tong']}: vào điểm #{idxvung + 1}")
+                self._iddiemdanhxungquanhhientai = idxvung
+                self._diemdanhxungquanhhientai = diemdanhxungquanhs[idxvung]
+                self._thoidiembatdaudendiem = time.time()
+
             if self._iddiemdanhxungquanhhientai == -1 or not self._diemdanhxungquanhhientai:
                 # Vừa mở bot chưa đọc được bản đồ hiện tại (False): chờ, không thì không có điểm nào "cùng bản đồ" và bị chọn điểm 0
                 # (vd đang ở bản đồ thứ 2 của lộ trình lại chạy ngược về điểm đầu ở bản đồ 1)
@@ -1815,7 +1828,7 @@ class TacTuDiChuyen:
 
                 if dist_to_target <= 4.0:
                     canchuyendendiemtieptheo = True
-                elif time.time() - self._thoidiembatdaudendiem > 1.0 and self._is_diemtrongvungdongdoiuutien(target_point[0], target_point[1], self._laytoadodongdoikhacnhom()):
+                elif not vung and time.time() - self._thoidiembatdaudendiem > 1.0 and self._is_diemtrongvungdongdoiuutien(target_point[0], target_point[1], self._laytoadodongdoikhacnhom()):
                     # Điểm đánh đang nằm trong vùng (chỗ đứng / điểm đang tới) của nhân vật ưu tiên hơn => nhảy thẳng tới điểm xuôi lộ trình
                     # đầu tiên ngoài vùng; không còn điểm nào ngoài vùng thì giữ điểm này (trước nhảy từng điểm mỗi giây, chạy qua chạy lại)
                     idxkhongtrung = self._chondiemkhongtrungdongdoi(self._iddiemdanhxungquanhhientai, diemdanhxungquanhs, idbandohientai)
@@ -1841,11 +1854,14 @@ class TacTuDiChuyen:
                     self._sodiemdadilotrinhdo += 1
                     if self._sodiemdadilotrinhdo >= len(diemdanhxungquanhs) and self._chuyensanglotrinhdexuat():
                         break
-                next_index = (self._iddiemdanhxungquanhhientai + 1) % len(diemdanhxungquanhs)
-                # Bỏ qua các điểm bot ID nhỏ hơn đang đứng / đang tới (bot ID nhỏ nhất đi lộ trình bình thường, bot sau rải ra phía trước)
-                idxkhongtrung = self._chondiemkhongtrungdongdoi(next_index, diemdanhxungquanhs, idbandohientai)
-                if idxkhongtrung is not None:
-                    next_index = idxkhongtrung
+                if vung:
+                    next_index = self._diemketieptrongvung(vung, self._iddiemdanhxungquanhhientai)
+                else:
+                    next_index = (self._iddiemdanhxungquanhhientai + 1) % len(diemdanhxungquanhs)
+                    # Bỏ qua các điểm bot ID nhỏ hơn đang đứng / đang tới (bot ID nhỏ nhất đi lộ trình bình thường, bot sau rải ra phía trước)
+                    idxkhongtrung = self._chondiemkhongtrungdongdoi(next_index, diemdanhxungquanhs, idbandohientai)
+                    if idxkhongtrung is not None:
+                        next_index = idxkhongtrung
 
                 self._iddiemdanhxungquanhhientai = next_index
                 self._diemdanhxungquanhhientai = diemdanhxungquanhs[next_index]
@@ -1860,8 +1876,14 @@ class TacTuDiChuyen:
             is_chicungbando = not self._is_dilotrinhkhacbando or self.moitruong.get_is_phobanmuonbando()
             if is_khacbando and (is_chicungbando or (idbandohientai in BANDOPHOBANs and timduongbando(idbandohientai, target_map) is None)):
                 sodiem = len(diemdanhxungquanhs)
-                for buocnhay in range(1, sodiem + 1):
-                    idx = (self._iddiemdanhxungquanhhientai + buocnhay) % sodiem
+                if vung:
+                    # Chia vùng: chỉ tìm trong đoạn của mình
+                    chisos = vung["chisos"]
+                    vitri = chisos.index(self._iddiemdanhxungquanhhientai) if self._iddiemdanhxungquanhhientai in vung["tapchiso"] else -1
+                    ungviens = [chisos[(vitri + buocnhay) % len(chisos)] for buocnhay in range(1, len(chisos) + 1)]
+                else:
+                    ungviens = [(self._iddiemdanhxungquanhhientai + buocnhay) % sodiem for buocnhay in range(1, sodiem + 1)]
+                for idx in ungviens:
                     p_map_id = diemdanhxungquanhs[idx][2]
                     if p_map_id == idbandohientai or (not is_chicungbando and timduongbando(idbandohientai, p_map_id) is not None):
                         break
@@ -1880,7 +1902,8 @@ class TacTuDiChuyen:
                 buoc = self._lapbuocditoibando(target_map)
                 yeucautudomoi = self._thuchienbuocditoibando(buoc, target_map, self._diemdanhxungquanhhientai[:2], f"[LỘ TRÌNH] Điểm đánh ở {laytenbando(target_map)}")
                 break
-            self._capnhatbuocdichuyen(f"Chạy tới điểm đánh #{self._iddiemdanhxungquanhhientai + 1} ({self._diemdanhxungquanhhientai[0]}, {self._diemdanhxungquanhhientai[1]})")
+            chuvung = f" [vùng {vung['stt'] + 1}/{vung['tong']}: #{vung['chisos'][0] + 1}-#{vung['chisos'][-1] + 1}]" if vung else ""
+            self._capnhatbuocdichuyen(f"Chạy tới điểm đánh #{self._iddiemdanhxungquanhhientai + 1} ({self._diemdanhxungquanhhientai[0]}, {self._diemdanhxungquanhhientai[1]}){chuvung}")
             yeucautudomoi = {
                 "yeucau": YEUCAUDICHUYENDICHUYENTUDO,
                 "toadodich": self._diemdanhxungquanhhientai,
@@ -1986,6 +2009,128 @@ class TacTuDiChuyen:
 
     def thietlap_nguocchieulotrinh(self, is_nguocchieu):
         self._is_nguocchieulotrinh = bool(is_nguocchieu)
+
+    def thietlap_chiavunglotrinh(self, is_chiavung):
+        self._is_chiavunglotrinh = bool(is_chiavung)
+        self._bonhovunglotrinh = (0., None)
+
+    @staticmethod
+    def _khoalotrinh(diems):
+        # Khoá so sánh lộ trình không phụ thuộc chiều đi: (tuple điểm theo chiều "nhỏ hơn", mình có đang đi chiều đảo của khoá không).
+        # Hai bot nạp cùng mẫu, một bot đi ngược chiều vẫn ra cùng khoá => chia cùng một cách
+        try:
+            xuoi = tuple((int(d[0]), int(d[1]), int(d[2])) for d in diems)
+        except (TypeError, ValueError, IndexError):
+            return None, False
+        nguoc = xuoi[::-1]
+        return (xuoi, False) if xuoi <= nguoc else (nguoc, True)
+
+    def _layvunglotrinh(self):
+        # Vùng lộ trình của mình khi chia vùng với các bot cùng máy (None = không chia: tắt ô, đi một mình, đang theo sau...).
+        # {"chisos": chỉ số điểm của mình theo thứ tự đi, "tapchiso", "ids": ID cả nhóm chia vùng, "stt", "tong", "sodiem"}. Nhớ 1s
+        thoidiem, ketqua = self._bonhovunglotrinh
+        if time.time() - thoidiem < 1. and (ketqua is None or ketqua["sodiem"] == len(self._diemdanhxungquanhs)):
+            return ketqua
+        ketqua = self._tinhvunglotrinh()
+        self._bonhovunglotrinh = (time.time(), ketqua)
+        khoa = (ketqua["stt"], ketqua["tong"], ketqua["chisos"][0], ketqua["chisos"][-1]) if ketqua else None
+        if khoa != self._khoavunglotrinhdabao:
+            self._khoavunglotrinhdabao = khoa
+            if ketqua:
+                print(f"[LỘ TRÌNH] Chia vùng {ketqua['tong']} bot cùng lộ trình: mình vùng {ketqua['stt'] + 1}, "
+                      f"điểm #{min(ketqua['chisos']) + 1}-#{max(ketqua['chisos']) + 1}/{ketqua['sodiem']}")
+            else:
+                print("[LỘ TRÌNH] Hết chia vùng: đi cả lộ trình")
+        return ketqua
+
+    def _tinhvunglotrinh(self):
+        # Nhóm chia vùng = mình + các bot cùng máy (shared_data, cập nhật trong 5s) đang bật lộ trình và ô chia vùng, không tắt bot, không
+        # theo sau, đi CÙNG lộ trình (cả ngược chiều). Không xét bản đồ: bot về thành bán rác / chết vẫn giữ vùng, khỏi chia lại liên tục.
+        # Lộ trình (theo chiều khoá) cắt thành `tong` đoạn liền nhau gần bằng nhau, bot ID nhỏ nhất lấy đoạn đầu. Ít điểm hơn số bot thì
+        # vài bot chung 1 điểm (không tránh được)
+        diems = self._diemdanhxungquanhs
+        if not self._is_chiavunglotrinh or not self._is_tudongdichuyendiemdanhxungquanh or not diems or len(diems) < 2 \
+                or self._is_tudongtheosau or self.shared_data is None:
+            return None
+        khoa, is_dao = self._khoalotrinh(diems)
+        idbanthan = self.moitruong.get_idnguoichoi()
+        if khoa is None or not idbanthan:
+            return None
+        try:
+            danhsach = list(self.shared_data.items())
+        except Exception:
+            return None
+        ids = {idbanthan}
+        for idcuaso, info in danhsach:
+            if idcuaso == self.idcuaso or not isinstance(info, dict):
+                continue
+            idkhac = info.get("idnguoichoi")
+            if not idkhac or idkhac == idbanthan or time.time() - info.get("thoidiemcapnhat", 0.) > 5.:
+                continue
+            if info.get("_is_tatbot") or info.get("_is_tudongtheosau") or not info.get("_is_tudongdichuyendiemdanhxungquanh") \
+                    or not info.get("_is_chiavunglotrinh"):
+                continue
+            if self._khoalotrinh(info.get("_diemdanhxungquanhs") or [])[0] != khoa:
+                continue
+            ids.add(idkhac)
+        if len(ids) < 2:
+            return None
+        thutuid = sorted(ids)
+        stt = thutuid.index(idbanthan)
+        tong = len(thutuid)
+        sodiem = len(khoa)
+        batdau = stt * sodiem // tong
+        ketthuc = max(batdau + 1, (stt + 1) * sodiem // tong)
+        chisos = sorted(sodiem - 1 - i if is_dao else i for i in range(batdau, ketthuc))
+        return {"chisos": chisos, "tapchiso": set(chisos), "ids": set(thutuid), "stt": stt, "tong": tong, "sodiem": sodiem}
+
+    def get_vunglotrinhshare(self):
+        # [vùng thứ mấy, tổng số vùng, điểm đầu, điểm cuối] (đánh số từ 1 theo lộ trình của mình) cho giao diện, None nếu không chia
+        _, vung = self._bonhovunglotrinh
+        if not vung:
+            return None
+        return [vung["stt"] + 1, vung["tong"], vung["chisos"][0] + 1, vung["chisos"][-1] + 1]
+
+    def _is_trongvunglotrinh(self, x, y):
+        # Quái (x, y) thuộc vùng mình khi điểm đánh gần nó nhất (cùng bản đồ) là điểm trong vùng mình. Quái đang sát mình (<= 2 ô, thường
+        # là con đang đánh mình lúc đi ngang vùng khác) vẫn cho đánh. Không chia vùng / bản đồ không có điểm nào thì không giới hạn
+        vung = self._layvunglotrinh()
+        if not vung:
+            return True
+        if khoangcachtamdanh((x, y), self.moitruong.get_toado()) <= 2:
+            return True
+        idbando = self.moitruong.get_idbandohientai()
+        gannhat = None
+        for idx, d in enumerate(self._diemdanhxungquanhs):
+            if len(d) < 3 or d[2] != idbando:
+                continue
+            khoangcach = math.dist((x, y), (d[0], d[1]))
+            if gannhat is None or khoangcach < gannhat[0]:
+                gannhat = (khoangcach, idx)
+        return gannhat is None or gannhat[1] in vung["tapchiso"]
+
+    def _chondiemtrongvung(self, vung, idbando):
+        # Điểm vào vùng: điểm trong vùng gần mình nhất trên bản đồ đang đứng, không có thì điểm đầu đoạn
+        tot = None
+        for idx in vung["chisos"]:
+            d = self._diemdanhxungquanhs[idx]
+            if d[2] == idbando:
+                khoangcach = self.moitruong.get_khoangcachdiem(d[0], d[1])
+                if tot is None or khoangcach < tot[0]:
+                    tot = (khoangcach, idx)
+        return tot[1] if tot else vung["chisos"][0]
+
+    def _diemketieptrongvung(self, vung, idxhientai):
+        # Đi qua lại trong đoạn của mình (tới đầu / cuối đoạn thì quay đầu), không vòng về đầu lộ trình băng qua vùng bot khác
+        chisos = vung["chisos"]
+        if len(chisos) == 1:
+            return chisos[0]
+        if idxhientai not in vung["tapchiso"]:
+            return self._chondiemtrongvung(vung, self.moitruong.get_idbandohientai())
+        vitri = chisos.index(idxhientai)
+        if not 0 <= vitri + self._huongvunglotrinh < len(chisos):
+            self._huongvunglotrinh = -self._huongvunglotrinh
+        return chisos[vitri + self._huongvunglotrinh]
 
     def tuchon_lotrinhmau(self, idbando = None):
         # Chọn mẫu ít nhân vật khác dùng nhất trên cùng bản đồ; mẫu nào cũng có người dùng thì đi chiều còn lại để không bám đuôi nhau.

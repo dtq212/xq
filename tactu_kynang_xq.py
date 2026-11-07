@@ -2199,10 +2199,15 @@ class TacTuKyNang:
         cu = self._yeucautancongxuat
         diachicu = cu.get("diachimuctieu") if cu else None
         if self._is_giuyeucautancongcu and diachicu \
-                and thoidiemhientai - self._thoidiemxuatyeucautancong < THOIGIANGIUYEUCAUTANCONG \
                 and diachicu == self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon() \
                 and self.moitruong.get_is_nhanvattontai(diachicu) and not self.moitruong.get_is_nhanvatdachet(diachicu):
-            return
+            dagiu = thoidiemhientai - self._thoidiemxuatyeucautancong
+            # Mục tiêu còn trong tầm đánh thì giữ lâu hơn: mọi chiêu đang hồi / chờ số bay (Tự học chờ ~0.84s mỗi chiêu) có khi >1.5s không
+            # ra yêu cầu nào, hết giữ là rơi xuống Đi dạo chạy về điểm tuần sư môn / lộ trình rồi lượt sau lại quay về đánh (log 342
+            # 07/11 00:47:06, 00:47:15: Đao Dũng cách 1-2 ô vẫn "ĐI DẠO (TỰ DO)" về điểm 6/24)
+            if dagiu < THOIGIANGIUYEUCAUTANCONG or (dagiu < THOIGIANGIUYEUCAUTANCONGTRONGTAM
+                                                   and self.moitruong.get_khoangcachtamdanh(diachicu) <= self._khoangcachsudungkynangtamxa):
+                return
         self._yeucautancongxuat = None
 
     def _tudongsudungkynang(self):
@@ -2375,8 +2380,8 @@ class TacTuKyNang:
             (VITRIKYNANG_TIENTHANVODICH, "sudungkynangkhongmuctieu", lambda: (phantramsinhluc <= 25 or (is_muctieupk and phantramsinhluc <= 50)), 0, None, True),
             (VITRIKYNANG_TIEUCHUTHIEN, "sudungkynanglendongdoi", lambda: diachidongdoicanbuff, self._khoangcachsudungkynangtamxa, diachidongdoicanbuff, False),
             (VITRIKYNANG_BANGPHACHNGANTAM, "sudungkynangkhongmuctieu", lambda: not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_BANGPHACHNGANTAM, HIEUUNGKYNANG_LANHNGUYETTAMPHAP), True, is_hieuungcoloi = 1), 0, None, True),
-            (VITRIKYNANG_LANGKHONGCHIHUYET, "sudungkynangmuctieu", lambda: is_muctieupk and self.moitruong.get_is_cothegaychoang(diachimuctieu) and khoangcach <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, True),
-            (VITRIKYNANG_VANKIEMXUYENTAM, "sudungkynangmuctieu", lambda: is_muctieupk and khoangcach <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, True),
+            (VITRIKYNANG_LANGKHONGCHIHUYET, "sudungkynangmuctieu", lambda: diachimuctieu and self.moitruong.get_is_cothegaychoang(diachimuctieu) and khoangcach <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, True),
+            (VITRIKYNANG_VANKIEMXUYENTAM, "sudungkynangmuctieu", lambda: diachimuctieu and khoangcach <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, True),
             # Đang di chuyển tự do (farm): cụm quái đếm quanh mục tiêu, còn Ngự Kiếm Phi Tiên đánh quanh bản thân
             # => chạy vào sát mục tiêu (giữa cụm) rồi mới ra chiêu để trúng nhiều mục tiêu nhất
             (VITRIKYNANG_NGUKIEMPHITIEN, "dichuyentiepcandenkhoangcach", lambda: is_ngukiemtiepcan and khoangcach > KHOANGCACHTIEPCANNGUKIEMPHITIEN, KHOANGCACHTIEPCANNGUKIEMPHITIEN, None, False),

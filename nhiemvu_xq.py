@@ -530,17 +530,24 @@ class SoVitri:
         try:
             with open(duongdan, encoding = "utf-8") as file:
                 dulieu = json.load(file)
-            return {"npc": dict(dulieu.get("npc") or {}), "quai": dict(dulieu.get("quai") or {}), "cuahang": dict(dulieu.get("cuahang") or {}),
+            # NPC khoá "<bản đồ>|<tên>": cùng danh hiệu có ở nhiều nước ("Chủ Tiệm Giáp Trụ" Tân Thủ Thôn / Tề / Sở...), trước khoá theo
+            # tên nên nước này đè nước kia, tìm ở Tề Quốc ra chỗ Tân Thủ Thôn. File cũ (khoá chỉ tên) đổi sang khoá mới lúc đọc
+            npcs = {}
+            for ten, v in (dulieu.get("npc") or {}).items():
+                if isinstance(v, list) and len(v) >= 3:
+                    npcs[ten if "|" in ten else f"{v[0]}|{ten}"] = v
+            return {"npc": npcs, "quai": dict(dulieu.get("quai") or {}), "cuahang": dict(dulieu.get("cuahang") or {}),
                     "dadi": dict(dulieu.get("dadi") or {})}
         except (OSError, ValueError):
             return {"npc": {}, "quai": {}, "cuahang": {}, "dadi": {}}
 
     def ghinpc(self, ten, idbando, x, y):
         with self._khoa:
-            cu = self._cuatoi["npc"].get(ten)
+            khoa = f"{idbando}|{ten}"
+            cu = self._cuatoi["npc"].get(khoa)
             # NPC đứng yên: chỉ ghi khi đổi chỗ hơn 2 ô (đi lại quanh chỗ đứng)
-            if not cu or cu[0] != idbando or abs(cu[1] - x) + abs(cu[2] - y) > 4:
-                self._cuatoi["npc"][ten] = [idbando, x, y]
+            if not cu or abs(cu[1] - x) + abs(cu[2] - y) > 4:
+                self._cuatoi["npc"][khoa] = [idbando, x, y]
                 self._is_doi = True
 
     def ghiquai(self, ten, idbando, x, y):
@@ -642,7 +649,7 @@ class SoVitri:
 
     def _laynguonnpc(self, thumucgame):
         # Các nguồn vị trí NPC theo thứ tự tin cậy, mỗi nguồn [(tên, bản đồ, x, y)] (cùng tên có thể ở nhiều bản đồ)
-        return ([(ten, *v[:3]) for ten, v in self._laygop()["npc"].items()], _laynpcbandonho(thumucgame),
+        return ([(khoa.split("|", 1)[1], *v[:3]) for khoa, v in self._laygop()["npc"].items()], _laynpcbandonho(thumucgame),
                 [(ten, *v[:3]) for ten, v in VITRINPCCODINH.items()],
                 [(ten, *v[:3]) for ten, v in (_taiquestlink(thumucgame) if thumucgame else {}).items()])
 

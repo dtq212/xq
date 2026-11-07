@@ -14,6 +14,13 @@ from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, donbangthoid
 
 # Ép đá: 1->4 sao luôn thành công, 4->5 khoảng 65%, 5->6 khoảng 35%; chỉ ghi log từ 4 sao
 SAOEPDAGHILOG = 4
+# Log 2026-11-07 (ID 364): khoảng 1/3 lần mix3 máy chủ không xử lý trong 3s (hoặc xử lý mà tổng số đá theo tên không giảm kịp) =>
+# trước đây dừng hẳn, phải bấm Ctrl+Y lại 6 lần mới ép xong 1 món. Giờ chờ tối đa THOIGIANCHOEPDA giây, không thấy thì gửi lại,
+# tối đa SOLANGUIEPDA lần cho mỗi lần ép
+THOIGIANCHOEPDA = 4.
+SOLANGUIEPDA = 3
+# Đọc mô tả (desc) đôi khi không về trong 1s khi hàng đợi lệnh bận: thử lại vài lần trước khi coi là món mất
+SOLANDOCMOTAEPDA = 3
 
 
 def _demsao(motavatpham):
@@ -828,71 +835,27 @@ class TacTuMucTieu:
         return True
 
     def action_test(self):
-        # Ép Đoạn Thạch vào món ở ô 0 tới 6 sao. Lần ép từ SAOEPDAGHILOG sao trở lên ghi 1 dòng vào _internal/epda/<id>.jsonl (sao
-        # trước/sau, loại đá, giờ, số lần thất bại liên tiếp trước đó của nhân vật) để đo tỉ lệ: có đệm thất bại không, giờ có ảnh hưởng
-        # không. Dưới 4 sao luôn thành công nên không ghi (ghi thì làm mất chuỗi thất bại đang đếm)
         vitrivatpham = 0
         iddoituong = self.moitruong.get_iddoituongvatphamhanhtrang(vitrivatpham)
-        if not iddoituong:
-            return
-        duongdanlog = _duongdanlogepda(self.moitruong.get_idnguoichoi())
-        thatbaitheocap, thatbaichung = _docthatbailientiep(duongdanlog)
-        while True:
-            motavatpham = self.moitruong.get_motavatphamhanhtrang(vitrivatpham, is_napmoi = True)
-            if not motavatpham or self.moitruong.get_iddoituongvatphamhanhtrang(vitrivatpham) != iddoituong:
-                break
-            saotruoc = _demsao(motavatpham)
-            if saotruoc >= 6:
-                break
-            if saotruoc >= 4:
-                tenda = CAOCAPDOANTHACH
-            elif saotruoc >= 2:
-                tenda = TRUNGCAPDOANTHACH
-            else:
-                tenda = SOCAPDOANTHACH
-            iddoituongdoanthach = self.moitruong.action_timkiemvatphamhanhtrang(tenda)
-            if not iddoituongdoanthach:
-                break
-            soluongdatruoc = (self.moitruong.get_soluongvatphamhanhtrangtheoten() or {}).get(tenda, 0)
-            self.moitruong.action_thucthicaulenh("mix3 0# {}# {}#".format(hex(iddoituong), hex(iddoituongdoanthach)).replace("0x", ""))
-            # Đá giảm = máy chủ đã xử lý lần ép; chờ tối đa 3s, không giảm thì không ghi (lệnh không tới / bị từ chối)
-            thoidiemhet = time.time() + 3
+        if iddoituong:
             while True:
-                time.sleep(0.1)
-                soluongdasau = (self.moitruong.get_soluongvatphamhanhtrangtheoten() or {}).get(tenda, soluongdatruoc)
-                if soluongdasau < soluongdatruoc or time.time() >= thoidiemhet:
+                self.moitruong.truyvan_motavatphamhanhtrang(vitrivatpham)
+                motavatpham = self.moitruong.get_motavatphamhanhtrang(vitrivatpham)
+                if not motavatpham:
                     break
-            if soluongdasau >= soluongdatruoc:
-                print("[Ép đá] Đá không giảm, dừng")
-                break
-            time.sleep(0.2)
-            motasau = self.moitruong.get_motavatphamhanhtrang(vitrivatpham, is_napmoi = True)
-            if self.moitruong.get_iddoituongvatphamhanhtrang(vitrivatpham) != iddoituong:
-                # Món biến mất (vỡ đồ?) cũng ghi lại
-                saosau = -1
-            else:
-                saosau = _demsao(motasau) if motasau else saotruoc
-            is_thanhcong = saosau > saotruoc
-            if saotruoc >= SAOEPDAGHILOG:
-                thatbailientiep = thatbaitheocap.get(saotruoc, 0)
-                _ghilogepda(duongdanlog, {
-                    "thoidiem": time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "vatpham": self.moitruong.get_tenvatphamhanhtrang(vitrivatpham) or "",
-                    "da": tenda,
-                    "saotruoc": saotruoc,
-                    "saosau": saosau,
-                    "thanhcong": is_thanhcong,
-                    "thatbailientiep": thatbailientiep,
-                    "thatbailientiepchung": thatbaichung,
-                })
-                print("[Ép đá] {} sao -> {} sao ({}), thất bại liên tiếp trước đó: {} (cấp này) / {} (chung)".format(
-                    saotruoc, saosau, "thành công" if is_thanhcong else "thất bại", thatbailientiep, thatbaichung))
-                if is_thanhcong:
-                    thatbaitheocap[saotruoc], thatbaichung = 0, 0
+                if "★★★★★★" in motavatpham:
+                    break
+                if "★★★★★" in motavatpham or "★★★★" in motavatpham:
+                    iddoituongdoanthach = self.moitruong.action_timkiemvatphamhanhtrang(CAOCAPDOANTHACH)
+                elif "★★★" in motavatpham or "★★" in motavatpham:
+                    iddoituongdoanthach = self.moitruong.action_timkiemvatphamhanhtrang(TRUNGCAPDOANTHACH)
                 else:
-                    thatbaitheocap[saotruoc], thatbaichung = thatbailientiep + 1, thatbaichung + 1
-            if saosau < 0:
-                break
+                    iddoituongdoanthach = self.moitruong.action_timkiemvatphamhanhtrang(SOCAPDOANTHACH)
+                if iddoituongdoanthach:
+                    self.moitruong.action_thucthicaulenh("mix3 0# {}# {}#".format(hex(iddoituong), hex(iddoituongdoanthach)).replace("0x", ""))
+                    time.sleep(0.25)
+                else:
+                    break
     def action_tudongtimkiemmuctieumonphai(self):
         tenmonphai = self.moitruong.get_tenmonphai()
 
@@ -1320,6 +1283,10 @@ class TacTuMucTieu:
         #   hơn nó, kể cả mình, đứng trong vùng). Trước đây thiếu điều kiện này: bot ID nhỏ nhường quái gần bot ID lớn, bot ID lớn nhường
         #   vì quái trong vùng bot ID nhỏ => không ai đánh, 4 bot cùng lộ trình đứng nhường nhau (2026-11-06)
         idbanthan = self.moitruong.get_idnguoichoi()
+        # Đang chia vùng lộ trình: bot cùng nhóm chia vùng đã phân quái theo vùng (_kiemtra_tamdiemdanh), không nhường theo ID nữa
+        vung = self._layvunglotrinh()
+        if vung:
+            dongdois = [(toado, iddongdoi) for toado, iddongdoi in dongdois if iddongdoi not in vung["ids"]]
         for toadodongdoi, iddongdoi in dongdois:
             khoangcachdongdoi = math.dist(toadoquai, toadodongdoi)
             if iddongdoi < idbanthan and khoangcachdongdoi <= BANKINHVUNGNHUONGQUAIDONGDOI:

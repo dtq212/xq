@@ -18,6 +18,7 @@ import math
 import os
 import re
 import time
+import unicodedata
 
 from hangso_xq import *
 from bando_xq import timduongbando, CAPQUAI_MAP, BANDOCONG_MAP
@@ -921,7 +922,7 @@ class TacTuSuMon:
             return self._buoctythi(s, nv)
         if loai == LOAI_BATYEUQUAI:
             # Bắt được thì quái thành bảo thú trong danh sách (cửa sổ nhiệm vụ không báo Xong): về trả ngay
-            if any(chuanhoaten(ten) == chuanhoaten(nv["quai"]) for ten in moitruong.get_danhsachtenbaothugiangho()):
+            if self._is_dabatyeuquai(nv["quai"]):
                 return self._noichuyen(s, nv, npcgiao, ["look", "task_info"], f"nộp {nv['quai']}", bandomonphai)
             return self._buocbatyeuquai(s, nv)
         self._ketthucsumon(f"chưa biết làm nhiệm vụ này: {nv['ten']} – {nv['mucdich']}")
@@ -1065,6 +1066,7 @@ class TacTuSuMon:
                 # chạy về, đi dò khắp bản đồ)
                 return self._buocmuahang(s, {"vatpham": CONGVANTRUYNA, "soluong": SOLUONGMUACONGVANTRUYNA, "cuahang": CHUTIEMTAPHOA,
                                              "luot": nv["luot"]})
+            self._xoademmua(s, nv["luot"], CONGVANTRUYNA)
             return self._dentoi(s, idbando, None, None, nhan)
         s["chedo"] = "danhquai"
         self._batdanhquai(s)
@@ -1303,6 +1305,11 @@ class TacTuSuMon:
         lenhgive = taolenhgiao(manpc, [(iddoituong, min(nv["soluong"], max(1, moitruong.get_soluongvatphamhanhtrang(vitri) or 1)))], 0)[0]
         return self._noichuyen(s, nv, nv["npc"], [f"give:{lenhgive}"], f"giao {nv['vatpham']}", bandomonphai)
 
+    def _xoademmua(self, s, luot, vatpham):
+        # Món tiêu hao (Dây Càn Khôn, Công Văn Truy Nã) đã có trong túi = lần mua trước đã về: xoá số lần mua để lần hết sau đếm lại từ
+        # đầu. Không xoá thì bắt yêu tốn hết 30 dây ~3 lượt về mua là bị coi "mua 3 lần không được" (log 347, dù mua lần nào cũng được)
+        s["thu"].pop(f"{luot}|{vatpham}|mua", None)
+
     def _buocmuahang(self, s, nv):
         # Tới cửa hàng (tên riêng hoặc danh hiệu), tra ô / giá theo tên món trong hàng đã nhớ (chưa có thì mở cửa hàng đọc 1 lần) rồi mua
         # thẳng bằng lệnh buy, không để cửa sổ cửa hàng mở
@@ -1432,11 +1439,26 @@ class TacTuSuMon:
         s["trangthai"] = f"đánh {nv['quai']} 1 cái cho giảm máu ({mau}%)"
         return True
 
+    def _is_dabatyeuquai(self, quai):
+        # Bắt vào thì tên bảo thú bị game cắt bớt so với tên quái (người dùng: "Đao Thuẫn Khô Lâu" thành "Đao Thuẫn Khô L" / "Đao Thuẫn",
+        # so nguyên tên thì không khớp nên bắt mãi tới 4 con, hết dây phải về mua liên tục). Khớp khi tên bảo thú là phần đầu tên quái;
+        # bỏ hết dấu trước khi so vì chữ cuối bị cắt giữa chừng ("Thuẫ") thì dấu thanh không còn đúng chỗ. Tên ngắn dưới 4 ký tự bỏ qua
+        def bodau(ten):
+            ten = "".join(c for c in unicodedata.normalize("NFD", ten or "") if not unicodedata.combining(c))
+            return " ".join(ten.replace("đ", "d").replace("Đ", "D").split()).lower()
+        tenquai = bodau(quai)
+        for ten in self.moitruong.get_danhsachtenbaothugiangho():
+            ten = bodau(ten)
+            if len(ten) >= 4 and tenquai.startswith(ten):
+                return True
+        return False
+
     def _buocbatyeuquai(self, s, nv):
         moitruong = self.moitruong
         if not self._demvatpham(DAYCANKHON):
             # Hết dây: về Chủ Tiệm Tạp Hóa ở Tân Thủ Thôn mua như món Mua sắm
             return self._buocmuahang(s, {"vatpham": DAYCANKHON, "soluong": SOLUONGMUADAYCANKHON, "cuahang": CHUTIEMTAPHOA, "luot": nv["luot"]})
+        self._xoademmua(s, nv["luot"], DAYCANKHON)
         idbando = timbandotheoten(nv.get("bando"))
         if not idbando:
             self._ketthucsumon(f"không rõ bắt {nv['quai']} ở bản đồ nào: {nv['mota']}")

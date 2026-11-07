@@ -800,8 +800,8 @@ class GiaoDienHienThi:
         self.lbl_dangdieukhien.pack(anchor = tk.W)
         self.lbl_vitri = ttk.Label(frame, text = "", style = "Phu.TLabel")
         self.lbl_vitri.pack(anchor = tk.W)
-        # Hành động hiện tại + nguồn: khối riêng dưới hàng nút (đủ bề ngang cửa sổ), cao cố định 2 dòng để giao diện không nhảy lên xuống
-        # khi chữ dài / ngắn. Lịch sử ở cuối tab Khác. Dáng hộp thông báo (alert-info): nền xanh nhạt, viền + vạch nhấn trái màu chính.
+        # Hành động hiện tại + nguồn (dòng riêng bên dưới): khối riêng dưới hàng nút (đủ bề ngang cửa sổ), cao 2-4 dòng theo chữ (thường
+        # là 2: hành động + nguồn).Lịch sử ở cuối tab Khác. Dáng hộp thông báo (alert-info): nền xanh nhạt, viền + vạch nhấn trái màu chính.
         # Dùng tk.Text (chỉ đọc) để tô riêng từng phần: tên việc, số đếm x/y, toạ độ, bản đồ; phần còn lại chữ thường
         khung_hanhdong = tk.Frame(self.root, bg = self._mau["nen_thongbao"], highlightbackground = self._mau["chinh"], highlightthickness = 1)
         khung_hanhdong.pack(fill = tk.X, padx = 10, pady = (0, 6))
@@ -813,6 +813,7 @@ class GiaoDienHienThi:
                                     font = (FONTCHU, COCHU))
         self.txt_hanhdong.pack(side = tk.LEFT, fill = tk.X, expand = True, padx = (4, 8), pady = 4)
         self.txt_hanhdong.configure(state = tk.DISABLED)
+        self.txt_hanhdong.bind("<Configure>", self._chinhcaohanhdong, add = "+")
         self._khoahanhdong = None
 
         # Dòng cảnh báo tạm ngưng (chỉ hiện khi phát hiện người chơi ẩn thân) + nút bật lại
@@ -1554,6 +1555,22 @@ class GiaoDienHienThi:
                 self._nguocchieuchoxacnhan = (hwnd, self.var_nguocchieu.get(), time.time())
 
         ttk.Checkbutton(hangnut, text = "Đi ngược chiều", variable = self.var_nguocchieu, command = on_nguocchieu).pack(side = tk.LEFT)
+
+        # Chia lộ trình thành từng đoạn cho các bot cùng máy cùng lộ trình (tactu_dichuyen_xq._tinhvunglotrinh); chờ bot nhận như ngược chiều
+        self.var_chiavunglotrinh = tk.BooleanVar(value = True)
+        self._chiavungchoxacnhan = None
+
+        def on_chiavunglotrinh():
+            hwnd = self.get_selected_hwnd()
+            if hwnd:
+                self.command_dict[hwnd] = f"set_chiavunglotrinh:{1 if self.var_chiavunglotrinh.get() else 0}"
+                self._chiavungchoxacnhan = (hwnd, self.var_chiavunglotrinh.get(), time.time())
+
+        self._gantooltip(ttk.Checkbutton(hangnut, text = "Chia vùng", variable = self.var_chiavunglotrinh, command = on_chiavunglotrinh),
+                         "Các nhân vật cùng máy đi cùng lộ trình (kể cả ngược chiều) được chia lộ trình thành từng đoạn liền nhau theo "
+                         "thứ tự ID: mỗi bot chỉ đi qua lại và đánh quái trong đoạn của mình, không nhường nhau nữa").pack(side = tk.LEFT, padx = (6, 0))
+        self.lbl_vunglotrinh = ttk.Label(hangnut, text = "")
+        self.lbl_vunglotrinh.pack(side = tk.LEFT, padx = (4, 0))
 
         def on_tuchon_lotrinhmau():
             hwnd = self.get_selected_hwnd()
@@ -4751,8 +4768,22 @@ class GiaoDienHienThi:
                 o.insert(tk.END, kq.group(), tag)
                 vitri = kq.end()
             o.insert(tk.END, hanhdong[vitri:], "thuong")
-            o.insert(tk.END, f"   ·  nguồn: {nguon or '-'}", "nguon")
+            # Nguồn xuống dòng riêng bên dưới (người dùng: mỗi cái một dòng nhìn gọn hơn)
+            o.insert(tk.END, f"\nNguồn: {nguon or '-'}", "nguon")
         o.configure(state = tk.DISABLED)
+        self._chinhcaohanhdong()
+
+    def _chinhcaohanhdong(self, event = None):
+        # Cao theo số dòng hiển thị (hành động dài tự xuống dòng + dòng nguồn), 2-4 dòng; gọi lại khi đổi bề ngang cửa sổ
+        o = self.txt_hanhdong
+        try:
+            o.update_idletasks()
+            dem = o.count("1.0", "end-1c", "displaylines")
+            sodong = max(2, min(4, (dem[0] if dem else 0) + 1))
+        except tk.TclError:
+            return
+        if int(o.cget("height")) != sodong:
+            o.configure(height = sodong)
 
     def _capnhatbangdieukhien(self):
         hwnd_to_show = self.get_selected_hwnd()
@@ -4825,6 +4856,15 @@ class GiaoDienHienThi:
             self._nguocchieuchoxacnhan = choxacnhan = None
         if not choxacnhan and "_is_nguocchieulotrinh" in info and self.var_nguocchieu.get() != bool(info["_is_nguocchieulotrinh"]):
             self.var_nguocchieu.set(bool(info["_is_nguocchieulotrinh"]))
+        choxacnhan = self._chiavungchoxacnhan
+        if choxacnhan and (choxacnhan[0] != hwnd_to_show or info.get("_is_chiavunglotrinh") == choxacnhan[1] or time.time() - choxacnhan[2] > 5.):
+            self._chiavungchoxacnhan = choxacnhan = None
+        if not choxacnhan and "_is_chiavunglotrinh" in info and self.var_chiavunglotrinh.get() != bool(info["_is_chiavunglotrinh"]):
+            self.var_chiavunglotrinh.set(bool(info["_is_chiavunglotrinh"]))
+        vunglotrinh = info.get("_vunglotrinh")
+        chuvung = f"(vùng {vunglotrinh[0]}/{vunglotrinh[1]}: #{vunglotrinh[2]}-#{vunglotrinh[3]})" if vunglotrinh else ""
+        if self.lbl_vunglotrinh.cget("text") != chuvung:
+            self.lbl_vunglotrinh.config(text = chuvung)
         tenbodos = info.get("_tenbodotrieuhoi") or []
         self.lbl_bodotrieuhoi.config(text = ", ".join(tenbodos) if tenbodos else "(chưa ghi bộ đồ)")
 

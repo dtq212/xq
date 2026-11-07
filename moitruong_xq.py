@@ -222,6 +222,9 @@ class MoiTruong:
         # Số bay của mục tiêu lúc gửi chiêu (_docsobaydoituong) và đã thấy số bay mới chưa (chiêu đã trúng): thả khựng sớm
         self._sobaymuctieuxuatchieu = None
         self._is_datrungchieu = False
+        # Đã ghi tư thế về đứng im sau khi thấy số bay của chiêu gửi gần nhất chưa (mỗi chiêu chỉ ghi 1 lần: đánh thường "kill" ra đòn
+        # kế tiếp vào lại tư thế 6 mà vẫn còn cờ trúng của chiêu trước thì không được cắt)
+        self._is_dadungimsautrungchieu = False
         self._thoidiemtuthenhanvatdungimcomuctieugannhat = 0.
         self._thoidiemtuthenhanvatkhongdichuyengannhat = 0.
         # Theo từng bảo thú (Mao Sơn có thể có nhiều bảo thú triệu hồi cùng lúc, dùng chung một mốc thì con sau bị chặn lệnh)
@@ -4699,8 +4702,18 @@ class MoiTruong:
         # trọn (cắt ngang bị game đánh vi phạm); phần khựng sau đó thì thả sớm khi chiêu đã tác động xong: mục tiêu đã chết / biến mất,
         # hoặc mục tiêu đã hiện số bay (server báo trúng, _is_muctieudatrungchieu); không thấy thì giữ tối đa THOIGIANKHUNGSAUXUATCHIEU
         thoidiemhientai = time.time()
+        idtuthe = self.get_idtuthenhanvat()
+        # Mục tiêu đã hiện số bay mới (server đã tính chiêu trúng) mà nhân vật còn trong tư thế xuất chiêu: ghi về đứng im luôn,
+        # thả khựng, cho đi / ra chiêu kế ngay (người chơi yêu cầu 2026-11-07)
+        if idtuthe in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT, TUTHENHANVAT_DELAYSAUTANCONG) \
+                and not self._is_dadungimsautrungchieu and self._is_muctieudatrungchieu():
+            self._is_dadungimsautrungchieu = True
+            self.set_idtuthenhanvat(TUTHENHANVAT_DUNGIM)
+            self._thoidiemxuatchieugannhat = 0.
+            self._inlog(f"[ĐỨNG IM SAU SỐ BAY] tư thế {idtuthe} => đứng im")
+            return False
         if self._is_chieucanngatdichuyen \
-                and self.get_idtuthenhanvat() in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT, TUTHENHANVAT_DELAYSAUTANCONG):
+                and idtuthe in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT, TUTHENHANVAT_DELAYSAUTANCONG):
             if self._is_khungsauxuatchieu:
                 self._thoidiemxuatchieugannhat = thoidiemhientai
             self._is_muctieudatrungchieu()
@@ -4755,6 +4768,7 @@ class MoiTruong:
         self._idmuctieuxuatchieu = self.get_iddoituong(diachimuctieu) if diachimuctieu else None
         self._sobaymuctieuxuatchieu = self._docsobaydoituong(diachimuctieu) if diachimuctieu else None
         self._is_datrungchieu = False
+        self._is_dadungimsautrungchieu = False
 
     def get_is_khoavankhitrieuhoi(self):
         # Khoá từ lúc gửi lệnh triệu hồi: giữ trong lúc chờ vào vận khí (_get_is_dangchovankhi), sau đó giữ tới khi game hết vận khí (tối đa THOIGIANKHOAVANKHITRIEUHOITOIDA)

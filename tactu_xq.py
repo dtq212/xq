@@ -35,7 +35,7 @@ THUOCTINHTHIETLAPs = (
     "_is_chidungtudongtancong", "_is_uutienmuctieupk", "_is_tudongsudungvatpham", "_is_tudongnhatvatpham", "_is_chidanhnguoichoi",
     "_is_tudongtodoi", "_is_thucsondao", "_is_chantangcapdo", "_is_tudongtangcap", "_captudongtangcaptoida",
     "_is_tudongdichuyendiemdanhxungquanh", "_diemdanhxungquanhs", "_is_lotrinhphobanmuonbando", "_is_dilotrinhkhacbando",
-    "_lotrinhmaudangdung", "_is_nguocchieulotrinh", "_is_tudonggomquai", "_is_tudongvebanrac", "_is_tudongvesuado", "_phantramvesuado",
+    "_lotrinhmaudangdung", "_is_nguocchieulotrinh", "_is_chiavunglotrinh", "_is_tudonggomquai", "_is_tudongvebanrac", "_is_tudongvesuado", "_phantramvesuado",
     "_idbandoquaylaibanrac", "_is_tudongdichientruong", "_is_tudongkhaikhoang", "_is_tudongdaotangbaodo", "_tenmuctieutancongs", "_is_uutienbaothukynangtrieuhoi",
     "_tenmuctieukhongtancongs", "_tenvatphamnhats", "_phamchatnhats", "_khoangcachtoidatheosau", "_bankinhdiemdanh", "_tamxatoida",
     "_danhhieulammoi", "_phantramnoiluckhaithientichdia", "_chedokynang", "_is_tudongtrieuhoibaothugiangho", "_is_tudongsudungkynangbaothu",
@@ -408,6 +408,16 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._sodiemdadilotrinhdo = 0
         # Ô "Đi ngược chiều" trên giao diện: chiều ưu tiên khi tự chọn lộ trình mẫu (tuchon_lotrinhmau), lưu theo nhân vật
         self._is_nguocchieulotrinh = False
+        # Ô "Chia vùng bot cùng máy": các nhân vật cùng máy đi CÙNG lộ trình (kể cả ngược chiều) được chia lộ trình thành từng đoạn liền
+        # nhau theo thứ tự ID, mỗi bot chỉ đi qua lại và đánh quái trong đoạn của mình (thay cho nhường điểm / nhường quái theo ID,
+        # vốn hay đi sát nhau rồi nhường lộn xộn, bot kẹp giữa chạy qua chạy lại). Lưu theo nhân vật
+        self._is_chiavunglotrinh = True
+        # Vùng lộ trình đã tính (tactu_dichuyen_xq._layvunglotrinh): (thời điểm, kết quả), tính lại sau 1s
+        self._bonhovunglotrinh = (0., None)
+        # Chiều đi qua lại trong vùng: 1 xuôi, -1 ngược (tới đầu / cuối đoạn thì đảo)
+        self._huongvunglotrinh = 1
+        # Khoá vùng (stt, tổng, các điểm) lần báo log gần nhất, đổi vùng mới in lại
+        self._khoavunglotrinhdabao = None
         self._is_lotrinhtuchon = False
         # Bật lộ trình mà chưa có điểm nào thì dò bản đồ như Phong Yêu Kính (_dobandokhonglotrinh): {idbando, is_phobanmuon, diems, i, luc,
         # chieu}, giữ riêng, không tính vào lộ trình
@@ -848,6 +858,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             "_is_dilotrinhkhacbando": self._is_dilotrinhkhacbando,
             "_lotrinhmaudangdung": self._lotrinhmaudangdung,
             "_is_nguocchieulotrinh": self._is_nguocchieulotrinh,
+            "_is_chiavunglotrinh": self._is_chiavunglotrinh,
             "_is_tudonggomquai": self._is_tudonggomquai,
             "_is_tudongvebanrac": self._is_tudongvebanrac,
             "_is_tudongvesuado": self._is_tudongvesuado,
@@ -979,6 +990,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             if "_is_dilotrinhkhacbando" in thietlap: self._is_dilotrinhkhacbando = thietlap["_is_dilotrinhkhacbando"]
             if "_lotrinhmaudangdung" in thietlap: self._lotrinhmaudangdung = thietlap["_lotrinhmaudangdung"]
             if "_is_nguocchieulotrinh" in thietlap: self._is_nguocchieulotrinh = thietlap["_is_nguocchieulotrinh"]
+            if "_is_chiavunglotrinh" in thietlap: self._is_chiavunglotrinh = bool(thietlap["_is_chiavunglotrinh"])
             if "_is_tudonggomquai" in thietlap: self._is_tudonggomquai = thietlap["_is_tudonggomquai"]
             if "_is_tudongvebanrac" in thietlap: self._is_tudongvebanrac = thietlap["_is_tudongvebanrac"]
             if "_is_tudongvesuado" in thietlap: self._is_tudongvesuado = thietlap["_is_tudongvesuado"]

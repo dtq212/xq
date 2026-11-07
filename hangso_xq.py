@@ -329,6 +329,8 @@ THOIGIANCHOMUCTIEUKETRUOCKHINHATDO = 2.
 # Lượt kỹ năng không ra yêu cầu tấn công mà vẫn chọn đúng con vừa đánh, nó chưa chết: luồng di chuyển giữ yêu cầu cũ tối đa bấy nhiêu
 # giây (không Đi dạo / Tìm mục tiêu chung chạy đi chỗ khác rồi quay lại đánh)
 THOIGIANGIUYEUCAUTANCONG = 1.5
+# Như trên nhưng mục tiêu còn trong tầm đánh xa (chỉ đang chờ chiêu hồi / chờ số bay): giữ tối đa bấy nhiêu giây
+THOIGIANGIUYEUCAUTANCONGTRONGTAM = 8.
 # Có món cần đi nhặt mà chờ (bận đánh) quá bấy nhiêu giây thì đi nhặt luôn dù còn mục tiêu: quái ra liên tục vẫn nhặt được
 THOIGIANCHONHATDOTOIDA = 6.
 
@@ -438,8 +440,10 @@ VITRIKYNANG_NGUKIEMTHUAT = 2310
 VITRIKYNANG_TIENNHANCHILO = 2311
 VITRIKYNANG_VANKIEMXUYENTAM = 2312
 VITRIKYNANG_VANVUTIEUDIEU = 2315
+VITRIKYNANG_VANVUTIEUDIEU = 2313
 VITRIKYNANG_BANGTAMTHUC = 2313
 VITRIKYNANG_LANGKHONGCHIHUYET = 2314
+VITRIKYNANG_LANGKHONGCHIHUYET = 2315
 VITRIKYNANG_NGUKIEMPHITIEN = 2316
 
 VITRIKYNANG_TIENKHI = 3252
@@ -1538,7 +1542,7 @@ THOIGIANBOQUAMUCTIEUCHUNG = 60.
 # Đứng đánh mà đòn không trúng (bị chắn tầm nhìn, quái lỗi, server từ chối...): từ chiêu đầu tiên gửi vào mục tiêu (tính lại mỗi lần
 # thấy số bay mất máu mới trên nó) đã quá THOIGIANKHONGTRUNGCHIEUTOIDA giây và gửi ít nhất SOCHIEUKHONGTRUNGTOIDA chiêu mà vẫn
 # không có số bay mới thì bỏ qua quái đó THOIGIANBOQUAMUCTIEUKHONGTRUNG giây (không áp cho mục tiêu PK: có thể đang bất tử)
-THOIGIANKHONGTRUNGCHIEUTOIDA = 8.
+THOIGIANKHONGTRUNGCHIEUTOIDA = 4.
 SOCHIEUKHONGTRUNGTOIDA = 3
 THOIGIANBOQUAMUCTIEUKHONGTRUNG = 60.
 

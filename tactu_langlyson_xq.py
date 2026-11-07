@@ -138,10 +138,8 @@ THOIGIANTOITHIEUPY = 120.
 GIANCACHLOOKTHANHVIENPY = 10.
 GIANCACHMOIPY = 5.
 THOIGIANCHOMOIPY = 90.
-# Dò hết 1 lượt bản đồ thì hỏi Thỏ Yêu số quái đã đánh. Trưởng nhóm chưa đủ 2 boss chỉ ra khi đã dò ít nhất SOLUOTDORAPHONGYEU lượt,
-# không ai đang đánh boss, và: Thỏ Yêu báo đã đủ quái mà dò thêm 1 lượt vẫn không thấy boss, hoặc đã ở trong quá THOIGIANTOIDAPY giây
-# (từng cứ 2 lượt là ra: ra khi mới 1/2 boss, bỏ ngang boss thành viên đang đánh)
-SOLUOTDORAPHONGYEU = 2
+# Dò hết 1 lượt bản đồ thì hỏi Thỏ Yêu số quái đã đánh (chỉ để hiện trạng thái). Trưởng nhóm chưa đủ số boss của "Điều kiện thoát"
+# không ra theo số lượt dò (từng ra khi 1/2 boss lúc đang đánh dở), chỉ ra khi ở trong quá THOIGIANTOIDAPY giây và không ai đánh boss
 THOIGIANTOIDAPY = 30 * 60.
 # Điều kiện thoát kiểu "chờ hết quái" (PYK thường): mình và thành viên không ai còn mục tiêu liền chừng này giây là hết quái
 # (như THOIGIANHETMUCTIEUPYKC của kéo cấp; không import từ tactu_keocap_xq vì file đó import file này)
@@ -2122,20 +2120,18 @@ class TacTuLangLySon:
         yeucaukeocap = self._buoctrongphongyeukeocap(s, py, idbando, is_thanhvien)
         if yeucaukeocap is not False:
             return yeucaukeocap
-        # Trưởng nhóm chưa đủ boss: chỉ ra khi đã dò đủ SOLUOTDORAPHONGYEU lượt, không ai đang đánh boss, đã hỏi xong Thỏ Yêu, và đủ quái
-        # mà dò thêm 1 lượt vẫn không thấy boss (boss 2 chỉ ra khi đánh hết quái) hoặc ở quá THOIGIANTOIDAPY giây (đứng dò mãi phí thời gian)
+        # Trưởng nhóm chưa đủ boss theo "Điều kiện thoát": không ra theo số lượt dò nữa (người dùng dặn 2026-11-07: từng ra khi mới 1/2
+        # boss vì "đủ quái, dò thêm 1 lượt không thấy boss", đang đánh dở đã out), chỉ ra khi ở quá THOIGIANTOIDAPY giây mà không ai
+        # đang đánh boss (boss sau không ra thì khỏi kẹt mãi)
         is_hetluot = False
-        if not is_thanhvien and py["soluotdo"] >= SOLUOTDORAPHONGYEU and not py["boss"] and not py["hoisoquai"]:
-            is_duquai = py.get("luotduquai") is not None and py["soluotdo"] > py["luotduquai"]
-            is_quagio = now - py["lucvao"] >= THOIGIANTOIDAPY
-            if is_duquai or is_quagio:
-                nguoidanh = self._nguoikhacdanhbosspy()
-                if nguoidanh:
-                    s["trangthai"] = f"{tenpb}: {nguoidanh} đang đánh boss, chờ xong mới ra"
-                    py.pop("lydora", None)
-                else:
-                    is_hetluot = True
-                    py["lydora"] = "đủ quái, dò thêm 1 lượt không thấy boss" if is_duquai else f"quá {THOIGIANTOIDAPY / 60:.0f} phút"
+        if not is_thanhvien and not py["boss"] and not py["hoisoquai"] and now - py["lucvao"] >= THOIGIANTOIDAPY:
+            nguoidanh = self._nguoikhacdanhbosspy()
+            if nguoidanh:
+                s["trangthai"] = f"{tenpb}: {nguoidanh} đang đánh boss, chờ xong mới ra"
+                py.pop("lydora", None)
+            else:
+                is_hetluot = True
+                py["lydora"] = f"quá {THOIGIANTOIDAPY / 60:.0f} phút"
         # Đủ boss mà mới vào chưa tới THOIGIANTOITHIEUPY giây thì không tin (boss chỉ ra khi đã đánh 85% quái): chắc là số boss cũ.
         # Số boss phải diệt theo "Điều kiện thoát" cấu hình Phong Yêu Kính (như kéo cấp, người dùng dặn 2026-11-05); kiểu "chờ hết quái"
         # thì đủ boss rồi còn chờ mình và thành viên không ai còn mục tiêu liền THOIGIANHETMUCTIEUPY giây (quá THOIGIANTOIDAPY thì thôi)
