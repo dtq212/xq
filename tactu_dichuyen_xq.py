@@ -2109,6 +2109,11 @@ class TacTuDiChuyen:
             return None
         ids = {idbanthan}
         tens = {idbanthan: self.moitruong.get_tendoituong() or str(idbanthan)}
+        # Vòng dò lộ trình ẩn: mỗi bot tự tạo từ lưới vật cản đọc lúc đó + vùng đi được từ chỗ nó đứng nên có thể lệch nhau 1-2 điểm
+        # => so khoá tuyệt đối tách 4 bot thành 2 nhóm 2 (người dùng 2026-11-07). Ghép theo cùng bản đồ, cả nhóm dùng chung vòng của
+        # bot ID nhỏ nhất
+        idbandodo = diems[0][2] if is_do else None
+        vongdo = {idbanthan: list(diems)} if is_do else None
         for idcuaso, info in danhsach:
             if idcuaso == self.idcuaso or not isinstance(info, dict):
                 continue
@@ -2118,12 +2123,33 @@ class TacTuDiChuyen:
             if info.get("_is_tatbot") or info.get("_is_tudongtheosau") or not info.get("_is_tudongsudungkynang") \
                     or not info.get("_is_tudongdichuyendiemdanhxungquanh") or not info.get("_is_chiavunglotrinh"):
                 continue
-            if self._khoalotrinh(info.get("_diemdanhxungquanhs") or info.get("_diemdobando") or [])[0] != khoa:
+            if is_do:
+                vongkhac = info.get("_diemdobando")
+                if info.get("_diemdanhxungquanhs") or not vongkhac or len(vongkhac) < 2:
+                    continue
+                try:
+                    if int(vongkhac[0][2]) != idbandodo:
+                        continue
+                except (TypeError, ValueError, IndexError):
+                    continue
+                vongdo[idkhac] = list(vongkhac)
+            elif self._khoalotrinh(info.get("_diemdanhxungquanhs") or info.get("_diemdobando") or [])[0] != khoa:
                 continue
             ids.add(idkhac)
             tens[idkhac] = info.get("tennhanvat") or str(idkhac)
         if len(ids) < 2:
             return None
+        if is_do:
+            vongchung = vongdo[min(ids)]
+            khoachung, is_daochung = self._khoalotrinh(vongchung)
+            if khoachung is not None and khoachung != khoa and self._dobando:
+                # Vòng mình lệch vòng bot ID nhỏ nhất: nhận vòng đó, vào điểm gần chỗ đứng nhất
+                do = self._dobando
+                do["diems"] = [(int(d[0]), int(d[1])) for d in vongchung]
+                toado = self.moitruong.get_toado()
+                do["i"] = min(range(len(do["diems"])), key = lambda k: math.dist(do["diems"][k], toado))
+                print(f"[LỘ TRÌNH] Vòng dò lệch bot cùng bản đồ: dùng chung vòng {len(do['diems'])} điểm của bot ID {min(ids)}")
+                diems, khoa, is_dao = self.get_diemdobandoshare() or list(vongchung), khoachung, is_daochung
         thutuid = sorted(ids)
         stt = thutuid.index(idbanthan)
         tong = len(thutuid)
