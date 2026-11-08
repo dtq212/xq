@@ -422,6 +422,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         # Bật lộ trình mà chưa có điểm nào thì dò bản đồ như Phong Yêu Kính (_dobandokhonglotrinh): {idbando, is_phobanmuon, diems, i, luc,
         # chieu}, giữ riêng, không tính vào lộ trình
         self._dobando = None
+        # Số bước đi bộ từ điểm dò đang đi tới ra mọi ô (tactu_dichuyen _laybuocdiemdo): (khoá (bản đồ, điểm), rộng, cao, bảng bước)
+        self._buocdiemdo = None
         # Tạm ngưng toàn bộ hoạt động khi phát hiện người chơi ẩn thân xung quanh (đang di chuyển theo lộ trình điểm đánh)
         self._thoidiemhettamngung = 0.
         self._lydotamngung = ""

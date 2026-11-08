@@ -328,6 +328,12 @@ class KeoGaTuDong:
             g["luctangcap"] = now
             self.command_dict[hwnd] = f"set_captudongtangcaptoida:{self.capketthuc}"
             print(f"[KÉO GÀ A-Z] Đặt Tự tăng cấp tới cấp {self.capketthuc} cho {g['ten']} (ID {g['id']})")
+        elif info.get("_is_tudongsudungkynang"):
+            # Tắt "Tự động sử dụng kỹ năng" (người dùng dặn 2026-11-08): bật thì trong Phong Yêu Kính acc gà dò đánh chạy khắp bản đồ,
+            # tắt thì đứng cạnh Thỏ Yêu hưởng kinh nghiệm (tactu_keocap_xq._buoctrongphongyeukeocap); ở bãi chỉ theo sau acc chính
+            g["luctangcap"] = now
+            self.command_dict[hwnd] = "battat_tudongsudungkynang"
+            print(f"[KÉO GÀ A-Z] Tắt Tự động sử dụng kỹ năng cho {g['ten']} (ID {g['id']})")
 
     def _batchinh(self, hwndchinh, kcchinh, now):
         if kcchinh and kcchinh.get("vaitro") != "chinh":

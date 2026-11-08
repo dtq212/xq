@@ -5,6 +5,7 @@ import random
 import re
 import sys
 import time
+from collections import deque
 
 from hangso_xq import *
 from moitruong_xq import MoiTruong, DOUUTIEN_THAP, DOUUTIEN_KHANCAP, DOUUTIEN_CAO, SOLUONGDOITUONGXUNGQUANHTOIDA, tinh_is_huongmatvediem
@@ -27,7 +28,7 @@ THOIGIANMOIDIEMDO = 25.
 # liên tục (quái ra mãi / không tới được). Trước đây đồng hồ chạy cả lúc đánh: log 364 Cự Lộc đứng đánh quanh (60-70, 100-110) mà điểm
 # dò nhảy từ (74, 102) tới (177, 100), (144, 53) chưa tới điểm nào
 THOIGIANTOIDAMOIDIEMDO = 120.
-# Đang dò bản đồ: bỏ quái (cả quái nhân vật cùng máy thấy) xa điểm dò hơn mình quá chừng này ô, kẻo chạy ngược về. Log 364: acc gà theo
+# Đang dò bản đồ: bỏ quái (cả quái nhân vật cùng máy thấy) xa điểm dò hơn mình quá chừng này BƯỚC ĐI BỘ, kẻo chạy ngược về. Log 364: acc gà theo
 # sau thấy quái phía sau, "TÌM MỤC TIÊU CHUNG" kéo nhân vật dẫn quay lại (50, 104), (65, 113) rồi lặp mãi quanh (64, 110).
 # 8 = tầm đánh xa, quái đang đánh mình từ phía sau vẫn trong tầm này
 KHOANGCACHLUIDODANH = 8.
@@ -1613,14 +1614,73 @@ class TacTuDiChuyen:
         # Chia vùng với bot cùng máy: chỉ đánh quái thuộc vùng mình (điểm đánh gần quái nhất nằm trong đoạn của mình)
         return self._is_trongvunglotrinh(x, y)
 
+    def _laybuocdiemdo(self, idbando, diem):
+        # BFS 8 hướng (chéo chỉ khi 2 ô kề trống, như _timduongkhongcatgoc) trên lưới vật cản cả bản đồ + ô học được, xuất phát từ điểm dò:
+        # số bước đi bộ từ mọi ô về điểm dò. Tính 1 lần mỗi điểm dò (~0.1-0.2s bản đồ 304x228). -> (rộng, cao, bảng bước) hoặc None
+        khoa = (idbando, tuple(diem))
+        if self._buocdiemdo and self._buocdiemdo[0] == khoa:
+            return self._buocdiemdo[1:]
+        luoi = self.moitruong._get_luoicabando()
+        if not luoi:
+            return None
+        rong, cao = len(luoi), len(luoi[0])
+        hocs = util_taivatcanhoc(idbando)
+        trong = bytearray(rong * cao)
+        for x in range(rong):
+            cot = luoi[x]
+            for y in range(cao):
+                if not cot[y] and (x, y) not in hocs:
+                    trong[x * cao + y] = 1
+        vocuc = 1 << 20
+        buoc = [vocuc] * (rong * cao)
+        x0, y0 = self.moitruong.get_oditduocganhat(round(diem[0]), round(diem[1]))
+        if not (0 <= x0 < rong and 0 <= y0 < cao):
+            return None
+        buoc[x0 * cao + y0] = 0
+        hang = deque([(x0, y0)])
+        lancans = [(dx, dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy]
+        while hang:
+            x, y = hang.popleft()
+            b = buoc[x * cao + y] + 1
+            for dx, dy in lancans:
+                nx, ny = x + dx, y + dy
+                if not (0 <= nx < rong and 0 <= ny < cao) or not trong[nx * cao + ny] or buoc[nx * cao + ny] <= b:
+                    continue
+                if dx and dy and not (trong[(x + dx) * cao + y] and trong[x * cao + y + dy]):
+                    continue
+                buoc[nx * cao + ny] = b
+                hang.append((nx, ny))
+        self._buocdiemdo = (khoa, rong, cao, buoc)
+        return rong, cao, buoc
+
     def _is_quainguochuongdo(self, x, y):
-        # Đang dò bản đồ (lộ trình ẩn, không theo sau ai): quái ở (x, y) xa điểm dò đang đi tới hơn mình quá KHOANGCACHLUIDODANH ô
-        # => đánh nó là chạy ngược lại, bỏ qua
+        # Đang dò bản đồ (lộ trình ẩn, không theo sau ai): quái ở (x, y) xa điểm dò đang đi tới hơn mình quá KHOANGCACHLUIDODANH bước
+        # => đánh nó là chạy ngược lại, bỏ qua. Đo theo SỐ BƯỚC ĐI BỘ (BFS trên lưới vật cản), không theo đường chim bay: log 364 Cự Lộc
+        # 2026-11-08, điểm dò (177, 100) / (165, 76) bên kia sông, đường thật vòng xuống dưới / lên trên, đo chim bay thì quái phía
+        # sau đường vòng vẫn "không ngược" => đi vài bước lại quay về đánh
         do = self._dobando
-        if not do or do["idbando"] != self.moitruong.get_idbandohientai() or self._laytoadomuctieutheosau():
+        idbando = self.moitruong.get_idbandohientai()
+        if not do or do["idbando"] != idbando or self._laytoadomuctieutheosau():
             return False
-        x_do, y_do = do["diems"][do["i"]]
-        return math.dist((x, y), (x_do, y_do)) > math.dist(self.moitruong.get_toado(), (x_do, y_do)) + KHOANGCACHLUIDODANH
+        diem = do["diems"][do["i"]]
+        bang = self._laybuocdiemdo(idbando, diem)
+        x1, y1 = self.moitruong.get_toado()
+        if not bang:
+            return math.dist((x, y), diem) > math.dist((x1, y1), diem) + KHOANGCACHLUIDODANH
+        rong, cao, buoc = bang
+
+        def _buoctai(xa, ya):
+            # Quái / mình có thể đứng sát mép vật cản: lấy ô đi được ít bước nhất trong 3x3
+            xa, ya = round(xa), round(ya)
+            return min((buoc[i * cao + j] for i in range(xa - 1, xa + 2) for j in range(ya - 1, ya + 2) if 0 <= i < rong and 0 <= j < cao),
+                       default = 1 << 20)
+
+        buocminh = _buoctai(x1, y1)
+        if buocminh >= 1 << 20:
+            # Mình không thông với điểm dò (lưới lệch / vừa phù): không lọc
+            return False
+        # Quái không thông với điểm dò (bên kia vách / sông) cũng là đi ngược => bỏ
+        return _buoctai(x, y) > buocminh + KHOANGCACHLUIDODANH
 
     def _nhacbandokhongcodiemdanh(self):
         # Đang bật lộ trình mà bản đồ hiện tại không có điểm đánh nào: mọi mục tiêu bị bỏ qua mà không báo gì thì dễ tưởng đang đánh,

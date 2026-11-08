@@ -82,6 +82,11 @@ class TacTuHoatDong:
             return
 
         phathien =self._quetnguoichoibatthuong()
+        # Đang kéo cấp (mọi vai, kể cả kéo gà A-Z): bãi / Phong Yêu Kính đông người, thấy người lạ không tạm ngưng, không công bố cho cửa sổ
+        # khác (người dùng dặn 2026-11-08); ẩn thân vẫn ngưng như cũ
+        is_bonguoila = bool(self._keocap)
+        if is_bonguoila and phathien and "ẩn thân" not in phathien[0]:
+            phathien = None
         if phathien:
             # Chỉ công bố phát hiện trực tiếp (không công bố trạng thái tạm ngưng) để các nhân vật không gia hạn lẫn nhau mãi
             self._thoidiemphathienanthan = thoidiemhientai
@@ -95,7 +100,7 @@ class TacTuHoatDong:
             self._batdautamngung(f"phát hiện {phathien[0]}", phathien[1])
             return
         phathienkhac = self._layanthantucuasokhac()
-        if phathienkhac and (not is_chianthan or "ẩn thân" in phathienkhac[0]):
+        if phathienkhac and (not (is_chianthan or is_bonguoila) or "ẩn thân" in phathienkhac[0]):
             self._batdautamngung(*phathienkhac)
 
     def _layidnguoichoicungmays(self):
