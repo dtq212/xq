@@ -177,3 +177,8 @@ _internal/tiendophoban.json.tmp
 _internal/thongtinnguoichoi.json
 _internal/thongtinquai.json
 _internal/thongtinnguoichoi.json.tmp
+# Kéo gà A-Z (keogatudong_xq): danh sách tài khoản gà có mật khẩu, tiến độ bot ghi liên tục
+_internal/keogatudong.json
+_internal/keogatudong.json.tmp
+_internal/keogatudong_tiendo.json
+_internal/keogatudong_tiendo.json.tmp

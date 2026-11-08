@@ -1559,6 +1559,15 @@ class MoiTruong:
         tenbandogame = self.get_tenbandogame()
         return bool(tenbandogame) and self._is_tentapkich(unicodedata.normalize("NFC", tenbandogame), self.get_idbandohientai())
 
+    def get_is_dangophobandocbonho(self):
+        # Đang ở phó bản (Lăng Ly Sơn, Thành Kiều, Bát Quái Trận..., hoặc phó bản mượn ID bản đồ ngoài như Phong Yêu Kính / Tập Kích),
+        # đọc thẳng bộ nhớ, không dùng ID đệm của vòng lặp: dangnhap_xq gọi trên MoiTruong vừa dựng cho cửa sổ đang đơ
+        idbando = self._get_idbandohientai()
+        if idbando in BANDOPHOBANs:
+            return True
+        tenbandogame = unicodedata.normalize("NFC", self.get_tenbandogame() or "")
+        return bool(tenbandogame) and (tenbandogame.startswith(TIENTOTENPHOBANMUONBANDOs) or self._is_tentapkich(tenbandogame, idbando))
+
     @staticmethod
     def _is_tentapkich(tenbandogame, idbando):
         # Aegis tên "Tập Kích Môn Ph..."; Niết Bàn tên khác (chưa biết) nhưng vẫn mượn ID 151: ở ID 151 mà tên không phải Kênh Trịnh Quốc
@@ -2326,6 +2335,29 @@ class MoiTruong:
         # Tên bang của người chơi theo lần "desc user" gần nhất: "" không có bang, None chưa biết
         thongtin = self._bangphainguoichoi_map.get(idnguoichoi)
         return thongtin[0] if thongtin else None
+
+    def get_thoidiembangphai(self, idnguoichoi):
+        # Thời điểm biết bang của người chơi (lần "desc user" trả lời gần nhất), chưa biết thì 0
+        thongtin = self._bangphainguoichoi_map.get(idnguoichoi)
+        return thongtin[1] if thongtin else 0.
+
+    def action_hoibangphaicuaminh(self):
+        # "desc user <ID mình>" hỏi lại bang của chính mình ngay (bỏ qua THOIGIANLAMMOIBANGPHAI, vd kéo cấp kiểm tra đã vào bang chưa);
+        # trả lời ghi vào get_bangphai / get_thoidiembangphai. -> True nếu đã gửi
+        thoidiemhientai = time.time()
+        if thoidiemhientai - self._thoidiemhoibangphaiganhat < GIANCACHHOIBANGPHAI:
+            return False
+        if self._yeucaubangphai and thoidiemhientai - self._yeucaubangphai[2] < THOIGIANCHOTRALOIBANGPHAI:
+            return False
+        diachi = self.get_diachicosothongtinnhanvat1()
+        idnguoichoi = self.get_idnguoichoi(diachi)
+        if not idnguoichoi or idnguoichoi < 0:
+            return False
+        if self.action_thucthicaulenh("desc user {}".format(idnguoichoi), douutien = DOUUTIEN_THAP):
+            self._yeucaubangphai = (idnguoichoi, self.get_tendoituong(diachi), thoidiemhientai)
+            self._thoidiemhoibangphaiganhat = thoidiemhientai
+            return True
+        return False
 
     def get_is_cungbang(self, diachicosothongtinnhanvat):
         # So bang của mình với bang người đó (hỏi qua "desc user", action_hoibangphai). Chưa biết bang của mình hoặc của họ thì coi như cùng
@@ -3237,6 +3269,23 @@ class MoiTruong:
         if not 0 < soluachon <= 20:
             return []
         return [read_bytes(self.tientrinh, x + 0x1070 + k * 0xC9, 0xC9).split(b"\0")[0].decode("utf-8", "ignore") for k in range(soluachon)]
+
+    def get_nhanluachoncuasotuychons(self):
+        # Nhãn hiển thị của từng lựa chọn, cùng thứ tự với get_lenhcuasotuychons, vd "7.Ẩn hiệu ứng Kĩ năng" (bỏ mã màu). Mỗi lựa chọn là
+        # 1 ô chữ con: mảng con trỏ ở cửa sổ tuỳ chọn + 0x1D78, chữ ở ô + 0x24 (ô + 0x20 trỏ ngược về cửa sổ tuỳ chọn). Đo 2026-11-08
+        # trên menu Chức năng hệ thống ("pf2 908", acc 535 Aegis). Ô thừa của menu dài cũ còn nằm sau, chỉ lấy đủ số lựa chọn
+        x = self._get_diachicuasotuychon()
+        if not x:
+            return []
+        soluachon = read_int(self.tientrinh, x + 0x1DB8)
+        if not 0 < soluachon <= 20:
+            return []
+        nhans = []
+        for k in range(soluachon):
+            o = read_int(self.tientrinh, x + 0x1D78 + k * 4)
+            nhan = read_bytes(self.tientrinh, o + 0x24, 0x80).split(b"\0")[0].decode("utf-8", "ignore") if o else ""
+            nhans.append(re.sub(r'\x1b.', '', nhan))
+        return nhans
 
     def get_danhsachmucnhiemvu(self):
         # Các mục của cửa sổ nhiệm vụ ([thông tin game] + TG_NHIEMVU) theo thứ tự hiển thị: [(tên, mô tả)]. Tên mục ở + 0x90, mô tả cùng

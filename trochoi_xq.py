@@ -17,6 +17,7 @@ from amthanh_xq import khoitaocom, datamthanhtientrinhs
 from bannganluong_xq import BanNganLuong
 from cuaso_xq import CuaSo
 from dangnhap_xq import TuDongDangNhap
+from keogatudong_xq import KeoGaTuDong
 from dieuphoi_xq import taicauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
 from giaodienhienthi_xq import GiaoDienHienThi
 from hangso_xq import IS_CHIBATAMTHANHCUASOUUTIEN, THOIGIANKIEMTRAAMTHANH
@@ -82,6 +83,8 @@ class TroChoiManager:
             pass
         # Tự động đăng nhập lại nhân vật vắng mặt (thay cho các kịch bản tudongdangnhap*.py chạy riêng)
         self.dangnhap = TuDongDangNhap()
+        # Kéo gà A-Z: đăng nhập / tạo nhân vật acc gà lần lượt, chạy trong luồng tự đăng nhập
+        self.dangnhap.keoga = KeoGaTuDong(self.shared_data, self.command_dict)
         self.dangnhap.batdau()
         # Lệnh từ Telegram và báo cáo định kỳ (thongbao_xq), 1 luồng cho cả máy
         DieuKhienTelegram(self.shared_data, self.command_dict).batdau()

@@ -159,7 +159,10 @@ class GiamSat:
         idnguoichoi = moitruong.get_idnguoichoi()
         cauhinh = taicauhinhdangnhap()
         lydo = None
-        if not any(str(tk.get("idnguoichoi") or "") == str(idnguoichoi) for tk in cauhinh.get("taikhoans", [])):
+        if moitruong.get_is_dangophobandocbonho():
+            # Kill giữa phó bản là nhân vật bị out, phải chạy lại 1-2 tầng mới lên được chỗ cũ (người dùng 2026-11-08)
+            lydo = "đang ở phó bản"
+        elif not any(str(tk.get("idnguoichoi") or "") == str(idnguoichoi) for tk in cauhinh.get("taikhoans", [])):
             lydo = "nhân vật không có trong file tài khoản"
         elif not any(str(tk.get("idnguoichoi") or "") == str(idnguoichoi) for tk in taikhoanbatchomaynay(cauhinh)):
             lydo = "tài khoản đang tắt tự đăng nhập trên máy này"

@@ -23,11 +23,13 @@ from tienich_xq import duongdantaikhoan, tenmaynay, taicauhinhphongyeu, luucauhi
 from tienich_xq import taidanhsachnhanvat, luudanhsachnhanvat, taicaidatgiaodien, luucaidatgiaodien, taithongtinnguoichoi, luuthongtinnguoichoi, \
     taithongtinquai, luuthongtinquai
 from tienich_xq import laydoiphobans, taidoiphobans, luudoiphobans
+from keogatudong_xq import taicauhinhkeoga, luucauhinhkeoga, phantichdanhsachtaikhoan, chudanhsachtaikhoan, SOGATOIDA
 from dangnhap_xq import ancuasogame, duongdangamemaynay, focuscuasogame, hiencuasogame, is_batchomaynay, is_cuasogamedaan, luucauhinhdangnhap, taicauhinhdangnhap, taikhoanbatchomaynay
 from thongke_xq import taithongke, gopthongke
 from luattuido_xq import tailuat, luuluat, motaluat, TENHANHDONG, DIEUKIENs, TENDIEUKIEN, TRUONGMUABU, TENTRUONGMUABU, TENCHIKHI, CHIKHI_LUON, XEPCHONGMACDINH, \
     THAPNHATMACDINH, TENHANHDONGNHAT, DIEUKIENNHATs, NHAT_NHAT
 from hangso_xq import VIECHANG_MAP, VIECDOI_MAP, VIECCOVONGs, VIECRIENG_MAP
+from hangso_xq import CAPKETTHUCKEOCAP
 from hangso_xq import CHUTIEMTAPHOA, CHUTUULAU, TENMONPHAI, PHAMCHATVATPHAM_MAP, CAPTUDONGTANGCAPTOIDA, PHANTRAMVESUADO, BANDOQUAYLAI_THEOLOTRINH, BANDOQUAYLAI_LUCVE, DANHHIEULAMMOI_KHONG, DANHHIEULAMMOI_AN
 from hangso_xq import CHEDOHIENMUCTIEU_TAT, CHEDOHIENMUCTIEU_DANHHIEU, CHEDOHIENMUCTIEU_TEN, MAUHIENMUCTIEU_MAP, MAUHIENMUCTIEU_THEOMAU
 from hangso_xq import CHEDOKYNANG_CODINH, CHEDOKYNANG_TUHOC, SOMAUTOITHIEUTUHOC, THOIGIANKEHOACHTUHOC, SOLICHSUHANHDONG
@@ -2462,8 +2464,15 @@ class GiaoDienHienThi:
         tieude.append(f"máu {info.get('_phantrammaumuctieu', 0)}%")
         self.lbl_muctieu.config(text = "  ·  ".join(tieude))
         gop = gopuocluong(tomtats)
-        if gop["khihuyet"]:
-            self.lbl_muctieumau.config(text = f"Khí Huyết tối đa ≈ {gop['khihuyet']:,} (đo trên {gop['mautut']:.0f}% máu tụt)")
+        # Chưa đo được lần này thì hiện số đã lưu: quái theo tên + cấp, người chơi theo ID
+        daluu = (muc if idnguoichoi else getattr(self, "_khoquai", {}).get(muctieugame.get("khoaquai") or "")) or {}
+        if not gop["khihuyet"] and daluu.get("khihuyet"):
+            self.lbl_muctieumau.config(text = f"Khí Huyết tối đa ≈ {daluu['khihuyet']['giatri']:,} (đã lưu, đo trên"
+                                              f" {daluu['khihuyet'].get('mautut', 0):.0f}% máu tụt)")
+        elif gop["khihuyet"]:
+            self.lbl_muctieumau.config(text = f"Khí Huyết tối đa ≈ {gop['khihuyet']:,} (đo trên {gop['mautut']:.0f}% máu tụt, {gop['sodondoan']} đòn)"
+                                       + (f" - {gop['sobackhac']} lần máu tụt không do bạn đánh: số thấp hơn thật, không lưu"
+                                          if gop["sobackhac"] else ""))
         else:
             self.lbl_muctieumau.config(text = f"Khí Huyết tối đa: đang đo (máu mới tụt {gop['mautut']:.0f}%, cần ≥ {MAUTUTTOITHIEU:.0f}%)"
                                        if tomtats else "Khí Huyết tối đa: chưa đánh mục tiêu này")
@@ -2472,13 +2481,19 @@ class GiaoDienHienThi:
             if he in gop["khang"]:
                 khang, socum, sodon = gop["khang"][he]
                 phan.append(f"{ten} ≈ {khang:,} ({socum}/{sodon} đòn)")
+            elif daluu.get(he + "khang"):
+                phan.append(f"{ten} ≈ {daluu[he + 'khang']['giatri']:,} (đã lưu)")
             else:
                 phan.append(f"{ten}: chưa đủ đòn hệ {'Ngoại' if he == 'ngoai' else 'Nội'}")
         self.lbl_muctieukhang.config(text = "  ·  ".join(phan))
         # Công: chỉ người chơi, đo khi người đó đánh nhân vật của mình
         if idnguoichoi:
             congs, is_rohe = gopcongdoithu(self._laycongdoithu(infos).get(idnguoichoi, []))
-            if not congs:
+            congluus = [f"{ten} ≈ {daluu[khoa]['giatri']:,}" for khoa, ten in (("ngoaicong", "Ngoại Công"), ("noicong", "Nội Công"))
+                        if daluu.get(khoa)]
+            if not congs and congluus:
+                self.lbl_muctieucong.config(text = "  ·  ".join(congluus) + " (đã lưu)")
+            elif not congs:
                 self.lbl_muctieucong.config(text = "Công: chưa bị người này đánh đủ 3 đòn (đo từ máu nhân vật của bạn tụt)")
             elif is_rohe:
                 self.lbl_muctieucong.config(text = "  ·  ".join(f"{'Ngoại' if h == 'ngoai' else 'Nội'} Công ≈ {c:,} ({n}/{m} đòn bị đánh)"
@@ -2487,7 +2502,12 @@ class GiaoDienHienThi:
                 self.lbl_muctieucong.config(text = "Công (chưa rõ hệ theo môn phái): " + "  ·  ".join(
                     f"nếu đánh {'Ngoại' if h == 'ngoai' else 'Nội'} ≈ {c:,}" for h, (c, n, m) in sorted(congs.items())) + f" ({max(v[1] for v in congs.values())} đòn)")
         else:
-            self.lbl_muctieucong.config(text = "")
+            # Quái: Công / nhịp đánh đã lưu (đo khi nó đánh mình; chưa rõ hệ nên có cả 2)
+            phancong = [f"{ten} ≈ {daluu[khoa]['giatri']:,}" for khoa, ten in (("ngoaicong", "nếu đánh Ngoại"), ("noicong", "nếu đánh Nội"))
+                        if daluu.get(khoa)]
+            if daluu.get("nhip"):
+                phancong.append(f"nhịp {daluu['nhip']['giatri']} đòn/giây")
+            self.lbl_muctieucong.config(text = ("Công (đã lưu): " + "  ·  ".join(phancong)) if phancong else "")
         thuc = next((i.get("_chisophongthu") for i in infos if i.get("_iddoituongbanthan") == idmuctieu), None)
         self.lbl_muctieuthat.config(text = f"(Nhân vật của bạn - số thật: Khí Huyết {thuc[0]:,}, Ngoại Kháng {thuc[1]:,}, Nội Kháng {thuc[2]:,}"
                                            + (f", Ngoại Công {thuc[3]:,}, Nội Công {thuc[4]:,}" if len(thuc) >= 5 else "") + ")" if thuc else "")
@@ -3270,7 +3290,7 @@ class GiaoDienHienThi:
                                             "Bấm lại để dừng riêng nó")
         # Cấp kết thúc: mọi acc gà tới cấp này thì xong (đồ đệ xuất sư lúc đó); chỉ nhận lúc bấm bắt đầu, acc gà là cửa sổ dưới cấp này
         tk.Label(hangnut, text = "Kéo tới cấp:").pack(side = tk.LEFT, padx = (12, 0))
-        self.var_keocapcapketthuc = tk.IntVar(value = 60)
+        self.var_keocapcapketthuc = tk.IntVar(value = CAPKETTHUCKEOCAP)
         ttk.Spinbox(hangnut, from_ = 10, to = 200, increment = 1, width = 5, textvariable = self.var_keocapcapketthuc).pack(side = tk.LEFT, padx = 4)
         # Nhận đồ đệ: acc gà chọn (trống = acc gà đầu tiên theo tên) bái sư với acc chính ở Mạnh Tử trước khi lập nhóm, đồ đệ cấp 60 thì xuất sư
         hangdode = tk.Frame(nhom)
@@ -3289,7 +3309,7 @@ class GiaoDienHienThi:
         # Lưu các ô này ra _internal/keocap.json mỗi khi đổi, mở lại bot thì nạp lại (trước đây mở lại là mất)
         daluu = taigiaodienkeocap()
         try:
-            self.var_keocapcapketthuc.set(int(daluu.get("capketthuc", 60)))
+            self.var_keocapcapketthuc.set(int(daluu.get("capketthuc", CAPKETTHUCKEOCAP)))
         except (TypeError, ValueError):
             pass
         self.var_keocapnhandode.set(bool(daluu.get("nhandode")))
@@ -3299,6 +3319,7 @@ class GiaoDienHienThi:
             bien.trace_add("write", self._luugiaodienkeocap)
         self.lbl_keocap =tk.Label(nhom, text = "", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(560))
         self.lbl_keocap.grid(row = 3, column = 0, sticky = tk.W, pady = (4, 0))
+        self._taokeogatudong(nhom)
 
         # Đoạt Bảo Mã Tặc (tactu_matac_xq) cho nhân vật đang chọn
         nhom = self._popupviecs["matac"]["noidung"]
@@ -3502,7 +3523,7 @@ class GiaoDienHienThi:
         ttk.Label(hangra, text = "Điều kiện thoát Phong Yêu Kính:").pack(side = tk.LEFT)
         self._nhandieukienra = {d[1]: d[0] for d in DIEUKIENRAPYKEOCAPs}
         self._str_dieukienra = tk.StringVar(value = next(d[1] for d in DIEUKIENRAPYKEOCAPs if d[0] == cauhinh["dieukienrakeocap"]))
-        hop = ttk.Combobox(hangra, textvariable = self._str_dieukienra, values = [d[1] for d in DIEUKIENRAPYKEOCAPs], state = "readonly", width = 36)
+        hop = ttk.Combobox(hangra, textvariable = self._str_dieukienra, values = [d[1] for d in DIEUKIENRAPYKEOCAPs], state = "readonly", width = 42)
         hop.pack(side = tk.LEFT, padx = 4)
         hop.bind("<<ComboboxSelected>>", self._luucauhinhphongyeu)
         for su_kien in ("<FocusOut>", "<Return>"):
@@ -3534,6 +3555,10 @@ class GiaoDienHienThi:
         if keocap:
             # Dừng: acc chính và các acc gà của nó (vai acc gà thì dừng cả nhóm của acc chính đó)
             idchinh = info.get("idnguoichoi") if keocap.get("vaitro") == "chinh" else keocap.get("idchinh")
+            keoga = getattr(self.dangnhap, "keoga", None)
+            if keoga is not None and keoga.is_bat and keoga.idchinh == idchinh:
+                # Kéo gà A-Z đang chạy với acc chính này: dừng luôn, không thì nó bật lại acc chính
+                keoga.dung("Đã dừng (bấm Dừng kéo cấp)")
             for h, i in list(self.shared_data.items()):
                 kc = (i or {}).get("_keocap") or {}
                 if kc and (i.get("idnguoichoi") == idchinh or kc.get("idchinh") == idchinh):
@@ -3576,6 +3601,125 @@ class GiaoDienHienThi:
         for h, _ in gas:
             self.command_dict[h] = f"keocapga:{idchinh}"
 
+    def _taokeogatudong(self, nhom):
+        # Kéo gà A-Z (keogatudong_xq, chạy trong luồng tự đăng nhập): danh sách tài khoản gà, mỗi tài khoản chọn nhân vật dưới "Kéo tới cấp"
+        # (không có thì tạo mới), đủ "Số gà mỗi lượt" thì acc chính (nhân vật đang chọn) kéo như nút Bắt đầu kéo cấp, xong lượt thì đóng
+        # client acc gà, đăng nhập lượt kế. Dùng "Kéo tới cấp" / "Mời acc gà vào bang" ở trên
+        khung = ttk.LabelFrame(nhom, text = "🚀 Kéo gà A-Z (tự đăng nhập / tạo nhân vật acc gà)", padding = 6)
+        khung.grid(row = 4, column = 0, sticky = tk.EW, pady = (10, 0))
+        khung.columnconfigure(0, weight = 1)
+        cauhinh = taicauhinhkeoga()
+        tk.Label(khung, text = "Tài khoản gà, mỗi dòng: tài khoản mật khẩu [cụm máy chủ]", fg = MAUCHU_PHU, anchor = tk.W).grid(
+            row = 0, column = 0, sticky = tk.W)
+        self.txt_keoga = tk.Text(khung, height = 6, width = 60, undo = True)
+        self.txt_keoga.grid(row = 1, column = 0, sticky = tk.EW, pady = (2, 4))
+        self.txt_keoga.insert("1.0", chudanhsachtaikhoan(cauhinh["taikhoans"]))
+        self.txt_keoga.bind("<FocusOut>", lambda e: self._luukeoga())
+        hang = tk.Frame(khung)
+        hang.grid(row = 2, column = 0, sticky = tk.W)
+        tk.Label(hang, text = "Số gà mỗi lượt:").pack(side = tk.LEFT)
+        self.var_keogasoga = tk.IntVar(value = int(cauhinh.get("soga") or 4))
+        ttk.Spinbox(hang, from_ = 1, to = SOGATOIDA, increment = 1, width = 3, textvariable = self.var_keogasoga).pack(side = tk.LEFT, padx = 4)
+        tk.Label(hang, text = "Tên mới bắt đầu bằng:").pack(side = tk.LEFT, padx = (8, 0))
+        self.str_keogatiento = tk.StringVar(value = cauhinh.get("tiento") or "ga")
+        ttk.Entry(hang, textvariable = self.str_keogatiento, width = 8).pack(side = tk.LEFT, padx = 4)
+        tk.Label(hang, text = "Cụm / máy chủ mặc định:").pack(side = tk.LEFT, padx = (8, 0))
+        self.var_keogacum = tk.IntVar(value = int(cauhinh.get("group") or 1))
+        ttk.Spinbox(hang, from_ = 1, to = 20, increment = 1, width = 3, textvariable = self.var_keogacum).pack(side = tk.LEFT, padx = 4)
+        self.var_keogamaychu = tk.IntVar(value = int(cauhinh.get("server") or 1))
+        ttk.Spinbox(hang, from_ = 1, to = 20, increment = 1, width = 3, textvariable = self.var_keogamaychu).pack(side = tk.LEFT)
+        for bien in (self.var_keogasoga, self.str_keogatiento, self.var_keogacum, self.var_keogamaychu):
+            bien.trace_add("write", lambda *_: self._luukeoga(is_danhsach = False))
+        hangnut = tk.Frame(khung)
+        hangnut.grid(row = 3, column = 0, sticky = tk.W, pady = (6, 0))
+        self.btn_keoga = ttk.Button(hangnut, text = "🚀 Bắt đầu kéo gà A-Z", command = self._battatkeoga)
+        self.btn_keoga.pack(side = tk.LEFT)
+        self._gantooltip(self.btn_keoga, "Nhân vật đang chọn là acc chính. Lần lượt đăng nhập các tài khoản gà (chọn nhân vật dưới \"Kéo tới cấp\", "
+                                         "không có thì tạo mới tên ngẫu nhiên), đủ lượt thì kéo cấp như nút Bắt đầu kéo cấp; xong lượt đóng client "
+                                         "acc gà, vào lượt kế tới khi mọi tài khoản đủ 6 nhân vật đã kéo xong")
+        self.lbl_keoga = tk.Label(khung, text = "", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(540))
+        self.lbl_keoga.grid(row = 4, column = 0, sticky = tk.W, pady = (4, 0))
+
+    def _luukeoga(self, is_danhsach = True):
+        # Lưu ô kéo gà A-Z ra _internal/keogatudong.json. -> số tài khoản / None (danh sách có dòng lỗi)
+        cauhinh = taicauhinhkeoga()
+        try:
+            cauhinh.update(soga = int(self.var_keogasoga.get()), group = int(self.var_keogacum.get()), server = int(self.var_keogamaychu.get()))
+        except (tk.TclError, ValueError):
+            pass
+        cauhinh["tiento"] = self.str_keogatiento.get().strip() or "ga"
+        if is_danhsach:
+            taikhoans, lois = phantichdanhsachtaikhoan(self.txt_keoga.get("1.0", tk.END))
+            if lois:
+                hopthoai.showwarning("Kéo gà A-Z", "Danh sách tài khoản có dòng lỗi (chưa lưu):\n" + "\n".join(lois), parent = self._chahopthoai())
+                return None
+            cauhinh["taikhoans"] = taikhoans
+        luucauhinhkeoga(cauhinh)
+        return len(cauhinh["taikhoans"])
+
+    def _battatkeoga(self):
+        # Lỗi giữa chừng thì hiện hộp báo (trước đây lỗi chỉ in ra console, bấm nút mà không thấy gì)
+        try:
+            self._battatkeoga_()
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            hopthoai.showerror("Kéo gà A-Z", f"Lỗi: {e!r}", parent = self._chahopthoai())
+
+    def _battatkeoga_(self):
+        keoga = getattr(self.dangnhap, "keoga", None)
+        print(f"[KÉO GÀ A-Z] Bấm nút (đang {'bật' if keoga is not None and keoga.is_bat else 'tắt'})")
+        if keoga is None:
+            hopthoai.showwarning("Kéo gà A-Z", "Luồng kéo gà A-Z chưa chạy (bot cũ?): tắt hẳn bot rồi mở lại bằng chaybot.bat", parent = self._chahopthoai())
+            return
+        if keoga.is_bat:
+            if hopthoai.askyesno("Kéo gà A-Z", "Dừng kéo gà A-Z? (acc chính / acc gà đang kéo cấp vẫn chạy tiếp, dừng bằng nút Dừng kéo cấp)",
+                                 parent = self._chahopthoai()):
+                keoga.dung()
+            return
+        sotaikhoan = self._luukeoga()
+        if sotaikhoan is None:
+            return
+        if not sotaikhoan:
+            hopthoai.showwarning("Kéo gà A-Z", "Nhập danh sách tài khoản gà trước", parent = self._chahopthoai())
+            return
+        hwnd = self.get_selected_hwnd()
+        info = (self.shared_data.get(hwnd) or {}) if hwnd else {}
+        if not info.get("idnguoichoi"):
+            hopthoai.showwarning("Kéo gà A-Z", "Chọn acc chính trong danh sách trước (đã đọc được ID người chơi)", parent = self._chahopthoai())
+            return
+        kc = info.get("_keocap") or {}
+        if kc and kc.get("vaitro") != "chinh":
+            hopthoai.showwarning("Kéo gà A-Z", "Nhân vật này đang kéo cấp vai khác, dừng trước đã", parent = self._chahopthoai())
+            return
+        capketthuc = self._laycapketthuckeocap()
+        if not capketthuc:
+            hopthoai.showwarning("Kéo gà A-Z", "\"Kéo tới cấp\" phải là số từ 10 tới 200", parent = self._chahopthoai())
+            return
+        moibang = bool(self.var_keocapmoibang.get())
+        if not hopthoai.askyesno("Kéo gà A-Z", f"Acc chính: {info.get('tennhanvat')} (ID {info['idnguoichoi']})\n{sotaikhoan} tài khoản gà, "
+                                               f"{self.var_keogasoga.get()} acc gà mỗi lượt\nKéo tới cấp: {capketthuc}\nMời vào bang: "
+                                               f"{'có' if moibang else 'không'}\n\nBot sẽ tự mở client, đăng nhập, tạo nhân vật mới khi tài khoản không còn "
+                                               f"nhân vật dưới cấp {capketthuc}, và đóng client acc gà khi xong lượt.\n\nBắt đầu?",
+                                 parent = self._chahopthoai()):
+            return
+        if kc:
+            # Acc chính đang kéo cấp tay: dừng để kéo gà A-Z bật lại với acc gà của lượt
+            self.command_dict[int(hwnd)] = "huykeocap"
+        keoga.batdau(info["idnguoichoi"], capketthuc, moibang)
+        self._capnhatkeoga()
+
+    def _capnhatkeoga(self):
+        keoga = getattr(self.dangnhap, "keoga", None)
+        if keoga is None or not hasattr(self, "btn_keoga"):
+            return
+        chunut = "⏹ Dừng kéo gà A-Z" if keoga.is_bat else "🚀 Bắt đầu kéo gà A-Z"
+        if self.btn_keoga.cget("text") != chunut:
+            doichunut(self.btn_keoga, chunut)
+        chu = keoga.trangthai if keoga.is_bat or keoga.trangthai != "Đang tắt" else ""
+        if self.lbl_keoga.cget("text") != chu:
+            self.lbl_keoga.config(text = chu)
+
     def _focus_get(self):
         # Widget đang focus; focus ở danh sách thả xuống của ttk.Combobox (widget nội bộ "popdown" của Tk) thì tkinter không tra được
         # tên, ném KeyError => None
@@ -3585,7 +3729,7 @@ class GiaoDienHienThi:
             return None
 
     def _luugiaodienkeocap(self, *_):
-        dulieu = {"capketthuc": self._laycapketthuckeocap() or 60, "nhandode": bool(self.var_keocapnhandode.get()),
+        dulieu = {"capketthuc": self._laycapketthuckeocap() or CAPKETTHUCKEOCAP, "nhandode": bool(self.var_keocapnhandode.get()),
                   "tendode": self.str_keocapdode.get().strip(), "moibang": bool(self.var_keocapmoibang.get())}
         if dulieu != getattr(self, "_giaodienkeocapdaluu", None):
             self._giaodienkeocapdaluu = dulieu
@@ -3606,7 +3750,7 @@ class GiaoDienHienThi:
         idchinh = ((self.shared_data.get(hwnd) or {}) if hwnd else {}).get("idnguoichoi")
         gas = [(int(h), i) for h, i in list(self.shared_data.items())
                if hwnd and int(h) != int(hwnd) and isinstance(i, dict) and i.get("idnguoichoi")
-               and time.time() - i.get("thoidiemcapnhat", 0.) <= 5. and (i.get("capdo") or 0) < (self._laycapketthuckeocap() or 60)
+               and time.time() - i.get("thoidiemcapnhat", 0.) <= 5. and (i.get("capdo") or 0) < (self._laycapketthuckeocap() or CAPKETTHUCKEOCAP)
                and (not i.get("_keocap") or (i["_keocap"].get("vaitro") == "ga" and i["_keocap"].get("idchinh") == idchinh))]
         return sorted(gas, key = lambda x: x[1].get("tennhanvat") or "")
 
@@ -4580,6 +4724,7 @@ class GiaoDienHienThi:
             self._capnhatgiaodo()
             self._capnhathangviec()
             self._capnhatkeocap()
+            self._capnhatkeoga()
             self._capnhatmatac()
             self._capnhattodoimotlan()
             self._capnhatcanhbao()

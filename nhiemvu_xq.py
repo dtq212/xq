@@ -178,6 +178,9 @@ def timbandotheoten(ten):
 
 # Tên bản đồ nhiệm vụ gọi tắt -> tên đầy đủ trong bản đồ game
 TENBANDOGOITAT = {"Mã Lăng": "Mã Lăng Đạo"}
+# Quái mà mô tả nhiệm vụ Thu Thập ghi sai bản đồ -> bản đồ thật: sư môn "Thu thập 5 cái Toả Ma Liên" ghi
+# "Khốn Ma Trận tầng 2 đánh Tà Linh" nhưng Tà Linh ở Khốn Ma Trận 1 (người dùng xác nhận 2026-11-08)
+BANDOQUAITHAT = {"Tà Linh": "Khốn Ma Trận 1"}
 
 
 def is_nhiemvuthatbai(vanban):
@@ -311,6 +314,11 @@ def phantichnhiemvu(tenmuc, mota):
             m2 = re.search(r"(?:Giết|đánh) (.+?) ở (.+?) (?:sẽ|thì|có thể) ", motachitiet, re.IGNORECASE)
             if m2:
                 nv.update(bando = m2.group(2).strip(), quai = m2.group(1).strip())
+        # Mô tả ghi sai tầng: quái thật ở bản đồ khác
+        quai = chuanhoaten(nv.get("quai") or "")
+        bandothat = next((v for k, v in BANDOQUAITHAT.items() if chuanhoaten(k) == quai), None) if quai else None
+        if bandothat:
+            nv["bando"] = bandothat
         return nv
     m = re.match(rf"Thu mua ({_MAUSO}) (?:cái |chiếc )?(.+?)\s*, và giao cho (.+?)\s*\.?$", mucdich, re.IGNORECASE)
     if m:

@@ -38,7 +38,7 @@ from giaodo_xq import taolenhgiao
 from luattuido_xq import HANHDONG_BAN
 from thongbao_xq import baosuco
 from tienich_xq import phatam, taicauhinhphongyeu, CAUHINHPHONGYEU_MACDINH, taitiendophoban, luutiendophoban, taivitrithoyeu, \
-    luuvitrithoyeu, taibossphongyeu, luubossphongyeu, laydieukienrapykeocap
+    luuvitrithoyeu, taibossphongyeu, luubossphongyeu, laydieukienrapykeocap, is_ra85quaipy
 
 BANDO_THUYHOASON = 82
 NPCVAOLANGLYSON = ("Đào Vong Khổ Dịch", 137, 117)
@@ -146,6 +146,9 @@ THOIGIANTOIDAPY = 30 * 60.
 THOIGIANHETMUCTIEUPY = 10.
 # Thỏ Yêu đứng xa (bản đồ lớn) đi tới mất cả phút: 40s từng hết giờ giữa đường, không hỏi được
 THOIGIANHOISOQUAI = 120.
+# Điều kiện thoát "85quai": người give đứng ở Thỏ Yêu (không dò đánh) hỏi số quái mỗi chừng này giây; người dò đánh hỏi sau mỗi lượt dò
+# như cũ, thấy boss cũng coi là đã đủ 85% (boss chỉ ra khi đủ mốc)
+GIANCACHHOI85QUAIPY = 60.
 # Người give hết đồ (cấu hình is_laydothanhvien): báo xin đồ qua shared_data ("_pylamkim"), thành viên ngoài phó bản còn đồ đúng điều kiện
 # (cấp >= cấp tối thiểu của người give) tới cạnh give hết sang. Chờ quá THOIGIANCHODOTHANHVIENPY giây không ai báo còn đồ, hoặc mọi
 # thành viên báo hết thì mới dừng. Thành viên đọc túi mỗi GIANCACHDOCDOTHANHVIENPY giây, give mỗi GIANCACHGIAODOPY giây, tối đa
@@ -2146,6 +2149,14 @@ class TacTuLangLySon:
             self._logpb(s, f"Bản đồ {idbando} (khó đi): ra mở bản đồ khác")
             s.update(giaidoan = "nhanthuong", hoithoai = None)
             return None
+        if not is_thanhvien and is_ra85quaipy() and (py.get("du85") or py["boss"]) and now - py["lucvao"] >= THOIGIANTOITHIEUPY:
+            # Điều kiện thoát "85quai": đủ mốc ra boss thì ra luôn, không đánh boss (chờ nhặt đồ rơi đã)
+            if self._chonhatdoroipy(s):
+                s["trangthai"] = f"{tenpb}: đã đủ 85% quái, chờ nhặt đồ rồi ra"
+                return None
+            self._logpb(s, f"Đã đủ 85% quái ({'Thỏ Yêu báo' if py.get('du85') else 'thấy boss ' + py['boss']['ten']}): ra mở vòng mới, không đánh boss")
+            s.update(giaidoan = "nhanthuong", hoithoai = None)
+            return None
         # Kéo cấp: acc gà không tự đánh thì đứng yên ở Thỏ Yêu, người give ra khi đã diệt boss và hết quái (tactu_keocap_xq)
         yeucaukeocap = self._buoctrongphongyeukeocap(s, py, idbando, is_thanhvien)
         if yeucaukeocap is not False:
@@ -2225,6 +2236,10 @@ class TacTuLangLySon:
         # Tắt "Tự động sử dụng kỹ năng": đứng cạnh Thỏ Yêu, không dò lộ trình / đuổi boss / hỏi số quái. Trưởng nhóm không dò nên không
         # ra theo lượt dò: ở quá THOIGIANTOIDAPY giây mà không ai còn đánh boss / còn mục tiêu thì ra mở vòng mới (đủ boss thì ra như cũ)
         tenpb = self._tenpb(s)
+        if not is_thanhvien:
+            dangdung, yeucau = self._hoi85quaipy(s, py)
+            if dangdung:
+                return yeucau
         py["hoisoquai"] = None
         py["boss"] = None
         s["chedo"] = "cho"
@@ -2236,6 +2251,17 @@ class TacTuLangLySon:
             return None
         s["trangthai"] = f"{tenpb}: không bật Tự động sử dụng kỹ năng, đứng ở Thỏ Yêu (boss {len(py['bossdagiet'])}/{laydieukienrapykeocap()[0]})"
         return self._dungthoyeukc(s, py, idbando)
+
+    def _hoi85quaipy(self, s, py):
+        # Điều kiện thoát "85quai", người give đứng ở Thỏ Yêu: hỏi số quái mỗi GIANCACHHOI85QUAIPY giây. -> (đang hỏi, yêu cầu di chuyển)
+        if not is_ra85quaipy() or py.get("du85"):
+            return False, None
+        now = time.time()
+        if not py["hoisoquai"]:
+            if now - py.get("luchoi85", 0.) < GIANCACHHOI85QUAIPY:
+                return False, None
+            py["hoisoquai"] = py["luchoi85"] = now
+        return True, self._hoisoquaiphongyeu(s, py)
 
     def _hoisoquaiphongyeu(self, s, py):
         # Về Thỏ Yêu "2. Hiện tại chúng ta đánh được bao nhiêu quái?" -> "Hiện tại nhóm đã đánh được N quái vật. Muốn phát hiện Boss phải
@@ -2264,6 +2290,9 @@ class TacTuLangLySon:
             is_duquai = py["tile"] >= 100
         else:
             is_duquai = py["soquai"] is not None and py["soquaican"] and py["soquai"] >= py["soquaican"]
+        if py["soquai"] is not None and py["soquaican"] and py["soquai"] >= py["soquaican"]:
+            # Đủ mốc ra boss (85% quái): điều kiện thoát "85quai" ra luôn
+            py["du85"] = True
         if is_duquai and py.get("luotduquai") is None:
             # Đủ quái: dò thêm 1 lượt tìm boss vừa ra, vẫn không thấy thì trưởng nhóm ra
             py["luotduquai"] = py["soluotdo"]

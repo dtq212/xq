@@ -537,8 +537,8 @@ class TacTuMucTieu:
                     thongtin = False
                 elif _is_nhuongdongdoi(thongtin):
                     thongtin = False
-                elif not thongtin["is_muctieupk"] and self._kiemtramuctieukhongtrungchieu(diachicosothongtinnhanvatmuctieudangchon):
-                    thongtin = False
+                # Đã bỏ kiểm tra "Đánh không trúng" (_kiemtramuctieukhongtrungchieu): quái mạnh khi làm nhiệm vụ hay
+                # bị bỏ nhầm vì lâu không thấy số bay mới
 
             if thongtin:
                 muctieuhientai = thongtin
@@ -948,7 +948,11 @@ class TacTuMucTieu:
                 is_nguoichoi = self.moitruong.get_is_nguoichoi(diachicosothongtindoituongmuctieuxemxet)
                 is_baothu = self.moitruong.get_is_baothukynangtrieuhoi(diachicosothongtindoituongmuctieuxemxet) or self.moitruong.get_is_baothugiangho(diachicosothongtindoituongmuctieuxemxet)
                 tendoituong = self.moitruong.get_tendoituong(diachicosothongtindoituongmuctieuxemxet)
-                is_boss = not is_nguoichoi and not is_baothu and tendoituong in TENBOSSBUFFMAOSONs
+                # Quái nhiệm vụ riêng mang đuôi ID chủ ("Thủ Lĩnh Thích Khách ( 29 ) ( Cấp 102)"): bỏ các cặp ngoặc cuối rồi so tên;
+                # con của người khác thì mình không đánh được nên không buff
+                tenbossxet = re.sub(r"(\s*\([^()]*\))+\s*$", "", tendoituong or "")
+                is_boss = not is_nguoichoi and not is_baothu and tenbossxet in TENBOSSBUFFMAOSONs \
+                    and not self.moitruong.get_is_quairiengnguoikhac(tendoituong)
                 if not is_nguoichoi and not is_baothu and not is_boss and idbandohientai not in (BANDO_COMO, BANDO_BATQUAITRAN):
                     continue
                 if is_bandokhongpk and not is_boss:

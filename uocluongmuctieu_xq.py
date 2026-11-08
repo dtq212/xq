@@ -21,6 +21,7 @@ import time
 import unicodedata
 
 from congthucsatthuong_xq import HE_NGOAI, HE_NOI, HEMONPHAI_MAP, chonhe, congtusatthuong, khangtusatthuong, satthuong
+from tienich_xq import PHIENBANSODO
 from hangso_xq import (CHISONHANVAT_MAP, TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT, TUTHENHANVAT_DELAYSAUTANCONG,
                        LOAIMUCTIEU_NGUOICHOIKHACNHOM)
 
@@ -36,6 +37,9 @@ BEROCUM = 0.03
 MAUTUTTOITHIEU = 6.
 # Máu hồi lên quá chừng này % so với lần đọc trước: bắt đầu đoạn đo máu mới
 MAUHOIBATLAI = 2.
+# % máu tụt mà cửa sổ này không có số bay nào trong ±chừng này giây = người khác / bảo thú đánh => Khí Huyết của đoạn đó ra thấp
+# (kho quái cũ 2026-11-07 có Kiến Đen 10, Xích Hậu 2, Độc Nhãn Thú 3 Khí Huyết). Đếm vào "sobackhac" của đoạn, kho không lưu
+THOIGIANGANBAC = 1.
 DICHCONG = (CHISONHANVAT_MAP["Ngoại Công"][0], CHISONHANVAT_MAP["Nội Công"][0])
 # Đòn tới sau lệnh chiêu trong chừng này giây thì coi là của chiêu đó (chiêu có delay Đào Hoa ra số bay sau 0.28-0.53s, đo 2026-10-28)
 THOIGIANGANCHIEU = 0.8
@@ -154,6 +158,8 @@ class UocLuongMucTieu:
         self._diachi = None
         self._id = 0
         self._sobay = None
+        # % máu mục tiêu đang chọn lần đọc trước (biết mục tiêu còn đầy máu ngay trước đòn đầu của mình)
+        self._mautruoc = None
         # id chiêu -> (lúc đọc, (Công cộng thêm, phần bỏ qua phòng thủ) hoặc None)
         self._phancongchieu_map = {}
         self._luchoithongtin = 0.
@@ -289,28 +295,42 @@ class UocLuongMucTieu:
                 mt.action_hoithongtinnguoichoimuctieu(diachi)
         if diachi != self._diachi or iddoituong != self._id:
             self._diachi, self._id, self._sobay = diachi, iddoituong, mt.get_sobaydoituong(diachi)
+            self._mautruoc = float(mt.get_phantramsinhlucconlai(diachi))
             return
         moi = mt.get_sobaydoituong(diachi)
         cu, self._sobay = self._sobay, moi or self._sobay
+        mau = float(mt.get_phantramsinhlucconlai(diachi))
+        mautruoc, self._mautruoc = self._mautruoc, mau
         if not moi or not cu:
             return
         sts = [moi[0][i] for i in range(10) if moi[0][i] > 0 and (moi[0][i] != cu[0][i] or moi[1][i] < cu[1][i])]
-        mau = float(mt.get_phantramsinhlucconlai(diachi))
         with self._khoa:
             muctieu = self._muctieus.get(iddoituong)
             if muctieu is None:
                 if not sts:
                     return
-                # moc / mocsau: (tổng sát thương, % máu) ở lần % máu nhảy bậc đầu tiên / gần nhất của đoạn đo
+                # moc / mocsau: (tổng sát thương, % máu, tổng số đòn) ở lần % máu nhảy bậc đầu tiên / gần nhất của đoạn đo;
+                # sobackhac: số bậc tụt trong đoạn không có đòn của mình gần đó (THOIGIANGANBAC), bacchogan: lúc bậc đang chờ đòn tới
                 # idnguoichoi: ID người chơi cố định (tên đổi được), 0 nếu là quái / NPC -> giao diện lưu lâu dài theo ID này
                 idnguoichoi = mt.get_idnguoichoi(diachi) if mt.get_is_nguoichoi(diachi) else 0
                 # cacdon: (lúc, tổng số bay lần đọc đó) cho DPS; khoaquai: tên + cấp nếu là quái (lưu chỉ số quái)
+                # Ngay trước đòn đầu mục tiêu còn 100% => mốc đầu đoạn đo là (0, 100%): đo được cả đoạn từ đầy máu (trước đây mốc đầu
+                # là lần nhảy bậc sau đòn đầu, bot đánh 3-4 đòn chết thì đoạn chỉ 60-70% => quái hầu như không lưu được Khí Huyết)
+                is_daymau = mautruoc is not None and mautruoc >= 100
                 muctieu = self._muctieus[iddoituong] = {"ten": mt.get_tendoituong(diachi), "dons": collections.deque(maxlen = SODONGIU),
-                                                        "tongst": 0, "moc": None, "mocsau": None, "maucuoi": mau, "he": None,
+                                                        "tongst": 0, "moc": (0, 100., 0) if is_daymau else None, "mocsau": None,
+                                                        "maucuoi": 100. if is_daymau else mau, "he": None,
+                                                        "sodontong": 0, "lucdoncuoi": 0., "sobackhac": 0, "bacchogan": None,
                                                         "idnguoichoi": idnguoichoi or 0, "cacdon": collections.deque(maxlen = SODONGIU),
                                                         "khoaquai": khoaquaitheoten(mt._get_tenthucte(diachi)) if mt.get_is_quai(diachi) else ""}
             self._muctieus.move_to_end(iddoituong)
+            luc = time.time()
             if sts:
+                muctieu["sodontong"] += len(sts)
+                muctieu["lucdoncuoi"] = luc
+                # Số bay tới sau % máu (máy chủ gửi riêng): bậc đang chờ là của mình
+                if muctieu["bacchogan"] and luc - muctieu["bacchogan"] <= THOIGIANGANBAC:
+                    muctieu["bacchogan"] = None
                 muctieu["cacdon"].append((time.time(), sum(sts)))
                 cong = mt.get_chisonhanvats(DICHCONG)
                 he = chonhe(mt.get_tenmonphai(), {"ngoaicong": cong[0], "noicong": cong[1]}) if cong else None
@@ -327,12 +347,21 @@ class UocLuongMucTieu:
                     muctieu["dons"].append(gts)
                 muctieu["lucdanh"] = time.time()
             # Khí Huyết: chỉ tính giữa các lần % máu nhảy bậc (lúc đó máu vừa đi qua đúng mốc, sai số còn cỡ 1 đòn); hồi lên thì đo lại
+            if muctieu["bacchogan"] and luc - muctieu["bacchogan"] > THOIGIANGANBAC:
+                muctieu["sobackhac"] += 1
+                muctieu["bacchogan"] = None
             if mau > muctieu["maucuoi"] + MAUHOIBATLAI:
-                muctieu["moc"] = muctieu["mocsau"] = None
-            elif mau < muctieu["maucuoi"]:
-                muctieu["mocsau"] = (muctieu["tongst"], mau)
+                muctieu["moc"] = muctieu["mocsau"] = muctieu["bacchogan"] = None
+                muctieu["sobackhac"] = 0
+            elif 0 < mau < muctieu["maucuoi"]:
+                # Về 0% thì bỏ: đòn kết liễu hiện đủ số dù máu còn ít hơn (Khí Huyết ra cao hơn thật)
+                muctieu["mocsau"] = (muctieu["tongst"], mau, muctieu["sodontong"])
                 if muctieu["moc"] is None:
                     muctieu["moc"] = muctieu["mocsau"]
+                elif luc - muctieu["lucdoncuoi"] > THOIGIANGANBAC:
+                    if muctieu["bacchogan"]:
+                        muctieu["sobackhac"] += 1
+                    muctieu["bacchogan"] = luc
             muctieu["maucuoi"] = mau
             while len(self._muctieus) > SOMUCTIEUNHO:
                 self._muctieus.popitem(last = False)
@@ -348,6 +377,9 @@ class UocLuongMucTieu:
                     continue
                 khang, socum = khangtheocum(muctieu["dons"])
                 moc, mocsau = muctieu["moc"], muctieu["mocsau"]
+                # Mốc đầu 100% có sẵn trước khi máu nhảy bậc lần đầu: chưa có đoạn
+                if not mocsau:
+                    moc = None
                 dps, sokhoang = dpstheodon(list(muctieu["cacdon"]))
                 # Hệ số DPS theo mục tiêu đánh gần nhất đã biết Kháng (đủ đòn)
                 if dps and khang and cong and muctieu["he"] and sokhoang >= SODONLUUTOITHIEU:
@@ -361,6 +393,8 @@ class UocLuongMucTieu:
                     "he": muctieu["he"], "khang": round(khang) if khang else None, "socum": socum,
                     "sodon": len(muctieu["dons"]), "stdoan": (mocsau[0] - moc[0]) if moc else 0,
                     "maudau": moc[1] if moc else None, "maucuoi": mocsau[1] if mocsau else None, "lucdanh": muctieu["lucdanh"],
+                    # Số đòn của mình trong đoạn đo máu, số bậc máu tụt không phải do mình (xem THOIGIANGANBAC)
+                    "sodondoan": (mocsau[2] - moc[2]) if moc else 0, "sobackhac": muctieu["sobackhac"] + (1 if muctieu["bacchogan"] else 0),
                 }
             if hesomoi:
                 self._hesodps = hesomoi
@@ -393,6 +427,8 @@ def gopuocluong(tomtats):
     # Gộp tóm tắt của nhiều cửa sổ cho cùng 1 mục tiêu -> {"khang": {hệ: (Kháng, số đòn cụm, số đòn)}, "khihuyet": số hoặc None,
     # "mautut": % đã tụt trong đoạn đo}. Khí Huyết: các cửa sổ cùng đoạn đo (cùng mốc % đầu / cuối) thì cộng sát thương; khác đoạn thì
     # lấy đoạn dài nhất (sát thương cửa sổ khác trong đoạn đó bị thiếu => số ra thấp hơn thật)
+    # "sodondoan": số đòn của mình trong đoạn, "sobackhac": số bậc tụt không phải do các cửa sổ cùng đoạn (lấy ít nhất: bậc cửa sổ A
+    # không đánh có thể là của cửa sổ B cùng đoạn) - > 0 thì Khí Huyết ra thấp hơn thật, kho không lưu
     khangs = {}
     doans = {}
     for tt in tomtats:
@@ -400,14 +436,16 @@ def gopuocluong(tomtats):
             khangs[tt["he"]] = (tt["khang"], tt["socum"], tt["sodon"])
         if tt.get("maudau") is not None:
             khoa = (tt["maudau"], tt["maucuoi"])
-            doans[khoa] = doans.get(khoa, 0) + tt.get("stdoan", 0)
-    mautut, khihuyet = 0, None
+            st, sodon, sobac = doans.get(khoa, (0, 0, None))
+            sobackhac = tt.get("sobackhac", 0)
+            doans[khoa] = (st + tt.get("stdoan", 0), sodon + tt.get("sodondoan", 0), sobackhac if sobac is None else min(sobac, sobackhac))
+    mautut, khihuyet, sodondoan, sobackhac = 0, None, 0, 0
     if doans:
-        (maudau, maucuoi), tongst = max(doans.items(), key = lambda d: (d[0][0] - d[0][1], d[1]))
+        (maudau, maucuoi), (tongst, sodondoan, sobackhac) = max(doans.items(), key = lambda d: (d[0][0] - d[0][1], d[1][0]))
         mautut = maudau - maucuoi
         if mautut >= MAUTUTTOITHIEU and tongst > 0:
             khihuyet = round(tongst * 100. / mautut)
-    return {"khang": khangs, "khihuyet": khihuyet, "mautut": mautut}
+    return {"khang": khangs, "khihuyet": khihuyet, "mautut": mautut, "sodondoan": sodondoan, "sobackhac": sobackhac}
 
 
 # Lưu lâu dài theo ID người chơi (giao diện gọi, file tienich_xq.duongdanthongtinnguoichoi). Kháng cần ít nhất chừng này đòn khớp
@@ -440,13 +478,14 @@ def capnhatkhonguoichoi(kho, tomtatstheomuctieu, luc = None):
             cu = muc.get(TENCHISOKHANG_MAP[he])
             if not cu or luc - cu.get("luc", 0) > THOIGIANPHIENGIAOLUU or socum >= cu.get("sodon", 0):
                 if not cu or cu.get("giatri") != khang or cu.get("sodon") != socum:
-                    muc[TENCHISOKHANG_MAP[he]] = {"giatri": khang, "sodon": socum, "luc": round(luc)}
+                    muc[TENCHISOKHANG_MAP[he]] = {"giatri": khang, "sodon": socum, "luc": round(luc), "pb": PHIENBANSODO}
                     is_doi = True
-        if gop["khihuyet"]:
+        # Khí Huyết: đoạn có bậc máu tụt không phải do mình (người khác / bảo thú cùng đánh) thì không lưu
+        if gop["khihuyet"] and not gop["sobackhac"] and gop["sodondoan"] >= SODONTOITHIEUCUM:
             cu = muc.get("khihuyet")
             if not cu or luc - cu.get("luc", 0) > THOIGIANPHIENGIAOLUU or gop["mautut"] >= cu.get("mautut", 0):
                 if not cu or cu.get("giatri") != gop["khihuyet"]:
-                    muc["khihuyet"] = {"giatri": gop["khihuyet"], "mautut": gop["mautut"], "luc": round(luc)}
+                    muc["khihuyet"] = {"giatri": gop["khihuyet"], "mautut": gop["mautut"], "luc": round(luc), "pb": PHIENBANSODO}
                     is_doi = True
         for tt in tomtats:
             monphai, bangphai = tt.get("thongtin") or (None, None)
@@ -508,7 +547,7 @@ def ghicongnguoichoi(kho, idnguoichoi, tomtats, luc = None):
         cu = muc.get(TENCHISOCONG_MAP[he])
         if not cu or luc - cu.get("luc", 0) > THOIGIANPHIENGIAOLUU or socum >= cu.get("sodon", 0):
             if not cu or cu.get("giatri") != cong or cu.get("sodon") != socum:
-                muc[TENCHISOCONG_MAP[he]] = {"giatri": cong, "sodon": socum, "luc": round(luc)}
+                muc[TENCHISOCONG_MAP[he]] = {"giatri": cong, "sodon": socum, "luc": round(luc), "pb": PHIENBANSODO}
                 is_doi = True
     if not muc:
         del kho[str(idnguoichoi)]
@@ -517,11 +556,15 @@ def ghicongnguoichoi(kho, idnguoichoi, tomtats, luc = None):
 
 # Chỉ số quái theo tên + cấp (khoaquaitheoten), giao diện ghi _internal/thongtinquai.json (tienich_xq.luuthongtinquai), bot đọc để
 # hiện / kết luận ngay khi chọn quái cùng loại mà không phải đo lại. Chỉ ghi số đã CHẮC (người dùng yêu cầu biết chính xác mới lưu), đã
-# ghi thì giữ luôn:
-# - Khí Huyết: máu tụt liền 1 đoạn ≥ MAUTUTCHACCHAN % (bước % máu 2 => sai ±1% mỗi đầu, tụt 90% thì lệch ≤ ~2%)
+# ghi thì giữ, chỉ thay khi đo được chắc hơn hẳn (Khí Huyết tụt thêm >= MAUTUTTHAYTHE %, Kháng / Công gấp đôi số đòn):
+# - Khí Huyết: máu tụt liền 1 đoạn ≥ MAUTUTCHACCHAN % (đoạn thường bắt đầu từ 100% đúng đầy máu, đầu cuối bước 2% => tụt 50% lệch
+#   ≤ ~4%; 0% không tính vì đòn kết liễu dư), trong đoạn có ≥ SODONKHIHUYETCHACCHAN đòn của mình và mọi bậc tụt đều có đòn của
+#   mình gần đó (không ai khác cùng đánh). Trước 2026-11-08 cần 90% từ lần nhảy bậc sau đòn đầu => 103 quái chỉ 9 con có Khí Huyết
 # - Kháng / Công: cụm khớp nhau ≥ SODONCHACCHAN đòn (Kháng cụm khớp lệch dưới 1%)
 # - Nhịp đánh của quái: ≥ SOKHOANGNHIPCHACCHAN khoảng giữa 2 đòn liền nhau
-MAUTUTCHACCHAN = 90.
+MAUTUTCHACCHAN = 50.
+MAUTUTTHAYTHE = 10.
+SODONKHIHUYETCHACCHAN = 2
 SODONCHACCHAN = 5
 SOKHOANGNHIPCHACCHAN = 8
 
@@ -544,14 +587,22 @@ def capnhatkhoquai(kho, infos, luc = None):
         nonlocal is_doi
         ten, cap = khoaquai.rsplit("|", 1)
         muc = kho.setdefault(khoaquai, {"ten": ten, "cap": int(cap)})
-        if truong not in muc:
+        cu = muc.get(truong)
+        if cu and "mautut" in giatri:
+            is_thay = giatri["mautut"] >= cu.get("mautut", 0) + MAUTUTTHAYTHE
+        elif cu:
+            is_thay = giatri["sodon"] >= 2 * cu.get("sodon", 0) and giatri["giatri"] != cu.get("giatri")
+        else:
+            is_thay = True
+        if is_thay:
             giatri["luc"] = round(luc)
+            giatri["pb"] = PHIENBANSODO
             muc[truong] = giatri
             is_doi = True
 
     for (khoaquai, _), tomtats in theomuctieu.items():
         gop = gopuocluong(tomtats)
-        if gop["khihuyet"] and gop["mautut"] >= MAUTUTCHACCHAN:
+        if gop["khihuyet"] and gop["mautut"] >= MAUTUTCHACCHAN and not gop["sobackhac"] and gop["sodondoan"] >= SODONKHIHUYETCHACCHAN:
             ghi(khoaquai, "khihuyet", {"giatri": gop["khihuyet"], "mautut": gop["mautut"]})
         for he, (khang, socum, _) in gop["khang"].items():
             if socum >= SODONCHACCHAN:

@@ -50,12 +50,18 @@ def satthuong(cong, khang, he, congthem = 0, boquaphongthu = 0.):
     return s * c / (1. + b * k / c) ** p
 
 
+# Đòn nhỏ hơn chừng này không dùng để suy Kháng / Công: game cho sát thương sàn 1 (đánh quái miễn hệ, bị pháp bảo đỡ, quái yếu đánh
+# nhân vật trâu) và làm tròn số nguyên lệch > 10%. Kho quái cũ (2026-11-07) có Ngoại Kháng 99.076 / 133.011 = đúng 1 điểm sát thương
+# với Công 1000-1300, nhiều quái khác nhau cùng "Công" 106 / 264 = đòn 1-2 điểm lên nhân vật Kháng ~2000
+SATTHUONGTOITHIEUSUYRA = 5
+
+
 def khangtusatthuong(satthuongdo, cong, he, congthem = 0, boquaphongthu = 0.):
     # Lật ngược satthuong(): Kháng mục tiêu suy ra từ 1 đòn không bạo. None khi đòn lớn hơn mức Kháng 0 (đòn bạo / chiêu có cộng /
-    # đòn bỏ qua Kháng - không suy ra được)
+    # đòn bỏ qua Kháng - không suy ra được) hoặc đòn sàn (< SATTHUONGTOITHIEUSUYRA)
     s, b, p = HESOCONGTHUC_MAP[he]
     c = max(cong + congthem, 1)
-    if satthuongdo <= 0 or satthuongdo >= s * c:
+    if satthuongdo < SATTHUONGTOITHIEUSUYRA or satthuongdo >= s * c:
         return None
     k = ((s * c / satthuongdo) ** (1. / p) - 1.) / b * c
     return k / (1. - boquaphongthu) if boquaphongthu < 1 else None
@@ -63,8 +69,8 @@ def khangtusatthuong(satthuongdo, cong, he, congthem = 0, boquaphongthu = 0.):
 
 def congtusatthuong(satthuongdo, khang, he, congtoida = 30000):
     # Lật ngược satthuong() theo Công: Công người đánh suy ra từ 1 đòn không bạo lên mục tiêu có Kháng khang (đo Công đối thủ từ
-    # máu mình tụt). satthuong() tăng dần theo Công nên chia đôi. None khi không nằm trong [1, congtoida]
-    if satthuongdo <= 0 or satthuong(congtoida, khang, he) < satthuongdo:
+    # máu mình tụt). satthuong() tăng dần theo Công nên chia đôi. None khi không nằm trong [1, congtoida] hoặc đòn sàn
+    if satthuongdo < SATTHUONGTOITHIEUSUYRA or satthuong(congtoida, khang, he) < satthuongdo:
         return None
     thap, cao = 1., float(congtoida)
     for _ in range(60):

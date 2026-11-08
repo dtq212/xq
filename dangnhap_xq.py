@@ -5,19 +5,25 @@ import csv
 import ctypes
 import json
 import os
+import random
 import re
 import struct
 import subprocess
 import threading
 import time
 
+import pymem
+import pymem.process
 import pywintypes
 import win32api
 import win32con
 import win32gui
 import win32process
 
+import diachi_xq
+from diachi_xq import DC
 from moitruong_xq import MoiTruong
+from tienich_xq import read_bytes, read_chuoi, read_int, write_bytes, write_int
 from tienich_xq import duongdantaikhoan, duongdantaikhoantheomay, is_tieudecuasogame, laytamngungdanghieuluc, tenmaynay, xoatamngung
 
 # Mẫu regex, không ghi cứng số phiên bản: game cập nhật (2.01.07 -> 2.01.08...) hay đổi năm (ooo2026ooo) vẫn nhận ra cửa sổ
@@ -90,6 +96,68 @@ TOADO_CHONNHANVAT = {
 }
 
 DUONGDANGAMEMACDINH = r"E:\Games\ChienQuoc2D_Aegis\xq.exe"
+
+# Đăng nhập bằng cách gọi hàm nút trong game (_DangNhapBangHam) thay cho click / gõ phím; False = dùng lại cách cũ
+IS_DANGNHAPBANGHAM = True
+# Địa chỉ trong diachi_xq mà đăng nhập bằng hàm cần (thiếu cái nào thì dùng cách bấm phím)
+TENDIACHIDANGNHAP = ("MENUMAYCHU", "MENUDANGNHAP", "MENUCHONNHANVAT", "HAMXACNHANMAYCHU", "HAMNUTDANGNHAP", "HAMDATCHUOTONHAP",
+                     "HAMCHONNHANVAT", "HAMVAOGAME", "THONGTINGAME", "TG_GIAODIEN", "NV_TEN")
+# Địa chỉ riêng của tạo nhân vật (kéo gà A-Z): thiếu thì vẫn đăng nhập được, chỉ không tạo nhân vật
+TENDIACHITAONHANVAT = ("MENUTAONHANVAT", "HAMMOTAONHANVAT", "HAMNUTTAONHANVAT")
+# Byte "đang hiện" của từng menu (hàm ảo đầu tiên của menu đọc byte này)
+DANGHIEN_MENU = {"MENUMAYCHU": 0x5C, "MENUDANGNHAP": 0x760, "MENUCHONNHANVAT": 0x34, "MENUTAONHANVAT": 0x238}
+# Menu máy chủ: dữ liệu server.lst (+0x34, mỗi cụm CUM_KICHTHUOC byte), số cụm +0x38, cụm đang chọn +0x54, máy chủ đang chọn +0x58
+# (-1 = chưa chọn), dòng chọn trong danh sách "gần đây" +0x808, cờ đã chọn máy chủ +0x80D, cờ vẽ lại +0x2C. Click hàng thứ n của
+# danh sách (chưa cuộn) = chỉ số n - 1: cụm (y - 181) / 24, máy chủ (y - 174) / 22 (đúng TOADO_CUMMAYCHU / TOADO_MAYCHU cũ)
+MMC_DULIEU = 0x34
+MMC_SOCUM = 0x38
+MMC_CUM = 0x54
+MMC_MAYCHU = 0x58
+MMC_GANDAY = 0x808
+MMC_COCHON = 0x80D
+MMC_VELAI = 0x2C
+# Trong 1 cụm: tên cụm +0, tên máy chủ +0x2C (mỗi máy 20 byte), số máy chủ +0x284, trạng thái máy chủ +0x288 (mỗi máy 4 byte, <= 0 thì
+# client không cho chọn), IP +0x378 (mỗi máy 20 byte), cổng +0x5D0 (mỗi máy 4 byte)
+CUM_KICHTHUOC = 0x6C0
+CUM_TENMAYCHU = 0x2C
+CUM_SOMAYCHU = 0x284
+CUM_TRANGTHAIMAYCHU = 0x288
+# Menu nhập tài khoản: con trỏ ô nhập tài khoản / mật khẩu (chữ ở ô +0x24)
+MDN_OTAIKHOAN = 0x34
+MDN_OMATKHAU = 0x38
+# Menu chọn nhân vật: 6 con trỏ ô nhân vật từ +0x54 (cùng cấu trúc đối tượng nhân vật: id +0x20, -1 = ô trống; tên NV_TEN),
+# ô đang chọn +0x2C4 (-1 = chưa). Ô 0..2 hàng trên trái -> phải, 3..5 hàng dưới (char_index 1..6)
+SOONHANVAT = 6
+MCN_ONHANVAT = 0x54
+MCN_DANGCHON = 0x2C4
+ONV_ID = 0x20
+# Cấp nhân vật trong ô (menu chọn nhân vật vẽ "%d" từ đây, dịch ngược hàm vẽ xq+0x14F2C0 2026-11-08)
+ONV_CAPDO = 0x2EEC
+# Menu tạo nhân vật [xq+0x380B4C] (dịch ngược 2026-11-08, chưa test trong game lúc viết). Nút Tạo ở menu chọn nhân vật (HAMMOTAONHANVAT)
+# tạo / hiện menu, ghi ô trống (đếm từ 1, -1 = hết ô) vào +0x23C rồi ẩn menu chọn. Ô nhập tên +0x34 (chữ +0x24, tối đa 12 byte, không dấu
+# cách), giới tính +0x38 (1 nam, 2 nữ), mặt +0x240 / tóc +0x244 (đếm từ 0, số kiểu +0x24C = 5 / +0x248 = 8), +0x44 = đang chờ máy chủ
+# (nút Tạo bỏ qua khi khác 0). Nút Tạo (HAMNUTTAONHANVAT) kiểm tên rồi kết nối lại máy chủ; máy chủ chào thì client gửi
+# "LOGIN <tài khoản> <md5> <tên> <giới tính> <mặt + 1> <tóc + 1> <ô>", tạo xong máy chủ gửi lại danh sách nhân vật => menu chọn hiện lại
+MTN_OTEN = 0x34
+MTN_GIOITINH = 0x38
+MTN_DANGCHO = 0x44
+MTN_O = 0x23C
+MTN_MAT = 0x240
+MTN_TOC = 0x244
+MTN_SOTOC = 0x248
+MTN_SOMAT = 0x24C
+# Tên nhân vật tạo mới: tối đa 12 byte (client chặn dài hơn), chỉ chữ / số không dấu cho chắc qua bộ lọc tên; tiền tố + số ngẫu nhiên
+SOBYTETENTOIDA = 12
+SOCHUSOTEN = 4
+# Tạo nhân vật: chờ máy chủ trả danh sách nhân vật tối đa chừng này giây mỗi tên; tên bị từ chối (trùng) thì thử tên khác, tối đa SOLANTHUTEN tên
+THOIGIANCHOTAONHANVAT = 20.
+SOLANTHUTEN = 3
+# [TG + TG_GIAODIEN] + 0x1A4: trạng thái kết nối; 0xF / 0x31 / 0x32 = đang kết nối dở, nút Đăng nhập bỏ qua
+GD_TRANGTHAIKETNOI = 0x1A4
+TRANGTHAIDANGKETNOIs = (0xF, 0x31, 0x32)
+# Bấm Đăng nhập xong chờ tối đa chừng này giây cho máy chủ trả danh sách nhân vật
+THOIGIANCHODANHSACHNHANVAT = 20.
+
 
 # Mẫu file cấu hình khi chưa có. Mỗi tài khoản nhận diện online theo "idnguoichoi" (cố định); chưa điền ID thì tạm so theo "tennhanvat".
 # "maydangnhap": tên máy tự đăng nhập tài khoản này, rỗng = tắt. "duongdangames": {tên máy: đường dẫn xq.exe}
@@ -421,6 +489,19 @@ def laycuasodangvaogame():
     return set(_thoidiemvaogame)
 
 
+# Cửa sổ đơ ở phó bản đã báo "không kill" (chỉ in 1 lần mỗi đợt đơ)
+_cuasophobandaobao = set()
+
+
+def _is_cuasodangophoban(hwnd):
+    # Đọc bộ nhớ vẫn được khi cửa sổ đơ (tiến trình còn sống). Không đọc được thì coi như không ở phó bản (giữ cách cũ: kill)
+    try:
+        mt = MoiTruong(hwnd)
+        return bool(mt.get_is_nhanvattontai() and mt.get_is_dangophobandocbonho())
+    except Exception:
+        return False
+
+
 def kiemtravadongcuasotreo(hwnd):
     # Chỉ trả về True (đã kill) khi cửa sổ không trả lời liên tục THOIGIANTREOTOIDA giây; đơ ngắn (load bản đồ) thì bỏ qua
     try:
@@ -436,12 +517,19 @@ def kiemtravadongcuasotreo(hwnd):
             3000
         )
         _thoidiembatdautreo.pop(hwnd, None)
+        _cuasophobandaobao.discard(hwnd)
         return False
 
     except Exception:
         thoigiantreo = time.time() - _thoidiembatdautreo.setdefault(hwnd, time.time())
         if thoigiantreo < THOIGIANTREOTOIDA or hwnd in laycuasodangvaogame():
             print(f"   -> Cửa sổ không trả lời {int(thoigiantreo)}s (HWND: {hwnd}), có thể đang load, chờ thêm")
+            return False
+        if _is_cuasodangophoban(hwnd):
+            # Kill giữa phó bản là nhân vật bị out, phải chạy lại 1-2 tầng mới lên được chỗ cũ (người dùng 2026-11-08): chờ tới khi hết đơ
+            if hwnd not in _cuasophobandaobao:
+                _cuasophobandaobao.add(hwnd)
+                print(f"   -> Cửa sổ đơ {int(thoigiantreo)}s (HWND: {hwnd}) nhưng đang ở phó bản: không kill, chờ hết đơ")
             return False
         _thoidiembatdautreo.pop(hwnd, None)
         print(f"⚠️ Phát hiện cửa sổ bị đơ ngầm {int(thoigiantreo)}s (HWND: {hwnd}). Đang thực hiện dọn dẹp...")
@@ -696,11 +784,324 @@ def mogamevadangnhap(char_name, config, duongdangame, cuasogiuchos = ()):
         print(f"❌ Exception: {e}")
 
 
+class _DangNhapBangHam:
+    # Đăng nhập bằng cách gọi thẳng hàm của các nút trên màn hình đăng nhập trong xq.exe (luồng từ xa, như HAMGUILENH của MoiTruong),
+    # không click / gõ phím: không phụ thuộc toạ độ, cửa sổ ẩn / thu nhỏ, phím Ctrl/Shift người dùng đang giữ. Dịch ngược 2026-11-08,
+    # Aegis và Niết Bàn cùng mã. Thứ tự màn hình: chọn máy chủ (MENUMAYCHU) -> nhập tài khoản (MENUDANGNHAP) -> chọn nhân vật
+    # (MENUCHONNHANVAT) -> vào game. Mỗi menu có cờ "đang hiện" (hàm ảo đầu tiên của menu đọc đúng byte này)
+
+    def __init__(self, hwnd):
+        self.hwnd = hwnd
+        _, pid = win32process.GetWindowThreadProcessId(hwnd)
+        self.tientrinh = pymem.Pymem()
+        self.tientrinh.open_process_from_id(pid)
+        xqmodule = pymem.process.module_from_name(self.tientrinh.process_handle, "xq.exe")
+        if not xqmodule:
+            raise Exception("không thấy module xq.exe")
+        self.diachixq = xqmodule.lpBaseOfDll
+        diachi_xq.khoitao(xqmodule.filename)
+        thieu = [ten for ten in TENDIACHIDANGNHAP if ten in " ".join(DC.loi)]
+        if thieu:
+            raise Exception(f"chữ ký không dò được: {', '.join(thieu)}")
+
+    def dong(self):
+        try:
+            self.tientrinh.close_process()
+        except Exception:
+            pass
+
+    def _doc(self, diachi):
+        return read_int(self.tientrinh, diachi)
+
+    def menu(self, ten):
+        # Con trỏ menu (0 = chưa tạo)
+        return self._doc(self.diachixq + getattr(DC, ten))
+
+    def is_menudanghien(self, ten):
+        diachi = self.menu(ten)
+        return bool(diachi) and read_bytes(self.tientrinh, diachi + DANGHIEN_MENU[ten], 1) != b"\0"
+
+    def menudanghien(self):
+        for ten in (("MENUTAONHANVAT",) if self.is_taonhanvatduoc() else ()) + ("MENUCHONNHANVAT", "MENUDANGNHAP", "MENUMAYCHU"):
+            if self.is_menudanghien(ten):
+                return ten
+        return None
+
+    def chomenu(self, tens, thoigiantoida):
+        # Chờ tới khi 1 trong các menu tens hiện, trả về tên menu đó (None: hết giờ)
+        hethan = time.time() + thoigiantoida
+        while True:
+            ten = self.menudanghien()
+            if ten in tens:
+                return ten
+            if time.time() >= hethan or not win32gui.IsWindow(self.hwnd):
+                return None
+            time.sleep(0.2)
+
+    def goiham(self, tenham, this = None, thamsos = (), chuois = ()):
+        # Chạy hàm trong game bằng luồng từ xa: [push tham số] [mov ecx, this] call hàm; ret 4. chuois: các chuỗi chép vào vùng nhớ cấp
+        # tạm, thamsos ghi "chuoi<i>" thì thay bằng địa chỉ chuỗi thứ i. Vùng nhớ xoá trắng rồi giải phóng sau khi chạy (có mật khẩu)
+        kichthuoc = 64 + sum(len(c) + 1 for c in chuois)
+        vung = self.tientrinh.allocate(kichthuoc)
+        try:
+            diachichuois, vitri = [], vung + 64
+            for chuoi in chuois:
+                write_bytes(self.tientrinh, vitri, chuoi + b"\0", len(chuoi) + 1)
+                diachichuois.append(vitri)
+                vitri += len(chuoi) + 1
+            ma = b""
+            for t in reversed(thamsos):
+                t = diachichuois[int(t[5:])] if isinstance(t, str) else t
+                ma += b"\x68" + struct.pack("<I", t & 0xFFFFFFFF)
+            if this is not None:
+                ma += b"\xB9" + struct.pack("<I", this)
+            ma += b"\xB8" + struct.pack("<I", self.diachixq + getattr(DC, tenham)) + b"\xFF\xD0" + b"\x33\xC0\xC2\x04\x00"
+            write_bytes(self.tientrinh, vung, ma, len(ma))
+            # pymem chờ luồng chạy xong nhưng không đóng handle
+            ctypes.windll.kernel32.CloseHandle(self.tientrinh.start_thread(vung))
+        finally:
+            try:
+                write_bytes(self.tientrinh, vung, bytes(kichthuoc), kichthuoc)
+                self.tientrinh.free(vung)
+            except Exception:
+                pass
+
+    def chonmaychu(self, cum, maychu):
+        # cum, maychu đếm từ 1 như cấu hình ("group", "server"): đúng hàng thứ mấy trên danh sách lúc chưa cuộn
+        menumaychu = self.menu("MENUMAYCHU")
+        socum = self._doc(menumaychu + MMC_SOCUM)
+        dulieu = self._doc(menumaychu + MMC_DULIEU)
+        icum, imaychu = cum - 1, maychu - 1
+        if not dulieu or not 0 <= icum < socum:
+            print(f"   -> [Hàm] Không có cụm {cum} (có {socum} cụm)")
+            return False
+        cumdulieu = dulieu + icum * CUM_KICHTHUOC
+        somaychu = self._doc(cumdulieu + CUM_SOMAYCHU)
+        if not 0 <= imaychu < somaychu:
+            print(f"   -> [Hàm] Cụm {cum} không có máy chủ {maychu} (có {somaychu} máy)")
+            return False
+        tencum = read_chuoi(self.tientrinh, cumdulieu, 0x2C).decode("latin1", "ignore")
+        tenmaychu = read_chuoi(self.tientrinh, cumdulieu + CUM_TENMAYCHU + imaychu * 20, 20).decode("latin1", "ignore")
+        if self._doc(cumdulieu + CUM_TRANGTHAIMAYCHU + imaychu * 4) <= 0:
+            # Client cũng không cho chọn máy chủ trạng thái <= 0 (bảo trì / chưa mở)
+            print(f"   -> [Hàm] Máy chủ {tenmaychu} ({tencum}) đang đóng, không chọn được")
+            return False
+        print(f"   -> [Hàm] Chọn cụm {cum} \"{tencum}\", máy chủ {maychu} \"{tenmaychu}\"")
+        # Y như click: click cụm ghi +0x54 và cờ vẽ lại +0x2C, click máy chủ ghi +0x58, bỏ chọn danh sách "gần đây" +0x808, bật cờ +0x80D
+        write_int(self.tientrinh, menumaychu + MMC_CUM, icum)
+        write_int(self.tientrinh, menumaychu + MMC_VELAI, 1)
+        write_int(self.tientrinh, menumaychu + MMC_MAYCHU, imaychu)
+        write_int(self.tientrinh, menumaychu + MMC_GANDAY, -1)
+        write_bytes(self.tientrinh, menumaychu + MMC_COCHON, b"\x01", 1)
+        self.goiham("HAMXACNHANMAYCHU")
+        return True
+
+    def nhaptaikhoan(self, taikhoan, matkhau):
+        menudangnhap = self.menu("MENUDANGNHAP")
+        trangthai = self._doc(self._doc(self._doc(self.diachixq + DC.THONGTINGAME) + DC.TG_GIAODIEN) + GD_TRANGTHAIKETNOI)
+        if trangthai in TRANGTHAIDANGKETNOIs:
+            # Nút Đăng nhập không làm gì khi client đang kết nối dở (lần bấm trước chưa xong)
+            print(f"   -> [Hàm] Client đang kết nối dở (trạng thái {hex(trangthai)}), bấm Đăng nhập sẽ không có tác dụng")
+        self.goiham("HAMDATCHUOTONHAP", this = self._doc(menudangnhap + MDN_OTAIKHOAN), thamsos = ("chuoi0",), chuois = (taikhoan.encode("latin1"),))
+        self.goiham("HAMDATCHUOTONHAP", this = self._doc(menudangnhap + MDN_OMATKHAU), thamsos = ("chuoi0",), chuois = (matkhau.encode("latin1"),))
+        print("   -> [Hàm] Đã điền tài khoản & mật khẩu, bấm Đăng nhập")
+        self.goiham("HAMNUTDANGNHAP")
+
+    def danhsachnhanvat(self):
+        # [(ô 0..5, id, tên, cấp)] các ô có nhân vật (id -1 = ô trống)
+        menuchon = self.menu("MENUCHONNHANVAT")
+        ketqua = []
+        for o in range(SOONHANVAT):
+            nhanvat = self._doc(menuchon + MCN_ONHANVAT + 4 * o)
+            if not nhanvat:
+                continue
+            idnhanvat = self._doc(nhanvat + ONV_ID)
+            if idnhanvat == -1:
+                continue
+            ten = read_chuoi(self.tientrinh, nhanvat + DC.NV_TEN, 32).decode("utf-8", "ignore")
+            ketqua.append((o, idnhanvat, ten, self._doc(nhanvat + ONV_CAPDO)))
+        return ketqua
+
+    def _chodanhsachnhanvat(self, thoigiantoida = 3.):
+        hethan = time.time() + thoigiantoida
+        nhanvats = self.danhsachnhanvat()
+        while not nhanvats and time.time() < hethan:
+            time.sleep(0.2)
+            nhanvats = self.danhsachnhanvat()
+        return nhanvats
+
+    def chonvavaogame(self, config):
+        # Chọn ô theo ID / tên nhân vật nếu khớp (đổi thứ tự ô vẫn đúng người), không thì theo "char_index" (1..6)
+        nhanvats = self._chodanhsachnhanvat()
+        print("   -> [Hàm] Các ô nhân vật: " + ", ".join(f"ô {o + 1}: {ten} (ID {idnv}, cấp {cap})" for o, idnv, ten, cap in nhanvats))
+        idnguoichoi, tennhanvat = config.get("idnguoichoi"), chuanhoatennhanvat(config.get("tennhanvat"))
+        o = next((o for o, idnv, ten, _ in nhanvats if idnguoichoi and idnv == idnguoichoi), None)
+        if o is None:
+            o = next((o for o, idnv, ten, _ in nhanvats if tennhanvat and chuanhoatennhanvat(ten) == tennhanvat), None)
+        if o is None:
+            o = int(config.get("char_index", 1)) - 1
+            if not any(oo == o for oo, _, _, _ in nhanvats):
+                print(f"   -> [Hàm] Ô nhân vật {o + 1} trống / không có")
+                return False
+        elif o != int(config.get("char_index", 1)) - 1:
+            print(f"   -> [Hàm] Nhân vật đang ở ô {o + 1} (cấu hình ghi ô {config.get('char_index', 1)}), chọn ô {o + 1}")
+        menuchon = self.menu("MENUCHONNHANVAT")
+        self.goiham("HAMCHONNHANVAT", this = menuchon, thamsos = (o,))
+        if self._doc(menuchon + MCN_DANGCHON) != o:
+            print(f"   -> [Hàm] Chọn ô nhân vật {o + 1} không được")
+            return False
+        print(f"   -> [Hàm] Chọn ô nhân vật {o + 1}, bấm Vào game")
+        self.goiham("HAMVAOGAME")
+        return True
+
+    def is_taonhanvatduoc(self):
+        return not [ten for ten in TENDIACHITAONHANVAT if ten in " ".join(DC.loi)]
+
+    def taonhanvat(self, tiento, gioitinh = 0):
+        # Tạo 1 nhân vật ở ô trống (đang ở menu chọn nhân vật hoặc menu tạo nhân vật). -> (id, tên) nhân vật mới / None.
+        # gioitinh 1 nam, 2 nữ, 0 ngẫu nhiên; mặt / tóc ngẫu nhiên
+        if not self.is_taonhanvatduoc():
+            print("   -> [Hàm] Chữ ký tạo nhân vật không dò được, không tạo được nhân vật")
+            return None
+        if not self.is_menudanghien("MENUTAONHANVAT"):
+            self.goiham("HAMMOTAONHANVAT")
+            if self.chomenu(("MENUTAONHANVAT",), 5.) is None:
+                print("   -> [Hàm] Bấm Tạo mà không thấy menu tạo nhân vật")
+                return None
+        menutao = self.menu("MENUTAONHANVAT")
+        o = self._doc(menutao + MTN_O)
+        if o <= 0:
+            print("   -> [Hàm] Hết ô trống để tạo nhân vật")
+            return None
+        gioitinh = gioitinh if gioitinh in (1, 2) else random.choice((1, 2))
+        write_int(self.tientrinh, menutao + MTN_GIOITINH, gioitinh)
+        somat, sotoc = self._doc(menutao + MTN_SOMAT), self._doc(menutao + MTN_SOTOC)
+        if somat > 0:
+            write_int(self.tientrinh, menutao + MTN_MAT, random.randrange(somat))
+        if sotoc > 0:
+            write_int(self.tientrinh, menutao + MTN_TOC, random.randrange(sotoc))
+        tiento = re.sub(r"[^A-Za-z0-9]", "", tiento or "")[:SOBYTETENTOIDA - SOCHUSOTEN] or "ga"
+        for lan in range(SOLANTHUTEN):
+            ten = tiento + "".join(random.choice("0123456789") for _ in range(SOCHUSOTEN))
+            print(f"   -> [Hàm] Tạo nhân vật \"{ten}\" ({'nam' if gioitinh == 1 else 'nữ'}) ở ô {o} (lần {lan + 1}/{SOLANTHUTEN})")
+            # Lần bấm trước bị từ chối có thể còn cờ đang chờ máy chủ: bỏ cờ, không thì nút Tạo không làm gì
+            write_bytes(self.tientrinh, menutao + MTN_DANGCHO, b"\0", 1)
+            self.goiham("HAMDATCHUOTONHAP", this = self._doc(menutao + MTN_OTEN), thamsos = ("chuoi0",), chuois = (ten.encode("latin1"),))
+            self.goiham("HAMNUTTAONHANVAT")
+            if self.chomenu(("MENUCHONNHANVAT",), THOIGIANCHOTAONHANVAT) is None:
+                if not win32gui.IsWindow(self.hwnd) or not self.is_menudanghien("MENUTAONHANVAT"):
+                    print(f"   -> [Hàm] {THOIGIANCHOTAONHANVAT:.0f}s không quay lại menu chọn nhân vật, cũng không còn ở menu tạo")
+                    return None
+                print(f"   -> [Hàm] {THOIGIANCHOTAONHANVAT:.0f}s chưa quay lại menu chọn nhân vật (tên trùng / bị từ chối?), thử tên khác")
+                continue
+            time.sleep(1.)
+            moi = next(((idnv, tennv) for _, idnv, tennv, _ in self._chodanhsachnhanvat() if chuanhoatennhanvat(tennv) == ten.lower()), None)
+            if moi:
+                print(f"   -> [Hàm] Đã tạo nhân vật {moi[1]} (ID {moi[0]})")
+                return moi
+            print(f"   -> [Hàm] Quay lại menu chọn nhân vật mà không thấy \"{ten}\" (máy chủ từ chối?)")
+            return None
+        return None
+
+    def chonhoactaoga(self, config):
+        # Kéo gà A-Z (config["taoga"]): chọn nhân vật cấp < capketthuc chưa kéo xong (cấp cao nhất trước, đỡ kéo lại từ đầu), không có thì
+        # tạo nhân vật mới ở ô trống; hết ô thì báo "het". Kết quả ghi vào taoga["ketqua"]: id, ten, cap, tao (mới tạo), het, loitao, caps
+        taoga = config["taoga"]
+        ketqua = taoga.setdefault("ketqua", {})
+        capketthuc = int(taoga.get("capketthuc") or 0)
+        daxongs = {int(i) for i in taoga.get("idsdaxong") or ()}
+        nhanvats = self._chodanhsachnhanvat()
+        print("   -> [Hàm] Các ô nhân vật: " + (", ".join(f"ô {o + 1}: {ten} (ID {idnv}, cấp {cap})" for o, idnv, ten, cap in nhanvats) or "trống"))
+        ketqua["caps"] = {idnv: cap for _, idnv, _, cap in nhanvats}
+        chons = [(cap, o, idnv, ten) for o, idnv, ten, cap in nhanvats if cap < capketthuc and idnv not in daxongs]
+        if chons:
+            # Vào lại acc gà đang trong lượt (bị dis) thì đúng nhân vật đó
+            cap, o, idnv, ten = next((c for c in chons if c[2] == taoga.get("idchon")), max(chons))
+            print(f"   -> [Hàm] Kéo gà: chọn nhân vật cấp {cap} < {capketthuc}: {ten} (ID {idnv})")
+            ketqua.update(id = idnv, ten = ten, cap = cap, tao = False)
+        elif len(nhanvats) < SOONHANVAT:
+            moi = self.taonhanvat(taoga.get("tiento"), int(taoga.get("gioitinh") or 0))
+            if not moi:
+                ketqua["loitao"] = True
+                return False
+            idnv, ten = moi
+            ketqua.update(id = idnv, ten = ten, cap = 0, tao = True)
+        else:
+            print(f"   -> [Hàm] Kéo gà: cả {SOONHANVAT} ô đều là nhân vật đã kéo xong (cấp >= {capketthuc}), tài khoản hết chỗ")
+            ketqua["het"] = True
+            return False
+        return self.chonvavaogame(dict(config, idnguoichoi = ketqua["id"], tennhanvat = ketqua["ten"]))
+
+
+def _dangnhapbangham(hwnd_game, char_name, config):
+    # True: đã bấm Vào game. False: lỗi giữa chừng (để lượt sau thử lại). None: chưa dùng được (không mở được tiến trình, thiếu địa chỉ,
+    # chưa thấy menu nào) => dùng cách click / gõ phím cũ
+    try:
+        dn = _DangNhapBangHam(hwnd_game)
+    except Exception as e:
+        print(f"   -> [Hàm] Không đăng nhập bằng hàm được ({e}), dùng cách bấm phím")
+        return None
+    try:
+        menu = dn.chomenu(("MENUMAYCHU", "MENUDANGNHAP", "MENUCHONNHANVAT", "MENUTAONHANVAT"), 15.)
+        if menu == "MENUTAONHANVAT":
+            # Kẹt ở màn tạo nhân vật (lần trước tạo dở): kéo gà thì tạo tiếp, không thì không biết đường về
+            if not config.get("taoga"):
+                print("   -> [Hàm] Đang ở màn tạo nhân vật, không đăng nhập tiếp được")
+                return False
+            if not dn.taonhanvat(config["taoga"].get("tiento"), int(config["taoga"].get("gioitinh") or 0)):
+                config["taoga"].setdefault("ketqua", {})["loitao"] = True
+                return False
+            menu = "MENUCHONNHANVAT"
+        if menu is None:
+            print("   -> [Hàm] Chưa thấy màn hình chọn máy chủ / đăng nhập / chọn nhân vật, dùng cách bấm phím")
+            return None
+        if menu == "MENUMAYCHU":
+            try:
+                cum, maychu = int(config.get("group", 1)), int(config.get("server", 1))
+            except (TypeError, ValueError):
+                print(f"❌ Lỗi: cụm / máy chủ '{config.get('group')}' / '{config.get('server')}' không hợp lệ!")
+                return False
+            if not dn.chonmaychu(cum, maychu):
+                return False
+            # Client mở bằng mã từ launcher (chế độ đăng nhập khác 0) thì nút xác nhận máy chủ tự kết nối, không qua màn nhập tài khoản
+            menu = dn.chomenu(("MENUDANGNHAP", "MENUCHONNHANVAT"), 5.)
+            if menu is None:
+                print("   -> [Hàm] Bấm xác nhận máy chủ mà không sang màn nhập tài khoản")
+                return False
+        if menu == "MENUDANGNHAP":
+            dn.nhaptaikhoan(config["user"], config["pass"])
+            print("   -> [Hàm] Chờ danh sách nhân vật...")
+            if dn.chomenu(("MENUCHONNHANVAT",), THOIGIANCHODANHSACHNHANVAT) is None:
+                print(f"   -> [Hàm] {THOIGIANCHODANHSACHNHANVAT:.0f}s chưa sang màn chọn nhân vật (sai mật khẩu / tài khoản đang online / mất mạng?)")
+                return False
+        return dn.chonhoactaoga(config) if config.get("taoga") else dn.chonvavaogame(config)
+    except Exception as e:
+        print(f"❌ [Hàm] Lỗi đăng nhập bằng hàm: {e}")
+        return False
+    finally:
+        dn.dong()
+
+
 def dangnhaptrongcuaso(hwnd_game, char_name, config):
     # Từ màn hình chọn cụm / máy chủ (cửa sổ mới mở, hoặc cửa sổ bị dis quay về) tới khi vào game
     try:
         vitri = config.get("vitricuaso", 1)
         dichuyencuasotheovitri(hwnd_game, vitri)
+
+        if IS_DANGNHAPBANGHAM:
+            ketqua = _dangnhapbangham(hwnd_game, char_name, config)
+            if config.get("taoga"):
+                # Kéo gà A-Z: chọn / tạo nhân vật chỉ làm được bằng hàm, không lùi về cách bấm phím (sẽ vào nhầm ô 1)
+                config["taoga"].setdefault("ketqua", {})["hwnd"] = hwnd_game
+                if ketqua is None:
+                    config["taoga"]["ketqua"]["loitao"] = True
+                    return
+            if ketqua is not None:
+                if ketqua:
+                    _thoidiemvaogame[hwnd_game] = time.time()
+                    print(f"✅ Hoàn tất cho {char_name}. Nghỉ 15s...")
+                    time.sleep(15)
+                return
 
         time.sleep(2)
 
@@ -1102,6 +1503,9 @@ class TuDongDangNhap:
         self._onlinetruoc = {}
         self._lanroigames = {}
         self._tamhoanden = {}
+        # Kéo gà A-Z (keogatudong_xq.KeoGaTuDong, trochoi_xq gắn vào): chạy cùng luồng này sau mỗi lượt đăng nhập lại để hai bên không
+        # cùng mở client; đang bật thì cũng được đóng / kill client (is_chophepdong)
+        self.keoga = None
         self._luong = threading.Thread(target = self.loop, daemon = True)
 
     def batdau(self):
@@ -1156,7 +1560,7 @@ class TuDongDangNhap:
     def _capnhatisbat(self, cauhinh):
         global is_chophepdong
         self.is_bat = bool(taikhoanbatchomaynay(cauhinh))
-        is_chophepdong = self.is_bat
+        is_chophepdong = self.is_bat or bool(self.keoga and self.keoga.is_bat)
 
     def set_is_battaikhoan(self, cauhinh, vitri, is_bat):
         # Bật cho máy này (dòng đang bật ở máy khác thì chuyển sang máy này) / tắt; lưu ngay vào file chung
@@ -1173,6 +1577,10 @@ class TuDongDangNhap:
             except Exception as e:
                 self.trangthai = f"Lỗi: {e}"
                 print(f"[ĐĂNG NHẬP] Lỗi vòng lặp: {e}")
+            if self.keoga:
+                global is_chophepdong
+                is_chophepdong = self.is_bat or self.keoga.is_bat
+                self.keoga.mot_luot()
             time.sleep(5)
 
     def _mot_luot(self):

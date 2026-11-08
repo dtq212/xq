@@ -393,10 +393,36 @@ def duongdanthongtinnguoichoi():
     return os.path.join(os.path.dirname(_thumucthietlap()), "thongtinnguoichoi.json")
 
 
+# Chỉ số đo (Khí Huyết / Kháng / Công) ghi kèm "pb": PHIENBANSODO. Số không có / cũ hơn phiên bản này bị bỏ khi đọc: bản trước
+# 2026-11-07 lưu cả đòn sàn 1 điểm (Kháng 99.076, "Công" quái 106 / 264 giống nhau) và Khí Huyết bị người khác đánh cùng (Kiến Đen 10).
+# Lần đầu bỏ thì chép file gốc sang .bak
+PHIENBANSODO = 2
+KHOASODOs = ("khihuyet", "ngoaikhang", "noikhang", "ngoaicong", "noicong")
+
+
+def _bosodocu(kho, filepath):
+    # Xoá chỉ số đo phiên bản cũ khỏi kho (mục chỉ còn tên / cấp vẫn giữ); có xoá thì sao lưu file gốc 1 lần
+    is_doi = False
+    for muc in kho.values():
+        if not isinstance(muc, dict):
+            continue
+        for khoa in KHOASODOs:
+            if isinstance(muc.get(khoa), dict) and muc[khoa].get("pb", 0) < PHIENBANSODO:
+                del muc[khoa]
+                is_doi = True
+    if is_doi and not os.path.exists(filepath + ".bak"):
+        try:
+            import shutil
+            shutil.copyfile(filepath, filepath + ".bak")
+        except Exception as err:
+            print(f"Lỗi sao lưu {filepath}: {err}")
+    return kho
+
+
 def taithongtinnguoichoi():
     try:
         with open(duongdanthongtinnguoichoi(), "r", encoding = "utf-8") as file:
-            return json.load(file)
+            return _bosodocu(json.load(file), duongdanthongtinnguoichoi())
     except FileNotFoundError:
         return {}
     except Exception as err:
@@ -424,7 +450,7 @@ def duongdanthongtinquai():
 def taithongtinquai():
     try:
         with open(duongdanthongtinquai(), "r", encoding = "utf-8") as file:
-            return json.load(file)
+            return _bosodocu(json.load(file), duongdanthongtinquai())
     except FileNotFoundError:
         return {}
     except Exception as err:
@@ -547,9 +573,12 @@ def tainhomtodoitudongs():
 # DIEUKIENRAPYKEOCAPs: (khoá, nhãn giao diện, số boss phải diệt, có chờ hết quái không). Áp dụng cả kéo cấp lẫn Phong Yêu Kính
 # thường (người dùng dặn 2026-11-05: chọn 1 boss mà PYK thường vẫn chờ 2 boss). Game báo hoàn thành phó bản thì coi như đủ boss. Không có kiểu
 # "2 boss rồi chờ hết quái": boss 2 chỉ ra khi đã hết quái (người dùng dặn). Khoá lạ (bản lưu cũ "2boss_hetquai") thì về kiểu đầu
+# "85quai" (người dùng dặn 2026-11-08): Thỏ Yêu báo đã đánh đủ mốc ra boss (85% quái) hoặc thấy boss thì ra luôn, không đánh boss;
+# chưa tới mốc mà đủ 2 boss / game báo hoàn thành thì vẫn ra như kiểu 2 boss
 DIEUKIENRAPYKEOCAPs = (("2boss", "Diệt đủ 2 boss là ra ngay", 2, False),
                        ("1boss_hetquai", "Diệt 1 boss rồi chờ hết quái (kiểu cũ)", 1, True),
-                       ("1boss", "Diệt 1 boss là ra ngay", 1, False))
+                       ("1boss", "Diệt 1 boss là ra ngay", 1, False),
+                       ("85quai", "Diệt 85% quái là ra ngay (không đánh boss)", 2, False))
 CAUHINHPHONGYEU_MACDINH = {"is_lamkim": True, "is_hoangkim": False, "is_chichuagiamdinh": True, "caphonnhanvat": 25, "khongdot": [], "chidot": [],
                            "is_laydothanhvien": True, "is_nhatbanrac": False, "dieukienrakeocap": "2boss"}
 _cauhinhphongyeu_cache = {"cauhinh": None, "thoidiemsua": None, "thoidiemkiemtra": 0.}
@@ -583,6 +612,11 @@ def laydieukienrapykeocap(cauhinh = None):
         if d[0] == khoa:
             return d[2], d[3]
     return DIEUKIENRAPYKEOCAPs[0][2], DIEUKIENRAPYKEOCAPs[0][3]
+
+
+def is_ra85quaipy(cauhinh = None):
+    # Điều kiện thoát kiểu "85quai": đủ mốc ra boss (85% quái) là ra
+    return (cauhinh or taicauhinhphongyeu())["dieukienrakeocap"] == "85quai"
 
 
 def taicauhinhphongyeu():

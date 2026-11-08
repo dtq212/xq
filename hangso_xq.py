@@ -93,6 +93,11 @@ LENHHOIMONPHAI = "dGludmF0 1"
 # Niết Bàn không có tinvat 1 / 2: kỹ năng "Sử dụng tín vật" (thẻ Cơ Bản, id 61, đọc bảng kỹ năng 2026-11-02) về môn phái, đứng cạnh
 # Xa Phu, nói chuyện "1. Chấp nhận" về Tân Thủ Thôn; quá THOIGIANXAPHUNIETBAN giây chưa về được thì thôi
 LENHTINVAT_NIETBAN = "pf2 61"
+# Kỹ năng "Chức năng hệ thống" (thẻ Cơ Bản > Hệ thống) = "pf2 908": máy chủ trả menu thiết lập, mỗi lựa chọn "pf2 908.<n>", bấm là bật /
+# tắt qua lại, trạng thái lưu trên máy chủ nên chỉ biết qua nhãn (vd "7.Ẩn hiệu ứng Kĩ năng" = đang hiện, lựa chọn là "pf2 908.14").
+# Bot luôn giữ Ẩn hiệu ứng Kĩ năng (người dùng dặn 2026-11-08), làm 1 lần mỗi lần nhân vật vào game
+LENHCHUCNANGHETHONG = "pf2 908"
+SOLANTHUANHIEUUNGKYNANG = 3
 # Tín Vật Niết Bàn ("pf2 61") giãn cách 60s (người dùng dặn 2026-11-03): gửi trong lúc hồi thì game không vận khí,
 # đừng tưởng là không dùng được. Tính từ lúc vào vận khí, dư 2s. Aegis ("dGludmF0 ...") không hồi, không chờ (2026-11-05)
 THOIGIANHOITINVAT = 62.
@@ -118,7 +123,7 @@ THOIGIANDEMHOITHANHPHU = 600.
 # Bot dùng giữ chỗ chung (dieuphoi_xq.GiuHoiThanh) suốt lúc chờ + vận khí (tối đa THOIGIANKHOAVANKHITRIEUHOITOIDA), hết vận khí
 # thì giữ thêm ngẫu nhiên trong khoảng này (giây) rồi bot khác mới được dùng. Người dùng dặn 2026-11-07: chỉ cần cách nhau 5s
 # (6-15s cũ cộng vận khí làm 3-4 bot xếp hàng về thành rất chậm)
-KHOANGNGHIHOITHANHGIUACACBOT = (5., 5.)
+KHOANGNGHIHOITHANHGIUACACBOT = (0., 1.)
 # Giữ chỗ lúc vừa gửi lệnh: phủ cả chờ vào vận khí + vận khí (phòng bot chết giữa chừng thì chỗ tự hết hạn)
 THOIGIANGIUHOITHANHTOIDA = 25.
 # Tên khoá vận khí (action_khoavankhitrieuhoi) là về thành: hết khoá thì nhả giữ chỗ GiuHoiThanh
@@ -1656,7 +1661,7 @@ NHANVATTODOITUDONGs_LIST = [
 TENMUCTIEUKHONGTANCONGs = (*BAOTHUVATPHAMs, "Tần QuốcBinh Sĩ", "Triệu QuốcBinh Sĩ", QUYTOT, THIENBINH, DAUBINH, "CAVE1", "CAVE.2", 'Đỗ Độc', 'Ôn Thần', "Liễu Vọng Tháp")
 TENBOSSBUFFMAOSONs = ("Mã Quỷ", "Lương Hưng", "Yến Thập Tam", "Tư Tà", "Thủ Lĩnh Thành Kiều", TROMBAOPHITAC, "Bảo Hộp Phi Tặc",
                       "Tướng Quân Dũng", "Lăng Mộ Tà Linh", "Đường Truy", "Thế Công Minh", "Thạch Tướng Quân", "Cơ Quan Tướng Quân",
-                      "Hào Quật")
+                      "Hào Quật", "Thủ Lĩnh Thích Khách")
 
 # Hàng việc (tab Nhiệm vụ, tactu_hangviec_xq): mã việc -> tên, theo thứ tự mặc định; việc có vòng thì đặt được giới hạn số vòng
 VIECHANG_MAP = {"sumon": "Sư môn", "danhvong": "Danh Vọng"}
@@ -1667,3 +1672,8 @@ VIECCOVONGs = ("tapkich", "langlyson", "thanhkieu", "phongyeukinh")
 # Việc riêng hiện cuối bảng hàng việc (bấm Làm ngay / thiết lập chung một chỗ) nhưng không chạy theo hàng việc
 VIECRIENG_MAP = {"matac": "Mã Tặc", "keocap": "Kéo cấp acc gà"}
 
+# Cấp kết thúc mặc định (ô "Kéo tới cấp" trên giao diện, lưu ở s["capketthuc"]; bản lưu cũ không có thì dùng số này).
+# 45 là tối ưu điểm thành thạo kỹ năng bang / phút (đo 2026-11-08, acc 526-528, 535-537): mỗi lần acc gà lên cấp bang cộng
+# 800 (<=25), 1200 (26-35), 1600 (36-40), 2000 (41-45), 2400 (46-50), 2800 (51-56); thời gian từ cấp 1: 30 ~20p, 45 ~57p, 60 ~148p,
+# 65 ~205p. Tính cả ~10p chuẩn bị acc mới: dừng 45 ~740 điểm/phút, 60 ~560, 65 ~490 -> thay acc gà mới ở 45 lợi hơn kéo tiếp
+CAPKETTHUCKEOCAP = 45

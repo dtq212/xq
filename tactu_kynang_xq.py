@@ -2371,8 +2371,9 @@ class TacTuKyNang:
         is_bituocvukhi = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN,), macdinh = False, is_hieuungcoloi = 0)
         # Chưa học thì _is_kynangdungduoc tự bỏ qua, không cần xét cấp
         is_ngukiemdudieukien = diachimuctieu and self._is_nhieumuctieugan8
-        # Chỉ chạy vào khi đánh quái lúc di chuyển tự do, PK thì giữ khoảng cách như cũ
-        is_ngukiemtiepcan = is_ngukiemdudieukien and self._is_tudongdichuyendiemdanhxungquanh and not is_muctieupk
+        # Đánh quái (không PK) thì luôn chạy vào giữa cụm rồi mới ra chiêu, ở đâu cũng vậy (phó bản, theo sau...: người dùng 2026-11-08);
+        # PK thì giữ khoảng cách như cũ
+        is_ngukiemtiepcan = is_ngukiemdudieukien and not is_muctieupk
         danhsachuutien = [
             # Bị tước vũ khí: dùng Định Tâm Quyết ngay để giải, không chờ đủ nội lực ngưỡng
             (VITRIKYNANG_TINHTAMQUYET, "sudungkynangkhongmuctieu", lambda: is_bituocvukhi or self.moitruong.get_is_cohieuungs(HIEUUNGBATLOITHUCSONCOTHEGIAIs, macdinh = False, is_hieuungcoloi = 0), 0, None, True),

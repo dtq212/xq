@@ -93,7 +93,7 @@ _MAUNUTTHEOCHU = (
     (("Huỷ / bỏ", "Xoá", "Giải tán", "Bỏ", "⏹", "Dừng"), "Nguyhiem.TButton"),
     (("Thêm", "Ghi bộ đồ"), "Thanhcong.TButton"),
     (("Sửa", "Đổi tên", "Số vòng", "↺", "⚙", "Bổ sung"), "Canhbao.TButton"),
-    (("Lưu", "▶", "Áp dụng", "Đi", "Tiếp tục", "Nạp mẫu", "Tự đề xuất", "Tự chọn", "🗄", "🚚", "Cả máy", "👥", "🐣", "🤝", "🐥", "🐎",
+    (("Lưu", "▶", "Áp dụng", "Đi", "Tiếp tục", "Nạp mẫu", "Tự đề xuất", "Tự chọn", "🗄", "🚚", "Cả máy", "👥", "🐣", "🤝", "🐥", "🐎", "🚀",
       "Sắp xếp"), "Chinh.TButton"),
     (("Huỷ", "Mở file"), "Phu.TButton"),
 )

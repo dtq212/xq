@@ -66,6 +66,18 @@ MUCTIEU = [
     ("HAMVECHU", 0x95BA0, "ma", "vẽ 1 dòng chữ: thiscall ecx = [BIENVECHU], (surface, chữ, x, y, màu, 0), ret 0x18; không xử lý xuống dòng"),
     ("BIENVECHU", 0x380B34, "bien", "con trỏ bộ vẽ chữ (ecx của HAMVECHU)"),
     ("HAMDORONGCHU", 0x22090, "ma", "độ rộng (pixel) 1 dòng chữ: thiscall (ecx không dùng), (chữ), ret 4; game nhớ ở +0x112C tên / +0x1130 danh hiệu"),
+    # Màn hình đăng nhập (dangnhap_xq gọi thẳng các hàm nút thay cho click / gõ phím)
+    ("MENUMAYCHU", 0x380B58, "bien", "menu chọn cụm / máy chủ (đang hiện +0x5C)"),
+    ("MENUDANGNHAP", 0x380B48, "bien", "menu nhập tài khoản (đang hiện +0x760, ô tài khoản +0x34, ô mật khẩu +0x38)"),
+    ("MENUCHONNHANVAT", 0x380B50, "bien", "menu chọn nhân vật (đang hiện +0x34, ô nhân vật +0x54, đang chọn +0x2C4)"),
+    ("HAMXACNHANMAYCHU", 0xC2B60, "ma", "nút xác nhận máy chủ: không tham số, đọc cụm +0x54 / máy chủ +0x58 của MENUMAYCHU"),
+    ("HAMNUTDANGNHAP", 0x83BE0, "ma", "nút Đăng nhập: không tham số, kết nối máy chủ đã chọn rồi tự gửi LOGIN tài khoản md5(mật khẩu)"),
+    ("HAMDATCHUOTONHAP", 0x172300, "ma", "đặt chữ ô nhập: thiscall ecx = ô nhập, (chuỗi), ret 4; chữ ở +0x24 (0x100 byte)"),
+    ("HAMCHONNHANVAT", 0x14E960, "ma", "chọn ô nhân vật: thiscall ecx = MENUCHONNHANVAT, (ô 0..5), ret 4"),
+    ("HAMVAOGAME", 0x14F170, "ma", "nút Vào game của menu chọn nhân vật: không tham số"),
+    ("MENUTAONHANVAT", 0x380B4C, "bien", "menu tạo nhân vật (đang hiện +0x238, ô tên +0x34, giới tính +0x38, mặt +0x240, tóc +0x244, ô +0x23C)"),
+    ("HAMMOTAONHANVAT", 0x14F070, "ma", "nút Tạo của menu chọn nhân vật: không tham số; mở MENUTAONHANVAT, ghi ô trống vào +0x23C, ẩn menu chọn"),
+    ("HAMNUTTAONHANVAT", 0x85690, "ma", "nút Tạo của menu tạo nhân vật: không tham số; kiểm tên rồi kết nối lại, máy chủ chào thì gửi LOGIN ... tên"),
     # Offset trong cấu trúc ("hang": hằng số nằm trong lệnh). TG_: trong [THONGTINGAME]; TD_: trong cấu trúc tìm đường [TG + TG_TIMDUONG];
     # KN_: bảng kỹ năng [TG + TG_KYNANG]; HT_: hành trang [TG + TG_HANHTRANG]; NV_: nhân vật / đối tượng; KDK_: trong [KHOIDIEUKHIEN]
     ("TG_TIMDUONG", 0xADFDEC, "hang", "cấu trúc tìm đường / bản đồ"),

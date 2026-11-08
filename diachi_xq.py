@@ -65,11 +65,22 @@ CHUKY = {
     "HOOK_TROCHUYEN": ("ma", "55 8B 8A D8 FD AD 00", 1, 0x5964),  # chỗ hook đọc nội dung trò chuyện (6 byte)
     "HOOK_TINHETHONG": ("ma", "55 8B 89 64 FD AD 00", 1, 0x2b63),  # chỗ hook gói 0x3E chỉ in vào khung tin hệ thống (trả lời "desc user"), 6 byte
     "HOOK_VEDANHHIEU": ("ma", "50 56 E8 ?? ?? ?? ?? 8B 53 20", 2, 0x1d0a8),  # call HAMVECHU vẽ danh hiệu đối tượng (+0x1134) phía trên tên, 5 byte, ebx = đối tượng
-    "HOOK_VEDANHHIEU2": ("ma", "81 C1 34 11 00 00 99 2B C2 8B D5 D1 F8 2B D0 52 51 8B 0D ?? ?? ?? ?? 56 ?? ?? ?? ?? ??", 24, 0x9c34f),  # call HAMVECHU vẽ danh hiệu nhân vật mình (ebx = đối tượng)
-    "HOOK_VEDANHHIEU3": ("ma", "8D 87 34 11 00 00 51 8B 0D ?? ?? ?? ?? 50 56 ?? ?? ?? ?? ?? 80 7F 29 80", 15, 0x9cf52),  # call HAMVECHU vẽ danh hiệu người chơi khác (edi = đối tượng)
+    "HOOK_VEDANHHIEU2": ("ma", "E8 ?? ?? ?? ?? 8B 1D ?? ?? ?? ?? 83 BB F0 00 00 00 03", 0, 0x9c34f),  # call HAMVECHU vẽ danh hiệu nhân vật mình (ebx = đối tượng)
+    "HOOK_VEDANHHIEU3": ("ma", "56 E8 ?? ?? ?? ?? 80 7F 29 80", 1, 0x9cf52),  # call HAMVECHU vẽ danh hiệu người chơi khác (edi = đối tượng)
     "HAMVECHU": ("goi", "50 56 E8 ?? ?? ?? ?? 8B 53 20", 3, 0x95ba0),  # vẽ 1 dòng chữ: thiscall ecx = [BIENVECHU], (surface, chữ, x, y, màu, 0), ret 0x18; không xử lý xuống dòng
     "BIENVECHU": ("bien", "56 56 89 72 60 A1 ?? ?? ?? ??", 6, 0x380b34),  # con trỏ bộ vẽ chữ (ecx của HAMVECHU)
     "HAMDORONGCHU": ("goi", "75 1A 50 8B CB E8 ?? ?? ?? ??", 6, 0x22090),  # độ rộng (pixel) 1 dòng chữ: thiscall (ecx không dùng), (chữ), ret 4; game nhớ ở +0x112C tên / +0x1130 danh hiệu
+    "MENUMAYCHU": ("bien", "75 0D 8B 0D ?? ?? ?? ?? 6A 01", 4, 0x380b58),  # menu chọn cụm / máy chủ (đang hiện +0x5C)
+    "MENUDANGNHAP": ("bien", "8B 0D ?? ?? ?? ?? 3B CE 74 2E", 2, 0x380b48),  # menu nhập tài khoản (đang hiện +0x760, ô tài khoản +0x34, ô mật khẩu +0x38)
+    "MENUCHONNHANVAT": ("bien", "8B 0D ?? ?? ?? ?? 3B CE 74 08", 2, 0x380b50),  # menu chọn nhân vật (đang hiện +0x34, ô nhân vật +0x54, đang chọn +0x2C4)
+    "HAMXACNHANMAYCHU": ("ma", "64 A1 00 00 00 00 6A FF 68 ?? ?? ?? ?? 50 A1 ?? ?? ?? ?? 64 89 25 00 00 00 00 83 EC 2C 85 C0", 0, 0xc2b60),  # nút xác nhận máy chủ: không tham số, đọc cụm +0x54 / máy chủ +0x58 của MENUMAYCHU
+    "HAMNUTDANGNHAP": ("goi", "E8 ?? ?? ?? ?? B8 01 00 00 00 5E C2 08 00 90 90 90 90 90 90 90 90 90 90 83 EC 08", 1, 0x83be0),  # nút Đăng nhập: không tham số, kết nối máy chủ đã chọn rồi tự gửi LOGIN tài khoản md5(mật khẩu)
+    "HAMDATCHUOTONHAP": ("goi", "89 9E 20 03 00 00 E8 ?? ?? ?? ??", 7, 0x172300),  # đặt chữ ô nhập: thiscall ecx = ô nhập, (chuỗi), ret 4; chữ ở +0x24 (0x100 byte)
+    "HAMCHONNHANVAT": ("ma", "53 57 8B 7C 24 0C 85 FF", 0, 0x14e960),  # chọn ô nhân vật: thiscall ecx = MENUCHONNHANVAT, (ô 0..5), ret 4
+    "HAMVAOGAME": ("goi", "C2 08 00 E8 ?? ?? ?? ?? 5F 5E 5D", 4, 0x14f170),  # nút Vào game của menu chọn nhân vật: không tham số
+    "MENUTAONHANVAT": ("bien", "F3 A4 8B 0D ?? ?? ?? ?? 33 F6", 4, 0x380b4c),  # menu tạo nhân vật (đang hiện +0x238, ô tên +0x34, giới tính +0x38, mặt +0x240, tóc +0x244, ô +0x23C)
+    "HAMMOTAONHANVAT": ("ma", "6A 05 E8 ?? ?? ?? ?? C3 6A FF", 8, 0x14f070),  # nút Tạo của menu chọn nhân vật: không tham số; mở MENUTAONHANVAT, ghi ô trống vào +0x23C, ẩn menu chọn
+    "HAMNUTTAONHANVAT": ("ma", "A1 ?? ?? ?? ?? 81 EC 2C 04 00 00", 0, 0x85690),  # nút Tạo của menu tạo nhân vật: không tham số; kiểm tên rồi kết nối lại, máy chủ chào thì gửi LOGIN ... tên
     "TG_TIMDUONG": ("hang", [('33 F6 39 B2 ?? ?? ?? ?? 75 42', 4), ('8B 1D ?? ?? ?? ?? 8B 93 ?? ?? ?? ?? 3B D6', 8), ('C7 05 ?? ?? ?? ?? 00 00 00 00 8B 96 ?? ?? ?? ??', 12)], None, 0xadfdec),  # cấu trúc tìm đường / bản đồ
     "TG_HANHTRANG": ("hang", [('8A 55 06 8B 0D ?? ?? ?? ?? 52 50 8B 89 ?? ?? ?? ??', 13), ('8B 88 ?? ?? ?? ?? 89 5C 24 18', 2), ('8A 55 02 51 8B 88 ?? ?? ?? ??', 6)], None, 0xadfd78),  # hành trang (id, tên, số lượng, mô tả vật phẩm)
     "TG_KYNANG": ("hang", [('83 C4 1C 8B 15 ?? ?? ?? ?? 8B 82 ?? ?? ?? ??', 11), ('83 C5 04 F3 AB 8B 15 ?? ?? ?? ?? 68 F3 01 00 00 55 8B 82 ?? ?? ?? ??', 19), ('8B B9 ?? ?? ?? ?? 8B 84 2F 60 FF FF FF', 2)], None, 0xadfe18),  # bảng kỹ năng
@@ -80,8 +91,8 @@ CHUKY = {
     "TG_TIMDUONGCUCBO": ("hang", [('8B 5C 24 10 B9 19 00 00 00 33 C0 8D BC 24 48 01 00 00 F3 AB 8B 83 ?? ?? ?? ??', 22), ('E9 ?? ?? ?? ?? B9 19 00 00 00 33 C0 8D BC 24 48 01 00 00 F3 AB 8B 83 ?? ?? ?? ??', 23), ('8B 81 ?? ?? ?? ?? 85 C0 75 3E', 2)], None, 0xae1178),  # đối tượng tìm đường cục bộ
     "TG_VANKHI": ("hang", [('8B 81 ?? ?? ?? ?? 85 C0 75 51 68 00 01 00 00', 2), ('8B 83 ?? ?? ?? ?? 33 FF 3B C7', 2), ('74 1C 8B 8B ?? ?? ?? ?? 3B CE', 4)], None, 0xadfde8),  # đối tượng vận khí
     "TG_CUASOYESNO": ("hang", [('8B 88 ?? ?? ?? ?? 85 C9 75 4D 68 70 02 00 00', 2), ('8B 82 ?? ?? ?? ?? 85 C0 75 51 68 70 02 00 00', 2), ('89 9D ?? ?? ?? ?? 89 9D 18 FE AD 00', 2)], None, 0xadfe10),  # cửa sổ yes / no
-    "TG_VONGQUAYSO": ("hang", [('8B 88 ?? ?? ?? ?? 8A 81 A0 00 00 00', 2), ('89 82 ?? ?? ?? ?? 57 B9 19 00 00 00 33 C0', 2), ('8B 8A ?? ?? ?? ?? 5F 8A 81 A2 00 00 00', 2)], None, 0xadfe80),  # cửa sổ vòng quay số Bảo Điển
-    "TG_BAODIEN": ("hang", [('83 EC 64 56 8B B0 ?? ?? ?? ?? 57 8B 46 78', 6), ('FF 10 84 C0 8B 85 ?? ?? ?? ?? 74 1F C6 40 01 01', 6), ('C2 08 00 8B 88 ?? ?? ?? ?? 85 C9 74 3A 39 8B', 5)], None, 0xadfe7c),  # cửa sổ Bảo Điển ("zgdict open")
+    "TG_VONGQUAYSO": ("hang", [('8B 89 ?? ?? ?? ?? 85 C9 74 32', 2), ('89 9D 7C FE AD 00 89 9D ?? ?? ?? ??', 8), ('8B BE ?? ?? ?? ?? 3B FD 74 10 8B CF E8 ?? ?? ?? ?? 57 E8 ?? ?? ?? ?? 83 C4 04 8B BE 84 FE AD 00', 2)], None, 0xadfe80),  # cửa sổ vòng quay số Bảo Điển
+    "TG_BAODIEN": ("hang", [('8B 81 ?? ?? ?? ?? 85 C0 75 51 68 90 15 00 00', 2), ('89 9D 78 FE AD 00 89 9D ?? ?? ?? ??', 8), ('8B 88 ?? ?? ?? ?? 85 C9 74 3A 39 8B 8C FC AD 00', 2)], None, 0xadfe7c),  # cửa sổ Bảo Điển ("zgdict open")
     "TG_ENTER": ("hang", [('75 0D 8B 90 ?? ?? ?? ?? C6 82 40 81 00 00 00', 4), ('85 C0 74 36 8B 80 ?? ?? ?? ??', 6), ('8D 0C 82 E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 8B 8A ?? ?? ?? ??', 15)], None, 0xadfd60),  # khung chat (Enter)
     "TG_TROCHUYEN": ("hang", [('8B 81 ?? ?? ?? ?? 85 C0 0F ?? ?? ?? ?? ?? 68 B8 01 00 00', 2), ('8B 81 ?? ?? ?? ?? 85 C0 75 4D 68 B8 01 00 00', 2), ('55 8B 88 64 FD AD 00 E8 ?? ?? ?? ?? 8B 0D ?? ?? ?? ?? 8B 81 ?? ?? ?? ??', 20)], None, 0xadfdd8),  # nội dung trò chuyện
     "TG_KHUNGCHAT": ("hang", [('84 C9 0F ?? ?? ?? ?? ?? 8B 0D ?? ?? ?? ?? 8B 89 ?? ?? ?? ??', 16), ('74 13 8B 0D ?? ?? ?? ?? 50 55 8B 89 ?? ?? ?? ??', 12), ('8B 8A ?? ?? ?? ?? E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 8B 7D 02', 2)], None, 0xadfd64),  # khung trò chuyện đang hiện (HAMTHEMDONGKHUNGCHAT thêm dòng vào đây)

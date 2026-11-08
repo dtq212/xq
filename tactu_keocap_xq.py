@@ -50,12 +50,19 @@ MENUX2KINHNGHIEM = ("welcome.40", 2)
 # đeo (use2); thu hồi: acc gà "remove 7" tháo pháp bảo rồi give trả cùng đồ Lam Kim
 TRAOKEOCAPs = ("Cửu Long Thần Hỏa Trảo", "Cửu Long Thần Hoả Trảo")
 GIANCACHDOCTRAOKC = 3.
+# Thu hồi: túi đầy thì "remove 7" không tháo được Trảo; vứt món này trước cho có ô trống (người dùng dặn 2026-11-08). Vứt xong chừng này
+# giây mới tháo (chờ máy chủ cập nhật túi)
+VATPHAMVUTKHIDAYTUIKC = ("Chiến Quốc Bảo Điển",)
+GIANCACHVUTDOTHAOTRAOKC = 2.
 # Give Trảo xong chừng này giây mới xét acc gà đã nhận chưa / give lại, tối đa SOLANGIAOTRAOKC lần mỗi acc gà
 GIANCACHGIAOTRAOKC = 6.
 SOLANGIAOTRAOKC = 3
 # Tập hợp: chờ acc gà nhận Trảo tối đa chừng này giây rồi vẫn đi bãi (ở bãi vẫn đưa tiếp)
 THOIGIANCHOTRAOKC = 60.
 SOLANTHAOTRAOKC = 3
+# Cửu Long Thần Hỏa Trảo cần nhân vật cấp 2 mới đeo được (người dùng báo 2026-11-08): acc gà dưới cấp này không use2 Trảo, báo
+# trao "chuacap" (acc chính không give, tập hợp không chờ), tới cấp thì báo "" để acc chính give ở bãi
+CAPDEOTRAOKC = 2
 # Acc gà tự cộng điểm tiềm năng dư vào ô 4 Nại lực (người dùng dặn 2026-11-07): "gift a b c d e" = TỔNG MỚI 5 ô
 OTIEMNANGKEOCAP = 3
 GIANCACHCONGTIEMNANGKC = 10.
@@ -77,8 +84,6 @@ SOLANMOIBANGGIUACHUNG = 3
 GIANCACHDUNGVATPHAMKC = 1.5
 # (bản đồ, cấp đích): acc gà thấp nhất chưa tới cấp đích thì acc chính đánh ở bản đồ đó
 BAIKEOCAPs = ((BANDO_BAKHAU, 10), (BANDO_THUYHOASON_KC, 20), (BANDO_CULOC, 30), (BANDO_RANHGIOIDAMLAY, 35))
-# Cấp kết thúc mặc định (ô "Kéo tới cấp" trên giao diện, lưu ở s["capketthuc"]; bản lưu cũ không có thì dùng số này)
-CAPKETTHUCKEOCAP = 60
 # Acc gà đồ đệ quá cấp này (chưa ghi bái sư) thì coi như đã bái sư: bỏ bước bái sư, chỉ nhớ để tới cấp kết thúc xuất sư
 CAPTOIDANHANDODE = 30
 # Đồ đệ tới cấp này là xuất sư được (người dùng dặn): xuất sư ngay, không chờ mọi acc gà tới cấp kết thúc, xong kéo tiếp như thường
@@ -93,6 +98,13 @@ GIANCACHMOINHOMKC = 5.
 GIANCACHMOIBANGKC = 15.
 # Tập hợp: quá chừng này giây acc gà chưa đồng ý vào bang thì vẫn đi bãi (báo log, vẫn mời tiếp lúc đứng ở Tân Thủ Thôn)
 THOIGIANCHOBANGKC = 120.
+# Acc gà tự kiểm tra bang ("desc user <ID mình>", _kiemtrabangkc): trước đây "org join" xong là đánh dấu đã vào bang luôn, join lỗi thì
+# acc chính không mời lại nữa (người dùng báo 2026-11-08). Hỏi lúc bật, sau mỗi lần join GIANCACHKIEMTRABANGSAUJOIN giây, ngoài ra
+# GIANCACHKIEMTRABANG giây 1 lần (sửa dabang lưu cũ sai / bị đá khỏi bang); trả lời hiện ở khung tin hệ thống nên đừng hỏi dày
+GIANCACHKIEMTRABANG = 300.
+GIANCACHKIEMTRABANGSAUJOIN = 3.
+THOIGIANCHOKIEMTRABANG = 5.
+SOLANHOIBANGLOI = 3
 # Tới bãi chờ acc gà theo sang tối đa chừng này giây rồi mới đánh (có mặt mới được chia kinh nghiệm)
 THOIGIANCHOGATOIBAI = 90.
 # Phong Yêu Kính: người give tắt Phong Yêu Kính chừng này giây (hết đồ) thì acc chính chọn acc gà khác; ai tắt thì chừng này giây sau bật lại
@@ -425,7 +437,7 @@ class TacTuKeoCap:
             return None
         nhom = self._nhomkeocapkc(s, gas)
         self._moinhomkc(s, nhom)
-        self._moibangkc(s, gas, SOLANMOIBANGGIUACHUNG)
+        self._moibangkc(s, gas, SOLANMOIBANGGIUACHUNG, "solanmoibangbai")
         yeucautrao = self._chuyentraokc(s, gas)
         if yeucautrao is not False:
             return yeucautrao
@@ -617,9 +629,10 @@ class TacTuKeoCap:
             sp["buoc"] = "menu"
         return None
 
-    def _moibangkc(self, s, gas, solantoida = None):
+    def _moibangkc(self, s, gas, solantoida = None, khoa = "solanmoibang"):
         # Mời acc gà chưa đồng ý vào bang ("org invite <ID>"), mỗi GIANCACHMOIBANGKC giây 1 người, mỗi người tối đa solantoida lần (None:
-        # không giới hạn). -> [ID acc gà chưa vào bang]
+        # không giới hạn). khoa: bộ đếm số lần riêng (ở bãi đếm riêng, không thì số lần mời lúc tập hợp đã vượt giới hạn, ra bãi không
+        # mời lại nữa). -> [ID acc gà chưa vào bang]
         # Người dùng tắt ô "Mời acc gà vào bang" (acc chính không có bang): không mời, không ai chờ vào bang
         if not s.get("moibang", True):
             return []
@@ -631,7 +644,11 @@ class TacTuKeoCap:
             return []
         now = time.time()
         chuabangs = [i for i, info in gas.items() if not info["_keocap"].get("dabang")]
-        solans = s.setdefault("solanmoibang", {})
+        solans = s.setdefault(khoa, {})
+        for idga, info in gas.items():
+            if info["_keocap"].get("dabang"):
+                # Đã vào bang: xoá bộ đếm, sau này bị ra khỏi bang thì được mời lại đủ lần
+                solans.pop(idga, None)
         for idga in chuabangs:
             if solantoida is not None and solans.get(idga, 0) >= solantoida:
                 continue
@@ -886,6 +903,7 @@ class TacTuKeoCap:
         if chinh:
             s["capketthuc"] = int(chinh["_keocap"].get("capketthuc") or CAPKETTHUCKEOCAP)
         self._dongykeocapga(s)
+        self._kiemtrabangkc(s)
         self._congtiemnangkc(s)
         if not s["xongtanthu"]:
             self._tatsautheokc(s)
@@ -983,6 +1001,21 @@ class TacTuKeoCap:
         if self._is_traokc(moitruong.get_tenphapbaohientai()):
             # Đang đeo Cửu Long Thần Hỏa Trảo của acc chính: tháo ra túi ("remove 7") rồi trả cùng đồ Lam Kim
             if s.get("solanthaotrao", 0) < SOLANTHAOTRAOKC:
+                if all(moitruong.get_iddoituongvatphamhanhtrang(vitri) for vitri in moitruong.get_danhsachvitrimohanhtrang()):
+                    # Túi đầy: tháo không được, vứt Chiến Quốc Bảo Điển trước
+                    mon = self._timvatphamkc(VATPHAMVUTKHIDAYTUIKC)
+                    if mon:
+                        vitri, idmon = mon
+                        soluong = max(1, moitruong.get_soluongvatphamhanhtrang(vitri) or 1)
+                        lenh = "drop ! {}#{}".format(hex(idmon), soluong).replace("0x", "")
+                        moitruong.action_thucthicaulenh2(lenh)
+                        s["luctrado"] = now - GIANCACHGIAODOKC + GIANCACHVUTDOTHAOTRAOKC
+                        self._logkc(f"Túi đầy, không tháo được {TRAOKEOCAPs[0]}: vứt {VATPHAMVUTKHIDAYTUIKC[0]} trước ({lenh!r})")
+                        s["trangthai"] = f"thu hồi: túi đầy, vứt {VATPHAMVUTKHIDAYTUIKC[0]}"
+                        return None
+                    if not s.get("dalogdaytui"):
+                        s["dalogdaytui"] = True
+                        self._logkc(f"⚠️ Túi đầy mà không có {VATPHAMVUTKHIDAYTUIKC[0]} để vứt: vẫn thử tháo {TRAOKEOCAPs[0]}")
                 lenh = f"remove {VITRITRANGBI_PHAPBAO - VITRITRANGBIDAUTIEN + 1}"
                 s.update(solanthaotrao = s.get("solanthaotrao", 0) + 1, luctrado = now)
                 moitruong.action_thucthicaulenh(lenh)
@@ -1091,8 +1124,42 @@ class TacTuKeoCap:
         if len(phan) == 3 and phan[:2] == ["org", "join"] and phan[2] == str(s["idchinh"]):
             moitruong.action_thucthicaulenh(lenh)
             moitruong.set_is_danghiencuasoyesno(False)
-            s["dabang"] = True
-            self._logkc(f"Đồng ý vào bang ({lenh!r})")
+            # Chưa chắc vào được (bang đầy / lỗi): không đánh dấu dabang ở đây, _kiemtrabangkc hỏi lại bang sau GIANCACHKIEMTRABANGSAUJOIN giây
+            s["lucjoinbang"] = time.time()
+            self._logkc(f"Đồng ý vào bang ({lenh!r}), chờ kiểm tra lại")
+
+    def _kiemtrabangkc(self, s):
+        # Acc gà tự kiểm tra đã vào bang chưa bằng "desc user <ID mình>" (dòng Bang phái), báo dabang cho acc chính theo kết quả thật:
+        # chưa vào bang thì acc chính mời lại, vừa "org join" thì hỏi sau GIANCACHKIEMTRABANGSAUJOIN giây, ngoài ra GIANCACHKIEMTRABANG giây
+        moitruong = self.moitruong
+        now = time.time()
+        idminh = moitruong.get_idnguoichoi()
+        lucgui = s.get("luckiemtrabang", 0.)
+        if lucgui and moitruong.get_thoidiembangphai(idminh) >= lucgui:
+            tenbang = moitruong.get_bangphai(idminh)
+            dabang = bool(tenbang)
+            if dabang != s["dabang"] or s.get("tenbangkc") != tenbang:
+                self._logkc(f"Kiểm tra bang: {('đã vào bang ' + tenbang) if dabang else 'chưa có bang'}")
+            s.update(dabang = dabang, tenbangkc = tenbang, luckiemtrabang = 0., solanhoibangloi = 0)
+            return
+        if lucgui and now - lucgui < THOIGIANCHOKIEMTRABANG:
+            return
+        if lucgui:
+            # Không thấy trả lời: hỏi lại sớm tối đa SOLANHOIBANGLOI lần, quá thì đợi lượt định kỳ (giữ dabang cũ)
+            s["luckiemtrabang"] = 0.
+            s["solanhoibangloi"] = s.get("solanhoibangloi", 0) + 1
+            if s["solanhoibangloi"] <= SOLANHOIBANGLOI:
+                s["lucjoinbang"] = now
+            else:
+                self._logkc("⚠️ Hỏi bang (desc user) không thấy trả lời, giữ trạng thái bang cũ")
+                s["solanhoibangloi"] = 0
+        lucjoin = s.get("lucjoinbang", 0.)
+        if lucjoin and now - lucjoin >= GIANCACHKIEMTRABANGSAUJOIN:
+            can = True
+        else:
+            can = now - s.get("luckiemtrabangxong", -999.) >= GIANCACHKIEMTRABANG
+        if can and moitruong.action_hoibangphaicuaminh():
+            s.update(luckiemtrabang = now, luckiemtrabangxong = now, lucjoinbang = 0.)
 
     def _roinhomkhacchinhkc(self, s):
         # Tập hợp / bãi: đang ở nhóm không phải của acc chính (nhóm Phong Yêu Kính cũ...) thì rời để nhận lời mời acc chính
@@ -1131,9 +1198,20 @@ class TacTuKeoCap:
             return
         s["lucdoctrao"] = now
         trao = "deo" if self._is_traokc(self.moitruong.get_tenphapbaohientai()) else ("tui" if self._timvatphamkc(TRAOKEOCAPs) else "")
+        if trao == "" and not self._is_dudeotraokc():
+            trao = "chuacap"
         if trao != s.get("trao"):
-            self._logkc(f"{TRAOKEOCAPs[0]}: " + {"deo": "đang đeo", "tui": "có trong túi", "": "không có"}[trao])
+            self._logkc(f"{TRAOKEOCAPs[0]}: " + {"deo": "đang đeo", "tui": "có trong túi", "": "không có",
+                                                  "chuacap": f"không có, chưa cấp {CAPDEOTRAOKC} nên chưa nhận"}[trao])
         s["trao"] = trao
+
+    def _is_dudeotraokc(self):
+        # Đủ cấp đeo Cửu Long Thần Hỏa Trảo chưa (đọc cấp lỗi / ra 0 thì coi như đủ, giữ cách cũ)
+        try:
+            capdo = int(self.moitruong.get_capdonhanvat() or 0)
+        except Exception:
+            return True
+        return capdo <= 0 or capdo >= CAPDEOTRAOKC
 
     def _congtiemnangkc(self, s):
         # Acc gà còn điểm tiềm năng chưa cộng thì dồn hết vào Nại lực (ô OTIEMNANGKEOCAP, người dùng dặn): "gift a b c d e" = tổng mới 5 ô
@@ -1233,6 +1311,9 @@ class TacTuKeoCap:
         if buoc == "vatpham":
             dalam = s.setdefault("dungvatpham", {})
             for tens, cach in VATPHAMTANTHUs:
+                if tens[0] == TRAOKEOCAPs[0] and not self._is_dudeotraokc():
+                    # Chưa đủ cấp đeo: để trong túi, qua tân thủ _dungvatphamconsotkc đeo khi lên cấp
+                    continue
                 mon = self._timvatphamkc(tens)
                 if not mon or dalam.get(tens[0], 0) >= SOLANDUNGVATPHAMTANTHU:
                     continue
@@ -1293,8 +1374,8 @@ class TacTuKeoCap:
         s["lucdocsot"] = now
         dalam = s.setdefault("dungvatphamsot", {})
         for tens, cach in VATPHAMTANTHUs:
-            if tens[0] == TRAOKEOCAPs[0] and s.get("giaidoan") in ("thuhoi", "xong"):
-                # Thu hồi: Trảo vừa tháo ra để trả acc chính, đừng đeo lại
+            if tens[0] == TRAOKEOCAPs[0] and (s.get("giaidoan") in ("thuhoi", "xong") or not self._is_dudeotraokc()):
+                # Thu hồi: Trảo vừa tháo ra để trả acc chính, đừng đeo lại; chưa đủ cấp đeo thì chờ lên cấp
                 continue
             mon = self._timvatphamkc(tens)
             if mon and dalam.get(tens[0], 0) < SOLANDUNGVATPHAMTANTHU \
@@ -1478,6 +1559,10 @@ class TacTuKeoCap:
         if is_danhquai:
             # Để _buoctrongphongyeu dò đánh như trưởng nhóm (đủ boss / hết lượt dò thì nó cũng tự ra)
             return False
+        # Điều kiện thoát "85quai": đứng cạnh Thỏ Yêu thì hỏi số quái định kỳ (đủ thì _buoctrongphongyeu ra)
+        dangdung, yeucau = self._hoi85quaipy(s, py)
+        if dangdung:
+            return yeucau
         py["hoisoquai"] = None
         s["chedo"] = "cho"
         if is_duboss:

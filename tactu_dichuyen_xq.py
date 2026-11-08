@@ -23,6 +23,14 @@ THOIGIANBAODUNGCHO = 60.
 # thì sang điểm kế
 KHOANGCACHTOIDIEMDO = 3.
 THOIGIANMOIDIEMDO = 25.
+# Đồng hồ THOIGIANMOIDIEMDO dừng khi đang có mục tiêu (đánh dọc đường), nhưng 1 điểm dò không giữ quá chừng này giây kể cả khi đánh
+# liên tục (quái ra mãi / không tới được). Trước đây đồng hồ chạy cả lúc đánh: log 364 Cự Lộc đứng đánh quanh (60-70, 100-110) mà điểm
+# dò nhảy từ (74, 102) tới (177, 100), (144, 53) chưa tới điểm nào
+THOIGIANTOIDAMOIDIEMDO = 120.
+# Đang dò bản đồ: bỏ quái (cả quái nhân vật cùng máy thấy) xa điểm dò hơn mình quá chừng này ô, kẻo chạy ngược về. Log 364: acc gà theo
+# sau thấy quái phía sau, "TÌM MỤC TIÊU CHUNG" kéo nhân vật dẫn quay lại (50, 104), (65, 113) rồi lặp mãi quanh (64, 110).
+# 8 = tầm đánh xa, quái đang đánh mình từ phía sau vẫn trong tầm này
+KHOANGCACHLUIDODANH = 8.
 
 
 class TacTuDiChuyen:
@@ -1591,7 +1599,10 @@ class TacTuDiChuyen:
         if not self._is_tudongdichuyendiemdanhxungquanh or self._is_bolotrinhdiemdanh():
             return True
         if not self._diemdanhxungquanhs:
-            # Lộ trình ẩn (dò bản đồ): không giới hạn bán kính, chỉ giới hạn theo vùng khi bật Chia vùng với bot cùng máy
+            # Lộ trình ẩn (dò bản đồ): không giới hạn bán kính, chỉ giới hạn theo vùng khi bật Chia vùng với bot cùng máy;
+            # không quay ngược xa khỏi điểm dò đang đi tới
+            if self._is_quainguochuongdo(x, y):
+                return False
             return self._is_trongvunglotrinh(x, y)
         idbandohientai = self.moitruong.get_idbandohientai()
         diemcungbandos = [d for d in self._diemdanhxungquanhs if len(d) >= 3 and d[2] == idbandohientai]
@@ -1601,6 +1612,15 @@ class TacTuDiChuyen:
             return False
         # Chia vùng với bot cùng máy: chỉ đánh quái thuộc vùng mình (điểm đánh gần quái nhất nằm trong đoạn của mình)
         return self._is_trongvunglotrinh(x, y)
+
+    def _is_quainguochuongdo(self, x, y):
+        # Đang dò bản đồ (lộ trình ẩn, không theo sau ai): quái ở (x, y) xa điểm dò đang đi tới hơn mình quá KHOANGCACHLUIDODANH ô
+        # => đánh nó là chạy ngược lại, bỏ qua
+        do = self._dobando
+        if not do or do["idbando"] != self.moitruong.get_idbandohientai() or self._laytoadomuctieutheosau():
+            return False
+        x_do, y_do = do["diems"][do["i"]]
+        return math.dist((x, y), (x_do, y_do)) > math.dist(self.moitruong.get_toado(), (x_do, y_do)) + KHOANGCACHLUIDODANH
 
     def _nhacbandokhongcodiemdanh(self):
         # Đang bật lộ trình mà bản đồ hiện tại không có điểm đánh nào: mọi mục tiêu bị bỏ qua mà không báo gì thì dễ tưởng đang đánh,
@@ -1935,21 +1955,29 @@ class TacTuDiChuyen:
             toado = self.moitruong.get_toado()
             i = min(range(len(diems)), key = lambda k: math.dist(diems[k], toado))
             do = self._dobando = {"idbando": idbando, "is_phobanmuon": is_phobanmuon, "is_codinh": is_codinh, "diems": diems, "i": i,
-                                  "luc": time.time(), "chieu": -1 if self._is_nguocchieulotrinh else 1}
+                                  "luc": time.time(), "batdau": time.time(), "lancuoi": time.time(),
+                                  "chieu": -1 if self._is_nguocchieulotrinh else 1}
             self._bonhovunglotrinh = (0., None)
             print(f"[LỘ TRÌNH] Chưa có điểm đánh: dò {laytenbando(idbando)} {len(diems)} điểm")
         vung = self._layvunglotrinh()
         if vung and not vung["is_do"]:
             vung = None
         x, y = do["diems"][do["i"]]
+        # Đang có mục tiêu (đánh dọc đường) thì dừng đồng hồ THOIGIANMOIDIEMDO: lùi mốc "luc" đúng bằng thời gian trôi từ lần gọi trước
+        # (kẹp 1s phòng vòng lặp bị treo lâu)
+        thoidiemhientai = time.time()
+        if thoidiemhientai - self._thoidiemcomuctieugannhat < 1.:
+            do["luc"] += min(thoidiemhientai - do.get("lancuoi", thoidiemhientai), 1.)
+        do["lancuoi"] = thoidiemhientai
         if vung and do["i"] not in vung["tapchiso"]:
             # Chia vùng với bot cùng máy cùng bản đồ: vào điểm dò gần nhất trong đoạn của mình
-            do["luc"] = time.time()
+            do["luc"] = do["batdau"] = time.time()
             do["i"] = self._chondiemtrongvung(vung, idbando)
             print(f"[LỘ TRÌNH] Dò bản đồ vùng {vung['stt'] + 1}/{vung['tong']}: vào điểm {do['i'] + 1}")
             x, y = do["diems"][do["i"]]
-        elif self.moitruong.get_khoangcachdiem(x, y) <= KHOANGCACHTOIDIEMDO or time.time() - do["luc"] > THOIGIANMOIDIEMDO:
-            do["luc"] = time.time()
+        elif self.moitruong.get_khoangcachdiem(x, y) <= KHOANGCACHTOIDIEMDO or time.time() - do["luc"] > THOIGIANMOIDIEMDO \
+                or time.time() - do.get("batdau", 0.) > THOIGIANTOIDAMOIDIEMDO:
+            do["luc"] = do["batdau"] = time.time()
             do["i"] = self._diemketieptrongvung(vung, do["i"]) if vung else (do["i"] + do["chieu"]) % len(do["diems"])
             x, y = do["diems"][do["i"]]
         chuvung = f" [vùng {vung['stt'] + 1}/{vung['tong']}: {vung['chisos'][0] + 1}-{vung['chisos'][-1] + 1}]" if vung else ""

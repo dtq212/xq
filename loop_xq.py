@@ -11,6 +11,7 @@ import pymem.exception
 from hangso_xq import IS_BOKHUNGSAUTANCONG, CHUKYBOKHUNGSAUTANCONG, THOIGIANCHOBOKHUNGSAUTANCONG, TUTHENHANVAT_DELAYSAUTANCONG, TUTHENHANVAT_LOI, CHUKYGIUOTRONGHANHTRANG
 from hangso_xq import BANDO_BANGPHAI, TRUONGPHONGTIENSINH, RUONGDUTRU
 from hangso_xq import BANDO_CHIENTRUONG, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, BANDO_YENTRUONGTHANH3, BANDO_YENTRUONGTHANH2, BANDO_YENTRUONGTHANH1, TANGBAODO, LAMCAU, HACCAU, HIEUUNGKYNANG_TRONGTHUONG
+from hangso_xq import LENHCHUCNANGHETHONG, SOLANTHUANHIEUUNGKYNANG
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
 from tienich_xq import canhbao
@@ -123,6 +124,10 @@ class LoopChinh:
         self.stop = stop
         self.thoidiemhopthanhtinhthach_map = {}
         self.thoidiemlogtinhthachgannhat = 0.
+        # Ẩn hiệu ứng Kĩ năng (xem _thietlapanhieuungkynang): đã xong trong lần vào game này / số lần đã thử / lần thử gần nhất
+        self.is_daanhieuungkynang = False
+        self.solanthuanhieuungkynang = 0
+        self.thoidiemthuanhieuungkynang = 0.
 
     def __del__(self):
         if not self.stop.is_set():
@@ -157,12 +162,63 @@ class LoopChinh:
         time.sleep(0.25)
         return bool(self.moitruong.get_noidungcuasotuychon())
 
+    @staticmethod
+    def _chuanhoanhanluachon(nhan):
+        # "7.Ẩn hiệu ứng Kĩ năng" / "4.[Tắt] Hiện mũ ..." -> "an hieu ung ki nang": bỏ số thứ tự, [Bật]/[Tắt], dấu, hoa thường
+        nhan = re.sub(r"^\s*\d+\s*\.\s*", "", nhan or "")
+        nhan = re.sub(r"\[[^\]]*\]", " ", nhan)
+        nhan = "".join(c for c in unicodedata.normalize("NFD", nhan) if not unicodedata.combining(c))
+        return " ".join(nhan.replace("đ", "d").replace("Đ", "D").split()).lower()
+
+    def _docluachonhieuungkynang(self):
+        # Mở menu Chức năng hệ thống, -> (nhãn chuẩn hoá, lệnh) của lựa chọn hiệu ứng Kĩ năng, hoặc None (menu không về / không thấy)
+        if not self._guilenhchomenu(LENHCHUCNANGHETHONG):
+            return None
+        for nhan, lenh in zip(self.moitruong.get_nhanluachoncuasotuychons(), self.moitruong.get_lenhcuasotuychons()):
+            nhanchuan = self._chuanhoanhanluachon(nhan)
+            # "Kĩ năng" / "Kỹ năng": bỏ dấu đều ra "ki nang" / "ky nang"
+            if "hieu ung" in nhanchuan and re.search(r"k[iy] nang", nhanchuan) and lenh.startswith(LENHCHUCNANGHETHONG + "."):
+                return nhanchuan, lenh
+        return None
+
+    def _thietlapanhieuungkynang(self):
+        # Luôn Ẩn hiệu ứng Kĩ năng. Trạng thái lưu trên máy chủ, vào game không phải lúc nào cũng đang ẩn, mà không có chỗ đọc trực tiếp:
+        # dùng kỹ năng Chức năng hệ thống ("pf2 908") rồi xem nhãn lựa chọn: "Ẩn hiệu ứng Kĩ năng" = đang hiện -> chọn để ẩn (lệnh bật / tắt
+        # qua lại), "Hiện hiệu ứng Kĩ năng" = đã ẩn. Chọn xong mở lại menu kiểm tra. Mỗi lần vào game làm 1 lần, thử tối đa
+        # SOLANTHUANHIEUUNGKYNANG lần cách nhau 5s; đang hội thoại NPC thì để lượt sau (menu dùng chung cửa sổ tuỳ chọn)
+        if self.is_daanhieuungkynang or self.solanthuanhieuungkynang >= SOLANTHUANHIEUUNGKYNANG:
+            return
+        if time.time() - self.thoidiemthuanhieuungkynang < 5. or self.tactu.get_is_danghoithoainpc():
+            return
+        self.solanthuanhieuungkynang += 1
+        self.thoidiemthuanhieuungkynang = time.time()
+        try:
+            luachon = self._docluachonhieuungkynang()
+            if luachon and luachon[0].startswith("an "):
+                self.moitruong.action_thucthicaulenh(luachon[1])
+                time.sleep(0.5)
+                luachon = self._docluachonhieuungkynang()
+                self.moitruong._inlog(f"[ẨN HIỆU ỨNG KĨ NĂNG] đang hiện, đã gửi {luachon and luachon[1]} -> nhãn sau: {luachon and luachon[0]}")
+            if luachon and luachon[0].startswith("hien "):
+                self.is_daanhieuungkynang = True
+                self.moitruong._inlog("[ẨN HIỆU ỨNG KĨ NĂNG] hiệu ứng Kĩ năng đang ẩn")
+            elif self.solanthuanhieuungkynang >= SOLANTHUANHIEUUNGKYNANG:
+                self.moitruong._inlog(f"[ẨN HIỆU ỨNG KĨ NĂNG] thôi sau {self.solanthuanhieuungkynang} lần, lựa chọn đọc được: {luachon}")
+        finally:
+            if self.moitruong.get_is_danghiencuasotuychon():
+                self.moitruong.set_is_danghiencuasotuychon(False)
+
     def step(self):
         if not self.moitruong.get_is_nhanvattontai() or self.moitruong.get_is_dangmatketnoi():
+            # Ra khỏi game / mất kết nối: lần vào sau kiểm tra lại (trạng thái theo nhân vật trên máy chủ)
+            self.is_daanhieuungkynang = False
+            self.solanthuanhieuungkynang = 0
             return
 
         if self.tactu.get_is_dangtamngung():
             return
+
+        self._thietlapanhieuungkynang()
 
         self.tactu.action_tudongxulygomquai()
         self.tactu.action_tudongsudungkynang()
