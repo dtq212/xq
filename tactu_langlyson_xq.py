@@ -644,6 +644,18 @@ class TacTuLangLySon:
         cauhinh = PHOBAN_MAP[s["phoban"]]
         ten = cauhinh["ten"]
         s["trangthai"] = f"vào {ten} (vòng {s['sovong'] + 1})"
+        noidungmenu = (moitruong.get_noidungcuasotuychon() or "").lower()
+        if "hết lượt" in noidungmenu and ten.lower() in noidungmenu:
+            # Lăng Ly Sơn: nói chuyện Đào Vong Khổ Dịch (lối đi NPC chung, _quanpcsangbando) mà NPC báo "Hôm nay ngươi đã hết lượt vào Lăng
+            # Ly Sơn." (chỉ có "1. Rời khỏi"): xong việc hôm nay, sang việc khác. Xét trước khi gọi bước đi: bước đó chọn lựa chọn đầu là
+            # xoá nội dung menu (người dùng 2026-11-09)
+            moitruong.xoa_noidungcuasotuychon()
+            if moitruong.get_is_danghiencuasotuychon():
+                moitruong.set_is_danghiencuasotuychon(False)
+            self._hoithoailoidinpc = None
+            self._logpb(s, f"NPC báo hôm nay đã hết lượt vào {ten}")
+            self._ketthuclanglyson(f"✅ Hôm nay đã hết lượt vào {ten}")
+            return None
         if cauhinh["luachonvao"] is None:
             if not self._is_nhomdu(s):
                 return None
