@@ -220,6 +220,10 @@ class CuaSo:
 
                 tennhanvat = self.moitruong.get_tendoituong()
                 idnguoichoi = self.moitruong.get_idnguoichoi()
+                # Bị dis về màn chọn máy chủ thì bộ nhớ vẫn giữ ID cũ (đo 2026-11-08: tontai False, id 561): không báo ID đó lên
+                # shared_data, không thì Kéo gà A-Z / acc chính tưởng acc gà còn online, không bao giờ đăng nhập lại
+                if idnguoichoi and not self.moitruong.get_is_nhanvattontai():
+                    idnguoichoi = 0
 
                 if idnguoichoi and idnguoichoi != self.idnguoichoi:
                     if self.idnguoichoi:
@@ -262,7 +266,7 @@ class CuaSo:
                 info = {
                     "tennhanvat": tennhanvat,
                     # Thành viên cùng máy dùng để tìm cửa sổ trưởng nhóm (bản đồ/tọa độ) mà phù theo
-                    "idnguoichoi": self.moitruong.get_idnguoichoi(),
+                    "idnguoichoi": idnguoichoi,
                     "thoidiemcapnhat": time.time(),
                     "tenbando": self.moitruong.get_idbandohientai(),
                     # Đầu tên phó bản mượn ID bản đồ ngoài (Phong Yêu Kính...), "" = bản đồ thật (moitruong.get_is_cungbando)

@@ -105,6 +105,24 @@ def chudanhsachtaikhoan(taikhoans):
                      for t in taikhoans)
 
 
+def _timcuasodistheoid(idnguoichoi):
+    # Cửa sổ game đang ở màn hình đăng nhập (bị dis) mà bộ nhớ vẫn giữ ID nhân vật này (dis không xoá ID, đo 2026-11-08)
+    from moitruong_xq import MoiTruong
+    ketqua = []
+
+    def callback(hwnd, _):
+        if ketqua or not dangnhap_xq._is_cuasomanhinhdangnhap(hwnd):
+            return
+        try:
+            if int(MoiTruong(hwnd).get_idnguoichoi() or 0) == int(idnguoichoi):
+                ketqua.append(hwnd)
+        except Exception:
+            pass
+
+    win32gui.EnumWindows(callback, None)
+    return ketqua[0] if ketqua else 0
+
+
 class KeoGaTuDong:
     def __init__(self, shared_data, command_dict):
         self.shared_data = shared_data
@@ -392,6 +410,10 @@ class KeoGaTuDong:
                   "tennhanvat": ga["ten"] if ga else "", "idnguoichoi": ga["id"] if ga else None, "taoga": taoga}
         ten = ga["ten"] if ga else user
         hwndcu = ga.get("hwnd") if ga else 0
+        if ga and not (hwndcu and win32gui.IsWindow(hwndcu) and dangnhap_xq._is_cuasomanhinhdangnhap(hwndcu)):
+            # Mở lại bot giữa lượt thì hwnd = 0: tìm cửa sổ bị dis theo ID còn trong bộ nhớ, không thì mở thêm client trong khi
+            # cửa sổ dis vẫn chiếm chỗ (giới hạn số client)
+            hwndcu = _timcuasodistheoid(ga["id"]) or hwndcu
         if hwndcu and win32gui.IsWindow(hwndcu) and dangnhap_xq._is_cuasomanhinhdangnhap(hwndcu):
             # Bị dis về màn hình đăng nhập: vào lại trong chính cửa sổ đó
             dangnhap_xq.dangnhaptrongcuaso(hwndcu, ten, config)
