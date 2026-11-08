@@ -17,7 +17,9 @@
         "thanhkieu",
         "phongyeukinh"
       ],
-      "chon": [],
+      "chon": [
+        "langlyson"
+      ],
       "vong": {},
       "phai": ""
     }

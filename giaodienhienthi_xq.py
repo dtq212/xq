@@ -2107,7 +2107,7 @@ class GiaoDienHienThi:
                   style = "Phu.TLabel", justify = tk.LEFT, wraplength = self._px(390)).grid(row = 2, column = 0, columnspan = 2, sticky = tk.W)
 
         # Bảng tài khoản (thứ tự = thứ tự đăng nhập), sửa bằng form; vẫn mở được file JSON để sửa tay
-        nhom = self._taonhom(tab, "Tài khoản (đăng nhập lần lượt từ trên xuống)")
+        nhom = self._taonhom(tab, "Tài khoản (đăng nhập song song, mở client lần lượt từ trên xuống)")
         self.tree_taikhoan = BangCatChu(nhom, columns = ("bat", "tinhtrang", "ten", "id", "user", "maychu", "nhanvat", "cuaso"), show = "headings",
                                           height = 10, selectmode = "browse")
         for col, text, width, anchor in (

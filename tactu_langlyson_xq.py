@@ -300,6 +300,17 @@ class TacTuLangLySon:
         # Đang tự lo đi lại / nói chuyện NPC / chờ thành viên: không chọn quái, đi trước đánh / nhặt
         return bool(self._langlyson) and self._langlyson.get("chedodoc", "dichuyen") in ("dichuyen", "cho")
 
+    def get_tenbossuutienlanglyson(self):
+        # Đang đánh ở chỗ boss (bước "danh"): các tên boss để chọn mục tiêu ưu tiên boss hơn quái thường quanh đó (từng mải đánh bầy quái
+        # chạy theo sau lưng, boss đứng bên cạnh). -> tuple tên hoặc ()
+        s = self._langlyson
+        if not s or s.get("chedodoc") != "danhquai" or not isinstance(s.get("boss"), dict):
+            return ()
+        ten = s["boss"].get("ten")
+        if not ten:
+            return ()
+        return ten if isinstance(ten, tuple) else (ten,)
+
     def get_is_langlysonchothanhvien(self):
         # Trưởng nhóm đang chờ đủ thành viên trước boss cuối: báo qua shared_data để thành viên theo sau cũng không đánh
         # (theo mốc bắt đầu chờ chứ không theo chedo: chedo mỗi lượt đặt lại từ đầu, thành viên đọc giữa chừng không bị chập chờn)
@@ -750,7 +761,7 @@ class TacTuLangLySon:
         if loai == "noichuyen":
             _, tennpc, x, y = buoc
             s["trangthai"] = f"{tenbando}: nói chuyện {tennpc} ({x}, {y})"
-            ketqua, yeucau = self._noichuyenlls(s, tennpc, x, y, is_baokhongmenu = True)
+            ketqua, yeucau = self._noichuyenlls(s, tennpc, x, y, is_baokhongmenu = True, is_kiemtralai = True)
             if ketqua == "xong":
                 self._sangbuoc(s, idbando)
             elif ketqua == "khongmenu":
@@ -767,6 +778,20 @@ class TacTuLangLySon:
         if loai == "sangtang":
             idke = buoc[1]
             s["trangthai"] = f"{tenbando}: sang {laytenbando(idke)}"
+            noidung = self.moitruong.get_noidungcuasotuychon() or ""
+            buoctruoc = buocs[i - 1] if i > 0 else None
+            if "chưa hoạt động" in noidung and buoctruoc and buoctruoc[0] == "noichuyen":
+                # Cơ Quan Thạch Sư: "...vẫn chưa hoạt động, hãy đánh bại Dũng Tướng Quân và khởi động Cơ Quan Thạch": bước khởi động chưa
+                # được, quay lại làm (từng đứng nói chuyện Thạch Sư mãi 5 phút, 364 2026-11-09 00:52)
+                self._logpb(s, f"{tenbando}: NPC báo chưa hoạt động, quay lại nói chuyện {buoctruoc[1]}")
+                self.moitruong.xoa_noidungcuasotuychon()
+                if self.moitruong.get_is_danghiencuasotuychon():
+                    self.moitruong.set_is_danghiencuasotuychon(False)
+                self._hoithoailoidinpc = None
+                s["buoc"][idbando] = i - 1
+                s["hoithoai"] = None
+                self._luutiendo(s)
+                return None
             ketqua = self._lapbuocditoibando(idke)
             if ketqua["loai"] in ("toinoi", "khongduong"):
                 return None
@@ -849,10 +874,15 @@ class TacTuLangLySon:
             s["trangthai"] = f"{laytenbando(idbando)}: không còn thấy {_tenboss(tenboss)} ở ({xboss}, {yboss}), chờ xác nhận đã giết"
             return None, None
         khoangcach = moitruong.get_khoangcachdiem(x, y)
-        if boss.get("is_datoi") and khoangcach > KHOANGCACHROIBOSS and not diachi:
-            # Bị quái kéo ra xa quá: đi lại về toạ độ boss (không đánh dọc đường)
+        # Mốc tính "tới nơi": thấy boss thì tính tới chính con boss, chưa thấy thì tới toạ độ cấu hình. Từng: cứ thấy boss trong tầm nhìn
+        # (~20-30 ô) là buông di chuyển, đứng lại đánh bầy quái chạy theo sau lưng, quên boss (364 2026-11-09 00:49 đứng ở (213, 228) cách
+        # Tướng Quân Dũng (234, 207) ~30 ô; Đường Truy đánh quái 37s mới tới boss)
+        vitriboss = moitruong.get_toado(diachi) if diachi else None
+        khoangcachmoc = moitruong.get_khoangcachdiem(*vitriboss) if vitriboss else khoangcach
+        if boss.get("is_datoi") and khoangcachmoc > KHOANGCACHROIBOSS:
+            # Bị quái kéo ra xa quá / boss ở xa: đi lại tới boss (không đánh dọc đường)
             boss["is_datoi"] = False
-        if diachi or khoangcach <= KHOANGCACHTOIBOSS or (boss.get("is_datoi") and khoangcach <= KHOANGCACHROIBOSS):
+        if khoangcachmoc <= KHOANGCACHTOIBOSS or (boss.get("is_datoi") and khoangcachmoc <= KHOANGCACHROIBOSS):
             # Tới nơi (hoặc thấy boss): đánh mọi quái quanh đó. Đã tới thì giữ đánh tới KHOANGCACHROIBOSS ô (từng: vừa tới 6 ô là quay lại
             # đánh quái đuổi theo, dạt ra quá 6 ô lại chạy vào, qua lại mãi)
             boss["is_datoi"] = True
@@ -877,9 +907,11 @@ class TacTuLangLySon:
             if khoangcach > KHOANGCACHSATBOSS and not diachi:
                 return None, {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x, y, idbando), "khoangcachtoida": 1.}
             return None, None
-        s["trangthai"] = f"{laytenbando(idbando)}: tới đánh {_tenboss(tenboss)} ({x}, {y})"
-        self._capnhatbuocdichuyen(f"{self._tenpb(s)}: tới {_tenboss(tenboss)} ({x}, {y})")
-        return None, {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x, y, idbando), "khoangcachtoida": 1.}
+        # Chưa tới: chế độ "dichuyen" (không chọn quái dọc đường, đi trước đánh), thấy boss thì đi thẳng tới boss
+        xdich, ydich = vitriboss or (x, y)
+        s["trangthai"] = f"{laytenbando(idbando)}: tới đánh {_tenboss(tenboss)} ({xdich}, {ydich})" + (" (đã thấy boss)" if vitriboss else "")
+        self._capnhatbuocdichuyen(f"{self._tenpb(s)}: tới {_tenboss(tenboss)} ({xdich}, {ydich})")
+        return None, {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (xdich, ydich, idbando), "khoangcachtoida": 1.}
 
     def _timbosssong(self, tenboss):
         # tenboss: chuỗi hoặc tuple các tên có thể gặp
@@ -893,12 +925,13 @@ class TacTuLangLySon:
         return None
 
     def _noichuyenlls(self, s, tennpc, x, y, is_chovankhi = True, kiemtramenu = None, luachon = 0, is_xacnhan = False, is_baokhongmenu = False,
-                      kiemtramenucuoi = None):
+                      kiemtramenucuoi = None, is_kiemtralai = False):
         # Tới cạnh NPC, "look" mở menu, chọn lựa chọn thứ luachon (đếm từ 0, trừ CLOSE; tuple: chọn xong chờ menu kế chọn tiếp). is_chovankhi: chọn xong phải thấy vận khí rồi hết
         # vận khí mới là xong (quá THOIGIANCHOVANKHILLS giây chưa vận khí thì nói lại, quá SOLANTHUNOICHUYEN lần -> "loi"); không thì chọn
         # xong là xong. kiemtramenu(lời NPC) False thì không chọn -> "tuchoi". is_xacnhan: chọn xong game hỏi lại "Xác Nhận / Hủy Bỏ" thì
         # bấm Xác Nhận (_xacnhanlls). is_baokhongmenu: "look" SOLANTHUNOICHUYEN lần NPC không mở menu -> "khongmenu". kiemtramenucuoi: như
         # kiemtramenu nhưng xét lời menu cuối của luachon tuple (vd Phong Yêu Kính "1. Tiến vào" rồi mới tới "...đã mở Phong Yêu Kính...").
+        # is_kiemtralai: vận khí xong thì "look" lại, NPC không mở menu mới là xong, còn menu thì chọn lại (Cơ Quan Thạch).
         # -> (None | "xong" | "loi" | "tuchoi" | "khongmenu", yêu cầu di chuyển)
         moitruong = self.moitruong
         idbando = moitruong.get_idbandohientai()
@@ -908,6 +941,12 @@ class TacTuLangLySon:
         if not h or h["npc"] != tennpc:
             h = s["hoithoai"] = {"npc": tennpc, "buoc": "look", "luc": 0., "solan": 0, "vankhi": False}
         if h["buoc"] == "cho":
+            if h["vankhi"] and is_kiemtralai and not h.get("dangkiemtra"):
+                # Vận khí xong chưa chắc đã khởi động được (364 2026-11-09 00:50:36: vận khí ~3.6s, Cơ Quan Thạch Sư vẫn báo "chưa hoạt
+                # động", phải bấm tay): "look" lại, không mở menu là xong (NPC đã khởi động không mở menu), còn menu thì chọn lại
+                h.update(buoc = "look", dangkiemtra = True, vankhi = False)
+                moitruong._inlog(f"[PHÓ BẢN] {tennpc}: vận khí xong, look lại kiểm tra đã khởi động chưa")
+                return None, None
             if h["vankhi"]:
                 return "xong", None
             if is_xacnhan and self._xacnhanlls(h, tennpc, now):
@@ -945,6 +984,10 @@ class TacTuLangLySon:
         if not noidung:
             if now - h["luc"] > THOIGIANCHOMENULLS:
                 h["buoc"] = "look"
+                if h.get("dangkiemtra"):
+                    moitruong._inlog(f"[PHÓ BẢN] {tennpc}: look lại không mở menu, đã khởi động xong")
+                    s["hoithoai"] = None
+                    return "xong", None
                 # NPC không mở menu (Cơ Quan Thạch đã khởi động rồi, dis vào lại làm từ đầu tầng): từng "look" mãi không thôi, đứng đực ra.
                 # is_baokhongmenu: quá SOLANTHUNOICHUYEN lần thì báo nơi gọi
                 h["solankhongmenu"] = h.get("solankhongmenu", 0) + 1
@@ -955,6 +998,14 @@ class TacTuLangLySon:
         h["solankhongmenu"] = 0
         lenhs = [l for l in moitruong.get_lenhcuasotuychons() if l.strip() and l.upper() != "CLOSE"]
         moitruong._inlog(f"[PHÓ BẢN] Menu {tennpc}: {noidung[:80]!r} {lenhs}")
+        if h.get("dangkiemtra"):
+            # Vận khí xong mà NPC vẫn mở menu: chưa khởi động được (bị quái đánh ngắt?), chọn lại
+            h["dangkiemtra"] = False
+            h["solankhoidonglai"] = h.get("solankhoidonglai", 0) + 1
+            self._logpb(s, f"{tennpc}: vận khí xong mà vẫn mở menu (chưa khởi động được), chọn lại lần {h['solankhoidonglai']}")
+            if h["solankhoidonglai"] >= SOLANTHUNOICHUYEN:
+                self._baolanglyson(s, f"khoidonglai|{tennpc}|{s['sovong']}", f"⚠️ {self._tenpb(s)}: khởi động {tennpc} {h['solankhoidonglai']} lần "
+                                                                            f"vẫn chưa được (vận khí xong vẫn mở menu), Foxia vẫn thử tiếp")
         chons = luachon if isinstance(luachon, tuple) else (luachon,)
         cap = h.get("cap", 0)
         luachon = chons[cap]

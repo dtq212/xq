@@ -903,7 +903,9 @@ BANDO_LANGLYSON3 = 704
 BANDOPHOBANs = (BANDO_BATQUAITRAN, BANDO_THANHKIEU, BANDO_LANGLYSON1, BANDO_LANGLYSON2, BANDO_LANGLYSON3, 891, 892, 893, 894, 895, 896, 897, 898, 899)
 # Phó bản mượn ID bản đồ ngoài, nhận ra qua đầu tên bản đồ game (tên chỉ 20 byte nên bị cắt): Phong Yêu Kính "Phó Bản Phong Y" (ID 1 bản đồ ngẫu nhiên, không bao giờ là Tân Thủ Thôn / quốc gia; vd 133
 # như Thần Bí Động 1), Tập Kích Môn Phái "Tập Kích Môn Ph" (ID 151 như Kênh Trịnh Quốc 1). Lộ trình nạp trong đó ra ngoài là tự bỏ
-TIENTOTENPHOBANMUONBANDOs = ("Phó Bản", "Tập Kích Môn", "Chiến Quốc Tr")
+# Chỉ "Phó Bản Phong", không để "Phó Bản": vào Lăng Ly Sơn tên đổi thành "Phó Bản Lăng Ly" trước, ID còn Thuý Hoa Sơn vài giây => tưởng
+# kẹt trong phó bản mượn bản đồ, Tín Vật bỏ dở việc vào (Kng 2026-11-09 01:16:05)
+TIENTOTENPHOBANMUONBANDOs = ("Phó Bản Phong", "Tập Kích Môn", "Chiến Quốc Tr")
 # Đầu tên bản đồ Phong Yêu Kính (Aegis "Phó Bản Phong Y", Niết Bàn "Chiến Quốc Tr..."). Cổng của bản đồ thật mượn ID không có tác dụng
 # trong đó (người dùng): không né vùng cấm quanh cổng
 TIENTOTENBANDOPHONGYEU = ("Phó Bản Phong", "Chiến Quốc Tr")
@@ -1662,9 +1664,11 @@ NHANVATTODOITUDONGs_LIST = [
 
 # Bảo thú vật phẩm (cả Thuỷ Bình) không tấn công / không mất máu
 TENMUCTIEUKHONGTANCONGs = (*BAOTHUVATPHAMs, "Tần QuốcBinh Sĩ", "Triệu QuốcBinh Sĩ", QUYTOT, THIENBINH, DAUBINH, "CAVE1", "CAVE.2", 'Đỗ Độc', 'Ôn Thần', "Liễu Vọng Tháp")
+# "Chiến Quốc Tống Bảo Tiểu Yêu" dài 28 ký tự / 39 byte UTF-8 nhưng tên đối tượng (+0x10AC) không bị cắt 31 byte như tên vật phẩm:
+# log [DI CHUYỂN] (đọc qua get_tendoituong) các acc 195/216/286/287 đều ra đủ tên, nên so khớp nguyên tên được
 TENBOSSBUFFMAOSONs = ("Mã Quỷ", "Lương Hưng", "Yến Thập Tam", "Tư Tà", "Thủ Lĩnh Thành Kiều", TROMBAOPHITAC, "Bảo Hộp Phi Tặc",
                       "Tướng Quân Dũng", "Lăng Mộ Tà Linh", "Đường Truy", "Thế Công Minh", "Thạch Tướng Quân", "Cơ Quan Tướng Quân",
-                      "Hào Quật", "Thủ Lĩnh Thích Khách")
+                      "Hào Quật", "Thủ Lĩnh Thích Khách", "Chiến Quốc Tống Bảo Tiểu Yêu")
 
 # Hàng việc (tab Nhiệm vụ, tactu_hangviec_xq): mã việc -> tên, theo thứ tự mặc định; việc có vòng thì đặt được giới hạn số vòng
 VIECHANG_MAP = {"sumon": "Sư môn", "danhvong": "Danh Vọng"}

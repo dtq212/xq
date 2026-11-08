@@ -596,6 +596,7 @@ class TacTuMucTieu:
 
         is_nhanvatbichoang = self.moitruong.get_is_nhanvatbichoang()
         is_vanmongcoc = self.moitruong.get_tenmonphai() == "vanmongcoc"
+        tenbossuutien = self.get_tenbossuutienlanglyson()
 
         def _is_codieukienbattu(diachi):
             if self.moitruong.get_phantramsinhlucconlai(diachi) > 5:
@@ -633,8 +634,15 @@ class TacTuMucTieu:
                         if not is_xemxetmauthap or not is_xemxetbattu:
                             return True
 
+            # Lăng Ly Sơn / Thành Kiều ở chỗ boss: boss hơn quái thường (quái chạy theo sau lưng vẫn đánh khi không thấy boss)
+            if tenbossuutien:
+                is_xemxetboss = (self.moitruong.get_tendoituong(xemxet["diachi"]) or "").strip() in tenbossuutien
+                is_hientaiboss = (self.moitruong.get_tendoituong(hientai["diachi"]) or "").strip() in tenbossuutien
+                if is_xemxetboss != is_hientaiboss:
+                    return is_xemxetboss
+
             # Chỉ hơn nhau về khoảng cách: muốn thay mục tiêu đang đánh thì phải gần hơn hẳn (xem CHENHLECHKHOANGCACHDOIMUCTIEU)
-            chenhlech = CHENHLECHKHOANGCACHDOIMUCTIEU if hientai is muctieuhientai else 0.5
+            chenhlech =CHENHLECHKHOANGCACHDOIMUCTIEU if hientai is muctieuhientai else 0.5
             # Tập hỏa mà người theo sau ở máy khác (không biết họ chọn ai): ưu tiên mục tiêu gần người theo sau nhất cho sát mục tiêu của họ.
             # Không tập hỏa: ưu tiên mục tiêu gần bản thân (vẫn lọc bỏ mục tiêu ngoài vùng quanh người theo sau ở chỗ khác)
             if is_anhhuongboimuctieutheosau and self._is_taphoa:
