@@ -125,6 +125,9 @@ class MoiTruong:
         self._diachitimduongcucbo = None
         # Luồng di chuyển và lệnh tự đề xuất lộ trình cùng gọi hàm tìm đường cục bộ (chung ô tham số / bộ đệm trong game)
         self._khoatimduongcucbo = threading.Lock()
+        # Nhiều vòng lặp cùng gọi auto_assemble_khoitaothongtinbando: hàm khởi tạo xq + 0xCEEB0 chạy lâu (nạp place.txt + mọi ảnh
+        # thành trì .tcb qua engine.dll), 2 luồng chạy song song đè heap của nhau => crash engine.dll + 0x180C8 (Thk 354, 2026-11-08 23:57)
+        self._khoakhoitaothongtinbando = threading.Lock()
         # Lần gửi "desc pf <id>" gần nhất theo id kỹ năng (get_tieuhaokynang)
         self._thoidiemtruyvanmotakynang_map = {}
         # id kỹ năng -> (thời điểm đọc, tiêu hao hoặc None): hàm ra chiêu xét tiêu hao mỗi lượt cho mọi chiêu nên nhớ lại một lúc
@@ -941,7 +944,14 @@ class MoiTruong:
         # 1 lần mỗi phiên đăng nhập (đặt về 0 duy nhất ở xq + 0x3755F lúc khởi tạo thông tin game, đổi bản đồ vẫn giữ).
         # Trước đây gọi hàm phím tắt xq + 0x3C100 (phím mở bản đồ 0x64): tạo cấu trúc rồi bật / tắt cửa sổ bản đồ => bản đồ hiện lên.
         # Nay làm như game tự làm ở xq + 0x225D0 / 0x22A51 (luồng tìm đường): cấp phát 0x37C868 byte (new, xq + 0x17DD0C), gọi hàm khởi
-        # tạo xq + 0xCEEB0 (trả về this) rồi gán vào [thông tin game] + 0xADFDEC, không đụng tới cửa sổ bản đồ
+        # tạo xq + 0xCEEB0 (trả về this) rồi gán vào [thông tin game] + 0xADFDEC, không đụng tới cửa sổ bản đồ.
+        # Chỉ 1 luồng khởi tạo mỗi lúc: start_thread chờ luồng chạy xong, luồng gọi sau chờ khoá rồi thấy đã có cấu trúc thì bỏ qua
+        with self._khoakhoitaothongtinbando:
+            if self.get_is_dakhoitaothongtinbando():
+                return
+            self._khoitaothongtinbando()
+
+    def _khoitaothongtinbando(self):
         if not self._is_dasetupautoassemblekhoitaothongtinbando:
             self._diachiautoassemblekhoitaothongtinbando = self.tientrinh.allocate(128)
             addr_base_ptr = self.diachixq + DC.THONGTINGAME

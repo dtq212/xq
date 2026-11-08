@@ -246,7 +246,7 @@ class TacTuMucTieu:
             "is_muctieupk": is_muctieupk,
         }
 
-    def _timmuctieuchung(self, toadobanthan, toadotheosau, khoangcachchophepmuctieutheosau, toadodongdois):
+    def _timmuctieuchung(self, toadobanthan, toadotheosau, khoangcachchophepmuctieutheosau):
         # Mình không còn mục tiêu hợp lệ nào: lấy đối tượng thù địch nhân vật khác cùng máy đang thấy (mình chưa thấy), lọc như khi chọn
         # mục tiêu (tên, PK, vùng cấm, điểm đánh, vùng quanh người theo sau, nhường quái), chọn con gần mình nhất => yêu cầu tìm đường tới đó.
         # Tắt tự động sử dụng kỹ năng thì tới nơi cũng không đánh: không đi
@@ -279,7 +279,7 @@ class TacTuMucTieu:
                 continue
             if self._kiemtra_divaovungcam(x, y):
                 continue
-            if not is_muctieupk and (not self._kiemtra_tamdiemdanh(x, y) or (toadodongdois and self._is_nhuongquaichodongdoi((x, y), khoangcach, toadodongdois))):
+            if not is_muctieupk and not self._kiemtra_tamdiemdanh(x, y):
                 continue
             if not tot or khoangcach < tot[0]:
                 tot = (khoangcach, iddoituong, x, y)
@@ -516,15 +516,7 @@ class TacTuMucTieu:
             thongtin["khoangcachtheosau"] = khoangcachtamdanh(toado, toadotheosau) if is_anhhuongboimuctieutheosau else 0.
             return thongtin
 
-        # Đang đi lộ trình điểm đánh: nhường quái đang ở gần nhân vật khác của mình cho nhân vật đó,
-        # tránh các nhân vật đánh chung một chỗ, đi sát rạt vào nhau (giống logic nhường quái khi gom)
-        toadodongdois = self._laytoadodongdoikhacnhom() if self._is_tudongdichuyendiemdanhxungquanh else []
-
-        def _is_nhuongdongdoi(thongtin):
-            if thongtin["is_muctieupk"] or not toadodongdois:
-                return False
-            return self._is_nhuongquaichodongdoi(thongtin["toado"], thongtin["khoangcach"], toadodongdois)
-
+        # Không nhường quái cho nhân vật khác nữa (2026-11-08): chia vùng lộ trình (_kiemtra_tamdiemdanh) đã phân quái giữa các bot
         muctieuhientai = None
 
         if diachicosothongtinnhanvatmuctieudangchon:
@@ -534,8 +526,6 @@ class TacTuMucTieu:
                 if is_anhhuongboimuctieutheosau and thongtin["khoangcachtheosau"] > khoangcachchophepmuctieuhientaitheosau:
                     thongtin = False
                 elif self.moitruong.get_idmaupk() == MAUPK_HOABINH and thongtin["is_muctieupk"]:
-                    thongtin = False
-                elif _is_nhuongdongdoi(thongtin):
                     thongtin = False
                 # Đã bỏ kiểm tra "Đánh không trúng" (_kiemtramuctieukhongtrungchieu): quái mạnh khi làm nhiệm vụ hay
                 # bị bỏ nhầm vì lâu không thấy số bay mới
@@ -556,7 +546,7 @@ class TacTuMucTieu:
             thongtin = self.moitruong.get_is_nhanvattontai(diachiduphong) and self._kiemtramuctieuhople(diachiduphong, is_dongdoi = False)
             if thongtin:
                 _bosungvitri(thongtin)
-                is_duphonghople = thongtin["khoangcach"] < KHOANGCACHTOANMANHINH and not _is_nhuongdongdoi(thongtin)
+                is_duphonghople = thongtin["khoangcach"] < KHOANGCACHTOANMANHINH
                 if is_anhhuongboimuctieutheosau and thongtin["khoangcachtheosau"] > khoangcachchophepmuctieuhientaitheosau:
                     is_duphonghople = False
 
@@ -717,8 +707,6 @@ class TacTuMucTieu:
             _bosungvitri(thongtinmuctieuxemxet, toadomuctieuxemxet)
             if is_anhhuongboimuctieutheosau and thongtinmuctieuxemxet["khoangcachtheosau"] > khoangcachchophepmuctieutheosau:
                 continue
-            if _is_nhuongdongdoi(thongtinmuctieuxemxet):
-                continue
 
             # Mục tiêu hiện tại đã là điểm xuất phát của muctieutotnhat, không so lại với chính nó
             if muctieuhientai and diachicosothongtinnhanvatmuctieuxemxet == muctieuhientai["diachi"]:
@@ -745,7 +733,7 @@ class TacTuMucTieu:
         # Quanh mình không còn mục tiêu nào: xem tầm nhìn của nhân vật khác cùng máy, có thì tìm đường tới đó
         if not muctieutotnhat:
             self._yeucautimmuctieuchung = self._timmuctieuchung(toadobanthan, toadotheosau if is_anhhuongboimuctieutheosau else None,
-                                                                khoangcachchophepmuctieutheosau, toadodongdois)
+                                                                khoangcachchophepmuctieutheosau)
         else:
             self._muctieuchungdangtim = None
 
@@ -1280,29 +1268,6 @@ class TacTuMucTieu:
         if diachimuctieudangchon and self.moitruong.get_iddoituong(diachimuctieudangchon) == idquai:
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
 
-    def _is_nhuongquaichodongdoi(self, toadoquai, khoangcachtoiquai, dongdois):
-        # dongdois: [(tọa độ, id người chơi)] từ _laytoadodongdoikhacnhom
-        # - Đồng đội ID nhỏ hơn được ưu tiên: mình tránh hẳn mọi quái trong vùng BANKINHVUNGNHUONGQUAIDONGDOI quanh nó
-        # - Còn lại: quái ở sát đồng đội (<= 9) và gần nó hơn mình thì để cho nó, TRỪ KHI chính nó cũng nhường con này (có nhân vật ID nhỏ
-        #   hơn nó, kể cả mình, đứng trong vùng). Trước đây thiếu điều kiện này: bot ID nhỏ nhường quái gần bot ID lớn, bot ID lớn nhường
-        #   vì quái trong vùng bot ID nhỏ => không ai đánh, 4 bot cùng lộ trình đứng nhường nhau (2026-11-06)
-        idbanthan = self.moitruong.get_idnguoichoi()
-        # Đang chia vùng lộ trình: bot cùng nhóm chia vùng đã phân quái theo vùng (_kiemtra_tamdiemdanh), không nhường theo ID nữa
-        vung = self._layvunglotrinh()
-        if vung:
-            dongdois = [(toado, iddongdoi) for toado, iddongdoi in dongdois if iddongdoi not in vung["ids"]]
-        for toadodongdoi, iddongdoi in dongdois:
-            khoangcachdongdoi = math.dist(toadoquai, toadodongdoi)
-            if iddongdoi < idbanthan and khoangcachdongdoi <= BANKINHVUNGNHUONGQUAIDONGDOI:
-                return True
-            if khoangcachdongdoi <= 9.0 and khoangcachdongdoi < khoangcachtoiquai:
-                is_donglaicungnhuong = (idbanthan < iddongdoi and khoangcachtoiquai <= BANKINHVUNGNHUONGQUAIDONGDOI) or any(
-                    idkhac < iddongdoi and math.dist(toadoquai, toadokhac) <= BANKINHVUNGNHUONGQUAIDONGDOI
-                    for toadokhac, idkhac in dongdois if idkhac != iddongdoi)
-                if not is_donglaicungnhuong:
-                    return True
-        return False
-
     def _laybotcungbando(self):
         # Nhân vật cùng máy (shared_data) cùng bản đồ, trong danh sách người quen, không theo sau ai: [(id, tọa độ, điểm đánh đang tới (x, y)
         # hoặc None khi không đi lộ trình)]. Đọc shared_data tốn (proxy Manager) nên nhớ 1s
@@ -1517,10 +1482,7 @@ class TacTuMucTieu:
         # Tập Kích: neo rớt lại cũng không quay về đón, kéo tiếp cho đỡ chạy qua chạy lại (xong mới tụ về neo)
         is_neobirotlai = (diachiquaidautien and khoangcachneohientai > 12.0 and not is_gomhetquaithay)
 
-        # Chỉ khi đi lộ trình điểm đánh: quái gần nhân vật khác trong danh sách tổ đội tự động hơn mình thì nhường.
-        # Không đi lộ trình thì không nhường gì cả.
-        toadobanthan = self.moitruong.get_toado()
-        toadodongdois = self._laytoadodongdoikhacnhom() if self._is_tudongdichuyendiemdanhxungquanh else []
+        # Không nhường quái cho nhân vật khác khi gom (2026-11-08): chia vùng lộ trình (_kiemtra_tamdiemdanh) đã phân quái giữa các bot
 
         while True:
             i += 1
@@ -1543,15 +1505,6 @@ class TacTuMucTieu:
                 continue
 
             iddoituongquai = self.moitruong.get_iddoituong(diachidoituongxemxet)
-
-            if toadodongdois:
-                khoangcachtoiquai = math.dist(toadoquai, toadobanthan)
-                if self._is_nhuongquaichodongdoi(toadoquai, khoangcachtoiquai, toadodongdois):
-                    self._danhsachidquaidagom.discard(iddoituongquai)
-                    if self._idquaidautien == iddoituongquai:
-                        self._idquaidautien = 0
-                        diachiquaidautien = 0
-                    continue
 
             if iddoituongquai in self._idmuctieubiloi_map:
                 continue
@@ -1615,10 +1568,8 @@ class TacTuMucTieu:
                 if self.moitruong.get_idloainhanvat(diachinhanvatmuctieudangchon) == LOAIMUCTIEU_QUAIVATHOACNPC:
                     id_target = self.moitruong.get_iddoituong(diachinhanvatmuctieudangchon)
                     kc_target = self.moitruong.get_khoangcach(diachinhanvatmuctieudangchon)
-                    toadotarget = self.moitruong.get_toado(diachinhanvatmuctieudangchon)
-                    is_dongdoigannhuong = self._is_nhuongquaichodongdoi(toadotarget, kc_target, toadodongdois)
                     is_dagommotlan = is_gomhetquaithay and id_target in self._danhsachidquaidagommotlan
-                    if id_target not in self._danhsachidquaidagom and not is_dagommotlan and id_target not in self._idmuctieubiloi_map and 12.0 < kc_target < KHOANGCACHTOANMANHINH and not is_dongdoigannhuong:
+                    if id_target not in self._danhsachidquaidagom and not is_dagommotlan and id_target not in self._idmuctieubiloi_map and 12.0 < kc_target < KHOANGCACHTOANMANHINH:
                         idquaicankeogannhat = id_target
                         diachicosoquaicankeo = diachinhanvatmuctieudangchon
                         khoangcachquaicankeo = kc_target
