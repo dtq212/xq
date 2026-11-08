@@ -280,8 +280,11 @@ KICHTHUOCDOITUONGTIMDUONGCUCBO = 0x56000
 BANKINHKEODICH = 15
 # Đoạn tìm đường cục bộ ra đoạn cụt (không tới được đích) thì chừng này giây sau mới thử lại đúng đoạn đó
 THOIGIANNHODOANCUT = 1.
-# Vừa đổi bản đồ thì chừng này giây sau mới lập bước đi tới bản đồ khác (toạ độ còn của bản đồ cũ)
-THOIGIANCHOSAUDOIBANDO = 1.
+# Vừa đổi bản đồ thì chừng này giây coi toạ độ chưa ổn định (moitruong.get_is_toadochuaondinh): không lập bước đi tới bản đồ khác,
+# không quyết định di chuyển, cửa sổ khác cùng máy vẫn thấy bản đồ / toạ độ cũ. Game đổi mã bản đồ trước, toạ độ sau (2026-11-08 17:52:
+# ra Phong Yêu Kính về Chu (292,185) mà 0,2s sau vẫn báo (94,137) của PYK, acc gà chạy theo toạ độ đó ra ngoài thành rồi quay lại).
+# Người dùng dặn: chậm 1-1,5s sau đổi bản đồ không sao, đổi lại khỏi dùng dữ liệu cũ
+THOIGIANCHOSAUDOIBANDO = 1.5
 # ... và toạ độ còn y như ở bản đồ cũ thì chờ tiếp, tối đa chừng này giây
 THOIGIANCHOTOADOSAUDOIBANDO = 5.
 # Giữ khoảng cách tối thiểu mà sau lưng là vật cản: thử lùi lệch khỏi hướng thẳng chừng này độ (cả 2 bên, lệch ít trước), lệch hướng

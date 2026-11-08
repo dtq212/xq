@@ -4963,13 +4963,14 @@ class GiaoDienHienThi:
 
     def _capnhatbangdieukhien(self):
         hwnd_to_show = self.get_selected_hwnd()
-        if not hwnd_to_show or hwnd_to_show not in self.shared_data:
+        # .get: cửa sổ bị dis tự xoá dòng của nó khỏi shared_data bất cứ lúc nào (cuaso_xq), xét "in" rồi đọc có thể KeyError
+        info = self.shared_data.get(hwnd_to_show) if hwnd_to_show else None
+        if not info:
             self.lbl_dangdieukhien.config(text = "Chưa có nhân vật")
             self.lbl_vitri.config(text = "")
             self._hienthihanhdong("", "")
             self._capnhatlichsuhanhdong(None)
             return
-        info = self.shared_data[hwnd_to_show]
 
         idbando = info.get("tenbando")
         tenbando = laytenbando(idbando) if idbando is not None else "-"

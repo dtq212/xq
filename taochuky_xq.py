@@ -60,6 +60,7 @@ MUCTIEU = [
     ("VA_TUTHEDELAY2", 0x1B377, "ma", "mov [esi+0x11B8], 0x0B (tư thế delay sau tấn công)"),
     ("HOOK_TROCHUYEN", 0x5964, "ma", "chỗ hook đọc nội dung trò chuyện (6 byte)"),
     ("HOOK_TINHETHONG", 0x2B63, "ma", "chỗ hook gói 0x3E chỉ in vào khung tin hệ thống (trả lời \"desc user\"), 6 byte"),
+    ("HOOK_COTNHIEMVUNPC", 0x217FE, "ma", "đọc số cờ dấu nhiệm vụ NPC: mov ecx,[esi]; test ecx,ecx; je (6 byte), chặn số cờ rác"),
     ("HOOK_VEDANHHIEU", 0x1D0A8, "ma", "call HAMVECHU vẽ danh hiệu đối tượng (+0x1134) phía trên tên, 5 byte, ebx = đối tượng"),
     ("HOOK_VEDANHHIEU2", 0x9C34F, "ma", "call HAMVECHU vẽ danh hiệu nhân vật mình (ebx = đối tượng)"),
     ("HOOK_VEDANHHIEU3", 0x9CF52, "ma", "call HAMVECHU vẽ danh hiệu người chơi khác (edi = đối tượng)"),

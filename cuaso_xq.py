@@ -144,6 +144,7 @@ class CuaSo:
             self.moitruong.giuhoithanh = GiuHoiThanh(idcuaso, dieuphoi_khoa, dieuphoi_trangthai)
         self.moitruong.action_thietlaphooknoidungtrochuyen()
         self.moitruong.action_thietlaphooklenhgame()
+        self.moitruong.action_thietlaphookcotnhiemvunpc()
         self.tactu = TacTu(self.moitruong)
         # Bot đọc gộp cả cửa sổ máy khác trong LAN (lan_xq), ghi vẫn vào máy này
         self.tactu.shared_data = DuLieuNhieuMay(shared_data, shared_data_lan) if shared_data_lan is not None else shared_data
@@ -159,6 +160,8 @@ class CuaSo:
         self.danhhieumuctieu = DanhHieuMucTieu(self.moitruong, self.tactu, shared_data, idcuaso)
 
         self.tennhanvat = None
+        # (ID bản đồ, phó bản mượn ID, x, y) lần cuối toạ độ ổn định: vừa đổi bản đồ thì chia sẻ cái này thay cho toạ độ cũ lẫn mã bản đồ mới
+        self._vitrichiase = None
         self.idnguoichoi = 0
         self.thoidiemluuthietlap = time.time()
 
@@ -240,6 +243,13 @@ class CuaSo:
                     self.thoidiemluuthietlap = time.time()
 
                 if not idnguoichoi:
+                    # Bị dis / chưa vào game: bỏ dòng cũ khỏi shared_data, không thì bảng giao diện vẫn hiện nhân vật ở bản đồ cũ như
+                    # đang chơi (gacon4160 dis 2026-11-08 19:40 vẫn hiện Linh Cốc Động 1), cửa sổ khác cũng đọc nhầm vị trí cũ
+                    if self.idcuaso in self.shared_data:
+                        try:
+                            del self.shared_data[self.idcuaso]
+                        except KeyError:
+                            pass
                     time.sleep(1.0)
                     continue
 
@@ -261,6 +271,13 @@ class CuaSo:
                     tentrangthai = "Đã chết"
 
                 x, y = self.moitruong.get_toado()
+                vitri = (self.moitruong.get_idbandohientai(), self.moitruong.get_tenphobanmuonbando(), x, y)
+                if self.moitruong.get_is_toadochuaondinh() and self._vitrichiase:
+                    # Vừa đổi bản đồ: game đổi mã bản đồ trước, toạ độ vài giây sau mới đổi. Cửa sổ khác thấy chỗ cũ thêm 1,5s chứ không
+                    # thấy bản đồ mới + toạ độ cũ (acc gà chạy theo toạ độ PYK ra ngoài thành Chu, 2026-11-08)
+                    vitri = self._vitrichiase
+                self._vitrichiase = vitri
+                x, y = vitri[2], vitri[3]
                 is_dangtrongnhom = self.moitruong.get_is_dangnamtrongnhom()
 
                 info = {
@@ -268,9 +285,9 @@ class CuaSo:
                     # Thành viên cùng máy dùng để tìm cửa sổ trưởng nhóm (bản đồ/tọa độ) mà phù theo
                     "idnguoichoi": idnguoichoi,
                     "thoidiemcapnhat": time.time(),
-                    "tenbando": self.moitruong.get_idbandohientai(),
+                    "tenbando": vitri[0],
                     # Đầu tên phó bản mượn ID bản đồ ngoài (Phong Yêu Kính...), "" = bản đồ thật (moitruong.get_is_cungbando)
-                    "_phobanmuonbando": self.moitruong.get_tenphobanmuonbando(),
+                    "_phobanmuonbando": vitri[1],
                     # Vân Mộng Cốc cùng máy dùng để biết buff Ngân Châm hay Kim Châm cho nhân vật này
                     "tenmonphai": self.moitruong.get_tenmonphai(),
                     # Tổ đội tự động dùng để biết các nhóm khác đang cùng bản đồ

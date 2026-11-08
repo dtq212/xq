@@ -386,6 +386,12 @@ class TacTuDiChuyen:
             if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Đang tạm ngưng để về bán rác")
             self._lammoitheodoitiepcan()
             return
+        if self.moitruong.get_is_toadochuaondinh():
+            # Vừa đổi bản đồ, toạ độ mình / người khác còn của bản đồ cũ: chờ ổn định (THOIGIANCHOSAUDOIBANDO) rồi mới quyết định đi đâu,
+            # không thì tìm đường theo toạ độ cũ, client đi hết đường đó mới quay lại
+            if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Vừa đổi bản đồ, chờ toạ độ ổn định")
+            self._lammoitheodoitiepcan()
+            return
 
         is_anhhuongboimuctieutheosau = bool(self._laytoadomuctieutheosau())
 

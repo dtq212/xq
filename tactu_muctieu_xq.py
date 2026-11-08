@@ -473,7 +473,7 @@ class TacTuMucTieu:
         # Đang Đi tới bản đồ người dùng chọn / đi giao đồ / cất kho / đi làm sư môn: không chọn quái dọc đường (trước đây gặp quái là đứng
         # lại đánh), tới nơi mới đánh
         if self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangcatkho() or self.get_is_sumondichuyen() or self.get_is_langlysondichuyen() \
-                or self.get_is_sugiadichuyen() or self.get_is_tapkichdichuyen() or self.get_is_matacdichuyen() or self.get_is_danhvongdichuyen():
+                or self.get_is_sugiadichuyen() or self.get_is_tapkichdichuyen() or self.get_is_matacdichuyen() or self.get_is_danhvongdichuyen()                 or self.get_is_keocapchuyendo():
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             return
 

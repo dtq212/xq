@@ -1,4 +1,6 @@
 import os
+import sys
+import threading
 import time
 import tkinter as tk
 import traceback
@@ -23,7 +25,7 @@ from giaodienhienthi_xq import GiaoDienHienThi
 from hangso_xq import IS_CHIBATAMTHANHCUASOUUTIEN, THOIGIANKIEMTRAAMTHANH
 from lan_xq import DongBoLan, taicauhinhlan
 from thongbao_xq import DieuKhienTelegram
-from tienich_xq import is_tieudecuasogame, laynhomtodoitudongs, toiuuhieunangtientrinh
+from tienich_xq import is_tieudecuasogame, laynhomtodoitudongs, toiuuhieunangtientrinh, ghilognhanvat
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
@@ -278,8 +280,42 @@ def _gantientrinhvaojob():
         return None
 
 
+class _GhiLogChinh:
+    # Chép mọi print của tiến trình chính (luồng tự đăng nhập, kéo gà A-Z, giao diện) ra _internal/log/chinh.log kèm giờ: trước đây chỉ
+    # in ra console, đóng cửa sổ là mất, lỗi đăng nhập / kéo gà không có gì để đọc lại (2026-11-08)
+    def __init__(self, goc):
+        self.goc = goc
+        self._dangdo = ""
+        self._khoa = threading.Lock()
+
+    def write(self, chu):
+        if self.goc is not None:
+            try:
+                self.goc.write(chu)
+            except Exception:
+                pass
+        with self._khoa:
+            self._dangdo += chu
+            *dongs, self._dangdo = self._dangdo.split("\n")
+        gio = time.strftime("%H:%M:%S")
+        for dong in dongs:
+            if dong.strip():
+                ghilognhanvat("chinh", f"[{gio}] {dong}")
+
+    def flush(self):
+        if self.goc is not None:
+            try:
+                self.goc.flush()
+            except Exception:
+                pass
+
+    def __getattr__(self, ten):
+        return getattr(self.goc, ten)
+
+
 if __name__ == "__main__":
     freeze_support()
+    sys.stdout = _GhiLogChinh(sys.stdout)
     jobdondep = _gantientrinhvaojob()
     manager = TroChoiManager()
     manager.run()

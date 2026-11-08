@@ -373,13 +373,11 @@ class MoiTruong:
             except:
                 pass
 
-        if getattr(self, "_is_dasetupactionthietlaphooknoidungtrochuyen", False):
-            safe_free_old("_is_dasetupactionthietlaphooknoidungtrochuyen", "_diachibodemnoidungtrochuyen")
-            safe_free_old("_is_dasetupactionthietlaphooknoidungtrochuyen", "_diachihamkichbannoidungtrochuyen")
-            safe_free_old("_is_dasetupactionthietlaphooknoidungtrochuyen", "_diachihamkichbantinhethong")
-        safe_free_old("_diachibodemlenhgame", "_diachibodemlenhgame")
-        safe_free_old("_diachihamkichbanlenhgame", "_diachihamkichbanlenhgame")
-
+        # KHÔNG giải phóng kịch bản / bộ đệm của các hook (trò chuyện, tin hệ thống, lệnh game, danh hiệu, cờ nhiệm vụ NPC): mã game vẫn
+        # "jmp" vào đó sau khi bot thôi chạy, giải phóng thì client văng ở lần nhận tin / gửi lệnh kế tiếp. Trước đây có giải phóng: nguy
+        # hiểm khi CuaSo.__init__ lỗi sau lúc đặt hook (run_bot_process bắt lỗi, MoiTruong bị huỷ trong khi game còn sống). Lần chạy sau
+        # hook lệnh game dùng lại kịch bản cũ, hook trò chuyện cấp vùng mới (mỗi lần mở bot sót ~0,6 KB, không đáng kể).
+        # Chỉ giải phóng các hàm bot tự gọi bằng luồng riêng (start_thread), mã game không nhảy vào.
         mem_map = [
             ("_is_dasetupautoassemblekhoitaothongtinbando", "_diachiautoassemblekhoitaothongtinbando"),
             ("_is_dasetupautoassemblenhatvatpham", "_diachiautoassemblenhatvatpham")
@@ -1318,6 +1316,46 @@ class MoiTruong:
         patch_bytes = b"\xE9" + relative_offset.to_bytes(4, byteorder = "little", signed = True) + b"\x90"
         write_bytes(self.tientrinh, addr_at_hook, patch_bytes, len(patch_bytes))
         self._inlog("[LỆNH GAME] đã đặt hook dò lệnh game tự gửi")
+        return True
+
+    def action_thietlaphookcotnhiemvunpc(self):
+        # Chặn crash client ở xq+0x21837 (dump C:\CrashDumps 2026-11-08 16:15 và 16:42, cả 2 lần acc chính 364, 3-5s sau khi rời Phong
+        # Yêu Kính về bản đồ 80): hàm xq+0x21790 duyệt bảng dấu nhiệm vụ NPC xq+0x206040 (400 bản ghi x 0xE94, mỗi dòng 0x7C = loại +
+        # 30 số cờ), lấy số cờ / 8 làm chỉ số byte trong vùng cờ [KHOIDIEUKHIEN] + 0x1663. Gói tin máy chủ chỉ ghi số cờ 16 bit (movsx
+        # word, xq+0x9FBA3), thật đo được ~0x628-0x62A; nhưng cả 2 dump đều có 1 ô rác giống con trỏ heap (0x0E6CB7C8 / 0x11780898) ở
+        # đúng 0x606118 => đọc lệch ~30MB, văng game. Chưa tìm ra ai ghi rác (không lệnh ghi nào của bot nhắm vào đó).
+        # Chỗ hook HOOK_COTNHIEMVUNPC: "mov ecx, [esi]; test ecx, ecx; je <bỏ ô>" (6 byte) -> thêm: số cờ ngoài 1..0x7FFF cũng bỏ ô
+        # như ô trống. Kịch bản không bao giờ giải phóng (game còn nhảy vào sau khi bot tắt); lần chạy sau thấy đã vá thì thôi.
+        diachihook = self.diachixq + DC.HOOK_COTNHIEMVUNPC
+        try:
+            mahook = read_bytes(self.tientrinh, diachihook, 6)
+        except Exception:
+            return False
+        if mahook[0] == 0xE9 and mahook[5] == 0x90:
+            return True
+        if mahook[:5] != bytes.fromhex("8B 0E 85 C9 74"):
+            self._inlog(f"[CHẶN CRASH] chỗ đọc cờ nhiệm vụ NPC không như dự kiến: {mahook.hex(' ')}")
+            return False
+        diachiboqua = diachihook + 6 + struct.unpack("<b", mahook[5:6])[0]
+        asm_script = f"""
+            mov ecx, dword ptr [esi]
+            test ecx, ecx
+            je boqua
+            cmp ecx, 0x7FFF
+            ja boqua
+            push {diachihook + 6}
+            ret
+        boqua:
+            push {diachiboqua}
+            ret
+        """
+        encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+        if not encoding:
+            return False
+        kichban = self.tientrinh.allocate(64)
+        write_bytes(self.tientrinh, kichban, bytes(encoding), len(encoding))
+        write_bytes(self.tientrinh, diachihook, b"\xE9" + struct.pack("<i", kichban - (diachihook + 5)) + b"\x90", 6)
+        self._inlog("[CHẶN CRASH] đã vá chỗ đọc cờ dấu nhiệm vụ NPC (bỏ số cờ rác)")
         return True
 
     def action_loglenhgame(self):

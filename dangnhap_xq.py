@@ -1014,8 +1014,12 @@ class _DangNhapBangHam:
         print("   -> [Hàm] Các ô nhân vật: " + (", ".join(f"ô {o + 1}: {ten} (ID {idnv}, cấp {cap})" for o, idnv, ten, cap in nhanvats) or "trống"))
         ketqua["caps"] = {idnv: cap for _, idnv, _, cap in nhanvats}
         chons = [(cap, o, idnv, ten) for o, idnv, ten, cap in nhanvats if cap < capketthuc and idnv not in daxongs]
+        # Vào lại acc gà đang trong lượt (bị dis) thì đúng nhân vật đó, kể cả đã tới cấp kết thúc (acc chính còn chờ nó trả đồ Lam Kim / Trảo).
+        # Trước đây lọc cấp trước: gacon4160 (572) cấp 47 dis lúc thu hồi, vào lại thì tạo nhân vật mới 576, Trảo kẹt ở 572 (2026-11-08)
+        cu = next(((cap, o, idnv, ten) for o, idnv, ten, cap in nhanvats if idnv == taoga.get("idchon")), None)
+        if cu:
+            chons = [cu]
         if chons:
-            # Vào lại acc gà đang trong lượt (bị dis) thì đúng nhân vật đó
             cap, o, idnv, ten = next((c for c in chons if c[2] == taoga.get("idchon")), max(chons))
             print(f"   -> [Hàm] Kéo gà: chọn nhân vật cấp {cap} < {capketthuc}: {ten} (ID {idnv})")
             ketqua.update(id = idnv, ten = ten, cap = cap, tao = False)

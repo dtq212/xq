@@ -35,6 +35,11 @@ GIANCACHLENHTANGCAP = 10.
 # Acc gà của lượt (acc chính đã bật) chừng này giây không lên cấp thì nhắn Telegram, nhắc lại mỗi chừng ấy (người dùng dặn 2026-11-08: 2 lượt
 # kẹt cấp 0 / 10 tổng ~4,5 giờ lúc ngủ vì tự tăng cấp không bật mà không ai biết)
 THOIGIANKHONGLENCAP = 30 * 60.
+# Vừa đóng / kill client của tài khoản thì máy chủ vẫn coi tài khoản đang online thêm một lúc: đăng nhập lại ngay bị báo tài khoản
+# đang online / đầy (người dùng báo 2026-11-08, xong lượt vào lại gacon5 ngay thì hỏng, lượt đó thiếu acc). Chờ chừng này giây
+THOIGIANCHOTHOATTAIKHOAN = 45.
+# Acc gà trong lượt vào lại hỏng: lần thứ n chờ 30*n giây rồi thử lại, tối đa chừng này
+THOIGIANTHULAIGATOIDA = 180.
 
 CAUHINHMAU = {"soga": SOGAMACDINH, "tiento": TIENTOMACDINH, "gioitinh": 0, "group": 1, "server": 1, "taikhoans": []}
 
@@ -138,6 +143,8 @@ class KeoGaTuDong:
         self._lucbatchinh = 0.
         self._lucchinhhetvai = 0.
         self._is_chinhdabat = False
+        # Tài khoản ("user") -> lúc vừa đóng client của nó (chờ THOIGIANCHOTHOATTAIKHOAN giây rồi mới đăng nhập lại)
+        self._lucdong = {}
         tiendo = _docjson("keogatudong_tiendo.json", {})
         if tiendo.get("bat") and tiendo.get("idchinh"):
             # Mở lại bot giữa chừng: làm tiếp lượt cũ (acc gà còn online thì nhận lại theo ID)
@@ -261,10 +268,18 @@ class KeoGaTuDong:
 
         self._canhbaokhonglencap(infos, now)
 
+        is_dutcap = bool(self.luot) and self._is_chinhdabat and all(int(g.get("cap") or 0) >= self.capketthuc for g in self.luot)
+        # Acc gà vắng (dis) thì vào lại trước mọi việc, kể cả khi mọi acc gà đã đủ cấp mà acc chính chưa báo xong: acc chính còn chờ chúng
+        # trả đồ Lam Kim (thu hồi) / đang Phong Yêu Kính dở. Trước đây nhánh "chờ acc chính thu hồi đồ" return trước nên acc gà dis lúc đó
+        # không bao giờ được đăng nhập lại (572 dis 19:40 2026-11-08, cả lượt đứng chờ). Acc chính đã báo xong thì thôi, sắp đóng client
+        if not (is_dutcap and (not kcchinh or kcchinh.get("giaidoan") == "xong")) and self._dangnhaplaigavang(cauhinh, now):
+            return
+
         # Lượt xong: mọi acc gà tới cấp kết thúc và acc chính đã hết vai kéo cấp (xong thu hồi đồ Lam Kim)
-        if self.luot and self._is_chinhdabat and all(int(g.get("cap") or 0) >= self.capketthuc for g in self.luot):
+        if is_dutcap:
             if kcchinh and kcchinh.get("giaidoan") != "xong":
-                self.trangthai = f"Mọi acc gà đã cấp {self.capketthuc}, chờ acc chính thu hồi đồ / báo xong"
+                vangs = [g["ten"] for g in self.luot if g["lucvang"]]
+                self.trangthai = f"Mọi acc gà đã cấp {self.capketthuc}, chờ acc chính thu hồi đồ / báo xong" +                                  (f" (chờ vào lại: {', '.join(vangs)})" if vangs else "")
                 return
             self._lucchinhhetvai = self._lucchinhhetvai or now
             conga = [g for g in self.luot if g["id"] in infos and infos[g["id"]][1].get("_keocap")]
@@ -275,23 +290,22 @@ class KeoGaTuDong:
             return
         self._lucchinhhetvai = 0.
 
-        # Đăng nhập: acc gà vắng (dis) thì vào lại trước, sau đó thêm tài khoản cho đủ lượt (chưa bật acc chính)
-        for g in self.luot:
-            if g["lucvang"] and now - g["lucvang"] >= THOIGIANVANGDANGNHAPLAI and not dangnhap_xq.laycuasodangvaogame():
-                taikhoan = next((t for t in cauhinh["taikhoans"] if t["user"] == g["user"]), None)
-                if not taikhoan:
-                    print(f"[KÉO GÀ A-Z] Tài khoản {g['user']} không còn trong danh sách, bỏ {g['ten']} khỏi lượt")
-                    self.luot.remove(g)
-                    self._luutiendo()
-                    return
-                self.trangthai = f"Đăng nhập lại {g['ten']} ({g['user']})"
-                self._dangnhap(taikhoan, cauhinh, len(self.luot), g)
-                return
         soga = max(1, min(SOGATOIDA, int(cauhinh.get("soga") or SOGAMACDINH)))
         if not self._is_chinhdabat and len(self.luot) < soga:
             dangdung = {g["user"] for g in self.luot}
             cho = [t for t in cauhinh["taikhoans"] if t["user"] not in dangdung and not self._is_het(t["user"])
                    and self._solanloi.get(t["user"], 0) < SOLANLOITOIDA]
+            # Nhân vật của tài khoản đang online sẵn (bấm Bắt đầu lại / mở lại bot giữa lượt): nhận vào lượt luôn, không đăng nhập đè
+            # (trước đây đăng nhập lần lượt từ tài khoản đầu dù đang online: client mới đá nhân vật đang chơi, hoặc báo tài khoản
+            # đang online, 2026-11-08)
+            if self._nhanlaigaonline(cho, infos, online, soga, now):
+                return
+            chothoat = [t for t in cho if now - self._lucdong.get(t["user"], 0.) < THOIGIANCHOTHOATTAIKHOAN]
+            if chothoat and len(chothoat) == len(cho):
+                conlai = int(THOIGIANCHOTHOATTAIKHOAN - (now - self._lucdong[chothoat[0]["user"]])) + 1
+                self.trangthai = f"Chờ {chothoat[0]['user']} thoát hẳn khỏi máy chủ ({conlai}s) rồi đăng nhập"
+                return
+            cho = [t for t in cho if t not in chothoat]
             if cho:
                 if dangnhap_xq.laycuasodangvaogame():
                     self.trangthai = "Chờ acc gà vừa đăng nhập vào game..."
@@ -338,6 +352,63 @@ class KeoGaTuDong:
             return
         self.trangthai = f"Lượt {len(self.luot)} acc gà: " + ", ".join(f"{g['ten']} cấp {g.get('cap') or 0}" for g in self.luot) + \
                          (f" (chờ vào lại: {', '.join(chuasan)})" if chuasan else "")
+
+    def _nhanlaigaonline(self, cho, infos, online, soga, now):
+        # Tài khoản trong danh sách chờ mà có nhân vật (đã ghi trong tiến độ) đang online trên máy này: nhân vật chưa tới cấp kết thúc
+        # thì nhận vào lượt (không đăng nhập), đã xong thì đóng client của nó trước (đăng nhập đè sẽ báo tài khoản đang online).
+        # -> True: lượt này đã làm gì đó (vòng sau xét tiếp)
+        nvtheouser = self._tiendo().get("taikhoans") or {}
+        hwndtheoid = {idnv: hwnd for hwnd, idnv in online["cuaso"].items()}
+        hwndtheoid.update({idnv: hwnd for idnv, (hwnd, _) in infos.items()})
+        dalam = False
+        for t in cho:
+            if len(self.luot) >= soga:
+                break
+            user = t["user"]
+            nvs = (nvtheouser.get(user) or {}).get("nhanvats") or {}
+            dangons = [int(i) for i in nvs if int(i) in hwndtheoid and int(i) != self.idchinh]
+            if not dangons:
+                continue
+
+            def capcua(idnv):
+                return max(int((infos.get(idnv) or (0, {}))[1].get("capdo") or 0), int(nvs[str(idnv)].get("cap") or 0))
+
+            chuaxongs = [i for i in dangons if capcua(i) < self.capketthuc]
+            if chuaxongs:
+                idnv = max(chuaxongs, key = capcua)
+                info = (infos.get(idnv) or (0, {}))[1]
+                g = {"user": user, "id": idnv, "ten": info.get("tennhanvat") or nvs[str(idnv)].get("ten") or "", "cap": capcua(idnv),
+                     "hwnd": hwndtheoid[idnv], "lucvang": 0., "lucguilenh": 0., "lucvaogame": now}
+                self.luot.append(g)
+                self._luutiendo()
+                print(f"[KÉO GÀ A-Z] {g['ten']} (ID {idnv}, cấp {g['cap']}) của {user} đang online: nhận vào lượt, không đăng nhập lại")
+                dalam = True
+            elif now - self._lucdong.get(user, 0.) >= THOIGIANCHOTHOATTAIKHOAN:
+                print(f"[KÉO GÀ A-Z] {user}: nhân vật đã kéo xong (ID {', '.join(map(str, dangons))}) còn online, đóng client rồi mới đăng nhập")
+                for i in dangons:
+                    self._dongcuaso(hwndtheoid[i])
+                self._lucdong[user] = now
+                dalam = True
+        return dalam
+
+    def _dangnhaplaigavang(self, cauhinh, now):
+        # Acc gà trong lượt vắng quá THOIGIANVANGDANGNHAPLAI giây: đăng nhập lại (cửa sổ bị dis thì vào lại trong chính nó). -> True: đã làm
+        if dangnhap_xq.laycuasodangvaogame():
+            return False
+        for g in self.luot:
+            if not g["lucvang"] or now - g["lucvang"] < THOIGIANVANGDANGNHAPLAI or now < g.get("lucthulai", 0.):
+                continue
+            taikhoan = next((t for t in cauhinh["taikhoans"] if t["user"] == g["user"]), None)
+            if not taikhoan:
+                print(f"[KÉO GÀ A-Z] Tài khoản {g['user']} không còn trong danh sách, bỏ {g['ten']} khỏi lượt")
+                self.luot.remove(g)
+                self._luutiendo()
+                return True
+            self.trangthai = f"Đăng nhập lại {g['ten']} ({g['user']})"
+            print(f"[KÉO GÀ A-Z] {g['ten']} (ID {g['id']}) vắng {int(now - g['lucvang'])}s: đăng nhập lại {g['user']}")
+            self._dangnhap(taikhoan, cauhinh, len(self.luot), g)
+            return True
+        return False
 
     def _canhbaokhonglencap(self, infos, now):
         # Acc gà dưới cấp kết thúc mà THOIGIANKHONGLENCAP giây không lên cấp (chỉ tính khi acc chính đã bật kéo cấp lượt này): nhắn Telegram
@@ -428,6 +499,7 @@ class KeoGaTuDong:
             print(f"[KÉO GÀ A-Z] Tài khoản {user} hết chỗ (6 nhân vật đã kéo xong): bỏ qua")
             self._danhdauhet(user)
             self._dongcuaso(ketqua.get("hwnd"))
+            self._lucdong[user] = time.time()
             if ga:
                 self.luot.remove(ga)
                 self._luutiendo()
@@ -437,14 +509,24 @@ class KeoGaTuDong:
             print(f"[KÉO GÀ A-Z] Đăng nhập / tạo nhân vật tài khoản {user} không được (lần {self._solanloi[user]}/{SOLANLOITOIDA})")
             if self._solanloi[user] >= SOLANLOITOIDA:
                 from thongbao_xq import guitinmay
-                guitinmay("dangnhap", f"⚠️ Kéo gà A-Z: tài khoản <b>{html.escape(user)}</b> đăng nhập / tạo nhân vật lỗi {SOLANLOITOIDA} lần, "
-                                      f"bỏ qua (sai mật khẩu / đang online / máy chủ từ chối tên?)", khoa = ("keoga", user), giancach = 600.)
-                if ga:
-                    self.luot.remove(ga)
-                    self._luutiendo()
+                guitinmay("dangnhap", f"⚠️ Kéo gà A-Z: tài khoản <b>{html.escape(user)}</b> đăng nhập / tạo nhân vật lỗi {SOLANLOITOIDA} lần"
+                                      + (f", vẫn thử vào lại {html.escape(ga['ten'])} mỗi {int(THOIGIANTHULAIGATOIDA)}s" if ga
+                                         else ", bỏ qua (sai mật khẩu / đang online / máy chủ từ chối tên?)"),
+                          khoa = ("keoga", user), giancach = 600.)
+            if ga:
+                # Acc gà trong lượt bị dis mà vào lại hỏng (thường do máy chủ chưa nhả tài khoản: báo đang online / đầy): không bỏ khỏi lượt
+                # (acc chính vẫn đang chờ nó), thử lại giãn dần. Trước đây hỏng 3 lần là bỏ hẳn, lượt kéo thiếu acc (2026-11-08)
+                ga["lucthulai"] = time.time() + min(THOIGIANTHULAIGATOIDA, 30. * self._solanloi[user])
+                self._solanloi[user] = min(self._solanloi[user], SOLANLOITOIDA - 1)
             return
         self._solanloi.pop(user, None)
         if ga:
+            if int(ketqua["id"]) != ga["id"]:
+                # Không thấy đúng nhân vật cũ ở màn chọn (đã đổi ô / bị xoá?): báo, không lặng lẽ thay nhân vật khác vào lượt
+                from thongbao_xq import guitinmay
+                print(f"[KÉO GÀ A-Z] ⚠️ Vào lại {ga['ten']} (ID {ga['id']}) mà ra nhân vật ID {ketqua['id']}")
+                guitinmay("dangnhap", f"⚠️ Kéo gà A-Z: vào lại <b>{html.escape(ga['ten'])}</b> (ID {ga['id']}) của {html.escape(user)} mà ra "
+                                      f"nhân vật ID {ketqua['id']}, kiểm tra tay giúp", khoa = ("keogasainv", user), giancach = 600.)
             ga.update(lucvang = 0., hwnd = ketqua.get("hwnd") or 0)
             return
         g = {"user": user, "id": int(ketqua["id"]), "ten": ketqua.get("ten") or "", "cap": int(ketqua.get("cap") or 0),
@@ -469,6 +551,7 @@ class KeoGaTuDong:
             self._ghinhanvat(g["user"], g["id"], g["ten"], g.get("cap") or 0, True)
             hwnd = infos[g["id"]][0] if g["id"] in infos else g.get("hwnd")
             self._dongcuaso(hwnd)
+            self._lucdong[g["user"]] = time.time()
             tens.append(f"{g['ten']} ({g['user']})")
         print(f"[KÉO GÀ A-Z] ✅ Xong lượt (cấp {self.capketthuc}): {', '.join(tens)}. Đóng client, đăng nhập lượt kế")
         guitinmay("dangnhap", f"✅ Kéo gà A-Z xong lượt cấp {self.capketthuc}: {html.escape(', '.join(tens))}", khoa = "keogaluot", giancach = 0.)

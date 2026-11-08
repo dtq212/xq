@@ -70,39 +70,6 @@
             "vitricuaso": 5,
             "user": "thiendao",
             "pass": "hateva"
-        },
-        {
-            "tennhanvat": "gacon1_3",
-            "idnguoichoi": 535,
-            "group": 1,
-            "server": 1,
-            "char_index": 1,
-            "maydangnhap": "",
-            "vitricuaso": 1,
-            "user": "gacon1",
-            "pass": "hateva"
-        },
-        {
-            "tennhanvat": "gacon2_3",
-            "idnguoichoi": 536,
-            "group": 1,
-            "server": 1,
-            "char_index": 1,
-            "maydangnhap": "",
-            "vitricuaso": 2,
-            "user": "gacon2",
-            "pass": "hateva"
-        },
-        {
-            "tennhanvat": "gacon3_3",
-            "idnguoichoi": 537,
-            "group": 1,
-            "server": 1,
-            "char_index": 1,
-            "maydangnhap": "",
-            "vitricuaso": 3,
-            "user": "gacon3",
-            "pass": "hateva"
         }
     ]
 }
