@@ -607,7 +607,8 @@ class TacTuHoatDong:
         moitruong = self.moitruong
         capdo = moitruong.get_capdonhanvat()
         kinhnghiem, kinhnghiemcan = moitruong.get_kinhnghiem(), moitruong.get_kinhnghiemcanlencap()
-        if not capdo or capdo >= self._captudongtangcaptoida or kinhnghiem is None or not kinhnghiemcan or kinhnghiem < kinhnghiemcan:
+        # Nhân vật mới tạo là cấp 0 (kéo gà A-Z): chỉ bỏ khi không đọc được cấp (False / None), không bỏ cấp 0
+        if capdo is False or capdo is None or capdo >= self._captudongtangcaptoida or kinhnghiem is None or not kinhnghiemcan                 or kinhnghiem < kinhnghiemcan:
             return
         self._thoidiemtudongtangcap = time.time()
         caulenh = "gift ! upgrade" if moitruong.is_nietban else "gift upgrade"

@@ -32,6 +32,9 @@ SOLANLOITOIDA = 3
 # Lượt xong: acc chính hết vai kéo cấp mà acc gà còn vai (chưa đọc "xong") thì chờ thêm tối đa chừng này giây rồi vẫn đóng
 THOIGIANCHODONGGA = 60.
 GIANCACHLENHTANGCAP = 10.
+# Acc gà của lượt (acc chính đã bật) chừng này giây không lên cấp thì nhắn Telegram, nhắc lại mỗi chừng ấy (người dùng dặn 2026-11-08: 2 lượt
+# kẹt cấp 0 / 10 tổng ~4,5 giờ lúc ngủ vì tự tăng cấp không bật mà không ai biết)
+THOIGIANKHONGLENCAP = 30 * 60.
 
 CAUHINHMAU = {"soga": SOGAMACDINH, "tiento": TIENTOMACDINH, "gioitinh": 0, "group": 1, "server": 1, "taikhoans": []}
 
@@ -224,17 +227,21 @@ class KeoGaTuDong:
 
         # Cập nhật acc gà của lượt: cửa sổ, cấp
         for g in self.luot:
+            g.setdefault("luclencap", now)
             if g["id"] in infos:
                 g["hwnd"] = infos[g["id"]][0]
                 g["lucvang"] = 0.
                 cap = infos[g["id"]][1].get("capdo") or 0
                 if cap > int(g.get("cap") or 0):
                     g["cap"] = cap
+                    g["luclencap"] = now
                     self._ghinhanvat(g["user"], g["id"], g["ten"], cap)
             elif g["id"] in online["id"]:
                 g["lucvang"] = 0.
             elif not g["lucvang"]:
                 g["lucvang"] = now
+
+        self._canhbaokhonglencap(infos, now)
 
         # Lượt xong: mọi acc gà tới cấp kết thúc và acc chính đã hết vai kéo cấp (xong thu hồi đồ Lam Kim)
         if self.luot and self._is_chinhdabat and all(int(g.get("cap") or 0) >= self.capketthuc for g in self.luot):
@@ -314,11 +321,38 @@ class KeoGaTuDong:
         self.trangthai = f"Lượt {len(self.luot)} acc gà: " + ", ".join(f"{g['ten']} cấp {g.get('cap') or 0}" for g in self.luot) + \
                          (f" (chờ vào lại: {', '.join(chuasan)})" if chuasan else "")
 
+    def _canhbaokhonglencap(self, infos, now):
+        # Acc gà dưới cấp kết thúc mà THOIGIANKHONGLENCAP giây không lên cấp (chỉ tính khi acc chính đã bật kéo cấp lượt này): nhắn Telegram
+        if not self._is_chinhdabat:
+            for g in self.luot:
+                g["luclencap"] = now
+            return
+        kets = []
+        for g in self.luot:
+            if int(g.get("cap") or 0) >= self.capketthuc or now - g["luclencap"] < THOIGIANKHONGLENCAP:
+                continue
+            if now - g.get("luccanhbao", 0.) < THOIGIANKHONGLENCAP:
+                continue
+            g["luccanhbao"] = now
+            info = (infos.get(g["id"]) or (0, {}))[1]
+            if not info:
+                tinhtrang = "không online"
+            else:
+                tinhtrang = (f"tự tăng cấp {'bật tới cấp ' + str(info.get('_captudongtangcaptoida')) if info.get('_is_tudongtangcap') else 'TẮT'}, "
+                             f"{info.get('_trangthaikeocap') or 'không kéo cấp'}")
+            kets.append(f"{g['ten']} (ID {g['id']}) cấp {g.get('cap') or 0}, {int((now - g['luclencap']) // 60)} phút: {tinhtrang}")
+        if kets:
+            from thongbao_xq import guitinmay
+            print("[KÉO GÀ A-Z] ⚠️ Acc gà lâu không lên cấp: " + "; ".join(kets))
+            guitinmay("dangnhap", "⚠️ Kéo gà A-Z: acc gà lâu không lên cấp\n" + "\n".join("• " + html.escape(k) for k in kets),
+                      khoa = "keogakhonglencap", giancach = 0.)
+
     def _battangcap(self, g, hwnd, info, now):
         # Acc gà thường đăng nhập tay không bật "Tự tăng cấp"; kéo gà A-Z thì bật cho acc gà của lượt, "tới cấp" ít nhất cấp kết thúc
         # (người dùng dặn 2026-11-08). command_dict mỗi cửa sổ giữ 1 lệnh: chờ lệnh trước bot đã đọc, mỗi lệnh cách GIANCACHLENHTANGCAP giây
         # (bật là lệnh đảo, gửi dồn thì tắt lại)
-        if hwnd in self.command_dict or now - g.get("luctangcap", 0.) < GIANCACHLENHTANGCAP:
+        # Bot đọc lệnh xong ghi None chứ không xoá khoá (cuaso_xq): xét giá trị, không xét "in" (từng không bao giờ gửi được, 2026-11-08)
+        if self.command_dict.get(hwnd) or now - g.get("luctangcap", 0.) < GIANCACHLENHTANGCAP:
             return
         if not info.get("_is_tudongtangcap"):
             g["luctangcap"] = now
