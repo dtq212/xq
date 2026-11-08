@@ -153,6 +153,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._thoidiemlammoitoado = 0.
         self._is_lammoisautruot = False
         self._toadotruoclammoi = None
+        # Giữ mục tiêu sau lệnh làm mới (_is_giumuctieusaulammoi): ID mục tiêu lúc gửi (0 = không giữ) và thời điểm gửi
+        self._idmuctieugiusaulammoi = 0
+        self._thoidiemguilammoitrangthai = 0.
         # Thống kê log {(đứng yên, khoảng cách): [ra, không ra]} (xoá sau mỗi lần log), thống kê để học tầm {khoảng cách: [ra, gửi]}
         # (phai dần) khi di chuyển / khi đứng yên (chưa có mẫu => thử tới tầm tối đa) và lần cập nhật gần nhất, lần log thống kê gần nhất.
         # Bảng di chuyển khởi đầu bằng số đo cũ TILERATAMXAMACDINH (khỏi trượt lại từ đầu mỗi lần chạy); đổi tầm tối đa thì học lại từ đầu
@@ -224,6 +227,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         # _layvungtoiduoc)
         self._diemdoquanh_cache = {}
         self._vungtoiduoc_cache = None
+        # Sư môn: số bước đi bộ từ mỗi ô tới điểm đang đi (loang từ điểm trên lưới cả bản đồ): (bản đồ, điểm, {ô: số bước})
+        self._sobuoctoidiem_cache = None
         self._ketquasumon = ""
         self._sumon_npcgiao = ""
         self._sovitri = SoVitri(moitruong.is_nietban)
@@ -565,6 +570,12 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         # Nhất Quyền lượt trước có sẵn sàng không, lúc nó vừa vào hồi chiêu (_get_thoigianconlaihoichieunhatquyen)
         self._is_nhatquyensansangtruoc = False
         self._thoidiemnhatquyenvaohoichieu = 0.
+        # Dịch chỗ đứng sau chiêu delay 0 (_xulydichosauchieudelay0): chiêu delay 0 lượt trước có sẵn sàng không (id -> bool), lần dịch
+        # đang đi {"dich", "idmuctieu", "batdau", "lydo"} hoặc None
+        self._is_sansangdelay0truoc_map = {}
+        self._dichosaudelay0 = None
+        # Lúc chiêu delay 0 gần nhất vào hồi chiêu (0 = đã xét dịch chỗ xong cho chiêu đó)
+        self._thoidiemdelay0vaohoichieu = 0.
         self._khoalogdichuyencuoi = None
         self._thoidiemtodoigannhat_map = {}
         self._thoidiemxulytodoigannhat = 0.
@@ -1211,7 +1222,14 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         if self._danhhieulammoi == DANHHIEULAMMOI_KHONG and not is_batbuoc:
             return False
         caulenh = "title hide" if self._danhhieulammoi in (DANHHIEULAMMOI_KHONG, DANHHIEULAMMOI_AN) else "title show {}".format(self._danhhieulammoi)
-        return self.moitruong.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_KHANCAP)
+        if not self.moitruong.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_KHANCAP):
+            return False
+        # Máy chủ gửi lại trạng thái làm bảng đối tượng client chập chờn một lúc: mục tiêu đang chọn bị coi là không hợp lệ, bot nhảy sang
+        # vật khác rồi mới quay lại (log 342/347 ngày 2026-11-09: 9 lần nhảy, đều trong 1.5s sau lệnh title). Ghi ID để giữ lại mục tiêu
+        diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+        self._idmuctieugiusaulammoi = self.moitruong.get_iddoituong(diachimuctieu) if diachimuctieu else 0
+        self._thoidiemguilammoitrangthai = time.time()
+        return True
 
     def thietlap_danhhieulammoi(self, ma):
         self._danhhieulammoi = str(ma).strip()

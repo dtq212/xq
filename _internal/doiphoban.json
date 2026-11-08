@@ -6,9 +6,9 @@
       "thanhviens": [
         364,
         342,
-        354,
         359,
-        347
+        347,
+        354
       ],
       "thutu": [
         "sugia",
@@ -17,7 +17,9 @@
         "thanhkieu",
         "phongyeukinh"
       ],
-      "chon": [],
+      "chon": [
+        "phongyeukinh"
+      ],
       "vong": {},
       "phai": ""
     }

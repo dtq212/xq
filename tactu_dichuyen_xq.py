@@ -732,6 +732,10 @@ class TacTuDiChuyen:
                     # Bản đồ có chỗ máy chủ giật lại (Tập Kích Môn Phái (103, 54)...): gom quái / tấn công / nhặt đồ / theo sau cũng đi đường bot
                     # tự tìm (né khu vực cấm, ô học được là chặn), không click thẳng / tìm đường của client chui vào đó
                     self.moitruong.action_dikhongcatgoc(round(x_dich), round(y_dich), khoangcachtoida)
+                elif toadodich and yeucauduocchon.get("is_dioo") and yeucauduocchon.get("yeucau") == YEUCAUDICHUYENTANCONG:
+                    # Dịch chỗ đứng vài ô quanh mục tiêu (Đào Hoa sau chiêu delay 0): đi theo ô tới đúng ô, không lùi về tìm đường của game
+                    self.moitruong.action_dichuyenoo(round(toadodich[0]), round(toadodich[1]), delay = 0.,
+                                                     sobuoctoida = yeucauduocchon.get("sobuoctoida"))
                 elif toadodich and yeucauduocchon.get("yeucau") in (YEUCAUDICHUYENTANCONG, YEUCAUDICHUYENTIMMUCTIEUCHUNG):
                     # Tấn công bị kẹp quanh trưởng nhóm (đích đã cắt thành tọa độ) vẫn là tiếp cận: dùng tìm đường như tiếp cận đối tượng
                     self.moitruong.action_dichuyengiukhoangcachtoidadiembangtimduong(toadodich[0], toadodich[1], khoangcachtoida)

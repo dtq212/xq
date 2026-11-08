@@ -58,6 +58,8 @@ THOIGIANNHODANH = 1.5
 TUTHERADONs = (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT, TUTHENHANVAT_DELAYSAUTANCONG)
 DICHKHANG = (CHISONHANVAT_MAP["Ngoại Kháng"][0], CHISONHANVAT_MAP["Nội Kháng"][0])
 SODOITHUNHO = 8
+# Số loại quái (tên + cấp) gom đòn Kháng / Công cùng lúc (xem UocLuongMucTieu._donsquai)
+SOLOAIQUAINHO = 24
 
 
 # Đòn đã gán cho chiêu vẫn thử thêm giả thuyết "đánh thường" (đánh thường tự động rơi trúng lúc vừa gửi chiêu) với trọng số thấp
@@ -175,6 +177,36 @@ class UocLuongMucTieu:
         # Sát thương / giây thật của mình chia cho sát thương 1 đòn thường theo công thức (mục tiêu đã biết Kháng) - "số đòn thường quy
         # đổi mỗi giây", để ước DPS lên mục tiêu chưa đánh: DPS ≈ hệ số * satthuong(Công mình, Kháng nó)
         self._hesodps = None
+        # Đòn gom theo loại quái (khoaquai = tên + cấp), không theo từng con: quái thường chết sau 2-4 đòn nên 1 con không bao giờ đủ
+        # SODONCHACCHAN đòn khớp => kho quái 2026-11-09 có 151 loại, 46 có Khí Huyết mà Nội Kháng 17, Ngoại Kháng 2. Cùng tên + cấp thì
+        # cùng Kháng / Công, nên cộng đòn của mọi con cùng loại. {khoaquai: {"dons": [gts], "he": hệ}} và {khoaquai: [(st, NK, NộiK)]}
+        self._donsquai = collections.OrderedDict()
+        self._bidanhquai = collections.OrderedDict()
+
+    def _ghiquai(self, kho, khoaquai, phantu, he = None):
+        # Thêm 1 đòn vào kho gom theo loại quái (giữ SODONGIU đòn mới nhất, SOLOAIQUAINHO loại gần nhất); đổi hệ thì đo lại
+        muc = kho.get(khoaquai)
+        if muc is None or muc["he"] != he:
+            muc = kho[khoaquai] = {"dons": collections.deque(maxlen = SODONGIU), "he": he}
+        kho.move_to_end(khoaquai)
+        muc["dons"].append(phantu)
+        while len(kho) > SOLOAIQUAINHO:
+            kho.popitem(last = False)
+
+    def get_sharequai(self):
+        # {khoaquai: {"khang": {hệ: (Kháng, số đòn cụm, số đòn)}, "cong": {hệ: (Công, số đòn cụm, số đòn)}}} gom mọi con cùng loại
+        ketqua = {}
+        with self._khoa:
+            for khoaquai, muc in self._donsquai.items():
+                khang, socum = khangtheocum(muc["dons"])
+                if khang and muc["he"]:
+                    ketqua.setdefault(khoaquai, {"khang": {}, "cong": {}})["khang"][muc["he"]] = (round(khang), socum, len(muc["dons"]))
+            for khoaquai, muc in self._bidanhquai.items():
+                for he, chiso in ((HE_NGOAI, 1), (HE_NOI, 2)):
+                    giatri, socum = congtheocum([congtusatthuong(d[0], d[chiso], he) for d in muc["dons"]])
+                    if giatri:
+                        ketqua.setdefault(khoaquai, {"khang": {}, "cong": {}})["cong"][he] = (round(giatri), socum, len(muc["dons"]))
+        return ketqua
 
     def _quetkedanh(self):
         # Ghi lúc từng đối tượng đang ra đòn quay mặt về mình (xem BANKINHKETANCONG)
@@ -224,6 +256,8 @@ class UocLuongMucTieu:
             self._bidanhs.move_to_end(iddoituong)
             bidanh["dons"].append((truoc[0] - mau[0], khang[0], khang[1], luc))
             bidanh["lucdanh"] = luc
+            if khoaquai:
+                self._ghiquai(self._bidanhquai, khoaquai, (truoc[0] - mau[0], khang[0], khang[1]))
             while len(self._bidanhs) > SOMUCTIEUNHO:
                 self._bidanhs.popitem(last = False)
         if not idnguoichoi:
@@ -345,6 +379,8 @@ class UocLuongMucTieu:
                     if phan != (0, 0.):
                         gts.append((khangtusatthuong(st, c, he), TRONGSODANHTHUONGKHIGANCHIEU))
                     muctieu["dons"].append(gts)
+                    if muctieu["khoaquai"]:
+                        self._ghiquai(self._donsquai, muctieu["khoaquai"], gts, he)
                 muctieu["lucdanh"] = time.time()
             # Khí Huyết: chỉ tính giữa các lần % máu nhảy bậc (lúc đó máu vừa đi qua đúng mốc, sai số còn cỡ 1 đòn); hồi lên thì đo lại
             if muctieu["bacchogan"] and luc - muctieu["bacchogan"] > THOIGIANGANBAC:
@@ -615,4 +651,16 @@ def capnhatkhoquai(kho, infos, luc = None):
         tot = max(((tt["nhip"], tt["sokhoang"]) for tt in tomtats if tt.get("nhip")), key = lambda v: v[1], default = None)
         if tot and tot[1] >= SOKHOANGNHIPCHACCHAN:
             ghi(khoaquai, "nhip", {"giatri": tot[0], "sodon": tot[1]})
+    # Kháng / Công gom theo loại quái (mọi con cùng tên + cấp, xem UocLuongMucTieu._donsquai): mỗi cửa sổ 1 tóm tắt, lấy cụm đông nhất
+    theoloai = {}
+    for i in infos:
+        for khoaquai, tt in (i.get("_chisoquai") or {}).items():
+            for loai, tenmap in (("khang", TENCHISOKHANG_MAP), ("cong", TENCHISOCONG_MAP)):
+                for he, v in (tt.get(loai) or {}).items():
+                    truong = tenmap[he]
+                    if v[1] > theoloai.get((khoaquai, truong), (0, 0, 0))[1]:
+                        theoloai[(khoaquai, truong)] = v
+    for (khoaquai, truong), (giatri, socum, _) in theoloai.items():
+        if socum >= SODONCHACCHAN:
+            ghi(khoaquai, truong, {"giatri": giatri, "sodon": socum})
     return is_doi

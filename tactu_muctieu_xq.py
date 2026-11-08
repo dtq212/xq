@@ -444,6 +444,32 @@ class TacTuMucTieu:
             self._thongtinmuctieuboqua_map.pop(iddoituong, None)
         print("Thôi bỏ qua mục tiêu: {}".format(", ".join(hex(i) for i in idxoas) or "không có"))
 
+    def _is_giumuctieusaulammoi(self, diachimuctieu):
+        # Trong THOIGIANGIUMUCTIEUSAULAMMOI giây sau lệnh làm mới (action_lammoitrangthai) bảng đối tượng client chập chờn: giữ mục tiêu
+        # lúc gửi theo ID, bỏ qua lượt chọn lại (kiểm tra hợp lệ lúc này hay sai). Địa chỉ đổi thì tìm lại theo ID; chưa thấy thì chờ, chưa
+        # chọn con khác. Mục tiêu chết thật thì thôi giữ. True = lượt này không chọn lại mục tiêu
+        idgiu = self._idmuctieugiusaulammoi
+        if not idgiu:
+            return False
+        if time.time() - self._thoidiemguilammoitrangthai >= THOIGIANGIUMUCTIEUSAULAMMOI:
+            self._idmuctieugiusaulammoi = 0
+            return False
+        moitruong = self.moitruong
+        if diachimuctieu and moitruong.get_iddoituong(diachimuctieu) == idgiu:
+            if moitruong.get_is_nhanvatdachet(diachimuctieu):
+                self._idmuctieugiusaulammoi = 0
+                return False
+            return True
+        for diachi in moitruong._get_diachidoituongxungquanhs():
+            if moitruong.get_iddoituong(diachi) == idgiu:
+                if moitruong.get_is_nhanvatdachet(diachi):
+                    self._idmuctieugiusaulammoi = 0
+                    return False
+                moitruong.set_diachicosothongtinnhanvatmuctieudangchon(diachi)
+                moitruong._inlog(f"[LÀM MỚI TOẠ ĐỘ] mục tiêu {hex(idgiu)} đổi địa chỉ sau làm mới => chọn lại")
+                return True
+        return True
+
     def action_tudongtimkiemmuctieu(self):
         # Yêu cầu đi tới mục tiêu nhân vật khác thấy chỉ tạo lại ở cuối hàm khi mình không có mục tiêu nào
         self._yeucautimmuctieuchung = None
@@ -496,6 +522,8 @@ class TacTuMucTieu:
         self._thoidiemthaymuctieu_map = {k: v for k, v in self._thoidiemthaymuctieu_map.items() if thoidiemhientai - v[1] <= THOIGIANMATDAUMUCTIEU}
 
         diachicosothongtinnhanvatmuctieudangchon = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+        if self._is_giumuctieusaulammoi(diachicosothongtinnhanvatmuctieudangchon):
+            return
 
         toadotheosau = self._laytoadomuctieutheosau()
         is_anhhuongboimuctieutheosau = bool(toadotheosau)

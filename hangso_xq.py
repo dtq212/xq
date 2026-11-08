@@ -259,6 +259,9 @@ VUNGTIEPCANTAMXADUNGYEN = 0.5
 THOIGIANCHOLAMMOITOADO = 0.3
 THOIGIANGIANCACHLAMMOITOADO = 5.
 THOIGIANDOLECHLAMMOI = 1.5
+# Sau lệnh làm mới, bảng đối tượng client chập chờn (mục tiêu bị coi là không hợp lệ ~0.1-0.4s, đo log 2026-11-09): trong
+# THOIGIANGIUMUCTIEUSAULAMMOI giây giữ nguyên mục tiêu theo ID, không chọn lại
+THOIGIANGIUMUCTIEUSAULAMMOI = 1.
 VUNGMEPTAMXA = 2.
 TAMXATOITHIEU = 8.
 NGUONGTILERATAMXA = 0.85
@@ -602,6 +605,35 @@ VITRIKYNANG_NHATQUYENBATSON = 2119
 VITRIKYNANG_LACKICH = 2123
 VITRIKYNANG_PHANTOA = 2124
 
+# Dịch chỗ đứng sau chiêu delay 0 của Đào Hoa (người dùng đề xuất 2026-11-09): Ba Động / Lạc Kích / Đại Hải ra dame ngay, không cần đứng
+# yên, nhưng máy chủ khoá chiêu kế 0.8-1.7s => dùng lúc đó đi sang ô kề mục tiêu tốt hơn (tối đa SOBUOCDICHODELAY0 bước, vẫn kề mục
+# tiêu nên hết khoá đánh được ngay). Điểm ô: + HESOGOMQUAIDELAY0 mỗi quái trong BANKINHDAIHAI ô (Đại Hải trúng nhiều con), - khoảng
+# cách tới mục tiêu kế khi mục tiêu chính còn <= PHANTRAMMAUDONMUCTIEUKE % máu, - khoảng cách tới chỗ người chơi đang chạy tới (đón
+# đầu), + ô thoáng (ô kề đi được, tránh kẹt góc vật cản). Chỉ đi khi hơn ô đang đứng NGUONGDICHODELAY0 điểm. Đi quá THOIGIANDICHODELAY0
+# giây chưa tới thì thôi, đánh tiếp (khoá ngắn nhất ~0.8s, không để chậm chiêu kế)
+# Log 342/347 ngày 2026-11-09 (102 lần, bản đi 2 ô, ngưỡng 1): 2 ô mất ~0.75s (43/102 lần chưa tới), chiêu kế chậm thêm ~0.3s (trung vị
+# 1.18-1.34s so với 0.86-1.06s không dịch); 1 ô ~0.42s => chỉ đi 1 ô. "Mục tiêu kế" chiếm 77/102 lần, nhiều lần con kế cách 7-9 ô
+# (đi 1 ô gần hơn 1.3 ô vô ích) => chỉ tính khi con kế cách mục tiêu chính <= KHOANGCACHMUCTIEUKEDELAY0 ô, ngưỡng 1 -> 1.5
+# TẮT 2026-11-09 (người dùng): bot không cắt hoạt ảnh xuất chiêu nữa, client không bước khi còn tư thế 6 (~0.68s) nên khoảng khoá còn
+# lại không đủ để đi mà không chen vào chiêu kế
+IS_DICHOSAUCHIEUDELAY0 = False
+VITRIKYNANGDELAY0DAOHOAs = (VITRIKYNANG_BADONGQUYEN, VITRIKYNANG_LACKICH, VITRIKYNANG_DAIHAIVOLUONG)
+SOBUOCDICHODELAY0 = 1
+# Khoá sau chiêu delay 0 ngắn nhất từng đo ~0.6s (nguyen-ly-giam-delay-dao-hoa): thôi đi trước mốc đó để không bao giờ để lỡ lúc máy
+# chủ nhận chiêu kế; đi 1 ô ~0.42s nên vẫn kịp tới. Hết mốc mà chưa tới thì vòng chiêu bình thường ngắt di chuyển rồi spam chiêu kế
+THOIGIANDICHODELAY0 = 0.55
+# Chỉ bắt đầu dịch khi đã hết tư thế xuất chiêu 6/9 (client không bước khi còn tư thế này) trong chừng này giây sau khi chiêu delay 0
+# vào hồi chiêu; quá thì bỏ lượt dịch (còn ít thời gian khoá, đi không kịp)
+THOIGIANCHOBATDAUDICHODELAY0 = 0.25
+BANKINHDAIHAI = 3
+HESOGOMQUAIDELAY0 = 2.
+PHANTRAMMAUDONMUCTIEUKE = 30
+KHOANGCACHMUCTIEUKEDELAY0 = 4.
+HESODONMUCTIEUKE = 1.
+HESODONDAUNGUOICHOI = 1.5
+HESOTHOANGDELAY0 = 0.25
+NGUONGDICHODELAY0 = 1.5
+
 VIRIKYNANG_NGUYENKHIQUYNGUYEN = 3172
 # Nguyên Khí Quy Nguyên quá ~30 phút thì server cho hết hạn nhưng client vẫn hiện hiệu ứng: bật được chừng này giây thì bấm làm mới
 # (thu hồi rồi bật lại). Người dùng chọn 10 phút cho an toàn
@@ -874,6 +906,9 @@ BANDO_MAOSON = 269
 BANDO_RANHGIOIDAMLAY = 163
 BANDO_DIAGIOIDAMLAY = 164
 BANDO_MALANGDAO = 141
+BANDO_KHONMATRAN1 = 291
+BANDO_KHONMATRAN2 = 292
+BANDO_KHONMATRAN3 = 293
 BANDO_DONGHAINGUTHON = 11
 BANDO_KENHTRINHQUOC1 = 151
 BANDO_KENHTRINHQUOC2 = 152
@@ -1191,8 +1226,10 @@ KHUVUCCAM_MAP = {
 }
 # Bản đồ luôn đi bằng đường bot tự tìm trên lưới vật cản (moitruong.action_dikhongcatgoc) dù không có khu vực cấm: Mã Lăng Đạo vách đá
 # dài, tìm đường của client / game tới quái bên kia vách chạy tới chân vách rồi đứng ("Hoàn tất tự động tìm đường" liên tục, 2026-11-06).
-# Trước đây có khu vực cấm nên bản đồ này đã đi kiểu này
-BANDOBOTTUTIMDUONGs = {BANDO_MALANGDAO}
+# Trước đây có khu vực cấm nên bản đồ này đã đi kiểu này.
+# Khốn Ma Trận 1/2/3 là mê cung: tìm đường cục bộ của client (~50-100 bước) tới điểm sư môn phía đông chạy tới ngõ cụt (131, 108) rồi
+# quay lại, lắc qua lắc lại quanh (125, 109) (log 342, 2026-11-09); đường bot tự tìm có tìm cả bản đồ khi khung ±25 ô không ra đường
+BANDOBOTTUTIMDUONGs = {BANDO_MALANGDAO, BANDO_KHONMATRAN1, BANDO_KHONMATRAN2, BANDO_KHONMATRAN3}
 VUNGCAM_MAP = {
     idbando: [{"type": "circle", "x": x, "y": y, "r": BANKINHVUNGCAMCONG} for _, x, y, _, _ in BANDOCONG_MAP.get(idbando, ("", ()))[1]]
              + KHUVUCCAM_MAP.get(idbando, [])

@@ -469,7 +469,7 @@ class TacTuSuMon:
                             self.moitruong._inlog(f"[SƯ MÔN] {nhan}: bỏ {buoc} điểm không đi tới được")
                             kp["i"] += buoc
                             kp["luc"] = time.time()
-                            for k in ("ganhat", "lucgan", "datoi"):
+                            for k in ("ganhat", "lucgan", "datoi", "thoigiantoida"):
                                 kp.pop(k, None)
                         break
             # Điểm rơi vào vật cản thì đo theo ô đi được gần nhất (nơi đi cũng nhắm ô đó), tới đó là tới
@@ -477,20 +477,26 @@ class TacTuSuMon:
             # Điểm không tới được (toạ độ trong nhiệm vụ có khi lệch vào chỗ không đi được, nhất là Tuần Sơn): THOIGIANKHONGNHICH giây không
             # gần thêm thì thôi, đã cách dưới KHOANGCACHGANDUOC ô thì coi như tới (vẫn đứng chờ điểm đầu), xa hơn thì sang điểm kế
             khoangcach = self.moitruong.get_khoangcachdiem(x, y)
-            if khoangcach < kp.get("ganhat", float("inf")) - 1:
-                kp["ganhat"], kp["lucgan"] = khoangcach, time.time()
+            # Đo "gần thêm" theo số bước đường đi thật (mê cung Khốn Ma Trận: đi vòng thì đường chim bay tăng, 10s là bị coi kẹt rồi đổi
+            # điểm liên tục, log 342 2026-11-09). Không có lưới thì đo đường chim bay như cũ
+            sobuoc = self._laysobuoctoidiem(idbando, (x, y))
+            dotiendo = khoangcach if sobuoc is None else sobuoc
+            if dotiendo < kp.get("ganhat", float("inf")) - 1:
+                kp["ganhat"], kp["lucgan"] = dotiendo, time.time()
+            # Điểm xa theo đường đi: cho thêm thời gian (đi bộ chừng 4 ô/s), kẻo chưa vòng tới đã quá THOIGIANMOIDIEM
+            kp.setdefault("thoigiantoida", max(THOIGIANMOIDIEM, (sobuoc or 0) / 3. + 15.))
             is_ket = time.time() - kp.setdefault("lucgan", time.time()) > THOIGIANKHONGNHICH
-            is_toi = khoangcach <= KHOANGCACHTOIDIEM or kp.get("datoi") or (is_ket and khoangcach <= KHOANGCACHGANDUOC)
+            is_toi = khoangcach <= KHOANGCACHTOIDIEM or kp.get("datoi") or (is_ket and dotiendo <= KHOANGCACHGANDUOC)
             if is_toi and kp["i"] == 0 and chodiemdau:
                 kp["datoi"] = True
                 kp.setdefault("luctoi", time.time())
                 if time.time() - kp["luctoi"] < chodiemdau:
                     s["trangthai"] = f"{nhan}: chờ ở gần ({x}, {y})"
                     return None
-            if is_toi or is_ket or time.time() - kp["luc"] > THOIGIANMOIDIEM:
+            if is_toi or is_ket or time.time() - kp["luc"] > kp["thoigiantoida"]:
                 kp["i"] += 1
                 kp["luc"] = time.time()
-                for k in ("ganhat", "lucgan", "datoi"):
+                for k in ("ganhat", "lucgan", "datoi", "thoigiantoida"):
                     kp.pop(k, None)
         else:
             kp["luc"] = time.time()
@@ -560,6 +566,19 @@ class TacTuSuMon:
                 return None
             nho = self._vungtoiduoc_cache = (idbando, vung)
         return nho[1]
+
+    def _laysobuoctoidiem(self, idbando, diem):
+        # Số bước đi bộ từ chỗ đứng tới diem (ô đi được) trên lưới cả bản đồ hiện tại: loang 1 lần từ diem (nhớ theo bản đồ + điểm), mỗi
+        # lượt chỉ tra bảng. Không đọc được lưới / mình không thông với điểm -> None
+        if self.moitruong.get_idbandohientai() != idbando:
+            return None
+        nho = self._sobuoctoidiem_cache
+        if not nho or nho[0] != idbando or nho[1] != diem:
+            luoi = self.moitruong.get_luoivatcanbando()
+            nho = self._sobuoctoidiem_cache = (idbando, diem, (layvungtoiduoc(luoi, diem) if luoi else None) or {})
+        if not nho[2]:
+            return None
+        return nho[2].get(self.moitruong.get_oditduocganhat(*self.moitruong.get_toado()))
 
     def _tinpc(self, s, tennpc, idbandogoiy = None, is_chibandogoiy = False):
         # Đi tìm NPC: thấy rồi -> địa chỉ; chưa thấy -> yêu cầu di chuyển tới chỗ đã biết / đi khắp bản đồ gợi ý. -> (địa chỉ, yêu cầu).

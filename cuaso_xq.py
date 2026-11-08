@@ -473,6 +473,8 @@ class CuaSo:
                     info["_congdoithu"] = self.uocluongmuctieu.get_sharecongdoithu()
                     # Mọi kẻ đã đánh mình (cả quái): Công + nhịp đánh, cho kết luận Nguy hiểm / An toàn và lưu chỉ số quái
                     info["_bidanh"] = self.uocluongmuctieu.get_sharebidanh()
+                    # Kháng / Công gom mọi con cùng loại quái (tên + cấp): 1 con chết quá nhanh không đủ đòn
+                    info["_chisoquai"] = self.uocluongmuctieu.get_sharequai()
                     info["_hesodps"] = self.uocluongmuctieu.get_hesodps()
                     # Kết luận về mục tiêu đang chọn (danhhieumuctieu_xq): {id, khoaquai, muc, daluu, ketluan}
                     info["_muctieugame"] = self.danhhieumuctieu.get_share()

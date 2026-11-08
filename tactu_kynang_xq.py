@@ -78,6 +78,137 @@ class TacTuKyNang:
         thoigianhoichieu = tieuhao.get("tái sử dụng", THOIGIANHOICHIEUNHATQUYEN)
         return max(0., thoigianhoichieu - (thoidiemhientai - self._thoidiemnhatquyenvaohoichieu))
 
+    def _xulydichosauchieudelay0(self, diachimuctieu, is_cancanchien, is_muctieulanguoichoi):
+        # Chiêu delay 0 (VITRIKYNANGDELAY0DAOHOAs) vừa vào hồi chiêu (sẵn sàng -> đang hồi = máy chủ đã nhận) mà đang cận chiến: chọn ô kề
+        # mục tiêu tốt hơn (_chonodungdelay0) rồi đi sang trong lúc máy chủ khoá chiêu kế. Đang đi thì không gửi chiêu (đánh lúc chạy bị
+        # kéo giật, đòn hụt), tới nơi / quá THOIGIANDICHODELAY0 giây / đổi mục tiêu thì đánh tiếp. True = lượt này chỉ di chuyển
+        # Client không tự bước khi còn tư thế xuất chiêu 6/9 (log 347 2026-11-09: bắt đầu dịch lúc tư thế 6 thì 3/3 lần ~1.18s sau mới
+        # bước, lúc đó đã quay lại đánh => bước trễ chen vào chiêu kế). Nên chỉ bắt đầu khi đã hết tư thế xuất chiêu (bị ĐỨNG IM SAU SỐ
+        # BAY cắt hoặc tự hết), trong THOIGIANCHOBATDAUDICHODELAY0 giây kể từ lúc chiêu delay 0 vào hồi chiêu
+        moitruong = self.moitruong
+        thoidiemhientai = time.time()
+        for idkynang in VITRIKYNANGDELAY0DAOHOAs:
+            is_sansang = moitruong.get_is_kynangsansang(idkynang)
+            if self._is_sansangdelay0truoc_map.get(idkynang) and not is_sansang:
+                self._thoidiemdelay0vaohoichieu = thoidiemhientai
+            self._is_sansangdelay0truoc_map[idkynang] = is_sansang
+        idtuthe = moitruong.get_idtuthenhanvat()
+        is_vuadung = thoidiemhientai - self._thoidiemdelay0vaohoichieu <= THOIGIANCHOBATDAUDICHODELAY0 \
+            and idtuthe not in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT)
+
+        dicho = self._dichosaudelay0
+        if dicho:
+            idmuctieu = moitruong.get_iddoituong(diachimuctieu) if diachimuctieu else 0
+            thoigian = thoidiemhientai - dicho["batdau"]
+            toado = tuple(round(v) for v in moitruong.get_toado())
+            if idmuctieu != dicho["idmuctieu"]:
+                ketthuc = "đổi mục tiêu"
+            elif toado == dicho["dich"] and moitruong.get_idtuthenhanvat() != TUTHENHANVAT_DICHUYEN:
+                ketthuc = "tới nơi"
+            elif thoigian >= THOIGIANDICHODELAY0:
+                ketthuc = f"chưa tới (đang ở {toado})"
+                # Chưa nhích khỏi chỗ cũ: huỷ chuỗi bước, kẻo client bước muộn chen vào lúc ra chiêu kế
+                if toado == dicho["toadobatdau"]:
+                    moitruong.action_ngatdichuyen()
+                    ketthuc += ", huỷ bước"
+            else:
+                self._yeucaudichosaudelay0(diachimuctieu, dicho["dich"])
+                return True
+            moitruong._inlog(f"[DỊCH CHỖ DELAY 0] {ketthuc} sau {thoigian:.2f}s => đánh tiếp")
+            self._dichosaudelay0 = None
+            # Một chiêu delay 0 chỉ dịch một lần
+            self._thoidiemdelay0vaohoichieu = 0.
+            return False
+
+        if not IS_DICHOSAUCHIEUDELAY0 or not is_vuadung or not is_cancanchien or not diachimuctieu:
+            return False
+        # Đang theo sau: chỗ đứng do vùng quanh người theo sau quyết định
+        if self._laytoadomuctieutheosau():
+            return False
+        chon = self._chonodungdelay0(diachimuctieu, is_muctieulanguoichoi)
+        if not chon:
+            return False
+        dich, lydo = chon
+        toadobatdau = tuple(round(v) for v in moitruong.get_toado())
+        self._dichosaudelay0 = {"dich": dich, "idmuctieu": moitruong.get_iddoituong(diachimuctieu), "batdau": thoidiemhientai, "lydo": lydo,
+                                "toadobatdau": toadobatdau}
+        moitruong._inlog(f"[DỊCH CHỖ DELAY 0] {toadobatdau} -> {dich} (tư thế {idtuthe}, "
+                         f"{thoidiemhientai - self._thoidiemdelay0vaohoichieu:.2f}s sau chiêu delay 0): {lydo}")
+        self._yeucaudichosaudelay0(diachimuctieu, dich)
+        return True
+
+    def _yeucaudichosaudelay0(self, diachimuctieu, dich):
+        # Đi theo ô tới đúng ô (is_dioo, xem LoopDieuPhoiDiChuyen): không qua tiếp cận cận chiến (đã kề là nó ngắt di chuyển)
+        self._yeucautancong = {
+            "yeucau": YEUCAUDICHUYENTANCONG,
+            "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
+            "diachimuctieu": diachimuctieu,
+            "toadodich": dich,
+            "khoangcachtoida": 0.,
+            "is_dioo": True,
+            "sobuoctoida": SOBUOCDICHODELAY0,
+        }
+
+    def _chonodungdelay0(self, diachimuctieu, is_muctieulanguoichoi):
+        # Ô kề mục tiêu (max(|dx|, |dy|) = 1), đi được, cách mình tối đa SOBUOCDICHODELAY0 ô, điểm cao nhất (xem hằng số ở hangso_xq.py).
+        # Hơn ô đang đứng chưa tới NGUONGDICHODELAY0 thì đứng yên. -> ((x, y), lý do) hoặc None
+        moitruong = self.moitruong
+        xm, ym = (round(v) for v in moitruong.get_toado())
+        xt, yt = (round(v) for v in moitruong.get_toado(diachimuctieu))
+        r = 2
+        luoi = moitruong._get_luoivatcan(xt - r, yt - r, xt + r, yt + r)
+        if not luoi:
+            return None
+
+        def is_diduoc(x, y):
+            return abs(x - xt) <= r and abs(y - yt) <= r and not luoi[x - xt + r][y - yt + r]
+
+        idmuctieu = moitruong.get_iddoituong(diachimuctieu)
+        quais = [tuple(p) for p in self._toadomuctieuhoples]
+        # Mục tiêu kế: con hợp lệ khác gần mục tiêu chính nhất, chỉ xét khi mục tiêu chính sắp chết
+        muctieuke = None
+        if moitruong.get_phantramsinhlucconlai(diachimuctieu) <= PHANTRAMMAUDONMUCTIEUKE:
+            khacs = [d for d in self._diachimuctieuhoples if d != diachimuctieu and moitruong.get_iddoituong(d) != idmuctieu]
+            if khacs:
+                muctieuke = min((moitruong.get_toado(d) for d in khacs), key = lambda p: math.dist(p, (xt, yt)))
+                # Con kế còn xa: dịch 1 ô gần thêm chẳng được bao nhiêu, không tính
+                if math.dist(muctieuke, (xt, yt)) > KHOANGCACHMUCTIEUKEDELAY0:
+                    muctieuke = None
+        # Người chơi đang chạy: chỗ nó sắp tới (ô bước đang đi, kéo thêm 1 bước cùng hướng)
+        dondau = None
+        if is_muctieulanguoichoi and moitruong.get_idtuthenhanvat(diachimuctieu) == TUTHENHANVAT_DICHUYEN:
+            xb, yb = moitruong.get_toadobuoc(diachimuctieu)
+            if (xb, yb) != (xt, yt):
+                dondau = (xb + (xb - xt), yb + (yb - yt))
+
+        def diem(x, y):
+            chitiet = {}
+            if not is_muctieulanguoichoi:
+                chitiet["quai"] = sum(1 for p in quais if max(abs(p[0] - x), abs(p[1] - y)) <= BANKINHDAIHAI)
+            if muctieuke:
+                chitiet["ke"] = math.dist((x, y), muctieuke)
+            if dondau:
+                chitiet["dondau"] = math.dist((x, y), dondau)
+            chitiet["thoang"] = sum(1 for dx in (-1, 0, 1) for dy in (-1, 0, 1) if (dx or dy) and is_diduoc(x + dx, y + dy))
+            tong = HESOGOMQUAIDELAY0 * chitiet.get("quai", 0) - HESODONMUCTIEUKE * chitiet.get("ke", 0.) \
+                - HESODONDAUNGUOICHOI * chitiet.get("dondau", 0.) + HESOTHOANGDELAY0 * chitiet["thoang"]
+            return tong, chitiet
+
+        diemhientai, chitiethientai = diem(xm, ym)
+        tot = None
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                x, y = xt + dx, yt + dy
+                if (dx or dy) and (x, y) != (xm, ym) and is_diduoc(x, y) and max(abs(x - xm), abs(y - ym)) <= SOBUOCDICHODELAY0:
+                    d, chitiet = diem(x, y)
+                    if not tot or d > tot[0]:
+                        tot = (d, (x, y), chitiet)
+        if not tot or tot[0] - diemhientai < NGUONGDICHODELAY0:
+            return None
+        ten = {"quai": "quái trong {} ô".format(BANKINHDAIHAI), "ke": "cách mục tiêu kế", "dondau": "cách chỗ đón đầu", "thoang": "ô thoáng"}
+        lydo = ", ".join(f"{ten[k]} {chitiethientai[k]:.3g}->{tot[2][k]:.3g}" for k in tot[2] if tot[2][k] != chitiethientai.get(k))
+        return tot[1], f"điểm {diemhientai:.1f}->{tot[0]:.1f} ({lydo})"
+
     def _ngattancongvatlydaohoa(self, diachimuctieu):
         # Đang đánh thường ("kill") mục tiêu này thì gửi "pf2 14" lên nó tới khi máy chủ báo "Bạn đã ngừng “Tự Động Công Kích”"
         # (pf2 14 bật / tắt qua lại: lỡ đang tắt thì lần gửi bật lại, báo "Sử dụng", lần sau gửi tiếp là tắt)
@@ -1179,6 +1310,9 @@ class TacTuKyNang:
         nguyenkhiconlai = self.moitruong.get_nguyenkhiconlai() or 0
         if self._is_tudongbatnguyenkhiquynguyen:
             self._lammoinguyenkhiquynguyen()
+        # Trong lúc máy chủ khoá chiêu kế sau chiêu delay 0: dịch sang ô kề mục tiêu tốt hơn, chưa gửi chiêu
+        if self._xulydichosauchieudelay0(diachimuctieu, is_cancanchien, is_muctieulanguoichoi):
+            return
         # Nhất Quyền (dame chính) đã hồi chiêu mà nguyên khí còn thấp: để dành cho nó, không lót chiêu delay 0 (delay 0 -> Nhất Quyền là
         # bước chậm nhất, 0.8-1.7s). Lạc Kích lặp lại / Ba Động cận chiến đã cần NGUYENKHITOITHIEUCHIEULOT nên luật này chặn Đại Hải
         is_nhatquyensansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_NHATQUYENBATSON)

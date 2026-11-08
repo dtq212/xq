@@ -225,9 +225,6 @@ class MoiTruong:
         # Số bay của mục tiêu lúc gửi chiêu (_docsobaydoituong) và đã thấy số bay mới chưa (chiêu đã trúng): thả khựng sớm
         self._sobaymuctieuxuatchieu = None
         self._is_datrungchieu = False
-        # Đã ghi tư thế về đứng im sau khi thấy số bay của chiêu gửi gần nhất chưa (mỗi chiêu chỉ ghi 1 lần: đánh thường "kill" ra đòn
-        # kế tiếp vào lại tư thế 6 mà vẫn còn cờ trúng của chiêu trước thì không được cắt)
-        self._is_dadungimsautrungchieu = False
         self._thoidiemtuthenhanvatdungimcomuctieugannhat = 0.
         self._thoidiemtuthenhanvatkhongdichuyengannhat = 0.
         # Theo từng bảo thú (Mao Sơn có thể có nhiều bảo thú triệu hồi cùng lúc, dùng chung một mốc thì con sau bị chặn lệnh)
@@ -3679,7 +3676,9 @@ class MoiTruong:
         self._thoidiemboquadichuyencungtoadogannhat = time.time()
         return True
 
-    def action_dikhongcatgoc(self, x2, y2, khoangcachtoida = 0., is_cabando = False):
+    def action_dikhongcatgoc(self, x2, y2, khoangcachtoida = 0., is_cabando = False, is_doancut = False):
+        # is_doancut: gọi từ _dicabandokhidoancut (tìm đường cục bộ của client ra đoạn cụt trên bản đồ thường): không học vật cản (lag
+        # khoá tại chỗ dễ học nhầm), không ra đường thì trả None để nơi gọi dùng tự động tìm đường của game (không lùi về đi theo ô)
         # is_cabando: tìm đường trên cả bản đồ (đi vòng vách đá dài tới quái tầng bên kia). Đích (quái lang thang) nhích không quá
         # LECHDICHCABANDO ô thì đi hết chuỗi đang có rồi mới tìm lại (mỗi lần tìm cả bản đồ tốn tới ~1s)
         # Đi tới (x2, y2) cùng bản đồ theo đường bot tự tìm trên lưới vật cản, KHÔNG đi chéo qua khe giữa 2 vật cản chỉ chạm góc (chéo chỉ
@@ -3700,7 +3699,7 @@ class MoiTruong:
             self._kettiendokhongcatgoc = None
             return False
         now = time.time()
-        if self._hockhongcatgoc((x1, y1), now):
+        if not is_doancut and self._hockhongcatgoc((x1, y1), now):
             return True
         # Đang đi chuỗi tới đúng đích này thì để client đi tiếp (hết chuỗi 99 bước thì lần gọi sau tìm tiếp). Đích nhích ít (theo sau người
         # đang đi) thì 1.5s mới tìm lại: ghi lại chuỗi mỗi lượt làm đứt nhịp gửi "go", đi khựng
@@ -3711,7 +3710,7 @@ class MoiTruong:
         # Đoạn vừa thấy không có đường (cả khung ±25 ô lẫn cả bản đồ): khỏi tìm lại mỗi lượt (0.1s), đi như action_dioochangtoidich
         khoadoan = (self.get_idbandohientai(), x1, y1, x2, y2)
         if now - self._khongduongkhongcatgoc_cache.get(khoadoan, 0.) < THOIGIANNHOKHONGDUONGCABANDO:
-            return self.action_dioochangtoidich(x2, y2, khoangcachtoida)
+            return None if is_doancut else self.action_dioochangtoidich(x2, y2, khoangcachtoida)
         if is_cabando:
             chuoihuong = self._timduongcabando(x1, y1, x2, y2, khoangcachtoida)
         else:
@@ -3724,6 +3723,12 @@ class MoiTruong:
             self._is_duongcabando = bool(chuoihuong)
             if chuoihuong and IS_LOGDICHUYEN:
                 self._inlog(f"[ĐI KHÔNG CẮT GÓC] {(x1, y1)} -> {(x2, y2)} khung ±25 ô không ra đường, cả bản đồ {len(chuoihuong)} bước")
+        # A* không né vòng quanh cổng (VUNGCAM_MAP): đường vòng cả bản đồ trên bản đồ thường mà đi qua cổng là sang bản đồ khác => bỏ, để
+        # tự động tìm đường của game như cũ
+        if chuoihuong and is_doancut and self.is_tranhvungcam and self._is_chuoihuongquavungcam(x1, y1, chuoihuong):
+            if IS_LOGDICHUYEN:
+                self._inlog(f"[ĐOẠN CỤT CẢ BẢN ĐỒ] {(x1, y1)} -> {(x2, y2)}: đường {len(chuoihuong)} bước đi qua vùng cổng, bỏ")
+            chuoihuong = None
         if not chuoihuong:
             if len(self._khongduongkhongcatgoc_cache) > 256:
                 self._khongduongkhongcatgoc_cache.clear()
@@ -3734,6 +3739,10 @@ class MoiTruong:
                 dx, dy = HUONGTIMDUONG_MAP[kytu]
                 self._duongkhongcatgoc.append((self._duongkhongcatgoc[-1][0] + dx, self._duongkhongcatgoc[-1][1] + dy))
         if not chuoihuong:
+            if is_doancut:
+                if IS_LOGDICHUYEN:
+                    self._inlog(f"[ĐOẠN CỤT CẢ BẢN ĐỒ] {(x1, y1)} -> {(x2, y2)} không ra đường, dùng tự động tìm đường của game")
+                return None
             if IS_LOGDICHUYEN:
                 self._inlog(f"[ĐI KHÔNG CẮT GÓC] {(x1, y1)} -> {(x2, y2)} không ra đường, đi theo ô thường")
             return self.action_dioochangtoidich(x2, y2, khoangcachtoida)
@@ -3751,6 +3760,21 @@ class MoiTruong:
         if IS_LOGDICHUYEN:
             self._inlog(f"[ĐI KHÔNG CẮT GÓC] {(x1, y1)} -> {(x2, y2)}: {len(chuoihuong)} bước")
         return True
+
+    def _is_chuoihuongquavungcam(self, x, y, chuoihuong):
+        # Có ô nào trên chuỗi hướng (bắt đầu từ (x, y), không tính ô đứng) nằm trong vùng cấm / vòng quanh cổng của bản đồ hiện tại
+        for kytu in chuoihuong.decode("latin1"):
+            dx, dy = HUONGTIMDUONG_MAP.get(kytu, (0, 0))
+            x, y = x + dx, y + dy
+            if self.get_is_duongdicatvungcam(x, y, x, y):
+                return True
+        return False
+
+    def _dicabandokhidoancut(self, x, y, khoangcachtoida = 0.):
+        # Tìm đường cục bộ của client (~50-100 bước) không ra đường / ra đoạn cụt (mê cung, vách dài: chạy tới ngõ cụt rồi quay lại, log 342
+        # Khốn Ma Trận 1 2026-11-09): đi bằng A* cả bản đồ của bot thay vì tự động tìm đường của game. Bản đồ nào cũng dùng được, không phải
+        # thêm tay vào BANDOBOTTUTIMDUONGs. None: cả bản đồ cũng không ra đường (nơi gọi dùng tự động tìm đường của game như cũ)
+        return self.action_dikhongcatgoc(round(x), round(y), khoangcachtoida, is_cabando = True, is_doancut = True)
 
     def _layokhuvuccam(self, xa, ya, xb, yb):
         # Các ô trong vùng [xa, xb] x [ya, yb] thuộc khu vực cấm khai tay của bản đồ hiện tại (KHUVUCCAM_MAP, không tính vòng quanh cổng)
@@ -4206,6 +4230,9 @@ class MoiTruong:
         nhan = "ĐI Ô"
         is_ok = self.action_dichuyenoo(round(xdich), round(ydich), delay = delay)
         if is_ok is None:
+            nhan = "ĐI Ô CẢ BẢN ĐỒ"
+            is_ok = self._dicabandokhidoancut(xdich, ydich)
+        if is_ok is None:
             nhan = "TÌM ĐƯỜNG"
             is_ok = self.action_tudongtimduong(round(xdich), round(ydich), self.get_idbandohientai(), is_lotrinh = False)
         if is_ok and IS_LOGDICHUYEN and (round(xdich), round(ydich)) != self._dichclicklogcuoi:
@@ -4309,6 +4336,9 @@ class MoiTruong:
         elif now - tiendo[2] > THOIGIANKETDIOO:
             tiendo[3] = True
         if tiendo[3]:
+            is_ok = self._dicabandokhidoancut(x2, y2, khoangcachtoida)
+            if is_ok is not None:
+                return is_ok
             return self.action_tudongtimduong(xdich, ydich, self.get_idbandohientai(), is_lotrinh = False)
         # Đang đi chặng tới đúng đích này, chưa tới gần điểm cuối chặng: đi tiếp (tính lại mỗi lượt thì ghi đè chuỗi liên tục, đi khựng)
         if self._changdioo and self._changdioo[0] == (x2, y2) and self.get_idlenhdichuyen() \
@@ -4326,6 +4356,9 @@ class MoiTruong:
                     self._changdioo = ((x2, y2), diem)
                 return is_ok
         self._changdioo = None
+        is_ok = self._dicabandokhidoancut(x2, y2, khoangcachtoida)
+        if is_ok is not None:
+            return is_ok
         return self.action_tudongtimduong(xdich, ydich, self.get_idbandohientai(), is_lotrinh = False)
 
     def _chondichtoiduoc(self, x2, y2, khoangcachtoida):
@@ -4476,6 +4509,9 @@ class MoiTruong:
         # chưa có đối tượng tìm đường) thì dùng tự động tìm đường của game như cũ
         nhan = "TIẾP CẬN ĐI Ô"
         is_ok = self.action_dichuyenoo(xdich, ydich, delay = 0.)
+        if is_ok is None:
+            nhan = "TIẾP CẬN CẢ BẢN ĐỒ"
+            is_ok = self._dicabandokhidoancut(xdich, ydich)
         if is_ok is None:
             nhan = "TIẾP CẬN TÌM ĐƯỜNG"
             is_ok = self.action_tudongtimduong(xdich, ydich, self.get_idbandohientai(), is_lotrinh = False)
@@ -4816,15 +4852,8 @@ class MoiTruong:
         # hoặc mục tiêu đã hiện số bay (server báo trúng, _is_muctieudatrungchieu); không thấy thì giữ tối đa THOIGIANKHUNGSAUXUATCHIEU
         thoidiemhientai = time.time()
         idtuthe = self.get_idtuthenhanvat()
-        # Mục tiêu đã hiện số bay mới (server đã tính chiêu trúng) mà nhân vật còn trong tư thế xuất chiêu: ghi về đứng im luôn,
-        # thả khựng, cho đi / ra chiêu kế ngay (người chơi yêu cầu 2026-11-07)
-        if idtuthe in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT, TUTHENHANVAT_DELAYSAUTANCONG) \
-                and not self._is_dadungimsautrungchieu and self._is_muctieudatrungchieu():
-            self._is_dadungimsautrungchieu = True
-            self.set_idtuthenhanvat(TUTHENHANVAT_DUNGIM)
-            self._thoidiemxuatchieugannhat = 0.
-            self._inlog(f"[ĐỨNG IM SAU SỐ BAY] tư thế {idtuthe} => đứng im")
-            return False
+        # Đã bỏ ghi tư thế về đứng im khi mục tiêu hiện số bay (thêm 2026-11-07, bỏ 2026-11-09 theo người dùng): không cắt được hoạt
+        # ảnh nên game đặt lại tư thế 6 (Lạc Kích ~45% lần), tua hoạt ảnh thì hình nhân vật vẽ lệch chỗ thật
         if self._is_chieucanngatdichuyen \
                 and idtuthe in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT, TUTHENHANVAT_DELAYSAUTANCONG):
             if self._is_khungsauxuatchieu:
@@ -4881,7 +4910,6 @@ class MoiTruong:
         self._idmuctieuxuatchieu = self.get_iddoituong(diachimuctieu) if diachimuctieu else None
         self._sobaymuctieuxuatchieu = self._docsobaydoituong(diachimuctieu) if diachimuctieu else None
         self._is_datrungchieu = False
-        self._is_dadungimsautrungchieu = False
 
     def get_is_khoavankhitrieuhoi(self):
         # Khoá từ lúc gửi lệnh triệu hồi: giữ trong lúc chờ vào vận khí (_get_is_dangchovankhi), sau đó giữ tới khi game hết vận khí (tối đa THOIGIANKHOAVANKHITRIEUHOITOIDA)
