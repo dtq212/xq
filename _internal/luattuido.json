@@ -150,7 +150,12 @@
         "Dây Càn Khôn",
         "Tinh Thiết Ty",
         "Tinh Thiết Phiến",
-        "Hàn Thiết Phiến"
+        "Hàn Thiết Phiến",
+        "Toái Sa",
+        "Ma Tinh Thạch",
+        "Da Bò",
+        "Nhiếp Hồn Thạch",
+        "Da Sói"
       ],
       "tenchua": [],
       "loai": [],
@@ -427,7 +432,12 @@
         "An Thần Hoàn",
         "Tạp Hóa Đơn",
         "Tinh Nguyên Đơn",
-        "Bổ Tâm Đơn"
+        "Bổ Tâm Đơn",
+        "Toái Sa",
+        "Ma Tinh Thạch",
+        "Da Bò",
+        "Nhiếp Hồn Thạch",
+        "Da Sói"
       ],
       "tenchua": [],
       "chibanrac": false,
@@ -486,7 +496,12 @@
         "Cá",
         "Ngọc Cái",
         "Trường Thọ Thạch",
-        "Phất Trần"
+        "Phất Trần",
+        "Toái Sa",
+        "Ma Tinh Thạch",
+        "Da Bò",
+        "Nhiếp Hồn Thạch",
+        "Da Sói"
       ],
       "tenchua": [],
       "chibanrac": true,

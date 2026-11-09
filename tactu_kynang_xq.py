@@ -888,6 +888,11 @@ class TacTuKyNang:
 
         khoangcach = self.moitruong.get_khoangcachtamdanh(diachimuctieu) if diachimuctieu else 0.
 
+        # Đang đứng trong tầm hái khoáng chờ look vào vận khí (tactu_hoatdong _xuly_daokhoang): không ra chiêu / "kill" / tiếp cận, kẻo
+        # quay ra đánh quái bỏ dở việc hái (khoá kỹ năng của moitruong không chặn "kill" và các bước di chuyển tiếp cận)
+        if thoidiemhientai < self._thoidiemhetgiukhaikhoang:
+            return False, False
+
         # Đang lùi giữ khoảng cách với kẻ tấn công: bỏ chiêu đánh, phủ đầu, mọi bước tiếp cận và Lôi Động Cửu Thiên (vận khí đứng yên 6s),
         # chỉ còn buff / hồi máu / triệu hồi... để "buff xong chạy". Trả về (False, False) để thử kỹ năng tiếp theo trong danh sách
         # Chỉ dùng Tự động tấn công: bỏ mọi kỹ năng thật (có vị trí kỹ năng: chiêu đánh, buff, triệu hồi...), chỉ còn "kill" và các bước

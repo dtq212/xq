@@ -1119,6 +1119,23 @@ CUONGTHIPHU = "Cương Thi Phù"
 # Khai khoáng (hái dược) ở các bản đồ này thì tự vứt các dược không cần (dù có luật Giữ)
 BANDOHAIDUOCs = (261, 262, 263)
 VATPHAMVUTKHIHAIDUOCs = ("La Hán Quả", "Hoàng Liên", "Hà Thủ Ô", "Xuyên Tâm Liên")
+# Khai khoáng: cách khoáng dưới KHOANGCACHDAOKHOANG ô (đường thẳng) thì đứng "look" để đào, xa hơn thì đi tới (đường bot tự tìm theo lưới
+# vật cản, dừng cách khoáng KHOANGCACHDUNGDAOKHOANG ô vì ô khoáng có thể là vật cản). Trước khi đi tìm đường 1 lần: không có đường / phải
+# vòng quá xa (HESODUONGVONGTOIDA như quái) thì bỏ khoáng đó, không chạy thử 10s rồi mới báo "Khoáng lỗi" như trước.
+# Chỉ tính giờ khi bot đang thật sự đi tới khoáng (đánh quái / nhặt đồ chen vào thì dừng đồng hồ): THOIGIANKHONGGANKHOANG giây không gần
+# thêm KHOANGCACHGANTHEMKHOANG ô => bỏ. Đứng trong tầm gửi SOLANLOOKKHOANGTOIDA lần "look" mà không vào vận khí (lúc đào không đổi tư thế,
+# chỉ có vận khí - người dùng xác nhận 2026-11-10) => bỏ.
+# Khoáng bị bỏ thì THOIGIANBOQUAKHOANG giây sau mới xét lại
+KHOANGCACHDAOKHOANG = 6.
+KHOANGCACHDUNGDAOKHOANG = 4.
+THOIGIANKHONGGANKHOANG = 8.
+KHOANGCACHGANTHEMKHOANG = 1.
+SOLANLOOKKHOANGTOIDA = 6
+THOIGIANBOQUAKHOANG = 30.
+THOIGIANNHODUONGKHOANG = 20.
+# Đứng trong tầm hái: giữ đứng yên + khoá kỹ năng THOIGIANGIUKHAIKHOANG giây (làm mới mỗi lượt) để look kịp vào vận khí, không quay ra
+# đánh quái (người dùng báo 2026-11-10: bật đánh quái thì chạy tới khoáng chưa look xong đã chạy ngược lại đánh)
+THOIGIANGIUKHAIKHOANG = 1.5
 
 # Xếp chồng tự nhận biết (món có số lượng >= 1 trong hành trang), 1 ô tối đa = số lớn nhất từng thấy (ít nhất 30);
 # món có số tối đa khác thì ghi ở đây

@@ -539,6 +539,11 @@ class TacTuDiChuyen:
         # Đang lùi giữ khoảng cách thì không đi nhặt đồ, nên cũng không chặn buff vì nhặt đồ
         self._is_danguutiennhatdo = (is_yeucaunhatvatphamganhon or is_yeucaunhatvatphamuutien or is_yeucaunhatvatphamcholau) and not self._yeucaugiukhoangcach
 
+        if time.time() < self._thoidiemhetgiukhaikhoang and not is_muctieupk and not self._yeucaugiukhoangcach:
+            # Đứng trong tầm hái khoáng chờ look vào vận khí: không đi đánh quái / nhặt đồ (tactu_hoatdong _xuly_daokhoang làm mới mốc)
+            if is_log: print("[DEBUG-MOVE] BỊ CHẶN: Đang giữ chỗ KHAI KHOÁNG")
+            self._lammoitheodoitiepcan()
+            return
         if self._yeucaugiukhoangcach:
             # Kẻ tấn công lại quá gần: lùi trước mọi việc khác (vẫn sau các khoá vận khí / ra chiêu ở trên)
             yeucauduocchon = self._yeucaugiukhoangcach
@@ -579,6 +584,7 @@ class TacTuDiChuyen:
         elif self._yeucaukhaikhoang and not is_muctieupk:
             yeucauduocchon = self._yeucaukhaikhoang
             lydochon = "KHAI KHOÁNG"
+            self._thoidiemchondikhaikhoang = time.time()
         elif self._yeucaudaotangbaodo and not is_muctieupk:
             yeucauduocchon = self._yeucaudaotangbaodo
             lydochon = "ĐÀO TÀNG BẢO ĐỒ"

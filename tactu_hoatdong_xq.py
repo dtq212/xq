@@ -626,8 +626,16 @@ class TacTuHoatDong:
 
         if idbandohientai != self._idbandolanquetkhaikhoangtruoc:
             self._idkhoangbiloi_map.clear()
+            self._duongtoikhoang_map.clear()
             self._idbandolanquetkhaikhoangtruoc = idbandohientai
 
+        if self.moitruong._get_is_dangvankhitrongame():
+            # Đào khoáng / hái dược không đổi tư thế mà là vận khí: "look" vừa gửi đã có tác dụng => đếm lại số lần look, không tính giờ.
+            # Chỉ tính vận khí thật của game, không tính khoảng chờ action_chovankhi (look không ăn thì vẫn phải đếm tới SOLANLOOKKHOANGTOIDA)
+            self._solanlookkhoang = 0
+            self._thoidiembatdautheokhoang = time.time()
+        elif self.moitruong.get_is_dangvankhi():
+            self._thoidiembatdautheokhoang = time.time()
         if self.moitruong.get_is_dangvankhi() or self.moitruong.get_is_dangclickchuottrai() or self.moitruong.get_is_nhanvatdachet() or time.time() - self._thoidiemtamngungdichuyensudungkynang < 0.:
             self._yeucaukhaikhoang = None
             self._diachicosokhaikhoang = 0
@@ -636,9 +644,12 @@ class TacTuHoatDong:
         if 0:
             pass
         else:
-            idcanxoas = [k for k, v in self._idkhoangbiloi_map.items() if time.time() - v > 30]
+            idcanxoas = [k for k, v in self._idkhoangbiloi_map.items() if time.time() - v > THOIGIANBOQUAKHOANG]
             for k in idcanxoas:
                 del self._idkhoangbiloi_map[k]
+            idcanxoas = [k for k, v in self._duongtoikhoang_map.items() if time.time() - v[1] > THOIGIANNHODUONGKHOANG]
+            for k in idcanxoas:
+                del self._duongtoikhoang_map[k]
 
             i = -1
             diachidoituonggannhat = None
@@ -661,6 +672,8 @@ class TacTuHoatDong:
 
                     khoangcach = self.moitruong.get_khoangcach(diachidoituong)
                     if khoangcach > KHOANGCACHTOANMANHINH: continue
+                    # Khoáng sau vách / bị vật cản bao kín: bỏ luôn, chọn khoáng khác đi tới được
+                    if not self._is_khoangtoiduoc(diachidoituong, iddoituong, khoangcach): continue
 
                     if khoangcach < khoangcachgannhat:
                         khoangcachgannhat = khoangcach
@@ -689,6 +702,7 @@ class TacTuHoatDong:
 
                 if math.dist((mx, my), (target_x, target_y)) <= 12.0:
                     char_dist = self.moitruong.get_khoangcach(diachidoituong)
+                    if not self._is_khoangtoiduoc(diachidoituong, iddoituong, char_dist): continue
                     if char_dist < min_char_dist:
                         min_char_dist = char_dist
                         best_mineral_addr = diachidoituong
@@ -698,41 +712,94 @@ class TacTuHoatDong:
         else:
             self._xuly_chaylotrinh(target_x, target_y, index_var_name, len_list)
 
+    def _is_khoangtoiduoc(self, diachikhoang, idkhoang, khoangcach):
+        # Tìm đường 1 lần trên lưới vật cản (+ ô học được) tới cách khoáng KHOANGCACHDUNGDAOKHOANG ô, nhớ THOIGIANNHODUONGKHOANG giây theo
+        # id (khoáng đứng yên). Không có đường / phải vòng quá xa (như quái: HESODUONGVONGTOIDA) thì bỏ khoáng THOIGIANBOQUAKHOANG giây
+        if khoangcach < KHOANGCACHDAOKHOANG:
+            return True
+        nho = self._duongtoikhoang_map.get(idkhoang)
+        if nho is None:
+            sobuoc = self.moitruong.get_sobuocduongtoi(*self.moitruong.get_toado(diachikhoang), KHOANGCACHDUNGDAOKHOANG)
+            nho = self._duongtoikhoang_map[idkhoang] = (sobuoc, time.time())
+            lydo = None
+            if sobuoc is None:
+                lydo = "không có đường tới (vật cản)"
+            elif sobuoc > khoangcach * HESODUONGVONGTOIDA + SOBUOCDUONGVONGCONGTHEM:
+                lydo = f"đường vòng {sobuoc} bước cho {khoangcach:.1f} ô"
+            if lydo:
+                self.moitruong._inlog(f"[KHAI KHOÁNG] Bỏ khoáng {hex(idkhoang)} {self.moitruong.get_tendoituong(diachikhoang)} "
+                                      f"{self.moitruong.get_toado(diachikhoang)}: {lydo}")
+                self._idkhoangbiloi_map[idkhoang] = time.time()
+                return False
+        return nho[0] is not None
+
+    def _boquakhoang(self, idkhoang, lydo):
+        self.moitruong._inlog(f"[KHAI KHOÁNG] Bỏ khoáng {hex(idkhoang)} {THOIGIANBOQUAKHOANG:.0f}s: {lydo}")
+        canhbao(self.moitruong, "Khoáng lỗi, bỏ qua", is_block = False)
+        self._idkhoangbiloi_map[idkhoang] = time.time()
+        self._idkhoangdangtheo = 0
+        self._yeucaukhaikhoang = None
+        self._diachicosokhaikhoang = 0
+        self._thoidiemhetgiukhaikhoang = 0.
+
     def _xuly_daokhoang(self, diachikhoang, khoangcach):
         id_min = self.moitruong.get_iddoituong(diachikhoang)
+        now = time.time()
 
         if id_min != self._idkhoangdangtheo:
             self._idkhoangdangtheo = id_min
-            self._thoidiembatdautheokhoang = time.time()
-        else:
-            if time.time() - self._thoidiembatdautheokhoang > 10.0:
-                canhbao(self.moitruong, "Khoáng lỗi, bỏ qua")
-                self._idkhoangbiloi_map[id_min] = time.time()
-                self._idkhoangdangtheo = 0
-                self._yeucaukhaikhoang = None
+            self._thoidiembatdautheokhoang = now
+            self._khoangcachgannhatkhoang = khoangcach
+            self._solanlookkhoang = 0
+            self.moitruong._inlog(f"[KHAI KHOÁNG] Theo khoáng {hex(id_min)} {self.moitruong.get_tendoituong(diachikhoang)} "
+                                  f"{self.moitruong.get_toado(diachikhoang)} cách {khoangcach:.1f} ô")
+
+        self._diachicosokhaikhoang = diachikhoang
+
+        if khoangcach >= KHOANGCACHDAOKHOANG:
+            self._solanlookkhoang = 0
+            if khoangcach < self._khoangcachgannhatkhoang - KHOANGCACHGANTHEMKHOANG:
+                # Đang gần thêm: tính lại giờ
+                self._khoangcachgannhatkhoang = khoangcach
+                self._thoidiembatdautheokhoang = now
+            elif now - self._thoidiemchondikhaikhoang > 1.5:
+                # Bộ điều phối di chuyển đang làm việc khác (đánh quái, nhặt đồ, giữ khoảng cách...): không tính giờ, trước đây đánh quái quá
+                # 10s cạnh khoáng là báo "Khoáng lỗi" dù chưa hề đi tới
+                self._thoidiembatdautheokhoang = now
+            elif now - self._thoidiembatdautheokhoang > THOIGIANKHONGGANKHOANG:
+                self._boquakhoang(id_min, f"{THOIGIANKHONGGANKHOANG:.0f}s đi mà không gần thêm (còn {khoangcach:.1f} ô, "
+                                          f"gần nhất {self._khoangcachgannhatkhoang:.1f} ô), có thể vướng vật cản")
                 return
 
-        if khoangcach >= 6.0:
-            mx_move, my_move = self.moitruong.get_toado(diachikhoang, )
-
+            mx_move, my_move = self.moitruong.get_toado(diachikhoang)
+            # is_khongcatgoc: đi đường bot tự tìm theo lưới vật cản (action_dikhongcatgoc), không click thẳng vào ô khoáng rồi húc vách
             self._yeucaukhaikhoang = {
                 "yeucau": YEUCAUDICHUYENKHAIKHOANG,
                 "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
                 "toadodich": (mx_move, my_move),
-                "khoangcachtoida": 0
+                "khoangcachtoida": KHOANGCACHDUNGDAOKHOANG,
+                "is_khongcatgoc": True,
             }
-        else:
-            self._yeucaukhaikhoang = None
+            return
 
-            if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
-                if time.time() - self._thoidiemkhaikhoanggannhat > 1.0:
-                    self.moitruong.action_khaikhoang(id_min)
-                    self._thoidiemkhaikhoanggannhat = time.time()
-                    self._thoidiembatdautheokhoang = time.time()
-            else:
-                pass
-
-        self._diachicosokhaikhoang = diachikhoang
+        self._yeucaukhaikhoang = None
+        self._thoidiembatdautheokhoang = now
+        # Tới tầm hái: giữ đứng yên, không ra chiêu tới khi look xong vào vận khí (trước đây bật đánh quái thì vừa chạy tới khoáng, chưa
+        # kịp look / vận khí đã quay ra đánh quái => look mãi không ăn, báo "Khoáng lỗi"). Hết SOLANLOOKKHOANGTOIDA lần thì _boquakhoang
+        self._thoidiemhetgiukhaikhoang = now + THOIGIANGIUKHAIKHOANG
+        self.moitruong.action_khoakynang(THOIGIANGIUKHAIKHOANG)
+        if self.moitruong.get_idtuthenhanvat() != TUTHENHANVAT_DUNGIM:
+            # Đang đánh / đi: chờ đứng im mới look (lúc đào không đổi tư thế mà vận khí, đếm lại ở action_tudongkhaikhoang)
+            return
+        if now - self._thoidiemkhaikhoanggannhat > 1.0:
+            if self._solanlookkhoang >= SOLANLOOKKHOANGTOIDA:
+                self._boquakhoang(id_min, f"{SOLANLOOKKHOANGTOIDA} lần look mà vẫn đứng im (cách {khoangcach:.1f} ô)")
+                return
+            if self.moitruong.action_khaikhoang(id_min):
+                self._solanlookkhoang += 1
+                # Từ lúc gửi look tới khi máy chủ bật vận khí: coi như đang vận khí (chặn chiêu / di chuyển ngắt việc hái)
+                self.moitruong.action_chovankhi(caulenh = "look {}#".format(hex(id_min)).replace("0x", ""), ten = "KHAI KHOÁNG")
+            self._thoidiemkhaikhoanggannhat = now
 
     def _xuly_chaylotrinh(self, tx, ty, index_var_name, len_list):
         self._diachicosokhaikhoang = 0
@@ -750,7 +817,8 @@ class TacTuHoatDong:
                 "yeucau": YEUCAUDICHUYENKHAIKHOANG,
                 "kieudichuyen": KIEUDICHUYEN_GIUKHOANGCACHTOIDA,
                 "toadodich": (tx, ty),
-                "khoangcachtoida": 0
+                "khoangcachtoida": 0,
+                "is_khongcatgoc": True,
             }
 
     def action_tudongdichientruong(self):

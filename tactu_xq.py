@@ -110,6 +110,14 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._idkhoangbiloi_map = {}
         self._idkhoangdangtheo = 0
         self._thoidiembatdautheokhoang = 0.
+        # Khai khoáng: khoảng cách gần nhất đã tới khoáng đang theo, số lần "look" liên tiếp chưa vào tư thế đào, lần cuối bộ điều phối
+        # di chuyển thật sự chọn đi khai khoáng (đánh quái / nhặt đồ chen vào thì không tính giờ), {id khoáng: (số bước / None, thời điểm)}
+        self._khoangcachgannhatkhoang = 0.
+        self._solanlookkhoang = 0
+        self._thoidiemchondikhaikhoang = 0.
+        self._duongtoikhoang_map = {}
+        # Đứng trong tầm hái khoáng: tới mốc này bộ điều phối không đi đánh quái / nhặt đồ (giữ chỗ cho look + vận khí)
+        self._thoidiemhetgiukhaikhoang = 0.
         self._idbandolanquetkhaikhoangtruoc = 0
         self._is_nhieumuctieugan3 = False
         self._is_nhieumuctieugan5 = False
