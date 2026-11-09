@@ -614,17 +614,31 @@ VITRIKYNANG_PHANTOA = 2124
 # Log 342/347 ngày 2026-11-09 (102 lần, bản đi 2 ô, ngưỡng 1): 2 ô mất ~0.75s (43/102 lần chưa tới), chiêu kế chậm thêm ~0.3s (trung vị
 # 1.18-1.34s so với 0.86-1.06s không dịch); 1 ô ~0.42s => chỉ đi 1 ô. "Mục tiêu kế" chiếm 77/102 lần, nhiều lần con kế cách 7-9 ô
 # (đi 1 ô gần hơn 1.3 ô vô ích) => chỉ tính khi con kế cách mục tiêu chính <= KHOANGCACHMUCTIEUKEDELAY0 ô, ngưỡng 1 -> 1.5
-# TẮT 2026-11-09 (người dùng): bot không cắt hoạt ảnh xuất chiêu nữa, client không bước khi còn tư thế 6 (~0.68s) nên khoảng khoá còn
-# lại không đủ để đi mà không chen vào chiêu kế
-IS_DICHOSAUCHIEUDELAY0 = False
+# Bỏ hoạt ảnh chiêu delay 0 của nhân vật mình ở client (MoiTruong.action_thietlaphookhoatanhtancong, 2026-11-09): mỗi đòn đánh là 1 ô
+# trong hàng đợi hành động của đối tượng (+0x100, 100 ô x 0x28 byte, đọc +0x10A0 / ghi +0x10A4 - chính là "NV_HOATANH"), ô đòn đánh
+# mang mã hoạt ảnh chiêu ở byte +0x104 (đo trên Thỏ 342: Thốn Kình 20, Đại Hải 60, Ba Động 70, Nhất Quyền 90, đánh thường 0 và Lạc
+# Kích có vẻ cũng 0). Ô có mã trong MAHOATANHBOQUAs bị bỏ (không vào tư thế 6), Lạc Kích: bot gửi chiêu thì bỏ 1 ô mã 0 kế tiếp trong
+# THOIGIANBOHOATANHLACKICH giây. Chỉ đổi phần vẽ ở client: dame / lệnh lên máy chủ như cũ
+IS_BOHOATANHCHIEUDELAY0 = True
+# Giữ chân từ lúc chiêu delay 0 vào hồi chiêu tới khi mục tiêu hiện số bay mới (máy chủ đã tính đòn) - người dùng yêu cầu 2026-11-09,
+# không có hoạt ảnh thì client đi được ngay. Số bay "mới" = ô có bộ đếm khung <= DEMSOBAYMOI (~0.3s, đếm 0 -> ~60 trong ~1s) hoặc
+# khác lúc bắt đầu giữ. Tối đa THOIGIANGIUCHANDELAY0 giây (đòn trượt / không có số bay thì vẫn thả)
+THOIGIANGIUCHANDELAY0 = 0.5
+DEMSOBAYMOI = 20
+MAHOATANHBOQUAs = (70, 60)
+THOIGIANBOHOATANHLACKICH = 0.8
+# Từng tắt 2026-11-09 vì client không bước khi còn tư thế 6 (~0.68s); BẬT LẠI cùng ngày khi đã có hook bỏ hoạt ảnh chiêu delay 0
+# (IS_BOHOATANHCHIEUDELAY0): Ba Động / Đại Hải / Lạc Kích không còn vào tư thế 6 nên đi được ngay
+IS_DICHOSAUCHIEUDELAY0 = True
 VITRIKYNANGDELAY0DAOHOAs = (VITRIKYNANG_BADONGQUYEN, VITRIKYNANG_LACKICH, VITRIKYNANG_DAIHAIVOLUONG)
+TENCHIEUDELAY0DAOHOA = {VITRIKYNANG_BADONGQUYEN: "Ba Động", VITRIKYNANG_LACKICH: "Lạc Kích", VITRIKYNANG_DAIHAIVOLUONG: "Đại Hải"}
 SOBUOCDICHODELAY0 = 1
 # Khoá sau chiêu delay 0 ngắn nhất từng đo ~0.6s (nguyen-ly-giam-delay-dao-hoa): thôi đi trước mốc đó để không bao giờ để lỡ lúc máy
 # chủ nhận chiêu kế; đi 1 ô ~0.42s nên vẫn kịp tới. Hết mốc mà chưa tới thì vòng chiêu bình thường ngắt di chuyển rồi spam chiêu kế
 THOIGIANDICHODELAY0 = 0.55
 # Chỉ bắt đầu dịch khi đã hết tư thế xuất chiêu 6/9 (client không bước khi còn tư thế này) trong chừng này giây sau khi chiêu delay 0
 # vào hồi chiêu; quá thì bỏ lượt dịch (còn ít thời gian khoá, đi không kịp)
-THOIGIANCHOBATDAUDICHODELAY0 = 0.25
+THOIGIANCHOBATDAUDICHODELAY0 = 0.35
 BANKINHDAIHAI = 3
 HESOGOMQUAIDELAY0 = 2.
 PHANTRAMMAUDONMUCTIEUKE = 30

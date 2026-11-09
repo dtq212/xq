@@ -145,6 +145,7 @@ class CuaSo:
         self.moitruong.action_thietlaphooknoidungtrochuyen()
         self.moitruong.action_thietlaphooklenhgame()
         self.moitruong.action_thietlaphookcotnhiemvunpc()
+        self.moitruong.action_thietlaphookhoatanhtancong()
         self.tactu = TacTu(self.moitruong)
         # Bot đọc gộp cả cửa sổ máy khác trong LAN (lan_xq), ghi vẫn vào máy này
         self.tactu.shared_data = DuLieuNhieuMay(shared_data, shared_data_lan) if shared_data_lan is not None else shared_data

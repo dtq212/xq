@@ -177,6 +177,11 @@ class MoiTruong:
         # (vị trí con trỏ cửa sổ trong thông tin game, hiện?) -> đoạn mã gọi vtable[1] ẩn / hiện cửa sổ (_goivtableanhien)
         self._diachivtableanhien_map = {}
         self._is_dasetupactionthietlaphooknoidungtrochuyen = False
+        # Bỏ hoạt ảnh chiêu delay 0 (action_thietlaphookhoatanhtancong): vùng dữ liệu của kịch bản (0 = chưa vá) và lúc đánh dấu Lạc Kích
+        self._diachidulieuhoatanh = 0
+        self._thoidiemdanhdaulackich = 0.
+        # Giữ chân sau chiêu delay 0 tới khi có số bay (action_giuchansauchieudelay0): {diachi, id, sobay, batdau} hoặc None
+        self._giuchandelay0 = None
 
         self._thoidiemdichuyengannhat = 0.
         # Chờ xác nhận vận khí (action_chovankhi): None hoặc {"caulenh", "vitrikynang", "tao", "gui", "guitgt", "chapnhan", "ten"}
@@ -1364,6 +1369,93 @@ class MoiTruong:
         write_bytes(self.tientrinh, diachihook, b"\xE9" + struct.pack("<i", kichban - (diachihook + 5)) + b"\x90", 6)
         self._inlog("[CHẶN CRASH] đã vá chỗ đọc cờ dấu nhiệm vụ NPC (bỏ số cờ rác)")
         return True
+
+    def action_thietlaphookhoatanhtancong(self):
+        # Bỏ hoạt ảnh chiêu delay 0 của nhân vật mình (xem IS_BOHOATANHCHIEUDELAY0 trong hangso_xq.py). Chỗ hook HOOK_HOATANHTANCONG
+        # (xq+0x1AE5B) trong hàm xử lý hàng đợi hành động: ô mã >= 0x28 (đòn đánh), "mov edx, [esi+0x1180]" (6 byte), esi = đối tượng,
+        # ecx = ô (mã hoạt ảnh chiêu ở [ecx+0x104]). Bỏ ô = tăng chỉ số đọc +0x10A0 (vòng 0..0x63) rồi nhảy tới đoạn nối chung sau khi
+        # xử lý 1 ô (xq+0x1B3C6, các nhánh khác cũng jmp tới) => không vào tư thế 6, không bắt đầu hoạt ảnh.
+        # Dữ liệu [+0] bật, [+1] chờ bỏ 1 ô mã 0 (Lạc Kích, bot đặt khi gửi chiêu), [+4] đếm số ô đã bỏ.
+        # Kịch bản không giải phóng; lần chạy bot sau thấy đã vá thì trả byte gốc rồi vá lại (mã bỏ qua lấy theo hằng số mới)
+        diachihook = self.diachixq + DC.HOOK_HOATANHTANCONG
+        magoc = bytes.fromhex("8B 96 80 11 00 00")
+        try:
+            mahook = read_bytes(self.tientrinh, diachihook, 6)
+        except Exception:
+            return False
+        if mahook[0] == 0xE9:
+            write_bytes(self.tientrinh, diachihook, magoc, 6)
+        elif mahook != magoc:
+            self._inlog(f"[BỎ HOẠT ẢNH] chỗ hook không như dự kiến: {mahook.hex(' ')}")
+            return False
+        self._diachidulieuhoatanh = 0
+        if not IS_BOHOATANHCHIEUDELAY0:
+            return True
+        dulieu = self.tientrinh.allocate(16)
+        write_bytes(self.tientrinh, dulieu, b"\x01" + bytes(15), 16)
+        sosanh = "\n".join(f"cmp edx, {ma}\n je boqua" for ma in MAHOATANHBOQUAs)
+        asm_script = f"""
+            cmp byte ptr [{dulieu}], 0
+            je goc
+            cmp esi, dword ptr [{self.diachixq + DC.NHANVAT}]
+            jne goc
+            push edx
+            movzx edx, byte ptr [ecx + 0x104]
+            {sosanh}
+            test edx, edx
+            jne khong
+            cmp byte ptr [{dulieu + 1}], 0
+            je khong
+            mov byte ptr [{dulieu + 1}], 0
+            jmp boqua
+        khong:
+            pop edx
+        goc:
+            mov edx, dword ptr [esi + 0x1180]
+            push {diachihook + 6}
+            ret
+        boqua:
+            pop edx
+            inc dword ptr [{dulieu + 4}]
+            mov edx, dword ptr [esi + 0x10a0]
+            inc edx
+            cmp edx, 0x63
+            jle luu
+            xor edx, edx
+        luu:
+            mov dword ptr [esi + 0x10a0], edx
+            push {self.diachixq + DC.HOOK_HOATANHTANCONG + 0x56B}
+            ret
+        """
+        encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+        if not encoding:
+            return False
+        kichban = self.tientrinh.allocate(256)
+        write_bytes(self.tientrinh, kichban, bytes(encoding), len(encoding))
+        write_bytes(self.tientrinh, diachihook, b"\xE9" + struct.pack("<i", kichban - (diachihook + 5)) + b"\x90", 6)
+        self._diachidulieuhoatanh = dulieu
+        self._inlog(f"[BỎ HOẠT ẢNH] đã vá: bỏ hoạt ảnh mã {MAHOATANHBOQUAs} + Lạc Kích của nhân vật mình")
+        return True
+
+    def action_danhdaubohoatanhlackich(self):
+        # Bot vừa gửi Lạc Kích: ô hoạt ảnh mã 0 kế tiếp của mình bỏ qua (Lạc Kích mang mã 0 như đánh thường). Quá THOIGIANBOHOATANHLACKICH
+        # giây chưa có ô nào thì _donbohoatanhlackich gỡ cờ, kẻo bỏ nhầm đòn đánh thường sau đó
+        if not self._diachidulieuhoatanh:
+            return
+        try:
+            write_bytes(self.tientrinh, self._diachidulieuhoatanh + 1, b"\x01", 1)
+            self._thoidiemdanhdaulackich = time.time()
+        except Exception:
+            pass
+
+    def _donbohoatanhlackich(self):
+        if self._diachidulieuhoatanh and self._thoidiemdanhdaulackich \
+                and time.time() - self._thoidiemdanhdaulackich >= THOIGIANBOHOATANHLACKICH:
+            self._thoidiemdanhdaulackich = 0.
+            try:
+                write_bytes(self.tientrinh, self._diachidulieuhoatanh + 1, b"\x00", 1)
+            except Exception:
+                pass
 
     def action_loglenhgame(self):
         # Log [LỆNH GAME] các lệnh hook bắt được mà bot không vừa gửi (bot gửi cũng đi qua hàm này)
@@ -4851,6 +4943,9 @@ class MoiTruong:
         # trọn (cắt ngang bị game đánh vi phạm); phần khựng sau đó thì thả sớm khi chiêu đã tác động xong: mục tiêu đã chết / biến mất,
         # hoặc mục tiêu đã hiện số bay (server báo trúng, _is_muctieudatrungchieu); không thấy thì giữ tối đa THOIGIANKHUNGSAUXUATCHIEU
         thoidiemhientai = time.time()
+        self._donbohoatanhlackich()
+        if self._is_giuchandelay0():
+            return True
         idtuthe = self.get_idtuthenhanvat()
         # Đã bỏ ghi tư thế về đứng im khi mục tiêu hiện số bay (thêm 2026-11-07, bỏ 2026-11-09 theo người dùng): không cắt được hoạt
         # ảnh nên game đặt lại tư thế 6 (Lạc Kích ~45% lần), tua hoạt ảnh thì hình nhân vật vẽ lệch chỗ thật
@@ -4866,6 +4961,42 @@ class MoiTruong:
             self._thoidiemxuatchieugannhat = 0.
             return False
         return True
+
+    def action_giuchansauchieudelay0(self, diachimuctieu, tenchieu = ""):
+        # Chiêu delay 0 vừa vào hồi chiêu: giữ chân (get_is_dangxuatchieu True => mọi hàm đi bị chặn, đang đi thì bị ngắt) tới khi mục
+        # tiêu hiện số bay mới, tối đa THOIGIANGIUCHANDELAY0 giây (xem _is_giuchandelay0)
+        if not diachimuctieu:
+            return
+        self._giuchandelay0 = {"diachi": diachimuctieu, "id": self.get_iddoituong(diachimuctieu), "ten": tenchieu,
+                               "sobay": self._docsobaydoituong(diachimuctieu), "batdau": time.time()}
+
+    def get_is_giuchandelay0(self):
+        return self._giuchandelay0 is not None
+
+    def _is_giuchandelay0(self):
+        giu = self._giuchandelay0
+        if not giu:
+            return False
+        thoigian = time.time() - giu["batdau"]
+        diachi = giu["diachi"]
+        lydo = None
+        if self.get_iddoituong(diachi) != giu["id"] or self.get_is_nhanvatdachet(diachi):
+            lydo = "mục tiêu chết / mất"
+        elif thoigian >= THOIGIANGIUCHANDELAY0:
+            lydo = "hết giờ, không thấy số bay"
+        else:
+            sobay = self._docsobaydoituong(diachi)
+            if sobay:
+                (giatri, dem), cu = sobay, giu["sobay"]
+                for i in range(10):
+                    if giatri[i] > 0 and (dem[i] <= DEMSOBAYMOI or not cu or giatri[i] != cu[0][i] or dem[i] < cu[1][i]):
+                        lydo = f"thấy số bay {giatri[i]}"
+                        break
+        if not lydo:
+            return True
+        self._giuchandelay0 = None
+        self._inlog(f"[GIỮ CHÂN DELAY 0] {giu['ten']}: {lydo} sau {thoigian:.2f}s => thả")
+        return False
 
     def _is_muctieuxuatchieudahet(self):
         if not self._diachimuctieuxuatchieu:
@@ -5425,6 +5556,8 @@ class MoiTruong:
         if is_ok:
             self._thoidiemsudungkynanggannhat = time.time()
             self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
+            if idkynang == VITRIKYNANG_LACKICH:
+                self.action_danhdaubohoatanhlackich()
         return is_ok
 
     def action_sudungkynangvitri(self, idvitri_x, idvitri_y = None, delay = 0.):

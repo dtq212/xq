@@ -91,8 +91,13 @@ class TacTuKyNang:
             is_sansang = moitruong.get_is_kynangsansang(idkynang)
             if self._is_sansangdelay0truoc_map.get(idkynang) and not is_sansang:
                 self._thoidiemdelay0vaohoichieu = thoidiemhientai
+                # Giữ chân tới khi mục tiêu hiện số bay (người dùng 2026-11-09), áp cả khi tắt dịch chỗ
+                moitruong.action_giuchansauchieudelay0(diachimuctieu, TENCHIEUDELAY0DAOHOA.get(idkynang, str(idkynang)))
             self._is_sansangdelay0truoc_map[idkynang] = is_sansang
         idtuthe = moitruong.get_idtuthenhanvat()
+        # Còn đang giữ chân chờ số bay thì chưa bắt đầu dịch (mốc thời gian dịch tính từ lúc thả)
+        if moitruong.get_is_giuchandelay0() and moitruong.get_is_dangxuatchieu():
+            return False
         is_vuadung = thoidiemhientai - self._thoidiemdelay0vaohoichieu <= THOIGIANCHOBATDAUDICHODELAY0 \
             and idtuthe not in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT)
 

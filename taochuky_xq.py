@@ -61,6 +61,7 @@ MUCTIEU = [
     ("HOOK_TROCHUYEN", 0x5964, "ma", "chỗ hook đọc nội dung trò chuyện (6 byte)"),
     ("HOOK_TINHETHONG", 0x2B63, "ma", "chỗ hook gói 0x3E chỉ in vào khung tin hệ thống (trả lời \"desc user\"), 6 byte"),
     ("HOOK_COTNHIEMVUNPC", 0x217FE, "ma", "đọc số cờ dấu nhiệm vụ NPC: mov ecx,[esi]; test ecx,ecx; je (6 byte), chặn số cờ rác"),
+    ("HOOK_HOATANHTANCONG", 0x1AE5B, "ma", "xử lý ô hoạt ảnh tấn công (mã >= 0x28) trong hàng đợi hành động: mov edx,[esi+0x1180] (6 byte), ecx = ô"),
     ("HOOK_VEDANHHIEU", 0x1D0A8, "ma", "call HAMVECHU vẽ danh hiệu đối tượng (+0x1134) phía trên tên, 5 byte, ebx = đối tượng"),
     ("HOOK_VEDANHHIEU2", 0x9C34F, "ma", "call HAMVECHU vẽ danh hiệu nhân vật mình (ebx = đối tượng)"),
     ("HOOK_VEDANHHIEU3", 0x9CF52, "ma", "call HAMVECHU vẽ danh hiệu người chơi khác (edi = đối tượng)"),

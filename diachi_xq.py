@@ -65,6 +65,7 @@ CHUKY = {
     "HOOK_TROCHUYEN": ("ma", "55 8B 8A D8 FD AD 00", 1, 0x5964),  # chỗ hook đọc nội dung trò chuyện (6 byte)
     "HOOK_TINHETHONG": ("ma", "55 8B 89 64 FD AD 00", 1, 0x2b63),  # chỗ hook gói 0x3E chỉ in vào khung tin hệ thống (trả lời "desc user"), 6 byte
     "HOOK_COTNHIEMVUNPC": ("ma", "33 DB 8B 0E 85 C9", 2, 0x217fe),  # đọc số cờ dấu nhiệm vụ NPC: mov ecx,[esi]; test ecx,ecx; je (6 byte), chặn số cờ rác
+    "HOOK_HOATANHTANCONG": ("ma", "8B 96 80 11 00 00 33 FF", 0, 0x1ae5b),  # xử lý ô hoạt ảnh tấn công (mã >= 0x28) trong hàng đợi hành động: mov edx,[esi+0x1180] (6 byte), ecx = ô
     "HOOK_VEDANHHIEU": ("ma", "50 56 E8 ?? ?? ?? ?? 8B 53 20", 2, 0x1d0a8),  # call HAMVECHU vẽ danh hiệu đối tượng (+0x1134) phía trên tên, 5 byte, ebx = đối tượng
     "HOOK_VEDANHHIEU2": ("ma", "E8 ?? ?? ?? ?? 8B 1D ?? ?? ?? ?? 83 BB F0 00 00 00 03", 0, 0x9c34f),  # call HAMVECHU vẽ danh hiệu nhân vật mình (ebx = đối tượng)
     "HOOK_VEDANHHIEU3": ("ma", "56 E8 ?? ?? ?? ?? 80 7F 29 80", 1, 0x9cf52),  # call HAMVECHU vẽ danh hiệu người chơi khác (edi = đối tượng)
