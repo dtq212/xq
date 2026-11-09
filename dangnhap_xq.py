@@ -21,6 +21,8 @@ import win32gui
 import win32process
 
 import diachi_xq
+import dedis_xq
+import diettreo_xq
 from diachi_xq import DC
 from moitruong_xq import MoiTruong
 from tienich_xq import read_bytes, read_chuoi, read_int, write_bytes, write_int
@@ -1682,6 +1684,8 @@ class TuDongDangNhap:
         online = laydanhsachnhanvatonlines()
 
         self._tudienid(cauhinh, online)
+        # Ghi cổng cục bộ kết nối game của từng nhân vật: bị dis thì dùng cổng này diệt nhân vật treo trên máy chủ (diettreo_xq)
+        diettreo_xq.capnhatketnoi(online["cuaso"])
 
         # Cửa sổ đang có nhân vật: nhớ là của ai. Cửa sổ đã đóng thì quên
         for hwnd, idnguoichoi in online["cuaso"].items():
@@ -1758,6 +1762,14 @@ class TuDongDangNhap:
         # Luồng đăng nhập một tài khoản, chạy tới khi nhân vật vào hẳn game (hết đang load) để vòng quét không đăng nhập lại nó
         ten = taikhoan.get("tennhanvat") or str(taikhoan.get("idnguoichoi"))
         try:
+            # Lần đầu đăng nhập lại trong cửa sổ dis như thường. Không vào được (nhân vật treo trên máy chủ: "Full tài khoản") thì lần 2
+            # nhờ máy ảo đăng nhập tạm acc này để đè lên nhân vật treo, rồi đăng nhập lại ở đây đè lên máy ảo (dedis_xq, giữ chỗ, không ai
+            # bị out). Không có máy ảo / không đè được thì diệt nhân vật treo bằng cổng cũ (diettreo_xq). Thử nghiệm 2026-11-10
+            lan = self._solandangnhaplaicuaso.get(hwnd_dis, 0) if hwnd_dis else 0
+            if hwnd_dis and lan >= 2 and dedis_xq.is_codedis() and self._dangnhapde(taikhoan, hwnd_dis, ten):
+                return
+            if not (hwnd_dis and lan <= 1):
+                diettreo_xq.diettreo(taikhoan.get("idnguoichoi"))
             if hwnd_dis:
                 # Đăng nhập lại ngay trong cửa sổ bị dis: vào lại tại chỗ (phó bản), không về thành
                 print(f"\n[ĐĂNG NHẬP] {ten} bị dis, đăng nhập lại ngay trong cửa sổ cũ (HWND: {hwnd_dis}, lần {self._solandangnhaplaicuaso.get(hwnd_dis, 0)})")
@@ -1772,6 +1784,34 @@ class TuDongDangNhap:
                 time.sleep(2)
         except Exception as e:
             print(f"❌ [ĐĂNG NHẬP] Lỗi luồng đăng nhập {ten}: {e}")
+
+    def _dangnhapde(self, taikhoan, hwnd_dis, ten):
+        # Nhờ máy ảo đăng nhập tạm acc này (máy chủ giới hạn theo máy nên máy ảo vào đè được lên nhân vật treo), rồi đăng nhập lại trong
+        # cửa sổ cũ ở đây (đè lên phiên ở máy ảo). True: nhân vật đã vào lại ở đây. Xong / hỏng đều báo máy ảo đóng client tạm
+        idnguoichoi = taikhoan.get("idnguoichoi")
+        if not idnguoichoi:
+            print(f"[ĐÈ DIS] {ten}: tài khoản chưa có ID, không đè được")
+            return False
+        print(f"\n[ĐÈ DIS] {ten} vẫn chưa vào lại được: nhờ máy ảo đăng nhập tạm để đè lên nhân vật treo")
+        traloi = dedis_xq.dangnhaptam(taikhoan)
+        if not traloi or not traloi.get("ok"):
+            print(f"[ĐÈ DIS] Máy ảo không đăng nhập tạm được: {(traloi or {}).get('loi')}")
+            return False
+        print(f"[ĐÈ DIS] Máy ảo đã vào game {ten}"
+              f"{' (đóng tạm ' + traloi['usernhuong'] + ')' if traloi.get('usernhuong') else ''}, đăng nhập lại ở đây")
+        is_vao = False
+        try:
+            if dangnhaptrongcuaso(hwnd_dis, ten, taikhoan):
+                hethan = time.time() + 60
+                while time.time() < hethan and not is_vao:
+                    time.sleep(3)
+                    is_vao = laydanhsachnhanvatonlines()["cuaso"].get(hwnd_dis) == int(idnguoichoi)
+        except Exception as e:
+            print(f"❌ [ĐÈ DIS] Lỗi đăng nhập lại {ten}: {e}")
+        print(f"[ĐÈ DIS] {ten}: {'đã vào lại trong cửa sổ cũ' if is_vao else 'đăng nhập lại ở đây KHÔNG vào được'}")
+        tl = dedis_xq.ketthuctam(traloi)
+        print(f"[ĐÈ DIS] Báo máy ảo đóng client tạm: {'xong' if tl and tl.get('ok') else (tl or {}).get('loi')}")
+        return is_vao
 
     def _bogiuchocuasodis(self, ten, cuasodis):
         # Đủ client mà chỗ nào cũng bị cửa sổ dis giữ (của nhân vật khác / không nhận ra của ai): bỏ giữ chỗ để lượt sau đóng được

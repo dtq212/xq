@@ -3,5 +3,10 @@
   "maychu": "Admin-PC",
   "diachi": "192.168.78.1",
   "cong": 50321,
-  "matkhau": "pT2zhAPvtRN6vvBWeT6XSt1r"
+  "matkhau": "pT2zhAPvtRN6vvBWeT6XSt1r",
+  "nhuongcho": {
+    "may": "Ngoc-PC",
+    "diachi": "192.168.78.131",
+    "cong": 50322
+  }
 }

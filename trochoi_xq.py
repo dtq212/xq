@@ -88,6 +88,9 @@ class TroChoiManager:
         # Kéo gà A-Z: đăng nhập / tạo nhân vật acc gà lần lượt, chạy trong luồng tự đăng nhập
         self.dangnhap.keoga = KeoGaTuDong(self.shared_data, self.command_dict)
         self.dangnhap.batdau()
+        # Máy ảo (lan.json "nhuongcho"): nhận yêu cầu đăng nhập tạm acc của máy chính để đè lên nhân vật treo (dedis_xq)
+        from dedis_xq import MayNhuongCho
+        MayNhuongCho(self.dangnhap).batdau()
         # Lệnh từ Telegram và báo cáo định kỳ (thongbao_xq), 1 luồng cho cả máy
         DieuKhienTelegram(self.shared_data, self.command_dict).batdau()
         # Bán ngân lượng theo chuyển khoản (bannganluong_xq): chỉ máy chạy nhân vật bán mới hỏi SePay
