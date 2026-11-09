@@ -32,6 +32,7 @@ from hangso_xq import VIECHANG_MAP, VIECDOI_MAP, VIECCOVONGs, VIECRIENG_MAP
 from hangso_xq import CAPKETTHUCKEOCAP
 from hangso_xq import CHUTIEMTAPHOA, CHUTUULAU, TENMONPHAI, PHAMCHATVATPHAM_MAP, CAPTUDONGTANGCAPTOIDA, PHANTRAMVESUADO, BANDOQUAYLAI_THEOLOTRINH, BANDOQUAYLAI_LUCVE, DANHHIEULAMMOI_KHONG, DANHHIEULAMMOI_AN
 from hangso_xq import CHEDOHIENMUCTIEU_TAT, CHEDOHIENMUCTIEU_DANHHIEU, CHEDOHIENMUCTIEU_TEN, MAUHIENMUCTIEU_MAP, MAUHIENMUCTIEU_THEOMAU
+from danhhieumuctieu_xq import NHANHANHDONG
 from hangso_xq import CHEDOKYNANG_CODINH, CHEDOKYNANG_TUHOC, SOMAUTOITHIEUTUHOC, THOIGIANKEHOACHTUHOC, SOLICHSUHANHDONG
 from dieuphoi_xq import taicauhinhdieuphoi, luucauhinhdieuphoi, chuanhoacauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
 
@@ -481,6 +482,8 @@ class GiaoDienHienThi:
             "giukhoangcachchimuctieupk": tk.BooleanVar(value = True),
             "taphoa": tk.BooleanVar(),
             "timmuctieuchung": tk.BooleanVar(value = True),
+            "chaytoibuffthanhvien": tk.BooleanVar(),
+            "hienhanhdongtrendau": tk.BooleanVar(value = True),
             "khoangcachgiuketancong": tk.DoubleVar(value = KHOANGCACHGIUKETANCONG),
             "mauchaytron": tk.IntVar(value = NGUONGMAUCHAYTRON),
             "mauhetchaytron": tk.IntVar(value = NGUONGMAUHETCHAYTRON),
@@ -1014,6 +1017,7 @@ class GiaoDienHienThi:
         self._create_check(nhom, "Ưu tiên bảo thú Mao Sơn", self.vars["uutienmaoson"], "battat_uutienbaothukynangtrieuhoi", "Ctrl+Alt+S")
         self._create_check(nhom, "Tập hỏa: đánh mục tiêu của người mình theo sau (cùng máy)", self.vars["taphoa"], "battat_taphoa")
         self._create_check(nhom, "Hết mục tiêu thì tìm tới mục tiêu nhân vật khác cùng máy thấy", self.vars["timmuctieuchung"], "battat_timmuctieuchung")
+        self._create_check(nhom, "Buff toàn bản đồ: không theo sau thì chạy tới buff thành viên cùng máy", self.vars["chaytoibuffthanhvien"], "battat_chaytoibuffthanhvien")
         self._create_check(nhom, "Đào Hoa: tự bật Nguyên Khí Quy Nguyên", self.vars["nguyenkhiquynguyen"], "battat_tudongbatnguyenkhiquynguyen")
 
         # Danh sách Tấn công / Bỏ qua và mục tiêu bot đang tự bỏ qua, ngay dưới các ô chọn mục tiêu
@@ -2392,6 +2396,9 @@ class GiaoDienHienThi:
         self.cbo_mauhienmuctieu.set("Theo % máu")
         self.cbo_mauhienmuctieu.pack(side = tk.LEFT, padx = 4)
         self.cbo_mauhienmuctieu.bind("<<ComboboxSelected>>", on_mauhienmuctieu_change)
+        # Hành động hiện tại của bot lên đầu nhân vật mình (danhhieumuctieu_xq.ODauNhanVat), chỉ client mình thấy
+        self._create_check(nhom, "Hiện hành động hiện tại trên đầu nhân vật (chỉ mình thấy)", self.vars["hienhanhdongtrendau"],
+                           "battat_hienhanhdongtrendau")
 
     def _luukhonguoichoi(self, infos):
         # Gộp ước lượng mọi cửa sổ theo mục tiêu, ghi chỉ số người chơi vào file theo ID (mỗi THOIGIANLUUKHONGUOICHOI giây, chỉ khi
@@ -3514,7 +3521,7 @@ class GiaoDienHienThi:
                         ).grid(row = 5, column = 0, columnspan = 2, sticky = tk.W, pady = (2, 0))
         # Bán rác riêng của Phong Yêu Kính (_banracphongyeu), không ăn theo ô "Tự động về bán rác" tab Hành trang (logic khác hẳn: NPC, chừa đồ
         # đem đốt, không sửa đồ / cất kho / mua bù)
-        ttk.Checkbutton(khung, text = "Bán rác: nhặt cả luật \"Về bán rác\", ra Chu Quốc bán ở Chủ Tiệm Y Dược theo Luật túi đồ (chừa Lam Kim / Hoàng Kim)",
+        ttk.Checkbutton(khung, text = "Bán rác: nhặt cả luật \"Về bán rác\", ra Chu Quốc bán ở Chủ Tiệm Y Dược theo Luật túi đồ (chừa Lam Kim / Hoàng Kim / tím)",
                         variable = self._var_phongyeu["is_nhatbanrac"], command = self._luucauhinhphongyeu
                         ).grid(row = 6, column = 0, columnspan = 2, sticky = tk.W, pady = (2, 0))
         # Điều kiện thoát Phong Yêu Kính (cả PYK thường lẫn kéo cấp): các kiểu cố định DIEUKIENRAPYKEOCAPs
@@ -4886,8 +4893,8 @@ class GiaoDienHienThi:
         for thoidiem, hanhdong, nguon in lichsu:
             self.tree_lichsuhanhdong.insert("", tk.END, values = (time.strftime("%d/%m %H:%M:%S", time.localtime(thoidiem)), hanhdong, nguon or "-"))
 
-    # Phần cần nhấn trong câu hành động: số đếm "1/4", toạ độ "(320, 144)", tên bản đồ sau "ở " (tới dấu câu / số / ngoặc kế tiếp)
-    _NHANHANHDONG = re.compile(r"(?P<dem>\b(?P<da>\d+)/(?P<can>\d+)\b)|(?P<toado>\(\d+,\s*\d+\))|(?<=\bở )(?P<bando>[^:·,;()\d]+[^:·,;()\d\s])")
+    # Phần cần nhấn trong câu hành động (dùng chung với dòng trên đầu nhân vật trong game, danhhieumuctieu_xq.NHANHANHDONG)
+    _NHANHANHDONG = NHANHANHDONG
 
     def _hienthihanhdong(self, hanhdong, nguon):
         # Vẽ lại chỉ khi chữ, chế độ sáng/tối hoặc bề ngang đổi (bảng điều khiển cập nhật liên tục, tránh nháy)
@@ -5006,6 +5013,8 @@ class GiaoDienHienThi:
                 ("giukhoangcachchimuctieupk", "_is_giukhoangcachchimuctieupk"),
                 ("taphoa", "_is_taphoa"),
                 ("timmuctieuchung", "_is_timmuctieuchung"),
+                ("chaytoibuffthanhvien", "_is_chaytoibuffthanhvien"),
+                ("hienhanhdongtrendau", "_is_hienhanhdongtrendau"),
                 ("tutimduongtheosau", "_is_tutimduongtheosau"),
                 ("diquocgiatanthutienco", "_is_diquocgiatanthutienco"),
                 ("doidotrieuhoi", "_is_doidokhitrieuhoi"),
@@ -5297,7 +5306,7 @@ class GiaoDienHienThi:
     def _capnhatdiemdanh(self, info):
         diemdanhs = [tuple(d) for d in info.get("_diemdanhxungquanhs", [])]
         dangden = (info.get("_diemdanhdangden") or [None] * 4)[3]
-        # Lộ trình ẩn: bảng hiện điểm dò bản đồ bot đang đi. Trong Phong Yêu Kính: vòng dò của phó bản (tự chia vùng, không theo ô Chia vùng)
+        # Lộ trình ẩn: bảng hiện điểm dò bản đồ bot đang đi. Trong Phong Yêu Kính: vòng dò của phó bản (tự chia vùng giữa người cùng dò có bật ô Chia vùng)
         dophongyeu = info.get("_dophongyeu")
         is_phongyeu = isinstance(dophongyeu, dict) and bool(dophongyeu.get("diems"))
         is_do = not diemdanhs and (is_phongyeu or bool(info.get("_diemdobando")))

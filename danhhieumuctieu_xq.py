@@ -23,13 +23,19 @@ chọn theo từng cửa sổ ở đầu tab Chiến đấu, hangso_xq.CHEDOHIEN
 - Bỏ qua NPC (sư môn đọc tên / danh hiệu NPC cửa hàng). Số đo gộp mọi cửa sổ cùng máy như đầu tab Chiến đấu (uocluongmuctieu_xq.gopuocluong).
 - Game / máy chủ ghi lại ô (vào lại tầm nhìn...) => ghi lại mỗi CHUKYGHI giây; ô khác chữ mình ghi thì nhận làm gốc mới.
 - Đổi đối tượng / đổi chế độ / tắt / bot dừng: trả ô gốc (chỉ khi ô còn đúng chữ mình ghi), thôi vẽ dòng thêm.
+- Hành động hiện tại của bot trên đầu nhân vật mình (ODauNhanVat, khối hook OKHOINHANVAT): game chỉ gọi vẽ danh hiệu khi ô +0x1134
+  khác rỗng (xq+0x9CEB9 / 0x9C2A4 "test cl, cl; je", dò 2026-11-09) => có danh hiệu thật thì hook vẽ 1 dòng lên trên, KHÔNG đụng ô;
+  ô rỗng (chưa có / "title hide") thì ghi chữ vào ô (dài quá thì ô giữ " " và hook vẽ cả dòng). Làm mới toạ độ (TacTu.action_
+  lammoitrangthai) chỉ gửi lệnh "title ..." không đọc ô này; máy chủ ghi lại ô thì nhận theo danh hiệu thật / ô rỗng ở vòng sau.
 """
+import re
 import struct
 import time
 
 from congthucsatthuong_xq import HE_NGOAI, HE_NOI, satthuong, chonhe
 from diachi_xq import DC
 from hangso_xq import CHEDOHIENMUCTIEU_DANHHIEU, CHEDOHIENMUCTIEU_TEN, MAUHIENMUCTIEU_THEOMAU, NGUONGMAUHIENMUCTIEU
+from hangso_xq import OKHOIMUCTIEU, OKHOINHANVAT, MAUHANHDONGTRENDAU, KICHTHUOCDONGVEDANHHIEU
 from uocluongmuctieu_xq import gopuocluong, gopcongdoithu, khoaquaitheoten, DICHCONG, DICHKHANG, THOIGIANDANGDANH
 from tienich_xq import read_bytes, write_bytes, taithongtinnguoichoi, taithongtinquai, DAUNOITENMUCTIEU_BYTES
 
@@ -89,6 +95,55 @@ def taodongs(mau, khihuyet, khangs, congs, chumau = MAUHIENMUCTIEU_THEOMAU):
     return dongs
 
 
+# Phần cần nhấn trong câu hành động: số đếm "1/4", toạ độ "(320, 144)", tên bản đồ sau "ở " (tới dấu câu / số / ngoặc kế tiếp).
+# Giao diện (khối 📢) dùng chung
+NHANHANHDONG = re.compile(r"(?P<dem>\b(?P<da>\d+)/(?P<can>\d+)\b)|(?P<toado>\(\d+,\s*\d+\))|(?<=\bở )(?P<bando>[^:·,;()\d]+[^:·,;()\d\s])")
+
+# Câu hành động có tên đối tượng ngay sau động từ (TacTu._ghihanhdongdichuyen): (động từ, tên tới trước toạ độ "(x, y)" / hết câu).
+# Tên quái có thể chứa ngoặc "( 29 ) ( Cấp 102)" nên chỉ dừng ở toạ độ
+TIENTODOITUONG = re.compile(r"^(Tiếp cận để tấn công|Tấn công|Lùi giữ khoảng cách với|Đi theo|Đi nhặt|Tới mục tiêu) "
+                            r"(.+?)(?=\s*\(\d+,\s*\d+\)\s*$|$)")
+
+
+def tomauhanhdong(hanhdong):
+    # Câu hành động -> bytes UTF-8 tô màu từng phần theo MAUHANHDONGTRENDAU (giống cách giao diện tô khối 📢)
+    hanhdong = re.sub(r"(\(\d+,\s*\d+\))(?:\s+\1)+", r"\1", " ".join(str(hanhdong).split()))
+    phans = []
+    vitri = 0
+    dau = hanhdong.find(": ")
+    kqdoituong = TIENTODOITUONG.match(hanhdong)
+    if kqdoituong:
+        # "Tiếp cận để tấn công <tên>": động từ màu tên việc, tên đối tượng màu riêng (toạ độ sau tên tô như thường)
+        phans += [("dau", kqdoituong.group(1) + " "), ("doituong", kqdoituong.group(2))]
+        vitri = kqdoituong.end()
+    elif 0 < dau <= 30:
+        phans.append(("dau", hanhdong[:dau + 1]))
+        vitri = dau + 1
+    elif dau < 0 and len(hanhdong) <= 30 and not NHANHANHDONG.search(hanhdong) and not kqdoituong:
+        # Câu ngắn chỉ có tên việc ("Lộ trình", "Tấn công") thì cả câu màu tên việc
+        return mamau(MAUHANHDONGTRENDAU["dau"]) + hanhdong.encode("utf-8")
+    for kq in NHANHANHDONG.finditer(hanhdong, vitri):
+        phans.append(("thuong", hanhdong[vitri:kq.start()]))
+        if kq.group("dem"):
+            loai = "du" if int(kq.group("da")) >= int(kq.group("can")) else "thieu"
+        else:
+            loai = "toado" if kq.group("toado") else "bando"
+        phans.append((loai, kq.group()))
+        vitri = kq.end()
+    phans.append(("thuong", hanhdong[vitri:]))
+    ketqua, maucuoi = b"", None
+    for loai, chu in phans:
+        if not chu:
+            continue
+        mau = MAUHANHDONGTRENDAU[loai]
+        # Khoảng trắng không cần đổi màu (đỡ tốn byte, ô chỉ 0x80)
+        if mau != maucuoi and chu.strip():
+            ketqua += mamau(mau)
+            maucuoi = mau
+        ketqua += chu.encode("utf-8")
+    return ketqua
+
+
 def dinhdangthoigian(giay):
     # 12 -> "12 giây", 65 -> "1 phút 5 giây", quá 10 phút -> "hơn 10 phút"
     giay = int(round(giay))
@@ -139,9 +194,9 @@ def gopmotdong(dongs, sobytetoida):
 
 
 def catutf8(dulieu, sobyte):
-    # Cắt bytes UTF-8 tối đa sobyte byte, không cắt giữa 1 ký tự
-    dulieu = dulieu[:sobyte]
-    return dulieu.decode("utf-8", "ignore").encode("utf-8")
+    # Cắt bytes UTF-8 tối đa sobyte byte, không cắt giữa 1 ký tự / giữa mã màu (ESC + chữ cái)
+    dulieu = dulieu[:sobyte].decode("utf-8", "ignore").encode("utf-8")
+    return dulieu[:-1] if dulieu.endswith(b"\x1b") else dulieu
 
 
 class ODoiTuong:
@@ -239,13 +294,60 @@ class ODoiTuong:
         self._daghi = noidung
 
 
+class ODauNhanVat(ODoiTuong):
+    # 1 dòng chữ trên đầu nhân vật mình (hành động hiện tại): có danh hiệu thật thì hook vẽ lên trên (không đụng ô), ô danh hiệu rỗng thì
+    # mượn ô (xem đầu file). _dangghi / _daghi chỉ dùng khi đang mượn ô (_daghi = chữ mình ghi, rỗng = không mượn)
+    def khoiphuc(self):
+        if self._dongthem and self._dongthem[0]:
+            self._datdongthem(0, [])
+        if not self._dangghi:
+            return
+        diachi, iddoituong, chedo = self._dangghi
+        self._dangghi = None
+        try:
+            if self._daghi and self.moitruong.get_iddoituong(diachi) == iddoituong \
+                    and self._docoi(diachi, chedo).split(b"\0")[0] == self._daghi:
+                # Ô gốc rỗng (mình chỉ mượn ô rỗng)
+                self._ghioi(diachi, chedo, b"\0")
+        except Exception:
+            pass
+        self._daghi = b""
+
+    def ghi(self, diachi, chu):
+        # chu: bytes UTF-8 có mã màu, 1 dòng
+        chedo = CHEDOHIENMUCTIEU_DANHHIEU
+        chu = catutf8(chu, KICHTHUOCDONGVEDANHHIEU - 1)
+        iddoituong = self.moitruong.get_iddoituong(diachi)
+        if self._dangghi != (diachi, iddoituong, chedo):
+            self.khoiphuc()
+            self._dangghi = (diachi, iddoituong, chedo)
+        hientai = self._docoi(diachi, chedo).split(b"\0")[0]
+        if hientai and hientai != self._daghi:
+            # Danh hiệu thật (có sẵn / máy chủ vừa ghi sau "title show"): vẽ dòng trên nó, thôi mượn ô. Hook lỗi thì thôi, không đè
+            self._daghi = b""
+            self._datdongthem(diachi, [chu])
+            return
+        # Ô rỗng ("title hide" / chưa có danh hiệu) hoặc chữ mình: chữ vừa ô thì ghi thẳng, dài thì ô giữ " " cho game gọi vẽ, hook vẽ chữ
+        if len(chu) <= KICHTHUOCDANHHIEU - 1:
+            noidung = chu
+            self._datdongthem(0, [])
+        elif self._datdongthem(diachi, [chu]):
+            noidung = b" "
+        else:
+            noidung = catutf8(chu, KICHTHUOCDANHHIEU - 1)
+        if hientai != noidung:
+            self._ghioi(diachi, chedo, noidung + b"\0")
+        self._daghi = noidung
+
+
 class DanhHieuMucTieu:
     def __init__(self, moitruong, tactu, shared_data, idcuaso):
         self.moitruong = moitruong
         self.tactu = tactu
         self.shared_data = shared_data
         self.idcuaso = idcuaso
-        self._muctieu = ODoiTuong(moitruong, 0)
+        self._muctieu = ODoiTuong(moitruong, OKHOIMUCTIEU)
+        self._nhanvat = ODauNhanVat(moitruong, OKHOINHANVAT)
         self._lucgop = 0.
         self._gop = {}
         self._lucdockho = 0.
@@ -256,6 +358,7 @@ class DanhHieuMucTieu:
 
     def khoiphuc(self):
         self._muctieu.khoiphuc()
+        self._nhanvat.khoiphuc()
 
     def get_share(self):
         return dict(self._share)
@@ -362,6 +465,17 @@ class DanhHieuMucTieu:
             return
         self._muctieu.ghi(diachi, chedo, [dongketluan] + taodongs(mau, gop["khihuyet"], gop["khangs"], gop["congs"], chumau))
 
-    def step(self, chedo, chumau = MAUHIENMUCTIEU_THEOMAU):
+    def _buocnhanvat(self, hanhdong, chedomuctieu):
+        # Hành động hiện tại lên đầu nhân vật mình; rỗng (tắt ô / chưa có hành động) thì trả ô. Đang tự chọn mình làm mục tiêu và đang
+        # ghi thông tin mục tiêu thì nhường ô cho phần mục tiêu
+        mt = self.moitruong
+        diachi = mt.get_diachicosothongtinnhanvat1()
+        if not hanhdong or not diachi or (chedomuctieu == CHEDOHIENMUCTIEU_DANHHIEU and diachi == self._muctieu.get_diachi()):
+            self._nhanvat.khoiphuc()
+            return
+        self._nhanvat.ghi(diachi, tomauhanhdong(hanhdong))
+
+    def step(self, chedo, chumau = MAUHIENMUCTIEU_THEOMAU, hanhdong = ""):
         chedo = chedo if chedo in (CHEDOHIENMUCTIEU_DANHHIEU, CHEDOHIENMUCTIEU_TEN) else None
         self._buocmuctieu(chedo, chumau)
+        self._buocnhanvat(hanhdong, chedo)

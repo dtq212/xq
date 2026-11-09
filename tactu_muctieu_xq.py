@@ -586,7 +586,8 @@ class TacTuMucTieu:
         if is_anhhuongboimuctieutheosau:
             khoangcachtoibanthanvatheosau = math.dist(toadobanthan, toadotheosau)
             # Chừa thêm một khoảng: ngưỡng này trùng chỗ dừng khi theo nhóm nên lệch chút xíu (trưởng nhóm đang đi) là không chọn được mục tiêu
-            if khoangcachtoibanthanvatheosau > khoangcachtoidatheosau + DUKHOANGCACHTHEOSAUCHONMUCTIEU:
+            # Tính cả phần nới vùng đứng đánh: vừa giết xong con ở mép vùng rộng thì vẫn chọn được con kế tiếp, không bị kéo về trước
+            if khoangcachtoibanthanvatheosau > khoangcachtoidatheosau + self._tinhtoannoikhoangcachdanhtheosau() + DUKHOANGCACHTHEOSAUCHONMUCTIEU:
                 # Không đếm lượt này: xoá kết quả đếm cũ để không dùng chiêu diện rộng theo số quái của lượt trước khi đang chạy về
                 self._is_nhieumuctieugan3 = self._is_nhieumuctieugan5 = self._is_nhieumuctieugan7 = self._is_nhieumuctieugan8 = False
                 self._is_nhieumuctieuganbanthan3 = self._is_nhieumuctieuganbanthan5 = self._is_nhieumuctieuganbanthan7 = self._is_nhieumuctieuganbanthan9 = False
@@ -1215,13 +1216,16 @@ class TacTuMucTieu:
                 if phantramsinhlucconlai >= 25. or idbandohientai in BANDOKHONGPKs:
                     monphaidangxemxet = monphaicungmay_map.get(self.moitruong.get_idnguoichoi(diachidoituongdangxemxet)) if is_nguoichoi_hientai else None
                     tenbaothu = "" if is_nguoichoi_hientai else (self.moitruong.get_tendoituong(diachidoituongdangxemxet) or "")
-                    if not diachidoituongcanbuffngancham and monphaidangxemxet not in MONPHAICHIBUFFKIMCHAMs \
+                    # Người chơi trong tầm nhìn đọc được vũ khí (kể cả khác máy)
+                    is_canngancham, is_cankimcham = self._loaichamcanbuff(
+                        monphaidangxemxet, self.moitruong.get_idloaivukhi(diachidoituongdangxemxet) if is_nguoichoi_hientai else None)
+                    if not diachidoituongcanbuffngancham and is_canngancham \
                             and not tenbaothu.startswith(BAOTHUCHIBUFFKIMCHAMs):
                         is_thieuhieuung = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NGANCHAMDOACH,), macdinh = True, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 1)
                         if is_thieuhieuung:
                             diachidoituongcanbuffngancham = diachidoituongdangxemxet
 
-                    if not diachidoituongcanbuffkimcham and monphaidangxemxet not in MONPHAICHIBUFFNGANCHAMs \
+                    if not diachidoituongcanbuffkimcham and is_cankimcham \
                             and not tenbaothu.startswith(BAOTHUCHIBUFFNGANCHAMs):
                         is_thieuhieuung = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KIMCHAMDOACH,), macdinh = True, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 1)
                         if is_thieuhieuung:
@@ -1263,6 +1267,15 @@ class TacTuMucTieu:
 
             self._diachidoituongcanbuffphonganthuatvanmongcoc = diachidoituongcanbuffphonganthuat
             self._diachidoituongcanbuffhuyenquangthiemanhvanmongcoc = diachidoituongcanbuffhuyenquangthiemanh
+
+    def _loaichamcanbuff(self, tenmonphai, idloaivukhi = None):
+        # Vân Mộng Cốc: người này cần (Ngân Châm Độ Ách, Kim Châm Độ Ách)? Theo môn phái (MONPHAICHIBUFF...), riêng Thục Sơn theo vũ khí
+        # đang đeo: kiếm chỉ Kim Châm, đao chỉ Ngân Châm (LOAIVUKHITHUCSONCHIBUFF...). Không biết môn phái / vũ khí thì cả hai
+        if tenmonphai == "thucson" and idloaivukhi in LOAIVUKHITHUCSONCHIBUFFNGANCHAMs:
+            return True, False
+        if tenmonphai == "thucson" and idloaivukhi in LOAIVUKHITHUCSONCHIBUFFKIMCHAMs:
+            return False, True
+        return tenmonphai not in MONPHAICHIBUFFKIMCHAMs, tenmonphai not in MONPHAICHIBUFFNGANCHAMs
 
     def _tinhkhoangcachdendoanthang(self, px, py, x1, y1, x2, y2):
         dx = x2 - x1

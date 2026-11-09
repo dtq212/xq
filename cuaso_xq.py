@@ -105,7 +105,8 @@ def khoidong_loopdanhhieumuctieu(danhhieu, tactu, moitruong, stop):
     while not stop.is_set() and moitruong.get_is_cuasogametontai():
         try:
             if moitruong.get_is_nhanvattontai() and not moitruong.get_is_dangmatketnoi():
-                danhhieu.step(tactu._chedohienthongtinmuctieugame, tactu._mauhienthongtinmuctieugame)
+                danhhieu.step(tactu._chedohienthongtinmuctieugame, tactu._mauhienthongtinmuctieugame,
+                              tactu._hanhdong[0] if tactu._is_hienhanhdongtrendau else "")
         except Exception as e:
             print(f"[Loop DANH HIỆU MỤC TIÊU] Lỗi: {e}")
             time.sleep(1)
@@ -145,6 +146,7 @@ class CuaSo:
         self.moitruong.action_thietlaphooknoidungtrochuyen()
         self.moitruong.action_thietlaphooklenhgame()
         self.moitruong.action_thietlaphookcotnhiemvunpc()
+        self.moitruong.action_thietlaphookvehieuungdat()
         self.moitruong.action_thietlaphookhoatanhtancong()
         self.tactu = TacTu(self.moitruong)
         # Bot đọc gộp cả cửa sổ máy khác trong LAN (lan_xq), ghi vẫn vào máy này
@@ -271,6 +273,12 @@ class CuaSo:
                 elif self.moitruong.get_is_nhanvatdachet():
                     tentrangthai = "Đã chết"
 
+                # Hiệu ứng trên người mình [(id, có lợi)] cho cửa sổ khác cùng máy biết mình thiếu buff gì khi mình ngoài tầm nhìn của họ
+                # (client chỉ đọc được hiệu ứng người trong tầm nhìn). Bảng vừa tụt về 0 (đang tải lại) => None = chưa biết
+                hieuungs = None
+                if self.moitruong.get_is_cohieuungs((), None) is not None:
+                    hieuungs = [(idhieuung, coloi) for idhieuung, coloi, _ in self.moitruong.get_danhsachhieuungnhanvats()]
+
                 x, y = self.moitruong.get_toado()
                 vitri = (self.moitruong.get_idbandohientai(), self.moitruong.get_tenphobanmuonbando(), x, y)
                 if self.moitruong.get_is_toadochuaondinh() and self._vitrichiase:
@@ -291,6 +299,8 @@ class CuaSo:
                     "_phobanmuonbando": vitri[1],
                     # Vân Mộng Cốc cùng máy dùng để biết buff Ngân Châm hay Kim Châm cho nhân vật này
                     "tenmonphai": self.moitruong.get_tenmonphai(),
+                    # Loại vũ khí đang đeo: Vân Mộng Cốc buff Thục Sơn kiếm chỉ Kim Châm, đao chỉ Ngân Châm (cả khi ngoài tầm nhìn)
+                    "idloaivukhi": self.moitruong.get_idloaivukhi(),
                     # Tổ đội tự động dùng để biết các nhóm khác đang cùng bản đồ
                     "idtruongnhom": self.moitruong.get_idnguoichoitruongnhom() if is_dangtrongnhom else 0,
                     "thanhviennhoms": self.moitruong.get_danhsachidnguoichoithanhviennhoms() if is_dangtrongnhom else [],
@@ -299,6 +309,7 @@ class CuaSo:
                     "status": tentrangthai,
                     "phantramsinhluc": phantramsinhluc,
                     "phantramnoiluc": phantramnoiluc,
+                    "hieuungs": hieuungs,
                     "is_window_active": self.moitruong.get_is_cuasogamekichhoat(),
 
                     "_is_tudongtheosau": self.tactu._is_tudongtheosau,
@@ -368,7 +379,9 @@ class CuaSo:
                     "_is_timmuctieuchung": self.tactu._is_timmuctieuchung,
                     "_chedohienthongtinmuctieugame": self.tactu._chedohienthongtinmuctieugame,
                     "_mauhienthongtinmuctieugame": self.tactu._mauhienthongtinmuctieugame,
+                    "_is_hienhanhdongtrendau": self.tactu._is_hienhanhdongtrendau,
                     "_is_tutimduongtheosau": self.tactu._is_tutimduongtheosau,
+                    "_is_chaytoibuffthanhvien": self.tactu._is_chaytoibuffthanhvien,
                     "_is_diquocgiatanthutienco": self.tactu._is_diquocgiatanthutienco,
                     "_is_dangsapxephanhtrang": self.tactu._is_dangsapxephanhtrang,
                     "_is_doidokhitrieuhoi": self.tactu._is_doidokhitrieuhoi,
@@ -736,6 +749,8 @@ class CuaSo:
                     self.tactu.thietlap_mauhienthongtinmuctieugame(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_chedohienthongtinmuctieugame:"):
                     self.tactu.thietlap_chedohienthongtinmuctieugame(cmd.split(":", 1)[1])
+                elif cmd == "battat_hienhanhdongtrendau":
+                    self.tactu._is_hienhanhdongtrendau = not self.tactu._is_hienhanhdongtrendau
                 elif cmd == "battat_timmuctieuchung":
                     self.tactu.battat_timmuctieuchung()
                 elif isinstance(cmd, str) and cmd.startswith("set_khoangcachgiuketancong:"):
@@ -755,6 +770,8 @@ class CuaSo:
                         pass
                 elif cmd == "battat_tutimduongtheosau":
                     self.tactu.battat_tutimduongtheosau()
+                elif cmd == "battat_chaytoibuffthanhvien":
+                    self.tactu.battat_chaytoibuffthanhvien()
                 elif cmd == "battat_diquocgiatanthutienco":
                     self.tactu.battat_diquocgiatanthutienco()
                 elif cmd == "battat_sapxephanhtrang":

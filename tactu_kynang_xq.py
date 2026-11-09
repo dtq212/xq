@@ -244,6 +244,25 @@ class TacTuKyNang:
             if IS_LOGCAULENH:
                 self.moitruong._inlog(f"[NGẮT ĐÁNH THƯỜNG] nguyên khí {self.moitruong.get_nguyenkhiconlai()}: {caulenh}")
 
+    def _is_lacanhlangphi(self, diachimuctieu):
+        # Đào Hoa Lạc Ảnh (tâm = người dùng chiêu, giữ ~BANKINHTRANDOLACANH ô) đặt thêm là phí khi mục tiêu đã dính hiệu ứng 211, hoặc mục
+        # tiêu đang đứng trong một trận Lạc Ảnh đang có trên mặt đất (Đào Hoa Nguyên khác vừa đặt, có thể ở máy khác / người chơi thật)
+        if not diachimuctieu:
+            return False
+        lydo = None
+        if self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_DAOHOALACANH,), macdinh = False, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu):
+            lydo = "mục tiêu đã dính Lạc Ảnh (hiệu ứng 211)"
+        else:
+            toadomuctieu = self.moitruong.get_toado(diachimuctieu)
+            for tran in self.moitruong.get_danhsachtranlacanh():
+                if math.dist(toadomuctieu, (tran["x"], tran["y"])) <= BANKINHTRANDOLACANH:
+                    lydo = f"mục tiêu {toadomuctieu} trong trận Lạc Ảnh tâm ({tran['x']},{tran['y']})"
+                    break
+        if lydo and time.time() - self._thoidiemlogbolacanh > 3.:
+            self._thoidiemlogbolacanh = time.time()
+            self.moitruong._inlog(f"[TRẬN LẠC ẢNH] không đặt trận: {lydo}")
+        return bool(lydo)
+
     def _is_nhuongbuffdaohoanguyen(self):
         # Có nhân vật Đào Hoa Nguyên khác chạy cùng máy, cùng nhóm, đứng trước mình trong danh sách tổ đội tự động,
         # đang bật tự dùng kỹ năng, còn sống và ở gần (cùng bản đồ, trong tầm buff) thì để nhân vật đó dùng Trấn Cổ Thần Uy / Hộ Thể Kim Cang
@@ -883,7 +902,8 @@ class TacTuKyNang:
                 and self.moitruong.get_idbandohientai() in BANDOKHONGTANCONGs:
             return False, False
 
-        if self._yeucaugiukhoangcach and (loaikynang in ("sudungkynangmuctieu", "tancongvatly", "sudungkynangphudau")
+        # Đang né Kỳ Môn / Độn Giáp (vài bước): không ra chiêu đánh / tiếp cận, ra chiêu sẽ ngắt bước né
+        if (self._yeucaugiukhoangcach or self._yeucaunetran) and (loaikynang in ("sudungkynangmuctieu", "tancongvatly", "sudungkynangphudau")
                                           or loaikynang.startswith("dichuyen") or vitrikynang in (VITRIKYNANG_LOIDONGCUUTHIEN, VITRIKYNANG_LOILONGQUYET)):
             return False, False
 
@@ -1039,7 +1059,9 @@ class TacTuKyNang:
             elif loaikynang == "sudungkynanglendongdoi":
                 is_dasudung = self.moitruong.action_sudungkynangvitrimuctieu(vitrikynang, diachicosothongtinnhanvatmuctieu = diachimuctieu, is_khongkiemtracothetancong = True)
             elif loaikynang == "sudungkynangphudau":
-                self.moitruong.action_sudungkynangvitriphudau(vitrikynang, None, diachimuctieu, khoangcachphudau = khoangcachyeucau)
+                # Trận pháp Vân Mộng Cốc: game không cho 2 trận chung 1 tâm => tâm đã có trận thì đổi ô (trong tầm xa)
+                self.moitruong.action_sudungkynangvitriphudau(vitrikynang, None, diachimuctieu, khoangcachphudau = khoangcachyeucau,
+                                                              tamxatranphap = self._khoangcachsudungkynangtamxa if vitrikynang in TRANPHAPVANMONGCOCs else None)
             else:
                 is_dasudung = False
 
@@ -1237,7 +1259,7 @@ class TacTuKyNang:
             # Chiêu không mục tiêu vẫn gắn mục tiêu đang đánh nên dùng xong tạo yêu cầu đi tới khoảng cách yêu cầu: để 0 là chạy sát quái
             # đánh cận chiến (Mê Tâm Thuật 3642 khi quái ngoài tầm => mọi lần "TIẾP CẬN CẬN CHIẾN ... giữ ≤0.0", 2026-11-03) => để tầm xa
             (VITRIKYNANG_MATAMTHUAT, "sudungkynangkhongmuctieu", lambda: not is_anthan and diachimuctieu and is_muctieugiukhoangcach and khoangcach <= KHOANGCACHLUIGIUKHOANGCACH and time.time() - self._thoidiemsudungnhiephonchamgannhat < 1., self._khoangcachsudungkynangtamxa, None, False),
-            (None, "dichuyengiukhoangcach", lambda: not is_bidaohoalacanh and diachimuctieu and is_muctieugiukhoangcach and khoangcach <= KHOANGCACHLUIGIUKHOANGCACH and (time.time() - self._thoidiemsudungmatamthuatgannhat < 0.5 or time.time() - self._thoidiemsudungamkichgannhat < 0.5 or time.time() - self._thoidiemsudungthichsatgannhat < 0.5), khoangcach + 3., None, False),
+            (None, "dichuyengiukhoangcach", lambda: diachimuctieu and is_muctieugiukhoangcach and khoangcach <= KHOANGCACHLUIGIUKHOANGCACH and (time.time() - self._thoidiemsudungmatamthuatgannhat < 0.5 or time.time() - self._thoidiemsudungamkichgannhat < 0.5 or time.time() - self._thoidiemsudungthichsatgannhat < 0.5), khoangcach + 3., None, False),
             (VITRIKYNANG_LACTUYETVONGAN, "sudungkynangkhongmuctieu", lambda: not is_anthan and diachimuctieu and is_muctieupk and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_LACTUYETVONGAN,), True, is_hieuungcoloi = 1), self._khoangcachsudungkynangtamxa, None, False),
             # "kill" bật Tự Động Công Kích (đánh thường tầm xa) như Đào Hoa: gửi khi mục tiêu trong tầm xa, không chiếm lượt (chiêu vẫn gửi
             # ngay lượt này), không chặn di chuyển / chạy lại gần (tầm yêu cầu + BUKHOANGCACHTAMXA). Đang ẩn thân thì để Bí Sát mở đòn.
@@ -1255,7 +1277,7 @@ class TacTuKyNang:
             (VITRIKYNANG_AMKICH, "sudungkynangmuctieu", lambda: not is_bidaohoalacanh and diachimuctieu and not is_muctieucomatamthuat and (is_muctieugiukhoangcach or is_bituocvukhi), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
             (None, "sudungcaoboctacdan", lambda: self.moitruong.get_idbandohientai() != BANDO_TIVO and diachimuctieu and is_muctieulanguoichoi and time.time() - self._thoidiemsudungcaoboctacdangannhat > 30. and self.moitruong.action_timkiemvatphamhanhtrang(CAOBOCTACDAN), self._khoangcachsudungkynangtamxa, None, False),
             (VITRIKYNANG_THICHSAT, "sudungkynangmuctieu", lambda: not is_bidaohoalacanh and diachimuctieu and not is_muctieucomatamthuat and (is_muctieugiukhoangcach or is_bituocvukhi), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
-            (None, "dichuyengiukhoangcach", lambda: not is_bidaohoalacanh and diachimuctieu and is_muctieugiukhoangcach and khoangcach <= KHOANGCACHLUIGIUKHOANGCACH, khoangcach + 3., None, False),
+            (None, "dichuyengiukhoangcach", lambda: diachimuctieu and is_muctieugiukhoangcach and khoangcach <= KHOANGCACHLUIGIUKHOANGCACH, khoangcach + 3., None, False),
             (VITRIKYNANG_THAUCOTDINH, "sudungkynangmuctieu", lambda: not is_bituocvukhi and diachimuctieu, self._khoangcachsudungkynangtamxa, None, True),
             (VITRIKYNANG_HAPTINHMACHAM, "sudungkynangmuctieu", lambda: not is_bituocvukhi and diachimuctieu, self._khoangcachsudungkynangtamxa, None, True),
             # Đường bắn bị vật cản chắn: đi ngang / lùi tới ô bắn thông gần nhất trong tầm (đã trừ bù tầm khi đứng im), không lao vào
@@ -1369,7 +1391,11 @@ class TacTuKyNang:
             (VITRIKYNANG_LACKICH, "sudungkynangmuctieu", lambda: is_cancanchien and not is_muctieucohieuung(HIEUUNGKYNANG_LACKICH), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False, HIEUUNGKYNANG_LACKICH),
             # Ba Động cận chiến / Lạc Kích lặp lại là chiêu lót: chỉ dùng khi không làm thiếu nguyên khí / chậm Nhất Quyền (is_duoclotdelay0)
             (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: is_cancanchien and is_duoclotdelay0, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
-            (VITRIKYNANG_DAOHOALACANH, "sudungkynangkhongmuctieu", lambda: is_cancanchien and is_muctieulanguoichoi, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True),
+            # Lạc Ảnh: dùng cả lên quái (người dùng dặn 2026-11-10, trước chỉ với người chơi). Không dùng khi mục tiêu đã bị nhốt / đang trong
+            # trận Đào Hoa Nguyên khác (_is_lacanhlangphi); giữ chỗ hiệu ứng 211 để 2 Đào Hoa Nguyên cùng máy không cùng đặt trận lên 1 mục
+            # tiêu trong lúc hiệu ứng chưa kịp hiện
+            (VITRIKYNANG_DAOHOALACANH, "sudungkynangkhongmuctieu", lambda: is_cancanchien and not self._is_lacanhlangphi(diachimuctieu),
+                KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_DAOHOALACANH),
             # Lạc Kích đã có hiệu ứng vẫn ra dame ngay (chiêu lót, như Ba Động cận chiến)
             (VITRIKYNANG_LACKICH, "sudungkynangmuctieu", lambda: is_cancanchien and is_duoclotdelay0, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
             (None, "sudungcaoboctacdan", lambda: self.moitruong.get_idbandohientai() not in (BANDO_TIVO, BANDO_CHIENTRUONG) and diachimuctieu and is_muctieulanguoichoi and time.time() - self._thoidiemsudungcaoboctacdangannhat > 5. and self.moitruong.action_timkiemvatphamhanhtrang(CAOBOCTACDAN), self._khoangcachsudungkynangtamxa, None, False, False),

@@ -180,6 +180,9 @@ class MoiTruong:
         # Bỏ hoạt ảnh chiêu delay 0 (action_thietlaphookhoatanhtancong): vùng dữ liệu của kịch bản (0 = chưa vá) và lúc đánh dấu Lạc Kích
         self._diachidulieuhoatanh = 0
         self._thoidiemdanhdaulackich = 0.
+        # Cờ bật hook bỏ hoạt ảnh đang ghi (chỉ Đào Hoa Nguyên) và lúc xét lại
+        self._is_batbohoatanh = False
+        self._thoidiemxetbatbohoatanh = 0.
         # Giữ chân sau chiêu delay 0 tới khi có số bay (action_giuchansauchieudelay0): {diachi, id, sobay, batdau} hoặc None
         self._giuchandelay0 = None
 
@@ -309,6 +312,12 @@ class MoiTruong:
         self._banghieuung_cache = {}
         # Tâm Trận Pháp Lạc Ảnh đang giữ mình (người dùng chiêu, xem _timtamtrandolacanh), None khi không bị giữ
         self._toadotrandolacanh = None
+        # Hiệu ứng mặt đất: địa chỉ nút -> mã hiệu ứng đã thấy (sprite bị đẩy khỏi bộ đệm thì vẫn biết mã), xem get_danhsachhieuungdat
+        self._mahieuungdattheonut = {}
+        # Tâm trận mình vừa đặt: (x, y) -> thời điểm (THOIGIANNHOTAMTRANVUADAT); chữ ký danh sách trận đã ghi log gần nhất
+        self._tamtranvuadat = {}
+        self._logdanhsachtrangannhat = None
+        self._logdanhsachlacanhgannhat = None
 
         self.diachihamthucthicaulenh = 0
 
@@ -1204,7 +1213,7 @@ class MoiTruong:
         return "nối sau chienquoc2d.dll" if is_dll else "call gốc"
 
     def action_ghidongvedanhhieu(self, diachidoituong, dongs, okhoi = 0):
-        # Đặt các dòng vẽ thêm trên danh hiệu của diachidoituong vào khối okhoi (0 mục tiêu, 1-3 đệ; dongs: bytes, dòng 0 sát danh hiệu,
+        # Đặt các dòng vẽ thêm trên danh hiệu của diachidoituong vào khối okhoi (OKHOIMUCTIEU / OKHOINHANVAT; dongs: bytes, dòng 0 sát danh hiệu,
         # tối đa SODONGVEDANHHIEU); diachidoituong 0 / dongs rỗng = thôi vẽ. Ghi chữ trước, số dòng và đối tượng sau để game không đọc
         # ô đang ghi dở
         dulieu = self.action_thietlaphookvedanhhieu()
@@ -1370,12 +1379,68 @@ class MoiTruong:
         self._inlog("[CHẶN CRASH] đã vá chỗ đọc cờ dấu nhiệm vụ NPC (bỏ số cờ rác)")
         return True
 
+    def action_thietlaphookvehieuungdat(self):
+        # Chặn crash engine.dll + 0x424D (Thỏ 342 ngày 10/11 lúc 00:13:37, dump đầy đủ XQ.exe.1002140.dmp; Ngốc 347 ngày 09/11 lúc 01:39).
+        # Danh sách hiệu ứng mặt đất (đầu ở [xq + 0x376CA4], nút 0x2C: +0 sprite, +8 bộ đếm khung, +0xC tốc độ, +0x10/+0x14 ô),
+        # ví dụ trận pháp Vân Mộng Cốc (Kỳ Môn Trận, Độn Giáp Trận). Hàm vẽ có 2 vòng (xq+0x4F83A, xq+0x4FE8E) lấy khung
+        # [sprite + 0x1C] + chỉ số * 8 rồi gọi vẽ mà không kiểm tra; lúc văng, sprite có 26 khung nhưng [+0x1C] = 0 (chưa nạp / đã nhả)
+        # => engine đọc vtable ở địa chỉ 0x50. Đường vẽ đối tượng (xq+0x15134) thì có kiểm tra khung NULL rồi bỏ qua.
+        # Vá: sprite hoặc mảng khung NULL thì bỏ lời gọi vẽ (2 push + call thiscall ret 8 => ngăn xếp cân), vẫn tăng bộ đếm như thường.
+        # Kịch bản không giải phóng (game còn nhảy vào sau khi bot tắt); lần chạy sau thấy đã vá thì thôi.
+        # (tên hằng, mã gốc, số byte ghi đè, chỗ tiếp sau lệnh gọi vẽ tính từ chỗ hook, lệnh gốc chạy lại)
+        dsvongve = [
+            ("HOOK_VEHIEUUNGDAT1", "8B 16 89 4C 24 10", 6, 0x18, "mov dword ptr [esp + 0x10], ecx"),
+            ("HOOK_VEHIEUUNGDAT2", "8B 16 33 FF 89 4C 24 10", 8, 0x19, "xor edi, edi\n            mov dword ptr [esp + 0x10], ecx"),
+        ]
+        ketqua = True
+        for tenhang, magoc, sobyte, dotiep, lenhgoc in dsvongve:
+            diachihook = self.diachixq + getattr(DC, tenhang)
+            try:
+                mahook = read_bytes(self.tientrinh, diachihook, sobyte)
+            except Exception:
+                ketqua = False
+                continue
+            if mahook[0] == 0xE9:
+                continue
+            if mahook != bytes.fromhex(magoc):
+                self._inlog(f"[CHẶN CRASH] chỗ vẽ hiệu ứng mặt đất {tenhang} không như dự kiến: {mahook.hex(' ')}")
+                ketqua = False
+                continue
+            asm_script = f"""
+            mov edx, dword ptr [esi]
+            {lenhgoc}
+            test edx, edx
+            je boqua
+            cmp dword ptr [edx + 0x1C], 0
+            je boqua
+            push {diachihook + sobyte}
+            ret
+        boqua:
+            push {diachihook + dotiep}
+            ret
+            """
+            encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+            if not encoding:
+                ketqua = False
+                continue
+            kichban = self.tientrinh.allocate(64)
+            write_bytes(self.tientrinh, kichban, bytes(encoding), len(encoding))
+            mavanew = b"\xE9" + struct.pack("<i", kichban - (diachihook + 5)) + b"\x90" * (sobyte - 5)
+            write_bytes(self.tientrinh, diachihook, mavanew, sobyte)
+        if ketqua:
+            self._inlog("[CHẶN CRASH] đã vá chỗ vẽ hiệu ứng mặt đất (bỏ qua sprite chưa có khung)")
+        return ketqua
+
     def action_thietlaphookhoatanhtancong(self):
         # Bỏ hoạt ảnh chiêu delay 0 của nhân vật mình (xem IS_BOHOATANHCHIEUDELAY0 trong hangso_xq.py). Chỗ hook HOOK_HOATANHTANCONG
         # (xq+0x1AE5B) trong hàm xử lý hàng đợi hành động: ô mã >= 0x28 (đòn đánh), "mov edx, [esi+0x1180]" (6 byte), esi = đối tượng,
         # ecx = ô (mã hoạt ảnh chiêu ở [ecx+0x104]). Bỏ ô = tăng chỉ số đọc +0x10A0 (vòng 0..0x63) rồi nhảy tới đoạn nối chung sau khi
         # xử lý 1 ô (xq+0x1B3C6, các nhánh khác cũng jmp tới) => không vào tư thế 6, không bắt đầu hoạt ảnh.
-        # Dữ liệu [+0] bật, [+1] chờ bỏ 1 ô mã 0 (Lạc Kích, bot đặt khi gửi chiêu), [+4] đếm số ô đã bỏ.
+        # Bỏ ô xong mà hàng đợi rỗng và tư thế còn 2 (đi, từ bước trước): client chỉ về tư thế đứng khi đang xử lý ô (nhánh xq+0x1ACCB:
+        # tư thế = [+0x11B8] tư thế nghỉ, gọi xq+0x171B0 nạp lại hoạt ảnh tư thế, [+0xE0] = 0), hàng rỗng thì không xử lý nữa => nhân vật
+        # "chạy tại chỗ" tới ô kế (người dùng thấy lúc spam chiêu, 09/11). Làm y nhánh đó; xq+0x171B0 = chỗ hook - 0x3CAB (thiscall ecx =
+        # đối tượng, không tham số, 84 chỗ gọi). Không đụng tư thế 6/9 (không cắt hoạt ảnh chiêu đang chạy).
+        # Dữ liệu [+0] bật, [+1] chờ bỏ 1 ô mã 0 (Lạc Kích, bot đặt khi gửi chiêu), [+4] đếm số ô đã bỏ, [+8] đếm số lần về tư thế đứng.
         # Kịch bản không giải phóng; lần chạy bot sau thấy đã vá thì trả byte gốc rồi vá lại (mã bỏ qua lấy theo hằng số mới)
         diachihook = self.diachixq + DC.HOOK_HOATANHTANCONG
         magoc = bytes.fromhex("8B 96 80 11 00 00")
@@ -1391,8 +1456,12 @@ class MoiTruong:
         self._diachidulieuhoatanh = 0
         if not IS_BOHOATANHCHIEUDELAY0:
             return True
+        # [+0] bật để 0: mã hoạt ảnh dùng chung giữa các phái (Ngự Kiếm Phi Tiên Thục Sơn cũng mất hoạt ảnh), chỉ bật khi nhân vật là
+        # Đào Hoa Nguyên (_capnhatbatbohoatanh, xét lại mỗi vài giây vì lúc vá có thể chưa vào game / đổi nhân vật)
         dulieu = self.tientrinh.allocate(16)
-        write_bytes(self.tientrinh, dulieu, b"\x01" + bytes(15), 16)
+        write_bytes(self.tientrinh, dulieu, bytes(16), 16)
+        self._is_batbohoatanh = False
+        self._thoidiemxetbatbohoatanh = 0.
         sosanh = "\n".join(f"cmp edx, {ma}\n je boqua" for ma in MAHOATANHBOQUAs)
         asm_script = f"""
             cmp byte ptr [{dulieu}], 0
@@ -1424,6 +1493,20 @@ class MoiTruong:
             xor edx, edx
         luu:
             mov dword ptr [esi + 0x10a0], edx
+            cmp edx, dword ptr [esi + 0x10a4]
+            jne noi
+            cmp dword ptr [esi + 0x1178], 2
+            jne noi
+            mov ecx, dword ptr [esi + 0x11b8]
+            cmp ecx, 2
+            je noi
+            mov dword ptr [esi + 0x1178], ecx
+            mov ecx, esi
+            mov eax, {self.diachixq + DC.HOOK_HOATANHTANCONG - 0x3CAB}
+            call eax
+            mov dword ptr [esi + 0xe0], 0
+            inc dword ptr [{dulieu + 8}]
+        noi:
             push {self.diachixq + DC.HOOK_HOATANHTANCONG + 0x56B}
             ret
         """
@@ -1434,7 +1517,7 @@ class MoiTruong:
         write_bytes(self.tientrinh, kichban, bytes(encoding), len(encoding))
         write_bytes(self.tientrinh, diachihook, b"\xE9" + struct.pack("<i", kichban - (diachihook + 5)) + b"\x90", 6)
         self._diachidulieuhoatanh = dulieu
-        self._inlog(f"[BỎ HOẠT ẢNH] đã vá: bỏ hoạt ảnh mã {MAHOATANHBOQUAs} + Lạc Kích của nhân vật mình")
+        self._inlog(f"[BỎ HOẠT ẢNH] đã vá: bỏ hoạt ảnh mã {MAHOATANHBOQUAs} + Lạc Kích của nhân vật mình (chỉ khi là Đào Hoa Nguyên)")
         return True
 
     def action_danhdaubohoatanhlackich(self):
@@ -1448,7 +1531,26 @@ class MoiTruong:
         except Exception:
             pass
 
+    def _capnhatbatbohoatanh(self):
+        # Bật cờ [+0] của hook bỏ hoạt ảnh chỉ khi nhân vật là Đào Hoa Nguyên; xét mỗi 2 giây, chỉ ghi khi đổi
+        now = time.time()
+        if not self._diachidulieuhoatanh or now - self._thoidiemxetbatbohoatanh < 2.:
+            return
+        self._thoidiemxetbatbohoatanh = now
+        try:
+            is_bat = self.get_tenmonphai() == "daohoanguyen"
+        except Exception:
+            return
+        if is_bat != self._is_batbohoatanh:
+            try:
+                write_bytes(self.tientrinh, self._diachidulieuhoatanh, b"\x01" if is_bat else b"\x00", 1)
+                self._is_batbohoatanh = is_bat
+                self._inlog(f"[BỎ HOẠT ẢNH] {'bật (Đào Hoa Nguyên)' if is_bat else 'tắt (không phải Đào Hoa Nguyên)'}")
+            except Exception:
+                pass
+
     def _donbohoatanhlackich(self):
+        self._capnhatbatbohoatanh()
         if self._diachidulieuhoatanh and self._thoidiemdanhdaulackich \
                 and time.time() - self._thoidiemdanhdaulackich >= THOIGIANBOHOATANHLACKICH:
             self._thoidiemdanhdaulackich = 0.
@@ -2209,7 +2311,13 @@ class MoiTruong:
         self._is_nhanvatbimongdu = self.get_is_cohieuungs((HIEUUNGKYNANG_MONGDU,), macdinh = False, is_hieuungcoloi = 0)
         self._is_nhanvatbibienthan = self.get_is_cohieuungs((HIEUUNGKYNANG_BIENTHANTHUAT,), macdinh = False, is_hieuungcoloi = 0)
         if self.get_is_cohieuungs((HIEUUNGKYNANG_DAOHOALACANH,), macdinh = False, is_hieuungcoloi = 0):
-            if not self._toadotrandolacanh:
+            # Tâm trận đọc được trên mặt đất (nút 21151 / 21152) thì dùng luôn, không thì đoán theo người dùng chiêu như cũ
+            tamdat = self._timtamtrandolacanhtrendat()
+            if tamdat:
+                if tamdat != self._toadotrandolacanh:
+                    self._inlog(f"[TRẬN ĐỒ] Dính Trận Pháp Lạc Ảnh tại {self.get_toado()}, tâm trận trên mặt đất {tamdat} (đoán trước đó {self._toadotrandolacanh})")
+                    self._toadotrandolacanh = tamdat
+            elif not self._toadotrandolacanh:
                 self._toadotrandolacanh = self._timtamtrandolacanh()
         else:
             self._toadotrandolacanh = None
@@ -2246,6 +2354,14 @@ class MoiTruong:
                 return "batdong" if thoigianhieuluctoida <= THOIGIANTOIDABATDONG else "honme"
         return None
 
+    def _timtamtrandolacanhtrendat(self):
+        # Trận Lạc Ảnh trên mặt đất gần mình nhất (đang bị giữ thì mình ở trong trận: cách tâm tối đa BANKINHTRANDOLACANH, nới thêm 2 ô
+        # cho lệch toạ độ), None nếu không thấy
+        toadobanthan = self.get_toado()
+        tots = [(math.dist(toadobanthan, (tran["x"], tran["y"])), (tran["x"], tran["y"])) for tran in self.get_danhsachtranlacanh()]
+        tots = [t for t in tots if t[0] <= BANKINHTRANDOLACANH + 2.]
+        return min(tots)[1] if tots else None
+
     def _timtamtrandolacanh(self):
         # Trận lấy người dùng chiêu làm tâm: lúc vừa bị dính, người chơi ngoài nhóm trong KHOANGCACHTIMNGUOIDUNGTRANDO ô, ưu tiên người
         # đánh tay không (Đào Hoa Nguyên dùng quyền) rồi tới người gần nhất (đứng sát nhau thì chỉ xét gần nhất hay chọn nhầm người phái khác);
@@ -2267,6 +2383,110 @@ class MoiTruong:
                 tam, tennguoidung, khoatot = toado, self.get_tendoituong(diachi), khoa
         self._inlog(f"[TRẬN ĐỒ] Dính Trận Pháp Lạc Ảnh tại {toadobanthan}, tâm trận {tam} ({tennguoidung or 'không thấy người dùng chiêu, lấy chỗ mình đứng'})")
         return tam
+
+    # Danh sách hiệu ứng mặt đất (dịch ngược xq+0x4935D0 và gói máy chủ xử lý ở xq+0x4A2E09). Gói: ô x, y (word) + các mục 4 byte
+    # (mã hiệu ứng word, tốc độ, giá trị +0x1C) + byte cuối là cờ: 0 = gỡ (game ghi +0x18 = 1, bộ đếm khung 0x2710 để hết hình rồi xoá),
+    # khác 0 = đặt. Danh sách sắp theo y - x để vẽ, chung với nút đối tượng (xq+0x41F4D9: +0 = 0, +4 = đối tượng).
+    # Nút 0x2C byte: +0 sprite, +4 đối tượng, +8 bộ đếm khung, +0xC tốc độ, +0x10 / +0x14 ô x / y (cùng hệ get_toado), +0x18 cờ đặt
+    # (đo 2), +0x1C (đo 2), +0x20 mã sprite kế tiếp (0xFFFF = không), +0x24 nút trước, +0x28 nút sau.
+    # Nút KHÔNG có mã kỹ năng / người đặt / thời hạn: mã lấy ngược từ sprite qua bộ đệm 100 ô của hàm nạp perform/<mã>.dat
+    # (xq+0x4083A0): [MAHIEUUNGDAT + i*4] = mã, [BANGSPRITEHIEUUNG + (i+1)*4] = sprite. Bộ đệm đầy thì đẩy ô cũ ra (xoay vòng) và nhả
+    # sprite dù nút còn trỏ tới (chính là crash engine.dll+0x424D) => nhớ mã theo địa chỉ nút lúc còn tra được
+    OFFSET_HIEUUNGDAT_SPRITE = 0x0
+    OFFSET_HIEUUNGDAT_DOITUONG = 0x4
+    OFFSET_HIEUUNGDAT_X = 0x10
+    OFFSET_HIEUUNGDAT_Y = 0x14
+    OFFSET_HIEUUNGDAT_CO = 0x18
+    OFFSET_HIEUUNGDAT_SAU = 0x28
+    KICHTHUOCNUTHIEUUNGDAT = 0x2C
+    SOOBODEMHIEUUNG = 100
+    # Chặn vòng lặp khi đọc trúng lúc game đang sửa danh sách
+    SONUTHIEUUNGDATTOIDA = 1000
+
+    def get_danhsachhieuungdat(self):
+        # [{"diachi", "ma" (None khi không tra được), "x", "y", "co"}] các nút có sprite (bỏ nút đối tượng)
+        ketqua = []
+        try:
+            dau = read_int(self.tientrinh, self.diachixq + DC.DSHIEUUNGDAT)
+            if not dau:
+                return ketqua
+            mas = struct.unpack(f"<{self.SOOBODEMHIEUUNG}I", read_bytes(self.tientrinh, self.diachixq + DC.MAHIEUUNGDAT, 4 * self.SOOBODEMHIEUUNG))
+            sprites = struct.unpack(f"<{self.SOOBODEMHIEUUNG}I", read_bytes(self.tientrinh, self.diachixq + DC.BANGSPRITEHIEUUNG + 4, 4 * self.SOOBODEMHIEUUNG))
+        except Exception:
+            return ketqua
+        matheosprite = {sprite: ma for sprite, ma in zip(sprites, mas) if sprite and ma}
+        nut, danhdau, nhomoi = dau, set(), {}
+        while nut and nut not in danhdau and len(danhdau) < self.SONUTHIEUUNGDATTOIDA:
+            danhdau.add(nut)
+            try:
+                sprite, doituong, _, _, x, y, co, _, _, _, sau = struct.unpack("<11I", read_bytes(self.tientrinh, nut, self.KICHTHUOCNUTHIEUUNGDAT))
+            except Exception:
+                break
+            if sprite and not doituong:
+                ma = matheosprite.get(sprite)
+                ma = ma if ma is not None else self._mahieuungdattheonut.get(nut)
+                if ma is not None:
+                    nhomoi[nut] = ma
+                ketqua.append({"diachi": nut, "ma": ma, "x": x, "y": y, "co": co})
+            nut = sau
+        self._mahieuungdattheonut = nhomoi
+        return ketqua
+
+    def get_danhsachtranphap(self):
+        # Trận pháp Vân Mộng Cốc đang có: [{"ma", "ten", "x", "y", ...}], bỏ nút đang gỡ (cờ 1). Nút không tra được mã (sprite đã bị
+        # đẩy khỏi bộ đệm trước khi bot kịp thấy) vẫn tính là trận chưa rõ loại: tránh nhầm còn hơn đặt trùng tâm
+        dstran = []
+        for nut in self.get_danhsachhieuungdat():
+            if nut["co"] == 1:
+                continue
+            if nut["ma"] is None or nut["ma"] in TRANPHAPVANMONGCOCs:
+                nut["ten"] = TRANPHAPVANMONGCOCs.get(nut["ma"], "trận chưa rõ")
+                dstran.append(nut)
+        return dstran
+
+    def get_danhsachtranlacanh(self):
+        # Trận Pháp Lạc Ảnh (Đào Hoa Lạc Ảnh 2115) trên mặt đất: 2 nút cùng tâm mã MAHIEUUNGDATLACANHs (21151 + 21152), gộp theo tâm.
+        # Tâm = người dùng chiêu. Ghi log khi danh sách đổi, kèm mọi mã hiệu ứng đất đang thấy
+        dsnut = [nut for nut in self.get_danhsachhieuungdat() if nut["co"] != 1]
+        dstran = list({(nut["x"], nut["y"]): nut for nut in dsnut if nut["ma"] in MAHIEUUNGDATLACANHs}.values())
+        chuky = (tuple(sorted((nut["x"], nut["y"]) for nut in dstran)), tuple(sorted({nut["ma"] or 0 for nut in dsnut})))
+        if chuky != self._logdanhsachlacanhgannhat:
+            self._logdanhsachlacanhgannhat = chuky
+            mota = ", ".join(f"({nut['x']},{nut['y']})" for nut in dstran)
+            self._inlog(f"[TRẬN LẠC ẢNH] thấy {len(dstran)} trận{' tâm ' + mota if mota else ''}; mã hiệu ứng đất đang có: {list(chuky[1])}")
+        return dstran
+
+    def get_tamtrandangco(self):
+        # Ô tâm không đặt trận được: trận đang có trên mặt đất + tâm mình vừa đặt (gói tạo nút chưa về)
+        thoidiemhientai = time.time()
+        self._tamtranvuadat = {o: t for o, t in self._tamtranvuadat.items() if thoidiemhientai - t < THOIGIANNHOTAMTRANVUADAT}
+        dstran = self.get_danhsachtranphap()
+        chuky = tuple(sorted((tran["ma"] or 0, tran["x"], tran["y"]) for tran in dstran))
+        if chuky != self._logdanhsachtrangannhat:
+            self._logdanhsachtrangannhat = chuky
+            mota = ", ".join(f"{tran['ten']}{'' if tran['ma'] is None else ' ' + str(tran['ma'])} tâm ({tran['x']},{tran['y']})" for tran in dstran)
+            self._inlog(f"[TRẬN PHÁP] thấy {len(dstran)} trận trên mặt đất{': ' + mota if mota else ''}")
+        return {(tran["x"], tran["y"]) for tran in dstran} | set(self._tamtranvuadat)
+
+    def _chontamtran(self, x, y, x1, y1, tamxa):
+        # Tâm (x, y) đã có trận thì chọn ô gần nhất quanh đó (bán kính BANKINHDOITAMTRAN) chưa có trận và còn trong tầm (tamxa tính từ
+        # mình ở (x1, y1), đo kiểu ô vuông như tầm đánh); không có ô nào thì trả None (bỏ lượt đặt)
+        tamdangco = self.get_tamtrandangco()
+        if (x, y) not in tamdangco:
+            return x, y
+        ungvien = []
+        for dx in range(-BANKINHDOITAMTRAN, BANKINHDOITAMTRAN + 1):
+            for dy in range(-BANKINHDOITAMTRAN, BANKINHDOITAMTRAN + 1):
+                o = (x + dx, y + dy)
+                if o in tamdangco or max(abs(o[0] - x1), abs(o[1] - y1)) > tamxa:
+                    continue
+                ungvien.append((math.dist(o, (x, y)), o))
+        if not ungvien:
+            self._inlog(f"[TRẬN PHÁP] tâm ({x},{y}) đã có trận, không còn ô trống quanh đó trong tầm => không đặt")
+            return None
+        o = min(ungvien)[1]
+        self._inlog(f"[TRẬN PHÁP] tâm ({x},{y}) đã có trận => đổi sang ({o[0]},{o[1]})")
+        return o
 
     def get_is_bigiutrongtrando(self):
         return bool(self._toadotrandolacanh)
@@ -4773,7 +4993,7 @@ class MoiTruong:
             return False
         return self.action_dichuyengiukhoangcachtoidadiem(x2, y2, khoangcachtoida = 0, khoangcachdichuyentoida = khoangcachdichuyentoida, delay = delay)
 
-    def action_sudungkynangvitriphudau(self, idvitri_x, idvitri_y, diachi2, khoangcachphudau, delay = 1):
+    def action_sudungkynangvitriphudau(self, idvitri_x, idvitri_y, diachi2, khoangcachphudau, delay = 1, tamxatranphap = None):
         # idvitri_x là mã kỹ năng (id hoặc vị trí (x, y)) khi không truyền idvitri_y
         vitri = self._giaivitrikynang(idvitri_x, idvitri_y)
         if not vitri:
@@ -4781,9 +5001,11 @@ class MoiTruong:
         idvitri_x, idvitri_y = vitri
         if not diachi2 or not self.get_is_nhanvattontai(diachi2):
             return False
-        return self.action_sudungkynangvitriphudaudiem(idvitri_x, idvitri_y, *self.get_toado(diachi2), khoangcachphudau = khoangcachphudau, delay = delay)
+        return self.action_sudungkynangvitriphudaudiem(idvitri_x, idvitri_y, *self.get_toado(diachi2), khoangcachphudau = khoangcachphudau, delay = delay,
+                                                       tamxatranphap = tamxatranphap)
 
-    def action_sudungkynangvitriphudaudiem(self, idvitri_x, idvitri_y, x2, y2, khoangcachphudau, delay = 1):
+    def action_sudungkynangvitriphudaudiem(self, idvitri_x, idvitri_y, x2, y2, khoangcachphudau, delay = 1, tamxatranphap = None):
+        # tamxatranphap (trận pháp Vân Mộng Cốc): tâm định đặt đã có trận thì đổi sang ô trống gần đó trong tầm này (_chontamtran)
         # idvitri_x là mã kỹ năng (id hoặc vị trí (x, y)) khi không truyền idvitri_y
         vitri = self._giaivitrikynang(idvitri_x, idvitri_y)
         if not vitri:
@@ -4804,10 +5026,17 @@ class MoiTruong:
         else:
             deltax, deltay = khoangcachphudau, khoangcachphudau
         targetx, targety = round(x1 + deltax), round(y1 + deltay)
+        if tamxatranphap is not None:
+            tam = self._chontamtran(targetx, targety, x1, y1, tamxatranphap)
+            if not tam:
+                return False
+            targetx, targety = tam
         is_ok = self.action_sudungkynangtoado(idkynang, targetx, targety)
         if is_ok:
             self._thoidiemsudungkynanggannhat = time.time()
             self._thoidiemsudungkynangvitrigannhat_map[idvitri] = time.time()
+            if tamxatranphap is not None:
+                self._tamtranvuadat[(targetx, targety)] = time.time()
         return is_ok
 
     def get_is_damocuasotuychonnhanvatchinhlandau(self):

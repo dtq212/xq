@@ -3,6 +3,34 @@
     {
       "bat": true,
       "is_bao": false,
+      "hanhdong": "vut",
+      "ghichu": "Vứt tàng bảo đồ",
+      "ten": [
+        "Tàng Bảo Đồ",
+        "Công thức Ty Trù",
+        "Công thức Thanh Long Bào",
+        "Công thức Ty Tuyến",
+        "Công thức Ma Tuyến"
+      ],
+      "tenchua": [],
+      "loai": [],
+      "mota": []
+    },
+    {
+      "bat": true,
+      "is_bao": false,
+      "hanhdong": "ban",
+      "ghichu": "bán Phấn Huỳnh Quang",
+      "ten": [
+        "Phấn Huỳnh Quang"
+      ],
+      "tenchua": [],
+      "loai": [],
+      "mota": []
+    },
+    {
+      "bat": true,
+      "is_bao": false,
       "hanhdong": "giu",
       "ghichu": "Danh sách không bán (cũ)",
       "ten": [
@@ -116,7 +144,13 @@
         "Đá Càn Khôn",
         "12 con Giáp - Chuột",
         "Chiến Quốc Lệnh x3",
-        "Nữ Nhi Y"
+        "Nữ Nhi Y",
+        "Tinh Nguyên Đơn",
+        "Công Văn Truy Nã",
+        "Dây Càn Khôn",
+        "Tinh Thiết Ty",
+        "Tinh Thiết Phiến",
+        "Hàn Thiết Phiến"
       ],
       "tenchua": [],
       "loai": [],
@@ -157,18 +191,6 @@
       "mota": []
     },
     {
-      "hanhdong": "giu",
-      "ghichu": "Mô tả không bán (cũ)",
-      "mota": [
-        "ngự thạch"
-      ],
-      "bat": true,
-      "is_bao": false,
-      "ten": [],
-      "tenchua": [],
-      "loai": []
-    },
-    {
       "bat": true,
       "is_bao": true,
       "hanhdong": "giu",
@@ -186,18 +208,26 @@
       "mota": []
     },
     {
+      "hanhdong": "giu",
+      "ghichu": "Mô tả không bán (cũ)",
+      "mota": [
+        "ngự thạch"
+      ],
       "bat": true,
       "is_bao": false,
-      "hanhdong": "vut",
-      "ghichu": "Vứt tàng bảo đồ",
-      "ten": [
-        "Tàng Bảo Đồ",
-        "Công thức Ty Trù",
-        "Công thức Thanh Long Bào",
-        "Công thức Ty Tuyến",
-        "Công thức Ma Tuyến"
-      ],
+      "ten": [],
       "tenchua": [],
+      "loai": []
+    },
+    {
+      "bat": true,
+      "is_bao": false,
+      "hanhdong": "giu",
+      "ghichu": "Giữ Công thức (đặt sau luật Vứt công thức)",
+      "ten": [],
+      "tenchua": [
+        "Công thức"
+      ],
       "loai": [],
       "mota": []
     }
@@ -396,7 +426,8 @@
         "Tái Tạo Hoàn",
         "An Thần Hoàn",
         "Tạp Hóa Đơn",
-        "Tinh Nguyên Đơn"
+        "Tinh Nguyên Đơn",
+        "Bổ Tâm Đơn"
       ],
       "tenchua": [],
       "chibanrac": false,
@@ -450,7 +481,12 @@
         "Tim Sói",
         "Động Vật Bì Mao",
         "Hoạt Lạc Hoàn",
-        "An Thần Hoàn"
+        "An Thần Hoàn",
+        "Tiểu Thái Cực",
+        "Cá",
+        "Ngọc Cái",
+        "Trường Thọ Thạch",
+        "Phất Trần"
       ],
       "tenchua": [],
       "chibanrac": true,

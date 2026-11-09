@@ -230,6 +230,14 @@ KHOANGCACHSUDUNGKYNANGCANCHIEN = 1.
 KHOANGCACHLUIGIUKHOANGCACH = 3.
 # Đang theo sau: mình ra xa trưởng nhóm quá vùng đứng đánh chừng này ô (trưởng nhóm đang đi) thì chưa chọn mục tiêu, chạy về trước
 DUKHOANGCACHTHEOSAUCHONMUCTIEU = 1.5
+# Đang theo sau mà đánh nhau: vùng đứng đánh / tìm mục tiêu quanh người được theo sau rộng hơn khoảng cách theo sau chừng này ô
+# (người dùng 2026-11-09: đánh xa 3 ô, cận chiến 6 ô vì phải chạy sát quái). Không có mục tiêu thì vẫn bám đúng khoảng cách theo sau.
+# Cận chiến hay đánh xa xét theo tầm đánh của chiêu tiếp cận gần nhất (_khoangcachvoitoimuctieu), xem _tinhtoannoikhoangcachdanhtheosau.
+# Phải cộng đồng bộ ở: bán kính chỗ đứng đánh (_tinhtoanbankinhdungtancongtheosau → tầm tìm mục tiêu, cắt chỗ đứng, điểm lùi),
+# ngưỡng kéo về khi đang có mục tiêu (action_tudongtheosau) và ngưỡng chặn chọn mục tiêu (tactu_muctieu), nếu không sẽ chọn
+# quái không với tới hoặc chạy ra đánh rồi bị kéo về liên tục
+NOIKHOANGCACHDANHTHEOSAU = 3.
+NOIKHOANGCACHDANHTHEOSAUCANCHIEN = 6.
 KHOANGCACHSUDUNGKYNANGTAMXA = 8.  # 9., 12.
 # Tầm xa 8 ô đã là con số trừ hao lệch tọa độ client - server (tầm thật ~12 ô), nên không trừ thêm nhiều nữa:
 # - lọc mục tiêu quanh người theo sau dùng tầm xa - TRUHAOTAMXACHONMUCTIEU (dùng trọn 8 ô)
@@ -484,6 +492,25 @@ VITRIKYNANG_PHONGANTHUAT = 5315
 VITRIKYNANG_LINHKHIHOTHE = 5911
 VITRIKYNANG_KYMONTRAN = 5912
 VITRIKYNANG_DONGIAPTRAN = 5913
+# Trận pháp Vân Mộng Cốc nằm trong danh sách hiệu ứng mặt đất (MoiTruong.get_danhsachhieuungdat) với mã hiệu ứng = mã kỹ năng
+# (dump Thỏ 342 lúc 2026-11-10 00:13: nút mã 5913 tại (165,177), nút kia tại (166,176)). Game không cho đặt 2 trận chung 1 tâm
+# (người dùng báo) => trước khi đặt, đổi tâm nếu ô định đặt đã có trận
+TRANPHAPVANMONGCOCs = {VITRIKYNANG_KYMONTRAN: "Kỳ Môn Trận", VITRIKYNANG_DONGIAPTRAN: "Độn Giáp Trận"}
+# Tâm mình vừa đặt trận: gói máy chủ tạo nút về sau vài trăm ms, trong lúc đó vẫn coi ô là đã có trận
+THOIGIANNHOTAMTRANVUADAT = 3.
+# Né Kỳ Môn / Độn Giáp (tactu_dichuyen._tinhyeucaunetran): đứng trong trận mà mục tiêu đang đánh không ở trong trận đó thì đi ra
+# tới cách tâm BANKINHTRANVANMONGCOC + KHOANGCACHNETHEMTRAN ô (người dùng dặn 2026-11-10). Bán kính CHƯA ĐO, tạm lấy như Lạc Ảnh;
+# tính lại mỗi THOIGIANTINHNETRAN giây
+BANKINHTRANVANMONGCOC = 2.5
+KHOANGCACHNETHEMTRAN = 1.
+THOIGIANTINHNETRAN = 0.3
+# Đối thủ cận chiến bị nhốt trong Lạc Ảnh thì phái đánh xa của mình đứng ngoài, cách tâm trận ít nhất BANKINHTRANDOLACANH + chừng này
+# (tầm cận chiến 1 ô + dư), vẫn trong tầm bắn vào trận (người dùng dặn 2026-11-10). Phái đánh xa: các phái dưới đây, Thục Sơn khi đeo kiếm.
+# Đối thủ cận chiến: vũ khí không phải kiếm / ám khí (như is_muctieugiukhoangcach) và môn phái (nếu đã biết) không thuộc MONPHAIPHEPTHUATs
+KHOANGCACHNETRANLACANH = 2.
+MONPHAITANCONGTAMXAs = ("vanmongcoc", "maoson", "conluan", "duongmon")
+# Đổi tâm trận: thử các ô quanh tâm định đặt trong bán kính này (ô vuông), ưu tiên ô gần tâm cũ nhất
+BANKINHDOITAMTRAN = 2
 
 VITRIKYNANG_TIEUCHUTHIEN = 3291
 
@@ -894,12 +921,16 @@ TENMONPHAI = {
 # (đo 2026-10-26, Thọ nhốt 30: bị giữ ở cách Thọ 2-2.8 ô, có lần cách chỗ bị dính tới 4.5 ô): đích di chuyển ngoài bán kính này
 # quanh tâm trận bị kéo về mép trận. Tâm trận = người chơi ngoài nhóm trong KHOANGCACHTIMNGUOIDUNGTRANDO ô lúc vừa bị dính, ưu tiên người đánh tay không (Đào Hoa Nguyên) rồi tới người gần nhất
 BANKINHTRANDOLACANH = 2.5
+# Trận Lạc Ảnh trên mặt đất (MoiTruong.get_danhsachtranlacanh) là 2 nút hiệu ứng đất cùng tâm, mã 21151 và 21152 (không phải 2115).
+# Đo 2026-11-10 00:54 (trận vàng ở (169,175), cả 5 cửa sổ gần đó cùng thấy, cờ +0x18 = 2, +0x1C = 0; tồn tại ~16s rồi xoá hẳn)
+MAHIEUUNGDATLACANHs = (21151, 21152)
 KHOANGCACHTIMNGUOIDUNGTRANDO = 4.
 
 MONPHAIPHEPTHUATs = ("vanmongcoc", "maoson", "conluan")
 
 MONPHAICHIBUFFNGANCHAMs = ("daohoanguyen", "camvequan", "duongmon")
 MONPHAICHIBUFFKIMCHAMs = ("vanmongcoc", "maoson", "conluan")
+# Thục Sơn thì theo vũ khí đang đeo: LOAIVUKHITHUCSONCHIBUFF... (đặt cạnh IDLOAIVUKHI_*)
 # Bảo thú triệu hồi (tên bắt đầu bằng): Cương Thi / Thiên Binh / Thiên Tướng không cần Kim Châm, Quỷ Tốt không cần Ngân Châm
 BAOTHUCHIBUFFNGANCHAMs = (CUONGTHI, THIENBINH, THIENTUONG)
 BAOTHUCHIBUFFKIMCHAMs = (QUYTOT,)
@@ -1118,8 +1149,15 @@ NGUONGMAUHIENMUCTIEU = (60, 30)
 SODONGVEDANHHIEU = 4
 KICHTHUOCDONGVEDANHHIEU = 0x80
 KHOANGCACHDONGCHU = 14
-# Số đối tượng hook vẽ thêm dòng cùng lúc (ô 0 mục tiêu đang chọn; thôi hiện đệ vì "desc npc" lúc được lúc không, 2026-11-05)
-SODOITUONGVEDANHHIEU = 1
+# Số đối tượng hook vẽ thêm dòng cùng lúc: ô 0 mục tiêu đang chọn, ô 1 nhân vật mình (hành động hiện tại của bot, danhhieumuctieu_xq.
+# ODauNhanVat). Thôi hiện đệ vì "desc npc" lúc được lúc không (2026-11-05)
+SODOITUONGVEDANHHIEU = 2
+OKHOIMUCTIEU = 0
+OKHOINHANVAT = 1
+# Màu dòng hành động hiện tại trên đầu nhân vật mình (mã màu game ở trên), tô từng phần như khối 📢 của giao diện: tên việc trước ": ",
+# tên đối tượng sau động từ ("Tấn công <tên>", "Đi theo <tên>"), chữ thường, số đếm đủ / còn thiếu ("21/28"), toạ độ "(149, 158)",
+# tên bản đồ sau "ở "
+MAUHANHDONGTRENDAU = {"dau": "C", "doituong": "Y", "thuong": "W", "du": "G", "thieu": "Y", "toado": "w", "bando": "p"}
 KICHTHUOCKHOIVEDANHHIEU = 8 + SODONGVEDANHHIEU * KICHTHUOCDONGVEDANHHIEU
 # Vùng mã hook; 0x10 byte cuối: dấu hiệu + 5 byte gốc ở chỗ hook (lần chạy bot sau lấy lại, không nối chồng)
 KICHTHUOCKICHBANVEDANHHIEU = 0x200
@@ -1585,6 +1623,10 @@ IDLOAIVUKHI_KIEM = 62
 IDLOAIVUKHI_THUONG = 63
 IDLOAIVUKHI_CON = 64
 IDLOAIVUKHI_AMKHI = 69
+# Vân Mộng Cốc buff Thục Sơn theo vũ khí đang đeo (người dùng dặn 2026-11-09): kiếm chỉ cần Kim Châm, đao chỉ cần Ngân Châm;
+# không biết vũ khí thì buff cả hai (MONPHAICHIBUFF... là theo môn phái)
+LOAIVUKHITHUCSONCHIBUFFNGANCHAMs = (IDLOAIVUKHI_DAO,)
+LOAIVUKHITHUCSONCHIBUFFKIMCHAMs = (IDLOAIVUKHI_KIEM,)
 
 YEUCAUDICHUYEN_NONE = 0
 YEUCAUDICHUYENNHATDO = 1
@@ -1594,6 +1636,12 @@ YEUCAUDICHUYENTHEOSAU = 4
 YEUCAUDICHUYENGOMQUAI = 5
 YEUCAUDICHUYENGIUKHOANGCACH = 6
 YEUCAUDICHUYENTIMMUCTIEUCHUNG = 7
+# Buff toàn bản đồ: chạy tới thành viên cùng máy, cùng bản đồ, ngoài tầm cần buff (tactu_dichuyen._chontoibuffthanhvien)
+YEUCAUDICHUYENCHAYTOIBUFF = 8
+# Vân Mộng Cốc: bắt đầu chạy khi người cần buff xa hơn chừng này ô (gần hơn là trong tầm nhìn, luật buff tại chỗ tự tiếp cận),
+# dừng chạy khi đã vào gần chừng kia ô. Đào Hoa / Thục Sơn dùng tầm đánh xa (luật tại chỗ chỉ xét người trong tầm buff)
+KHOANGCACHBATDAUCHAYTOIBUFF = 16.
+KHOANGCACHDUNGCHAYTOIBUFF = 12.
 
 # Hết mục tiêu quanh mình thì đi tới mục tiêu nhân vật khác cùng máy đang thấy (tầm nhìn chung): chỉ xét mục tiêu cách mình tối đa
 # KHOANGCACHTIMMUCTIEUCHUNGTOIDA ô, tìm đường tới cách nó KHOANGCACHDUNGTIMMUCTIEUCHUNG ô (đủ gần để tự thấy rồi chọn như thường).

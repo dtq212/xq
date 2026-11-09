@@ -102,6 +102,9 @@ LOIMENUDOITHANHVIENPY = "đợi thành viên"
 # cấp thấp, giá bán thấp nhất. Chỉ lấy đồ trong túi, không bao giờ đụng đồ đang mặc
 MAMAULAMKIM = "\x1bC"
 MAMAUHOANGKIM = "\x1bY"
+# Màu tím (vd Kim Đao, Cổ Phương Côn, Xích Anh Thương, Chiến Quốc Lệnh x3; đọc mô tả thô 2026-11-09): không đem đốt, bán rác Phong Yêu
+# Kính luôn chừa như Hoàng Kim (người dùng giữ đồ tím)
+MAMAUTIM = "\x1bp"
 CAPDOLAMKIMTOITHIEU = 15
 # Mỗi lượt gửi desc tối đa chừng này ô chưa có mô tả (mỗi lệnh chờ 0.2s); gửi xong chừng này giây chưa có mô tả thì gửi lại, tối đa
 # SOLANDESCPY lần rồi bỏ ô đó
@@ -170,8 +173,11 @@ THOIGIANMOIDIEMPY = 25.
 NPCBANRACPY = ("Chủ Tiệm Y Dược", 250, 176)
 KHOANGCACHBANRACPY = 3.
 THOIGIANBANRACPY = 120.
-# Món luôn bán khi bán rác Phong Yêu Kính (kể cả tên màu, không có luật Bán), trừ khi khớp luật Giữ / Vứt / Cất kho của người dùng
-TENLUONBANPYs = ("Tinh Nguyên Đơn",)
+# Món luôn bán khi bán rác Phong Yêu Kính (kể cả tên màu, không có luật Bán), trừ khi khớp luật Giữ / Vứt / Cất kho của người dùng.
+# Bỏ Tinh Nguyên Đơn (2026-11-09): người dùng muốn giữ, có luật Giữ trong luattuido.json
+TENLUONBANPYs = ()
+# Bán rác Phong Yêu Kính: món không khớp luật nào mà tên màu này thì chừa (Lam Kim còn có thể bán thêm khi thiếu ô trống)
+MAMAUCHUABANPYs = (MAMAULAMKIM, MAMAUHOANGKIM, MAMAUTIM)
 # Bán rác xong mà hành trang còn ít hơn chừng này ô trống thì bán thêm đồ Lam Kim (chữ xanh) cho đủ, không thì vào phó bản đầy túi
 # không nhặt được (2026-11-04). Không bao giờ bán thêm đồ Hoàng Kim / có sao / luật Giữ / Cất kho
 SOOTRONGTOITHIEUPY = 6
@@ -249,6 +255,10 @@ THOIGIANCHOGIAITAN = 30.
 THOIGIANVONGTOIDA = 40 * 60.
 # Thành Kiều: nói chuyện vào mà quá SOLANTHUNOICHUYEN lần không vận khí (chưa xác nhận được / NPC không cho vào) thì chừng này giây sau thử lại
 THOIGIANTHULAIVAO = 20.
+# Phong Yêu Kính: đã vào vòng này rồi mà bị văng ra ngoài (dis, đăng nhập lại) thì phó bản cũ mất, Tả Khâu Minh đòi đốt đồ mới (09/11 10:50
+# cả 5 acc dis giữa vòng 16, trưởng đội coi là "không cho vào" rồi dừng cả đội tới khi bật tay lại ~3 tiếng sau). Khi đó coi vòng đã mất,
+# đốt món mới mở lại vòng; tối đa chừng này lần mỗi lần bật, quá thì dừng như cũ (tránh đốt đồ liên tục nếu là lỗi khác)
+SOLANDOTLAIPYSAUVANGRA = 2
 # Trước khi vào: nhóm phải đủ người như vòng trước và đứng yên chừng này giây; chờ quá THOIGIANBAONHOMTHIEU giây chưa đủ thì báo
 THOIGIANNHOMONDINH = 5.
 THOIGIANBAONHOMTHIEU = 120.
@@ -1787,8 +1797,8 @@ class TacTuLangLySon:
                     lamkims.append((uutien, vitri, iddoituong, ten))
                 continue
             is_luonban = unicodedata.normalize("NFC", ten).strip() in TENLUONBANPYs
-            if hanhdong is None and not is_luonban and mota.startswith((MAMAULAMKIM, MAMAUHOANGKIM)):
-                boquas.append(f"{ten} (tên màu Lam Kim / Hoàng Kim)")
+            if hanhdong is None and not is_luonban and mota.startswith(MAMAUCHUABANPYs):
+                boquas.append(f"{ten} (tên màu Lam Kim / Hoàng Kim / tím)")
                 if mota.startswith(MAMAULAMKIM):
                     lamkims.append((uutien, vitri, iddoituong, ten))
                 continue
@@ -1808,7 +1818,7 @@ class TacTuLangLySon:
                                f"{len(banthems)} món Lam Kim: " + ", ".join(banthems))
             if len(banthems) < thieu:
                 self._logpb(s, f"⚠️ Bán rác: hết đồ bán được, chỉ còn {sootrong + len(lenhs)} ô trống (cần {SOOTRONGTOITHIEUPY}); "
-                               "còn lại là đồ Giữ / Cất kho / Hoàng Kim / có sao")
+                               "còn lại là đồ Giữ / Cất kho / Hoàng Kim / tím / có sao")
         if boquas:
             self._logpb(s, f"Bán rác: chừa {len(boquas)} món: " + ", ".join(boquas))
         if not lenhs:
@@ -1816,7 +1826,7 @@ class TacTuLangLySon:
         b["somon"] = len(lenhs)
         self._hangdoibanrac = lenhs
         self._thoidiemguibanractieptheo = 0.
-        self._logpb(s, f"Bán {len(lenhs)} món rác ở {tennpc} (chừa đồ Lam Kim / Hoàng Kim)")
+        self._logpb(s, f"Bán {len(lenhs)} món rác ở {tennpc} (chừa đồ Lam Kim / Hoàng Kim / tím)")
         s["trangthai"] = f"bán rác ở {tennpc}: {len(lenhs)} món"
         return None
 
@@ -1886,6 +1896,14 @@ class TacTuLangLySon:
                     baosuco(moitruong, "langlyson", f"⚠️ {ten}: chọn vào {SOLANTHUNOICHUYEN} lần chưa được đưa vào, dừng tự động (xem giúp)",
                             khoa = f"{s['batdau']}|khongvaopy", giancach = 0.)
                     self._ketthuclanglyson(f"❌ Dừng: chọn vào {SOLANTHUNOICHUYEN} lần chưa được đưa vào")
+            elif ketqua == "tuchoi" and s["davao"] and s.get("solandotlaipy", 0) < SOLANDOTLAIPYSAUVANGRA:
+                # Đã vào vòng này rồi, giờ ở ngoài mà NPC đòi đốt đồ: phó bản cũ đã mất (dis / văng ra), mở vòng mới (giữ số vòng đã xong)
+                s["solandotlaipy"] = s.get("solandotlaipy", 0) + 1
+                self._logpb(s, f"{tennpc} không cho vào lại: phó bản vòng {s['sovong'] + 1} đã mất (dis / văng ra), đốt món mới mở lại "
+                               f"(lần {s['solandotlaipy']}/{SOLANDOTLAIPYSAUVANGRA})")
+                self._baolanglyson(s, f"dotlaipy|{s['solandotlaipy']}", f"⚠️ {ten}: vòng {s['sovong'] + 1} bị văng ra (dis?), phó bản cũ mất, "
+                                                                        f"đốt đồ mới mở lại")
+                self._datlaivongmoi(s)
             elif ketqua == "tuchoi":
                 baosuco(moitruong, "langlyson", f"⚠️ {ten}: đã đốt đồ mà {tennpc} không cho vào, dừng tự động (không đốt thêm, xem giúp)",
                         khoa = f"{s['batdau']}|tuchoipy", giancach = 0.)
@@ -2377,6 +2395,10 @@ class TacTuLangLySon:
         if nhomkeocap:
             thanhviens |= {nhomkeocap[0], *nhomkeocap[1]}
         ids = {idtoi}
+        # Ô Chia vùng (tab lộ trình) áp dụng cả trong Phong Yêu Kính: mình bỏ tích thì dò cả vòng một mình, người khác bỏ tích thì
+        # không tính vào nhóm chia (trước đây PYK bỏ qua ô này => bỏ tích vẫn bị chia, người dùng 2026-11-09)
+        if not self._is_chiavunglotrinh:
+            return [idtoi]
         try:
             danhsach = list(self.shared_data.items()) if self.shared_data is not None else []
         except Exception:
@@ -2385,7 +2407,8 @@ class TacTuLangLySon:
             if idcuaso == self.idcuaso or not isinstance(info, dict) or info.get("idnguoichoi") not in thanhviens:
                 continue
             if time.time() - info.get("thoidiemcapnhat", 0.) > 5. or info.get("_phobanlanglyson") != "phongyeukinh" \
-                    or info.get("_is_tudongtheosau") or not info.get("_is_tudongsudungkynang") or not moitruong.get_is_cungbando(info):
+                    or info.get("_is_tudongtheosau") or not info.get("_is_tudongsudungkynang") or not info.get("_is_chiavunglotrinh") \
+                    or not moitruong.get_is_cungbando(info):
                 continue
             ids.add(info["idnguoichoi"])
         return sorted(ids)

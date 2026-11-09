@@ -41,7 +41,7 @@ THUOCTINHTHIETLAPs = (
     "_danhhieulammoi", "_phantramnoiluckhaithientichdia", "_chedokynang", "_is_tudongtrieuhoibaothugiangho", "_is_tudongsudungkynangbaothu",
     "_is_tudongbatnguyenkhiquynguyen", "_is_tranhvungcam", "_is_giukhoangcachketancong", "_khoangcachgiuketancong", "_mauchaytron",
     "_mauhetchaytron", "_is_giukhoangcachchimuctieupk", "_is_taphoa", "_is_timmuctieuchung", "_chedohienthongtinmuctieugame",
-    "_mauhienthongtinmuctieugame", "_is_tutimduongtheosau", "_is_diquocgiatanthutienco", "_is_doidokhitrieuhoi", "_bodotrieuhoi", "_baothutrieuhoimaoson",
+    "_mauhienthongtinmuctieugame", "_is_hienhanhdongtrendau", "_is_tutimduongtheosau", "_is_chaytoibuffthanhvien", "_is_diquocgiatanthutienco", "_is_doidokhitrieuhoi", "_bodotrieuhoi", "_baothutrieuhoimaoson",
     "_sumon_npcgiao", "_tapkich_phai", "_matac_bandos", "_is_tubatmatac", "_hangviec_thutu", "_hangviec_chon",
 )
 
@@ -675,6 +675,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         # Yêu cầu lùi đang có (None = không cần lùi); tính lại mỗi THOIGIANTINHGIUKHOANGCACH giây trong action_xulyuutiendichuyen
         self._yeucaugiukhoangcach = None
         self._thoidiemtinhgiukhoangcachgannhat = 0.
+        # Yêu cầu né ra khỏi Kỳ Môn / Độn Giáp (None = không cần né), tính lại mỗi THOIGIANTINHNETRAN giây; khoá log lần né gần nhất
+        self._yeucaunetran = None
+        self._thoidiemtinhnetrangannhat = 0.
+        self._khoalognetran = None
         # Đang chạy trốn vì máu thấp (dưới _mauchaytron%, trên _mauhetchaytron% mới quay lại đánh): mọi phái, không cần bật giữ khoảng cách.
         # Hai ngưỡng chỉnh ở giao diện, lưu theo nhân vật; _mauchaytron = 0 là tắt
         self._is_dangchaytron = False
@@ -697,6 +701,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         # Ghi thông tin ước lượng (Khí Huyết / Kháng / Công) lên mục tiêu đang chọn trong client (danhhieumuctieu_xq): CHEDOHIENMUCTIEU_*
         self._chedohienthongtinmuctieugame = CHEDOHIENMUCTIEU_TAT
         self._mauhienthongtinmuctieugame = MAUHIENMUCTIEU_THEOMAU
+        # Hiện hành động hiện tại (_hanhdong) trên đầu nhân vật mình trong client (danhhieumuctieu_xq.ODauNhanVat)
+        self._is_hienhanhdongtrendau = True
         self._yeucautimmuctieuchung = None
         self._muctieuchungdangtim = None
         self._thoidiemhetboquamuctieuchung_map = {}
@@ -713,6 +719,11 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         # Theo sau: người được theo sau ở bản đồ khác => tự tìm đường tới bản đồ đó (phù / Hồi Thành Phù / chạy bộ như Đi tới bản đồ).
         # Tắt thì chỉ theo sau trong cùng bản đồ
         self._is_tutimduongtheosau = True
+        # Buff toàn bản đồ: không theo sau ai mà thành viên nhóm / người quen cùng máy, cùng bản đồ, ngoài tầm cần buff theo luật của phái
+        # thì chạy tới (tactu_dichuyen.action_chaytoibuffthanhvien). Yêu cầu di chuyển đang có / ID người đang chạy tới
+        self._is_chaytoibuffthanhvien = False
+        self._yeucauchaytoibuff = None
+        self._idchaytoibuff = 0
         # Đi quốc gia bằng Tân Thủ Tiên Cô: tới quốc gia thì Tín Vật về môn phái, Tân Thủ Tiên Cô phù lên bản đồ gần rồi chạy sang, thay
         # cho Hồi Thành Phù (BANDOGANQUOCGIA_TANTHUTIENCO, _lapbuocquocgiatanthutienco). Mặc định bật (người dùng dặn 2026-11-06)
         self._is_diquocgiatanthutienco = True
@@ -797,6 +808,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._diachidoituongcanbuffhothekimcangdaohoanguyen = None
         # (thời điểm xét, có nhường Trấn Cổ Thần Uy / Hộ Thể Kim Cang cho Đào Hoa Nguyên ưu tiên hơn không)
         self._bonhonhuongbuffdaohoanguyen = (0., False)
+        # Lần gần nhất ghi log bỏ Đào Hoa Lạc Ảnh vì phí (_is_lacanhlangphi), giãn log 3s
+        self._thoidiemlogbolacanh = 0.
         # Lần chọn gửi gần nhất của tâm pháp bật / tắt (Nguyên Khí Quy Nguyên, Dã Tính Cuồng Lực) theo vị trí kỹ năng
         self._thoidiemguitamphapbattat_map = {}
 
@@ -905,7 +918,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             "_is_timmuctieuchung": self._is_timmuctieuchung,
             "_chedohienthongtinmuctieugame": self._chedohienthongtinmuctieugame,
             "_mauhienthongtinmuctieugame": self._mauhienthongtinmuctieugame,
+            "_is_hienhanhdongtrendau": self._is_hienhanhdongtrendau,
             "_is_tutimduongtheosau": self._is_tutimduongtheosau,
+            "_is_chaytoibuffthanhvien": self._is_chaytoibuffthanhvien,
             "_is_diquocgiatanthutienco": self._is_diquocgiatanthutienco,
             "_is_doidokhitrieuhoi": self._is_doidokhitrieuhoi,
             "_bodotrieuhoi": self._bodotrieuhoi,
@@ -1037,7 +1052,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             if "_is_timmuctieuchung" in thietlap: self._is_timmuctieuchung = thietlap["_is_timmuctieuchung"]
             if "_chedohienthongtinmuctieugame" in thietlap: self.thietlap_chedohienthongtinmuctieugame(thietlap["_chedohienthongtinmuctieugame"])
             if "_mauhienthongtinmuctieugame" in thietlap: self.thietlap_mauhienthongtinmuctieugame(thietlap["_mauhienthongtinmuctieugame"])
+            if "_is_hienhanhdongtrendau" in thietlap: self._is_hienhanhdongtrendau = bool(thietlap["_is_hienhanhdongtrendau"])
             if "_is_tutimduongtheosau" in thietlap: self._is_tutimduongtheosau = thietlap["_is_tutimduongtheosau"]
+            if "_is_chaytoibuffthanhvien" in thietlap: self._is_chaytoibuffthanhvien = bool(thietlap["_is_chaytoibuffthanhvien"])
             if "_is_diquocgiatanthutienco" in thietlap: self._is_diquocgiatanthutienco = thietlap["_is_diquocgiatanthutienco"]
             if "_is_doidokhitrieuhoi" in thietlap: self._is_doidokhitrieuhoi = thietlap["_is_doidokhitrieuhoi"]
             if "_bodotrieuhoi" in thietlap: self._bodotrieuhoi = list(thietlap["_bodotrieuhoi"])
@@ -1160,6 +1177,15 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             phatam("Bật tự tìm đường tới người được theo sau")
         else:
             phatam("Tắt tự tìm đường tới người được theo sau")
+
+    def battat_chaytoibuffthanhvien(self):
+        self._is_chaytoibuffthanhvien = not self._is_chaytoibuffthanhvien
+        self._yeucauchaytoibuff = None
+        self._idchaytoibuff = 0
+        if self._is_chaytoibuffthanhvien:
+            phatam("Bật buff toàn bản đồ")
+        else:
+            phatam("Tắt buff toàn bản đồ")
 
     def battat_diquocgiatanthutienco(self):
         self._is_diquocgiatanthutienco = not self._is_diquocgiatanthutienco
