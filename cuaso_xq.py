@@ -557,6 +557,13 @@ class CuaSo:
                     self.tactu.kichhoat_giaodo()
                 elif isinstance(cmd, str) and cmd.startswith("huygiaodo:"):
                     self.tactu.huy_giaodo(cmd.split(":", 1)[1])
+                elif isinstance(cmd, str) and cmd.startswith("raoban:"):
+                    # Rao bán ngân lượng (bannganluong_xq): raoban:<kênh>|<nội dung>, kênh "chat" (thế giới) / "say" (gần)... theo chuỗi
+                    # "<kênh> %s" trong XQ.exe. Chỉ nhận kênh chat, không để thành lệnh game tuỳ ý
+                    kenh, _, noidung = cmd.split(":", 1)[1].partition("|")
+                    if kenh in ("chat", "say", "rumor", "vipchat", "ct", "ot", "ft", "et", "tt") and noidung.strip():
+                        if not self.moitruong.action_thucthicaulenh2(f"{kenh} {noidung.strip()}", delay = 0., is_khancap = True):
+                            print(f"[BÁN NL] Chưa gửi được lệnh rao")
                 elif cmd == "catkho":
                     # Cất kho ngay (tactu_catkho_xq) từ giao diện / Telegram
                     self.tactu.yeucau_catkho()

@@ -239,6 +239,11 @@ class TacTuGiaoDo:
             if tien > nganluong:
                 self._ketthucgiaodo(yeucau, False, f"không đủ ngân lượng (cần {so(tien)}, có {so(nganluong)})")
                 return
+            # Đơn bán ngân lượng: giữ quỹ tối thiểu (bannganluong.json "giulaitoithieu"), giao xong mà tụt dưới mức thì không giao
+            giulaitoithieu = int(yeucau.get("giulaitoithieu") or 0)
+            if yeucau.get("is_ban") and giulaitoithieu and nganluong - tien < giulaitoithieu:
+                self._ketthucgiaodo(yeucau, False, f"giao {so(tien)} thì còn {so(nganluong - tien)}, dưới mức giữ lại {so(giulaitoithieu)}")
+                return
             _, thucte, loi = chiamon(yeucau["vatphams"], cacchong)
             if loi:
                 self._ketthucgiaodo(yeucau, False, loi)

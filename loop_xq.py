@@ -250,7 +250,7 @@ class LoopChinh:
                         break
 
         if self.moitruong.get_idnguoichoi() in (342, 347, 354, 359, 364):
-            for tenvatpham in ("Túi Ngân Lượng", "Túi Kim Bảo", "Túi Quà Vô Song", "Túi Pháp Bảo", ):
+            for tenvatpham in ("Lễ Bao Khai Quốc", "Túi Ngân Lượng", "Túi Kim Bảo", "Túi Quà Vô Song", "Túi Pháp Bảo", ):
                 if self.tactu.action_sudungvatphamhanhtrang(tenvatpham):
                     break
 

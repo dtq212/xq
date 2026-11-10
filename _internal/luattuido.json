@@ -4,13 +4,33 @@
       "bat": true,
       "is_bao": false,
       "hanhdong": "vut",
+      "ghichu": "",
+      "ten": [],
+      "tenchua": [
+        "Trang Phục Mùa Hè",
+        "Vạn Ác Chi Dực",
+        "Trang Phục Dạo Phố"
+      ],
+      "loai": [],
+      "mota": []
+    },
+    {
+      "bat": true,
+      "is_bao": false,
+      "hanhdong": "vut",
       "ghichu": "Vứt tàng bảo đồ",
       "ten": [
         "Tàng Bảo Đồ",
         "Công thức Ty Trù",
         "Công thức Thanh Long Bào",
         "Công thức Ty Tuyến",
-        "Công thức Ma Tuyến"
+        "Công thức Ma Tuyến",
+        "Khu Thần Lệnh",
+        "Chiến Quốc Lệnh",
+        "Linh Tê Hoàn",
+        "Thần Thú - Tuất",
+        "Thần Phong Phi Phong",
+        "Thần Thú - Chuột"
       ],
       "tenchua": [],
       "loai": [],

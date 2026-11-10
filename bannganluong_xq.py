@@ -6,8 +6,13 @@
 #     (để trống = mọi tài khoản đã nối SePay)
 #   - "tiento": tiền tố trước ID trong nội dung chuyển khoản; "nganluongmoi1000d": 1.000đ đổi được bao nhiêu ngân lượng;
 #     "sotientoithieu": dưới số tiền này thì không tự giao (báo Telegram xử lý tay)
+#   - "giulaitoithieu": ngân lượng nhân vật bán luôn giữ lại làm quỹ; đơn mà giao xong số dư tụt dưới mức này thì bot không give,
+#     đơn thành "loi" (báo Telegram), bổ sung ngân lượng rồi đặt "guilai". 0 = bán tới hết
 #   - "idnhanvatban": ID người chơi của nhân vật bán. Chỉ máy đang chạy nhân vật này mới hỏi SePay và giao (máy khác chép cùng cấu hình
 #     cũng không giao trùng)
+#   - Rao bán: "is_rao" bật, nhân vật bán gửi "<kenhrao> <nội dung>" mỗi "chukyrao" giây. Kênh lấy từ chuỗi trong XQ.exe ("chat %s",
+#     "say %s"...): mặc định "vipchat" (kênh VIP, test 2026-11-10 hiện đủ câu ~160 byte), "say" kênh gần. "noidungrao" thay {mil100k} (100.000đ được bao nhiêu mil, vd 1,5), {dongia} (giá 1 mil, vd 66,7k), {tiento}, {stk} (sotaikhoan),
+#     {nganhang}, {chutaikhoan}, {conlai} (mil còn bán được = ngân lượng đang có - giulaitoithieu - đơn chờ giao). Hết mil thì không rao
 # Đơn lưu ở _internal/bannganluong_don.json (KHÔNG đưa lên git: đồng bộ git ghi đè bản cũ là giao lại đơn đã giao). Chạy lần đầu (chưa có
 # file) chỉ nhận giao dịch từ lúc đó, không giao lại lịch sử. Trạng thái đơn ("trangthai"):
 #   chogiao: đã đưa vào hàng chờ của nhân vật bán. Bot mất hàng chờ (mở lại client) mà chưa gửi lệnh give thì tự đưa lại
@@ -37,7 +42,17 @@ CAUHINHMAU = {
     "nganluongmoi1000d": 0,
     "sotientoithieu": 10000,
     "idnhanvatban": 0,
+    "giulaitoithieu": 0,
+    "is_rao": False,
+    "kenhrao": "vipchat",
+    "chukyrao": 60,
+    "nganhang": "",
+    "chutaikhoan": "",
+    "noidungrao": "Bán mil 100k = {mil100k} mil, CK {nganhang} {stk} {chutaikhoan} nội dung {tiento}+ID nhân vật (vd {tiento}12345), "
+                  "tới Tạp Hóa Tân Thủ Thôn nhận tự động. Còn {conlai} mil",
 }
+# 1 mil = 1 triệu ngân lượng
+NGANLUONGMOIMIL = 1000000
 # Hỏi SePay mỗi chừng này giây; đồng bộ trạng thái đơn với bot nhanh hơn
 CHUKYHOISEPAY = 30.
 CHUKYDONGBO = 5.
@@ -96,6 +111,11 @@ def docidnguoichoi(noidung, tiento):
     return ids.pop() if len(ids) == 1 else None
 
 
+def _somil(nganluong):
+    # Ngân lượng -> số mil 1 chữ số thập phân, dấu phẩy: 1.500.000 -> "1,5", 10.448.500 -> "10,4", 2.000.000 -> "2"
+    return f"{nganluong / NGANLUONGMOIMIL:.1f}".rstrip("0").rstrip(".").replace(".", ",")
+
+
 def _so(n):
     return f"{n:,}".replace(",", ".")
 
@@ -106,6 +126,7 @@ class BanNganLuong:
         self.shared_data = shared_data
         self.command_dict = command_dict
         self._luchoisepay = 0.
+        self._lucrao = 0.
         self._trangthai_log = None
 
     def batdau(self):
@@ -159,6 +180,41 @@ class BanNganLuong:
 
         self._dongbo(cauhinh, hwnd, info, dons)
         _ghijson(duongdandon(), trangthai)
+        self._rao(cauhinh, hwnd, info, dons)
+
+    def _rao(self, cauhinh, hwnd, info, dons):
+        # Rao bán trên kênh chat mỗi "chukyrao" giây. command_dict mỗi cửa sổ chỉ giữ 1 lệnh: đang có lệnh chờ (vd giaodo) thì để lượt sau
+        # (5s), kẻo đè mất
+        if not cauhinh.get("is_rao") or time.time() - self._lucrao < max(10., float(cauhinh.get("chukyrao") or 60)):
+            return
+        if self.command_dict.get(hwnd):
+            return
+        nganluong = info.get("nganluong")
+        if nganluong is None:
+            return
+        dangcho = sum(int(don.get("nganluong") or 0) for don in dons.values() if don.get("trangthai") == "chogiao")
+        conlai = nganluong - int(cauhinh.get("giulaitoithieu") or 0) - dangcho
+        if conlai < NGANLUONGMOIMIL:
+            self._lucrao = time.time()
+            print(f"[BÁN NL] Hết mil để rao (ngân lượng {_so(nganluong)}, chờ giao {_so(dangcho)})")
+            return
+        # Giá 1 mil theo nghìn đồng: 1.000đ = nganluongmoi1000d ngân lượng; lẻ thì 1 số thập phân ("100k", 15.000 NL/1k -> "66,7k")
+        dongia = NGANLUONGMOIMIL / int(cauhinh["nganluongmoi1000d"])
+        tieude = f"{dongia:.1f}".rstrip("0").rstrip(".").replace(".", ",") + "k"
+        try:
+            noidung = str(cauhinh.get("noidungrao") or CAUHINHMAU["noidungrao"]).format(
+                dongia = tieude, mil100k = _somil(100 * int(cauhinh["nganluongmoi1000d"])), tiento = cauhinh.get("tiento") or "", stk = cauhinh.get("sotaikhoan") or "",
+                nganhang = cauhinh.get("nganhang") or "", chutaikhoan = cauhinh.get("chutaikhoan") or "",
+                conlai = _somil(conlai))
+        except (KeyError, IndexError, ValueError) as err:
+            self._lucrao = time.time()
+            print(f"[BÁN NL] noidungrao sai mẫu ({err}), không rao")
+            return
+        # Bỏ xuống dòng và khoảng trắng thừa (ô trống trong mẫu)
+        noidung = re.sub(r"\s+", " ", noidung).strip()
+        self.command_dict[hwnd] = f"raoban:{cauhinh.get('kenhrao') or 'vipchat'}|{noidung}"
+        self._lucrao = time.time()
+        print(f"[BÁN NL] Rao: {noidung}")
 
     def _laygiaodich(self, cauhinh, trangthai):
         # Giao dịch tiền vào mới (id tăng dần). SePay: since_id lấy id >= giá trị
@@ -232,7 +288,7 @@ class BanNganLuong:
             if now - don.get("lucgui", 0) >= THOIGIANCHOBOTNHAN:
                 # Chưa đưa lần nào, hoặc bot mất hàng chờ trước khi gửi give (mở lại client): đưa (lại)
                 yeucau = dict(taoyeucau(f"ID {don['idnguoichoi']}", don["nganluong"]), id = mayeucau, idnguoichoi = don["idnguoichoi"],
-                              is_ban = True)
+                              is_ban = True, giulaitoithieu = int(cauhinh.get("giulaitoithieu") or 0))
                 guiyeucau(self.command_dict, hwnd, yeucau)
                 don["lucgui"] = now
                 print(f"[BÁN NL] Đưa đơn {idgd} vào hàng chờ {info.get('tennhanvat')}: {_so(don['nganluong'])} ngân lượng cho ID {don['idnguoichoi']}")
