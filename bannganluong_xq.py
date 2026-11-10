@@ -8,6 +8,9 @@
 #     "sotientoithieu": dưới số tiền này thì không tự giao (báo Telegram xử lý tay)
 #   - "giulaitoithieu": ngân lượng nhân vật bán luôn giữ lại làm quỹ; đơn mà giao xong số dư tụt dưới mức này thì bot không give,
 #     đơn thành "loi" (báo Telegram), bổ sung ngân lượng rồi đặt "guilai". 0 = bán tới hết
+#   - "tanglandau": % ngân lượng tặng thêm cho đơn đầu tiên của mỗi ID (0 = tắt). "Lần đầu" = trong bannganluong_don.json chưa có đơn
+#     nào của ID đó ngoài đơn "huy" / "xulytay" (đơn xulytay là chưa giao được, đặt "guilai" thì giao đúng số đã tính lúc tạo, không
+#     tặng thêm). Khách mua trước khi có file đơn thì bot không biết, vẫn tính là lần đầu
 #   - "idnhanvatban": ID người chơi của nhân vật bán. Chỉ máy đang chạy nhân vật này mới hỏi SePay và giao (máy khác chép cùng cấu hình
 #     cũng không giao trùng)
 #   - Rao bán: "is_rao" bật, nhân vật bán rao theo từng mục "raos": {"kenh", "chuky": [x, y] giây ngẫu nhiên (1 số = cố định),
@@ -50,12 +53,13 @@ CAUHINHMAU = {
     "sotientoithieu": 10000,
     "idnhanvatban": 0,
     "giulaitoithieu": 0,
+    "tanglandau": 20,
     "is_rao": False,
     "nganhang": "",
     "chutaikhoan": "",
     "raos": [
         {"kenh": "vipchat", "chuky": [70, 150],
-         "noidung": "bán mil {mil100k}m = 100k ai cần thì chat mật, vui lòng không tổ đội, xin cảm ơn !"},
+         "noidung": "bán mil {mil100k}m = 100k ai có nhu cầu vui lòng IB. Ưu đãi mua lần đầu tặng thêm 20%"},
     ],
     "is_traloitinmat": True,
     "trehoantraloi": [5, 12],
@@ -242,7 +246,7 @@ class BanNganLuong:
             for gd in self._laygiaodich(cauhinh, trangthai):
                 trangthai["idcuoi"] = max(trangthai["idcuoi"], int(gd["id"]))
                 if str(gd["id"]) not in dons:
-                    dons[str(gd["id"])] = self._taodon(cauhinh, gd)
+                    dons[str(gd["id"])] = self._taodon(cauhinh, gd, dons)
 
         self._dongbo(cauhinh, hwnd, info, dons)
         _ghijson(duongdandon(), trangthai)
@@ -360,7 +364,7 @@ class BanNganLuong:
                and str(gd.get("transaction_date") or "") >= trangthai["lucbatdau"]]
         return sorted(gds, key = lambda gd: int(gd["id"]))
 
-    def _taodon(self, cauhinh, gd):
+    def _taodon(self, cauhinh, gd, dons):
         sotien = int(float(gd["amount_in"]))
         noidung = gd.get("transaction_content") or ""
         idnguoichoi = docidnguoichoi(noidung, cauhinh["tiento"])
@@ -370,14 +374,37 @@ class BanNganLuong:
             don.update(trangthai = "xulytay", ghichu = f"nội dung không có đúng 1 ID dạng {cauhinh['tiento']}<số>")
         elif sotien < int(cauhinh.get("sotientoithieu") or 0):
             don.update(trangthai = "xulytay", ghichu = f"dưới tối thiểu {_so(int(cauhinh['sotientoithieu']))}đ")
+        else:
+            phantram = self._phantramtanglandau(cauhinh, idnguoichoi, dons)
+            if phantram:
+                # Lưu cả số gốc và phần tặng để đối soát; "nganluong" là tổng sẽ give
+                tang = don["nganluong"] * phantram // 100
+                don.update(nganluonggoc = don["nganluong"], nganluongtang = tang, nganluong = don["nganluong"] + tang,
+                           ghichu = f"lần đầu tặng {phantram}%")
         print(f"[BÁN NL] Giao dịch {gd['id']}: {_so(sotien)}đ \"{noidung}\" -> {don['trangthai']} {don['ghichu']}")
         if don["trangthai"] == "xulytay":
             guitin(f"⚠️ Nhận {_so(sotien)}đ (GD {gd['id']}) nhưng {don['ghichu']}: <i>{html.escape(noidung)}</i>\n"
                    f"Sửa bannganluong_don.json: điền \"idnguoichoi\", đặt \"trangthai\": \"guilai\"", is_html = True)
         else:
-            guitin(f"💳 Nhận {_so(sotien)}đ từ ID <b>{idnguoichoi}</b> → {_so(don['nganluong'])} ngân lượng, chờ người chơi tới Tiệm Tạp Hóa "
-                   f"Tân Thủ Thôn", is_html = True)
+            tang = f" (gồm {_so(don['nganluongtang'])} tặng lần đầu)" if don.get("nganluongtang") else ""
+            guitin(f"💳 Nhận {_so(sotien)}đ từ ID <b>{idnguoichoi}</b> → {_so(don['nganluong'])} ngân lượng{tang}, chờ người chơi tới Tiệm "
+                   f"Tạp Hóa Tân Thủ Thôn", is_html = True)
         return don
+
+    @staticmethod
+    def _phantramtanglandau(cauhinh, idnguoichoi, dons):
+        # % tặng cho đơn này: chỉ khi ID chưa có đơn nào khác (bỏ qua đơn huỷ / xử lý tay = chưa nhận được gì). Các giao dịch cùng 1 lượt
+        # hỏi SePay được thêm vào dons lần lượt nên 2 lần chuyển liền nhau chỉ lần đầu được tặng
+        try:
+            phantram = max(0, int(cauhinh.get("tanglandau") or 0))
+        except (TypeError, ValueError):
+            return 0
+        if not phantram:
+            return 0
+        for don in dons.values():
+            if don.get("idnguoichoi") == idnguoichoi and don.get("trangthai") not in ("huy", "xulytay"):
+                return 0
+        return phantram
 
     def _dongbo(self, cauhinh, hwnd, info, dons):
         # Đối chiếu đơn với hàng chờ giao đồ của nhân vật bán (shared_data "_hangchogiaodo", id yêu cầu = "nl<id giao dịch>-<lần guilai>")

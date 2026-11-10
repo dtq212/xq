@@ -83,8 +83,9 @@ class TacTuHoatDong:
 
         phathien =self._quetnguoichoibatthuong()
         # Đang kéo cấp (mọi vai, kể cả kéo gà A-Z): bãi / Phong Yêu Kính đông người, thấy người lạ không tạm ngưng, không công bố cho cửa sổ
-        # khác (người dùng dặn 2026-11-08); ẩn thân vẫn ngưng như cũ
-        is_bonguoila = bool(self._keocap)
+        # khác (người dùng dặn 2026-11-08); ẩn thân vẫn ngưng như cũ.
+        # Bật Tự động khai khoáng cũng vậy: bãi khoáng đông người, thấy người lạ không ngưng (người dùng dặn 2026-11-10)
+        is_bonguoila = bool(self._keocap) or self._is_tudongkhaikhoang
         if is_bonguoila and phathien and "ẩn thân" not in phathien[0]:
             phathien = None
         if phathien:
