@@ -65,8 +65,10 @@ CHUKY = {
     "HOOK_TROCHUYEN": ("ma", "55 8B 8A D8 FD AD 00", 1, 0x5964),  # chỗ hook đọc nội dung trò chuyện (6 byte)
     "HOOK_TINHETHONG": ("ma", "55 8B 89 64 FD AD 00", 1, 0x2b63),  # chỗ hook gói 0x3E chỉ in vào khung tin hệ thống (trả lời "desc user"), 6 byte
     "HOOK_COTNHIEMVUNPC": ("ma", "33 DB 8B 0E 85 C9", 2, 0x217fe),  # đọc số cờ dấu nhiệm vụ NPC: mov ecx,[esi]; test ecx,ecx; je (6 byte), chặn số cờ rác
-    "HOOK_VEHIEUUNGDAT1": ("ma", "8B 16 89 4C 24 10 6A 00 8B CB 8B 52 1C", 0, 0x4f83a),  # vẽ hiệu ứng mặt đất vòng 1: mov edx,[esi]; mov [esp+0x10],ecx (6 byte), esi = nút
-    "HOOK_VEHIEUUNGDAT2": ("ma", "8B 16 33 FF 89 4C 24 10 57 8B 52 1C", 0, 0x4fe8e),  # vẽ hiệu ứng mặt đất vòng 2: mov edx,[esi]; xor edi,edi; mov [esp+0x10],ecx (8 byte)
+    "HOOK_VEHIEUUNGDAT1": ("ma", "8B 16 89 4C 24 10 6A 00", 0, 0x4f83a),  # vẽ hiệu ứng mặt đất vòng 1: mov edx,[esi]; mov [esp+0x10],ecx (6 byte), esi = nút
+    "HOOK_VEHIEUUNGDAT2": ("ma", "F7 7E 0C 8B 16 33 FF", 3, 0x4fe8e),  # vẽ hiệu ứng mặt đất vòng 2: mov edx,[esi]; xor edi,edi; mov [esp+0x10],ecx (8 byte)
+    "HOOK_VETILENEN1": ("ma", "8B 54 24 2C 8B 4C 24 14", 0, 0x535bf),  # vẽ tile nền ở luồng nền: sau call lấy khung tile, mov edx,[esp+0x2C]; mov ecx,[esp+0x14] (8 byte), eax = khung
+    "HOOK_VETILENEN2": ("ma", "8B 54 24 30 50 8B CB", 0, 0x9bafe),  # vẽ tile nền: sau call lấy khung tile, mov edx,[esp+0x30]; push eax (5 byte), eax = khung
     "DSHIEUUNGDAT": ("bien", "8B 3D ?? ?? ?? ?? 39 1F 75 2C", 2, 0x376ca4),  # đầu danh sách hiệu ứng mặt đất (trận pháp...), nút 0x2C byte, kế tiếp +0x28
     "MAHIEUUNGDAT": ("bien", "53 55 57 B8 ?? ?? ?? ?? 39 30", 4, 0x376a48),  # bộ đệm 100 mã hiệu ứng (perform/<mã>) đã nạp sprite, ô i ứng với BANGSPRITEHIEUUNG[i + 1]
     "BANGSPRITEHIEUUNG": ("bien", "8B 04 85 ?? ?? ?? ?? 8B 48 1C", 3, 0x1be614),  # bảng con trỏ sprite hiệu ứng theo chỉ số (chỉ số = ô bộ đệm + 1)

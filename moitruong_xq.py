@@ -76,6 +76,16 @@ THOIGIANGIATKHONGCATGOC = 4.
 SOLANGIATKHONGCATGOC = 2
 # Mỗi ô trong khu vực cấm khai tay tính thêm chừng này bước khi tìm đường không cắt góc
 PHATKHUVUCCAMKHONGCATGOC = 20.
+# Ô NPC (lớp +0x29 == 0x80) đang đứng: lưới vật cản client không ghi NPC => A* vạch đường xuyên qua NPC, nhân vật vấp vào đó (người dùng
+# thấy 2026-11-11). Tính thêm chừng này bước cho ô đó (phạt chứ không chặn hẳn: lối hẹp 1 ô có NPC đứng vẫn đi qua được, đích là NPC vẫn
+# tới được); danh sách ô NPC đọc lại sau THOIGIANNHOONPC giây (A* gọi mỗi ~0.1s, quét cả bảng đối tượng mỗi lần thì tốn)
+PHATONPCKHONGCATGOC = 10.
+THOIGIANNHOONPC = 1.
+# Đi liên tục mà client không bước ra khỏi ô chừng này giây (ô "sắp tới" không lệch nên _hockhongcatgoc không học được) thì chặn tạm
+# bước đầu của đường đang đi THOIGIANTAMCHAN giây (A* tính thêm PHATTAMCHANKHONGCATGOC bước cho ô đó)
+THOIGIANKETTAMCHAN = 3.
+THOIGIANTAMCHAN = 30.
+PHATTAMCHANKHONGCATGOC = 30.
 # Chạy trốn theo đường tính sẵn (get_duongchaytron): xét lưới vật cản trong ô vuông bán kính BANKINHLUOICHAYTRON quanh mình, chọn đích
 # cách SOBUOCDICHCHAYTRONTOITHIEU..SOBUOCDICHCHAYTRONTOIDA bước (đích không sát mép lưới để còn đếm được khoảng trống phía sau nó)
 BANKINHLUOICHAYTRON = 40
@@ -147,6 +157,8 @@ class MoiTruong:
         self._duongkhongcatgoc = []
         self._kettiendokhongcatgoc = None
         self._lucvuahockhongcatgoc = 0.
+        # (bản đồ, ô) -> lúc chặn tạm: client đứng mãi không bước sang ô đó (NPC / người chắn), A* né THOIGIANTAMCHAN giây
+        self._tamchankhongcatgoc = {}
         self._lucgoikhongcatgoc = 0.
         # Đích / lúc ghi chuỗi gần nhất của action_dichuoihuongchaytron (chạy trốn theo đường tính sẵn)
         self._dichchaytrondaghi = None
@@ -164,6 +176,8 @@ class MoiTruong:
         # (bản đồ, lúc đọc, lưới cả bản đồ) cho A* cả bản đồ (_timduongkhongcatgoc lechtoida = None): lưới tĩnh theo bản đồ, khỏi đọc
         # lại ~300 cột mỗi lần tìm
         self._luoicabando_cache = None
+        # (bản đồ, lúc đọc, set ô NPC đang đứng) cho A* né NPC (_get_onpcdung)
+        self._onpc_cache = None
         # action_dikhongcatgoc: chuỗi đang đi là đường tìm trên cả bản đồ; (bản đồ, từ, tới) -> lúc thấy không có đường
         self._is_duongcabando = False
         self._khongduongkhongcatgoc_cache = {}
@@ -185,6 +199,9 @@ class MoiTruong:
         self._thoidiemxetbatbohoatanh = 0.
         # Giữ chân sau chiêu delay 0 tới khi có số bay (action_giuchansauchieudelay0): {diachi, id, sobay, batdau} hoặc None
         self._giuchandelay0 = None
+        # Đo mã hoạt ảnh chiêu (_dohoatanhchieu): None hoặc {nhanvat, ghi}; (id kỹ năng, lúc gửi) chiêu đo gần nhất bot gửi
+        self._dohoatanh = None
+        self._thoidiembotguidohoatanh = None
 
         self._thoidiemdichuyengannhat = 0.
         # Chờ xác nhận vận khí (action_chovankhi): None hoặc {"caulenh", "vitrikynang", "tao", "gui", "guitgt", "chapnhan", "ten"}
@@ -759,7 +776,39 @@ class MoiTruong:
         if self._is_chuatoiluotlenh(caulenh) or self._is_kynangbispam(idkynang):
             return False
         self._thoidiemsudungkynanggannhat = time.time()
-        return self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO, vitrikynang = vitrikynang)
+        is_ok = self.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO, vitrikynang = vitrikynang)
+        if is_ok and idkynang in KYNANGDOHOATANHs:
+            self._thoidiembotguidohoatanh = (idkynang, time.time())
+        return is_ok
+
+    def _dohoatanhchieu(self):
+        # Đo mã hoạt ảnh chiêu (tạm, bật khi KYNANGDOHOATANHs khác rỗng): theo dõi liên tục chỉ số ghi hàng đợi hành động của nhân vật
+        # mình, log ô đòn đánh mới (mã >= 0x28) có mã hoạt ảnh chưa biết (ngoài MAHOATANHDABIETs) - bắt được cả chiêu bấm tay; trong
+        # THOIGIANDOHOATANH giây sau khi bot gửi chiêu trong KYNANGDOHOATANHs thì log mọi ô. Đọc theo chỉ số ghi nên hook bỏ hoạt ảnh (chỉ
+        # tăng chỉ số đọc) không ảnh hưởng
+        if not KYNANGDOHOATANHs:
+            return
+        try:
+            nhanvat = struct.unpack("<I", read_bytes(self.tientrinh, self.diachixq + DC.NHANVAT, 4))[0]
+            moi = struct.unpack("<I", read_bytes(self.tientrinh, nhanvat + DC.NV_HOATANH + 4, 4))[0]
+        except Exception:
+            return
+        do = self._dohoatanh
+        if not do or do["nhanvat"] != nhanvat or not 0 <= do["ghi"] < 100:
+            self._dohoatanh = {"nhanvat": nhanvat, "ghi": moi}
+            return
+        botgui = self._thoidiembotguidohoatanh
+        thoidiemhientai = time.time()
+        try:
+            while do["ghi"] != moi and 0 <= moi < 100:
+                o = read_bytes(self.tientrinh, nhanvat + 0x100 + do["ghi"] * 0x28, 12)
+                is_botvuagui = botgui and thoidiemhientai - botgui[1] < THOIGIANDOHOATANH
+                if o[0] >= 0x28 and (o[4] not in MAHOATANHDABIETs or is_botvuagui):
+                    nguon = f"bot gửi {botgui[0]} +{thoidiemhientai - botgui[1]:.2f}s" if is_botvuagui else "không do bot gửi"
+                    self._inlog(f"[ĐO HOẠT ẢNH] ({nguon}) ô {do['ghi']} mã {o[0]} biến thể {o[1]} hoạt ảnh {o[4]} | {o.hex(' ')}")
+                do["ghi"] = (do["ghi"] + 1) % 100
+        except Exception:
+            self._dohoatanh = None
 
     def action_sudungtancongvatly(self, diachicosothongtinnhanvatmuctieu, delay = 0.):
         if self._is_nhanvatbichoang:
@@ -1542,6 +1591,59 @@ class MoiTruong:
             self._inlog("[CHẶN CRASH] đã vá chỗ vẽ hiệu ứng mặt đất (bỏ qua sprite chưa có khung)")
         return ketqua
 
+    def action_thietlaphookvetilenen(self):
+        # Chặn crash engine.dll + 0x424D trên LUỒNG NỀN của game (Thk 354 ngày 11/11 lúc 01:55:19, dump trong thư mục game
+        # xq.exe.2026-11-11.01.55.19.dmp; ~10 phút sau khi đăng nhập lại vì dis, đang đi bộ ở Tề Quốc).
+        # Game tự tạo luồng (xq+0x99591, hàm luồng xq+0x99EB0) vẽ trước nền đất quanh nhân vật vào 2 bộ đệm luân phiên
+        # ([THONGTINGAME]+0xAEBF48), gọi xq+0x53100. Hàm lấy khung tile xq+0xCE620 trả [sprite + 0x1C] + chỉ số * 8 mà không kiểm tra
+        # (nạp xong thấy [+0x1C] = 0 chỉ báo lỗi rồi chạy tiếp) => lúc văng trả về 8, engine đọc vtable ở 8.
+        # Luồng nền đọc tile trong lúc luồng chính nạp / nhả => tranh chấp của chính game, bot không gọi tới.
+        # Hàm lấy khung tile chỉ có 2 chỗ gọi: xq+0x535BA (luồng nền) và xq+0x9BAF9. Vá ngay sau lời gọi: khung < 0x10000 hoặc
+        # vtable = 0 thì bỏ lời gọi vẽ "push eax; call [edx+0x30]" (chưa push nên ngăn xếp cân), mất 1 ô nền trong 1 khung hình.
+        # Kịch bản không giải phóng; lần chạy sau thấy đã vá (E9) thì thôi.
+        # (tên hằng, mã gốc, số byte ghi đè, chỗ tiếp sau lệnh gọi vẽ tính từ chỗ hook, lệnh gốc chạy lại)
+        dschove = [
+            ("HOOK_VETILENEN1", "8B 54 24 2C 8B 4C 24 14", 8, 0xC, "mov edx, dword ptr [esp + 0x2C]\n            mov ecx, dword ptr [esp + 0x14]"),
+            ("HOOK_VETILENEN2", "8B 54 24 30 50", 5, 0xA, "mov edx, dword ptr [esp + 0x30]\n            push eax"),
+        ]
+        ketqua = True
+        for tenhang, magoc, sobyte, dotiep, lenhgoc in dschove:
+            diachihook = self.diachixq + getattr(DC, tenhang)
+            try:
+                mahook = read_bytes(self.tientrinh, diachihook, sobyte)
+            except Exception:
+                ketqua = False
+                continue
+            if mahook[0] == 0xE9:
+                continue
+            if mahook != bytes.fromhex(magoc):
+                self._inlog(f"[CHẶN CRASH] chỗ vẽ tile nền {tenhang} không như dự kiến: {mahook.hex(' ')}")
+                ketqua = False
+                continue
+            asm_script = f"""
+            cmp eax, 0x10000
+            jb boqua
+            cmp dword ptr [eax], 0
+            je boqua
+            {lenhgoc}
+            push {diachihook + sobyte}
+            ret
+        boqua:
+            push {diachihook + dotiep}
+            ret
+            """
+            encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+            if not encoding:
+                ketqua = False
+                continue
+            kichban = self.tientrinh.allocate(64)
+            write_bytes(self.tientrinh, kichban, bytes(encoding), len(encoding))
+            mavanew = b"\xE9" + struct.pack("<i", kichban - (diachihook + 5)) + b"\x90" * (sobyte - 5)
+            write_bytes(self.tientrinh, diachihook, mavanew, sobyte)
+        if ketqua:
+            self._inlog("[CHẶN CRASH] đã vá chỗ vẽ tile nền (bỏ qua khung tile NULL)")
+        return ketqua
+
     def action_thietlaphookhoatanhtancong(self):
         # Bỏ hoạt ảnh chiêu delay 0 của nhân vật mình (xem IS_BOHOATANHCHIEUDELAY0 trong hangso_xq.py). Chỗ hook HOOK_HOATANHTANCONG
         # (xq+0x1AE5B) trong hàm xử lý hàng đợi hành động: ô mã >= 0x28 (đòn đánh), "mov edx, [esi+0x1180]" (6 byte), esi = đối tượng,
@@ -1662,6 +1764,7 @@ class MoiTruong:
 
     def _donbohoatanhlackich(self):
         self._capnhatbatbohoatanh()
+        self._dohoatanhchieu()
         if self._diachidulieuhoatanh and self._thoidiemdanhdaulackich \
                 and time.time() - self._thoidiemdanhdaulackich >= THOIGIANBOHOATANHLACKICH:
             self._thoidiemdanhdaulackich = 0.
@@ -4342,7 +4445,24 @@ class MoiTruong:
             return sap != that
         if sap != that and max(abs(sap[0] - that[0]), abs(sap[1] - that[1])) <= 3:
             tiendo[2] = (that[0] + (sap[0] > that[0]) - (sap[0] < that[0]), that[1] + (sap[1] > that[1]) - (sap[1] < that[1]))
-        if now - tiendo[1] < THOIGIANKETKHONGCATGOC or not self._dichkhongcatgoc or not tiendo[2]:
+        if now - tiendo[1] < THOIGIANKETKHONGCATGOC or not self._dichkhongcatgoc:
+            return False
+        if not tiendo[2]:
+            # Client không bước ra khỏi ô (ô "sắp tới" luôn = ô thật) nên không biết lệch về đâu: Thỏ ở Yên Quốc (206, 241) cạnh Bảo Thạch
+            # Thương Nhân 2026-11-12 02:51 gửi "go 206,241 88" 13s liền không nhích. Đứng quá THOIGIANKETTAMCHAN giây thì chặn tạm bước đầu
+            # của đường đang đi (chỉ trong bộ nhớ, THOIGIANTAMCHAN giây, không ghi vatcanhoc.json: có thể là NPC / người chơi đứng chắn)
+            duong = self._duongkhongcatgoc
+            if now - tiendo[1] < THOIGIANKETTAMCHAN or len(duong) < 2 or duong[0] != that:
+                return False
+            ke = duong[1]
+            tiendo[1] = now
+            idbando = self.get_idbandohientai()
+            if len(self._tamchankhongcatgoc) > 64:
+                self._tamchankhongcatgoc.clear()
+            self._tamchankhongcatgoc[(idbando, ke)] = now
+            self._dichkhongcatgoc = None
+            self._inlog(f"[ĐI KHÔNG CẮT GÓC] Ở {that} đứng {THOIGIANKETTAMCHAN:.0f}s không bước sang {ke} được: chặn tạm {ke} "
+                        f"{THOIGIANTAMCHAN:.0f}s (NPC / người đứng chắn?), tìm đường khác")
             return False
         ke = tiendo[2]
         tiendo[1], tiendo[2] = now, None
@@ -4414,6 +4534,23 @@ class MoiTruong:
         except Exception as e:
             self._inlog(f"[ĐI VÒNG] Không ghi được lưới: {e}")
 
+    def _get_onpcdung(self):
+        # Set các ô NPC (lớp +0x29 == 0x80) đang đứng trong tầm màn hình, nhớ THOIGIANNHOONPC giây theo bản đồ. Lỗi đọc thì coi như không có
+        idbando = self.get_idbandohientai()
+        cache = self._onpc_cache
+        now = time.time()
+        if cache and cache[0] == idbando and now - cache[1] < THOIGIANNHOONPC:
+            return cache[2]
+        os_ = set()
+        try:
+            for diachi in self._get_diachidoituongxungquanhs():
+                if self.get_is_npc(diachi):
+                    os_.add(tuple(round(v) for v in self.get_toado(diachi)))
+        except Exception:
+            pass
+        self._onpc_cache = (idbando, now, os_)
+        return os_
+
     def _timduongkhongcatgoc(self, x1, y1, x2, y2, khoangcachtoida = 0., lechtoida = 25, is_chocatgoc = False):
         # A* trên lưới vật cản vùng bao 2 điểm (thêm lechtoida ô mỗi bên), 8 hướng nhưng chéo chỉ khi 2 ô kề đều trống. Tới ô cách đích
         # không quá khoangcachtoida (0: đúng ô đích) là xong. lechtoida = None: tìm trên cả bản đồ (vách đá dài ở Mã Lăng Đạo: đường vòng
@@ -4437,6 +4574,11 @@ class MoiTruong:
         # Khu vực cấm khai tay (KHUVUCCAM_MAP: chỗ đi vào là kẹt, vd Tập Kích Môn Phái (103, 53), (96, 96)): mỗi ô trong đó tính thêm
         # PHATKHUVUCCAMKHONGCATGOC bước (né được thì né; đang đứng / đích ở trong thì vẫn đi ra / vào được)
         cams = self._layokhuvuccam(ox, oy, ox + rong - 1, oy + cao - 1)
+        # Ô NPC đang đứng: phạt PHATONPCKHONGCATGOC bước (ô đứng / ô đích không tính: đi tới nói chuyện với NPC)
+        npcs = self._get_onpcdung() - {(x1, y1), (x2, y2)}
+        bayh = time.time()
+        tamchans = {o for (b, o), luc in self._tamchankhongcatgoc.items()
+                    if b == idbando and bayh - luc < THOIGIANTAMCHAN and o not in ((x1, y1), (x2, y2))}
 
         huongs = [(dx, dy, kytu.encode()) for kytu, (dx, dy) in HUONGTIMDUONG_MAP.items()]
         nguong = max(0., khoangcachtoida)
@@ -4457,7 +4599,8 @@ class MoiTruong:
                 nx, ny = x + dx, y + dy
                 if not trong(nx, ny) or (dx and dy and not is_chocatgoc and not (trong(x + dx, y) and trong(x, y + dy))):
                     continue
-                ng = g + (1.4142 if dx and dy else 1.) + (PHATKHUVUCCAMKHONGCATGOC if (nx, ny) in cams else 0.)
+                ng = g + (1.4142 if dx and dy else 1.) + (PHATKHUVUCCAMKHONGCATGOC if (nx, ny) in cams else 0.) \
+                    + (PHATONPCKHONGCATGOC if (nx, ny) in npcs else 0.) + (PHATTAMCHANKHONGCATGOC if (nx, ny) in tamchans else 0.)
                 if ng < gs.get((nx, ny), float("inf")):
                     gs[(nx, ny)] = ng
                     truoc[(nx, ny)] = (o, kytu)

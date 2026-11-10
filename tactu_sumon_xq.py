@@ -53,6 +53,23 @@ SOLANBATTRUOCKHIDANH = 10
 NGUONGMAUDUNGDANH = 40
 NGUONGMAUANTOAN = 15
 THOIGIANCHODANH = 3.
+# Đánh giảm máu bằng chiêu đơn mục tiêu cơ bản của môn phái (1 lần gửi = 1 đòn, tự dừng) thay cho "kill": "kill" bật Tự Động Công Kích,
+# trúng rồi vẫn đánh tiếp, sang việc khác (Hồi Thành Phù) vẫn đánh nên bị ngắt vận khí (Cầu Cửu Khúc 2026-11-11 02:06, ngắt 2 lần rồi
+# chạy bộ 12 cổng). Thử lần lượt, lấy chiêu đầu tiên đã học + sẵn sàng + đủ tiêu hao; không có thì mới "kill" rồi ngắt ngay sau khi trúng.
+# Côn Luân chưa chắc chiêu đánh cơ bản (4211 Biến Thân Thuật không phải chiêu đánh): tạm Phong Hoả Quyết / Ngũ Lôi Thuật
+CHIEUDANHGIAMMAU_MAP = {
+    "thucson": (VITRIKYNANG_DONDAOTRUCNHAP, VITRIKYNANG_NGUKIEMTHUAT),
+    "camvequan": (VITRIKYNANG_MANGXAXUATDONG,),
+    "duongmon": (VITRIKYNANG_MAIHOACHAM,),
+    "daohoanguyen": (VITRIKYNANG_HACHODAOTAM,),
+    "maoson": (VITRIKYNANG_PHUCMAQUYET,),
+    "vanmongcoc": (VITRIKYNANG_LIETPHONGQUYET,),
+    "conluan": (VITRIKYNANG_PHONGHOAQUYET, VITRIKYNANG_NGULOITHUAT),
+}
+# Ngắt Tự Động Công Kích ("pf2 14", bật / tắt qua lại): gửi lại cách nhau chừng này giây tới khi máy chủ báo đã ngừng, quá
+# THOIGIANNGATDANHTOIDA giây thì thôi
+GIANCACHNGATDANH = 1.
+THOIGIANNGATDANHTOIDA = 15.
 KHOANGCACHNOICHUYEN = 3.
 # Gần NPC dưới chừng này ô mà không đi lại gần hơn được (vật cản) thì vẫn thử nói chuyện
 KHOANGCACHNOICHUYENKET = 6.
@@ -824,6 +841,8 @@ class TacTuSuMon:
         # Gọi thay lộ trình điểm đánh khi đang làm sư môn -> yêu cầu di chuyển hoặc None. Chế độ "farm" thì lộ trình điểm đánh chạy tiếp
         s = self._sumon
         moitruong = self.moitruong
+        # Trước mọi chờ (kể cả đang vận khí): còn đánh thường từ lúc đánh giảm máu thì ngắt, không thì ngắt vận khí Hồi Thành Phù
+        self._xulyngatdanhsumon()
         # Ghi log khi trạng thái sư môn đổi / đang bị chặn (đứng im không rõ lý do thì xem log biết đang chờ gì)
         if s["trangthai"] != s.get("trangthaidaghi"):
             s["trangthaidaghi"] = s["trangthai"]
@@ -1434,31 +1453,86 @@ class TacTuSuMon:
         cho = s.get("chodanh")
         if cho and cho["id"] == iddt:
             if mau < cho["mau"]:
-                # Đã trúng: nhớ sức đánh, bắt ngay (chiêu bắt ngắt đánh thường)
-                satthuong[nv["quai"]] = max(satthuong.get(nv["quai"], 0), cho["mau"] - mau)
+                # Đã trúng: nhớ sức đánh (theo tên quái + cách đánh), ngắt đánh thường nếu đã "kill", bắt ngay
+                satthuong[cho["khoa"]] = max(satthuong.get(cho["khoa"], 0), cho["mau"] - mau)
                 s["chodanh"] = None
-                moitruong._inlog(f"[SƯ MÔN] Đánh {nv['quai']}: máu {cho['mau']}% -> {mau}% (1 cái tụt {cho['mau'] - mau}%), bắt tiếp")
+                moitruong._inlog(f"[SƯ MÔN] Đánh {nv['quai']} ({cho['cach']}): máu {cho['mau']}% -> {mau}% "
+                                 f"(1 cái tụt {cho['mau'] - mau}%), bắt tiếp")
                 moitruong.action_ngatdichuyen()
+                self._batdaungatdanhsumon(cho)
                 return False
             if time.time() - cho["luc"] < THOIGIANCHODANH:
                 s["trangthai"] = f"đánh {nv['quai']} 1 cái cho giảm máu ({mau}%)"
                 return True
             s["chodanh"] = None
             moitruong.action_ngatdichuyen()
+            self._batdaungatdanhsumon(cho)
             return False
         if s.get("solanbat", {}).get(iddt, 0) < SOLANBATTRUOCKHIDANH or mau < NGUONGMAUDUNGDANH:
             return False
-        dukien = satthuong.get(nv["quai"])
+        # Chiêu đơn mục tiêu của phái (1 đòn rồi thôi); không có chiêu dùng được mới "kill" (đánh thường, phải tự ngắt)
+        idkynang = self._chonchieudanhgiammau()
+        cach = (moitruong.get_tenkynangtheoid(idkynang) or f"chiêu {idkynang}") if idkynang else "đánh thường (kill)"
+        khoa = f"{nv['quai']}|{idkynang or 'kill'}"
+        dukien = satthuong.get(khoa)
         if dukien is not None and mau - dukien * 1.5 < NGUONGMAUANTOAN:
             return False
+        if idkynang:
+            if not moitruong.action_sudungkynangmuctieukhacnguoichoi(idkynang, iddt):
+                # Chưa tới lượt / đang khoá chiêu: lượt sau thử lại, lượt này cứ bắt
+                return False
+        else:
+            moitruong.action_thucthicaulenh(f"kill {iddt:x}#")
         # Đánh 1 cái rồi đếm lại SOLANBATTRUOCKHIDANH lần bắt nữa mới đánh tiếp
         s["solanbat"][iddt] = 0
-        s["chodanh"] = {"id": iddt, "mau": mau, "luc": time.time()}
-        moitruong._inlog(f"[SƯ MÔN] Bắt {nv['quai']} {SOLANBATTRUOCKHIDANH} lần chưa được, máu {mau}%: đánh 1 cái"
+        s["chodanh"] = {"id": iddt, "mau": mau, "luc": time.time(), "is_kill": not idkynang, "cach": cach, "khoa": khoa}
+        moitruong._inlog(f"[SƯ MÔN] Bắt {nv['quai']} {SOLANBATTRUOCKHIDANH} lần chưa được, máu {mau}%: đánh 1 cái bằng {cach}"
                          f"{f' (1 cái tụt ~{dukien}%)' if dukien is not None else ' (chưa biết sức đánh)'}")
-        moitruong.action_thucthicaulenh(f"kill {iddt:x}#")
         s["trangthai"] = f"đánh {nv['quai']} 1 cái cho giảm máu ({mau}%)"
         return True
+
+    def _chonchieudanhgiammau(self):
+        # Chiêu đánh giảm máu (CHIEUDANHGIAMMAU_MAP): chiêu đầu tiên đã học, sẵn sàng, đủ tiêu hao. Không có -> None ("kill")
+        for idkynang in CHIEUDANHGIAMMAU_MAP.get(self.moitruong.get_tenmonphai(), ()):
+            if self.moitruong.get_is_kynangdahoc(idkynang) and self._is_kynangdungduoc(idkynang):
+                return idkynang
+        return None
+
+    def _batdaungatdanhsumon(self, cho):
+        # Đã "kill" để đánh giảm máu: trúng (hoặc hết giờ chờ) thì ngắt Tự Động Công Kích ngay, không để nó đánh tiếp
+        if cho.get("is_kill"):
+            self._ngatdanhsumon = {"id": cho["id"], "luc": 0., "batdau": time.time()}
+            self._xulyngatdanhsumon()
+
+    def _xulyngatdanhsumon(self):
+        # Gửi "pf2 14 <id quái>#" (bật / tắt Tự Động Công Kích) tới khi máy chủ báo "đã ngừng" (lỡ đang tắt thì lần gửi bật lại, máy chủ
+        # báo "Sử dụng", lần sau gửi tiếp là tắt - như _ngattancongvatlydaohoa). Quá THOIGIANNGATDANHTOIDA giây thì thôi
+        ngat = self._ngatdanhsumon
+        if not ngat:
+            return
+        moitruong = self.moitruong
+        now = time.time()
+        if ngat["luc"]:
+            for thoidiem, noidung in reversed(moitruong.get_lichsutrochuyen5s()):
+                if thoidiem < ngat["luc"]:
+                    break
+                thuong = unicodedata.normalize("NFC", noidung).lower()
+                if TENKYNANG_TUDONGCONGKICH.lower() in thuong:
+                    if "ngừng" in thuong:
+                        self._ngatdanhsumon = None
+                        moitruong._inlog("[SƯ MÔN] Đã ngắt Tự Động Công Kích (máy chủ báo đã ngừng)")
+                        return
+                    break
+            if now - ngat["luc"] < GIANCACHNGATDANH:
+                return
+        if now - ngat["batdau"] > THOIGIANNGATDANHTOIDA:
+            self._ngatdanhsumon = None
+            moitruong._inlog(f"[SƯ MÔN] {THOIGIANNGATDANHTOIDA:.0f}s chưa thấy máy chủ báo ngừng Tự Động Công Kích, thôi ngắt")
+            return
+        caulenh = f"pf2 {IDKYNANG_TUDONGCONGKICH} {ngat['id']:x}#"
+        if moitruong.action_thucthicaulenh(caulenh, douutien = 3):
+            ngat["luc"] = now
+            moitruong._inlog(f"[SƯ MÔN] Ngắt Tự Động Công Kích sau khi đánh giảm máu: {caulenh}")
 
     def _is_dabatyeuquai(self, quai):
         # Bắt vào thì tên bảo thú bị game cắt bớt so với tên quái (người dùng: "Đao Thuẫn Khô Lâu" thành "Đao Thuẫn Khô L" / "Đao Thuẫn",

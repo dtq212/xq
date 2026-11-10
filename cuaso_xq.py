@@ -148,6 +148,7 @@ class CuaSo:
         self.moitruong.action_thietlaphooklenhgame()
         self.moitruong.action_thietlaphookcotnhiemvunpc()
         self.moitruong.action_thietlaphookvehieuungdat()
+        self.moitruong.action_thietlaphookvetilenen()
         self.moitruong.action_thietlaphookhoatanhtancong()
         self.tactu = TacTu(self.moitruong)
         # Bot đọc gộp cả cửa sổ máy khác trong LAN (lan_xq), ghi vẫn vào máy này

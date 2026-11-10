@@ -119,6 +119,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         # Đứng trong tầm hái khoáng: tới mốc này bộ điều phối không đi đánh quái / nhặt đồ (giữ chỗ cho look + vận khí)
         self._thoidiemhetgiukhaikhoang = 0.
         self._idbandolanquetkhaikhoangtruoc = 0
+        # Loại đang làm nhận biết theo pháp bảo: "haiduoc" (Liềm) / "khaikhoang" (Cuốc) / "" chưa biết
+        self._loaikhaikhoang = ""
         self._is_nhieumuctieugan3 = False
         self._is_nhieumuctieugan5 = False
         self._is_nhieumuctieugan7 = False
@@ -572,6 +574,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._diachimuctieutancongvatly = 0
         # Lần gửi "pf2 14" gần nhất để ngắt đánh thường (_ngattancongvatlydaohoa)
         self._thoidiemguingattancongvatly = 0.
+        # Sư Môn đánh quái giảm máu bằng "kill" (không có chiêu dùng được): đánh trúng xong ngắt Tự Động Công Kích tới khi máy chủ báo
+        # đã ngừng (TacTuSuMon._xulyngatdanhsumon) -> {"id": id quái, "luc": lần gửi "pf2 14" gần nhất, "batdau": lúc bắt đầu ngắt} / None
+        self._ngatdanhsumon = None
         # Lúc Nguyên Khí Quy Nguyên được bật gần nhất theo tin game (None = chưa biết) và tin cuối đã xét (_lammoinguyenkhiquynguyen)
         self._thoidiembatnguyenkhiquynguyen = None
         self._thoidiemxettinnguyenkhiquynguyen = 0.
@@ -1359,9 +1364,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
     def battat_is_tudongkhaikhoang(self):
         self._is_tudongkhaikhoang = not self._is_tudongkhaikhoang
         if self._is_tudongkhaikhoang:
-            phatam("Bật tự động khai khoáng")
+            phatam("Bật tự động khai khoáng hái dược")
         else:
-            phatam("Tắt tự động khai khoáng")
+            phatam("Tắt tự động khai khoáng hái dược")
 
     def battat_tudonggomquai(self):
         self._is_tudonggomquai = not self._is_tudonggomquai

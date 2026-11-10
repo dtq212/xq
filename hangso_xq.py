@@ -664,22 +664,33 @@ KHOANGCACHTOITHIEUBADONG = 3.
 IS_BOHOATANHCHIEUDELAY0 = True
 # Giữ chân từ lúc chiêu delay 0 vào hồi chiêu tới khi mục tiêu hiện số bay mới (máy chủ đã tính đòn) - người dùng yêu cầu 2026-11-09,
 # không có hoạt ảnh thì client đi được ngay. Số bay "mới" = ô có bộ đếm khung <= DEMSOBAYMOI (~0.3s, đếm 0 -> ~60 trong ~1s) hoặc
-# khác lúc bắt đầu giữ. Tối đa THOIGIANGIUCHANDELAY0 giây (đòn trượt / không có số bay thì vẫn thả)
-THOIGIANGIUCHANDELAY0 = 0.5
+# khác lúc bắt đầu giữ. Tối đa THOIGIANGIUCHANDELAY0 giây (đòn trượt / không có số bay thì vẫn thả). 0.5 -> 0.25 (người dùng 2026-11-11:
+# chiêu delay 0 gần như ra số bay ngay, không cần chờ lâu)
+THOIGIANGIUCHANDELAY0 = 0.25
 DEMSOBAYMOI = 20
-MAHOATANHBOQUAs = (70, 60)
+# Lạc Ảnh mã 50 (đo 2026-11-11 trên 342 bấm tay: ô mã 66 biến thể 2 hoạt ảnh 50, MoiTruong._dohoatanhchieu)
+MAHOATANHBOQUAs = (70, 60, 50)
 THOIGIANBOHOATANHLACKICH = 0.8
+# Đo tạm mã hoạt ảnh (2026-11-11, MoiTruong._dohoatanhchieu): danh sách khác rỗng thì log "[ĐO HOẠT ẢNH]" mọi đòn đánh của mình có
+# mã hoạt ảnh ngoài MAHOATANHDABIETs (bắt cả chiêu bấm tay), và mọi đòn trong THOIGIANDOHOATANH giây sau khi bot gửi chiêu trong danh
+# sách. Đo xong Lạc Ảnh thì thêm mã vào MAHOATANHBOQUAs và để rỗng danh sách này
+KYNANGDOHOATANHs = ()
+THOIGIANDOHOATANH = 1.5
+# Thốn Kình 20, Lạc Ảnh 50, Đại Hải 60, Ba Động 70, Nhất Quyền 90, đánh thường / Lạc Kích 0
+MAHOATANHDABIETs = (0, 20, 50, 60, 70, 90)
 # Từng tắt 2026-11-09 vì client không bước khi còn tư thế 6 (~0.68s); BẬT LẠI cùng ngày khi đã có hook bỏ hoạt ảnh chiêu delay 0
 # (IS_BOHOATANHCHIEUDELAY0): Ba Động / Đại Hải / Lạc Kích không còn vào tư thế 6 nên đi được ngay
 IS_DICHOSAUCHIEUDELAY0 = True
-VITRIKYNANGDELAY0DAOHOAs = (VITRIKYNANG_BADONGQUYEN, VITRIKYNANG_LACKICH, VITRIKYNANG_DAIHAIVOLUONG)
-TENCHIEUDELAY0DAOHOA = {VITRIKYNANG_BADONGQUYEN: "Ba Động", VITRIKYNANG_LACKICH: "Lạc Kích", VITRIKYNANG_DAIHAIVOLUONG: "Đại Hải"}
+# Đào Hoa Lạc Ảnh là chiêu delay 0 (người dùng xác nhận 2026-11-10); từ 2026-11-11 đưa vào đây theo yêu cầu người dùng => cũng giữ chân
+# tới số bay / dịch chỗ sau chiêu như 3 chiêu kia (trước đó chỉ nằm trong danh sách nối chiêu)
+VITRIKYNANGDELAY0DAOHOAs = (VITRIKYNANG_BADONGQUYEN, VITRIKYNANG_LACKICH, VITRIKYNANG_DAIHAIVOLUONG, VITRIKYNANG_DAOHOALACANH)
+TENCHIEUDELAY0DAOHOA = {VITRIKYNANG_BADONGQUYEN: "Ba Động", VITRIKYNANG_LACKICH: "Lạc Kích", VITRIKYNANG_DAIHAIVOLUONG: "Đại Hải",
+                        VITRIKYNANG_DAOHOALACANH: "Lạc Ảnh"}
 SOBUOCDICHODELAY0 = 1
 # Không dùng 2 chiêu delay 0 liền nhau (người dùng phát hiện 2026-11-10: delay 0 nối delay 0 bị khoá lâu, kẹp với chiêu có delay thì ổn).
-# Đào Hoa Lạc Ảnh CŨNG là chiêu delay 0 (người dùng xác nhận lại 2026-11-10) nhưng không đưa vào VITRIKYNANGDELAY0DAOHOAs (không
-# giữ chân / dịch chỗ sau trận). Chiêu Đào Hoa vào hồi chiêu gần nhất (= máy chủ nhận) là delay 0 và chưa quá THOIGIANCHANDELAY0LIENTIEP
+# Chiêu Đào Hoa vào hồi chiêu gần nhất (= máy chủ nhận) là delay 0 và chưa quá THOIGIANCHANDELAY0LIENTIEP
 # giây (khoá sau delay 0 dài nhất đo được ~1.7s) thì lượt này bỏ qua mọi chiêu delay 0, dùng chiêu có delay (Nhất Quyền, Thốn Kình...)
-VITRIKYNANGDELAY0NOICHIEUDAOHOAs = VITRIKYNANGDELAY0DAOHOAs + (VITRIKYNANG_DAOHOALACANH,)
+VITRIKYNANGDELAY0NOICHIEUDAOHOAs = VITRIKYNANGDELAY0DAOHOAs
 VITRIKYNANGCODELAYDAOHOAs = (VITRIKYNANG_THONKINH, VITRIKYNANG_NHATQUYENBATSON, VITRIKYNANG_PHONGMAQUYET, VITRIKYNANG_KHONGTHUNHAPBACHNHAN,
                              VITRIKYNANG_METUNGQUYEN, VITRIKYNANG_HACHODAOTAM)
 THOIGIANCHANDELAY0LIENTIEP = 2.
@@ -1138,6 +1149,12 @@ NGUYENLIEULUYENDONs = ("Hoàng Kỳ", "Cúc Dại", "Quả Anh Túc", "Điền T
 CUONGTHIPHU = "Cương Thi Phù"
 # Danh sách không bán (VATPHAMKHONGBANs) đã chuyển thành luật Giữ mặc định trong luattuido_xq.LUATMACDINH (sửa ở tab Hành trang)
 
+# Tự động khai khoáng / Hái dược: nhận biết đang làm gì theo tên pháp bảo đang đeo (có "Liềm" = hái dược, có "Cuốc" = khai khoáng).
+# Hái dược: tìm đối tượng tên trong NGUYENLIEULUYENDONs; khai khoáng: đối tượng tên chứa "Khoáng" (Thiết / Ngân / Tích Khoáng...).
+# Không đeo cả hai (vd đang đổi sang pháp bảo không hư hỏng lúc máu thấp) thì giữ loại nhận biết lần trước; chưa nhận biết lần nào thì tìm cả hai.
+PHAPBAOHAIDUOC = "Liềm"
+PHAPBAOKHAIKHOANG = "Cuốc"
+CHUTENKHOANG = "Khoáng"
 # Khai khoáng (hái dược) ở các bản đồ này thì tự vứt các dược không cần (dù có luật Giữ)
 BANDOHAIDUOCs = (261, 262, 263)
 VATPHAMVUTKHIHAIDUOCs = ("La Hán Quả", "Hoàng Liên", "Hà Thủ Ô", "Xuyên Tâm Liên")

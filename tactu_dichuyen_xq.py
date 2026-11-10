@@ -1356,6 +1356,11 @@ class TacTuDiChuyen:
             return {"loai": "cho", "solan": None, "mota": f"Vừa ra khỏi phó bản, chờ bản đồ ổn định rồi mới tới {ten}"}
         if idbandohientai == idbandodich:
             return {"loai": "toinoi", "mota": f"Đã ở {ten}", "solan": 0}
+        # Về Tân Thủ Thôn KHÔNG BAO GIỜ chạy bộ (người dùng dặn 2026-11-11, từng chạy bộ 12 cổng từ Cầu Cửu Khúc khi Hồi Thành Phù bị
+        # quái đánh ngắt vận khí 2 lần rồi bị bộ đếm coi là lặp): chỉ Hồi Thành Phù, hoặc Hồi Môn Phái / Tín Vật rồi Xa Phu
+        is_vetanthu = idbandodich == BANDO_TANTHUTHON
+        if is_vetanthu:
+            is_hoithanhphu = True
         # is_roiphoban: đang ở phó bản mà đích ở ngoài, không chạy bộ ra được (Lăng Ly Sơn xong, người được theo sau đã ra) thì Hồi Thành Phù
         # ra luôn (mất phó bản). Nơi khác (cất kho, giao đồ...) không truyền cờ này nên vẫn không bao giờ Hồi Thành Phù trong phó bản
         if is_roiphoban and idbandohientai in BANDOPHOBANs and idbandodich not in BANDOPHOBANs \
@@ -1411,6 +1416,9 @@ class TacTuDiChuyen:
                 return {"loai": "hoithanhphu", "solan": phuongan[3] if phuongan else 0,
                         "mota": f"Hồi Thành Phù về Tân Thủ Thôn{diphu}{chaytiep} ({ten}), thay vì chạy bộ {solanbo} cổng"}
             lydokhongphu = f" (không Hồi Thành Phù: {lydo})"
+        if is_vetanthu:
+            # Không Hồi Thành Phù được (đang ở phó bản...): đứng chờ, không chạy bộ
+            return {"loai": "cho", "solan": None, "mota": f"Không chạy bộ về {ten}, chờ Hồi Thành Phù được{lydokhongphu}"}
         if duongdi:
             _, xcong, ycong, idke = duongdi[0]
             # Hiện cả đường đi: "còn 15 cổng" không thì không biết là qua những bản đồ nào
@@ -2724,17 +2732,23 @@ class TacTuDiChuyen:
         if self.moitruong.get_is_phobanmuonbando() and not is_roiphoban:
             return f"đang ở {self.moitruong.get_tenbandogame()}"
         nganluong = self.moitruong.get_nganluong()
-        # is_vemonphai: chỉ Tín Vật về môn phái (miễn phí), không cần tiền Hồi Thành Phù
+        # is_vemonphai: chỉ Tín Vật về môn phái (miễn phí), không cần tiền Hồi Thành Phù.
+        # Về Tân Thủ Thôn thiếu tiền: Hồi Môn Phái (miễn phí) rồi Xa Phu (action_sudunghoithanhphu), không cần tiền
         if nganluong is not None and nganluong < GIAHOITHANHPHU and not self.get_is_vomonphai() and not self.moitruong.is_nietban \
-                and not is_vemonphai and self.get_solantinvat(idbandodich) is None:
+                and not is_vemonphai and self.get_solantinvat(idbandodich) is None and idbandodich != BANDO_TANTHUTHON:
             return f"còn {nganluong} lượng, không đủ {GIAHOITHANHPHU} lượng Hồi Thành Phù"
         # Bỏ lần đã chờ xong mà không vào vận khí (gửi ngay sau khi đổi bản đồ, game không nhận: QuanSuMuMuu 16:50 bị đếm oan 1 lần)
         self._thoidiemhoithanhphus = [(t, d, cho) for t, d, cho in self._thoidiemhoithanhphus if time.time() - t < THOIGIANDEMHOITHANHPHU
                                       and not (cho and cho.get("ketthuc") and not cho.get("vao"))]
+        # Về Tân Thủ Thôn: không bao giờ chạy bộ nên không có gì để "ngưng vì lặp", cứ thử lại (bị đánh ngắt vận khí thì dùng lại)
+        if idbandodich == BANDO_TANTHUTHON:
+            return None
         # Chỉ đếm lần chưa tới được nơi (sau lần dùng chưa vào bản đồ đích): Danh Vọng đi đi về về Tề Quốc vài phút 1 lần, đếm cả lần đã
         # tới thì quá SOLANHOITHANHPHUTOIDA lần là bị cấm Hồi Thành Phù, chạy bộ vòng 9 cổng (ThichVaCham 20:40)
+        # Không đếm lần vừa dùng (còn đang vận khí ~10s): đếm luôn thì lượt sau đã đủ số lần, đổi sang chạy bộ, tự ngắt chính lần đang
+        # vận khí (Cầu Cửu Khúc 2026-11-11 02:07:24, vận khí mới 1.1s)
         lucvao = self.moitruong.get_lucvaobando(idbandodich)
-        solan = sum(1 for t, d, _ in self._thoidiemhoithanhphus if d == idbandodich and t > lucvao)
+        solan = sum(1 for t, d, _ in self._thoidiemhoithanhphus if d == idbandodich and lucvao < t < time.time() - 12.)
         if solan >= SOLANHOITHANHPHUTOIDA:
             noi = f" để tới {laytenbando(idbandodich)}" if idbandodich else ""
             return f"đã Hồi Thành Phù {solan} lần{noi} trong {round(THOIGIANDEMHOITHANHPHU / 60)} phút (có thể đang lặp)"
@@ -2762,7 +2776,12 @@ class TacTuDiChuyen:
             # (về phái: đích là môn phái / gần môn phái thì chỉ Tín Vật, cả 2D lẫn Niết Bàn, không Hồi Thành Phù / Xa Phu)
             is_tinvat = is_vemonphai or self.get_solantinvat(idbandodich) is not None
             idhoithanhphu = self.moitruong.action_timkiemvatphamhanhtrang(HOITHANHPHU) if self.moitruong.is_nietban and not is_tinvat else 0
-            if not idhoithanhphu and not is_tinvat and self.moitruong.is_nietban \
+            # 2D về Tân Thủ Thôn mà không đủ tiền Hồi Thành Phù: Hồi Môn Phái (miễn phí) rồi Xa Phu về Tân Thủ Thôn như Niết Bàn
+            # (người dùng dặn 2026-11-11: về Tân Thủ Thôn chỉ Hồi Thành Phù hoặc về môn phái + Xa Phu, không bao giờ chạy bộ)
+            nganluong = self.moitruong.get_nganluong()
+            is_monphaixaphu = not self.moitruong.is_nietban and not is_tinvat and not self.get_is_vomonphai() \
+                and idbandodich == BANDO_TANTHUTHON and nganluong is not None and nganluong < GIAHOITHANHPHU
+            if not idhoithanhphu and not is_tinvat and (self.moitruong.is_nietban or is_monphaixaphu) \
                     and self.moitruong.get_idbandohientai() == BANDOMONPHAI.get(self.moitruong.get_tenmonphai()) \
                     and not self.moitruong.get_is_phobanmuonbando() \
                     and any(self._timxaphunietban(self.moitruong.get_idbandohientai())):
@@ -2791,6 +2810,11 @@ class TacTuDiChuyen:
                 # action_xulyxaphunietban nói chuyện "1. Chấp nhận" về Tân Thủ Thôn (người dùng dặn 2026-11-02)
                 self.moitruong._inlog(f"[HỒI THÀNH PHÙ] Niết Bàn: Tín Vật ('{LENHTINVAT_NIETBAN}') về môn phái rồi {XAPHU} về Tân Thủ Thôn")
                 lenh = LENHTINVAT_NIETBAN
+                self._xaphunietban = time.time()
+            elif is_monphaixaphu:
+                self.moitruong._inlog(f"[HỒI THÀNH PHÙ] Còn {nganluong} lượng, không đủ {GIAHOITHANHPHU}: Hồi Môn Phái ('{LENHHOIMONPHAI}') "
+                                      f"rồi {XAPHU} về Tân Thủ Thôn")
+                lenh = LENHHOIMONPHAI
                 self._xaphunietban = time.time()
             elif self.get_is_vomonphai():
                 # Vô Môn Phái: Hồi Môn Phái (miễn phí) cũng về Tân Thủ Thôn, luôn dùng thay Hồi Thành Phù (người dùng dặn 2026-11-01)

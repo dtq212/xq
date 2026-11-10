@@ -617,6 +617,30 @@ class TacTuHoatDong:
             moitruong._inlog(f"[TĂNG CẤP] cấp {capdo}, kinh nghiệm {kinhnghiem} / {kinhnghiemcan}: gửi {caulenh} (tự tăng tới cấp {self._captudongtangcaptoida})")
             phatam(f"Tăng lên cấp {capdo + 1}", is_block = False)
 
+    def _get_loaikhaikhoang(self):
+        # Theo pháp bảo đang đeo: "Liềm" = hái dược, "Cuốc" = khai khoáng. Không đeo cái nào (đang đổi pháp bảo không hư hỏng
+        # lúc máu thấp, hoặc tháo) thì giữ loại lần trước; "" = chưa biết lần nào
+        tenphapbao = self.moitruong.get_tenphapbaohientai() or ""
+        loai = ""
+        if PHAPBAOHAIDUOC in tenphapbao:
+            loai = "haiduoc"
+        elif PHAPBAOKHAIKHOANG in tenphapbao:
+            loai = "khaikhoang"
+        if loai and loai != self._loaikhaikhoang:
+            self._loaikhaikhoang = loai
+            self.moitruong._inlog(f"[KHAI KHOÁNG] Pháp bảo {tenphapbao} -> {'Hái dược' if loai == 'haiduoc' else 'Khai khoáng'}")
+        return self._loaikhaikhoang
+
+    @staticmethod
+    def _is_doituongkhaikhoang(tendoituong, loai):
+        is_duoc = tendoituong in NGUYENLIEULUYENDONs
+        is_khoang = CHUTENKHOANG in tendoituong
+        if loai == "haiduoc":
+            return is_duoc
+        if loai == "khaikhoang":
+            return is_khoang
+        return is_duoc or is_khoang
+
     def action_tudongkhaikhoang(self):
         if not self._is_tudongkhaikhoang:
             self._yeucaukhaikhoang = None
@@ -655,6 +679,7 @@ class TacTuHoatDong:
             i = -1
             diachidoituonggannhat = None
             khoangcachgannhat = KHOANGCACHTOIDAHOPLE + 1
+            loai = self._get_loaikhaikhoang()
 
             while True:
                 i += 1
@@ -662,11 +687,7 @@ class TacTuHoatDong:
                 if not diachidoituong: break
 
                 tendoituong = self.moitruong.get_tendoituong(diachidoituong)
-                tenvatphamkhangs = NGUYENLIEULUYENDONs
-                if self.moitruong.get_idnguoichoi() == 59845:
-                    tenvatphamkhangs = ("Thiết Khoáng", "Ngân Khoáng", "Tích Khoáng")
-
-                if tendoituong and tendoituong in tenvatphamkhangs:
+                if tendoituong and self._is_doituongkhaikhoang(tendoituong, loai):
                     iddoituong = self.moitruong.get_iddoituong(diachidoituong)
                     if iddoituong <= 0: continue
                     if iddoituong in self._idkhoangbiloi_map: continue

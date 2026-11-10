@@ -19,7 +19,7 @@
 #   - Trả lời tin mật: "is_traloitinmat" bật thì ai nhắn tin mật cho nhân vật bán ("<tên> nói thầm với bạn : ...") được nhắn lại
 #     "tell <ID> <noidungtraloi>" (hết mil thì "noidunghetmil"). ID người nhắn tra ở danh sách mật ngữ gần đây của client
 #     (MoiTruong.get_tinmatdens), không ra thì gửi Dò tìm và báo Telegram để nhắn tay.
-#   - Ô thay trong câu: {mil100k} (100.000đ được bao nhiêu mil, vd 1,5), {dongia} (giá 1 mil, vd 66,7k), {tiento}, {stk} (sotaikhoan),
+#   - Ô thay trong câu: {mil100k} (100.000đ được bao nhiêu mil, vd 1.5), {dongia} (giá 1 mil, vd 66.7k), {tiento}, {stk} (sotaikhoan),
 #     {nganhang}, {chutaikhoan}, {conlai} (mil còn bán được = ngân lượng đang có - giulaitoithieu - đơn chờ giao); câu trả lời thêm
 #     {ten}, {idnguoimua}. Hết mil thì không rao
 # Đơn lưu ở _internal/bannganluong_don.json (KHÔNG đưa lên git: đồng bộ git ghi đè bản cũ là giao lại đơn đã giao). Chạy lần đầu (chưa có
@@ -58,8 +58,14 @@ CAUHINHMAU = {
     "nganhang": "",
     "chutaikhoan": "",
     "raos": [
-        {"kenh": "vipchat", "chuky": [70, 150],
-         "noidung": "bán mil {mil100k}m = 100k ai có nhu cầu vui lòng IB. Ưu đãi mua lần đầu tặng thêm 20%"},
+        # Không hứa "tặng 20% lần đầu" trên kênh thế giới: người chơi coi là mồi lừa. Nhiều câu bốc ngẫu nhiên, thưa hơn cho đỡ giống bot
+        {"kenh": "vipchat", "chuky": [300, 600],
+         "noidung": ["bán mil 100k = {mil100k}m, ck xong ra tạp hóa tân thủ thôn nhận liền, ai cần ib",
+                     "ai cần mil ib mình nhé, 100k {mil100k}m, tiền vào là giao ngay ở tạp hóa ttt",
+                     "bán mil giá 100k {mil100k}m, còn {conlai}m, mua ít cũng bán, ib mình",
+                     "có mil bán 100k = {mil100k}m, mình đứng tạp hóa tân thủ thôn suốt, cần thì ib",
+                     "mil 100k {mil100k}m nha ae, giao nhanh tại tạp hóa ttt, ib mình",
+                     "ae nào thiếu mil ib, mình bán 100k {mil100k}m, ra tạp hóa tân thủ thôn gặp mình nhận"]},
     ],
     "is_traloitinmat": True,
     "trehoantraloi": [5, 12],
@@ -173,8 +179,8 @@ def _khoangrao(chuky, toithieu = None):
 
 
 def _somil(nganluong):
-    # Ngân lượng -> số mil 1 chữ số thập phân, dấu phẩy: 1.500.000 -> "1,5", 10.448.500 -> "10,4", 2.000.000 -> "2"
-    return f"{nganluong / NGANLUONGMOIMIL:.1f}".rstrip("0").rstrip(".").replace(".", ",")
+    # Ngân lượng -> số mil 1 chữ số thập phân, dấu chấm (người chơi quen viết "1.5m"): 1.500.000 -> "1.5", 10.448.500 -> "10.4", 2.000.000 -> "2"
+    return f"{nganluong / NGANLUONGMOIMIL:.1f}".rstrip("0").rstrip(".")
 
 
 def _so(n):
@@ -270,7 +276,7 @@ class BanNganLuong:
         conlai = nganluong - int(cauhinh.get("giulaitoithieu") or 0) - dangcho
         # Giá 1 mil theo nghìn đồng: 1.000đ = nganluongmoi1000d ngân lượng; lẻ thì 1 số thập phân ("100k", 15.000 NL/1k -> "66,7k")
         dongia = NGANLUONGMOIMIL / int(cauhinh["nganluongmoi1000d"])
-        return {"dongia": f"{dongia:.1f}".rstrip("0").rstrip(".").replace(".", ",") + "k",
+        return {"dongia": f"{dongia:.1f}".rstrip("0").rstrip(".") + "k",
                 "mil100k": _somil(100 * int(cauhinh["nganluongmoi1000d"])), "tiento": cauhinh.get("tiento") or "",
                 "stk": cauhinh.get("sotaikhoan") or "", "nganhang": cauhinh.get("nganhang") or "",
                 "chutaikhoan": cauhinh.get("chutaikhoan") or "", "conlai": _somil(max(0, conlai)), "conlaing": conlai,

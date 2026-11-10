@@ -2332,7 +2332,7 @@ class GiaoDienHienThi:
         # Nhịp lệnh và các tự động ít dùng (khai khoáng, đào tàng bảo đồ, chiến trường). Chiến trường không chạy khi đang tự đi phó bản
         self._taonhomnhiplenh(tab)
         nhom = self._taonhom(tab, "Tự động khác")
-        self._create_check(nhom, "Tự động khai khoáng", self.vars["khaikhoang"], "battat_tudongkhaikhoang")
+        self._create_check(nhom, "Tự động khai khoáng/Hái dược", self.vars["khaikhoang"], "battat_tudongkhaikhoang")
         self._create_check(nhom, "Đào tàng bảo đồ", self.vars["daobaodo"], "battat_tudongdaotangbaodo")
         self._create_check(nhom, "Đi chiến trường", self.vars["chientruong"], "battat_tudongdichientruong")
         self._taonhomcongcusatthuong(tab)

@@ -447,7 +447,8 @@ class TacTuVatPham:
         if not self._is_tudongkhaikhoang:
             return
 
-        if self.moitruong.get_idbandohientai() in BANDOHAIDUOCs:
+        # Đang khai khoáng (đeo Cuốc) thì không vứt dược
+        if self.moitruong.get_idbandohientai() in BANDOHAIDUOCs and self._loaikhaikhoang != "khaikhoang":
             # Mỗi giây xét 1 lần kể cả khi không vứt: đọc mô tả có thể phải hỏi game (desc + chờ 0.2 giây)
             self._thoidiemvutvatphamgannhat = time.time()
             soluongo = self.moitruong.get_soluongvatphamhanhtrangtoida() + 1

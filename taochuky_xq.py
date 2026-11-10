@@ -63,6 +63,8 @@ MUCTIEU = [
     ("HOOK_COTNHIEMVUNPC", 0x217FE, "ma", "đọc số cờ dấu nhiệm vụ NPC: mov ecx,[esi]; test ecx,ecx; je (6 byte), chặn số cờ rác"),
     ("HOOK_VEHIEUUNGDAT1", 0x4F83A, "ma", "vẽ hiệu ứng mặt đất vòng 1: mov edx,[esi]; mov [esp+0x10],ecx (6 byte), esi = nút"),
     ("HOOK_VEHIEUUNGDAT2", 0x4FE8E, "ma", "vẽ hiệu ứng mặt đất vòng 2: mov edx,[esi]; xor edi,edi; mov [esp+0x10],ecx (8 byte)"),
+    ("HOOK_VETILENEN1", 0x535BF, "ma", "vẽ tile nền ở luồng nền: sau call lấy khung tile, mov edx,[esp+0x2C]; mov ecx,[esp+0x14] (8 byte), eax = khung"),
+    ("HOOK_VETILENEN2", 0x9BAFE, "ma", "vẽ tile nền: sau call lấy khung tile, mov edx,[esp+0x30]; push eax (5 byte), eax = khung"),
     ("DSHIEUUNGDAT", 0x376CA4, "bien", "đầu danh sách hiệu ứng mặt đất (trận pháp...), nút 0x2C byte, kế tiếp +0x28"),
     ("MAHIEUUNGDAT", 0x376A48, "bien", "bộ đệm 100 mã hiệu ứng (perform/<mã>) đã nạp sprite, ô i ứng với BANGSPRITEHIEUUNG[i + 1]"),
     ("BANGSPRITEHIEUUNG", 0x1BE614, "bien", "bảng con trỏ sprite hiệu ứng theo chỉ số (chỉ số = ô bộ đệm + 1)"),
