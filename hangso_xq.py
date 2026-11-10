@@ -1,5 +1,6 @@
 from collections import defaultdict
 from math import sqrt
+import re
 
 from bando_xq import laytenbandogame, layidbandotheoten, get_solanchuyenbando, BANDOCONG_MAP, SOLANCHUYENBANDOTOIDA
 
@@ -442,6 +443,16 @@ THOIGIANLAMMOIBANGPHAI = 600.
 KHOANGCACHHOIBANGPHAI = 12.
 # Game gửi cả khối nhiều dòng (nối "\n", tới 0x640 byte) vào 1 tin, vd trả lời "desc user": ô 128 byte cắt mất dòng Bang phái
 KICHTHUOCDONGTROCHUYEN = 512
+# Tin mật đến ở khung trò chuyện: "<tên> nói thầm với bạn : <nội dung>" (chữ tím, ảnh 2026-11-10, Aegis); gửi tin mật "tell <ID> <nội dung>"
+# (gõ "/tell <ID> ..." thì client gửi nguyên văn bỏ "/", XQ.exe 0x425BC3)
+# Dòng thô hàm thêm dòng khung chat nhận (đo 2026-11-10): "ESC Y \t+16711926,Gạ=364\t- nói thầm với bạn : chao" -> tên là liên kết
+# "\t+<màu>,<tên>=<ID>\t-" (bấm vào tên ra "/tell <ID>"), ID người gửi có sẵn trong dòng
+MAUTINMATDEN = re.compile(r"^\s*(?:\t?\+\d+,(?P<ten>[^=\t]+)=(?P<id>\d+)\t-|(?P<tenthuong>\S.{0,30}?))\s*nói thầm với bạn\s*:\s*(?P<noidung>.*)$", re.M)
+# Danh sách mật ngữ gần đây trong THONGTINGAME (XQ.exe 0x43F110 dựng "/%s(%d)%s" từ đây): LIENHETINMAT_SOLUONG ô x LIENHETINMAT_KICHTHUOC
+# byte {tên 0x14 byte, ID int +0x14}. Chưa dò bằng chữ ký vì chưa thấy lệnh nào dùng hằng này mà ổn định đủ (mới đọc tĩnh, chưa đo trong game)
+TG_LIENHETINMAT = 0xADFA5C
+LIENHETINMAT_SOLUONG = 20
+LIENHETINMAT_KICHTHUOC = 0x18
 # Bộ đệm chuỗi bot tự in vào khung trò chuyện (moitruong_xq.action_themdongkhungchat), byte UTF-8 kể cả số 0 cuối
 KICHTHUOCDONGKHUNGCHAT = 1024
 

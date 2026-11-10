@@ -339,6 +339,15 @@ class MoiTruong:
         self.thoidiembaothuxuathiengannhat_map = {}
 
         self._lichsutrochuyen5s = []
+        # Tin mật đến ("<tên> nói thầm với bạn : <nội dung>", chữ tím): [{luc, ten, noidung, id}] 5 phút gần nhất; tên đã gửi "friend ?"
+        # (Dò tìm) -> thời điểm; danh sách mật ngữ gần đây lần trước (log khi đổi)
+        self._tinmatdens = []
+        # Hook đầu hàm thêm dòng khung chat (action_thietlaphookkhungchat): bộ đệm vòng, kịch bản, số dòng đã đọc
+        self._diachibodemkhungchat = 0
+        self._diachihamkichbankhungchat = 0
+        self._demdongkhungchatdadoc = 0
+        self._thoidiemdotimtens = {}
+        self._lienhetinmatcu = None
         # Bang phái người chơi (action_hoibangphai): ID người chơi -> (tên bang, "" nếu không có bang, thời điểm biết); tên -> ID để tra chủ bảo thú
         self._bangphainguoichoi_map = {}
         self._idnguoichoitheoten_map = {}
@@ -1339,6 +1348,108 @@ class MoiTruong:
         self._inlog("[LỆNH GAME] đã đặt hook dò lệnh game tự gửi")
         return True
 
+    def action_thietlaphookkhungchat(self):
+        # Tin mật "<tên> nói thầm với bạn : ..." không đi qua HOOK_TROCHUYEN / HOOK_TINHETHONG (test 2026-11-10: ChâuSa nhắn, bot không
+        # thấy dòng nào). Hook thẳng đầu hàm thêm dòng khung chat HAMTHEMDONGKHUNGCHAT (156 chỗ gọi, mọi dòng khung chat đều qua đây),
+        # thiscall (chuỗi, cờ): sau pushad chuỗi ở [esp + 0x24]. 7 byte đầu "push -1; push <SEH>" (6A FF 68 ..) chép nguyên vào kịch bản
+        # rồi nhảy về +7. Bộ đệm vòng riêng, không lẫn với bộ đệm trò chuyện cũ (tránh xử lý 2 lần tin hệ thống)
+        addr_at_hook = self.diachixq + DC.HAMTHEMDONGKHUNGCHAT
+        try:
+            mahook = read_bytes(self.tientrinh, addr_at_hook, 7)
+        except Exception:
+            return False
+        if mahook[0] == 0xE9 and mahook[5:7] == b"\x90\x90":
+            # Hook của lần bot chạy trước còn trong game: đọc lại bộ đệm từ "mov ebx, <bộ đệm>" trong kịch bản
+            kichban = addr_at_hook + 5 + struct.unpack("<i", mahook[1:5])[0]
+            try:
+                ma = read_bytes(self.tientrinh, kichban, 24)
+            except Exception:
+                return False
+            vitri = ma.find(b"\xBB")
+            if vitri < 0 or vitri + 5 > len(ma):
+                return False
+            self._diachihamkichbankhungchat = kichban
+            self._diachibodemkhungchat = struct.unpack("<I", ma[vitri + 1:vitri + 5])[0]
+            self._demdongkhungchatdadoc = read_int(self.tientrinh, self._diachibodemkhungchat)
+            self._inlog("[KHUNG CHAT] dùng lại hook khung chat của lần chạy trước")
+            return True
+        if mahook[0:3] != b"\x6A\xFF\x68":
+            self._inlog(f"[KHUNG CHAT] đầu hàm thêm dòng khung chat lạ ({mahook.hex(' ')}), không hook: không đọc được tin mật")
+            return False
+        if not self._diachihamkichbankhungchat:
+            self._diachibodemkhungchat = self.tientrinh.allocate(4 + SOLUONGDONGTROCHUYEN * KICHTHUOCDONGTROCHUYEN)
+            write_int(self.tientrinh, self._diachibodemkhungchat, 0)
+            diachikichban = self.tientrinh.allocate(256)
+            seh = struct.unpack("<I", mahook[3:7])[0]
+            asm_script = f"""
+                pushad
+                mov esi, dword ptr [esp + 0x24]
+                test esi, esi
+                jz ketthuc
+                mov ebx, {self._diachibodemkhungchat}
+                mov eax, dword ptr [ebx]
+                and eax, {SOLUONGDONGTROCHUYEN - 1}
+                imul eax, eax, {KICHTHUOCDONGTROCHUYEN}
+                lea edi, [ebx + eax + 4]
+                mov ecx, {KICHTHUOCDONGTROCHUYEN - 1}
+            loop_copy:
+                mov al, byte ptr [esi]
+                mov byte ptr [edi], al
+                test al, al
+                jz end_copy
+                inc esi
+                inc edi
+                dec ecx
+                jnz loop_copy
+                mov byte ptr [edi], 0
+            end_copy:
+                inc dword ptr [ebx]
+            ketthuc:
+                popad
+                push -1
+                push {seh}
+                push {addr_at_hook + 7}
+                ret
+            """
+            encoding, count = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+            if not encoding:
+                return False
+            write_bytes(self.tientrinh, diachikichban, bytes(encoding), len(encoding))
+            self._diachihamkichbankhungchat = diachikichban
+        relative_offset = self._diachihamkichbankhungchat - (addr_at_hook + 5)
+        patch_bytes = b"\xE9" + relative_offset.to_bytes(4, byteorder = "little", signed = True) + b"\x90\x90"
+        write_bytes(self.tientrinh, addr_at_hook, patch_bytes, len(patch_bytes))
+        self._inlog("[KHUNG CHAT] đã đặt hook đọc dòng khung chat (tin mật)")
+        return True
+
+    def _docdongkhungchatmois(self):
+        # Các dòng mới thêm vào khung chat từ lần đọc trước (bỏ mã màu ESC + 1 chữ), như _docdongtrochuyenmois
+        if not self._diachibodemkhungchat:
+            return []
+        try:
+            dulieu = read_bytes(self.tientrinh, self._diachibodemkhungchat, 4 + SOLUONGDONGTROCHUYEN * KICHTHUOCDONGTROCHUYEN)
+        except Exception:
+            return []
+        dem = struct.unpack_from("<I", dulieu, 0)[0]
+        dadoc = self._demdongkhungchatdadoc
+        if dem < dadoc:
+            dadoc = 0
+        dadoc = max(dadoc, dem - SOLUONGDONGTROCHUYEN)
+        self._demdongkhungchatdadoc = dem
+        dongs = []
+        for i in range(dadoc, dem):
+            vitri = 4 + (i % SOLUONGDONGTROCHUYEN) * KICHTHUOCDONGTROCHUYEN
+            o = dulieu[vitri:vitri + KICHTHUOCDONGTROCHUYEN]
+            o = o[:o.find(b"\x00")] if b"\x00" in o else o
+            tho = o.decode("utf-8", errors = "ignore")
+            noidung = re.sub(r"\x1b[a-zA-Z0-9]", "", tho).strip()
+            if "thầm" in noidung:
+                # Dòng thô (còn mã màu) để dò khi mẫu tin mật không khớp
+                self._inlog(f"[KHUNG CHAT] {tho!r}")
+            if noidung:
+                dongs.append(noidung)
+        return dongs
+
     def action_thietlaphookcotnhiemvunpc(self):
         # Chặn crash client ở xq+0x21837 (dump C:\CrashDumps 2026-11-08 16:15 và 16:42, cả 2 lần acc chính 364, 3-5s sau khi rời Phong
         # Yêu Kính về bản đồ 80): hàm xq+0x21790 duyệt bảng dấu nhiệm vụ NPC xq+0x206040 (400 bản ghi x 0xE94, mỗi dòng 0x7C = loại +
@@ -2328,8 +2439,63 @@ class MoiTruong:
         for noidungtrochuyen in self._docdongtrochuyenmois():
             self._lichsutrochuyen5s.append((now, noidungtrochuyen))
             self._xulydongthongtinnguoichoi(noidungtrochuyen)
+        for dongkhungchat in self._docdongkhungchatmois():
+            self._xulydongtinmat(now, dongkhungchat)
 
         self._lichsutrochuyen5s = [msg for msg in self._lichsutrochuyen5s if now - msg[0] <= 5.0]
+
+    def _xulydongtinmat(self, now, noidung):
+        # Tin mật đến hiện ở khung trò chuyện "Gạ nói thầm với bạn : abc" (ảnh người dùng 2026-11-10); tên là liên kết có sẵn ID
+        # (MAUTINMATDEN), không có liên kết thì ID tra sau ở get_tinmatdens
+        m = MAUTINMATDEN.search(noidung)
+        if not m:
+            return
+        ten = (m.group("ten") or m.group("tenthuong") or "").strip()
+        idnguoigui = int(m.group("id")) if m.group("id") else None
+        noidungtin = m.group("noidung").strip()
+        self._tinmatdens = [t for t in self._tinmatdens if now - t["luc"] <= 300.] + [{"luc": now, "ten": ten, "noidung": noidungtin, "id": idnguoigui}]
+        self._inlog(f"[TIN MẬT] {ten} (ID {idnguoigui}): {noidungtin}")
+
+    def get_lienhetinmats(self):
+        # Danh sách mật ngữ gần đây của client (bấm lên/xuống ở ô chat ra "/<tên>(<ID>) "): TG + TG_LIENHETINMAT, LIENHETINMAT_SOLUONG ô
+        # x LIENHETINMAT_KICHTHUOC byte {tên 0x14 byte, ID int ở +0x14}, ô trống ID 0. Dò từ XQ.exe 0x43F110 ("/%s(%d)%s") và 0x425CA5
+        # (gửi "/<tên>(<ID>)" kiểm tên khớp ID trong danh sách này). -> {tên: ID}
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        if not x:
+            return {}
+        try:
+            dulieu = read_bytes(self.tientrinh, x + TG_LIENHETINMAT, LIENHETINMAT_SOLUONG * LIENHETINMAT_KICHTHUOC)
+        except Exception:
+            return {}
+        ketqua = {}
+        for i in range(LIENHETINMAT_SOLUONG):
+            o = dulieu[i * LIENHETINMAT_KICHTHUOC:(i + 1) * LIENHETINMAT_KICHTHUOC]
+            idnguoichoi = struct.unpack_from("<i", o, 0x14)[0]
+            ten = o[:0x14].split(b"\x00")[0].decode("utf-8", errors = "ignore").strip()
+            if idnguoichoi > 0 and ten:
+                ketqua[ten] = idnguoichoi
+        return ketqua
+
+    def get_tinmatdens(self):
+        # Tin mật 5 phút gần nhất kèm ID người gửi: tra danh sách mật ngữ gần đây, rồi tên -> ID đã biết (desc user, người chơi quanh đây).
+        # Chưa ra thì gửi "friend ? <tên>" (nút Dò tìm ở Thêm Bạn hữu) 1 lần / 30s để client có ID, log để dò chỗ đọc kết quả
+        if not self._tinmatdens:
+            return []
+        now = time.time()
+        lienhe = self.get_lienhetinmats()
+        if lienhe != self._lienhetinmatcu:
+            self._lienhetinmatcu = lienhe
+            self._inlog(f"[TIN MẬT] Danh sách mật ngữ gần đây: {lienhe}")
+        for tin in self._tinmatdens:
+            if tin["id"] is None:
+                tin["id"] = lienhe.get(tin["ten"]) or self._idnguoichoitheoten_map.get(tin["ten"])
+                if tin["id"] is None and now - self._thoidiemdotimtens.get(tin["ten"], 0.) >= 30.:
+                    self._thoidiemdotimtens[tin["ten"]] = now
+                    self._inlog(f"[TIN MẬT] Chưa biết ID của {tin['ten']}, gửi Dò tìm")
+                    self.action_thucthicaulenh2(f"friend ? {tin['ten']}", delay = 0., is_khancap = True)
+                elif tin["id"] is not None:
+                    self._inlog(f"[TIN MẬT] {tin['ten']} có ID {tin['id']}")
+        return [dict(t) for t in self._tinmatdens]
 
     def get_lichsutrochuyen5s(self):
         return self._lichsutrochuyen5s

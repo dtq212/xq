@@ -144,6 +144,7 @@ class CuaSo:
             # Không bao giờ 2 nhân vật Hồi Thành Phù / Tín Vật cùng lúc
             self.moitruong.giuhoithanh = GiuHoiThanh(idcuaso, dieuphoi_khoa, dieuphoi_trangthai)
         self.moitruong.action_thietlaphooknoidungtrochuyen()
+        self.moitruong.action_thietlaphookkhungchat()
         self.moitruong.action_thietlaphooklenhgame()
         self.moitruong.action_thietlaphookcotnhiemvunpc()
         self.moitruong.action_thietlaphookvehieuungdat()
@@ -467,6 +468,8 @@ class CuaSo:
                     "_biendongtainguyen": self.thongke.get_biendongganday(),
                     # Cảnh báo phát âm gần đây (tienich_xq.canhbao) cho tab Cảnh báo
                     "_canhbaos": list(CANHBAOGANDAYs),
+                    # Tin mật đến 5 phút gần nhất kèm ID người gửi nếu tra được (bannganluong_xq trả lời người hỏi mua)
+                    "_tinmatdens": self.moitruong.get_tinmatdens(),
                 }
                 # Tầm nhìn chia sẻ cho nhân vật khác cùng máy (đối tượng thù địch mình thấy); lỗi thì vẫn cập nhật phần còn lại
                 try:
@@ -564,6 +567,12 @@ class CuaSo:
                     if kenh in ("chat", "say", "rumor", "vipchat", "ct", "ot", "ft", "et", "tt") and noidung.strip():
                         if not self.moitruong.action_thucthicaulenh2(f"{kenh} {noidung.strip()}", delay = 0., is_khancap = True):
                             print(f"[BÁN NL] Chưa gửi được lệnh rao")
+                elif isinstance(cmd, str) and cmd.startswith("tinmat:"):
+                    # Tin mật (bannganluong_xq trả lời người hỏi mua): tinmat:<ID người chơi>|<nội dung> -> "tell <ID> <nội dung>"
+                    idnhan, _, noidung = cmd.split(":", 1)[1].partition("|")
+                    if idnhan.strip().isdigit() and noidung.strip():
+                        if not self.moitruong.action_thucthicaulenh2(f"tell {int(idnhan)} {noidung.strip()}", delay = 0., is_khancap = True):
+                            print(f"[BÁN NL] Chưa gửi được tin mật cho {idnhan}")
                 elif cmd == "catkho":
                     # Cất kho ngay (tactu_catkho_xq) từ giao diện / Telegram
                     self.tactu.yeucau_catkho()

@@ -10,9 +10,15 @@
 #     đơn thành "loi" (báo Telegram), bổ sung ngân lượng rồi đặt "guilai". 0 = bán tới hết
 #   - "idnhanvatban": ID người chơi của nhân vật bán. Chỉ máy đang chạy nhân vật này mới hỏi SePay và giao (máy khác chép cùng cấu hình
 #     cũng không giao trùng)
-#   - Rao bán: "is_rao" bật, nhân vật bán gửi "<kenhrao> <nội dung>" mỗi "chukyrao" giây. Kênh lấy từ chuỗi trong XQ.exe ("chat %s",
-#     "say %s"...): mặc định "vipchat" (kênh VIP, test 2026-11-10 hiện đủ câu ~160 byte), "say" kênh gần. "noidungrao" thay {mil100k} (100.000đ được bao nhiêu mil, vd 1,5), {dongia} (giá 1 mil, vd 66,7k), {tiento}, {stk} (sotaikhoan),
-#     {nganhang}, {chutaikhoan}, {conlai} (mil còn bán được = ngân lượng đang có - giulaitoithieu - đơn chờ giao). Hết mil thì không rao
+#   - Rao bán: "is_rao" bật, nhân vật bán rao theo từng mục "raos": {"kenh", "chuky": [x, y] giây ngẫu nhiên (1 số = cố định),
+#     "noidung"}, mỗi mục giờ hẹn riêng. Kênh lấy từ chuỗi trong XQ.exe ("vipchat %s", "say %s"...): "vipchat" kênh VIP/thế giới (test
+#     2026-11-10 hiện đủ câu ~160 byte), "say" kênh lân cận. Kênh thế giới chỉ rao giá + "ai mua ib", không lộ số tài khoản.
+#   - Trả lời tin mật: "is_traloitinmat" bật thì ai nhắn tin mật cho nhân vật bán ("<tên> nói thầm với bạn : ...") được nhắn lại
+#     "tell <ID> <noidungtraloi>" (hết mil thì "noidunghetmil"). ID người nhắn tra ở danh sách mật ngữ gần đây của client
+#     (MoiTruong.get_tinmatdens), không ra thì gửi Dò tìm và báo Telegram để nhắn tay.
+#   - Ô thay trong câu: {mil100k} (100.000đ được bao nhiêu mil, vd 1,5), {dongia} (giá 1 mil, vd 66,7k), {tiento}, {stk} (sotaikhoan),
+#     {nganhang}, {chutaikhoan}, {conlai} (mil còn bán được = ngân lượng đang có - giulaitoithieu - đơn chờ giao); câu trả lời thêm
+#     {ten}, {idnguoimua}. Hết mil thì không rao
 # Đơn lưu ở _internal/bannganluong_don.json (KHÔNG đưa lên git: đồng bộ git ghi đè bản cũ là giao lại đơn đã giao). Chạy lần đầu (chưa có
 # file) chỉ nhận giao dịch từ lúc đó, không giao lại lịch sử. Trạng thái đơn ("trangthai"):
 #   chogiao: đã đưa vào hàng chờ của nhân vật bán. Bot mất hàng chờ (mở lại client) mà chưa gửi lệnh give thì tự đưa lại
@@ -24,6 +30,7 @@
 import html
 import json
 import os
+import random
 import re
 import sys
 import threading
@@ -44,13 +51,40 @@ CAUHINHMAU = {
     "idnhanvatban": 0,
     "giulaitoithieu": 0,
     "is_rao": False,
-    "kenhrao": "vipchat",
-    "chukyrao": 60,
     "nganhang": "",
     "chutaikhoan": "",
-    "noidungrao": "Bán mil 100k = {mil100k} mil, CK {nganhang} {stk} {chutaikhoan} nội dung {tiento}+ID nhân vật (vd {tiento}12345), "
-                  "tới Tạp Hóa Tân Thủ Thôn nhận tự động. Còn {conlai} mil",
+    "raos": [
+        {"kenh": "vipchat", "chuky": [70, 150],
+         "noidung": "bán mil {mil100k}m = 100k ai cần thì chat mật, vui lòng không tổ đội"},
+    ],
+    "is_traloitinmat": True,
+    "trehoantraloi": [5, 12],
+    "noidungtraloi": [
+        "mình bán mil giá 100k = {mil100k}m, bạn mua thì ck vào {nganhang} {stk} nd {tiento}{idnguoimua}, xong ra tạp hóa tân thủ thôn chỗ mình đứng là nhận. còn {conlai}m",
+        "mình bán 100k {mil100k}m nha, b mua thì chuyển khoản vào {nganhang} {stk} nội dung {tiento}{idnguoimua} rồi qua tạp hóa tân thủ thôn nhận. mình còn {conlai}m",
+        "mil mình bán giá 100k = {mil100k}m b ơi. b mua thì ck {stk} {nganhang}, nd ghi {tiento}{idnguoimua}, ck xong ra tạp hóa ttt gặp mình nhận liền. còn {conlai}m",
+        "mình bán giá 100k {mil100k}m, còn {conlai}m. bạn mua thì ck vào {nganhang} {stk} nd {tiento}{idnguoimua} nhé, xong ghé tạp hóa tân thủ thôn đứng cạnh mình là có",
+        "mình đang bán 100k = {mil100k}m nè. b lấy thì ck qua {nganhang} {stk} ghi nd {tiento}{idnguoimua}, rồi ra tạp hóa tân thủ thôn nhận nha. còn {conlai}m",
+        "giá mình bán 100k {mil100k}m b nhé. mua thì ck vào {stk} ({nganhang}) nd {tiento}{idnguoimua}, tiền vào là ra tạp hóa tân thủ thôn nhận. còn {conlai}m thôi",
+        "mình bán mil 100k = {mil100k}m, còn {conlai}m. b mua thì chuyển vào {nganhang} {stk}, nội dung {tiento}{idnguoimua}, xong qua tạp hóa ttt chỗ mình nhận",
+        "ok b, mình bán giá 100k {mil100k}m. b mua thì ck {nganhang} {stk} nd đúng {tiento}{idnguoimua} giúp mình, xong ra tạp hóa tân thủ thôn lấy. còn {conlai}m",
+        "mình bán 100k ra {mil100k}m b ạ. muốn mua thì ck vào {stk} {nganhang} ghi {tiento}{idnguoimua}, rồi chạy ra tạp hóa tân thủ thôn gặp mình. còn {conlai}m",
+        "có b, mình bán giá 100k = {mil100k}m, còn {conlai}m. b mua thì ck vào {nganhang} {stk} nd {tiento}{idnguoimua} rồi ra tạp hóa tân thủ thôn đứng gần mình là nhận",
+        "mình bán mil 100k {mil100k}m nhé b. b mua thì ck {stk} {nganhang}, nd {tiento}{idnguoimua}, ck xong qua tạp hóa ttt nhận luôn. mình còn {conlai}m",
+        "mình bán giá 100k = {mil100k}m. b cần thì chuyển khoản vào {nganhang} {stk} với nd {tiento}{idnguoimua}, xong ra tạp hóa tân thủ thôn mình đưa. còn {conlai}m",
+    ],
+    "noidunghetmil": [
+        "hết mil rồi b ơi, lát có mình báo nha",
+        "tạm hết rồi b, tí nữa quay lại nhé",
+        "vừa bán hết mất r b, chút có thêm mình nhắn",
+    ],
 }
+# Trả lời tin mật: cùng 1 người cách nhau tối thiểu chừng này giây (nhắn liên tục không bị spam lại); chờ tra ID tối đa chừng này giây
+GIANCACHTRALOICUNGNGUOI = 30.
+THOIGIANCHOIDTINMAT = 15.
+# Kênh chat được rao (cuaso_xq chỉ nhận các kênh này); khoảng rao tối thiểu để khỏi spam khi cấu hình sai
+KENHRAOs = ("chat", "say", "rumor", "vipchat", "ct", "ot", "ft", "et", "tt")
+KHOANGRAOTOITHIEU = 3.
 # 1 mil = 1 triệu ngân lượng
 NGANLUONGMOIMIL = 1000000
 # Hỏi SePay mỗi chừng này giây; đồng bộ trạng thái đơn với bot nhanh hơn
@@ -111,6 +145,29 @@ def docidnguoichoi(noidung, tiento):
     return ids.pop() if len(ids) == 1 else None
 
 
+def _dien(mau, thongtin):
+    # Điền các ô {..} vào mẫu câu, gộp khoảng trắng (ô trống trong mẫu); mẫu sai thì None. Mẫu là danh sách thì bốc ngẫu nhiên 1 câu
+    # (câu giống hệt nhau lặp lại dễ bị nhận ra là bot)
+    if isinstance(mau, (list, tuple)):
+        mau = random.choice(mau) if mau else ""
+    try:
+        return re.sub(r"\s+", " ", str(mau).format(**thongtin)).strip()
+    except (KeyError, IndexError, ValueError) as err:
+        print(f"[BÁN NL] Mẫu câu sai ({err}): {mau}")
+        return None
+
+
+def _khoangrao(chuky, toithieu = None):
+    # [x, y] -> ngẫu nhiên x..y giây; 1 số -> cố định; sai thì 60..120
+    toithieu = KHOANGRAOTOITHIEU if toithieu is None else toithieu
+    try:
+        x, y = (chuky[0], chuky[-1]) if isinstance(chuky, (list, tuple)) else (chuky, chuky)
+        x, y = sorted((max(toithieu, float(x)), max(toithieu, float(y))))
+    except (TypeError, ValueError, IndexError):
+        x, y = 60., 120.
+    return random.uniform(x, y)
+
+
 def _somil(nganluong):
     # Ngân lượng -> số mil 1 chữ số thập phân, dấu phẩy: 1.500.000 -> "1,5", 10.448.500 -> "10,4", 2.000.000 -> "2"
     return f"{nganluong / NGANLUONGMOIMIL:.1f}".rstrip("0").rstrip(".").replace(".", ",")
@@ -126,11 +183,20 @@ class BanNganLuong:
         self.shared_data = shared_data
         self.command_dict = command_dict
         self._luchoisepay = 0.
-        self._lucrao = 0.
+        # Giờ hẹn rao tiếp theo từng mục "raos" (chỉ số -> time); lần in "hết mil" gần nhất
+        self._lucraoteps = {}
+        self._luchetmil = 0.
+        # Tin mật đã xử lý (thời điểm, tên); lần trả lời gần nhất theo ID người chơi
+        self._tinmatdaxuly = set()
+        self._luctraloiids = {}
+        # Thời điểm sẽ trả lời từng tin mật (đã cộng trễ giả gõ phím)
+        self._luctraloitins = {}
         self._trangthai_log = None
 
     def batdau(self):
         threading.Thread(target = self.loop, daemon = True).start()
+        # Rao chạy luồng riêng, 1s/lượt: kênh lân cận rao 5-10s, luồng chính 5s/lượt lại có lúc chờ SePay 15s
+        threading.Thread(target = self.loop_rao, daemon = True).start()
 
     def _log(self, trangthai):
         # In 1 dòng mỗi khi đổi trạng thái
@@ -180,41 +246,101 @@ class BanNganLuong:
 
         self._dongbo(cauhinh, hwnd, info, dons)
         _ghijson(duongdandon(), trangthai)
-        self._rao(cauhinh, hwnd, info, dons)
 
-    def _rao(self, cauhinh, hwnd, info, dons):
-        # Rao bán trên kênh chat mỗi "chukyrao" giây. command_dict mỗi cửa sổ chỉ giữ 1 lệnh: đang có lệnh chờ (vd giaodo) thì để lượt sau
-        # (5s), kẻo đè mất
-        if not cauhinh.get("is_rao") or time.time() - self._lucrao < max(10., float(cauhinh.get("chukyrao") or 60)):
-            return
-        if self.command_dict.get(hwnd):
-            return
+    def loop_rao(self):
+        while True:
+            try:
+                self._rao()
+            except Exception as err:
+                print(f"[BÁN NL] Lỗi rao: {err}")
+                time.sleep(10)
+            time.sleep(1.)
+
+    def _thongtinban(self, cauhinh, info):
+        # Các ô thay trong câu rao / trả lời; None khi chưa đọc được ngân lượng. "conlaing" = ngân lượng còn bán được
         nganluong = info.get("nganluong")
         if nganluong is None:
-            return
+            return None
+        dons = (_docjson(duongdandon(), None) or {}).get("dons") or {}
         dangcho = sum(int(don.get("nganluong") or 0) for don in dons.values() if don.get("trangthai") == "chogiao")
         conlai = nganluong - int(cauhinh.get("giulaitoithieu") or 0) - dangcho
-        if conlai < NGANLUONGMOIMIL:
-            self._lucrao = time.time()
-            print(f"[BÁN NL] Hết mil để rao (ngân lượng {_so(nganluong)}, chờ giao {_so(dangcho)})")
-            return
         # Giá 1 mil theo nghìn đồng: 1.000đ = nganluongmoi1000d ngân lượng; lẻ thì 1 số thập phân ("100k", 15.000 NL/1k -> "66,7k")
         dongia = NGANLUONGMOIMIL / int(cauhinh["nganluongmoi1000d"])
-        tieude = f"{dongia:.1f}".rstrip("0").rstrip(".").replace(".", ",") + "k"
-        try:
-            noidung = str(cauhinh.get("noidungrao") or CAUHINHMAU["noidungrao"]).format(
-                dongia = tieude, mil100k = _somil(100 * int(cauhinh["nganluongmoi1000d"])), tiento = cauhinh.get("tiento") or "", stk = cauhinh.get("sotaikhoan") or "",
-                nganhang = cauhinh.get("nganhang") or "", chutaikhoan = cauhinh.get("chutaikhoan") or "",
-                conlai = _somil(conlai))
-        except (KeyError, IndexError, ValueError) as err:
-            self._lucrao = time.time()
-            print(f"[BÁN NL] noidungrao sai mẫu ({err}), không rao")
+        return {"dongia": f"{dongia:.1f}".rstrip("0").rstrip(".").replace(".", ",") + "k",
+                "mil100k": _somil(100 * int(cauhinh["nganluongmoi1000d"])), "tiento": cauhinh.get("tiento") or "",
+                "stk": cauhinh.get("sotaikhoan") or "", "nganhang": cauhinh.get("nganhang") or "",
+                "chutaikhoan": cauhinh.get("chutaikhoan") or "", "conlai": _somil(max(0, conlai)), "conlaing": conlai,
+                "nganluong": nganluong, "dangcho": dangcho}
+
+    def _rao(self):
+        cauhinh = taicauhinh()
+        if not cauhinh.get("is_bat") or not cauhinh.get("nganluongmoi1000d") or not cauhinh.get("idnhanvatban"):
             return
-        # Bỏ xuống dòng và khoảng trắng thừa (ô trống trong mẫu)
-        noidung = re.sub(r"\s+", " ", noidung).strip()
-        self.command_dict[hwnd] = f"raoban:{cauhinh.get('kenhrao') or 'vipchat'}|{noidung}"
-        self._lucrao = time.time()
-        print(f"[BÁN NL] Rao: {noidung}")
+        hwnd, info = self._timnhanvatban(int(cauhinh["idnhanvatban"]))
+        # command_dict mỗi cửa sổ chỉ giữ 1 lệnh: đang có lệnh chờ (vd giaodo) thì để giây sau, kẻo đè mất
+        if hwnd is None or self.command_dict.get(hwnd):
+            return
+        thongtin = self._thongtinban(cauhinh, info)
+        if thongtin is None:
+            return
+        # Trả lời tin mật trước (người đang chờ), mỗi lượt 1 lệnh
+        if cauhinh.get("is_traloitinmat") and self._traloitinmat(cauhinh, hwnd, info, thongtin):
+            return
+        if not cauhinh.get("is_rao"):
+            return
+        raos = [r for r in (cauhinh.get("raos") or []) if isinstance(r, dict) and r.get("kenh") in KENHRAOs and r.get("noidung")]
+        now = time.time()
+        dendens = [i for i in range(len(raos)) if now >= self._lucraoteps.get(i, 0.)]
+        if not dendens:
+            return
+        if thongtin["conlaing"] < NGANLUONGMOIMIL:
+            if now - self._luchetmil >= 300:
+                self._luchetmil = now
+                print(f"[BÁN NL] Hết mil để rao (ngân lượng {_so(thongtin['nganluong'])}, chờ giao {_so(thongtin['dangcho'])})")
+            return
+        # Mỗi lượt gửi 1 mục (mục hẹn sớm nhất), mục khác tới hẹn cùng lúc thì giây sau
+        i = min(dendens, key = lambda j: self._lucraoteps.get(j, 0.))
+        rao = raos[i]
+        self._lucraoteps[i] = now + _khoangrao(rao.get("chuky"))
+        noidung = _dien(rao["noidung"], thongtin)
+        if noidung is None:
+            return
+        self.command_dict[hwnd] = f"raoban:{rao['kenh']}|{noidung}"
+        print(f"[BÁN NL] Rao {rao['kenh']}: {noidung} (lần sau sau {self._lucraoteps[i] - now:.0f}s)")
+
+    def _traloitinmat(self, cauhinh, hwnd, info, thongtin):
+        # Người nhắn tin mật (bất kỳ nội dung) -> nhắn lại hướng dẫn chuyển khoản riêng cho ID đó (nội dung CK đúng ID của họ) và số mil còn.
+        # Mỗi tin trả lời 1 lần; cùng 1 người nhắn liên tục thì cách nhau GIANCACHTRALOICUNGNGUOI giây. Không tra được ID sau
+        # THOIGIANCHOIDTINMAT giây thì báo Telegram để nhắn tay. -> True khi vừa gửi lệnh
+        now = time.time()
+        for tin in info.get("_tinmatdens") or []:
+            khoa = (round(tin["luc"], 3), tin["ten"])
+            if khoa in self._tinmatdaxuly:
+                continue
+            # Chờ vài giây như người đang gõ ("trehoantraloi" [x, y] giây, bốc 1 lần cho mỗi tin)
+            if khoa not in self._luctraloitins:
+                self._luctraloitins[khoa] = tin["luc"] + _khoangrao(cauhinh.get("trehoantraloi") or [5, 12], 1.)
+            if now < self._luctraloitins[khoa]:
+                continue
+            if tin.get("id") is None:
+                if now - tin["luc"] >= THOIGIANCHOIDTINMAT:
+                    self._tinmatdaxuly.add(khoa)
+                    print(f"[BÁN NL] Tin mật từ {tin['ten']} nhưng không tra được ID, cần nhắn tay")
+                    guitin(f"⚠️ {html.escape(tin['ten'])} nhắn mua mil (<i>{html.escape(tin['noidung'])}</i>) nhưng bot không tra được ID, "
+                           f"nhắn tay giúp", is_html = True)
+                continue
+            self._tinmatdaxuly.add(khoa)
+            if now - self._luctraloiids.get(tin["id"], 0.) < GIANCACHTRALOICUNGNGUOI:
+                continue
+            mau = cauhinh.get("noidungtraloi") if thongtin["conlaing"] >= NGANLUONGMOIMIL else cauhinh.get("noidunghetmil")
+            noidung = _dien(mau or "", dict(thongtin, ten = tin["ten"], idnguoimua = tin["id"]))
+            if not noidung:
+                continue
+            self._luctraloiids[tin["id"]] = now
+            self.command_dict[hwnd] = f"tinmat:{tin['id']}|{noidung}"
+            print(f"[BÁN NL] Trả lời tin mật {tin['ten']} (ID {tin['id']}, nhắn \"{tin['noidung']}\"): {noidung}")
+            return True
+        return False
 
     def _laygiaodich(self, cauhinh, trangthai):
         # Giao dịch tiền vào mới (id tăng dần). SePay: since_id lấy id >= giá trị
