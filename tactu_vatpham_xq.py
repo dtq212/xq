@@ -324,10 +324,16 @@ class TacTuVatPham:
             is_hoiphucphoban = not is_hoiphucpk and idbandohientai in BANDOPHOBANs
             nguongphantramhoiphuc = 75 if is_hoiphucpk else 35
             sinhlucmatdi = self.moitruong.get_sinhluctoida() - self.moitruong.get_sinhlucconlai()
+            # Phong Yêu Kính, Lăng Ly Sơn (3 tầng), Tập Kích Môn Phái: không dùng thuốc hồi sinh lực/nội lực (người chơi yêu cầu, tốn thuốc).
+            # Huyết Thạch / Pháp Lực Thạch / pháp bảo không hư hỏng ở trên vẫn giữ
+            is_khongdungthuoc = idbandohientai in (BANDO_LANGLYSON1, BANDO_LANGLYSON2, BANDO_LANGLYSON3) \
+                or self._is_trongphongyeu() or self.moitruong.get_is_bandotapkichmonphai()
 
             # Vật phẩm hồi ngay dùng chung thời gian hồi theo nhóm: chỉ gửi lệnh khi client báo đã hồi xong (_sudungvatphamhoi).
             # Lệnh không phải lúc nào cũng thành công: gửi rồi mà vẫn chưa vào hồi thì THOIGIANCHOXACNHANHOIVATPHAM giây sau gửi lại
-            if time.time() - self._thoidiemsudungvatphamhoisinhlucgannhat > THOIGIANCHOXACNHANHOIVATPHAM:
+            if is_khongdungthuoc:
+                pass
+            elif time.time() - self._thoidiemsudungvatphamhoisinhlucgannhat > THOIGIANCHOXACNHANHOIVATPHAM:
                 hoisinhlucs = []
                 # Phó bản thì không cần bật tự động kỹ năng
                 if (is_hoiphucpk and self._is_tudongsudungkynang) or is_hoiphucphoban:
@@ -341,7 +347,7 @@ class TacTuVatPham:
                 if self._sudungvatphamhoi(hoisinhlucs, co):
                     self._thoidiemsudungvatphamhoisinhlucgannhat = time.time()
 
-            if self._is_tudongsudungkynang and time.time() - self._thoidiemsudungvatphamhoinoilucgannhat > THOIGIANCHOXACNHANHOIVATPHAM:
+            if not is_khongdungthuoc and self._is_tudongsudungkynang and time.time() - self._thoidiemsudungvatphamhoinoilucgannhat > THOIGIANCHOXACNHANHOIVATPHAM:
                 hoinoilucs = []
                 if is_hoiphucpk or is_hoiphucphoban:
                     if phantramnoilucconlai < nguongphantramhoiphuc and noilucmatdi > 3000:

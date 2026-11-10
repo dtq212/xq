@@ -389,7 +389,10 @@ class TacTuDiChuyen:
                 if tran["ma"] in TRANPHAPVANMONGCOCs:
                     tam = (tran["x"], tran["y"])
                     # Mục tiêu đang trong trận này thì trận không phải vùng né (vẫn không chọn điểm né rơi vào nó)
-                    vungs.append((tran["ten"], tam, BANKINHTRANVANMONGCOC, math.dist(toadomuctieu, tam) <= BANKINHTRANVANMONGCOC))
+                    # Bán kính né = nửa cạnh vùng (Kỳ Môn 3x3 => 1.5, Độn Giáp 5x5 => 2.5); mục tiêu trong trận đo kiểu ô vuông
+                    nuacanh = NUACANHTRANVANMONGCOCs.get(tran["ma"], 2)
+                    is_muctieutrongtran = max(abs(round(toadomuctieu[0]) - tam[0]), abs(round(toadomuctieu[1]) - tam[1])) <= nuacanh
+                    vungs.append((tran["ten"], tam, nuacanh + 0.5, is_muctieutrongtran))
         if self._is_phaitancongtamxa():
             dstranlacanh = self.moitruong.get_danhsachtranlacanh()
             if dstranlacanh:

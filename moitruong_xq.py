@@ -2634,24 +2634,33 @@ class MoiTruong:
             self._inlog(f"[TRẬN PHÁP] thấy {len(dstran)} trận trên mặt đất{': ' + mota if mota else ''}")
         return {(tran["x"], tran["y"]) for tran in dstran} | set(self._tamtranvuadat)
 
-    def _chontamtran(self, x, y, x1, y1, tamxa):
-        # Tâm (x, y) đã có trận thì chọn ô gần nhất quanh đó (bán kính BANKINHDOITAMTRAN) chưa có trận và còn trong tầm (tamxa tính từ
-        # mình ở (x1, y1), đo kiểu ô vuông như tầm đánh); không có ô nào thì trả None (bỏ lượt đặt)
+    def _chontamtranvanmongcoc(self, matran, x2, y2, x1, y1, tamxa):
+        # Chọn tâm trận Vân Mộng Cốc cho mục tiêu ở (x2, y2), mình ở (x1, y1); mọi khoảng cách đo kiểu ô vuông như tầm đánh.
+        #  - Kỳ Môn (3x3): ưu tiên đúng ô mục tiêu; ô đó đã có trận thì ô kề (vẫn phủ mục tiêu) gần mục tiêu nhất
+        #  - Độn Giáp (5x5): ô lệch 1 khỏi ô mục tiêu (không bao giờ đặt vào ô mục tiêu: chừa tâm cho Kỳ Môn), ưu tiên phía mình
+        #    (chắc chắn trong tầm); hết ô lệch 1 thì lệch 2 (mục tiêu vẫn ở mép vùng)
+        # Bỏ ô đã có trận (game không cho 2 trận chung tâm) và ô ngoài tầm tamxa. Không có ô nào thì trả None (bỏ lượt đặt)
+        nuacanh = NUACANHTRANVANMONGCOCs.get(matran, 1)
+        tx, ty = round(x2), round(y2)
         tamdangco = self.get_tamtrandangco()
-        if (x, y) not in tamdangco:
-            return x, y
         ungvien = []
-        for dx in range(-BANKINHDOITAMTRAN, BANKINHDOITAMTRAN + 1):
-            for dy in range(-BANKINHDOITAMTRAN, BANKINHDOITAMTRAN + 1):
-                o = (x + dx, y + dy)
+        for dx in range(-nuacanh, nuacanh + 1):
+            for dy in range(-nuacanh, nuacanh + 1):
+                o = (tx + dx, ty + dy)
+                lech = max(abs(dx), abs(dy))
+                if matran == VITRIKYNANG_DONGIAPTRAN and lech == 0:
+                    continue
                 if o in tamdangco or max(abs(o[0] - x1), abs(o[1] - y1)) > tamxa:
                     continue
-                ungvien.append((math.dist(o, (x, y)), o))
+                phu = math.dist(o, (x1, y1)) if matran == VITRIKYNANG_DONGIAPTRAN else math.dist(o, (x2, y2))
+                ungvien.append((lech, phu, o))
+        ten = TRANPHAPVANMONGCOCs.get(matran, "trận")
         if not ungvien:
-            self._inlog(f"[TRẬN PHÁP] tâm ({x},{y}) đã có trận, không còn ô trống quanh đó trong tầm => không đặt")
+            self._inlog(f"[TRẬN PHÁP] {ten}: quanh mục tiêu ({tx},{ty}) không còn ô tâm trống trong tầm => không đặt")
             return None
-        o = min(ungvien)[1]
-        self._inlog(f"[TRẬN PHÁP] tâm ({x},{y}) đã có trận => đổi sang ({o[0]},{o[1]})")
+        lech, _, o = min(ungvien)
+        if matran != VITRIKYNANG_DONGIAPTRAN and lech:
+            self._inlog(f"[TRẬN PHÁP] {ten}: ô mục tiêu ({tx},{ty}) đã có trận => đặt ô kề ({o[0]},{o[1]})")
         return o
 
     def get_is_bigiutrongtrando(self):
@@ -5161,6 +5170,7 @@ class MoiTruong:
 
     def action_sudungkynangvitriphudau(self, idvitri_x, idvitri_y, diachi2, khoangcachphudau, delay = 1, tamxatranphap = None):
         # idvitri_x là mã kỹ năng (id hoặc vị trí (x, y)) khi không truyền idvitri_y
+        matranphap = idvitri_x if idvitri_y is None and idvitri_x in TRANPHAPVANMONGCOCs else None
         vitri = self._giaivitrikynang(idvitri_x, idvitri_y)
         if not vitri:
             return False
@@ -5168,10 +5178,11 @@ class MoiTruong:
         if not diachi2 or not self.get_is_nhanvattontai(diachi2):
             return False
         return self.action_sudungkynangvitriphudaudiem(idvitri_x, idvitri_y, *self.get_toado(diachi2), khoangcachphudau = khoangcachphudau, delay = delay,
-                                                       tamxatranphap = tamxatranphap)
+                                                       tamxatranphap = tamxatranphap, matranphap = matranphap)
 
-    def action_sudungkynangvitriphudaudiem(self, idvitri_x, idvitri_y, x2, y2, khoangcachphudau, delay = 1, tamxatranphap = None):
-        # tamxatranphap (trận pháp Vân Mộng Cốc): tâm định đặt đã có trận thì đổi sang ô trống gần đó trong tầm này (_chontamtran)
+    def action_sudungkynangvitriphudaudiem(self, idvitri_x, idvitri_y, x2, y2, khoangcachphudau, delay = 1, tamxatranphap = None, matranphap = None):
+        # tamxatranphap + matranphap (trận pháp Vân Mộng Cốc): tâm chọn theo loại trận quanh (x2, y2), trong tầm tamxatranphap
+        # (_chontamtranvanmongcoc), bỏ qua khoangcachphudau
         # idvitri_x là mã kỹ năng (id hoặc vị trí (x, y)) khi không truyền idvitri_y
         vitri = self._giaivitrikynang(idvitri_x, idvitri_y)
         if not vitri:
@@ -5193,7 +5204,7 @@ class MoiTruong:
             deltax, deltay = khoangcachphudau, khoangcachphudau
         targetx, targety = round(x1 + deltax), round(y1 + deltay)
         if tamxatranphap is not None:
-            tam = self._chontamtran(targetx, targety, x1, y1, tamxatranphap)
+            tam = self._chontamtranvanmongcoc(matranphap, x2, y2, x1, y1, tamxatranphap)
             if not tam:
                 return False
             targetx, targety = tam

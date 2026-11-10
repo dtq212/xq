@@ -510,9 +510,8 @@ TRANPHAPVANMONGCOCs = {VITRIKYNANG_KYMONTRAN: "Kỳ Môn Trận", VITRIKYNANG_DO
 # Tâm mình vừa đặt trận: gói máy chủ tạo nút về sau vài trăm ms, trong lúc đó vẫn coi ô là đã có trận
 THOIGIANNHOTAMTRANVUADAT = 3.
 # Né Kỳ Môn / Độn Giáp (tactu_dichuyen._tinhyeucaunetran): đứng trong trận mà mục tiêu đang đánh không ở trong trận đó thì đi ra
-# tới cách tâm BANKINHTRANVANMONGCOC + KHOANGCACHNETHEMTRAN ô (người dùng dặn 2026-11-10). Bán kính CHƯA ĐO, tạm lấy như Lạc Ảnh;
+# tới cách tâm (nửa cạnh NUACANHTRANVANMONGCOCs + 0.5) + KHOANGCACHNETHEMTRAN ô (người dùng dặn 2026-11-10);
 # tính lại mỗi THOIGIANTINHNETRAN giây
-BANKINHTRANVANMONGCOC = 2.5
 KHOANGCACHNETHEMTRAN = 1.
 THOIGIANTINHNETRAN = 0.3
 # Đối thủ cận chiến bị nhốt trong Lạc Ảnh thì phái đánh xa của mình đứng ngoài, cách tâm trận ít nhất BANKINHTRANDOLACANH + chừng này
@@ -520,8 +519,10 @@ THOIGIANTINHNETRAN = 0.3
 # Đối thủ cận chiến: vũ khí không phải kiếm / ám khí (như is_muctieugiukhoangcach) và môn phái (nếu đã biết) không thuộc MONPHAIPHEPTHUATs
 KHOANGCACHNETRANLACANH = 2.
 MONPHAITANCONGTAMXAs = ("vanmongcoc", "maoson", "conluan", "duongmon")
-# Đổi tâm trận: thử các ô quanh tâm định đặt trong bán kính này (ô vuông), ưu tiên ô gần tâm cũ nhất
-BANKINHDOITAMTRAN = 2
+# Vùng tác dụng trận Vân Mộng Cốc (người dùng báo 2026-11-10): Kỳ Môn 3x3 ô, Độn Giáp 5x5 ô quanh tâm => nửa cạnh (ô vuông)
+# 1 và 2. Đặt: Kỳ Môn ngay ô mục tiêu (vùng nhỏ, lệch là mục tiêu dễ ra ngoài); Độn Giáp lệch 1 ô khỏi ô mục tiêu (vẫn phủ mục tiêu,
+# chừa tâm cho Kỳ Môn vì game không cho 2 trận chung tâm) — MoiTruong._chontamtranvanmongcoc
+NUACANHTRANVANMONGCOCs = {VITRIKYNANG_KYMONTRAN: 1, VITRIKYNANG_DONGIAPTRAN: 2}
 
 VITRIKYNANG_TIEUCHUTHIEN = 3291
 
@@ -642,6 +643,9 @@ VITRIKYNANG_NHATQUYENBATSON = 2119
 
 VITRIKYNANG_LACKICH = 2123
 VITRIKYNANG_PHANTOA = 2124
+# Ba Động (đánh từ xa) chỉ dùng khi mục tiêu cách ít nhất chừng này ô (max(|dx|, |dy|)): gần hơn thì chạy vào cận chiến, dùng Ba Động
+# vẫn bị máy chủ khoá chiêu kế như chiêu delay 0 mà không chạy tới được (người dùng dặn 2026-11-10)
+KHOANGCACHTOITHIEUBADONG = 3.
 
 # Dịch chỗ đứng sau chiêu delay 0 của Đào Hoa (người dùng đề xuất 2026-11-09): Ba Động / Lạc Kích / Đại Hải ra dame ngay, không cần đứng
 # yên, nhưng máy chủ khoá chiêu kế 0.8-1.7s => dùng lúc đó đi sang ô kề mục tiêu tốt hơn (tối đa SOBUOCDICHODELAY0 bước, vẫn kề mục
@@ -671,6 +675,14 @@ IS_DICHOSAUCHIEUDELAY0 = True
 VITRIKYNANGDELAY0DAOHOAs = (VITRIKYNANG_BADONGQUYEN, VITRIKYNANG_LACKICH, VITRIKYNANG_DAIHAIVOLUONG)
 TENCHIEUDELAY0DAOHOA = {VITRIKYNANG_BADONGQUYEN: "Ba Động", VITRIKYNANG_LACKICH: "Lạc Kích", VITRIKYNANG_DAIHAIVOLUONG: "Đại Hải"}
 SOBUOCDICHODELAY0 = 1
+# Không dùng 2 chiêu delay 0 liền nhau (người dùng phát hiện 2026-11-10: delay 0 nối delay 0 bị khoá lâu, kẹp với chiêu có delay thì ổn).
+# Đào Hoa Lạc Ảnh CŨNG là chiêu delay 0 (người dùng xác nhận lại 2026-11-10) nhưng không đưa vào VITRIKYNANGDELAY0DAOHOAs (không
+# giữ chân / dịch chỗ sau trận). Chiêu Đào Hoa vào hồi chiêu gần nhất (= máy chủ nhận) là delay 0 và chưa quá THOIGIANCHANDELAY0LIENTIEP
+# giây (khoá sau delay 0 dài nhất đo được ~1.7s) thì lượt này bỏ qua mọi chiêu delay 0, dùng chiêu có delay (Nhất Quyền, Thốn Kình...)
+VITRIKYNANGDELAY0NOICHIEUDAOHOAs = VITRIKYNANGDELAY0DAOHOAs + (VITRIKYNANG_DAOHOALACANH,)
+VITRIKYNANGCODELAYDAOHOAs = (VITRIKYNANG_THONKINH, VITRIKYNANG_NHATQUYENBATSON, VITRIKYNANG_PHONGMAQUYET, VITRIKYNANG_KHONGTHUNHAPBACHNHAN,
+                             VITRIKYNANG_METUNGQUYEN, VITRIKYNANG_HACHODAOTAM)
+THOIGIANCHANDELAY0LIENTIEP = 2.
 # Khoá sau chiêu delay 0 ngắn nhất từng đo ~0.6s (nguyen-ly-giam-delay-dao-hoa): thôi đi trước mốc đó để không bao giờ để lỡ lúc máy
 # chủ nhận chiêu kế; đi 1 ô ~0.42s nên vẫn kịp tới. Hết mốc mà chưa tới thì vòng chiêu bình thường ngắt di chuyển rồi spam chiêu kế
 THOIGIANDICHODELAY0 = 0.55
@@ -717,11 +729,10 @@ CAPTOIDAQUAYSO = 29
 NGUYENKHITANCONGVATLYDAOHOA = 3
 # Nguyên khí hồi tới chừng này thì ngắt đánh thường (cách xa ngưỡng bật để không đánh vài chiêu lại phải "kill" lại)
 NGUYENKHINGATTANCONGVATLYDAOHOA = 8
-# Thốn Kình lấp chỗ (mục tiêu đã có Trọng Thương) chỉ dùng khi nguyên khí dư hẳn (cùng mức ngắt đánh thường), không ăn phần tích cho Nhất Quyền
-NGUYENKHITOITHIEUTHONKINHLAPCHO = 8
-# Ba Động cận chiến / Lạc Kích lặp lại (mục tiêu đã có Lạc Kích): dùng khi sau nó còn đủ cho Nhất Quyền (2 + 4 trên mô tả), hoặc khi
-# Nhất Quyền còn hồi ít nhất THOIGIANHOICHIEUCONLAICHIEULOT giây (bước chờ delay 0 -> Nhất Quyền 0.8-1.7s bị hồi chiêu che mất) và
-# nguyên khí còn NGUYENKHITOITHIEUCHIEULOTKHIHOICHIEU. Thời gian còn lại tính từ lúc Nhất Quyền vào hồi chiêu + tái sử dụng trên mô tả
+# Lạc Kích lặp lại (mục tiêu đã có Lạc Kích) là chiêu lót delay 0 duy trì (khôi phục 2026-11-10, kẹp xen chiêu có delay -
+# THOIGIANCHANDELAY0LIENTIEP): dùng khi sau nó còn đủ cho Nhất Quyền (2 + 4 trên mô tả), hoặc khi Nhất Quyền còn hồi ít nhất
+# THOIGIANHOICHIEUCONLAICHIEULOT giây (bước chờ delay 0 -> Nhất Quyền 0.8-1.7s bị hồi chiêu che mất) và nguyên khí còn
+# NGUYENKHITOITHIEUCHIEULOTKHIHOICHIEU. Thời gian còn lại tính từ lúc Nhất Quyền vào hồi chiêu + tái sử dụng trên mô tả
 NGUYENKHITOITHIEUCHIEULOT = 6
 THOIGIANHOICHIEUCONLAICHIEULOT = 1.
 NGUYENKHITOITHIEUCHIEULOTKHIHOICHIEU = 4

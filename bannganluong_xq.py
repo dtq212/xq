@@ -55,7 +55,7 @@ CAUHINHMAU = {
     "chutaikhoan": "",
     "raos": [
         {"kenh": "vipchat", "chuky": [70, 150],
-         "noidung": "bán mil {mil100k}m = 100k ai cần thì chat mật, vui lòng không tổ đội"},
+         "noidung": "bán mil {mil100k}m = 100k ai cần thì chat mật, vui lòng không tổ đội, xin cảm ơn !"},
     ],
     "is_traloitinmat": True,
     "trehoantraloi": [5, 12],

@@ -578,6 +578,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         # Nhất Quyền lượt trước có sẵn sàng không, lúc nó vừa vào hồi chiêu (_get_thoigianconlaihoichieunhatquyen)
         self._is_nhatquyensansangtruoc = False
         self._thoidiemnhatquyenvaohoichieu = 0.
+        # Chiêu Đào Hoa máy chủ nhận gần nhất (_capnhatchieudaohoavuanhan): sẵn sàng lượt trước (id -> bool), id và lúc vào hồi chiêu
+        self._is_sansangchieudaohoatruoc_map = {}
+        self._idchieudaohoavuanhan = None
+        self._thoidiemchieudaohoavuanhan = 0.
         # Dịch chỗ đứng sau chiêu delay 0 (_xulydichosauchieudelay0): chiêu delay 0 lượt trước có sẵn sàng không (id -> bool), lần dịch
         # đang đi {"dich", "idmuctieu", "batdau", "lydo"} hoặc None
         self._is_sansangdelay0truoc_map = {}
