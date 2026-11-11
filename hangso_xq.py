@@ -1398,7 +1398,12 @@ THOIGIANGIUKYNANGMUCTIEU = 2.0
 
 # Nhiều cửa sổ cùng phát nhạc nghe bị vọng: chỉ để tiếng cửa sổ có nhân vật ưu tiên cao nhất trong danh sách tổ đội tự động
 # (nhóm đầu, ID đứng trước), tính riêng từng bản Aegis / Niết Bàn, các cửa sổ khác tắt tiếng trong Volume Mixer của Windows. Thoát tool thì bật lại tiếng tất cả
-IS_CHIBATAMTHANHCUASOUUTIEN = True
+IS_CHIBATAMTHANHCUASOUUTIEN = False
+# Như trên nhưng chỉ tắt NHẠC NỀN ở các cửa sổ khác, âm thanh (tiếng chiêu, quái...) vẫn để mọi cửa sổ. Cờ nhạc nền / âm thanh trong
+# xq.ini [syssetting] dùng chung mọi client (đọc lúc mở game) nên không chỉnh riêng được bằng cửa sổ Điều chỉnh trò chơi: bot ghi thẳng
+# cờ nhạc của từng client trong bộ nhớ ([TG + TG_CAIDATTROCHOI] + 0x1EC) rồi gọi HAMNHACNEN để dừng / phát ngay, không đụng xq.ini.
+# Cửa sổ ưu tiên vẫn bật nhạc dù xq.ini đang music=0
+IS_CHIBATNHACNENCUASOUUTIEN = True
 THOIGIANKIEMTRAAMTHANH = 2.
 
 # Dữ liệu chung giữa các cửa sổ (shared_data) đọc lại sau mỗi khoảng này (các cửa sổ cập nhật 0.25s/lần)

@@ -44,6 +44,7 @@ MUCTIEU = [
     ("HAMTIMDUONGCUCBO", 0xB0D60, "ma", "tìm đường cục bộ (chuỗi hướng né vật cản)"),
     ("HAMTANGCAPDO", 0x16C730, "ma", "hàm được gọi ở chỗ vá chặn tăng cấp độ"),
     ("HAMTHEMDONGKHUNGCHAT", 0x178E70, "ma", "thêm dòng vào khung trò chuyện: thiscall [TG + TG_KHUNGCHAT], (chuỗi, 0), ret 8"),
+    ("HAMNHACNEN", 0x940F0, "ma", "cdecl (cờ 1 byte): 0 dừng nhạc nền, 1 phát nhạc bản đồ hiện tại nếu cờ nhạc [TG + TG_CAIDATTROCHOI] + 0x1EC > 0"),
     # Chỗ vá mã
     ("VA_GHIMUCTIEU2", 0xA20F0, "ma", "mov [MUCTIEUDANGCHON2], eax"),
     ("VA_GHIIDMUCTIEU2", 0xA20F8, "ma", "mov [IDMUCTIEUDANGCHON2], ecx"),
@@ -112,6 +113,7 @@ MUCTIEU = [
     ("TG_MAUPK", 0xAED6CC, "hang", "màu PK"),
     ("TG_CHUCNANGMORONG", 0xAEBC0C, "hang", "chức năng mở rộng"),
     ("TG_CUASOTUYCHON", 0xADFD74, "hang", "cửa sổ tuỳ chọn"),
+    ("TG_CAIDATTROCHOI", 0xADFDA0, "hang", "cửa sổ Điều chỉnh trò chơi (nhạc nền +0x1EC, âm thanh +0x1F0, đọc từ xq.ini [syssetting] lúc mở game)"),
     ("TG_KHO", 0xADFD88, "hang", "kho (Quản Khố): rương đang mở"),
     ("TG_CUAHANG", 0xADFD80, "hang", "cửa hàng NPC đang / vừa mở (id NPC +0x110, hàng +0x7D78 mỗi món 0x58: ô +4, giá +8, tên +0x12)"),
     ("TG_NHIEMVU", 0xADFDAC, "hang", "cửa sổ nhiệm vụ (tên mục +0x90, mô tả +0x860, mỗi mục 4 byte con trỏ)"),

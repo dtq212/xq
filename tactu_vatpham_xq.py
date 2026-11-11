@@ -374,50 +374,6 @@ class TacTuVatPham:
                             self._thoidiemdocsachgannhat = time.time()
                             break
 
-            if self.moitruong.get_idnguoichoi() in (59844, 59845):
-                if time.time() - self._thoidiemdocsachgannhat > 30.:
-                    sachcanhocs = [
-                        "Nhập môn Thái Cổ Thần Quy",
-                        "Nhập môn Quyền Cước Chi",
-                        "Nhập môn Kim Cương Bất H",
-                        "Nhập môn Chu Thiên Vận Ch",
-                        "Nhập môn Thái Cổ Thần Q",
-                        "Nhập môn Hộ Thể Kim Cang",
-                        "Nhập môn Kinh Lạc Học Th",
-                    ]
-                    for sachcanhoc in sachcanhocs:
-                        if co(sachcanhoc) and self.action_sudungvatphamhanhtrang(sachcanhoc):
-                            self._thoidiemdocsachgannhat = time.time()
-                            break
-
-                # if time.time() - self._thoidiemsudungtusamdongannhat > 30.:
-                #     if self.action_sudungvatphamhanhtrang(TUSAMDON, delay = 0.0):
-                #         self._thoidiemsudungtusamdongannhat = time.time()
-
-            if self.moitruong.get_idnguoichoi() == 59996:
-                if time.time() - self._thoidiemdocsachgannhat > 30.:
-                    sachcanhocs = [
-                        "Nhập môn Y Thuật",
-                        "Nhập môn Trung Y Dược Lý",
-                        "Nhập môn Tu Tâm",
-                    ]
-                    for sachcanhoc in sachcanhocs:
-                        if co(sachcanhoc) and self.action_sudungvatphamhanhtrang(sachcanhoc):
-                            self._thoidiemdocsachgannhat = time.time()
-                            break
-
-            if self.moitruong.get_idnguoichoi() == 60055:
-                if time.time() - self._thoidiemdocsachgannhat > 30.:
-                    sachcanhocs = [
-                        "Nhập môn Tụng Kinh",
-                        "Nhập môn Nghịch Thiên Ph",
-                        "Nhập môn Cơ Quan",
-                    ]
-                    for sachcanhoc in sachcanhocs:
-                        if co(sachcanhoc) and self.action_sudungvatphamhanhtrang(sachcanhoc):
-                            self._thoidiemdocsachgannhat = time.time()
-                            break
-
             if self.moitruong.get_thelucconlai() <= 5:
                 if time.time() - self._thoidiemsudungbattiendongannhat > 30.:
                     if co(BATTIENDON) and self.action_sudungvatphamhanhtrang(BATTIENDON):

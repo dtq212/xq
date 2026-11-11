@@ -1,6 +1,14 @@
 import ctypes
+import struct
 import uuid
 from ctypes import wintypes
+
+import pymem
+import pymem.process
+
+import diachi_xq
+from diachi_xq import DC
+from tienich_xq import read_int, write_int, write_bytes
 
 # Tắt / bật tiếng theo tiến trình qua Windows Audio Session API (giống bảng Volume Mixer), gọi COM bằng ctypes thuần
 # để khỏi thêm thư viện (pycaw/comtypes). Mỗi client game là 1 tiến trình có phiên âm thanh riêng trên loa mặc định
@@ -117,3 +125,58 @@ def datamthanhtientrinhs(pid_tattieng):
             _release(dsphien)
     finally:
         _release(manager)
+
+
+# Cửa sổ Điều chỉnh trò chơi ([TG + TG_CAIDATTROCHOI]): game đọc xq.ini [syssetting] vào đây lúc mở client (xq + 0xC4A00), dịch ngược
+# 2026-11-11. Nút Xác nhận so cờ của ô đánh dấu (+0x1E4 nhạc, +0x1E8 âm thanh) với cờ đang dùng, khác thì ghi lại và lưu xq.ini
+CDTC_NHACNEN = 0x1EC
+CDTC_AMTHANH = 0x1F0
+
+
+class NhacNenClient:
+    # Bật / tắt nhạc nền từng client: ghi cờ nhạc rồi gọi HAMNHACNEN(cờ) (cdecl, 1 tham số) bằng luồng từ xa; HAMNHACNEN(1) chỉ phát
+    # khi cờ nhạc > 0, đổi bản đồ game cũng tự xét cờ này nên tắt rồi là tắt hẳn tới khi bật lại. Không ghi xq.ini
+    def __init__(self):
+        self._tientrinhs = {}
+
+    def _mo(self, pid):
+        if pid not in self._tientrinhs:
+            tientrinh = pymem.Pymem()
+            tientrinh.open_process_from_id(pid)
+            xqmodule = pymem.process.module_from_name(tientrinh.process_handle, "xq.exe")
+            if not xqmodule:
+                tientrinh.close_process()
+                raise Exception("không thấy module xq.exe")
+            diachi_xq.khoitao(xqmodule.filename)
+            self._tientrinhs[pid] = (tientrinh, xqmodule.lpBaseOfDll)
+        return self._tientrinhs[pid]
+
+    def dong(self, pidconlais = ()):
+        # Đóng handle các tiến trình không còn trong pidconlais
+        for pid in [pid for pid in self._tientrinhs if pid not in pidconlais]:
+            try:
+                self._tientrinhs.pop(pid)[0].close_process()
+            except Exception:
+                pass
+
+    def dat(self, pid, is_bat):
+        # True: vừa đổi; False: đã đúng sẵn hoặc chưa vào game (chưa có cửa sổ cài đặt)
+        tientrinh, diachixq = self._mo(pid)
+        tg = read_int(tientrinh, diachixq + DC.THONGTINGAME)
+        caidat = read_int(tientrinh, tg + DC.TG_CAIDATTROCHOI) if tg else 0
+        if not caidat or (read_int(tientrinh, caidat + CDTC_NHACNEN) > 0) == is_bat:
+            return False
+        write_int(tientrinh, caidat + CDTC_NHACNEN, 1 if is_bat else 0)
+        # push cờ; call HAMNHACNEN; add esp, 4; xor eax, eax; ret 4
+        ma = (b"\x6A" + bytes([1 if is_bat else 0]) + b"\xB8" + struct.pack("<I", diachixq + DC.HAMNHACNEN) + b"\xFF\xD0"
+              + b"\x83\xC4\x04" + b"\x33\xC0\xC2\x04\x00")
+        vung = tientrinh.allocate(64)
+        try:
+            write_bytes(tientrinh, vung, ma, len(ma))
+            ctypes.windll.kernel32.CloseHandle(tientrinh.start_thread(vung))
+        finally:
+            try:
+                tientrinh.free(vung)
+            except Exception:
+                pass
+        return True

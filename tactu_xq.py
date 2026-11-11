@@ -410,11 +410,13 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
         self._diemdanhxungquanhs = []
         self._iddiemdanhxungquanhhientai = -1
-        # Điểm đánh đặt / nạp trong phó bản mượn ID bản đồ ngoài (Phong Yêu Kính): ra khỏi phó bản thì tự bỏ hết, kẻo chạy lên bản đồ thật
+        # Điểm đánh đặt / nạp trong phó bản mượn ID bản đồ ngoài (Phong Yêu Kính, Tập Kích): ra khỏi phó bản thì giữ nhưng không đi, kẻo chạy lên bản đồ thật
         self._is_lotrinhphobanmuonbando = False
         # Các thời điểm còn phải ngắt di chuyển sau khi vừa bỏ điểm đánh lúc ra khỏi phó bản đó
         self._thoidiemngatdichuyenroiphobans = []
         self._thoidiemroiphobanmuonbando = 0.
+        # Đang ở ngoài phó bản mượn ID mà vẫn giữ lộ trình của phó bản (đã ngắt di chuyển lần đầu ra)
+        self._is_dangngoailotrinhphoban = False
         # Tắt thì lộ trình chỉ đi các điểm cùng bản đồ đang đứng, không chạy sang bản đồ khác
         self._is_dilotrinhkhacbando = True
         # Lộ trình mẫu đang dùng dạng "<id bản đồ>|<tên mẫu>|<1 nếu đi ngược chiều>", rỗng nếu tự đặt điểm

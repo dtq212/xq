@@ -86,6 +86,18 @@ class TacTuTapKich:
         # Đang tự lo đi lại / tìm NPC ngoài phó bản: không chọn quái dọc đường, đi trước đánh / nhặt
         return bool(self._tapkich) and self._tapkich.get("chedodoc", "dichuyen") == "dichuyen"
 
+    def get_is_camdanhtapkich(self):
+        # Thành viên Theo sau: người mình theo sau (trưởng nhóm, cùng máy / LAN) đang tự đi tìm Võ Lâm Bại Hoại ngoài phó bản thì không đánh
+        # quái dọc đường, chỉ bám theo (đứng lại đánh là tụt lại, NPC bảo "gọi tất cả thành viên tới"). Trong phó bản đánh như thường.
+        # Đang đánh thường ("kill") thì ngắt luôn
+        if self._tapkich or not self._is_tudongtheosau or self.moitruong.get_is_bandotapkichmonphai():
+            return False
+        info = self._laythongtinmuctieutheosaucuasokhac()
+        is_cam = bool(info and info.get("_is_tapkichdichuyen"))
+        if is_cam and self._is_battudongtancongvatly and self._diachimuctieutancongvatly:
+            self._ngattancongvatlydaohoa(self._diachimuctieutancongvatly)
+        return is_cam
+
     def get_is_tapkichdanhquai(self):
         # Trong phó bản: đánh mọi quái, không giới hạn theo danh sách tên / điểm đánh của nhân vật
         return bool(self._tapkich) and self._tapkich.get("chedodoc") == "danhquai"
@@ -105,6 +117,8 @@ class TacTuTapKich:
         self._yeucautudo = None
         for thuoctinh, giatri in ((s or {}).get("tuychoncu") or {}).items():
             setattr(self, thuoctinh, giatri)
+        if s:
+            self._trathesautapkich(s, "dừng Tập Kích")
         if s and s["sovong"]:
             thongbao += f" (xong {s['sovong']} vòng)"
         self._logtk(thongbao)
@@ -118,6 +132,25 @@ class TacTuTapKich:
             s["dabao"].add(khoa)
             self._logtk(noidung)
             baosuco(self.moitruong, "langlyson", noidung, khoa = f"tapkich|{s['batdau']}|{khoa}", giancach = 0.)
+
+    def _trathesautapkich(self, s, lydo):
+        # Thành viên bị ép Theo sau trưởng nhóm lúc đi tìm Võ Lâm Bại Hoại: trả Theo sau cũ (vào phó bản / dừng). Ra phó bản vòng sau ép lại
+        if s.get("theosaucu") is not None:
+            self._is_tudongtheosau, self._idmuctieutheosau, self._tenmuctieutheosau = s["theosaucu"]
+            s["theosaucu"] = None
+            self._logtk(f"Thành viên: {lydo}, trả Theo sau như cũ ({'bật' if self._is_tudongtheosau else 'tắt'})")
+
+    def _epthesautapkich(self, s, idtruong, vaitro):
+        # Ngoài phó bản: thành viên chưa theo sau trưởng nhóm / trưởng đội thì ép Theo sau (Theo sau cũ nhớ vào s["theosaucu"]),
+        # vào phó bản / dừng thì _trathesautapkich trả lại -> trong phó bản đánh theo cấu hình Theo sau của người dùng
+        if not idtruong or (self._is_tudongtheosau and self._idmuctieutheosau == int(idtruong)):
+            return
+        if s.get("theosaucu") is None:
+            s["theosaucu"] = (self._is_tudongtheosau, self._idmuctieutheosau, self._tenmuctieutheosau)
+        self._is_tudongtheosau = True
+        self._idmuctieutheosau = int(idtruong)
+        self._tenmuctieutheosau = self._tenidnguoichoi(idtruong)
+        self._logtk(f"Thành viên: ép Theo sau {vaitro} {self._tenmuctieutheosau} lúc đi tìm {TENNPCTAPKICH} (vào phó bản thì trả lại)")
 
     def _batdanhquaitapkich(self, s):
         # Ô cần cho đánh quái người dùng quên bật thì đổi giúp, dừng thì trả lại. "Chỉ đánh người chơi" của người dùng giữ nguyên
@@ -208,6 +241,8 @@ class TacTuTapKich:
                 s.update(davao = True, hoithoai = None, lucchon = 0., solanloi = 0, do = None, vitriboss = None)
                 self._logtk(f"Đã vào phó bản (vòng {s['sovong'] + 1}, tên bản đồ game {moitruong.get_tenbandogame()!r})")
             s["chedo"] = "danhquai"
+            # Vào phó bản rồi: thôi ép Theo sau trưởng nhóm, trả Theo sau như cũ (đánh tự do)
+            self._trathesautapkich(s, "đã vào phó bản")
             self._batdanhquaitapkich(s)
             # Thủ Lĩnh là con cuối: thấy rồi thì thôi đi dò, đứng đánh; khuất tầm nhìn thì quay về chỗ thấy lần cuối
             diachiboss = self._timnpctapkich(tenca = TENBOSSTAPKICH)[0]
@@ -236,13 +271,16 @@ class TacTuTapKich:
             s["chedo"] = "thanhvien"
             idtruong = self.get_idtruongdoiviec("tapkich")
             if moitruong.get_is_dangnamtrongnhom() and moitruong.get_idnguoichoitruongnhom() == idtruong:
+                self._epthesautapkich(s, idtruong, "trưởng đội")
                 s["trangthai"] = "thành viên đội: đi theo trưởng đội" + ("" if self._is_tudongtheosau else " (chưa bật Theo sau!)")
             else:
                 s["trangthai"] = f"thành viên đội: chờ trưởng đội {self._tenidnguoichoi(idtruong)} lập nhóm (không tự vào)"
             return None
         if moitruong.get_is_dangnamtrongnhom() and not moitruong.get_is_truongnhom():
-            # Thành viên: Theo sau lo đi lại, menu vào / Lễ Bao tự chọn (_xulymenutapkich)
+            # Thành viên: Theo sau lo đi lại, menu vào / Lễ Bao tự chọn (_xulymenutapkich). Chưa theo sau trưởng nhóm thì tự bật Theo sau
+            # trưởng nhóm (Theo sau cũ nhớ lại, dừng Tập Kích thì trả)
             s["chedo"] = "thanhvien"
+            self._epthesautapkich(s, moitruong.get_idnguoichoitruongnhom(), "trưởng nhóm")
             s["trangthai"] = "thành viên: đi theo trưởng nhóm" + ("" if self._is_tudongtheosau else " (chưa bật Theo sau!)")
             return None
         return self._buocvaotapkich(s, idbando)

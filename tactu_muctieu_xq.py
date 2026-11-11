@@ -496,6 +496,11 @@ class TacTuMucTieu:
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             return
 
+        # Tập Kích: trưởng nhóm (người mình theo sau) đang đi tìm Võ Lâm Bại Hoại: không đánh quái dọc đường, bám theo
+        if self.get_is_camdanhtapkich():
+            self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
+            return
+
         # Đang Đi tới bản đồ người dùng chọn / đi giao đồ / cất kho / đi làm sư môn: không chọn quái dọc đường (trước đây gặp quái là đứng
         # lại đánh), tới nơi mới đánh
         if self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangcatkho() or self.get_is_sumondichuyen() or self.get_is_langlysondichuyen() \

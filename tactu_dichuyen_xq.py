@@ -2122,17 +2122,21 @@ class TacTuDiChuyen:
 
             idbandohientai = self.moitruong.get_idbandohientai()
 
-            # Điểm đánh của phó bản mượn ID bản đồ ngoài (Phong Yêu Kính) mà giờ đã ra ngoài: bỏ hết, kẻo chạy lên bản đồ thật cùng ID
-            if self._is_lotrinhphobanmuonbando and self.moitruong.get_is_phobanmuonbando() is False:
-                print(f"[LỘ TRÌNH] Đã ra khỏi phó bản ({self.moitruong.get_tenbandogame()}): bỏ {len(self._diemdanhxungquanhs)} điểm đánh của phó bản")
-                self.botoanbo_diemdanhxungquanh()
-                # Lệnh đi tới điểm kế của lộ trình có thể đã gửi ngay lúc vừa ra (trước khi bỏ điểm): dừng lại kẻo client đi tiếp,
-                # ngắt lại sau 0.5s và 1s
-                self.moitruong.action_ngatdichuyen()
-                self._thoidiemngatdichuyenroiphobans = [time.time() + 0.5, time.time() + 1.]
-                self._thoidiemroiphobanmuonbando = time.time()
-
             diemdanhxungquanhs = self._diemdanhxungquanhs
+
+            # Điểm đánh của phó bản mượn ID bản đồ ngoài (Phong Yêu Kính, Tập Kích) mà giờ đã ra ngoài: GIỮ NGUYÊN lộ trình đã setup
+            # (vào lại phó bản là đi tiếp), chỉ không đi các điểm đó khi đang ở ngoài, kẻo chạy lên bản đồ thật cùng ID
+            if self._is_lotrinhphobanmuonbando and self.moitruong.get_is_phobanmuonbando() is False:
+                diemdanhxungquanhs = []
+                if not self._is_dangngoailotrinhphoban:
+                    self._is_dangngoailotrinhphoban = True
+                    print(f"[LỘ TRÌNH] Đã ra khỏi phó bản ({self.moitruong.get_tenbandogame()}): giữ {len(self._diemdanhxungquanhs)} điểm đánh của phó bản, không đi ở ngoài")
+                    # Lệnh đi tới điểm kế của lộ trình có thể đã gửi ngay lúc vừa ra: dừng lại kẻo client đi tiếp, ngắt lại sau 0.5s và 1s
+                    self.moitruong.action_ngatdichuyen()
+                    self._thoidiemngatdichuyenroiphobans = [time.time() + 0.5, time.time() + 1.]
+                    self._thoidiemroiphobanmuonbando = time.time()
+            else:
+                self._is_dangngoailotrinhphoban = False
 
             # Chưa có điểm nào: không tự nạp lộ trình mẫu / lộ trình có sẵn của bản đồ nữa, dò bản đồ đang đứng như Phong Yêu Kính
             # (không ghi gì vào lộ trình). Chiến trường vẫn đứng điểm của phe; thành / làng thì đứng chờ như cũ
@@ -2156,7 +2160,7 @@ class TacTuDiChuyen:
                         self.moitruong.action_ngatdichuyen()
                         self.moitruong.action_thucthicaulenh("pf 4182.2")
                         self._thoidiemphatamlacmapgannhat = time.time()
-                    elif self._is_tudongvebanrac and self._diemdanhxungquanhs:
+                    elif self._is_tudongvebanrac and self._diemdanhxungquanhs and not self._is_dangngoailotrinhphoban:
                         self.moitruong.action_ngatdichuyen()
                         self.action_sudunghoithanhphu()
                         self._thoidiemphatamlacmapgannhat = time.time()

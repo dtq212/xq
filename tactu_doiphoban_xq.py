@@ -590,7 +590,9 @@ class TacTuDoiPhoBan:
         # Bật cùng việc với trưởng đội (chế độ thành viên) và Theo sau trưởng đội; Theo sau cũ nhớ lại để trả khi thôi đội
         if tv["theosaucu"] is None:
             tv["theosaucu"] = (self._is_tudongtheosau, self._idmuctieutheosau, self._tenmuctieutheosau)
-        if d["viec"] == "phongyeukinh":
+        if d["viec"] in ("phongyeukinh", "tapkich"):
+            # Tập Kích: trong phó bản đánh theo cấu hình Theo sau hiện tại; ngoài phó bản _xulytapkich tự ép Theo sau trưởng đội lúc đi
+            # tìm Võ Lâm Bại Hoại rồi trả lại khi vào phó bản (trước ép ở đây nên vào phó bản vẫn bám trưởng đội).
             # Phong Yêu Kính: thành viên tự nói chuyện Tả Khâu Minh vào, tắt Theo sau thì tự dò lệch điểm với trưởng đội (_buoctrongphongyeu).
             # Không ép bật Theo sau: giữ đúng ô Theo sau đang đặt (không lấy Theo sau cũ đã lưu: mở lại bot thì nó bật lại dù đã tắt tay),
             # trừ khi Theo sau đang là do đội ép bật ở việc trước (Lăng Ly Sơn / Thành Kiều) thì trả về Theo sau cũ

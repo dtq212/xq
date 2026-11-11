@@ -445,6 +445,8 @@ class CuaSo:
                     # Tập Kích Môn Phái (tactu_tapkich_xq): trạng thái cho giao diện; đang đi thì thành viên theo sau tự chọn menu vào / Lễ Bao
                     "_trangthaitapkich": self.tactu.get_trangthaitapkich(),
                     "_is_dangtapkich": self.tactu.get_is_dangtapkich(),
+                    # Đang tự đi tìm Võ Lâm Bại Hoại ngoài phó bản: thành viên theo sau không đánh quái dọc đường (get_is_camdanhtapkich)
+                    "_is_tapkichdichuyen": self.tactu.get_is_tapkichdichuyen(),
                     "_tapkich_phai": self.tactu._tapkich_phai or self.moitruong.get_tenmonphai() or "",
                     # Đoạt Bảo Mã Tặc (tactu_matac_xq): trạng thái, danh sách bản đồ cho giao diện
                     "_trangthaimatac": self.tactu.get_trangthaimatac(),

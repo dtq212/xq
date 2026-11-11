@@ -15,14 +15,14 @@ import csv
 import subprocess
 import win32process
 
-from amthanh_xq import khoitaocom, datamthanhtientrinhs
+from amthanh_xq import khoitaocom, datamthanhtientrinhs, NhacNenClient
 from bannganluong_xq import BanNganLuong
 from cuaso_xq import CuaSo
 from dangnhap_xq import TuDongDangNhap
 from keogatudong_xq import KeoGaTuDong
 from dieuphoi_xq import taicauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
 from giaodienhienthi_xq import GiaoDienHienThi
-from hangso_xq import IS_CHIBATAMTHANHCUASOUUTIEN, THOIGIANKIEMTRAAMTHANH
+from hangso_xq import IS_CHIBATAMTHANHCUASOUUTIEN, IS_CHIBATNHACNENCUASOUUTIEN, THOIGIANKIEMTRAAMTHANH
 from lan_xq import DongBoLan, taicauhinhlan
 from thongbao_xq import DieuKhienTelegram
 from tienich_xq import is_tieudecuasogame, laynhomtodoitudongs, toiuuhieunangtientrinh, ghilognhanvat
@@ -112,7 +112,7 @@ class TroChoiManager:
         t_hotkey = threading.Thread(target = self.loop_hotkey, daemon = True)
         t_hotkey.start()
 
-        if IS_CHIBATAMTHANHCUASOUUTIEN:
+        if IS_CHIBATAMTHANHCUASOUUTIEN or IS_CHIBATNHACNENCUASOUUTIEN:
             t_amthanh = threading.Thread(target = self.loop_amthanh, daemon = True)
             t_amthanh.start()
 
@@ -165,11 +165,14 @@ class TroChoiManager:
         return min(hwnds, key = khoa) if hwnds else None
 
     def loop_amthanh(self):
-        try:
-            khoitaocom()
-        except Exception as err:
-            print(f"Lỗi khởi tạo âm thanh: {err}")
-            return
+        if IS_CHIBATAMTHANHCUASOUUTIEN:
+            try:
+                khoitaocom()
+            except Exception as err:
+                print(f"Lỗi khởi tạo âm thanh: {err}")
+                return
+        nhacnen = NhacNenClient()
+        loinhacnens = set()
         while True:
             try:
                 pids = self._pidcuasogames()
@@ -182,8 +185,20 @@ class TroChoiManager:
                         is_nietban = False
                     nhoms.setdefault(is_nietban, []).append(hwnd)
                 hwndphats = {self._chonhwndphatamthanh(hwnds) for hwnds in nhoms.values()}
-                if pids:
+                if pids and IS_CHIBATAMTHANHCUASOUUTIEN:
                     datamthanhtientrinhs({pid: hwnd not in hwndphats for hwnd, pid in pids.items()})
+                if IS_CHIBATNHACNENCUASOUUTIEN:
+                    for hwnd, pid in pids.items():
+                        try:
+                            if nhacnen.dat(pid, hwnd in hwndphats):
+                                print(f"[NHẠC NỀN] {'Bật' if hwnd in hwndphats else 'Tắt'} nhạc nền cửa sổ {hwnd}")
+                            loinhacnens.discard(pid)
+                        except Exception as err:
+                            # Client đang mở / đang tắt: báo 1 lần mỗi tiến trình, khỏi lặp log mỗi 2 giây
+                            if pid not in loinhacnens:
+                                loinhacnens.add(pid)
+                                print(f"Lỗi chỉnh nhạc nền cửa sổ {hwnd}: {err}")
+                    nhacnen.dong(set(pids.values()))
             except Exception as err:
                 print(f"Lỗi chỉnh âm thanh: {err}")
             time.sleep(THOIGIANKIEMTRAAMTHANH)
