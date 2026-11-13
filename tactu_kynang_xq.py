@@ -359,6 +359,9 @@ class TacTuKyNang:
 
     def _guichieuluot(self, chieuluot, x_dich, y_dich, tenmonphai):
         # Gửi chiêu lướt chọn toạ độ, gửi lại trong 0.8s mà chiêu vẫn sẵn sàng thì tính 1 lần thất bại, đủ số lần thì nghỉ 3s
+        # Đứng im đánh: chiêu lướt (Khai Thiên Tịch Địa / Đằng Vân Giá Vũ) là di chuyển, không dùng
+        if self._is_dungimdanh:
+            return False
         if self._solanthatbaikhaithien >=self._solanthatbaikhaithientoida and time.time() - self._thoidiembiphatkhaithien > 3.0:
             self._solanthatbaikhaithien = 0
             self._thoidiembiphatkhaithien = 0
@@ -499,6 +502,10 @@ class TacTuKyNang:
             self._ketthuclaygockhaithien("hetsansang", tuple(round(v) for v in self.moitruong.get_toado()))
             return False
         if idtuthenhanvat in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT) or noiluc <= 150:
+            return False
+        # Đứng im đánh: Khai Thiên lướt tới điểm rơi (và đi lấy góc) là di chuyển => bỏ, đánh bằng chiêu khác
+        if self._is_dungimdanh:
+            self._ketthuclaygockhaithien("hethan", tuple(round(v) for v in self.moitruong.get_toado()))
             return False
         if not self._is_kynangdungduoc(VITRIKYNANG_KHAITHIENTICHDIA):
             return False
@@ -906,6 +913,19 @@ class TacTuKyNang:
         if thoidiemhientai < self._thoidiemhetgiukhaikhoang:
             return False, False
 
+        # Đứng im đánh: bỏ mọi bước di chuyển / tiếp cận trong danh sách, và không gửi chiêu / "kill" nhắm mục tiêu ngoài tầm (client tự
+        # chạy lại gần để ra chiêu = tự di chuyển). Thử mục kế tiếp (chiêu khác trong tầm, buff, chiêu không mục tiêu)
+        if self._is_dungimdanh:
+            if loaikynang.startswith("dichuyen"):
+                # Vẫn ghi tầm đánh thật (cận chiến 1 ô / tầm xa) như nhánh tiếp cận bên dưới: chọn mục tiêu lọc theo tầm này
+                if loaikynang in ("dichuyentiepcancanchien", "dichuyentiepcantamxa"):
+                    self._khoangcachvoitoimuctieu = KHOANGCACHSUDUNGKYNANGCANCHIEN if loaikynang == "dichuyentiepcancanchien" \
+                        else max(KHOANGCACHSUDUNGKYNANGCANCHIEN, khoangcachyeucau - TRUHAOTAMXACHONMUCTIEU)
+                return False, False
+            if loaikynang in ("sudungkynangmuctieu", "tancongvatly", "sudungkynanglendongdoi", "sudungkynangphudau") \
+                    and diachimuctieu and khoangcach > khoangcachyeucau:
+                return False, False
+
         # Đang lùi giữ khoảng cách với kẻ tấn công: bỏ chiêu đánh, phủ đầu, mọi bước tiếp cận và Lôi Động Cửu Thiên (vận khí đứng yên 6s),
         # chỉ còn buff / hồi máu / triệu hồi... để "buff xong chạy". Trả về (False, False) để thử kỹ năng tiếp theo trong danh sách
         # Chỉ dùng Tự động tấn công: bỏ mọi kỹ năng thật (có vị trí kỹ năng: chiêu đánh, buff, triệu hồi...), chỉ còn "kill" và các bước
@@ -920,8 +940,8 @@ class TacTuKyNang:
                 and self.moitruong.get_idbandohientai() in BANDOKHONGTANCONGs:
             return False, False
 
-        # Đang né Kỳ Môn / Độn Giáp (vài bước): không ra chiêu đánh / tiếp cận, ra chiêu sẽ ngắt bước né
-        if (self._yeucaugiukhoangcach or self._yeucaunetran) and (loaikynang in ("sudungkynangmuctieu", "tancongvatly", "sudungkynangphudau")
+        # Đang lùi giữ khoảng cách (vài bước): không ra chiêu đánh / tiếp cận, ra chiêu sẽ ngắt bước lùi
+        if self._yeucaugiukhoangcach and (loaikynang in ("sudungkynangmuctieu", "tancongvatly", "sudungkynangphudau")
                                           or loaikynang.startswith("dichuyen") or vitrikynang in (VITRIKYNANG_LOIDONGCUUTHIEN, VITRIKYNANG_LOILONGQUYET)):
             return False, False
 
@@ -1351,6 +1371,8 @@ class TacTuKyNang:
         is_nhuongbuff = self._is_nhuongbuffdaohoanguyen()
         is_nietban = self.moitruong.is_nietban
         is_cancanchien = bool(diachimuctieu) and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN
+        # Mục tiêu trong trận Lạc Ảnh nếu đặt ngay chỗ mình đứng (đường thẳng, xem KHOANGCACHSUDUNGLACANH)
+        is_tamlacanh = bool(diachimuctieu) and (is_cancanchien or self.moitruong.get_khoangcach(diachimuctieu) <= KHOANGCACHSUDUNGLACANH)
         idloaivukhimuctieu = self.moitruong.get_idloaivukhi(diachimuctieu) if diachimuctieu and is_muctieulanguoichoi else None
         nguyenkhiconlai = self.moitruong.get_nguyenkhiconlai() or 0
         if self._is_tudongbatnguyenkhiquynguyen:
@@ -1411,9 +1433,10 @@ class TacTuKyNang:
             (VITRIKYNANG_THONKINH, "sudungkynangmuctieu", lambda: is_cancanchien and not is_muctieucohieuung(HIEUUNGKYNANG_TRONGTHUONG), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_TRONGTHUONG),
             # Lạc Ảnh: ưu tiên trước Phong Ma / Không Thủ (người dùng dặn 2026-11-10). Dùng cả lên quái (người dùng dặn 2026-11-10, trước chỉ
             # với người chơi). Không dùng khi mục tiêu đã bị nhốt / đang trong trận Đào Hoa Nguyên khác (_is_lacanhlangphi); giữ chỗ hiệu
-            # ứng 211 để 2 Đào Hoa Nguyên cùng máy không cùng đặt trận lên 1 mục tiêu trong lúc hiệu ứng chưa kịp hiện
-            (VITRIKYNANG_DAOHOALACANH, "sudungkynangkhongmuctieu", lambda: is_cancanchien and not is_chandelay0 and (is_xahetchieu or not self._is_lacanhlangphi(diachimuctieu)),
-                KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_DAOHOALACANH),
+            # ứng 211 để 2 Đào Hoa Nguyên cùng máy không cùng đặt trận lên 1 mục tiêu trong lúc hiệu ứng chưa kịp hiện.
+            # Không cần kề mục tiêu (người dùng dặn 2026-11-12): trận tâm tại mình, mục tiêu trong KHOANGCACHSUDUNGLACANH ô là dính
+            (VITRIKYNANG_DAOHOALACANH, "sudungkynangkhongmuctieu", lambda: is_tamlacanh and not is_chandelay0 and (is_xahetchieu or not self._is_lacanhlangphi(diachimuctieu)),
+                KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False, HIEUUNGKYNANG_DAOHOALACANH),
             (VITRIKYNANG_PHONGMAQUYET, "sudungkynangmuctieu", lambda: is_cancanchien and (is_xahetchieu or (is_muctieulanguoichoi and idloaivukhimuctieu in (IDLOAIVUKHI_DAO, IDLOAIVUKHI_KIEM) and not is_muctieucohieuung(HIEUUNGKYNANG_TRAMMAC, HIEUUNGKYNANG_CHOANG))), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_TRAMMAC),
             (VITRIKYNANG_KHONGTHUNHAPBACHNHAN, "sudungkynangmuctieu", lambda: is_cancanchien and (is_xahetchieu or (is_muctieulanguoichoi and idloaivukhimuctieu not in (IDLOAIVUKHI_DAO, IDLOAIVUKHI_KIEM, IDLOAIVUKHI_TAYKHONG) and not is_muctieucohieuung(HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN, HIEUUNGKYNANG_CHOANG))), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN),
             # Nhất Quyền: chiêu dame mạnh nhất, ưu tiên duy trì (người dùng dặn 2026-11-10) => hết hồi là dùng, chỉ sau Thốn Kình (Trọng
@@ -1806,13 +1829,8 @@ class TacTuKyNang:
         idnguoichoithanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms()
         idnguoichoi = self.moitruong.get_idnguoichoi()
         thanhviens = []
-        j = -1
-        while True:
-            j += 1
-            addr = self.moitruong.get_diachicosothongtindoituongx(j)
-            if not addr:
-                return thanhviens
-            if not self.moitruong.get_is_nhanvattontai(addr) or self.moitruong.get_is_nhanvatdachet(addr):
+        for addr in self.moitruong.get_diachinhanvattontais():
+            if self.moitruong.get_is_nhanvatdachet(addr):
                 continue
             id_nd = self.moitruong.get_idnguoichoi(addr)
             if id_nd not in idnguoichoithanhviennhoms or id_nd == idnguoichoi:
@@ -1824,6 +1842,7 @@ class TacTuKyNang:
             if phantram >= 25 and self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_DATINCUONGLUC,), macdinh = False, diachicosothongtinnhanvat = addr, is_hieuungcoloi = 1):
                 phantram = 100
             thanhviens.append((phantram, khoangcach, addr))
+        return thanhviens
 
     def _get_is_cobaothukynangtrieuhoi(self, tenbaothu = None):
         # tenbaothu: chỉ tính bảo thú triệu hồi có tên này (vd: THIENBINH)
@@ -2319,6 +2338,13 @@ class TacTuKyNang:
             (None, loaitiepcan, lambda: diachicantiepcan and self.moitruong.get_khoangcachtamdanh(diachicantiepcan) > self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, diachicantiepcan, False),
         ]
 
+        # PK đánh người chơi (người dùng dặn 2026-11-14): Độn Giáp Trận lên đầu, trước cả Cải Tử Hoàn Sinh, như tung hoả mù trước
+        # rồi mới làm việc khác. Đánh quái giữ thứ tự cũ
+        if is_dangbatpk and is_muctieulanguoichoi:
+            vitridongiap = next((i for i, item in enumerate(danhsachuutien) if item[0] == VITRIKYNANG_DONGIAPTRAN), None)
+            if vitridongiap:
+                danhsachuutien.insert(0, danhsachuutien.pop(vitridongiap))
+
         self._capnhatkynangquantrong("vanmongcoc", danhsachuutien)
 
         danhsachuutien = self._sapxepuutientuhoc(danhsachuutien, diachimuctieu)
@@ -2504,6 +2530,46 @@ class TacTuKyNang:
                 self._is_thucsondao = is_dao
                 return
 
+    def _get_ungvienbuffthucson(self):
+        # -> ([bản thân, đồng đội nhóm trong tầm xa], [bảo thú triệu hồi của mình / thành viên nhóm trong tầm xa])
+        # Bảo thú triệu hồi xét chủ nhân như Vân Mộng Cốc (action_tudongtimkiemmuctieumonphai): tên chủ trong ngoặc phải là
+        # mình hoặc thành viên nhóm đang thấy trên màn hình (chủ ngoài tầm vẫn được, chỉ cần bảo thú trong tầm).
+        # Không tính bảo thú giang hồ (người dùng 2026-11-14: Tiểu Chu Thiên buff cả bảo thú triệu hồi của đồng đội)
+        nguoichois = [self.moitruong.get_diachicosothongtinnhanvat1()]
+        baothus = []
+        if not self.moitruong.get_is_dangnamtrongnhom():
+            return nguoichois, baothus
+        idnguoichoi = self.moitruong.get_idnguoichoi()
+        idnguoichoithanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms()
+        tenchunhanhoples = {self.moitruong.get_tendoituong()}
+        baothuxemxets = []
+        for addr in self.moitruong.get_diachinhanvattontais():
+            is_nguoichoi = self.moitruong.get_is_nguoichoi(addr)
+            if is_nguoichoi:
+                id_nd = self.moitruong.get_idnguoichoi(addr)
+                if id_nd not in idnguoichoithanhviennhoms or id_nd == idnguoichoi:
+                    continue
+                tenchunhanhoples.add(self.moitruong.get_tendoituong(addr))
+            elif not self.moitruong.get_is_baothukynangtrieuhoi(addr):
+                continue
+            if self.moitruong.get_is_nhanvatdachet(addr):
+                continue
+            if self.moitruong.get_khoangcachtamdanh(addr) > self._khoangcachsudungkynangtamxa:
+                continue
+            # Đồng đội / bảo thú vừa xuất hiện thì chờ đủ THOIGIANCHOCHONMUCTIEUMOI mới buff / hồi máu
+            if self._is_doituongmoixuathien(addr):
+                continue
+            if is_nguoichoi:
+                nguoichois.append(addr)
+            else:
+                baothuxemxets.append(addr)
+        tenchunhanhoples.discard(None)
+        tenchunhanhoples.discard("")
+        for addr in baothuxemxets:
+            if self.moitruong.get_tenchunhan(addr) in tenchunhanhoples:
+                baothus.append(addr)
+        return nguoichois, baothus
+
     def action_sudungkynangmonphaithucson(self):
         self._capnhatthucsondao()
         if self._is_thucsondao:
@@ -2523,28 +2589,10 @@ class TacTuKyNang:
         phantramsinhluc = self.moitruong.get_phantramsinhlucconlai()
 
         diachidongdoicanbuff = None
-        idnguoichoithanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms()
+        danhsachungviens, baothudongdois = self._get_ungvienbuffthucson()
 
-        danhsachungviens = [self.moitruong.get_diachicosothongtinnhanvat1()]
-        if self.moitruong.get_is_dangnamtrongnhom():
-            j = -1
-            while True:
-                j += 1
-                addr = self.moitruong.get_diachicosothongtindoituongx(j)
-                if not addr:
-                    break
-                if not self.moitruong.get_is_nhanvattontai(addr) or self.moitruong.get_is_nhanvatdachet(addr):
-                    continue
-                if self.moitruong.get_khoangcachtamdanh(addr) > self._khoangcachsudungkynangtamxa:
-                    continue
-                # Đồng đội vừa xuất hiện thì chờ đủ THOIGIANCHOCHONMUCTIEUMOI mới buff / hồi máu
-                if self._is_doituongmoixuathien(addr):
-                    continue
-                id_nd = self.moitruong.get_idnguoichoi(addr)
-                if id_nd in idnguoichoithanhviennhoms and id_nd != self.moitruong.get_idnguoichoi():
-                    danhsachungviens.append(addr)
-
-        for addr in danhsachungviens:
+        # Tiểu Chu Thiên xét cả bảo thú triệu hồi của đồng đội (đứng sau người chơi); Tiên Khí phía dưới chỉ xét người chơi
+        for addr in danhsachungviens + baothudongdois:
             is_thieuhieuung = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NOIKHANG,), diachicosothongtinnhanvat = addr, macdinh = True, is_hieuungcoloi = 1)
             is_quathoigian = False
 
@@ -2552,14 +2600,23 @@ class TacTuKyNang:
                 diachidongdoicanbuff = addr
                 break
 
-        # Đồng đội (không tính bản thân) máu thấp nhất dưới 75% để buff Tiên Khí
+        # Tiên Khí hồi sinh lực đơn mục tiêu (như Sơ Trị của Vân Mộng Cốc): chọn người máu thấp nhất dưới 75%,
+        # tính cả bản thân (danhsachungviens[0]) lẫn đồng đội trong tầm xa (người dùng 2026-11-12).
+        # Lọc như Vân Mộng Cốc (_diachidoituongcanbommauvanmongcoc): bỏ người đang bị Thiêu Đốt; Đào Hoa đang Dã Tính Cuồng Lực
+        # (tự đốt máu) chỉ hồi khi <= 35%, trừ khi mình đang bật PK thì vẫn 75% (người dùng 2026-11-13)
         diachidongdoimauthap = None
         phantramsinhlucdongdoithapnhat = 75
-        for addr in danhsachungviens[1:]:
+        is_dangbatpk = self.moitruong.get_idmaupk() != MAUPK_HOABINH
+        for addr in danhsachungviens:
             phantramsinhlucdongdoi = self.moitruong.get_phantramsinhlucconlai(addr)
-            if phantramsinhlucdongdoi < phantramsinhlucdongdoithapnhat:
-                phantramsinhlucdongdoithapnhat = phantramsinhlucdongdoi
-                diachidongdoimauthap = addr
+            if phantramsinhlucdongdoi >= phantramsinhlucdongdoithapnhat:
+                continue
+            if self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THIEUDOT,), macdinh = False, diachicosothongtinnhanvat = addr, is_hieuungcoloi = 0):
+                continue
+            if phantramsinhlucdongdoi > 35 and not is_dangbatpk and self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_DATINCUONGLUC,), macdinh = False, diachicosothongtinnhanvat = addr, is_hieuungcoloi = 1):
+                continue
+            phantramsinhlucdongdoithapnhat = phantramsinhlucdongdoi
+            diachidongdoimauthap = addr
         is_tieuchuthiensansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_TIEUCHUTHIEN)
         if self._is_tieuchuthiensansang and not is_tieuchuthiensansang and self._idnguoichoibuffnoikhanggannhat:
             self._thoidiembuffnoikhanggannhat_map[self._idnguoichoibuffnoikhanggannhat] = time.time()
@@ -2571,8 +2628,9 @@ class TacTuKyNang:
         # Chưa học thì _is_kynangdungduoc tự bỏ qua, không cần xét cấp
         is_ngukiemdudieukien = diachimuctieu and self._is_nhieumuctieugan8
         # Đánh quái (không PK) thì luôn chạy vào giữa cụm rồi mới ra chiêu, ở đâu cũng vậy (phó bản, theo sau...: người dùng 2026-11-08);
-        # PK thì giữ khoảng cách như cũ
-        is_ngukiemtiepcan = is_ngukiemdudieukien and not is_muctieupk
+        # PK thì giữ khoảng cách như cũ.
+        # Riêng Phá Thiên Tháp (ID 894) không chạy vào giữa cụm: chỉ ra Phi Tiên khi quái đã trong tầm hiệu quả 9 ô (người dùng 2026-11-12)
+        is_ngukiemtiepcan = is_ngukiemdudieukien and not is_muctieupk and self.moitruong.get_idbandohientai() != BANDO_BATQUAITRAN
         danhsachuutien = [
             # Bị tước vũ khí: dùng Định Tâm Quyết ngay để giải, không chờ đủ nội lực ngưỡng
             (VITRIKYNANG_TINHTAMQUYET, "sudungkynangkhongmuctieu", lambda: is_bituocvukhi or self.moitruong.get_is_cohieuungs(HIEUUNGBATLOITHUCSONCOTHEGIAIs, macdinh = False, is_hieuungcoloi = 0), 0, None, True),
@@ -2589,11 +2647,18 @@ class TacTuKyNang:
             (VITRIKYNANG_NGUKIEMPHITIEN, "sudungkynangkhongmuctieu", lambda: is_ngukiemdudieukien and khoangcach <= (KHOANGCACHTIEPCANNGUKIEMPHITIEN if is_ngukiemtiepcan else KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN), 0, None, True),
             (VITRIKYNANG_LANGKHONGCHIHUYET, "sudungkynangmuctieu", lambda: diachimuctieu and self.moitruong.get_is_cothegaychoang(diachimuctieu) and khoangcach <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, True),
             (VITRIKYNANG_VANKIEMXUYENTAM, "sudungkynangmuctieu", lambda: diachimuctieu and khoangcach <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, True),
-            # Không có mục tiêu hoặc đang đánh quái (không PK) thì buff Tiên Khí cho đồng đội máu dưới 75%
-            # (VITRIKYNANG_TIENKHI, "sudungkynanglendongdoi", lambda: noilucconlai > 100 and not is_muctieupk and diachidongdoimauthap, self._khoangcachsudungkynangtamxa, diachidongdoimauthap, False),
             (VITRIKYNANG_NGUKIEMTHUAT, "sudungkynangmuctieu", lambda: diachimuctieu and khoangcach <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, True),
             (VITRIKYNANG_BANGTAMTHUC, "sudungkynangmuctieu", lambda: diachimuctieu and khoangcach <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, True),
             (VITRIKYNANG_VANVUTIEUDIEU, "sudungkynangmuctieu", lambda: diachimuctieu and khoangcach <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, True),
+            # Phá Không Kích (chiêu chung Thục Sơn, Đao vẫn dùng) ngay trước Tiên Khí: chỉ khi mục tiêu đã đứng sát cận chiến (không chạy
+            # vào) và chưa bị Trọng Thương (người dùng 2026-11-14). Đọc hiệu ứng lỗi thì coi như đã có => bỏ qua.
+            # Người chơi cầm Kiếm gần như đánh nội công => Trọng Thương vô nghĩa, bỏ qua (chỉ xét vũ khí khi mục tiêu là người chơi)
+            (VITRIKYNANG_PHAKHONGKICH, "sudungkynangmuctieu", lambda: diachimuctieu and khoangcach <= KHOANGCACHSUDUNGKYNANGCANCHIEN
+                and not (is_muctieupk and self.moitruong.get_idloaivukhi(diachimuctieu) == IDLOAIVUKHI_KIEM)
+                and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRONGTHUONG,), macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu),
+                KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
+            # Tiên Khí ngay trước Tiên Nhân Chỉ Lộ: hồi máu cho bản thân / đồng đội máu thấp nhất dưới 75% (người dùng 2026-11-12)
+            (VITRIKYNANG_TIENKHI, "sudungkynanglendongdoi", lambda: noilucconlai > 100 and diachidongdoimauthap, self._khoangcachsudungkynangtamxa, diachidongdoimauthap, True),
             (VITRIKYNANG_TIENNHANCHILO, "sudungkynangmuctieu", lambda: diachimuctieu and khoangcach <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, True),
             (None, "dichuyentiepcantamxa", lambda: diachimuctieu and khoangcach > self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, False),
         ]
@@ -2618,7 +2683,7 @@ class TacTuKyNang:
             is_ok, is_break = self.action_xulyuutiensudungkynang(loaikynang, vitrikynang, target if target else diachimuctieu, khoangcachyeucau, is_yeucaukhongdichuyen)
             if not is_ok:
                 self._bogiuchokynangphai(giucho)
-            if is_ok and vitrikynang == VITRIKYNANG_TIEUCHUTHIEN and target:
+            if is_ok and vitrikynang == VITRIKYNANG_TIEUCHUTHIEN and target and self.moitruong.get_is_nguoichoi(target):
                 self._idnguoichoibuffnoikhanggannhat = self.moitruong.get_idnguoichoi(target)
             # Ngự Kiếm Phi Tiên, Tiểu Chu Thiên kéo dài tới hết tư thế ra chiêu: không đứng lại trước khi ra chiêu, vào tư thế ra chiêu thì
             # ngắt di chuyển (action_ngatdichuyenkhixuatchieu) rồi giữ đứng yên tới khi hết tư thế ra chiêu (giới hạn 10s phòng đọc tư thế sai);
@@ -2652,24 +2717,10 @@ class TacTuKyNang:
         noiluc = self.moitruong.get_noilucconlai()
 
         diachidongdoicanbuff = None
-        idnguoichoithanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms()
-        danhsachungviens = [self.moitruong.get_diachicosothongtinnhanvat1()]
+        danhsachungviens, baothudongdois = self._get_ungvienbuffthucson()
 
-        if self.moitruong.get_is_dangnamtrongnhom():
-            j = -1
-            while True:
-                j += 1
-                addr = self.moitruong.get_diachicosothongtindoituongx(j)
-                if not addr: break
-                if not self.moitruong.get_is_nhanvattontai(addr) or self.moitruong.get_is_nhanvatdachet(addr): continue
-                if self.moitruong.get_khoangcachtamdanh(addr) > self._khoangcachsudungkynangtamxa: continue
-                # Đồng đội vừa xuất hiện thì chờ đủ THOIGIANCHOCHONMUCTIEUMOI mới buff
-                if self._is_doituongmoixuathien(addr): continue
-                id_nd = self.moitruong.get_idnguoichoi(addr)
-                if id_nd in idnguoichoithanhviennhoms and id_nd != self.moitruong.get_idnguoichoi():
-                    danhsachungviens.append(addr)
-
-        for addr in danhsachungviens:
+        # Tiểu Chu Thiên xét cả bảo thú triệu hồi của đồng đội (đứng sau người chơi)
+        for addr in danhsachungviens + baothudongdois:
             id_nd = self.moitruong.get_idnguoichoi(addr)
             is_thieuhieuung = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NOIKHANG,), diachicosothongtinnhanvat = addr, macdinh = True, is_hieuungcoloi = 1)
             is_quathoigian = self.moitruong.get_diachicosothongtinnhanvat1() != addr and self.moitruong.get_is_nguoichoi(addr) and time.time() - self._thoidiembuffnoikhanggannhat_map.get(id_nd, 0) > 60
@@ -2721,7 +2772,8 @@ class TacTuKyNang:
 
             is_duocphepsudungluutinhtruymang = is_luutinhtruymangsansang and noiluc > 50 and self._solanthatbailuutinhtruymang < self._solanthatbailuutinhtruymangtoida and idtuthenhanvat not in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT)
 
-            if khoangcach <= self._khoangcachsudungkynangtamxa and is_duocphepsudungluutinhtruymang and not is_bimatamthuat \
+            # Đứng im đánh: Lưu Tinh lướt tới sau lưng mục tiêu là di chuyển => không dùng
+            if khoangcach <= self._khoangcachsudungkynangtamxa and is_duocphepsudungluutinhtruymang and not is_bimatamthuat and not self._is_dungimdanh \
                     and not self.moitruong.get_is_khongthedungkynang() \
                     and not self.moitruong.get_is_doanthangcovatcan(*self.moitruong.get_toado(), *self.moitruong.get_toado(diachimuctieu)):
                 # Lưu Tinh Truy Mạng chọn mục tiêu, lướt tới nó: mô tả ghi "di chuyển đến sau lưng mục tiêu" nhưng thực tế chỉ cần đoạn thẳng
@@ -2761,7 +2813,7 @@ class TacTuKyNang:
             if vitrikynang and not self._is_kynangdungduoc(vitrikynang): continue
 
             is_ok, is_break = self.action_xulyuutiensudungkynang(loaikynang, vitrikynang, target if target else diachimuctieu, khoangcachyeucau, is_ngat)
-            if is_ok and vitrikynang == VITRIKYNANG_TIEUCHUTHIEN and target:
+            if is_ok and vitrikynang == VITRIKYNANG_TIEUCHUTHIEN and target and self.moitruong.get_is_nguoichoi(target):
                 self._idnguoichoibuffnoikhanggannhat = self.moitruong.get_idnguoichoi(target)
             if is_break:
                 return

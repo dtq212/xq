@@ -1,6 +1,7 @@
 {
-  "capketthuc": 65,
+  "capketthuc": 45,
   "nhandode": false,
   "tendode": "May Mac",
-  "moibang": false
+  "moibang": true,
+  "dungcode": true
 }

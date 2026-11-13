@@ -14,6 +14,8 @@ r = K / C. Sát thương chỉ phụ thuộc C và r (cùng K/C thì cùng sát 
 - Mỗi đòn random ±1.5% quanh giá trị trên.
 """
 
+import functools
+
 HE_NGOAI = "ngoai"
 HE_NOI = "noi"
 
@@ -67,6 +69,9 @@ def khangtusatthuong(satthuongdo, cong, he, congthem = 0, boquaphongthu = 0.):
     return k / (1. - boquaphongthu) if boquaphongthu < 1 else None
 
 
+# Nhớ kết quả: hàm thuần (chỉ phụ thuộc tham số), mà uocluongmuctieu_xq tính lại cho MỌI đòn đã lưu mỗi lần giao diện vẽ (py-spy
+# 2026-11-12: ~10% CPU tiến trình bot, mỗi lần 60 vòng chia đôi). Tham số là số => băm được
+@functools.lru_cache(maxsize = 8192)
 def congtusatthuong(satthuongdo, khang, he, congtoida = 30000):
     # Lật ngược satthuong() theo Công: Công người đánh suy ra từ 1 đòn không bạo lên mục tiêu có Kháng khang (đo Công đối thủ từ
     # máu mình tụt). satthuong() tăng dần theo Công nên chia đôi. None khi không nằm trong [1, congtoida] hoặc đòn sàn

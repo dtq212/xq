@@ -261,6 +261,12 @@ class TroChoiManager:
                     cmd = "action_test"
                 elif keyboard.is_pressed("ctrl+alt+s"):
                     cmd = "battat_uutienbaothukynangtrieuhoi"
+                elif keyboard.is_pressed("ctrl+r"):
+                    # Đứng im đánh (R như "Run": bật/tắt chạy kiểu đứng im)
+                    cmd = "battat_dungimdanh"
+                elif keyboard.is_pressed("ctrl+u"):
+                    # Dùng 1 lượt các thuốc buff 1 giờ (Tiêu Dao Tán, Tử Tâm Đơn, Quy Nguyên Đơn, Kim Tang Tán, Khí Mạch Đơn, Nhân Sâm)
+                    cmd = "dungvongthuoc1gio"
                 if cmd:
                     self.command_dict[hwnd] = cmd
                     time.sleep(0.3)

@@ -4,6 +4,7 @@
 import csv
 import ctypes
 import json
+import msvcrt
 import os
 import random
 import re
@@ -296,6 +297,68 @@ def _killtientrinh(pid):
     return True
 
 
+# Ghi dump khi game đơ (không phải crash nên WER không ghi). Ngốc 347 lúc 21:20 và Thk 354 lúc 21:25 ngày 13/11 bị đơ 30-55s
+# giữa trận đánh cạnh Trận Lạc Ảnh, người dùng phải đóng tay, không có dump nên không biết kẹt ở đâu.
+# Đơ liên tục quá THOIGIANTREOGHIDUMP giây (không tính lúc vừa vào game đang load) thì ghi 1 dump đầy đủ cho mỗi tiến trình.
+# Bot là Python 64 bit nên dump mang ngữ cảnh WOW64; ngữ cảnh 32 bit của từng luồng nằm trong TLS WOW64 của TEB64
+# (khi đọc bằng WinDbg thì gõ .effmach x86). Mỗi file ~500 MB nên chỉ giữ SODUMPTREOGIU file mới nhất.
+THOIGIANTREOGHIDUMP = 20.
+THUMUCDUMPTREO = r"C:\CrashDumps"
+SODUMPTREOGIU = 4
+# MiniDumpWithFullMemory | MiniDumpWithHandleData | MiniDumpWithUnloadedModules | MiniDumpWithThreadInfo
+KIEUDUMPTREO = 0x2 | 0x4 | 0x20 | 0x1000
+_piddaghidumptreo = set()
+
+
+def _ghidumptreo(pid, hwnd, thoigiantreo):
+    if pid in _piddaghidumptreo:
+        return
+    _piddaghidumptreo.add(pid)
+
+    def _chay():
+        duongdan = os.path.join(THUMUCDUMPTREO, f"xq.treo.{pid}.{time.strftime('%Y-%m-%d.%H.%M.%S')}.dmp")
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error = True)
+        dbghelp = ctypes.WinDLL("dbghelp", use_last_error = True)
+        kernel32.OpenProcess.restype = ctypes.c_void_p
+        kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
+        dbghelp.MiniDumpWriteDump.argtypes = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_uint32,
+                                              ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+        hprocess = None
+        try:
+            os.makedirs(THUMUCDUMPTREO, exist_ok = True)
+            # PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_DUP_HANDLE
+            hprocess = kernel32.OpenProcess(0x0400 | 0x0010 | 0x0040, False, pid)
+            if not hprocess:
+                print(f"   -> [DUMP ĐƠ] không mở được tiến trình {pid}: lỗi {ctypes.get_last_error()}")
+                return
+            batdau = time.time()
+            with open(duongdan, "wb") as f:
+                # msvcrt.get_osfhandle của chính CRT Python (gọi msvcrt.dll qua ctypes là CRT khác => handle sai, lỗi 0x80070006)
+                hfile = ctypes.c_void_p(msvcrt.get_osfhandle(f.fileno()))
+                ok = dbghelp.MiniDumpWriteDump(hprocess, pid, hfile, KIEUDUMPTREO, None, None, None)
+                loi = ctypes.get_last_error()
+            if not ok:
+                print(f"   -> [DUMP ĐƠ] ghi dump tiến trình {pid} thất bại: lỗi {loi}")
+                os.remove(duongdan)
+                return
+            print(f"   -> [DUMP ĐƠ] HWND {hwnd} đơ {int(thoigiantreo)}s: đã ghi {duongdan} "
+                  f"({os.path.getsize(duongdan) // (1 << 20)} MB, {time.time() - batdau:.1f}s)")
+            cacdump = sorted((os.path.join(THUMUCDUMPTREO, ten) for ten in os.listdir(THUMUCDUMPTREO)
+                              if ten.startswith("xq.treo.") and ten.endswith(".dmp")), key = os.path.getmtime)
+            for cu in cacdump[:-SODUMPTREOGIU]:
+                try:
+                    os.remove(cu)
+                except OSError:
+                    pass
+        except Exception as e:
+            print(f"   -> [DUMP ĐƠ] lỗi ghi dump tiến trình {pid}: {e}")
+        finally:
+            if hprocess:
+                kernel32.CloseHandle(hprocess)
+
+    threading.Thread(target = _chay, daemon = True).start()
+
+
 _diachigioihanclients = {}
 
 
@@ -554,6 +617,11 @@ def kiemtravadongcuasotreo(hwnd):
 
     except Exception:
         thoigiantreo = time.time() - _thoidiembatdautreo.setdefault(hwnd, time.time())
+        if thoigiantreo >= THOIGIANTREOGHIDUMP and hwnd not in laycuasodangvaogame():
+            try:
+                _ghidumptreo(win32process.GetWindowThreadProcessId(hwnd)[1], hwnd, thoigiantreo)
+            except Exception:
+                pass
         if thoigiantreo < THOIGIANTREOTOIDA or hwnd in laycuasodangvaogame():
             print(f"   -> Cửa sổ không trả lời {int(thoigiantreo)}s (HWND: {hwnd}), có thể đang load, chờ thêm")
             return False

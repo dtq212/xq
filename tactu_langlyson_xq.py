@@ -106,6 +106,8 @@ MAMAUHOANGKIM = "\x1bY"
 # Kính luôn chừa như Hoàng Kim (người dùng giữ đồ tím)
 MAMAUTIM = "\x1bp"
 CAPDOLAMKIMTOITHIEU = 15
+# Trang bị dưới cấp này luôn ở dạng đã giám định (game): ô "Chỉ đồ Chưa giám định" chỉ áp cho đồ từ cấp này trở lên
+CAPLUONGIAMDINH = 30
 # Mỗi lượt gửi desc tối đa chừng này ô chưa có mô tả (mỗi lệnh chờ 0.2s); gửi xong chừng này giây chưa có mô tả thì gửi lại, tối đa
 # SOLANDESCPY lần rồi bỏ ô đó
 SODESCMOILUOT = 3
@@ -1353,9 +1355,6 @@ class TacTuLangLySon:
             return None
         if "đã Phong Ấn" in dongs[0] or "Khoá" in dongs[0] or "Khóa" in dongs[0]:
             return None
-        # Chỉ đồ chưa giám định: đồ có sao (★) cũng là đồ đã làm gì đó, bỏ luôn; tắt thì đốt cả đồ đã giám định
-        if cauhinh["is_chichuagiamdinh"] and "Chưa giám định" not in sach:
-            return None
         # Đồ có sao (★, đã ép) không bao giờ đem đốt, kể cả khi tắt "chỉ chưa giám định"
         if "★" in sach:
             return None
@@ -1368,7 +1367,11 @@ class TacTuLangLySon:
         khop = re.search(r"Cấp độ sử dụng\s*[:：]\s*cấp\s*(\d+)", sach) or re.search(r"Trang bị yêu cầu\s*[:：]\s*(\d+)\s*cấp", sach)
         if not khop or int(khop.group(1)) < CAPDOLAMKIMTOITHIEU:
             return None
-        gia = re.search(r"Giá bán ra\s*[:：]\s*(\d+)", sach)
+        # Chỉ đồ chưa giám định (tắt thì đốt cả đồ đã giám định). Đồ dưới CAPLUONGIAMDINH luôn ra ở dạng đã giám định (người dùng
+        # 2026-11-14: Lam Kim cấp 25 acc gà quay số cấp 1-29 bị bỏ hết) nên không xét điều kiện này
+        if cauhinh["is_chichuagiamdinh"] and int(khop.group(1)) >= CAPLUONGIAMDINH and "Chưa giám định" not in sach:
+            return None
+        gia =re.search(r"Giá bán ra\s*[:：]\s*(\d+)", sach)
         return int(khop.group(1)), int(gia.group(1)) if gia else 0
 
     def _laynhompy(self):
@@ -1824,8 +1827,7 @@ class TacTuLangLySon:
         if not lenhs:
             return xong(f"Không có rác để bán ở {tennpc}")
         b["somon"] = len(lenhs)
-        self._hangdoibanrac = lenhs
-        self._thoidiemguibanractieptheo = 0.
+        self._datnhangdoibanrac(lenhs)
         self._logpb(s, f"Bán {len(lenhs)} món rác ở {tennpc} (chừa đồ Lam Kim / Hoàng Kim / tím)")
         s["trangthai"] = f"bán rác ở {tennpc}: {len(lenhs)} món"
         return None

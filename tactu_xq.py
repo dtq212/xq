@@ -40,7 +40,7 @@ THUOCTINHTHIETLAPs = (
     "_tenmuctieukhongtancongs", "_tenvatphamnhats", "_phamchatnhats", "_khoangcachtoidatheosau", "_bankinhdiemdanh", "_tamxatoida",
     "_danhhieulammoi", "_phantramnoiluckhaithientichdia", "_chedokynang", "_is_tudongtrieuhoibaothugiangho", "_is_tudongsudungkynangbaothu",
     "_is_tudongbatnguyenkhiquynguyen", "_is_tranhvungcam", "_is_giukhoangcachketancong", "_khoangcachgiuketancong", "_mauchaytron",
-    "_mauhetchaytron", "_is_giukhoangcachchimuctieupk", "_is_taphoa", "_is_timmuctieuchung", "_chedohienthongtinmuctieugame",
+    "_mauhetchaytron", "_is_doiphapbaotheomau", "_is_xoayvongtrao", "_mauphapbaovua", "_mauphapbaothap", "_dotrephapbao", "_is_giukhoangcachchimuctieupk", "_is_taphoa", "_is_timmuctieuchung", "_chedohienthongtinmuctieugame",
     "_mauhienthongtinmuctieugame", "_is_hienhanhdongtrendau", "_is_tutimduongtheosau", "_is_chaytoibuffthanhvien", "_is_diquocgiatanthutienco", "_is_doidokhitrieuhoi", "_bodotrieuhoi", "_baothutrieuhoimaoson",
     "_sumon_npcgiao", "_tapkich_phai", "_matac_bandos", "_is_tubatmatac", "_hangviec_thutu", "_hangviec_chon",
 )
@@ -67,7 +67,6 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._is_baothukynangtrieuhoihetnoiluc = False
         self._is_baothukynangtrieuhoihetsinhluc = False
         self._thoidiemdocsachgannhat = 0.
-        self._thoidiemsudungbattiendongannhat = 0.
         self._thoidiemdichientruonggannhat = 0.
         # Các lệnh hội thoại Trương Quả Lão còn chờ gửi, cách nhau >= 0.25s (trước đây sleep 0.25s sau mỗi lệnh, chặn loop phụ)
         self._hangdoilenhchientruong = []
@@ -83,6 +82,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self.moitruong = moitruong
 
         self._is_tudongtheosau = True
+        # Đứng im đánh (Ctrl+R, người dùng 2026-11-13): bot không tự di chuyển bất kỳ kiểu nào (tiếp cận, lộ trình, theo sau, nhặt đồ,
+        # gom quái, chạy trốn, chiêu lướt, Hồi Thành Phù...), chỉ đánh mục tiêu đã trong tầm; người chơi click chuột đi thì vẫn đi
+        # (bot nhường như cũ). Không lưu vào thiết lập: mở lại bot là tắt, kẻo quên bật rồi tưởng bot hỏng không chạy
+        self._is_dungimdanh = False
         # Người được theo sau: 0 = trưởng nhóm, khác 0 = ID nhân vật cùng máy (ID cố định, tên chỉ để hiển thị vì có thể đổi)
         self._idmuctieutheosau = 0
         self._tenmuctieutheosau = ""
@@ -228,6 +231,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         # Việc cất kho đang làm (tactu_catkho_xq, None = không) và kết quả lần gần nhất cho giao diện
         self._catkho = None
         self._ketquacatkho = ""
+        # Việc sắp xếp kho đang làm (battat_sapxepkho / action_sapxepkho trong tactu_catkho_xq), None = không xếp
+        self._sapxepkho = None
         # Các lần cất kho trong THOIGIANGIULICHSUCATKHO giây gần nhất: [[thời điểm, {tên món: số lượng}]] cho báo cáo định kỳ Telegram
         self._lichsucatkho = []
         # Nhiệm vụ sư môn (tactu_sumon_xq): việc đang làm (None = không), kết quả lần gần nhất cho giao diện, NPC giao nhiệm vụ người dùng
@@ -348,15 +353,16 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._phamchatnhats = set(PHAMCHATVATPHAM_MAP)
 
         self._thoidiemtamngungkhaithientichdia = time.time()
-        self._thoidiemkiemtrahieuunggannhat = time.time()
+        # Bảng Tự động sử dụng vật phẩm (_dungvatphamtheoluat): {khoá luật: lúc dùng / kiểm tra hiệu ứng gần nhất}
+        self._thoidiemluatdung = {}
+        # Dùng Ân Xá Phù (_action_dunganxaphu): lúc gửi gần nhất, điểm PK lúc gửi, cách gửi đang thử (0 = use2, 1 = use !),
+        # số lần gửi liền mà PK không giảm
+        self._anxaphu = {"luc": 0., "pk": None, "cach": 0, "hut": 0}
         self._thoidiemnhatvatphamgannhat_map = {}
         self._thoidiemdoimaupkgannhat = time.time()
         self._thoidiemtudongtrieuhoibaothugiangho = time.time()
         self._thoidiemsudungvatphamgannhat = time.time()
         self._thoidiemsudungthucanbaothugannhat = time.time()
-        self._thoidiemsudungvatphamhoinoilucgannhat = time.time()
-        self._thoidiemsudungvatphamhoisinhlucgannhat = time.time()
-        self._thoidiemsudungthanhtamdangannhat = time.time()
         self._thoidiemsudunghoithanhphugannhat = time.time()
         # Lần log gần nhất "chờ nhân vật khác về thành" (action_thugiuhoithanh), khỏi log mỗi vòng
         self._thoidiemlogchohoithanh = 0.
@@ -373,9 +379,16 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         # Luật túi đồ (luattuido_xq): {tên: mô tả bỏ dòng tên} cho điều kiện "mô tả chứa", lần vứt theo luật gần nhất,
         # {id món: lúc được thử vứt lại} (game không cho vứt thì khỏi gửi mãi), {tên: lần mua bù gần nhất}
         self._motavatpham_map = {}
+        # Hai map trên nạp sẵn từ file cache theo tên (_taicachemotavatpham), khỏi desc lại mỗi lần mở bot
+        self._taicachemotavatpham()
         self._thoidiemvuttheoluatgannhat = 0.
         self._thoidiemthulaivut_map = {}
         self._thoidiemmuabu_map = {}
+        # Mua bù ở Trân Bảo Khố (TRANBAOKHO, tactu_vatpham_xq._muabutranbaokho): luồng đang mua (None = rảnh), lần xét gần nhất,
+        # {tên: chưa xét lại món này trước lúc}
+        self._luongmuatranbaokho = None
+        self._thoidiemkiemtramuatranbaokho = 0.
+        self._thoidiemchomuatranbaokho_map = {}
         # Về mua bù (món còn <= "thapnhat"): lần về gần nhất theo món, lần xét gần nhất, lúc bắt đầu chờ mua ở tiệm, lần đi tới NPC gần nhất
         self._thoidiemvemuabu_map = {}
         self._thoidiemkiemtravemuabu = 0.
@@ -394,7 +407,15 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._xoayvongsapxep = None
         self._is_dangsapxephanhtrang = False
         self._thoidiembatdausapxephanhtrang = 0.
+        # Tên vật phẩm -> (số lần đã gửi desc, thời điểm gửi gần nhất) khi sắp xếp hành trang (_timbuocsapxephanhtrang)
+        self._descsapxep_map = {}
+        # Tự đeo kỵ thú quý (action_tudongdeokythu): lúc xét lượt sau, lúc gửi "use" đang chờ kết quả (0 = không chờ), số lần hỏng liền
+        self._thoidiemxetdeokythu = 0.
+        self._lucguideokythu = 0.
+        self._solandeokythuthatbai = 0
         self._thoidiemsapxephanhtranggannhat = 0.
+        # Ảnh (ids, tên) hành trang lúc gửi lệnh move gần nhất: hành trang khác ảnh này = lệnh đã có kết quả, gửi lệnh kế ngay
+        self._anhhanhtrangsapxep = None
         self._solandichuyensapxep = 0
         self._lenhsapxepgannhat = None
         self._solanlaplenhsapxep = 0
@@ -549,6 +570,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         # Bán rác/sửa đồ chạy dần theo từng lượt của loop phụ (trước đây sleep 1s mỗi món, chặn cả loop phụ hàng chục giây)
         self._hangdoibanrac = []  # câu lệnh bán còn chờ gửi, 1 lệnh/giây
         self._thoidiemguibanractieptheo = 0.
+        # Lệnh bán đã gửi trong đợt này (chờ kiểm tra món còn trong túi để bán lại) và số lần đã bán lại (tactu_vatpham_xq)
+        self._lenhbanracdagui = []
+        self._solanthulaibanrac = 0
         self._thoidiemhetsuavatpham = 0.  # > 0: đang đi tìm Chủ Tiệm Sửa Chữa, bỏ cuộc lúc này
         self._thoidiemkiemtrasuavatpham = 0.
         self._buocbanrac = 0  # bước 3 (đang bán) của về bán rác: 0 chưa bán, 1 đang bán, 2 đang sửa đồ, 3 đang cất kho, 4 đang giao đồ
@@ -694,10 +718,6 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         # Yêu cầu lùi đang có (None = không cần lùi); tính lại mỗi THOIGIANTINHGIUKHOANGCACH giây trong action_xulyuutiendichuyen
         self._yeucaugiukhoangcach = None
         self._thoidiemtinhgiukhoangcachgannhat = 0.
-        # Yêu cầu né ra khỏi Kỳ Môn / Độn Giáp (None = không cần né), tính lại mỗi THOIGIANTINHNETRAN giây; khoá log lần né gần nhất
-        self._yeucaunetran = None
-        self._thoidiemtinhnetrangannhat = 0.
-        self._khoalognetran = None
         # Đang chạy trốn vì máu thấp (dưới _mauchaytron%, trên _mauhetchaytron% mới quay lại đánh): mọi phái, không cần bật giữ khoảng cách.
         # Hai ngưỡng chỉnh ở giao diện, lưu theo nhân vật; _mauchaytron = 0 là tắt
         self._is_dangchaytron = False
@@ -783,6 +803,27 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._tenphapbaocu = None
         self._mucsinhluckhihoandoi = 0
         self._thoidiemthumaclaiphapbao = 0.
+        # Đổi pháp bảo theo sinh lực (PHAPBAOTHEOMAU_MAP: Đào Hoa, Thục Sơn Kiếm, Vân Mộng Cốc): mặc định bật như trước khi có tuỳ chọn.
+        # Ngưỡng % máu xuống mức vừa / thấp và độ trễ khi đổi lên, chỉnh ở tab Chiến đấu, lưu theo nhân vật
+        self._is_doiphapbaotheomau = True
+        self._mauphapbaovua = NGUONGPHAPBAOTHEOMAU_VUA
+        self._mauphapbaothap = NGUONGPHAPBAOTHEOMAU_THAP
+        self._dotrephapbao = DOTREPHAPBAOTHEOMAU
+        # Pháp bảo hỏng (độ bền 0/x, người dùng dặn 2026-11-12): không đeo món hỏng, món đang đeo hỏng thì đổi món tương tự.
+        # Độ bền món trong túi: {id đối tượng: (thời điểm đọc, (bền, tối đa) | None không có độ bền | False chưa đọc được)};
+        # nằm trong túi thì không mòn nên đọc 1 lần, thấy món đó đang đeo thì xoá để lần sau đọc lại
+        self._dobenphapbaotui_map = {}
+        # Món đang đeo: desc lại định kỳ (THOIGIANKIEMTRADOBENPHAPBAO) theo id; độ bền đọc được gần nhất
+        self._thoidiemtruyvandobenphapbao = 0.
+        self._idtruyvandobenphapbao = None
+        self._thoidiemcanhbaophapbaohong = 0.
+        # Xoay vòng Cửu Long Thần Hỏa Trảo theo khí huyết (tactu_vatpham_xq._xoayvongtraotheokhihuyet), mặc định bật.
+        # Khí huyết Trảo trong túi {id: (hiện tại, tối đa)}: không hồi khi nằm trong túi nên đọc 1 lần cùng lúc đọc độ bền;
+        # Trảo đang đeo: (id, hiện tại, tối đa) đọc gần nhất từ "desc 7"
+        self._is_xoayvongtrao = True
+        self._khihuyetphapbaotui_map = {}
+        self._khihuyetphapbaodeo = None
+        self._thoidiemxetxoaytrao = 0.
 
         self._is_tudongsudungkynangbaothu = False
         # Tự bật / làm mới Nguyên Khí Quy Nguyên (Đào Hoa): tốn nên mặc định tắt
@@ -932,6 +973,11 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             "_khoangcachgiuketancong": self._khoangcachgiuketancong,
             "_mauchaytron": self._mauchaytron,
             "_mauhetchaytron": self._mauhetchaytron,
+            "_is_doiphapbaotheomau": self._is_doiphapbaotheomau,
+            "_is_xoayvongtrao": self._is_xoayvongtrao,
+            "_mauphapbaovua": self._mauphapbaovua,
+            "_mauphapbaothap": self._mauphapbaothap,
+            "_dotrephapbao": self._dotrephapbao,
             "_is_giukhoangcachchimuctieupk": self._is_giukhoangcachchimuctieupk,
             "_is_taphoa": self._is_taphoa,
             "_is_timmuctieuchung": self._is_timmuctieuchung,
@@ -1066,6 +1112,11 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             if "_khoangcachgiuketancong" in thietlap: self.thietlap_khoangcachgiuketancong(thietlap["_khoangcachgiuketancong"])
             if "_mauchaytron" in thietlap: self.thietlap_mauchaytron(thietlap["_mauchaytron"])
             if "_mauhetchaytron" in thietlap: self.thietlap_mauhetchaytron(thietlap["_mauhetchaytron"])
+            if "_is_doiphapbaotheomau" in thietlap: self._is_doiphapbaotheomau = bool(thietlap["_is_doiphapbaotheomau"])
+            if "_is_xoayvongtrao" in thietlap: self._is_xoayvongtrao = bool(thietlap["_is_xoayvongtrao"])
+            if "_mauphapbaovua" in thietlap: self.thietlap_mauphapbaovua(thietlap["_mauphapbaovua"])
+            if "_mauphapbaothap" in thietlap: self.thietlap_mauphapbaothap(thietlap["_mauphapbaothap"])
+            if "_dotrephapbao" in thietlap: self.thietlap_dotrephapbao(thietlap["_dotrephapbao"])
             if "_is_giukhoangcachchimuctieupk" in thietlap: self._is_giukhoangcachchimuctieupk = thietlap["_is_giukhoangcachchimuctieupk"]
             if "_is_taphoa" in thietlap: self._is_taphoa = thietlap["_is_taphoa"]
             if "_is_timmuctieuchung" in thietlap: self._is_timmuctieuchung = thietlap["_is_timmuctieuchung"]
@@ -1172,6 +1223,28 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
     def thietlap_mauhetchaytron(self, phantram):
         self._mauhetchaytron = min(100, max(1, int(float(phantram))))
 
+    def battat_doiphapbaotheomau(self):
+        self._is_doiphapbaotheomau = not self._is_doiphapbaotheomau
+        if self._is_doiphapbaotheomau:
+            phatam("Bật đổi pháp bảo theo sinh lực")
+        else:
+            phatam("Tắt đổi pháp bảo theo sinh lực")
+
+    def battat_xoayvongtrao(self):
+        self._is_xoayvongtrao = not self._is_xoayvongtrao
+        phatam("Bật xoay vòng Trảo theo khí huyết" if self._is_xoayvongtrao else "Tắt xoay vòng Trảo theo khí huyết")
+
+    # Ba ngưỡng đổi pháp bảo theo sinh lực: không ép thấp < vừa ở đây (nạp cấu hình đặt lần lượt từng ô sẽ bị kẹp sai);
+    # _laymucphapbaotheomau tự xếp lại khi dùng
+    def thietlap_mauphapbaovua(self, phantram):
+        self._mauphapbaovua = min(95, max(5, int(float(phantram))))
+
+    def thietlap_mauphapbaothap(self, phantram):
+        self._mauphapbaothap = min(90, max(1, int(float(phantram))))
+
+    def thietlap_dotrephapbao(self, phantram):
+        self._dotrephapbao = min(50, max(0, int(float(phantram))))
+
     def battat_sapxephanhtrang(self):
         if self._is_dangsapxephanhtrang:
             self._ketthucsapxephanhtrang("Dừng sắp xếp hành trang")
@@ -1179,10 +1252,12 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._is_dangsapxephanhtrang = True
         self._thoidiembatdausapxephanhtrang = time.time()
         self._thoidiemsapxephanhtranggannhat = 0.
+        self._anhhanhtrangsapxep = None
         self._solandichuyensapxep = 0
         self._lenhsapxepgannhat = None
         self._solanlaplenhsapxep = 0
         self._xoayvongsapxep = None
+        self._descsapxep_map = {}
         phatam("Bắt đầu sắp xếp hành trang")
 
     def _ketthucsapxephanhtrang(self, thongbao):
@@ -1303,6 +1378,20 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         else:
             phatam("Tắt tự động sử dụng kỹ năng")
 
+    def battat_is_tudongsudungvatpham(self):
+        self._is_tudongsudungvatpham = not self._is_tudongsudungvatpham
+        if self._is_tudongsudungvatpham:
+            phatam("Bật tự động sử dụng vật phẩm")
+        else:
+            phatam("Tắt tự động sử dụng vật phẩm")
+
+    def battat_is_tudongnhatvatpham(self):
+        self._is_tudongnhatvatpham = not self._is_tudongnhatvatpham
+        if self._is_tudongnhatvatpham:
+            phatam("Bật tự động nhặt đồ")
+        else:
+            phatam("Tắt tự động nhặt đồ")
+
     def battat_chidungtudongtancong(self):
         self._is_chidungtudongtancong = not self._is_chidungtudongtancong
         if self._is_chidungtudongtancong:
@@ -1355,6 +1444,21 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         # Nút "Huỷ tổ đội 1 lần" trên giao diện (phím tắt không huỷ): chỉ thôi mời, nhóm hiện tại giữ nguyên, thành viên thôi rời nhóm / chờ mời
         if self._todoimotlan:
             self._ketthuctodoimotlan("Đã huỷ tổ đội 1 lần (nhóm giữ nguyên)")
+
+    def battat_is_dungimdanh(self):
+        self._is_dungimdanh = not self._is_dungimdanh
+        # Chặn ngay ở tầng môi trường (mọi hàm đi theo ô / tìm đường / vector), không chờ vòng di chuyển kế tiếp
+        self.moitruong.set_is_vohieuhoadichuyen(self._is_dungimdanh)
+        if self._is_dungimdanh:
+            # Bỏ yêu cầu đi đang dở và huỷ đích tự động tìm đường của game (đích click của người chơi không đụng tới)
+            self._yeucautancong = None
+            self._yeucautimmuctieuchung = None
+            self.moitruong.action_ngungtudongtimduong()
+            print("[ĐỨNG IM ĐÁNH] Bật: không tự di chuyển, chỉ đánh mục tiêu trong tầm")
+            phatam("Bật đứng im đánh")
+        else:
+            print("[ĐỨNG IM ĐÁNH] Tắt")
+            phatam("Tắt đứng im đánh")
 
     def battat_is_tudongtheosau(self):
         self._is_tudongtheosau = not self._is_tudongtheosau

@@ -13,7 +13,7 @@
 #           chừa lại trong túi (tính theo tên món), "ghichu": ...}.
 #           Luật cũ trong "luat" có "hanhdong": "catkho" (chuyển hẳn sang) hoặc "is_catkho": true (chép sang, luật cũ giữ hành động) tự
 #           chuyển vào đây khi file chưa có "catkho"
-#   "muabu": đứng gần NPC ở Tân Thủ Thôn mà còn ít hơn "duoi" món (đếm cả các chồng) thì mua cho đủ "muatoi". Mỗi mục: {"bat": true,
+#   "muabu": đứng gần NPC (hoặc Trân Bảo Khố, mua bằng KNB ở đâu cũng được) mà còn ít hơn "duoi" món (đếm cả các chồng) thì mua cho đủ "muatoi". Mỗi mục: {"bat": true,
 #           "vatpham": tên (trong túi), "tencuahang": tên trong cửa hàng nếu khác ("" = như "vatpham"), "npc": tên / danh hiệu NPC bán,
 #           "duoi": N, "muatoi": M, (ô / giá bot tự tra theo tên trong cửa hàng; "o" / "dongia" của bản cũ bỏ đi)
 #           "thapnhat": còn <= chừng này (mặc định THAPNHATMACDINH) thì đang farm (bật Tự động về bán rác) cũng chạy về Tân Thủ Thôn mua
@@ -28,8 +28,19 @@
 #           vẫn nhặt khi đang theo sau. Không khớp luật nào thì còn xét đồ sư môn, phẩm chất (màu tên). Chuyển từ VATPHAMKHONGNHATs /
 #           VATPHAMUUTIENNHATs / VATPHAMTUDONGNHATs / VATPHAMTUDONGNHATFARMs ở hangso_xq (2026-11-01), file cũ chưa có "nhat" thì lấy
 #           NHATMACDINH
+#   "dung": tự động sử dụng vật phẩm (tactu_vatpham_xq.action_tudongsudungvatpham, cần bật ô "Tự động sử dụng vật phẩm"): MỌI luật bật
+#           đều được xét mỗi lượt (không phải luật đầu tiên). Luật đủ điều kiện thì dùng món đầu tiên trong "vatpham" còn trong túi và đã
+#           hết thời gian hồi. Mỗi luật: {"bat": true, "vatpham": [tên đúng, ưu tiên từ trên], "sinhluc": dùng khi sinh lực < x% (0 = không
+#           xét), "matsinhluc": và mất ít nhất N sinh lực, "noiluc" / "matnoiluc" như trên cho nội lực, "theluc": thể lực ≤ N (-1 = không
+#           xét), "hieuung": điều kiện hiệu ứng (TENHIEUUNGDUNG), "noi": nơi dùng (TENNOIDUNG), "monphai": "" = mọi môn phái,
+#           "chikhidanh": chỉ khi bật Tự động sử dụng kỹ năng, "khongphobanrieng": không dùng ở Lăng Ly Sơn / Phong Yêu Kính / Tập Kích,
+#           "giancach": tối thiểu chừng này giây giữa 2 lần dùng của luật, "ghichu": ...}. Có nhiều điều kiện thì phải đủ hết.
+#           File cũ chưa có "dung" thì lấy DUNGMACDINH (đúng các điều kiện viết cứng trước đây, chuyển sang 2026-11-14).
+#           Pháp bảo theo sinh lực, An Xá Phù, bảo thú vật phẩm vẫn viết cứng (có tuỳ chọn riêng)
 import copy
+import functools
 import json
+import time
 import os
 import sys
 import threading
@@ -42,7 +53,7 @@ from hangso_xq import (HACCAU, LAMCAU, HOACAU, HONGCAU, TUSAMDON, CAPCUUDON, HOA
                        KIMTANGTAN, KHIMACHDON, XALOITU, NGANHANHTU, TUTINHDON, PHUCSINHDON, THANHTAMDAN, KHUMATAN, THILUYENDON, THILUYENQUA,
                        CAOCAPBAOTHUTHUCPHAM, ANXAPHU, NHANSAM, TAITAOHOAN, HOITHANHPHU, THIENLYHUUTINH, PHIHANHPHU, THOHANHCHAU, CAOBOCTACDAN,
                        TANGBAODO, THIENNGUYENDON, THIENNGUYENDAN, HOIBANGPHU, TINHNGUYENDON, CUONGTHIPHU, NGUYENLIEULUYENDONs,
-                       CHUTIEMTAPHOA, CHUTUULAU, LAOTUU, DUAHAU)
+                       CHUTIEMTAPHOA, CHUTUULAU, LAOTUU, DUAHAU, TRIDUOC, PHUCDUOC, LONGTIENTHAO, HOATLACHOAN, CAPCUUDON)
 
 HANHDONG_GIU = "giu"
 HANHDONG_BAN = "ban"
@@ -68,6 +79,28 @@ NHAT_UUTIEN = "uutien"
 NHAT_KHONGNHAT = "khongnhat"
 TENHANHDONGNHAT = {NHAT_NHAT: "Nhặt", NHAT_UUTIEN: "Nhặt ưu tiên", NHAT_KHONGNHAT: "Không nhặt"}
 DIEUKIENNHATs = ("ten", "tenchua")
+# Nơi dùng của luật "dung" (bản đồ PK = không thuộc BANDOKHONGPKs; phó bản = BANDOPHOBANs khi không đang PK ở bản đồ PK)
+NOI_MOINOI = "moinoi"
+NOI_BANDOPK = "bandopk"
+NOI_DANGPK = "dangpk"
+NOI_KHAIKHOANG = "khaikhoang"
+NOI_PHOBAN = "phoban"
+NOI_KHAC = "khac"
+TENNOIDUNG = {NOI_MOINOI: "Mọi nơi", NOI_BANDOPK: "Bản đồ PK", NOI_DANGPK: "Bản đồ PK, đang bật PK",
+              NOI_KHAIKHOANG: "Bản đồ PK, đang bật PK hoặc khai khoáng", NOI_PHOBAN: "Phó bản (không đang PK)",
+              NOI_KHAC: "Nơi khác (không đang PK, không phó bản)"}
+# Điều kiện hiệu ứng của luật "dung": "thieu_..." = chỉ dùng khi CHƯA có hiệu ứng của món (buff), "co_..." / "bikhongche" = khi đang có.
+# Mã hiệu ứng ứng với từng khoá ở tactu_vatpham_xq (HIEUUNGLUATDUNG)
+HIEUUNG_KHONG = ""
+TENHIEUUNGDUNG = {HIEUUNG_KHONG: "Không xét", "thieu_huyetthach": "Chưa có hiệu ứng Huyết Thạch",
+                  "thieu_phapluc": "Chưa có hiệu ứng Pháp Lực Thạch", "thieu_thiennguyen": "Chưa có hiệu ứng Thiên Nguyên Đơn",
+                  "thieu_nganhanh": "Chưa có hiệu ứng Ngân Hạnh Tử", "thieu_xaloi": "Chưa có hiệu ứng Xá Lợi Tử",
+                  "co_datinh": "Đang có Dã Tính Cuồng Lực", "thieu_datinh": "Chưa có Dã Tính Cuồng Lực",
+                  "bikhongche": "Đang dính Thực Cốt / Thực Giáp / Thiêu Đốt..."}
+TRUONGSODUNG = ("sinhluc", "matsinhluc", "noiluc", "matnoiluc", "theluc", "giancach")
+# Giãn cách mặc định giữa 2 lần dùng của 1 luật (giây): bằng THOIGIANCHOXACNHANHOIVATPHAM, gửi rồi mà chưa vào hồi thì chừng này giây
+# sau gửi lại
+GIANCACHDUNGMACDINH = 1.
 
 
 def _khongtrung(*tens):
@@ -125,7 +158,47 @@ MUABUMACDINH = [
     {"vatpham": DUAHAU, "npc": CHUTUULAU, "duoi": 30, "muatoi": 30, "chikhi": CHIKHI_TRIEUHOIBAOTHU},
 ]
 
-_cache = {"dulieu": None, "mtime": None}
+# Dùng vật phẩm viết cứng trước đây trong tactu_vatpham_xq.action_tudongsudungvatpham (cùng điều kiện, cùng thứ tự)
+_HOISINHLUCPK = [TRIDUOC, THILUYENQUA, THILUYENDON, CAPCUUDON, HOATLACHOAN]
+_HOINOILUCPK = [PHUCDUOC, LONGTIENTHAO, THILUYENDON, HOATTAMDON]
+DUNGMACDINH = [
+    {"vatpham": [TIEUPHAPLUCTHACH], "noiluc": 50, "hieuung": "thieu_phapluc", "noi": NOI_BANDOPK, "giancach": 2.5,
+     "ghichu": "Pháp Lực Thạch"},
+    {"vatpham": [TIEUHUYETTHACH], "sinhluc": 75, "hieuung": "thieu_huyetthach", "noi": NOI_KHAIKHOANG, "giancach": 2.5,
+     "ghichu": "Huyết Thạch khi PK / khai khoáng"},
+    {"vatpham": [TIEUHUYETTHACH], "sinhluc": 50, "hieuung": "thieu_huyetthach", "monphai": "maoson", "giancach": 2.5,
+     "ghichu": "Huyết Thạch Mao Sơn"},
+    {"vatpham": [TIEUHUYETTHACH], "sinhluc": 25, "hieuung": "thieu_huyetthach", "giancach": 2.5, "ghichu": "Huyết Thạch máu thấp"},
+    {"vatpham": [THIENNGUYENDON], "hieuung": "thieu_thiennguyen", "noi": NOI_DANGPK, "monphai": "daohoanguyen", "giancach": 2.5,
+     "ghichu": "Buff khi PK"},
+    {"vatpham": [NGANHANHTU], "hieuung": "thieu_nganhanh", "noi": NOI_DANGPK, "giancach": 2.5, "ghichu": "Buff khi PK"},
+    {"vatpham": [XALOITU], "hieuung": "thieu_xaloi", "noi": NOI_DANGPK, "giancach": 2.5, "ghichu": "Buff khi PK"},
+    # Hồi sinh lực: mỗi luật 1 cặp, đang Dã Tính Cuồng Lực (Đào Hoa) thì ≤ 15% mới dùng (người dùng 2026-11-14). Sinh lực đọc ra luôn
+    # chẵn (x2) nên "< 15%" cũng là ≤ 15%
+    {"vatpham": list(_HOISINHLUCPK), "sinhluc": 75, "matsinhluc": 2500, "hieuung": "thieu_datinh", "noi": NOI_DANGPK, "chikhidanh": True,
+     "khongphobanrieng": True, "ghichu": "Hồi sinh lực khi PK"},
+    {"vatpham": list(_HOISINHLUCPK), "sinhluc": 15, "matsinhluc": 2500, "hieuung": "co_datinh", "noi": NOI_DANGPK, "chikhidanh": True,
+     "khongphobanrieng": True, "ghichu": "Hồi sinh lực khi PK (Dã Tính)"},
+    {"vatpham": _HOISINHLUCPK[::-1], "sinhluc": 35, "matsinhluc": 2500, "hieuung": "thieu_datinh", "noi": NOI_PHOBAN, "khongphobanrieng": True,
+     "ghichu": "Hồi sinh lực ở phó bản"},
+    {"vatpham": _HOISINHLUCPK[::-1], "sinhluc": 15, "matsinhluc": 2500, "hieuung": "co_datinh", "noi": NOI_PHOBAN, "khongphobanrieng": True,
+     "ghichu": "Hồi sinh lực ở phó bản (Dã Tính)"},
+    {"vatpham": [HOATLACHOAN], "sinhluc": 75, "hieuung": "thieu_datinh", "noi": NOI_KHAC, "chikhidanh": True, "khongphobanrieng": True,
+     "ghichu": "Hồi sinh lực"},
+    {"vatpham": [HOATLACHOAN], "sinhluc": 15, "hieuung": "co_datinh", "noi": NOI_KHAC, "chikhidanh": True, "khongphobanrieng": True,
+     "ghichu": "Hồi sinh lực (Dã Tính)"},
+    {"vatpham": list(_HOINOILUCPK), "noiluc": 75, "matnoiluc": 3000, "noi": NOI_DANGPK, "chikhidanh": True, "khongphobanrieng": True,
+     "ghichu": "Hồi nội lực khi PK"},
+    {"vatpham": _HOINOILUCPK[::-1], "noiluc": 35, "matnoiluc": 3000, "noi": NOI_PHOBAN, "chikhidanh": True, "khongphobanrieng": True,
+     "ghichu": "Hồi nội lực ở phó bản"},
+    {"vatpham": [KHUMATAN, THANHTAMDON], "hieuung": "bikhongche", "noi": NOI_DANGPK, "chikhidanh": True, "ghichu": "Giải hiệu ứng xấu"},
+    {"vatpham": [BATTIENDON], "theluc": 5, "giancach": 30., "ghichu": "Hồi thể lực"},
+]
+
+_cache = {"dulieu": None, "mtime": None, "lankiemtra": 0.}
+# tailuat() xem file đổi chưa tối đa mỗi chừng này giây (mỗi lần xem là 2 lệnh hệ thống exists + getmtime, mà mỗi món mỗi lượt gọi
+# tailuat vài lần; py-spy 2026-11-12: os.path.exists ~1.7% CPU). Sửa luật trên giao diện thì chậm nhất chừng này giây mới áp
+GIANCACHKIEMTRAFILELUAT = 1.
 _khoa = threading.Lock()
 
 
@@ -134,8 +207,10 @@ def duongdanluat():
     return os.path.join(thumucgoc, "_internal", "luattuido.json")
 
 
+@functools.lru_cache(maxsize = 8192)
 def chuanhoa(chu):
-    # So khớp không phân biệt hoa thường, dựng sẵn dấu (NFC), gộp khoảng trắng
+    # So khớp không phân biệt hoa thường, dựng sẵn dấu (NFC), gộp khoảng trắng. Nhớ kết quả: hàm thuần, mà mỗi lượt vứt / bán / cất kho
+    # gọi lại cho cùng tên món, cùng chuỗi luật, cả đoạn mô tả dài, với mọi luật x mọi món (py-spy 2026-11-12 ~2% CPU tiến trình bot)
     return " ".join(unicodedata.normalize("NFC", str(chu or "")).lower().split())
 
 
@@ -218,6 +293,49 @@ def _chuanhoanhat(luat):
     return {k: luat[k] for k in ("bat", "hanhdong", *DIEUKIENNHATs, "chibanrac", "ghichu")}
 
 
+def _chuanhoadung(luat):
+    luat = dict(luat)
+    kq = {"bat": bool(luat.get("bat", True)), "vatpham": _danhsach(luat.get("vatpham"))}
+    for truong in TRUONGSODUNG:
+        macdinhso = -1 if truong == "theluc" else GIANCACHDUNGMACDINH if truong == "giancach" else 0
+        try:
+            so = float(luat.get(truong, macdinhso))
+        except (TypeError, ValueError):
+            so = macdinhso
+        kq[truong] = so if truong == "giancach" else int(so)
+    kq["giancach"] = max(0.5, kq["giancach"])
+    kq["theluc"] = max(-1, kq["theluc"])
+    for truong in ("sinhluc", "noiluc", "matsinhluc", "matnoiluc"):
+        kq[truong] = max(0, kq[truong])
+    kq["hieuung"] = luat.get("hieuung") if luat.get("hieuung") in TENHIEUUNGDUNG else HIEUUNG_KHONG
+    kq["noi"] = luat.get("noi") if luat.get("noi") in TENNOIDUNG else NOI_MOINOI
+    kq["monphai"] = str(luat.get("monphai") or "").strip()
+    kq["chikhidanh"] = bool(luat.get("chikhidanh", False))
+    kq["khongphobanrieng"] = bool(luat.get("khongphobanrieng", False))
+    kq["ghichu"] = str(luat.get("ghichu") or "")
+    return kq
+
+
+def motadieukiendung(luat):
+    # 'Sinh lực < 75% · mất ≥ 2500 · Chưa có hiệu ứng Huyết Thạch' cho giao diện
+    phans = []
+    if luat["sinhluc"]:
+        phans.append(f"Sinh lực < {luat['sinhluc']}%")
+    if luat["matsinhluc"]:
+        phans.append(f"mất ≥ {luat['matsinhluc']} sinh lực")
+    if luat["noiluc"]:
+        phans.append(f"Nội lực < {luat['noiluc']}%")
+    if luat["matnoiluc"]:
+        phans.append(f"mất ≥ {luat['matnoiluc']} nội lực")
+    if luat["theluc"] >= 0:
+        phans.append(f"Thể lực ≤ {luat['theluc']}")
+    if luat["hieuung"]:
+        phans.append(TENHIEUUNGDUNG[luat["hieuung"]])
+    if luat["chikhidanh"]:
+        phans.append("đang bật đánh")
+    return " · ".join(phans) if phans else "Luôn (mỗi lần hết hồi)"
+
+
 def _chuanhoa(dulieu):
     luats, catkhos = list(dulieu.get("luat") or []), dulieu.get("catkho")
     if catkhos is None:
@@ -228,9 +346,13 @@ def _chuanhoa(dulieu):
     if nhats is None:
         # File cũ chưa có bảng nhặt: lấy danh sách nhặt viết cứng trước đây
         nhats = copy.deepcopy(NHATMACDINH)
+    dungs = dulieu.get("dung")
+    if dungs is None:
+        # File cũ chưa có bảng dùng vật phẩm: lấy các điều kiện viết cứng trước đây
+        dungs = copy.deepcopy(DUNGMACDINH)
     return {"luat": [_chuanhoaluat(l) for l in luats], "muabu": [_chuanhoamuabu(m) for m in dulieu.get("muabu") or []],
             "catkho": [_chuanhoacatkho(l) for l in catkhos], "is_catkhosauban": bool(dulieu.get("is_catkhosauban", True)),
-            "nhat": [_chuanhoanhat(l) for l in nhats]}
+            "nhat": [_chuanhoanhat(l) for l in nhats], "dung": [_chuanhoadung(l) for l in dungs]}
 
 
 def macdinh():
@@ -240,8 +362,12 @@ def macdinh():
 def tailuat():
     # Đọc lại khi file đổi. Chưa có file thì tạo từ luật mặc định; file hỏng thì dùng bản đọc được gần nhất, chưa đọc được lần nào thì
     # dùng luật mặc định (không bao giờ chạy với bộ luật rỗng do lỗi đọc: rỗng là bán hết)
-    duongdan = duongdanluat()
     with _khoa:
+        bayh = time.monotonic()
+        if _cache["dulieu"] and bayh - _cache["lankiemtra"] < GIANCACHKIEMTRAFILELUAT:
+            return _cache["dulieu"]
+        _cache["lankiemtra"] = bayh
+        duongdan = duongdanluat()
         if not os.path.exists(duongdan):
             try:
                 luuluat(macdinh())
@@ -268,6 +394,8 @@ def luuluat(dulieu):
     with open(duongdan + ".tmp", "w", encoding = "utf-8") as file:
         json.dump(_chuanhoa(dulieu), file, ensure_ascii = False, indent = 2)
     os.replace(duongdan + ".tmp", duongdan)
+    # Vừa lưu thì lần tailuat() kế tiếp xem lại file ngay (không chờ GIANCACHKIEMTRAFILELUAT)
+    _cache["lankiemtra"] = 0.
 
 
 def is_cancanmota(luat):

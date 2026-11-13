@@ -70,6 +70,9 @@ CHUKY = {
     "HOOK_VEHIEUUNGDAT2": ("ma", "F7 7E 0C 8B 16 33 FF", 3, 0x4fe8e),  # vẽ hiệu ứng mặt đất vòng 2: mov edx,[esi]; xor edi,edi; mov [esp+0x10],ecx (8 byte)
     "HOOK_VETILENEN1": ("ma", "8B 54 24 2C 8B 4C 24 14", 0, 0x535bf),  # vẽ tile nền ở luồng nền: sau call lấy khung tile, mov edx,[esp+0x2C]; mov ecx,[esp+0x14] (8 byte), eax = khung
     "HOOK_VETILENEN2": ("ma", "8B 54 24 30 50 8B CB", 0, 0x9bafe),  # vẽ tile nền: sau call lấy khung tile, mov edx,[esp+0x30]; push eax (5 byte), eax = khung
+    "HOOK_VELOPHIEUUNGNV": ("ma", "C6 44 24 3C 01 8B 04 85 ?? ?? ?? ??", 5, 0x15029),  # vòng vẽ 10 lớp hiệu ứng trên đối tượng: mov eax,[eax*4+0x5BE614] (7 byte), eax = chỉ số sprite lớp; bỏ lớp -> +0xAC
+    "HOOK_VELOPDACBIETNV": ("ma", "FF 15 ?? ?? ?? ?? 8B 94 AE A0 12 00 00", 6, 0x15194),  # vẽ lớp hiệu ứng đặc biệt (mã 9003) sau vòng lớp: mov edx,[esi+ebp*4+0x12A0] (7 byte); bỏ vẽ -> +0x2D
+    "HOOK_VECUASO": ("ma", "8B 06 39 78 1C 7E 3E", 0, 0x4b2ae),  # vòng vẽ cửa sổ giao diện: sau call vẽ cửa sổ, mov eax,[esi]; cmp [eax+0x1C],edi (5 byte), esi = ô mảng cửa sổ
     "DSHIEUUNGDAT": ("bien", "8B 3D ?? ?? ?? ?? 39 1F 75 2C", 2, 0x376ca4),  # đầu danh sách hiệu ứng mặt đất (trận pháp...), nút 0x2C byte, kế tiếp +0x28
     "MAHIEUUNGDAT": ("bien", "53 55 57 B8 ?? ?? ?? ?? 39 30", 4, 0x376a48),  # bộ đệm 100 mã hiệu ứng (perform/<mã>) đã nạp sprite, ô i ứng với BANGSPRITEHIEUUNG[i + 1]
     "BANGSPRITEHIEUUNG": ("bien", "8B 04 85 ?? ?? ?? ?? 8B 48 1C", 3, 0x1be614),  # bảng con trỏ sprite hiệu ứng theo chỉ số (chỉ số = ô bộ đệm + 1)

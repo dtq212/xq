@@ -212,7 +212,7 @@ class ThongKe:
 
     def _step(self):
         moitruong = self.moitruong
-        if not moitruong.get_is_nhanvattontai() or moitruong.get_is_dangmatketnoi():
+        if not moitruong.get_is_nhanvattontai():
             # Đang tải / mất kết nối: số đọc được không tin được, lấy mẫu lại từ đầu khi vào lại
             self._datlaimau()
             return

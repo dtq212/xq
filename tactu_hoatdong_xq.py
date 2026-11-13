@@ -127,14 +127,9 @@ class TacTuHoatDong:
         idcungnhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms() or ()
         is_maptrain = self.moitruong.get_idbandohientai() not in BANDOKHONGPKs
         nguoila = None
-        i = -1
-        while True:
-            i += 1
-            diachidoituong = self.moitruong.get_diachicosothongtindoituongx(i)
-            if not diachidoituong:
-                return nguoila
-            # Bỏ các ô đối tượng còn sót (nhân vật đã rời đi / chưa tải xong) để không báo nhầm người lạ
-            if not self.moitruong.get_is_nhanvattontai(diachidoituong) or not self.moitruong.get_is_nguoichoi(diachidoituong):
+        # Bản chụp chỉ có nhân vật còn tồn tại: bỏ được ô đối tượng còn sót (nhân vật đã rời đi / chưa tải xong), không báo nhầm người lạ
+        for diachidoituong in self.moitruong.get_diachinhanvattontais():
+            if not self.moitruong.get_is_nguoichoi(diachidoituong):
                 continue
             idnguoichoi = self.moitruong.get_idnguoichoi(diachidoituong)
             if self._is_nguoichoinoibo(idnguoichoi, idnhanvathientai, idcungmays, idcungnhoms):
@@ -147,6 +142,7 @@ class TacTuHoatDong:
                 return f"{tendoituong} ẩn thân", THOIGIANTAMNGUNGANTHAN
             if is_maptrain and nguoila is None:
                 nguoila = f"người lạ {tendoituong}", THOIGIANTAMNGUNGNGUOILA
+        return nguoila
 
     def _layanthantucuasokhac(self):
         # Nhân vật khác cùng bản đồ vừa tự phát hiện (trong vài giây gần đây) => (lý do, số giây) để tạm ngưng theo.

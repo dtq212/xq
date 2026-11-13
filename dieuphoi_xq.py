@@ -5,7 +5,7 @@ import threading
 import time
 
 from hangso_xq import IDKYNANGVANKHIs, IS_XOAYVONGLENHGIUACACBOT, KHOANGGIULUOTLENH, THOIGIANNHUONGLUOTKHIRANH, IS_XOAYVONGBATDAUDICHUYEN, KHOANGNGHIBATDAUDICHUYEN, THOIGIANCHOLUOTTOIDA, THOIGIANGIUKYNANGMUCTIEU, \
-    KHOANGNGHIHOITHANHGIUACACBOT, THOIGIANGIUHOITHANHTOIDA
+    KHOANGCACHHOITHANHGIUACACBOT
 from tienich_xq import _thumucthietlap
 
 # Bot đăng ký chờ lượt mà quá lâu không làm mới (process đã chết) thì bỏ qua
@@ -335,8 +335,9 @@ class GiuHoiThanh:
     """Chỉ 1 bot (cửa sổ game cùng máy) được Hồi Thành Phù / Tín Vật / Hồi Môn Phái tại 1 thời điểm (người dùng dặn 2026-11-06:
     2 nhân vật cùng biến mất 1 lúc rất lộ).
 
-    Dùng chung khoá + dict trangthai của DieuPhoiLuot: trangthai[KHOAGIUHOITHANH] = (hwnd, hết hạn). Bot gửi lệnh thì giữ
-    THOIGIANGIUHOITHANHTOIDA giây (phủ chờ + vận khí), hết vận khí thì rút lại còn khoảng nghỉ ngẫu nhiên KHOANGNGHIHOITHANHGIUACACBOT.
+    Dùng chung khoá + dict trangthai của DieuPhoiLuot: trangthai[KHOAGIUHOITHANH] = (hwnd, hết hạn). Khoảng cách tính từ lúc GỬI
+    lệnh (người dùng dặn 2026-11-14): bot gửi lệnh thì giữ ngẫu nhiên KHOANGCACHHOITHANHGIUACACBOT giây, hết là bot khác dùng được
+    dù bot trước còn vận khí. Lệnh không vào vận khí thì nhả sớm (ketthuc).
     Bot chết giữa chừng thì chỗ tự hết hạn.
     """
 
@@ -356,8 +357,10 @@ class GiuHoiThanh:
             return None
         return dangiu[0], dangiu[1] - thoidiemhientai
 
-    def thugiu(self, thoigian = THOIGIANGIUHOITHANHTOIDA):
-        # True: đã giữ chỗ (trống / hết hạn / chính mình giữ), được gửi lệnh. False: bot khác đang Hồi Thành / vừa Hồi Thành xong
+    def thugiu(self, thoigian = None):
+        # True: đã giữ chỗ (trống / hết hạn / chính mình giữ), được gửi lệnh. False: bot khác vừa dùng chưa đủ khoảng cách
+        if thoigian is None:
+            thoigian = random.uniform(*KHOANGCACHHOITHANHGIUACACBOT)
         thoidiemhientai = time.time()
         with self.khoa:
             dangiu = self.trangthai.get(KHOAGIUHOITHANH)
@@ -367,11 +370,12 @@ class GiuHoiThanh:
         return True
 
     def ketthuc(self, is_davao = True):
-        # Hết vận khí (hoặc lệnh không vào vận khí): giữ thêm khoảng nghỉ ngẫu nhiên rồi nhường. Không vào vận khí (nhân vật không biến
-        # mất) thì nghỉ ngắn hơn
-        nghitoithieu, nghitoida = KHOANGNGHIHOITHANHGIUACACBOT
-        nghi = random.uniform(nghitoithieu, nghitoida) if is_davao else random.uniform(1., 3.)
+        # Hết vận khí: khoảng cách đã tính từ lúc gửi lệnh (thugiu) nên không giữ thêm. Lệnh không vào vận khí (nhân vật không biến
+        # mất) thì nhả sớm sau 1-3s cho bot khác khỏi chờ
+        if is_davao:
+            return
+        nghi = random.uniform(1., 3.)
         with self.khoa:
             dangiu = self.trangthai.get(KHOAGIUHOITHANH)
             if dangiu and dangiu[0] == self.idcuaso:
-                self.trangthai[KHOAGIUHOITHANH] = (self.idcuaso, min(dangiu[1], time.time() + nghi) if not is_davao else time.time() + nghi)
+                self.trangthai[KHOAGIUHOITHANH] = (self.idcuaso, min(dangiu[1], time.time() + nghi))

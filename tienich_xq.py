@@ -81,8 +81,46 @@ def to_hex(val, nbits):
     return hex((val + (1 << nbits)) % (1 << nbits))
 
 
+# Đọc bộ nhớ gọi thẳng kernel32.ReadProcessMemory thay cho pymem: py-spy 2026-11-12 đọc bộ nhớ là ~37% CPU tiến trình bot, mỗi lần
+# pymem.read_int đi qua 3 tầng hàm + SetLastError + tạo c_void_p + bắt / đổi lỗi (đo trên chính tiến trình: pymem 2.6 µs, gọi thẳng
+# 0.95 µs). Lỗi vẫn báo pymem.exception.MemoryReadError như pymem (các chỗ except PymemError giữ nguyên). Đối tượng không phải Pymem
+# (không có process_handle) thì dùng hàm của nó như cũ
+import pymem.exception
+
+_kernel32 = ctypes.WinDLL("kernel32", use_last_error = True)
+_ReadProcessMemory = _kernel32.ReadProcessMemory
+_ReadProcessMemory.argtypes = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p)
+_ReadProcessMemory.restype = ctypes.c_int
+
+
+def _handle(process):
+    handle = getattr(process, "process_handle", None)
+    if handle is None and hasattr(process, "process_handle"):
+        raise pymem.exception.ProcessError("You must open a process before calling this method")
+    return handle
+
+
+def _docvao(handle, address, bodem, n_bytes):
+    if not _ReadProcessMemory(handle, address, ctypes.byref(bodem), n_bytes, None):
+        raise pymem.exception.MemoryReadError(address, n_bytes, ctypes.get_last_error())
+
+
+def _docbytes(process, address, n_bytes):
+    handle = _handle(process)
+    if handle is None:
+        return process.read_bytes(address, n_bytes)
+    bodem = ctypes.create_string_buffer(n_bytes)
+    _docvao(handle, address, bodem, n_bytes)
+    return bodem.raw
+
+
 def read_boolean(process, address):
-    return process.read_bool(address)
+    handle = _handle(process)
+    if handle is None:
+        return process.read_bool(address)
+    bodem = ctypes.c_bool()
+    _docvao(handle, address, bodem, 1)
+    return bodem.value
 
 
 def write_boolean(process, address, value):
@@ -90,7 +128,12 @@ def write_boolean(process, address, value):
 
 
 def read_int(process, address):
-    return process.read_int(address)
+    handle = _handle(process)
+    if handle is None:
+        return process.read_int(address)
+    bodem = ctypes.c_int()
+    _docvao(handle, address, bodem, 4)
+    return bodem.value
 
 
 def write_int(process, address, value):
@@ -98,7 +141,7 @@ def write_int(process, address, value):
 
 
 def read_short_int(process, address, n_bytes = 1):
-    return int.from_bytes(process.read_bytes(address, n_bytes), sys.byteorder)
+    return int.from_bytes(_docbytes(process, address, n_bytes), sys.byteorder)
 
 
 def write_short_int(process, address, value, n_bytes = 1):
@@ -106,7 +149,7 @@ def write_short_int(process, address, value, n_bytes = 1):
 
 
 def read_bytes(process, address, n_bytes):
-    return process.read_bytes(address, n_bytes)
+    return _docbytes(process, address, n_bytes)
 
 
 def read_chuoi(process, address, max_length):
@@ -115,7 +158,7 @@ def read_chuoi(process, address, max_length):
     raw_data = b""
     while len(raw_data) < max_length:
         diachi = address + len(raw_data)
-        chunk = process.read_bytes(diachi, min(max_length - len(raw_data), 0x1000 - diachi % 0x1000))
+        chunk = _docbytes(process, diachi, min(max_length - len(raw_data), 0x1000 - diachi % 0x1000))
         if b"\0" in chunk:
             return raw_data + chunk[:chunk.index(b"\0")]
         raw_data += chunk
@@ -136,7 +179,7 @@ def read_string(process, address, max_length = 2048):
     try:
         initial_size = 256
         if initial_size > max_length: initial_size = max_length
-        buffer = process.read_bytes(address, initial_size)
+        buffer = _docbytes(process, address, initial_size)
         null_index = buffer.find(b"\x00")
         if null_index != -1:
             raw_data = buffer[:null_index]
@@ -146,7 +189,7 @@ def read_string(process, address, max_length = 2048):
 
             while len(raw_data) < max_length:
                 try:
-                    chunk = process.read_bytes(address + current_offset, 128)
+                    chunk = _docbytes(process, address + current_offset, 128)
                     if b"\x00" in chunk:
                         raw_data += chunk[:chunk.index(b"\x00")]
                         break
@@ -297,8 +340,9 @@ def duongdanvatcanhoc():
     return os.path.join(os.path.dirname(_thumucthietlap()), "vatcanhoc.json")
 
 
-# Ô máy chủ không cho đi mà lưới vật cản của client ghi là đi được (rào chắn cố ý làm kẹt ở Chu Quốc), bot tự học khi đi mãi bị kéo về
-# (moitruong.action_dikhongcatgoc): {"<id bản đồ>": [[x, y], ...]}. Dùng chung mọi cửa sổ (mỗi cửa sổ 1 tiến trình): đọc lại khi file đổi
+# Ô máy chủ không cho đi mà lưới vật cản của client ghi là đi được (rào chắn cố ý làm kẹt ở Chu Quốc): {"<id bản đồ>": [[x, y], ...]}.
+# GHI TAY theo người dùng báo (2026-11-12 bỏ tự học: học nhầm hàng trăm ô; bị kéo về giờ chỉ chặn tạm trong bộ nhớ, log [NGHI VẬT CẢN]).
+# Bản đồ có ô ở đây thì mọi kiểu đi dùng A* của bot (TacTu._is_bandocochoket). Dùng chung mọi cửa sổ: đọc lại khi file đổi
 _vatcanhoc_cache = {"dulieu": {}, "thoidiemsua": None, "thoidiemkiemtra": 0.}
 
 

@@ -25,6 +25,8 @@ from tienich_xq import CANHBAOGANDAYs
 from uocluongmuctieu_xq import UocLuongMucTieu, CHUKYDOC as CHUKYUOCLUONG
 from danhhieumuctieu_xq import DanhHieuMucTieu, CHUKYGHI as CHUKYDANHHIEUMUCTIEU
 from hangso_xq import CHISONHANVAT_MAP
+from bandonho_xq import ThuThapBanDoNho
+from ngoaihinh_xq import NgoaiHinh, khoidong_loopngoaihinh
 
 # Khí Huyết, Ngoại Kháng, Nội Kháng, Ngoại Công, Nội Công (ô thấp mỗi cặp)
 DICHCHISOPHONGTHU = (CHISONHANVAT_MAP["Khí Huyết"][0], CHISONHANVAT_MAP["Ngoại Kháng"][0], CHISONHANVAT_MAP["Nội Kháng"][0],
@@ -81,7 +83,7 @@ def khoidong_looptodoimotlan(tactu, moitruong, stop):
     while not stop.is_set() and moitruong.get_is_cuasogametontai():
         is_dangchay = False
         try:
-            if moitruong.get_is_nhanvattontai() and not moitruong.get_is_dangmatketnoi():
+            if moitruong.get_is_nhanvattontai():
                 is_dangchay = tactu.action_todoimotlan()
         except Exception as e:
             print(f"[Loop TỔ ĐỘI 1 LẦN] Lỗi: {e}")
@@ -93,7 +95,7 @@ def khoidong_loopuocluongmuctieu(uocluong, moitruong, stop):
     # cùng lúc chiếm nhiều ô), chỉ đọc bộ nhớ
     while not stop.is_set() and moitruong.get_is_cuasogametontai():
         try:
-            if moitruong.get_is_nhanvattontai() and not moitruong.get_is_dangmatketnoi():
+            if moitruong.get_is_nhanvattontai():
                 uocluong.step()
         except Exception as e:
             print(f"[Loop ƯỚC LƯỢNG MỤC TIÊU] Lỗi: {e}")
@@ -104,9 +106,9 @@ def khoidong_loopdanhhieumuctieu(danhhieu, tactu, moitruong, stop):
     # Nối thông tin ước lượng vào đuôi tên mục tiêu đang chọn (danhhieumuctieu_xq), tắt ô / bot dừng thì trả tên gốc
     while not stop.is_set() and moitruong.get_is_cuasogametontai():
         try:
-            if moitruong.get_is_nhanvattontai() and not moitruong.get_is_dangmatketnoi():
+            if moitruong.get_is_nhanvattontai():
                 danhhieu.step(tactu._chedohienthongtinmuctieugame, tactu._mauhienthongtinmuctieugame,
-                              tactu._hanhdong[0] if tactu._is_hienhanhdongtrendau else "")
+                              tactu._hanhdong[0] if tactu._is_hienhanhdongtrendau else "", tactu._is_tatbot)
         except Exception as e:
             print(f"[Loop DANH HIỆU MỤC TIÊU] Lỗi: {e}")
             time.sleep(1)
@@ -149,10 +151,14 @@ class CuaSo:
         self.moitruong.action_thietlaphookcotnhiemvunpc()
         self.moitruong.action_thietlaphookvehieuungdat()
         self.moitruong.action_thietlaphookvetilenen()
-        self.moitruong.action_thietlaphookhoatanhtancong()
+        self.moitruong.action_thietlaphookvecuaso()
+        self.moitruong.action_thietlaphookverle()
+        self.moitruong.action_thietlaphookvehieuungnhanvat()
+        self.moitruong.action_gohookhoatanhtancong()
         self.tactu = TacTu(self.moitruong)
-        # Bot đọc gộp cả cửa sổ máy khác trong LAN (lan_xq), ghi vẫn vào máy này
-        self.tactu.shared_data = DuLieuNhieuMay(shared_data, shared_data_lan) if shared_data_lan is not None else shared_data
+        # Bot đọc gộp cả cửa sổ máy khác trong LAN (lan_xq), ghi vẫn vào máy này. Không bật LAN cũng bọc để đọc qua bản chụp nhớ tạm
+        # (bớt lượt hỏi qua tiến trình Manager)
+        self.tactu.shared_data = DuLieuNhieuMay(shared_data, shared_data_lan) if shared_data is not None else None
         self.tactu.idcuaso = idcuaso
         self.main_stop = threading.Event()
         self.thongke = ThongKe(self.moitruong, self.tactu)
@@ -163,6 +169,10 @@ class CuaSo:
         self.uocluongmuctieu = UocLuongMucTieu(self.moitruong)
         # Hiện số ước lượng đó ngay trong game, nối vào đuôi tên mục tiêu (chỉ client mình thấy)
         self.danhhieumuctieu = DanhHieuMucTieu(self.moitruong, self.tactu, shared_data, idcuaso)
+        # Dữ liệu cửa sổ Bản đồ nhỏ (bandonho_xq), chỉ gom khi giao diện bật cho nhân vật này
+        self.bandonho = ThuThapBanDoNho(self.moitruong, self.tactu)
+        # Ngoại hình chỉ mình thấy (ngoaihinh_xq): ghi đè ngoại trang / cánh / vũ khí / màu hào quang theo _internal/ngoaihinh.json
+        self.ngoaihinh = NgoaiHinh(self.moitruong)
 
         self.tennhanvat = None
         # (ID bản đồ, phó bản mượn ID, x, y) lần cuối toạ độ ổn định: vừa đổi bản đồ thì chia sẻ cái này thay cho toạ độ cũ lẫn mã bản đồ mới
@@ -181,6 +191,7 @@ class CuaSo:
             threading.Thread(target = khoidong_looptodoimotlan, args = [self.tactu, self.moitruong, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopuocluongmuctieu, args = [self.uocluongmuctieu, self.moitruong, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopdanhhieumuctieu, args = [self.danhhieumuctieu, self.tactu, self.moitruong, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_loopngoaihinh, args = [self.ngoaihinh, self.main_stop], daemon = True),
         )
 
         for luong in self.luongs:
@@ -315,6 +326,7 @@ class CuaSo:
                     "is_window_active": self.moitruong.get_is_cuasogamekichhoat(),
 
                     "_is_tudongtheosau": self.tactu._is_tudongtheosau,
+                    "_is_dungimdanh": self.tactu._is_dungimdanh,
                     "_idmuctieutheosau": self.tactu._idmuctieutheosau,
                     "_tenmuctieutheosau": self.tactu._tenmuctieutheosau,
                     "_is_tudongtodoi": self.tactu._is_tudongtodoi,
@@ -324,6 +336,8 @@ class CuaSo:
                     "_trangthaitodoimotlan": self.tactu._trangthaitodoimotlan,
                     "_is_tudongsudungkynang": self.tactu._is_tudongsudungkynang,
                     "_is_chidungtudongtancong": self.tactu._is_chidungtudongtancong,
+                    "_is_tudongsudungvatpham": self.tactu._is_tudongsudungvatpham,
+                    "_is_tudongnhatvatpham": self.tactu._is_tudongnhatvatpham,
                     "_is_uutienmuctieupk": self.tactu._is_uutienmuctieupk,
                     "_is_tudongtimkiemmuctieu": self.tactu._is_tudongtimkiemmuctieu,
                     "_is_tudonggomquai": self.tactu._is_tudonggomquai,
@@ -376,6 +390,11 @@ class CuaSo:
                     "_khoangcachgiuketancong": self.tactu._khoangcachgiuketancong,
                     "_mauchaytron": self.tactu._mauchaytron,
                     "_mauhetchaytron": self.tactu._mauhetchaytron,
+                    "_is_doiphapbaotheomau": self.tactu._is_doiphapbaotheomau,
+                    "_is_xoayvongtrao": self.tactu._is_xoayvongtrao,
+                    "_mauphapbaovua": self.tactu._mauphapbaovua,
+                    "_mauphapbaothap": self.tactu._mauphapbaothap,
+                    "_dotrephapbao": self.tactu._dotrephapbao,
                     "_is_giukhoangcachchimuctieupk": self.tactu._is_giukhoangcachchimuctieupk,
                     "_is_taphoa": self.tactu._is_taphoa,
                     "_is_timmuctieuchung": self.tactu._is_timmuctieuchung,
@@ -386,6 +405,7 @@ class CuaSo:
                     "_is_chaytoibuffthanhvien": self.tactu._is_chaytoibuffthanhvien,
                     "_is_diquocgiatanthutienco": self.tactu._is_diquocgiatanthutienco,
                     "_is_dangsapxephanhtrang": self.tactu._is_dangsapxephanhtrang,
+                    "_is_dangsapxepkho": self.tactu.get_is_dangsapxepkho(),
                     "_is_doidokhitrieuhoi": self.tactu._is_doidokhitrieuhoi,
                     "_tenbodotrieuhoi": [mon["ten"] for mon in self.tactu._bodotrieuhoi],
                     "_baothutrieuhoimaoson": self.tactu._baothutrieuhoimaoson,
@@ -512,6 +532,13 @@ class CuaSo:
                             if info["_idnguoichoimuctieu"] else (None, None)
                 except Exception as err:
                     print(f"Lỗi ước lượng mục tiêu: {err}")
+                # Ngoại hình thật đang mặc + loại vũ khí cho cửa sổ Ngoại hình (lọc lựa chọn cùng giới tính / cùng loại vũ khí)
+                info["_ngoaihinh"] = self.ngoaihinh.get_share()
+                try:
+                    if self.bandonho.is_bat:
+                        info["_bandonho"] = self.bandonho.lay(info.get("_diemdanhdangden"))
+                except Exception as err:
+                    print(f"Lỗi bản đồ nhỏ: {err}")
                 self.shared_data[self.idcuaso] = info
 
             except Exception as err:
@@ -547,6 +574,9 @@ class CuaSo:
                     self.tactu.thietlap_chiavunglotrinh(cmd.split(":", 1)[1] == "1")
                 elif cmd == "tieptuchoatdong":
                     self.tactu.tieptuchoatdong()
+                elif isinstance(cmd, str) and cmd.startswith("set_bandonho:"):
+                    # Cửa sổ Bản đồ nhỏ mở / đóng / đổi sang nhân vật khác
+                    self.bandonho.is_bat = cmd.split(":", 1)[1] == "1"
                 elif isinstance(cmd, str) and cmd.startswith("set_tatbot:"):
                     # Ô tích trên danh sách nhân vật: set_tatbot:1 tắt, set_tatbot:0 bật lại
                     self.tactu.thietlap_tatbot(cmd.split(":", 1)[1] == "1")
@@ -787,6 +817,16 @@ class CuaSo:
                         self.tactu.thietlap_mauhetchaytron(cmd.split(":")[1])
                     except Exception:
                         pass
+                elif cmd == "battat_doiphapbaotheomau":
+                    self.tactu.battat_doiphapbaotheomau()
+                elif cmd == "battat_xoayvongtrao":
+                    self.tactu.battat_xoayvongtrao()
+                elif isinstance(cmd, str) and cmd.startswith(("set_mauphapbaovua:", "set_mauphapbaothap:", "set_dotrephapbao:")):
+                    lenh, giatri = cmd.split(":", 1)
+                    try:
+                        getattr(self.tactu, "thietlap_" + lenh[len("set_"):])(giatri)
+                    except Exception:
+                        pass
                 elif cmd == "battat_tutimduongtheosau":
                     self.tactu.battat_tutimduongtheosau()
                 elif cmd == "battat_chaytoibuffthanhvien":
@@ -795,6 +835,8 @@ class CuaSo:
                     self.tactu.battat_diquocgiatanthutienco()
                 elif cmd == "battat_sapxephanhtrang":
                     self.tactu.battat_sapxephanhtrang()
+                elif cmd == "battat_sapxepkho":
+                    self.tactu.battat_sapxepkho()
                 elif cmd == "battat_doidokhitrieuhoi":
                     self.tactu.battat_doidokhitrieuhoi()
                 elif cmd == "ghi_bodotrieuhoi":
@@ -818,8 +860,13 @@ class CuaSo:
                     self.tactu.botoanbo_tenmuctieukhongtancong()
                 elif cmd == "battat_tudongtheosau":
                     self.tactu.battat_is_tudongtheosau()
+                elif cmd == "battat_dungimdanh":
+                    # Ctrl+R / ô "Đứng im đánh" tab Chiến đấu
+                    self.tactu.battat_is_dungimdanh()
                 elif cmd == "botoanbo_diemdanhxungquanh":
                     self.tactu.botoanbo_diemdanhxungquanh()
+                elif cmd == "nap_lotrinhan":
+                    self.tactu.nap_lotrinhan()
                 elif cmd == "battat_tudongtodoi":
                     self.tactu.battat_is_tudongtodoi()
                 elif cmd == "todoimotlan":
@@ -828,6 +875,10 @@ class CuaSo:
                     self.tactu.huy_todoimotlan()
                 elif cmd == "battat_tudongsudungkynang":
                     self.tactu.battat_is_tudongsudungkynang()
+                elif cmd == "battat_tudongsudungvatpham":
+                    self.tactu.battat_is_tudongsudungvatpham()
+                elif cmd == "battat_tudongnhatvatpham":
+                    self.tactu.battat_is_tudongnhatvatpham()
                 elif cmd == "battat_chidungtudongtancong":
                     self.tactu.battat_chidungtudongtancong()
                 elif cmd == "them_tenmuctieutancong":
@@ -875,6 +926,9 @@ class CuaSo:
                     self.tactu.battat_tudongsudungkynangbaothu()
                 elif cmd == "battat_tudongbatnguyenkhiquynguyen":
                     self.tactu.battat_tudongbatnguyenkhiquynguyen()
+                elif cmd == "dungvongthuoc1gio":
+                    # Ctrl+U
+                    self.tactu.action_dungvongthuoc1gio()
                 elif cmd == "action_test":
                     self.tactu.action_test()
                 self.command_dict[self.idcuaso] = None

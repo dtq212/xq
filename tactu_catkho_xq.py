@@ -12,11 +12,13 @@
 # Mixin của TacTu (tactu_xq.py): chỉ chứa hàm, trạng thái (self._...) khởi tạo trong TacTu.__init__
 import time
 import uuid
+from collections import Counter
 
 from hangso_xq import *
 from luattuido_xq import tailuat
 from moitruong_xq import DOUUTIEN_KHANCAP
 from thongbao_xq import baosuco
+from tienich_xq import phatam
 
 LYDOCATKHO_BANRAC = "banrac"
 LYDOCATKHO_LENHTAY = "lenhtay"
@@ -254,6 +256,398 @@ class TacTuCatKho:
         viec["dangcho"] = {"id": mon["id"], "ten": mon["ten"], "soluong": mon["soluong"], "cat": mon["cat"], "ruong": viec["ruong"], "o": o,
                            "is_gop": is_gop, "lucgui": now}
         return "dang"
+
+    # ---------------- Sắp xếp kho ----------------
+    # Bấm tay khi cửa sổ kho đang mở (Quản Khố, hoặc Bảo Khố Di Động "use <id>#" ở bất kỳ đâu: mã kho đọc ở moitruong.get_makhodangmo),
+    # hoặc đứng cạnh Quản Khố / Chủ Tiệm Sửa Chữa (Chu). Không di chuyển nhân vật.
+    # Lệnh kho (mã = ID NPC kho, vd "a6#" NPC Bảo Khố): đổi chỗ "pawn >" CHỈ trong cùng rương; sang rương khác chỉ có lệnh chuyển
+    # "pawn & <mã> <ô> <rương đích>" (món rơi vào ô trống của rương đích, rương đích đầy thì không được; kéo tay ô 44 sang rương 2,
+    # Gạ 364 2026-11-12), không đổi chỗ được 2 món khác rương. Nên làm như xếp 4 túi hành trang:
+    # 1. "quet": mở lần lượt mọi rương lấy dữ liệu (chỉ rương đang mở có dữ liệu).
+    # 2. "gom": coi cả kho là 1 dãy ô (rương 1 ô 1 .. rương cuối ô 49), đồ sắp theo thứ tự hành trang (_khoasapxepvatpham) rồi mã loại,
+    #    cắt mỗi rương 1 đoạn 49 món => số món từng mã mỗi rương cần có. Lấp dần từng rương (ý người dùng, ít lần mở rương: mỗi lần mở
+    #    tốn 1 lệnh pawn ~1s): với rương r, "don": mở r, chuyển liền các món thừa của r sang rương sau còn ô trống (ưu tiên rương cần
+    #    món đó); "nap": mở lần lượt các rương sau đang có món r thiếu (rương không có thì khỏi mở), chuyển hết sang r tới khi r đầy.
+    #    r chưa đủ (kho ít ô trống) thì lặp don / nap, vòng không chuyển được gì thì bỏ qua r. Rương trước r đã đủ 49 món đúng nên không
+    #    đụng tới. Mô hình đếm số món + ô trống mỗi rương; rương nào mở ra cũng lấy dữ liệu thật. Hết rương thì quét lại cả kho kiểm
+    #    tra, còn lệch thì gom lại từ rương 1 (tối đa soluotgomtoida lượt, 2 lượt liền không bớt lệch thì thôi). Kho hết ô trống thì bỏ gom.
+    # 3. Xếp trong từng rương như dưới.
+    # Từng rương: mở rương ("pawn <mã> <rương>"), xếp đồ theo cùng thứ tự với hành trang (_khoasapxepvatpham) dồn từ ô 1, bằng lệnh
+    # kéo thả "pawn > <mã> <ô nguồn> <ô đích>" (ô từ 1, trong rương đang mở; đích có đồ thì đổi chỗ 2 món). Mỗi lệnh đặt ít nhất 1 món
+    # vào đúng ô cuối (tối đa 48 lệnh / rương).
+    # Dữ liệu rương trong bộ nhớ KHÔNG đổi sau lệnh kéo thả, chỉ đổi khi mở lại rương, mà mở lại thì 0.8-1.6s mới có dữ liệu (đo Gạ 364
+    # 2026-11-12; bản đầu chờ dữ liệu đổi nên tưởng lệnh hỏng, gửi lại 2-3 lần => 2 món đổi chỗ chẵn lần là về chỗ cũ). Nên bot tự nhớ
+    # rương (mô hình): mở rương lấy dữ liệu thật, gửi liền cả loạt lệnh (cách GIANCACHLENHSAPXEPKHO giây), mỗi lệnh đổi chỗ trong mô hình;
+    # mô hình xong thì mở lại rương kiểm tra, còn sai thì xếp tiếp từ dữ liệu thật, quá soluottoida lượt / 3 lượt liền rương không đổi
+    # thì dừng báo lỗi.
+    # Chưa gộp chồng trong kho (chưa biết lệnh), chỉ xếp các chồng cùng tên nằm cạnh nhau
+    def battat_sapxepkho(self):
+        if self._sapxepkho:
+            self._ketthucsapxepkho("Dừng sắp xếp kho")
+            return
+        # pha "quet" / "gom": gom giữa các rương (ruongs: mô hình {rương: [ô]}, ban: rương vừa nhận đồ chưa biết ô, ruongmo: rương có dữ
+        # liệu mới nhất, canmo: rương _chodulieuruong đang chờ); "mo": đã / cần gửi lệnh mở rương (lucmo = 0 là chưa gửi), chờ dữ liệu;
+        # "xep": gửi lệnh đổi chỗ trong rương theo mô hình
+        self._sapxepkho = {"batdau": time.time(), "ruong": 1, "soruong": 0, "pha": "quet", "lucmo": 0., "anhmo": None, "solanmo": 0,
+                           "mohinh": None, "lucgui": 0., "soluot": 0, "anhluottruoc": None, "solankhongdoi": 0, "solenh": 0, "loi": [],
+                           "ruongs": {}, "ban": set(), "ruongmo": 0, "canmo": 0, "luotgom": 0, "solenhgom": 0, "lechtruoc": None,
+                           "solangomkhongbot": 0, "sochuyen": 0,
+                           "quetcu": {}, "dachuyen": [], "dadat": set()}
+        phatam("Bắt đầu sắp xếp kho")
+        print(f"{self.moitruong.get_tendoituong()}: [SẮP XẾP KHO] bắt đầu")
+
+    def get_is_dangsapxepkho(self):
+        return bool(self._sapxepkho)
+
+    def _ketthucsapxepkho(self, thongbao):
+        viec = self._sapxepkho
+        self._sapxepkho = None
+        solenh = viec["solenh"] if viec else 0
+        sochuyen = viec["sochuyen"] if viec else 0
+        loi = f" | {'; '.join(viec['loi'])}" if viec and viec["loi"] else ""
+        noidung = f"[SẮP XẾP KHO] {thongbao} (chuyển rương {sochuyen} lần, đổi chỗ {solenh} lần){loi}"
+        print(f"{self.moitruong.get_tendoituong()}: {noidung}")
+        self.moitruong._inlog(noidung)
+        phatam(thongbao)
+
+    def _logsapxepkho(self, noidung):
+        print(f"{self.moitruong.get_tendoituong()}: [SẮP XẾP KHO] {noidung}")
+        self.moitruong._inlog(f"[SẮP XẾP KHO] {noidung}")
+
+    def _laymakho(self):
+        # Mã đứng sau "pawn": cửa sổ kho đang mở (cả kho mở bằng Bảo Khố Di Động), không thì NPC kho đứng gần (Quản Khố, ở Chu thì cả
+        # Chủ Tiệm Sửa Chữa), không có nữa thì mã client tự gửi gần nhất
+        moitruong = self.moitruong
+        makho = moitruong.get_makhodangmo()
+        if makho:
+            return makho
+        for tennpc in (QUANKHO, CHUTIEMSUACHUA):
+            diachi = moitruong.action_timkiemnhanvat(tennhanvat = tennpc)
+            if diachi and moitruong.get_khoangcach(diachi) <= KHOANGCACHQUANKHO + 2:
+                return f"{moitruong.get_iddoituong(diachi):x}#"
+        return moitruong.get_makhoganday()
+
+    def _timbuocsapxepkho(self, os):
+        # (ô a, ô b) từ 0 cần đổi chỗ cho rương đang mở, None nếu rương đã xếp xong. Đích: đồ dồn từ ô 0 theo _khoasapxepvatpham rồi
+        # mã loại (cùng tên nằm cạnh), ô trống ở cuối. So bằng mã loại (cùng tên cùng mã), ô trống mã 0
+        mas = [ma for _, _, ma in os]
+        dangcos = sorted(((self._khoasapxepvatpham(ten), ma) for ten, _, ma in os if ma), key = lambda k: k)
+        dich = [ma for _, ma in dangcos] + [0] * (len(os) - len(dangcos))
+        for o in range(len(os)):
+            if mas[o] == dich[o]:
+                continue
+            nguons = [i for i in range(o + 1, len(os)) if mas[i] == dich[o] and mas[i] != dich[i]]
+            if not nguons:
+                continue
+            # Ưu tiên nguồn mà món đang ở ô o cũng về đúng chỗ sau khi đổi (1 lệnh đặt đúng 2 món)
+            nguon = next((i for i in nguons if dich[i] == mas[o]), nguons[0])
+            return o, nguon
+        return None
+
+    def _dichgomkho(self, ruongs):
+        # {rương: Counter(mã loại)} rương đó cần có: cả kho sắp như 1 dãy, mỗi rương 1 đoạn len(ô) món
+        dangcos = sorted((self._khoasapxepvatpham(ten), ma) for r in sorted(ruongs) for ten, _, ma in ruongs[r] if ma)
+        dich = {}
+        vitri = 0
+        for r in sorted(ruongs):
+            soo = len(ruongs[r])
+            dich[r] = Counter(ma for _, ma in dangcos[vitri:vitri + soo])
+            vitri += soo
+        return dich
+
+    @staticmethod
+    def _lechgomkho(ruongs, dich):
+        # Tổng số món đang nằm sai rương (0 = đã gom xong)
+        return sum(max(0, sl - dich[r][ma]) for r in ruongs for ma, sl in Counter(ma for _, _, ma in ruongs[r] if ma).items())
+
+    def _chodulieuruong(self, viec, makho, kho, now, ruong, thoigiancho):
+        # Mở rương ruong (luôn mở lại để có dữ liệu mới) rồi chờ dữ liệu về: danh sách ô khi có, None khi đang chờ, False khi mở
+        # SOLANMORUONG lần không được
+        if viec["canmo"] != ruong or not viec["lucmo"]:
+            viec["canmo"], viec["solanmo"] = ruong, 0
+            self._moruongsapxepkho(viec, makho, kho, now, ruong = ruong, pha = viec["pha"])
+            return None
+        if kho and kho["ruong"] == ruong and (kho["os"] != viec["anhmo"] or now - viec["lucmo"] >= thoigiancho):
+            viec["lucmo"], viec["canmo"], viec["solanmo"] = 0., 0, 0
+            return list(kho["os"])
+        if now - viec["lucmo"] < thoigiancho:
+            return None
+        if viec["solanmo"] >= SOLANMORUONG:
+            return False
+        self._moruongsapxepkho(viec, makho, kho, now, ruong = ruong, pha = viec["pha"])
+        return None
+
+    def _buocgomkho(self, viec, makho, kho, now, thoigiancho, soluotgomtoida):
+        # 1 bước pha "quet" / "gom"
+        moitruong = self.moitruong
+        tennv = moitruong.get_tendoituong()
+        soruong = max(1, viec["soruong"])
+        if viec["pha"] == "quet":
+            os = self._chodulieuruong(viec, makho, kho, now, viec["ruong"], thoigiancho)
+            if os is None:
+                return
+            if os is False:
+                viec["loi"].append(f"không mở được rương {viec['ruong']}")
+                self._ketthucsapxepkho(f"Dừng sắp xếp kho ở rương {viec['ruong']}")
+                return
+            viec["ruongs"][viec["ruong"]] = os
+            viec["ruongmo"] = viec["ruong"]
+            if viec["ruong"] < soruong:
+                viec["ruong"] += 1
+                return
+            viec["ban"] = set()
+            dich = self._dichgomkho(viec["ruongs"])
+            lech = self._lechgomkho(viec["ruongs"], dich)
+            self._kiemchungchuyenruong(viec)
+            viec["quetcu"] = {r: list(os) for r, os in viec["ruongs"].items()}
+            viec["dachuyen"], viec["dadat"] = [], set()
+            trongs = ", ".join(f"r{r} trống {sum(1 for _, _, ma in os if not ma)}" for r, os in sorted(viec["ruongs"].items()))
+            self._logsapxepkho(f"đã quét {soruong} rương ({trongs}), {lech} món nằm sai rương (lượt gom {viec['luotgom'] + 1})")
+            # 2 lượt gom liền không bớt được món sai rương nào (1 lượt thì có thể chỉ còn 1-2 lệnh mà game bỏ mất) / quá số lượt: thôi
+            # gom, chỉ xếp trong rương
+            if lech and viec["lechtruoc"] is not None and lech >= viec["lechtruoc"]:
+                viec["solangomkhongbot"] += 1
+            else:
+                viec["solangomkhongbot"] = 0
+            if lech and viec["solangomkhongbot"] >= 2:
+                viec["loi"].append(f"còn {lech} món chưa gom được về đúng rương (lệnh chuyển rương không có tác dụng?)")
+                lech = 0
+            elif lech and viec["luotgom"] >= soluotgomtoida:
+                viec["loi"].append(f"còn {lech} món chưa gom được sau {soluotgomtoida} lượt")
+                lech = 0
+            if not lech:
+                viec["pha"], viec["ruong"], viec["lucmo"], viec["solanmo"] = "mo", 1, 0., 0
+                return
+            viec["lechtruoc"] = lech
+            viec["luotgom"] += 1
+            viec["solenhgom"] = 0
+            viec["pha"] = "gom"
+            # Mô hình gom: đích, số món đang có và số ô trống mỗi rương (từ lần quét vừa xong)
+            viec["dich"] = dich
+            viec["dem"] = {r: Counter(ma for _, _, ma in os if ma) for r, os in viec["ruongs"].items()}
+            viec["trong"] = {r: sum(1 for _, _, ma in os if not ma) for r, os in viec["ruongs"].items()}
+            viec["rdich"], viec["buocgom"], viec["nguonnap"], viec["hangdoi"], viec["chuyenvong"] = 1, "don", 0, [], 0
+            return
+
+        # pha "gom": gửi hết hàng đợi lệnh chuyển của rương đang mở trước
+        if viec["hangdoi"]:
+            nguon, o, dich, ma, ten = viec["hangdoi"].pop(0)
+            lenh = f"pawn & {makho} {o + 1} {dich}"
+            if moitruong.action_thucthicaulenh(lenh, douutien = DOUUTIEN_KHANCAP):
+                if viec["sochuyen"] < 3:
+                    moitruong._inlog(f"[SẮP XẾP KHO] {lenh} ({ten} từ rương {nguon} sang rương {dich})")
+                quetdich = viec["quetcu"].get(dich)
+                is_cungotrong = bool(quetdich) and not quetdich[o][2] and (dich, o) not in viec["dadat"]
+                viec["dachuyen"].append((nguon, o, dich, ma, ten, is_cungotrong))
+                viec["dadat"].add((dich, o))
+                viec["lucgui"] = now
+                viec["sochuyen"] += 1
+                viec["solenhgom"] += 1
+                viec["chuyenvong"] += 1
+            return
+
+        dich, dem, trong = viec["dich"], viec["dem"], viec["trong"]
+        r = viec["rdich"]
+        if r > soruong:
+            # Gom xong mọi rương theo mô hình: quét lại cả kho kiểm tra (lệnh có thể bị bỏ)
+            viec["pha"], viec["ruong"], viec["lucmo"], viec["canmo"] = "quet", 1, 0., 0
+            return
+
+        def thieu(ma):
+            return dich[r][ma] - dem[r][ma]
+
+        def chuyen(nguon, o, ma, ten, toi):
+            # Xếp 1 lệnh vào hàng đợi, cập nhật mô hình luôn (chọn đích cho món sau theo số ô trống mới)
+            viec["hangdoi"].append((nguon, o, toi, ma, ten))
+            dem[nguon][ma] -= 1
+            dem[toi][ma] += 1
+            trong[nguon] += 1
+            trong[toi] -= 1
+
+        def ketthucvong():
+            # Hết 1 vòng don / nap của r: đủ rồi / vòng không chuyển được gì thì sang rương sau, không thì lặp vòng mới
+            dudu = all(dem[r][ma] == sl for ma, sl in dich[r].items()) and not any(sl > dich[r][ma] for ma, sl in dem[r].items())
+            if not dudu and not viec["chuyenvong"]:
+                self._logsapxepkho(f"rương {r} chưa gom đủ (không còn chỗ để đổi), bỏ qua")
+            if dudu or not viec["chuyenvong"]:
+                viec["rdich"] += 1
+            viec["buocgom"], viec["chuyenvong"] = "don", 0
+
+        if viec["buocgom"] == "don":
+            sothua = sum(max(0, sl - dich[r][ma]) for ma, sl in dem[r].items())
+            chosau = sum(trong[t] for t in range(r + 1, soruong + 1))
+            if sothua and chosau:
+                os = self._chodulieuruong(viec, makho, kho, now, r, thoigiancho)
+                if os is None:
+                    return
+                if os is False:
+                    viec["loi"].append(f"không mở được rương {r}")
+                    self._ketthucsapxepkho(f"Dừng sắp xếp kho ở rương {r}")
+                    return
+                dem[r] = Counter(ma for _, _, ma in os if ma)
+                trong[r] = sum(1 for _, _, ma in os if not ma)
+                for o, (ten, _, ma) in enumerate(os):
+                    if not ma or dem[r][ma] <= dich[r][ma]:
+                        continue
+                    toidas = [t for t in range(r + 1, soruong + 1) if trong[t]]
+                    if not toidas:
+                        break
+                    # Ưu tiên rương cần món này (khỏi chuyển lần nữa), không thì rương còn nhiều ô trống nhất
+                    toi = max(toidas, key = lambda t: (dich[t][ma] > dem[t][ma], trong[t]))
+                    chuyen(r, o, ma, ten, toi)
+            viec["buocgom"], viec["nguonnap"] = "nap", r + 1
+            return
+
+        # buocgom "nap": rương sau kế tiếp đang có món r thiếu
+        if not trong[r] or not any(thieu(ma) > 0 for ma in dich[r]):
+            ketthucvong()
+            return
+        nguon = next((t for t in range(viec["nguonnap"], soruong + 1) if any(thieu(ma) > 0 and dem[t][ma] > 0 for ma in dem[t])), None)
+        if nguon is None:
+            ketthucvong()
+            return
+        os = self._chodulieuruong(viec, makho, kho, now, nguon, thoigiancho)
+        if os is None:
+            return
+        if os is False:
+            viec["loi"].append(f"không mở được rương {nguon}")
+            self._ketthucsapxepkho(f"Dừng sắp xếp kho ở rương {nguon}")
+            return
+        dem[nguon] = Counter(ma for _, _, ma in os if ma)
+        trong[nguon] = sum(1 for _, _, ma in os if not ma)
+        for o, (ten, _, ma) in enumerate(os):
+            if ma and thieu(ma) > 0 and trong[r]:
+                chuyen(nguon, o, ma, ten, r)
+        viec["nguonnap"] = nguon + 1
+
+    def _kiemchungchuyenruong(self, viec):
+        # So lần quét này với lần quét đầu lượt gom: từng lệnh "pawn &" có đi không (ô nguồn hết món đó), rơi vào ô cùng số ở rương đích
+        # không, và lúc gửi ô cùng số đó trống hay có đồ. Để biết "pawn &" thả món vào ô trống bất kỳ hay vào đúng ô cùng số
+        # (nghi vì lần chạy Gạ 18:42 có lệnh gửi mấy lượt vẫn không đi)
+        if not viec["dachuyen"]:
+            return
+        ruongs = viec["ruongs"]
+        thongke = {}
+        chitiets = []
+        for nguon, o, dich, ma, ten, is_cungotrong in viec["dachuyen"]:
+            is_di = ruongs[nguon][o][2] != ma
+            is_cungo = ruongs[dich][o][2] == ma
+            khoa = ("đi" if is_di else "KHÔNG đi") + (", ô cùng số lúc gửi trống" if is_cungotrong else ", ô cùng số lúc gửi có đồ")
+            thongke[khoa] = thongke.get(khoa, 0) + 1
+            if len(chitiets) < 20:
+                chitiets.append(f"r{nguon}ô{o + 1}->r{dich} {ten}: {'đi' if is_di else 'KHÔNG đi'}"
+                                f"{' (rơi đúng ô cùng số)' if is_di and is_cungo else ''}{'' if is_cungotrong else ' [ô cùng số có đồ]'}")
+        self._logsapxepkho("kiểm chứng chuyển rương: " + "; ".join(f"{k}: {v}" for k, v in thongke.items()))
+        self._logsapxepkho("chi tiết: " + " | ".join(chitiets))
+
+    def _dichtrongruong(self, os):
+        # Mã loại từng ô sau khi xếp xong 1 rương (như _timbuocsapxepkho)
+        dangcos = sorted((self._khoasapxepvatpham(ten), ma) for ten, _, ma in os if ma)
+        return [ma for _, ma in dangcos] + [0] * (len(os) - len(dangcos))
+
+    def _moruongsapxepkho(self, viec, makho, kho, now, ruong = None, pha = "mo"):
+        # Gửi lệnh mở rương (mặc định viec["ruong"]), nhớ dữ liệu lúc gửi để biết dữ liệu mới đã về
+        viec["pha"] = pha
+        viec["anhmo"] = kho["os"] if kho else None
+        viec["lucmo"] = now
+        viec["lucgui"] = now
+        viec["solanmo"] += 1
+        self.moitruong.action_thucthicaulenh(f"pawn {makho} {ruong or viec['ruong']}", douutien = DOUUTIEN_KHANCAP)
+
+    # giancachlenh: máy chủ chỉ nhận ~1 lệnh pawn mỗi ~0.9-1s, lệnh tới sớm hơn bị bỏ (Gạ 2026-11-12 18:42 gửi cách 0.3s: các lệnh "pawn &"
+    # ăn được cách nhau 0.91-1.27s, lượt 1 gửi 16 ăn 3, lượt 2 gửi 13 ăn 4; lệnh mở rương gửi sau lệnh trước 0.2s không ăn, gửi lại thì
+    # ~0.2s có dữ liệu). Không spam thử lại được: lệnh kéo thả / chuyển rương không làm đổi dữ liệu rương trong bộ nhớ (phải mở lại rương
+    # mới biết ăn chưa, cũng tốn 1 lệnh pawn), gửi lại lệnh đổi chỗ đã ăn thì 2 món đổi về chỗ cũ. Gửi đều 1 lệnh / 1s là nhanh nhất
+    def action_sapxepkho(self, giancachlenh = 1.0, thoigianchomoruong = 1.5, soluottoida = 6, soluotgomtoida = 15, thoigiantoida = 600.):
+        viec = self._sapxepkho
+        if not viec:
+            return
+        moitruong = self.moitruong
+        now = time.time()
+        if now - viec["batdau"] > thoigiantoida:
+            self._ketthucsapxepkho("Sắp xếp kho quá lâu, dừng lại")
+            return
+        if moitruong.get_is_nhanvatdachet():
+            self._ketthucsapxepkho("Nhân vật chết, dừng sắp xếp kho")
+            return
+        if now - viec["lucgui"] < giancachlenh:
+            return
+        makho = self._laymakho()
+        if not makho:
+            self._ketthucsapxepkho("Không biết mã kho: mở kho (Quản Khố / Bảo Khố Di Động) rồi bấm lại")
+            return
+        kho = moitruong.get_khodangmo()
+        if kho and 0 < kho["soruong"] <= 20:
+            viec["soruong"] = kho["soruong"]
+        tennv = moitruong.get_tendoituong()
+
+        if viec["pha"] in ("quet", "gom"):
+            self._buocgomkho(viec, makho, kho, now, thoigianchomoruong, soluotgomtoida)
+            return
+
+        if viec["pha"] == "mo":
+            if not viec["lucmo"]:
+                self._moruongsapxepkho(viec, makho, kho, now)
+                return
+            # Dữ liệu mới về: đúng rương và khác lúc gửi lệnh mở; giống hệt thì chờ đủ thoigianchomoruong (rương không đổi gì cũng thế)
+            if not kho or kho["ruong"] != viec["ruong"] or (kho["os"] == viec["anhmo"] and now - viec["lucmo"] < thoigianchomoruong):
+                if now - viec["lucmo"] < thoigianchomoruong:
+                    return
+                if viec["solanmo"] >= SOLANMORUONG:
+                    viec["loi"].append(f"không mở được rương {viec['ruong']}")
+                    self._ketthucsapxepkho(f"Dừng sắp xếp kho ở rương {viec['ruong']}")
+                    return
+                self._moruongsapxepkho(viec, makho, kho, now)
+                return
+            viec["solanmo"] = 0
+            viec["lucmo"] = 0.
+            if self._timbuocsapxepkho(kho["os"]) is None:
+                self._logsapxepkho(f"xong rương {viec['ruong']} ({viec['soluot']} lượt)")
+                if viec["ruong"] >= max(1, viec["soruong"]):
+                    self._ketthucsapxepkho(f"Đã sắp xếp xong kho ({viec['ruong']} rương)")
+                    return
+                viec["ruong"] += 1
+                viec["soluot"], viec["anhluottruoc"], viec["solankhongdoi"] = 0, None, 0
+                return
+            # Còn sai: lượt mới từ dữ liệu thật. 3 lượt liền gửi lệnh mà rương y như trước lượt => lệnh không có tác dụng (1 lượt thì có
+            # thể chỉ còn 1-2 lệnh mà game bỏ mất)
+            if viec["soluot"] and kho["os"] == viec["anhluottruoc"]:
+                viec["solankhongdoi"] += 1
+                if viec["solankhongdoi"] >= 3:
+                    viec["loi"].append(f"rương {viec['ruong']}: lệnh kéo thả không có tác dụng")
+                    self._ketthucsapxepkho("Không đổi chỗ được đồ trong kho, dừng sắp xếp kho")
+                    return
+            else:
+                viec["solankhongdoi"] = 0
+            if viec["soluot"] >= soluottoida:
+                viec["loi"].append(f"rương {viec['ruong']}: {soluottoida} lượt vẫn chưa xếp xong")
+                self._ketthucsapxepkho("Sắp xếp kho chưa xong, dừng lại")
+                return
+            viec["soluot"] += 1
+            viec["anhluottruoc"] = kho["os"]
+            viec["mohinh"] = list(kho["os"])
+            viec["pha"] = "xep"
+            if viec["soluot"] > 1:
+                sai = sum(1 for a, b in zip(kho["os"], self._dichtrongruong(kho["os"])) if a[2] != b)
+                self._logsapxepkho(f"rương {viec['ruong']} còn {sai} ô sai sau lượt trước, xếp lượt {viec['soluot']}")
+            return
+
+        # pha "xep": lệnh kế theo mô hình; mô hình đã xong thì mở lại rương kiểm tra
+        mohinh = viec["mohinh"]
+        buoc = self._timbuocsapxepkho(mohinh)
+        if buoc is None:
+            self._moruongsapxepkho(viec, makho, kho, now)
+            viec["solanmo"] = 1
+            return
+        a, b = buoc
+        # "pawn > <mã> <ô nguồn> <ô đích>": nguồn trước (kéo tay ô 9 thả ô 8 thì client gửi "pawn > a6# 9 8", Gạ 364 2026-11-12)
+        lenh = f"pawn > {makho} {b + 1} {a + 1}"
+        if moitruong.action_thucthicaulenh(lenh, douutien = DOUUTIEN_KHANCAP):
+            if viec["solenh"] < 3:
+                moitruong._inlog(f"[SẮP XẾP KHO] {lenh} ({mohinh[b][0]} <-> {mohinh[a][0] or 'ô trống'})")
+            mohinh[a], mohinh[b] = mohinh[b], mohinh[a]
+            viec["lucgui"] = now
+            viec["solenh"] += 1
 
     def batdau_catkho_sauban(self):
         # Gọi khi bán rác + sửa đồ xong: bật "Tự cất sau bán rác" và có món cần cất thì tạo việc (đang có việc bấm tay thì làm tiếp việc đó)

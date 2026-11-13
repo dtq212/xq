@@ -35,7 +35,7 @@ import time
 from congthucsatthuong_xq import HE_NGOAI, HE_NOI, satthuong, chonhe
 from diachi_xq import DC
 from hangso_xq import CHEDOHIENMUCTIEU_DANHHIEU, CHEDOHIENMUCTIEU_TEN, MAUHIENMUCTIEU_THEOMAU, NGUONGMAUHIENMUCTIEU
-from hangso_xq import OKHOIMUCTIEU, OKHOINHANVAT, MAUHANHDONGTRENDAU, KICHTHUOCDONGVEDANHHIEU
+from hangso_xq import OKHOIMUCTIEU, OKHOINHANVAT, MAUHANHDONGTRENDAU, KICHTHUOCDONGVEDANHHIEU, CHUTATFOXIATRENDAU, MAUTATFOXIATRENDAU
 from uocluongmuctieu_xq import gopuocluong, gopcongdoithu, khoaquaitheoten, DICHCONG, DICHKHANG, THOIGIANDANGDANH
 from tienich_xq import read_bytes, write_bytes, taithongtinnguoichoi, taithongtinquai, DAUNOITENMUCTIEU_BYTES
 
@@ -465,17 +465,21 @@ class DanhHieuMucTieu:
             return
         self._muctieu.ghi(diachi, chedo, [dongketluan] + taodongs(mau, gop["khihuyet"], gop["khangs"], gop["congs"], chumau))
 
-    def _buocnhanvat(self, hanhdong, chedomuctieu):
-        # Hành động hiện tại lên đầu nhân vật mình; rỗng (tắt ô / chưa có hành động) thì trả ô. Đang tự chọn mình làm mục tiêu và đang
-        # ghi thông tin mục tiêu thì nhường ô cho phần mục tiêu
+    def _buocnhanvat(self, hanhdong, chedomuctieu, is_tatbot = False):
+        # Hành động hiện tại lên đầu nhân vật mình; rỗng (tắt ô / chưa có hành động) thì trả ô. Đang tắt Foxia thì luôn hiện
+        # CHUTATFOXIATRENDAU (màu đỏ) thay hành động. Đang tự chọn mình làm mục tiêu và đang ghi thông tin mục tiêu thì nhường ô cho phần mục tiêu
         mt = self.moitruong
         diachi = mt.get_diachicosothongtinnhanvat1()
-        if not hanhdong or not diachi or (chedomuctieu == CHEDOHIENMUCTIEU_DANHHIEU and diachi == self._muctieu.get_diachi()):
+        if (not hanhdong and not is_tatbot) or not diachi \
+                or (chedomuctieu == CHEDOHIENMUCTIEU_DANHHIEU and diachi == self._muctieu.get_diachi()):
             self._nhanvat.khoiphuc()
             return
-        self._nhanvat.ghi(diachi, tomauhanhdong(hanhdong))
+        if is_tatbot:
+            self._nhanvat.ghi(diachi, mamau(MAUTATFOXIATRENDAU) + CHUTATFOXIATRENDAU.encode("utf-8"))
+        else:
+            self._nhanvat.ghi(diachi, tomauhanhdong(hanhdong))
 
-    def step(self, chedo, chumau = MAUHIENMUCTIEU_THEOMAU, hanhdong = ""):
+    def step(self, chedo, chumau = MAUHIENMUCTIEU_THEOMAU, hanhdong = "", is_tatbot = False):
         chedo = chedo if chedo in (CHEDOHIENMUCTIEU_DANHHIEU, CHEDOHIENMUCTIEU_TEN) else None
         self._buocmuctieu(chedo, chumau)
-        self._buocnhanvat(hanhdong, chedo)
+        self._buocnhanvat(hanhdong, chedo, is_tatbot)

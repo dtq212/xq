@@ -2,8 +2,9 @@
 # chính (nhân vật đang chọn), giao diện gửi luôn lệnh bật vai acc gà cho các cửa sổ cùng máy được chọn. Acc chính điều phối, báo giai đoạn
 # qua shared_data ("_keocap"), acc gà đọc rồi tự làm phần của mình. Quy trình (dò theo log [LỆNH GAME] người dùng làm tay 2026-11-01):
 #   tanthu  (acc gà): Tân Thủ Thôn (95, 123) Thần Tiên Gia Gia: "1. Thủ Thuật Nhỏ" (tallk welcome.1) -> "1. Hoàn thành nhiệm vụ"
-#           (welcome.2); look lại -> "2. Nhận thời gian x2 kinh nghiệm" (welcome.40) -> "3. 4 giờ". Code tân thủ đã bỏ (2026-11-07);
-#           thưởng cũ còn trong túi vẫn dùng (VATPHAMTANTHUs; Chiến Quốc Lệnh x3 "use !"). Tập hợp / bãi: acc chính give mỗi acc gà 1
+#           (welcome.2); [tuỳ chọn: look lại -> "Nhập Code Tân Thủ" -> "codett + welcome2d", MENUCODETANTHU]; look lại -> "2. Nhận thời
+#           gian x2 kinh nghiệm" (welcome.40) -> "3. 4 giờ". Code tân thủ bỏ 2026-11-07, mở lại 2026-11-12 nên thành ô tuỳ chọn;
+#           thưởng code còn trong túi vẫn dùng (VATPHAMTANTHUs; Chiến Quốc Lệnh x3 "use !"). Tập hợp / bãi: acc chính give mỗi acc gà 1
 #           Cửu Long Thần Hỏa Trảo (TRAOKEOCAPs), acc gà đeo; thu hồi thì tháo ("remove 7"), trả cùng đồ Lam Kim. Acc gà tự cộng điểm
 #           tiềm năng dư vào Nại lực (ô 4)
 #   taphop  : mọi người về Tân Thủ Thôn (143, 143); acc chính lập nhóm, mời acc gà ("team + <ID>"), mời vào bang ("org invite <ID>", log
@@ -26,12 +27,14 @@
 # Acc gà Theo sau tự phù / chạy sang bản đồ của acc chính; không đủ tiền Hồi Thành Phù mà chạy bộ xa thì bộ tìm đường chung
 # (_lapbuocditoibando) hồi môn phái về Tân Thủ Thôn (chưa vào môn phái) rồi phù tiếp.
 # Mixin của TacTu (tactu_xq.py): chỉ chứa hàm, trạng thái (self._keocap...) khởi tạo trong TacTu.__init__
+import json
 import math
+import os
 import time
 import unicodedata
 
 from hangso_xq import *
-from tienich_xq import phatam, canhbao, taicauhinhphongyeu, taivitrithoyeu, laydieukienrapykeocap
+from tienich_xq import phatam, canhbao, taicauhinhphongyeu, taivitrithoyeu, laydieukienrapykeocap, taigiaodienkeocap, _thumucthietlap
 from thongbao_xq import baosuco
 from giaodo_xq import taolenhgiao
 from tactu_langlyson_xq import CAPDOLAMKIMTOITHIEU, laytenthoyeu, SOBOSSPHONGYEU, THOIGIANTOITHIEUPY, THOIGIANTOIDAPY
@@ -47,6 +50,15 @@ MENUNHIEMVUTANTHU = ("welcome.1", "welcome.2")
 # "1. Truyền Thuyết Sáng Lập Bang, 2. Nhận thời gian x2, 3. Xin đóng băng, 4. VIP là gì, 5. x2 VIP, 6. Gói dùng thử VIP"
 # => x2 là welcome.40 (welcome.20 là Truyền Thuyết, chọn nhầm ra hội thoại welcome.21). "3. 4 giờ" chưa dò đuôi: chọn thứ tự 2
 MENUX2KINHNGHIEM = ("welcome.40", 2)
+# Code tân thủ "welcome2d" (tuỳ chọn, ô "Acc gà nhập code welcome2d" trên giao diện, lưu keocap.json "dungcode"): admin mở lại 2026-11-12
+# nhưng có thể đóng bất cứ lúc nào. Luồng cũ (log 2026-11-01): look -> "6. Nhập Code Tân Thủ" (welcome.11747) -> welcome.13747 mở hộp
+# "Xin nhập mã Code Tân Thủ" -> gửi "codett + welcome2d". Thưởng: lên cấp 8, Cửu Long Thần Hỏa Trảo, Hoàng Sa Chi Tâm, Thủy Bình,
+# 3 Chiến Quốc Lệnh x3. Lúc code đóng welcome.11747 thành "Gói dùng thử VIP" nên chọn theo NHÃN chứa "code" (đuôi chỉ dùng khi
+# không đọc được nhãn): mỗi menu là (đuôi dự phòng, chữ trong nhãn)
+MENUCODETANTHU = (("welcome.11747", "code"), ("welcome.13747", "code"))
+LENHCODETANTHU = "codett + welcome2d"
+# Gửi code xong chờ thưởng (lên cấp 8 / có món thưởng trong túi) tối đa chừng này giây rồi mới dùng đồ
+THOIGIANCHOTHUONGCODE = 15.
 # Pháp bảo Cửu Long Thần Hỏa Trảo: acc chính có sẵn (người dùng để 4 cái trong túi), give mỗi acc gà 1 cái lúc tập hợp / ở bãi, acc gà
 # đeo (use2); thu hồi: acc gà "remove 7" tháo pháp bảo rồi give trả cùng đồ Lam Kim
 TRAOKEOCAPs = ("Cửu Long Thần Hỏa Trảo", "Cửu Long Thần Hoả Trảo")
@@ -97,6 +109,10 @@ THOIGIANCHOMENUKC = 3.
 SOLANTHUMENUKC = 3
 GIANCACHMOINHOMKC = 5.
 GIANCACHMOIBANGKC = 15.
+# Xong kéo cấp: acc chính trục xuất khỏi bang acc gà có tên bắt đầu bằng tiền tố Kéo gà A-Z ("tiento" trong _internal/keogatudong.json,
+# đang là "gacon") cho đỡ tốn chỗ bang. Lệnh "org banish <ID>" (log 364 Gạ 2026-11-14 06:20 trục xuất tay: client gửi "org info <ID>"
+# rồi "org banish <ID>" kèm "org status"); bấm tay cách nhau ~2-4s nên mỗi người cách chừng này giây
+GIANCACHTRUCXUATKC = 3.
 # Tập hợp: quá chừng này giây acc gà chưa đồng ý vào bang thì vẫn đi bãi (báo log, vẫn mời tiếp lúc đứng ở Tân Thủ Thôn)
 THOIGIANCHOBANGKC = 120.
 # Acc gà tự kiểm tra bang ("desc user <ID mình>", _kiemtrabangkc): trước đây "org join" xong là đánh dấu đã vào bang luôn, join lỗi thì
@@ -361,8 +377,12 @@ class TacTuKeoCap:
         if self._is_tudongtheosau:
             self._datkc(s, "_is_tudongtheosau", False, "Theo sau")
         gas = self._laygaonline(s)
+        # Tên acc gà từng thấy: lúc xong acc gà đã tự dừng / đóng client vẫn biết tên để xét tiền tố trục xuất khỏi bang
+        s.setdefault("tengas", {}).update({i: info["tennhanvat"] for i, info in gas.items() if info.get("tennhanvat")})
         if s["giaidoan"] == "xong" and now - s.get("lucxong", now) > THOIGIANBAOXONGKC:
             # Acc gà đọc "xong" là tự dừng ngay (thường trước acc chính): không chờ chúng nữa, kẻo kẹt "chờ cửa sổ acc gà" mãi
+            if not self._trucxuatgakc(s):
+                return None
             self._kiemtratraothuhoikc(s)
             self._ketthuckeocap(f"✅ Mọi acc gà đã tới cấp {s['capketthuc']}")
             return None
@@ -419,7 +439,7 @@ class TacTuKeoCap:
                 self.huy_langlyson()
             s.setdefault("lucxong", now)
             s["trangthai"] = f"mọi acc gà đã tới cấp {capketthuc}, báo acc gà dừng"
-            if now - s["lucxong"] > THOIGIANBAOXONGKC:
+            if now - s["lucxong"] > THOIGIANBAOXONGKC and self._trucxuatgakc(s):
                 self._kiemtratraothuhoikc(s)
                 self._ketthuckeocap(f"✅ Mọi acc gà đã tới cấp {capketthuc}")
             return None
@@ -672,6 +692,49 @@ class TacTuKeoCap:
                 moitruong.set_is_danghiencuasotuychon(False)
             sp["buoc"] = "menu"
         return None
+
+    @staticmethod
+    def _tientogakc():
+        # Tiền tố tên acc gà của Kéo gà A-Z (_internal/keogatudong.json, ô "Tiền tố" trên giao diện). Không có file (chưa dùng Kéo gà A-Z)
+        # thì "" = không trục xuất ai (đừng đoán "ga" mặc định kẻo đá nhầm thành viên thật)
+        try:
+            with open(os.path.join(os.path.dirname(_thumucthietlap()), "keogatudong.json"), "r", encoding = "utf-8") as f:
+                return _chuanhoa(json.load(f).get("tiento") or "")
+        except Exception:
+            return ""
+
+    def _trucxuatgakc(self, s):
+        # Xong kéo cấp: trục xuất khỏi bang acc gà có tên bắt đầu bằng tiền tố Kéo gà A-Z ("org banish <ID>"), mỗi GIANCACHTRUCXUATKC giây
+        # 1 người. -> True khi đã gửi hết (hoặc không cần trục xuất ai)
+        ds = s.get("cantrucxuat")
+        if ds is None:
+            ds = []
+            tiento = self._tientogakc().casefold()
+            if not s.get("moibang", True):
+                pass                                    # Không mời bang (acc chính không có bang) thì cũng không trục xuất
+            elif any(ten.endswith("Bang Chúng") for _, ten in self.moitruong.get_danhsachdanhhieu()):
+                self._logkc("Mình chỉ là Bang Chúng: không trục xuất acc gà khỏi bang")
+            elif not tiento:
+                self._logkc("Chưa có tiền tố tên acc gà (Kéo gà A-Z): không trục xuất acc gà khỏi bang")
+            else:
+                tengas = s.get("tengas") or {}
+                ds = [i for i in s["idgas"] if _chuanhoa(tengas.get(i)).casefold().startswith(tiento)]
+                bo = [f"{tengas.get(i) or '?'} ({i})" for i in s["idgas"] if i not in ds]
+                self._logkc(f"Trục xuất khỏi bang acc gà tên bắt đầu \"{tiento}\": "
+                            + (", ".join(f"{tengas[i]} ({i})" for i in ds) or "không có")
+                            + (f"; giữ lại: {', '.join(bo)}" if bo else ""))
+            s["cantrucxuat"] = ds
+        if not ds:
+            return True
+        now = time.time()
+        s["trangthai"] = f"trục xuất acc gà khỏi bang (còn {len(ds)})"
+        if now - s.get("luctrucxuat", 0.) < GIANCACHTRUCXUATKC:
+            return False
+        idga = ds.pop(0)
+        s["luctrucxuat"] = now
+        self._logkc(f"Trục xuất {(s.get('tengas') or {}).get(idga) or idga} khỏi bang (org banish {idga})")
+        self.moitruong.action_thucthicaulenh(f"org banish {idga}")
+        return False
 
     def _moibangkc(self, s, gas, solantoida = None, khoa = "solanmoibang"):
         # Mời acc gà chưa đồng ý vào bang ("org invite <ID>"), mỗi GIANCACHMOIBANGKC giây 1 người, mỗi người tối đa solantoida lần (None:
@@ -1075,8 +1138,10 @@ class TacTuKeoCap:
             self.huy_langlyson()
         if self._is_dangban() or now - s.get("luctrado", 0.) < GIANCACHGIAODOKC:
             return None
-        if self._is_traokc(moitruong.get_tenphapbaohientai()):
-            # Đang đeo Cửu Long Thần Hỏa Trảo của acc chính: tháo ra túi ("remove 7") rồi trả cùng đồ Lam Kim
+        is_traocode = self._is_traocodekc(s)
+        if not is_traocode and self._is_traokc(moitruong.get_tenphapbaohientai()):
+            # Đang đeo Cửu Long Thần Hỏa Trảo của acc chính: tháo ra túi ("remove 7") rồi trả cùng đồ Lam Kim. Trảo từ code welcome2d
+            # bị khoá không give được: cứ đeo, không trả (_is_traocodekc)
             if s.get("solanthaotrao", 0) < SOLANTHAOTRAOKC:
                 if all(moitruong.get_iddoituongvatphamhanhtrang(vitri) for vitri in moitruong.get_danhsachvitrimohanhtrang()):
                     # Túi đầy: tháo không được, vứt Chiến Quốc Bảo Điển trước
@@ -1107,8 +1172,8 @@ class TacTuKeoCap:
             s["trangthai"] = "thu hồi: đọc túi tìm đồ Lam Kim trả acc chính"
             return None
         # Trảo trong túi trả cùng đồ Lam Kim: (id, số lượng, tên)
-        trao = self._timvatphamkc(TRAOKEOCAPs)
-        mons = [(mon[3], 1, f"{mon[4]} (cấp {mon[0]})") for mon in ds] + ([(trao[1], 1, TRAOKEOCAPs[0])] if trao else [])
+        trao = None if is_traocode else self._timvatphamkc(TRAOKEOCAPs)
+        mons =[(mon[3], 1, f"{mon[4]} (cấp {mon[0]})") for mon in ds] + ([(trao[1], 1, TRAOKEOCAPs[0])] if trao else [])
         tenchinh = chinh.get("tennhanvat") or str(s["idchinh"])
         if not mons:
             self._logkc(f"Đã trả hết đồ Lam Kim / {TRAOKEOCAPs[0]} cho {tenchinh}" if s.get("sodotrado")
@@ -1277,10 +1342,21 @@ class TacTuKeoCap:
         trao = "deo" if self._is_traokc(self.moitruong.get_tenphapbaohientai()) else ("tui" if self._timvatphamkc(TRAOKEOCAPs) else "")
         if trao == "" and not self._is_dudeotraokc():
             trao = "chuacap"
+        if trao in ("deo", "tui") and self._is_traocodekc(s):
+            # Trảo của code welcome2d: acc chính không đưa thêm, không tính vào số Trảo phải thu hồi (_kiemtratraothuhoikc)
+            trao = "code"
         if trao != s.get("trao"):
             self._logkc(f"{TRAOKEOCAPs[0]}: " + {"deo": "đang đeo", "tui": "có trong túi", "": "không có",
+                                                  "code": "có từ code tân thủ (bị khoá, không trả acc chính)",
                                                   "chuacap": f"không có, chưa cấp {CAPDEOTRAOKC} nên chưa nhận"}[trao])
         s["trao"] = trao
+
+    @staticmethod
+    def _is_traocodekc(s):
+        # Acc gà tích ô "Acc gà nhập code welcome2d": Cửu Long Thần Hỏa Trảo nhận từ code bị khoá, không give được (người dùng dặn
+        # 2026-11-14) => lúc thu hồi không tháo / không trả Trảo, acc chính không chờ Trảo về. Code không mở (admin đóng, "codeloi")
+        # thì Trảo là acc chính đưa, vẫn thu hồi như cũ
+        return bool(taigiaodienkeocap().get("dungcode")) and not s.get("codeloi")
 
     def _is_dudeotraokc(self):
         # Đủ cấp đeo Cửu Long Thần Hỏa Trảo chưa (đọc cấp lỗi / ra 0 thì coi như đủ, giữ cách cũ)
@@ -1360,7 +1436,7 @@ class TacTuKeoCap:
         now = time.time()
         tennpc, x, y = NPCTHANTIENGIAGIA
         buoc = s["tanthu"]
-        if buoc in ("nhiemvu", "x2"):
+        if buoc in ("nhiemvu", "code", "x2"):
             if moitruong.get_idbandohientai() != BANDO_TANTHUTHON:
                 return self._ditoikc(s, BANDO_TANTHUTHON, (x, y), "tới Thần Tiên Gia Gia")
             if buoc == "nhiemvu":
@@ -1369,14 +1445,29 @@ class TacTuKeoCap:
                 if ketqua in ("xong", "khongco", "khongmenu"):
                     self._logkc({"xong": "Đã trả nhiệm vụ Sứ Mệnh Đưa Thư", "khongco": "Không có nhiệm vụ Sứ Mệnh Đưa Thư để trả (đã trả?), bỏ qua",
                                  "khongmenu": f"{tennpc} không mở menu, bỏ qua trả nhiệm vụ"}[ketqua])
-                    s.update(tanthu = "x2", hoithoai = None, luccho = now + 1.5)
+                    # Ô "nhập code" đọc lúc này (đổi giữa chừng vẫn ăn); acc gà máy khác theo ô trên giao diện máy đó
+                    dungcode = bool(taigiaodienkeocap().get("dungcode"))
+                    s.update(tanthu = "code" if dungcode else "x2", hoithoai = None, luccho = now + 1.5)
                 return yeucau
+            self._donghopcodekc()
             if s.get("hoithoai") is None and moitruong.get_is_danghiencuasotuychon():
-                # Trả nhiệm vụ xong NPC tự bật lại menu: đóng đi rồi look lại cho chắc là menu mới
+                # Trả nhiệm vụ / nhập code xong NPC tự bật lại menu: đóng đi rồi look lại cho chắc là menu mới
                 moitruong.set_is_danghiencuasotuychon(False)
                 moitruong.xoa_noidungcuasotuychon()
             if now < s.get("luccho", 0.):
                 return None
+            if buoc == "code":
+                s["trangthai"] = f"tân thủ: {tennpc} nhập code tân thủ"
+                ketqua, yeucau = self._chonmenukc(s, tennpc, x, y, MENUCODETANTHU)
+                if ketqua == "xong":
+                    moitruong.action_thucthicaulenh(LENHCODETANTHU)
+                    # Thưởng code có sẵn 3 Chiến Quốc Lệnh x3 kinh nghiệm (người dùng dặn 2026-11-12): bỏ bước nhận x2 4 giờ
+                    self._logkc(f"Nhập code tân thủ ({LENHCODETANTHU!r}), bỏ nhận x2 kinh nghiệm 4 giờ (đã có Chiến Quốc Lệnh x3)")
+                    s.update(tanthu = "vatpham", hoithoai = None, luccho = now + 2., lucguicode = now)
+                elif ketqua in ("khongco", "khongmenu"):
+                    self._logkc(f"{tennpc} không có lựa chọn Nhập Code Tân Thủ ({ketqua}, admin đóng code?), bỏ qua")
+                    s.update(tanthu = "x2", hoithoai = None, luccho = now + 1., codeloi = True)
+                return yeucau
             s["trangthai"] = f"tân thủ: {tennpc} nhận x2 kinh nghiệm 4 giờ"
             ketqua, yeucau = self._chonmenukc(s, tennpc, x, y, MENUX2KINHNGHIEM)
             if ketqua == "xong":
@@ -1389,7 +1480,12 @@ class TacTuKeoCap:
         if now < s.get("luccho", 0.):
             return None
         if buoc == "vatpham":
+            self._donghopcodekc()
             dalam = s.setdefault("dungvatpham", {})
+            if not dalam and now - s.get("lucguicode", -999.) < THOIGIANCHOTHUONGCODE and (moitruong.get_capdonhanvat() or 0) < 8 \
+                    and not any(self._timvatphamkc(tens) for tens in (*(t for t, _ in VATPHAMTANTHUs), (CHIENQUOCLENHX3,))):
+                s["trangthai"] = "tân thủ: chờ nhận thưởng code"
+                return None
             for tens, cach in VATPHAMTANTHUs:
                 if tens[0] == TRAOKEOCAPs[0] and not self._is_dudeotraokc():
                     # Chưa đủ cấp đeo: để trong túi, qua tân thủ _dungvatphamconsotkc đeo khi lên cấp
@@ -1423,6 +1519,13 @@ class TacTuKeoCap:
             self._logkc(f"Xong thưởng tân thủ (cấp {moitruong.get_capdonhanvat()}), về tập hợp")
             phatam("Acc gà xong tân thủ")
         return None
+
+    def _donghopcodekc(self):
+        # welcome.13747 mở hộp "Xin nhập mã Code Tân Thủ" (cửa sổ mã xác nhận), lệnh codett không tự đóng: tắt cờ mở như bấm Hủy Bỏ
+        moitruong = self.moitruong
+        if moitruong.get_is_dangmocuasoxacnhan() and "Code Tân Thủ" in moitruong.get_noidungcuasomaxacnhan():
+            moitruong.set_is_dangmocuasoxacnhan(False)
+            self._logkc("Đóng hộp nhập mã Code Tân Thủ")
 
     def _xacnhansuphuga(self, s, chinh):
         # Mình là đồ đệ acc chính chọn: Mạnh Tử hỏi "Bạn bằng lòng làm đồ đệ của <acc chính> không ?" (hoặc hỏi xuất sư) thì chọn lựa chọn
@@ -1539,6 +1642,16 @@ class TacTuKeoCap:
         if isinstance(duoi, int):
             # Số: chọn theo thứ tự lựa chọn (0 = lựa chọn 1), dùng khi chưa biết đuôi lệnh
             lenh = lenhs[duoi] if duoi < len(lenhs) else None
+        elif isinstance(duoi, tuple):
+            # (đuôi dự phòng, chữ trong nhãn): chọn lựa chọn có nhãn chứa chữ đó; không đọc được nhãn nào thì theo đuôi lệnh
+            duoiduphong, chu = duoi
+            capdu = [(l, n) for l, n in zip(moitruong.get_lenhcuasotuychons(), moitruong.get_nhanluachoncuasotuychons())
+                     if l.strip() and l.upper() != "CLOSE"]
+            self._logkc(f"Nhãn menu {tennpc}: {[n for _, n in capdu]}")
+            if any(n.strip() for _, n in capdu):
+                lenh = next((l for l, n in capdu if _chuanhoa(chu).lower() in _chuanhoa(n).lower()), None)
+            else:
+                lenh = next((l for l in lenhs if l.split()[-1] == duoiduphong), None)
         else:
             lenh = next((l for l in lenhs if l.split()[-1] == duoi), None)
         if not lenh:

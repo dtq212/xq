@@ -7,9 +7,7 @@
       "ghichu": "",
       "ten": [],
       "tenchua": [
-        "Trang Phục Mùa Hè",
-        "Vạn Ác Chi Dực",
-        "Trang Phục Dạo Phố"
+        "Thần Thú - Sửu"
       ],
       "loai": [],
       "mota": []
@@ -30,7 +28,10 @@
         "Linh Tê Hoàn",
         "Thần Thú - Tuất",
         "Thần Phong Phi Phong",
-        "Thần Thú - Chuột"
+        "Thần Thú - Chuột",
+        "Thần Thú - Mùi",
+        "Hà Thủ Ô",
+        "Điền Thất"
       ],
       "tenchua": [],
       "loai": [],
@@ -54,6 +55,7 @@
       "hanhdong": "giu",
       "ghichu": "Danh sách không bán (cũ)",
       "ten": [
+        "Kỵ Thú Tiểu Quai",
         "Hắc Cầu",
         "Lam Cầu",
         "Hoa Cầu",
@@ -143,6 +145,7 @@
         "Cương Thi Phù",
         "Hoàng Kỳ",
         "Cúc Dại",
+        "Dã Cúc",
         "Quả Anh Túc",
         "Điền Thất",
         "Táo Đỏ",
@@ -177,7 +180,15 @@
         "Nhiếp Hồn Thạch",
         "Da Sói",
         "Trứng Gà",
-        "Bắp"
+        "Bắp",
+        "Mặc Ngọc Bảo Thạch",
+        "Mặc Ngọc Ngọc Thạch",
+        "Lục Bảo Thạch",
+        "Lục Ngọc Thạch",
+        "Hồng Bảo Thạch",
+        "Hồng Ngọc Thạch",
+        "Hạt Mè Khai Môn",
+        "Cá"
       ],
       "tenchua": [],
       "loai": [],
@@ -198,7 +209,8 @@
         "Tàng Đồ",
         "Túi Hoàng Kim",
         "Phục Dược",
-        "Trị Dược"
+        "Trị Dược",
+        "Kỵ Thú"
       ],
       "loai": [],
       "mota": []
@@ -235,16 +247,17 @@
       "mota": []
     },
     {
-      "hanhdong": "giu",
-      "ghichu": "Mô tả không bán (cũ)",
-      "mota": [
-        "ngự thạch"
-      ],
       "bat": true,
       "is_bao": false,
+      "hanhdong": "giu",
+      "ghichu": "Mô tả không bán (cũ)",
       "ten": [],
       "tenchua": [],
-      "loai": []
+      "loai": [],
+      "mota": [
+        "ngự thạch",
+        "phân giải từ trang bị"
+      ]
     },
     {
       "bat": true,
@@ -530,7 +543,14 @@
         "Gỗ Đào Đinh",
         "Tỏa Ma Liên",
         "Hủ Cốt",
-        "Lam Ma Chi Lệ"
+        "Lam Ma Chi Lệ",
+        "Đỗ Khang Tửu",
+        "Khô Bò",
+        "Que Thịt Nướng",
+        "Túi Ngân Lượng Lớn",
+        "Bánh Đậu Xanh",
+        "Bánh Đậu Đỏ",
+        "Phần Tửu"
       ],
       "tenchua": [],
       "chibanrac": true,
@@ -595,6 +615,355 @@
       "tenchua": [],
       "chibanrac": false,
       "ghichu": "Tàng Bảo Đồ"
+    }
+  ],
+  "dung": [
+    {
+      "bat": true,
+      "vatpham": [
+        "Tiểu Pháp Lực Thạch"
+      ],
+      "sinhluc": 0,
+      "matsinhluc": 0,
+      "noiluc": 50,
+      "matnoiluc": 0,
+      "theluc": -1,
+      "giancach": 2.5,
+      "hieuung": "thieu_phapluc",
+      "noi": "bandopk",
+      "monphai": "",
+      "chikhidanh": false,
+      "khongphobanrieng": false,
+      "ghichu": "Pháp Lực Thạch"
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Tiểu Huyết Thạch"
+      ],
+      "sinhluc": 75,
+      "matsinhluc": 0,
+      "noiluc": 0,
+      "matnoiluc": 0,
+      "theluc": -1,
+      "giancach": 2.5,
+      "hieuung": "thieu_huyetthach",
+      "noi": "khaikhoang",
+      "monphai": "",
+      "chikhidanh": false,
+      "khongphobanrieng": false,
+      "ghichu": "Huyết Thạch khi PK / khai khoáng"
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Tiểu Huyết Thạch"
+      ],
+      "sinhluc": 50,
+      "matsinhluc": 0,
+      "noiluc": 0,
+      "matnoiluc": 0,
+      "theluc": -1,
+      "giancach": 2.5,
+      "hieuung": "thieu_huyetthach",
+      "noi": "moinoi",
+      "monphai": "maoson",
+      "chikhidanh": false,
+      "khongphobanrieng": false,
+      "ghichu": "Huyết Thạch Mao Sơn"
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Tiểu Huyết Thạch"
+      ],
+      "sinhluc": 25,
+      "matsinhluc": 0,
+      "noiluc": 0,
+      "matnoiluc": 0,
+      "theluc": -1,
+      "giancach": 2.5,
+      "hieuung": "thieu_huyetthach",
+      "noi": "moinoi",
+      "monphai": "",
+      "chikhidanh": false,
+      "khongphobanrieng": false,
+      "ghichu": "Huyết Thạch máu thấp"
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Thiên Nguyên Đơn"
+      ],
+      "sinhluc": 0,
+      "matsinhluc": 0,
+      "noiluc": 0,
+      "matnoiluc": 0,
+      "theluc": -1,
+      "giancach": 2.5,
+      "hieuung": "thieu_thiennguyen",
+      "noi": "dangpk",
+      "monphai": "daohoanguyen",
+      "chikhidanh": false,
+      "khongphobanrieng": false,
+      "ghichu": "Buff khi PK"
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Ngân Hạnh Tử"
+      ],
+      "sinhluc": 0,
+      "matsinhluc": 0,
+      "noiluc": 0,
+      "matnoiluc": 0,
+      "theluc": -1,
+      "giancach": 2.5,
+      "hieuung": "thieu_nganhanh",
+      "noi": "dangpk",
+      "monphai": "",
+      "chikhidanh": false,
+      "khongphobanrieng": false,
+      "ghichu": "Buff khi PK"
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Xá Lợi Tử"
+      ],
+      "sinhluc": 0,
+      "matsinhluc": 0,
+      "noiluc": 0,
+      "matnoiluc": 0,
+      "theluc": -1,
+      "giancach": 2.5,
+      "hieuung": "thieu_xaloi",
+      "noi": "dangpk",
+      "monphai": "",
+      "chikhidanh": false,
+      "khongphobanrieng": false,
+      "ghichu": "Buff khi PK"
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Trị Dược",
+        "Thí Luyện Quả",
+        "Thí Luyện Đơn",
+        "Cấp Cứu Đơn",
+        "Hoạt Lạc Hoàn"
+      ],
+      "sinhluc": 75,
+      "matsinhluc": 2500,
+      "noiluc": 0,
+      "matnoiluc": 0,
+      "theluc": -1,
+      "giancach": 1.0,
+      "hieuung": "thieu_datinh",
+      "noi": "dangpk",
+      "monphai": "",
+      "chikhidanh": true,
+      "khongphobanrieng": true,
+      "ghichu": "Hồi sinh lực khi PK"
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Trị Dược",
+        "Thí Luyện Quả",
+        "Thí Luyện Đơn",
+        "Cấp Cứu Đơn",
+        "Hoạt Lạc Hoàn"
+      ],
+      "sinhluc": 15,
+      "matsinhluc": 2500,
+      "noiluc": 0,
+      "matnoiluc": 0,
+      "theluc": -1,
+      "giancach": 1.0,
+      "hieuung": "co_datinh",
+      "noi": "dangpk",
+      "monphai": "",
+      "chikhidanh": true,
+      "khongphobanrieng": true,
+      "ghichu": "Hồi sinh lực khi PK (Dã Tính)"
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Hoạt Lạc Hoàn",
+        "Trị Dược",
+        "Cấp Cứu Đơn",
+        "Thí Luyện Đơn",
+        "Thí Luyện Quả"
+      ],
+      "sinhluc": 35,
+      "matsinhluc": 2500,
+      "noiluc": 0,
+      "matnoiluc": 0,
+      "theluc": -1,
+      "giancach": 1.0,
+      "hieuung": "thieu_datinh",
+      "noi": "phoban",
+      "monphai": "",
+      "chikhidanh": false,
+      "khongphobanrieng": true,
+      "ghichu": "Hồi sinh lực ở phó bản"
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Hoạt Lạc Hoàn",
+        "Trị Dược",
+        "Cấp Cứu Đơn",
+        "Thí Luyện Đơn",
+        "Thí Luyện Quả"
+      ],
+      "sinhluc": 25,
+      "matsinhluc": 2500,
+      "noiluc": 0,
+      "matnoiluc": 0,
+      "theluc": -1,
+      "giancach": 1.0,
+      "hieuung": "co_datinh",
+      "noi": "phoban",
+      "monphai": "",
+      "chikhidanh": false,
+      "khongphobanrieng": true,
+      "ghichu": "Hồi sinh lực ở phó bản (Dã Tính)"
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Hoạt Lạc Hoàn"
+      ],
+      "sinhluc": 75,
+      "matsinhluc": 0,
+      "noiluc": 0,
+      "matnoiluc": 0,
+      "theluc": -1,
+      "giancach": 1.0,
+      "hieuung": "thieu_datinh",
+      "noi": "khac",
+      "monphai": "",
+      "chikhidanh": true,
+      "khongphobanrieng": true,
+      "ghichu": "Hồi sinh lực"
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Hoạt Lạc Hoàn"
+      ],
+      "sinhluc": 15,
+      "matsinhluc": 0,
+      "noiluc": 0,
+      "matnoiluc": 0,
+      "theluc": -1,
+      "giancach": 1.0,
+      "hieuung": "co_datinh",
+      "noi": "khac",
+      "monphai": "",
+      "chikhidanh": true,
+      "khongphobanrieng": true,
+      "ghichu": "Hồi sinh lực (Dã Tính)"
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Phục Dược",
+        "Long Tiên Thảo",
+        "Thí Luyện Đơn",
+        "Hoạt Tâm Đơn"
+      ],
+      "sinhluc": 0,
+      "matsinhluc": 0,
+      "noiluc": 75,
+      "matnoiluc": 3000,
+      "theluc": -1,
+      "giancach": 1.0,
+      "hieuung": "",
+      "noi": "dangpk",
+      "monphai": "",
+      "chikhidanh": true,
+      "khongphobanrieng": true,
+      "ghichu": "Hồi nội lực khi PK"
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Phục Dược",
+        "Hoạt Tâm Đơn",
+        "Thí Luyện Đơn",
+        "Long Tiên Thảo"
+      ],
+      "sinhluc": 0,
+      "matsinhluc": 0,
+      "noiluc": 35,
+      "matnoiluc": 3000,
+      "theluc": -1,
+      "giancach": 1.0,
+      "hieuung": "",
+      "noi": "phoban",
+      "monphai": "",
+      "chikhidanh": true,
+      "khongphobanrieng": true,
+      "ghichu": "Hồi nội lực ở phó bản"
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Khu Ma Tán",
+        "Thanh Tâm Đơn"
+      ],
+      "sinhluc": 0,
+      "matsinhluc": 0,
+      "noiluc": 0,
+      "matnoiluc": 0,
+      "theluc": -1,
+      "giancach": 1.0,
+      "hieuung": "bikhongche",
+      "noi": "dangpk",
+      "monphai": "",
+      "chikhidanh": true,
+      "khongphobanrieng": false,
+      "ghichu": "Giải hiệu ứng xấu"
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Bát Tiên Đơn"
+      ],
+      "sinhluc": 0,
+      "matsinhluc": 0,
+      "noiluc": 0,
+      "matnoiluc": 0,
+      "theluc": 5,
+      "giancach": 30.0,
+      "hieuung": "",
+      "noi": "moinoi",
+      "monphai": "",
+      "chikhidanh": false,
+      "khongphobanrieng": false,
+      "ghichu": "Hồi thể lực"
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Phục Dược"
+      ],
+      "sinhluc": 0,
+      "matsinhluc": 0,
+      "noiluc": 25,
+      "matnoiluc": 0,
+      "theluc": -1,
+      "giancach": 15.0,
+      "hieuung": "",
+      "noi": "moinoi",
+      "monphai": "thucson",
+      "chikhidanh": true,
+      "khongphobanrieng": false,
+      "ghichu": ""
     }
   ]
 }

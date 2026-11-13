@@ -216,27 +216,46 @@ class DongBoLan:
             time.sleep(CHUKYDONGBOLAN)
 
 
+# DuLieuNhieuMay đọc lại từ Manager tối đa mỗi chừng này giây. Mỗi lần đọc shared_data là 1-2 lượt hỏi qua tiến trình Manager (gửi /
+# nhận qua socket + pickle), mà mỗi lượt vòng lặp có ~8 chỗ đọc (người lạ, bot cùng máy, tổ đội, nhường buff, tầm nhìn chung...):
+# py-spy 2026-11-12 ~8% CPU tiến trình bot. Bot khác ghi thì chậm nhất chừng này giây mới thấy; bot này tự ghi thì thấy ngay
+THOIGIANNHODULIEUCHUNG = 0.1
+
+
 class DuLieuNhieuMay:
-    # shared_data cho bot (tactu): ghi vào phần máy mình, đọc gộp cả cửa sổ máy khác (shared_data_lan)
+    # shared_data cho bot (tactu): ghi vào phần máy mình, đọc gộp cả cửa sổ máy khác (shared_data_lan, None = không bật LAN).
+    # Đọc từ 1 bản chụp (list cặp khoá - giá trị + dict) nhớ THOIGIANNHODULIEUCHUNG giây, dùng chung mọi luồng của tiến trình bot. Khoá
+    # máy mình (hwnd) và máy khác ("<tên máy>|<hwnd>") không trùng nhau. Giá trị là bản sao Manager trả về, nơi gọi chỉ đọc
     def __init__(self, cucbo, maykhac):
         self.cucbo = cucbo
         self.maykhac = maykhac
+        self._nho = (-1e9, [], {})
+
+    def _banchup(self):
+        nho = self._nho
+        bayh = time.monotonic()
+        if bayh - nho[0] < THOIGIANNHODULIEUCHUNG:
+            return nho
+        cap = list(self.cucbo.items()) + (list(self.maykhac.items()) if self.maykhac is not None else [])
+        nho = (bayh, cap, dict(cap))
+        self._nho = nho
+        return nho
 
     def items(self):
-        return list(self.cucbo.items()) + list(self.maykhac.items())
+        return list(self._banchup()[1])
 
     def values(self):
-        return list(self.cucbo.values()) + list(self.maykhac.values())
+        return [giatri for _, giatri in self._banchup()[1]]
 
     def keys(self):
-        return list(self.cucbo.keys()) + list(self.maykhac.keys())
+        return [khoa for khoa, _ in self._banchup()[1]]
 
     def get(self, khoa, macdinh = None):
-        giatri = self.cucbo.get(khoa)
-        return giatri if giatri is not None else self.maykhac.get(khoa, macdinh)
+        giatri = self._banchup()[2].get(khoa)
+        return giatri if giatri is not None else macdinh
 
     def __contains__(self, khoa):
-        return khoa in self.cucbo or khoa in self.maykhac
+        return khoa in self._banchup()[2]
 
     def __getitem__(self, khoa):
         giatri = self.get(khoa)
@@ -246,6 +265,8 @@ class DuLieuNhieuMay:
 
     def __setitem__(self, khoa, giatri):
         self.cucbo[khoa] = giatri
+        self._nho = (-1e9, [], {})
 
     def __delitem__(self, khoa):
         del self.cucbo[khoa]
+        self._nho = (-1e9, [], {})

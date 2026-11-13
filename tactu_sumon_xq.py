@@ -35,11 +35,17 @@ SOLUONGMUADAYCANKHON = 30
 CONGVANTRUYNA = "Công Văn Truy Nã"
 # Truy Bắt Thích Khách: hết Công Văn Truy Nã (dùng chỉ chỗ thích khách) thì về Chủ Tiệm Tạp Hóa ở Tân Thủ Thôn mua chừng này
 SOLUONGMUACONGVANTRUYNA = 5
+# Truy Bắt Thích Khách: mua đủ số con còn thiếu + chừng này tờ dự phòng (thích khách bị đánh chạy chỗ khác, tới chấm cũ phải dùng lại)
+SOLUONGDUPHONGCONGVAN = 2
 # Dùng công văn: chờ menu / vị trí máy chủ trả tối đa chừng này giây; tới cách chấm chừng này ô mà không thấy đối thủ thì dùng lại;
 # liền chừng này lần không ra gì (không menu, không vị trí, tới chấm không thấy) thì đi dò khắp bản đồ như cũ tới khi gặp đối thủ
 THOIGIANCHOTRUYNA = 4.
 KHOANGCACHTOICHAMTRUYNA = 4
 SOLANTRUYNALOI = 5
+# Liền SOLANTRUYNALOI lần không ra gì thì vừa đi dò bản đồ vừa cứ chừng này giây dùng lại công văn 1 lần (không bỏ hẳn): vừa nhận nhiệm vụ
+# máy chủ chưa trả vị trí một lúc (log 2026-11-14: Ám Sát lượt 29 dùng 5 lần trong 25s không có vị trí rồi đi dò cả 40 điểm Tề Quốc;
+# nhân vật khác cùng lúc 30-55s sau mới có chấm vàng). Dùng mà không ra vị trí thì không mất công văn (đếm lần mua trong log)
+GIANCACHTHULAITRUYNA = 10.
 THOIGIANDONCHAMTRUYNA = 1.  # chờ máy chủ dọn chấm vàng cũ sau khi làm mới danh hiệu
 # Mở cửa hàng (action_xulymocuahang): quá chừng này giây kể từ lúc bấm NPC mà cửa sổ chưa hiện thì coi như không mở được
 THOIGIANMOCUAHANGTOIDA = 10.
@@ -83,6 +89,8 @@ GIANCACHXINNHIEMVU = 10.
 # Luyện tập / Du lịch tự chọn bãi: quái cấp thấp nhất >= cấp - CAPTHAPHONTOIDA, cấp cao nhất <= cấp + CAPCAOHONTOIDA
 CAPTHAPHONTOIDA = 12
 CAPCAOHONTOIDA = 3
+# Quái thấp hơn cấp nhân vật từ chừng này cấp trở lên thì không ra Tiềm Năng: lộ trình riêng có bản đồ như vậy thì không dùng cho sư môn
+CAPCHENHLECHTIEMNANG = 10
 # Bãi train người dùng chọn theo cấp (ưu tiên hơn tự chọn; các bãi này game không ghi cấp quái): (từ cấp, tới dưới cấp, các tầng).
 # Lấy tầng đầu tiên có lộ trình mẫu, không có thì tầng đầu
 BANDOTRAINTHEOCAP = (
@@ -443,7 +451,7 @@ class TacTuSuMon:
                         moitruong.action_khoavankhitrieuhoi((LENHTINVAT_NIETBAN,), ten = "TÍN VẬT")
                         moitruong.action_thucthicaulenh(LENHTINVAT_NIETBAN)
                     else:
-                        # Khoá vận khí để hết vận khí còn nhả giữ chỗ Hồi Thành (GiuHoiThanh.ketthuc); không khoá thì bot khác chờ đủ 25s
+                        # Khoá vận khí để hết vận khí còn nhả giữ chỗ Hồi Thành (GiuHoiThanh.ketthuc); không vào vận khí thì nhả sớm
                         moitruong.action_khoavankhitrieuhoi((LENHHOIMONPHAI,), ten = "HỒI THÀNH PHÙ")
                         moitruong.action_thucthicaulenh(LENHHOIMONPHAI)
                     s["lucmonphai"] = now
@@ -945,8 +953,8 @@ class TacTuSuMon:
             return self._noichuyen(s, nv, nv["npc"], ["look", "thamvieng"], "thăm viếng", idbando)
         if loai in (LOAI_LUYENTAP, LOAI_DULICH):
             tiendo = f" ({nv['tiendo'][0]}/{nv['tiendo'][1]})" if nv["tiendo"] else ""
-            if self._diemdanhxungquanhs:
-                # Nhân vật có lộ trình điểm đánh riêng: farm theo lộ trình đó
+            if self._diemdanhxungquanhs and self._is_lotrinhhopcapsumon(s):
+                # Nhân vật có lộ trình điểm đánh riêng (quái hợp cấp): farm theo lộ trình đó
                 s["chedo"] = "farm"
                 self._batdanhquai(s)
                 s["trangthai"] = f"{TENLOAI[loai]}: farm theo lộ trình{tiendo}"
@@ -967,6 +975,23 @@ class TacTuSuMon:
             return self._buocbatyeuquai(s, nv)
         self._ketthucsumon(f"chưa biết làm nhiệm vụ này: {nv['ten']} – {nv['mucdich']}")
         return None
+
+    def _is_lotrinhhopcapsumon(self, s):
+        # Lộ trình điểm đánh riêng của nhân vật có dùng được cho Luyện tập / Du lịch không: quái thấp hơn cấp nhân vật từ
+        # CAPCHENHLECHTIEMNANG cấp trở lên thì không ra Tiềm Năng (người dùng xác nhận). Đã thấy acc cấp 100 cầm lộ trình Hái Dược 2x
+        # (quái 25~38), bản đồ 282 (quái 11~19), 171/172 (51~59) farm mãi không lên tiến độ. Bản đồ không có cấp quái trong game
+        # (Khốn Ma Trận, Hầm Vạn Nhân...) thì coi như hợp. Lộ trình lệch cấp -> tự chọn bãi (_buoctrain)
+        capdo = self.moitruong.get_capdonhanvat() or 0
+        thaps = sorted({int(d[2]) for d in self._diemdanhxungquanhs if len(d) >= 3 and int(d[2]) in CAPQUAI_MAP
+                        and CAPQUAI_MAP[int(d[2])][1] <= capdo - CAPCHENHLECHTIEMNANG})
+        if not thaps:
+            return True
+        if s.get("lotrinhlechcap") != (capdo, tuple(thaps)):
+            s["lotrinhlechcap"] = (capdo, tuple(thaps))
+            self.moitruong._inlog(f"[SƯ MÔN] Lộ trình điểm đánh có bản đồ quái thấp hơn cấp {capdo} từ {CAPCHENHLECHTIEMNANG} cấp trở lên ("
+                                  + ", ".join(f"{laytenbando(b) or b} {CAPQUAI_MAP[b][0]}~{CAPQUAI_MAP[b][1]}" for b in thaps)
+                                  + "): bỏ qua, tự chọn bãi hợp cấp")
+        return False
 
     def _chonbandotrain(self):
         # Bãi hợp cấp cho Luyện tập / Du lịch (CAPQUAI_MAP: cấp quái theo bản đồ, từ file game): quái không thấp hơn cấp - CAPTHAPHONTOIDA,
@@ -1100,12 +1125,16 @@ class TacTuSuMon:
             self._ketthucsumon(f"không rõ phải tới nước nào ({nv['ten']}): {nv['mucdich']}")
             return None
         nhan = f"{nv['ten']}: " + (", ".join(f"{t} {a}/{b}" for t, a, b in nv["tiendos"]) if nv.get("tiendos") else ", ".join(nv["quais"]))
+        # Mỗi con cần giết tốn ít nhất 1 Công Văn (dùng ra vị trí mới mất, hụt thì không), thích khách bị đánh chạy chỗ khác thì tốn thêm
+        conthieu = sum(max(0, b - a) for _, a, b in nv.get("tiendos") or []) or 1
+        soluongmua = {"vatpham": CONGVANTRUYNA, "soluong": max(SOLUONGMUACONGVANTRUYNA, conthieu + SOLUONGDUPHONGCONGVAN),
+                      "cuahang": CHUTIEMTAPHOA, "luot": nv["luot"]}
+        socongvan = self._demvatpham(CONGVANTRUYNA)
         if self.moitruong.get_idbandohientai() != idbando:
-            if not self._demvatpham(CONGVANTRUYNA):
-                # Hết công văn: về Chủ Tiệm Tạp Hóa ở Tân Thủ Thôn mua trước khi sang nước thích khách trốn (đang truy mà hết thì không
-                # chạy về, đi dò khắp bản đồ)
-                return self._buocmuahang(s, {"vatpham": CONGVANTRUYNA, "soluong": SOLUONGMUACONGVANTRUYNA, "cuahang": CHUTIEMTAPHOA,
-                                             "luot": nv["luot"]})
+            if socongvan < conthieu:
+                # Không đủ công văn cho số con còn thiếu (người dùng thấy 2026-11-14: Thủ Lĩnh 1/1 + Mộng Diện 0/4 mà trước đây chỉ mua khi
+                # hết hẳn, còn 1-2 tờ là đi luôn rồi hết giữa chừng chạy bộ dò): về Chủ Tiệm Tạp Hóa ở Tân Thủ Thôn mua đủ rồi mới sang
+                return self._buocmuahang(s, soluongmua)
             self._xoademmua(s, nv["luot"], CONGVANTRUYNA)
             return self._dentoi(s, idbando, None, None, nhan)
         s["chedo"] = "danhquai"
@@ -1119,6 +1148,15 @@ class TacTuSuMon:
             x, y = self.moitruong.get_toado(gannhat)
             return self._dentoi(s, idbando, x, y, f"{nhan}: đuổi {self.moitruong.get_tendoituong(gannhat)}",
                                 khoangcach = self._khoangcachsudungkynangtamxa, is_dioo = self._is_dioo(idbando))
+        t = s.get("truyna")
+        if not socongvan and not (t and t["luot"] == nv["luot"] and (t["dich"] or t["buoc"])):
+            # Đang ở nước thích khách mà hết công văn, không còn chấm vàng đang tới: về mua đủ rồi quay lại, không chạy bộ dò cả bản đồ
+            khoa = f"{nv['luot']}|hetcongvan"
+            if khoa not in s["thu"]:
+                s["thu"][khoa] = (1, time.time())
+                self.moitruong._inlog(f"[SƯ MÔN] Hết Công Văn Truy Nã giữa chừng ({nhan}): về mua {soluongmua['soluong']} tờ")
+            s["chedo"] = "dichuyen"
+            return self._buocmuahang(s, soluongmua)
         is_dangtruyna, yeucau = self._buoctruyna(s, nv, idbando, nhan)
         if is_dangtruyna:
             return yeucau
@@ -1150,12 +1188,19 @@ class TacTuSuMon:
             s["luoi"] = (khoa, diems)
         return self._diquadiem(s, khoa, idbando, s["luoi"][1], nhan, chodiemdau = THOIGIANCHODIEMNHIEMVU if nv.get("toado") else 0.)
 
+    def _locvitritruyna(self):
+        # Vị trí Công Văn Truy Nã (get_vitritruyna), bỏ ô trùng ID / toạ độ thành viên nhóm (chấm vàng trên bản đồ còn có thành viên nhóm,
+        # cấu trúc riêng, phòng hờ)
+        moitruong = self.moitruong
+        idnhoms, toadonhoms = set(moitruong.get_danhsachidnguoichoithanhviennhoms()), set(moitruong.get_toadothanhviennhoms())
+        return [v for v in moitruong.get_vitritruyna() if v[0] not in idnhoms and v[1:] not in toadonhoms]
+
     def _buoctruyna(self, s, nv, idbando, nhan):
         # Công Văn Truy Nã: "use <id>#" mở menu "Bạn muốn tìm vị trí của ai ?" (chỉ các đối thủ còn sống, mỗi con 1 lệnh
         # "use <id># target.3.<k>"), chọn con nào thì máy chủ ghi vị trí đúng con đó vào ô của nó trong khối điều khiển (get_vitritruyna,
         # chấm vàng trên bản đồ, không tự cập nhật; ô con đã chết giữ toạ độ cũ). Dùng liên tục được: tới chấm gần nhất, tới nơi không
         # thấy thì bỏ ô đó (tới khi nó có toạ độ mới) và dùng lại. -> (True, yêu cầu di chuyển / None) khi đang lo việc này, (False, None)
-        # khi hết công văn hoặc liền SOLANTRUYNALOI lần không ra gì (đi dò khắp bản đồ)
+        # khi hết công văn hoặc liền SOLANTRUYNALOI lần không ra gì (đi dò khắp bản đồ, giữa chừng cứ GIANCACHTHULAITRUYNA giây dùng lại)
         moitruong = self.moitruong
         t = s.get("truyna")
         if not t or t["luot"] != nv["luot"]:
@@ -1168,9 +1213,18 @@ class TacTuSuMon:
             moitruong._inlog(f"[SƯ MÔN] Tới chấm Truy Nã ({x}, {y}) không thấy đối thủ, dùng lại công văn")
             t["bo"].add(t["dich"])
             t["dich"], t["solanloi"] = None, t["solanloi"] + 1
-        if t["solanloi"] >= SOLANTRUYNALOI:
-            return False, None
         now = time.time()
+        if t["solanloi"] >= SOLANTRUYNALOI and t["buoc"] is None:
+            # Đang đi dò: vị trí máy chủ trả muộn (của lần dùng trước) thì tới luôn; quá GIANCACHTHULAITRUYNA giây thì dùng lại 1 lần
+            moi = [v for v in self._locvitritruyna() if v not in t["mau"] and v not in t["bo"]]
+            if moi:
+                t["dich"], t["solanloi"] = min(moi, key = lambda v: moitruong.get_khoangcachdiem(v[1], v[2])), 0
+                x, y = t["dich"][1:]
+                moitruong._inlog(f"[SƯ MÔN] Công Văn Truy Nã trả vị trí muộn {moi} -> tới ({x}, {y})")
+                s["trangthai"] = f"{nhan}: tới chấm Truy Nã ({x}, {y})"
+                return True, self._dentoi(s, idbando, x, y, s["trangthai"], is_dioo = self._is_dioo(idbando))
+            if now - t["luc"] < GIANCACHTHULAITRUYNA:
+                return False, None
         if t["buoc"] == "menu":
             lenhs = [l for l in moitruong.get_lenhcuasotuychons() if "# target." in l] if moitruong.get_noidungcuasotuychon() else []
             if lenhs:
@@ -1187,10 +1241,7 @@ class TacTuSuMon:
             s["trangthai"] = f"{nhan}: chờ menu Công Văn Truy Nã"
             return True, None
         if t["buoc"] == "vitri":
-            # Chấm vàng trên bản đồ còn có thành viên nhóm (cấu trúc nhóm riêng, không ở bảng này): phòng hờ vẫn bỏ ô trùng ID / toạ độ
-            # thành viên
-            idnhoms, toadonhoms = set(moitruong.get_danhsachidnguoichoithanhviennhoms()), set(moitruong.get_toadothanhviennhoms())
-            vitris = [v for v in moitruong.get_vitritruyna() if v[0] not in idnhoms and v[1:] not in toadonhoms]
+            vitris = self._locvitritruyna()
             moi = [v for v in vitris if v not in t["mau"]]
             if not moi and now - t["luc"] < THOIGIANCHOTRUYNA:
                 s["trangthai"] = f"{nhan}: chờ vị trí Công Văn Truy Nã"

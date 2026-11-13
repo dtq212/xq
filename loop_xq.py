@@ -11,7 +11,6 @@ import pymem.exception
 from hangso_xq import IS_BOKHUNGSAUTANCONG, CHUKYBOKHUNGSAUTANCONG, THOIGIANCHOBOKHUNGSAUTANCONG, TUTHENHANVAT_DELAYSAUTANCONG, TUTHENHANVAT_LOI, CHUKYGIUOTRONGHANHTRANG
 from hangso_xq import BANDO_BANGPHAI, TRUONGPHONGTIENSINH, RUONGDUTRU
 from hangso_xq import BANDO_CHIENTRUONG, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, BANDO_YENTRUONGTHANH3, BANDO_YENTRUONGTHANH2, BANDO_YENTRUONGTHANH1, TANGBAODO, LAMCAU, HACCAU, HIEUUNGKYNANG_TRONGTHUONG
-from hangso_xq import LENHCHUCNANGHETHONG, SOLANTHUANHIEUUNGKYNANG
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
 from tienich_xq import canhbao
@@ -39,7 +38,7 @@ class LoopLamMoiTrangThaiMoiTruong:
             time.sleep(0.2)
 
     def step(self):
-        if not self.moitruong.get_is_nhanvattontai() or self.moitruong.get_is_dangmatketnoi():
+        if not self.moitruong.get_is_nhanvattontai():
             return
         self.moitruong.action_lammoitrangthaimoitruong()
 
@@ -66,7 +65,7 @@ class LoopTimKiemMucTieu:
             time.sleep(0.15)
 
     def step(self):
-        if not self.moitruong.get_is_nhanvattontai() or self.moitruong.get_is_dangmatketnoi():
+        if not self.moitruong.get_is_nhanvattontai():
             return
         if self.tactu.get_is_dangtamngung():
             return
@@ -106,11 +105,15 @@ class LoopDieuPhoiDiChuyen:
             time.sleep(0.05)
 
     def step(self):
-        if not self.moitruong.get_is_nhanvattontai() or self.moitruong.get_is_dangmatketnoi():
+        if not self.moitruong.get_is_nhanvattontai():
             return
         # Sau lag giờ máy chủ của client bị tụt => máy chủ từ chối mọi bước đi: sửa ngay (chạy cả lúc bot tạm ngưng / người chơi tự đi)
         self.moitruong.action_suagiomaychu()
         if self.tactu.get_is_dangtamngung():
+            return
+        # Đang sắp xếp hành trang: đứng lại cho xếp xong (action_sapxephanhtrang bỏ lượt khi tư thế đang di chuyển, chạy lộ trình liên
+        # tục thì gần như không xếp được món nào); xếp mỗi lệnh ~0.1s nên chỉ dừng vài giây
+        if self.tactu._is_dangsapxephanhtrang:
             return
         # Tính đích theo nhóm ngay trước khi di chuyển (để ở loop chính thì phải chờ cả lượt dùng kỹ năng, đích bị cũ nên chạy theo vị trí trưởng nhóm từ lâu)
         self.tactu.action_tudongtheosau()
@@ -125,10 +128,6 @@ class LoopChinh:
         self.stop = stop
         self.thoidiemhopthanhtinhthach_map = {}
         self.thoidiemlogtinhthachgannhat = 0.
-        # Ẩn hiệu ứng Kĩ năng (xem _thietlapanhieuungkynang): đã xong trong lần vào game này / số lần đã thử / lần thử gần nhất
-        self.is_daanhieuungkynang = False
-        self.solanthuanhieuungkynang = 0
-        self.thoidiemthuanhieuungkynang = 0.
 
     def __del__(self):
         if not self.stop.is_set():
@@ -163,63 +162,12 @@ class LoopChinh:
         time.sleep(0.25)
         return bool(self.moitruong.get_noidungcuasotuychon())
 
-    @staticmethod
-    def _chuanhoanhanluachon(nhan):
-        # "7.Ẩn hiệu ứng Kĩ năng" / "4.[Tắt] Hiện mũ ..." -> "an hieu ung ki nang": bỏ số thứ tự, [Bật]/[Tắt], dấu, hoa thường
-        nhan = re.sub(r"^\s*\d+\s*\.\s*", "", nhan or "")
-        nhan = re.sub(r"\[[^\]]*\]", " ", nhan)
-        nhan = "".join(c for c in unicodedata.normalize("NFD", nhan) if not unicodedata.combining(c))
-        return " ".join(nhan.replace("đ", "d").replace("Đ", "D").split()).lower()
-
-    def _docluachonhieuungkynang(self):
-        # Mở menu Chức năng hệ thống, -> (nhãn chuẩn hoá, lệnh) của lựa chọn hiệu ứng Kĩ năng, hoặc None (menu không về / không thấy)
-        if not self._guilenhchomenu(LENHCHUCNANGHETHONG):
-            return None
-        for nhan, lenh in zip(self.moitruong.get_nhanluachoncuasotuychons(), self.moitruong.get_lenhcuasotuychons()):
-            nhanchuan = self._chuanhoanhanluachon(nhan)
-            # "Kĩ năng" / "Kỹ năng": bỏ dấu đều ra "ki nang" / "ky nang"
-            if "hieu ung" in nhanchuan and re.search(r"k[iy] nang", nhanchuan) and lenh.startswith(LENHCHUCNANGHETHONG + "."):
-                return nhanchuan, lenh
-        return None
-
-    def _thietlapanhieuungkynang(self):
-        # Luôn Ẩn hiệu ứng Kĩ năng. Trạng thái lưu trên máy chủ, vào game không phải lúc nào cũng đang ẩn, mà không có chỗ đọc trực tiếp:
-        # dùng kỹ năng Chức năng hệ thống ("pf2 908") rồi xem nhãn lựa chọn: "Ẩn hiệu ứng Kĩ năng" = đang hiện -> chọn để ẩn (lệnh bật / tắt
-        # qua lại), "Hiện hiệu ứng Kĩ năng" = đã ẩn. Chọn xong mở lại menu kiểm tra. Mỗi lần vào game làm 1 lần, thử tối đa
-        # SOLANTHUANHIEUUNGKYNANG lần cách nhau 5s; đang hội thoại NPC thì để lượt sau (menu dùng chung cửa sổ tuỳ chọn)
-        if self.is_daanhieuungkynang or self.solanthuanhieuungkynang >= SOLANTHUANHIEUUNGKYNANG:
-            return
-        if time.time() - self.thoidiemthuanhieuungkynang < 5. or self.tactu.get_is_danghoithoainpc():
-            return
-        self.solanthuanhieuungkynang += 1
-        self.thoidiemthuanhieuungkynang = time.time()
-        try:
-            luachon = self._docluachonhieuungkynang()
-            if luachon and luachon[0].startswith("an "):
-                self.moitruong.action_thucthicaulenh(luachon[1])
-                time.sleep(0.5)
-                luachon = self._docluachonhieuungkynang()
-                self.moitruong._inlog(f"[ẨN HIỆU ỨNG KĨ NĂNG] đang hiện, đã gửi {luachon and luachon[1]} -> nhãn sau: {luachon and luachon[0]}")
-            if luachon and luachon[0].startswith("hien "):
-                self.is_daanhieuungkynang = True
-                self.moitruong._inlog("[ẨN HIỆU ỨNG KĨ NĂNG] hiệu ứng Kĩ năng đang ẩn")
-            elif self.solanthuanhieuungkynang >= SOLANTHUANHIEUUNGKYNANG:
-                self.moitruong._inlog(f"[ẨN HIỆU ỨNG KĨ NĂNG] thôi sau {self.solanthuanhieuungkynang} lần, lựa chọn đọc được: {luachon}")
-        finally:
-            if self.moitruong.get_is_danghiencuasotuychon():
-                self.moitruong.set_is_danghiencuasotuychon(False)
-
     def step(self):
-        if not self.moitruong.get_is_nhanvattontai() or self.moitruong.get_is_dangmatketnoi():
-            # Ra khỏi game / mất kết nối: lần vào sau kiểm tra lại (trạng thái theo nhân vật trên máy chủ)
-            self.is_daanhieuungkynang = False
-            self.solanthuanhieuungkynang = 0
+        if not self.moitruong.get_is_nhanvattontai():
             return
 
         if self.tactu.get_is_dangtamngung():
             return
-
-        self._thietlapanhieuungkynang()
 
         self.tactu.action_tudongxulygomquai()
         self.tactu.action_tudongsudungkynang()
@@ -250,8 +198,11 @@ class LoopChinh:
                         break
 
         if self.moitruong.get_idnguoichoi() in (342, 347, 354, 359, 364):
-            for tenvatpham in ("Lễ Bao Khai Quốc", "Túi Ngân Lượng", "Túi Kim Bảo", "Túi Quà Vô Song", "Túi Pháp Bảo", ):
-                if self.tactu.action_sudungvatphamhanhtrang(tenvatpham):
+            # Đọc tên hành trang 1 lần rồi chỉ gửi lệnh với món đang có: trước đây mỗi món gọi action_sudungvatphamhanhtrang đọc lại cả
+            # ~96 ô (9 lần đọc cả hành trang mỗi lượt kể cả khi không có túi nào; py-spy 2026-11-14: ~8% thời gian bận của tiến trình)
+            tenhanhtrangs = set(self.moitruong.get_danhsachtenvatphamhanhtrang())
+            for tenvatpham in ("Lễ Bao Khai Quốc", "Túi Ngân Lượng", "Túi Ngân Lượng Lớn", "Túi Kim Bảo", "Túi Quà Vô Song", "Túi Pháp Bảo", "Lăng Mộ Bảo Rương", "Túi Quà Thành Kiều", "Túi Tử Kim 85"):
+                if tenvatpham in tenhanhtrangs and self.tactu.action_sudungvatphamhanhtrang(tenvatpham):
                     break
 
             def chuanhoaten(ten):
@@ -396,10 +347,35 @@ class LoopPhu:
                         pass
             if self.giamsat:
                 self.giamsat.danhdau("phụ")
-            time.sleep(0.5)
+            self._ngu_hoacsapxephanhtrang(0.5)
+
+    def _ngu_hoacsapxephanhtrang(self, thoigian, chuky = 0.05):
+        # Nghỉ giữa 2 lượt step; đang sắp xếp hành trang thì trong lúc nghỉ vẫn gọi action_sapxephanhtrang mỗi chuky giây để gửi lệnh
+        # move kế ngay khi lệnh trước có kết quả (trước chỉ 1 lệnh/lượt step ~0.5-1s nên rất chậm), các việc khác giữ nhịp cũ
+        hethan = time.time() + thoigian
+        while not self.stop.is_set():
+            conlai = hethan - time.time()
+            if conlai <= 0:
+                return
+            if not self.tactu._is_dangsapxephanhtrang and not self.tactu._sapxepkho:
+                time.sleep(conlai)
+                return
+            time.sleep(min(chuky, conlai))
+            try:
+                self.tactu.action_sapxephanhtrang()
+                # Lệnh pawn client tự gửi (mã kho) cần đọc kịp trước khi sắp xếp kho tìm mã
+                self.moitruong.action_loglenhgame()
+                self.tactu.action_sapxepkho()
+            except (pymem.exception.PymemError, pymem.exception.WinAPIError) as err:
+                print(f"[Loop PHỤ] Lỗi bộ nhớ khi sắp xếp hành trang / kho: {err}")
+                time.sleep(0.5)
+            except Exception as e:
+                traceback.print_exc()
+                print(f"[Loop PHỤ] Lỗi khi sắp xếp hành trang / kho: {e}")
+                time.sleep(0.5)
 
     def step(self):
-        if not self.moitruong.get_is_nhanvattontai() or self.moitruong.get_is_dangmatketnoi():
+        if not self.moitruong.get_is_nhanvattontai():
             return
 
         self.moitruong.action_vohieuhoathietlapmuctieu()
@@ -430,6 +406,7 @@ class LoopPhu:
         self.tactu.action_chantangcapdo()
         self.tactu.action_tudongxepchongvatpham()
         self.tactu.action_sapxephanhtrang()
+        self.tactu.action_sapxepkho()
         self.tactu.action_tudongdatvatphammoi()
         self.tactu.action_tudongtodoi()
         self.tactu.action_tudongdoimaupk()
@@ -451,6 +428,7 @@ class LoopPhu:
         self.tactu.action_tudongnhatvatpham()
         self.tactu.action_tudongvutvatpham()
         self.tactu.action_tudongvutvatphamtheoluat()
+        self.tactu.action_tudongdeokythu()
 
         self._thongbaochet()
 
@@ -459,6 +437,7 @@ class LoopPhu:
 
         self.moitruong.action_vohieuhoahookchienquoc2()
         self.moitruong.action_loglenhgame()
+        self.moitruong.action_dokho()
 
         if self.moitruong.get_idnguoichoi() in (59996, ) and self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
             diachi = self.moitruong.action_timkiemnhanvat("Thiên Sứ Trao Đổi")
@@ -492,12 +471,15 @@ class LoopBoKhungSauTanCong:
     def loop(self):
         while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():
             try:
-                if self.moitruong.get_is_nhanvattontai() and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_LOI:
+                # Đọc tư thế 1 lần mỗi lượt (py-spy 2026-11-12: luồng 0.02s/lượt đọc 2 lần là điểm đọc bộ nhớ nhiều nhất còn lại)
+                tuthe = self.moitruong.get_idtuthenhanvat() if self.moitruong.get_is_nhanvattontai() else None
+                if tuthe == TUTHENHANVAT_LOI:
                     self.moitruong.set_idtuthenhanvat(TUTHENHANVAT_DUNGIM)
+                    tuthe = TUTHENHANVAT_DUNGIM
                     if time.time() - self.thoidiemlogtuthelo > 5:
                         self.thoidiemlogtuthelo = time.time()
                         self.moitruong._inlog("[BỎ TƯ THẾ LỖI] tư thế 15 => ghi về đứng im")
-                if IS_BOKHUNGSAUTANCONG and self.moitruong.get_is_nhanvattontai() and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DELAYSAUTANCONG:
+                if IS_BOKHUNGSAUTANCONG and tuthe == TUTHENHANVAT_DELAYSAUTANCONG:
                     if not self.thoidiembatdaukhung:
                         self.thoidiembatdaukhung = time.time()
                     elif time.time() - self.thoidiembatdaukhung >= THOIGIANCHOBOKHUNGSAUTANCONG:
@@ -526,7 +508,7 @@ class LoopGiuOTrongHanhTrang:
     def loop(self):
         while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():
             try:
-                if self.moitruong.get_is_nhanvattontai() and not self.moitruong.get_is_dangmatketnoi():
+                if self.moitruong.get_is_nhanvattontai():
                     # Cập nhật mốc xuất chiêu đủ dày để biết chính xác lúc hết tư thế xuất chiêu (khựng tính từ mốc này)
                     self.moitruong.get_is_dangxuatchieu()
                     self.moitruong.action_baogiuluotkhixuatchieu()

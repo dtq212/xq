@@ -53,12 +53,12 @@ CAUHINHMAU = {
     "sotientoithieu": 10000,
     "idnhanvatban": 0,
     "giulaitoithieu": 0,
-    "tanglandau": 20,
+    "tanglandau": 10,
     "is_rao": False,
     "nganhang": "",
     "chutaikhoan": "",
     "raos": [
-        # Không hứa "tặng 20% lần đầu" trên kênh thế giới: người chơi coi là mồi lừa. Nhiều câu bốc ngẫu nhiên, thưa hơn cho đỡ giống bot
+        # Không hứa "tặng 10% lần đầu" trên kênh thế giới: người chơi coi là mồi lừa. Nhiều câu bốc ngẫu nhiên, thưa hơn cho đỡ giống bot
         {"kenh": "vipchat", "chuky": [300, 600],
          "noidung": ["bán mil 100k = {mil100k}m, ck xong ra tạp hóa tân thủ thôn nhận liền, ai cần ib",
                      "ai cần mil ib mình nhé, 100k {mil100k}m, tiền vào là giao ngay ở tạp hóa ttt",
@@ -89,8 +89,9 @@ CAUHINHMAU = {
         "vừa bán hết mất r b, chút có thêm mình nhắn",
     ],
 }
-# Trả lời tin mật: cùng 1 người cách nhau tối thiểu chừng này giây (nhắn liên tục không bị spam lại); chờ tra ID tối đa chừng này giây
-GIANCACHTRALOICUNGNGUOI = 30.
+# Trả lời tin mật: mỗi người (theo ID) chỉ được trả lời 1 câu trong chừng này giây, tin nhắn thêm trong lúc đó bỏ qua luôn (không trả
+# lời bù khi hết hạn) - nhắn liên tục không bị bot spam lại; chờ tra ID tối đa chừng này giây
+GIANCACHTRALOICUNGNGUOI = 300.
 THOIGIANCHOIDTINMAT = 15.
 # Kênh chat được rao (cuaso_xq chỉ nhận các kênh này); khoảng rao tối thiểu để khỏi spam khi cấu hình sai
 KENHRAOs = ("chat", "say", "rumor", "vipchat", "ct", "ot", "ft", "et", "tt")
