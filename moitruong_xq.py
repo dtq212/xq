@@ -1933,7 +1933,9 @@ class MoiTruong:
 
     # Hàm vẽ sprite nén RLE theo bảng màu trong engine.dll (stdcall 2 tham số, ret 8; tham số 2 = nút vẽ
     # [+0 x, +4 y, +8 rộng, +0xC cao, +0x10 bảng con trỏ hàng, +0x14 bảng màu]) và 17 byte đầu để đối chiếu trước khi vá
-    ENGINE_HAMVERLE = 0x1F3C0
+    # Có 3 biến thể cùng 17 byte đầu, cùng vòng giải nén (chỉ khác bảng màu lấy ở nút +0x14 hay +0x18). Gạ 364 ngày 14/11
+    # lúc 22:29:07 (C:\CrashDumps\XQ.exe.1620320.dmp) văng qua biến thể 0x1F46D chưa vá: nút ghi cao 37, bảng hàng chỉ 31 hàng.
+    ENGINE_HAMVERLES = (0x1F3C0, 0x1F46D, 0x1F6DB)
     ENGINE_HAMVERLE_MAGOC = "55 53 56 57 8B 54 24 14 8B 5C 24 18 8B 02 8B 4B 08"
 
     def action_thietlaphookverle(self):
@@ -1954,15 +1956,28 @@ class MoiTruong:
         if not enginemodule:
             self._inlog("[CHẶN CRASH] không tìm thấy engine.dll, bỏ vá chỗ vẽ RLE")
             return False
-        diachihook = enginemodule.lpBaseOfDll + self.ENGINE_HAMVERLE
+        ketqua = True
+        sovamoi = 0
+        for offsetham in self.ENGINE_HAMVERLES:
+            kq = self._vahamverle(enginemodule.lpBaseOfDll + offsetham)
+            if kq is None:
+                ketqua = False
+            elif kq:
+                sovamoi += 1
+        if sovamoi:
+            self._inlog(f"[CHẶN CRASH] đã vá {sovamoi} chỗ vẽ RLE engine.dll (kẹp số hàng, bỏ bảng hàng đã nhả)")
+        return ketqua
+
+    def _vahamverle(self, diachihook):
+        # Vá một biến thể hàm vẽ RLE. Trả None nếu lỗi, False nếu đã vá đúng kịch bản mới, True nếu vừa vá
         magoc = bytes.fromhex(self.ENGINE_HAMVERLE_MAGOC)
         try:
             mahook = read_bytes(self.tientrinh, diachihook, len(magoc))
         except Exception:
-            return False
+            return None
         if mahook[0] != 0xE9 and mahook != magoc:
-            self._inlog(f"[CHẶN CRASH] chỗ vẽ RLE engine.dll không như dự kiến: {mahook.hex(' ')}")
-            return False
+            self._inlog(f"[CHẶN CRASH] chỗ vẽ RLE engine.dll {diachihook:#x} không như dự kiến: {mahook.hex(' ')}")
+            return None
         asm_script = f"""
             push eax
             push ecx
@@ -2010,13 +2025,13 @@ class MoiTruong:
         """
         encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
         if not encoding:
-            return False
+            return None
         encoding = bytes(encoding)
         if mahook[0] == 0xE9:
             kichbancu = diachihook + 5 + struct.unpack("<i", mahook[1:5])[0]
             try:
                 if read_bytes(self.tientrinh, kichbancu, len(encoding)) == encoding:
-                    return True
+                    return False
             except Exception:
                 pass
         kichban = self.tientrinh.allocate(256)
@@ -2025,7 +2040,6 @@ class MoiTruong:
             write_bytes(self.tientrinh, diachihook + 1, struct.pack("<i", kichban - (diachihook + 5)), 4)
         else:
             write_bytes(self.tientrinh, diachihook, b"\xE9" + struct.pack("<i", kichban - (diachihook + 5)) + b"\x90" * 3, 8)
-        self._inlog("[CHẶN CRASH] đã vá chỗ vẽ RLE engine.dll (kẹp số hàng, bỏ bảng hàng đã nhả)")
         return True
 
     # Hàm dò nhị phân trong bảng chỉ mục một gói tài nguyên của engine.dll (thiscall, ret 4; ecx = gói ở 0x1004E5E8 + i*16:
