@@ -7,6 +7,7 @@
 import html
 import json
 import os
+import threading
 import time
 
 import win32gui
@@ -145,6 +146,12 @@ class KeoGaTuDong:
         self._is_chinhdabat = False
         # Tài khoản ("user") -> lúc vừa đóng client của nó (chờ THOIGIANCHOTHOATTAIKHOAN giây rồi mới đăng nhập lại)
         self._lucdong = {}
+        # Đăng nhập song song (người dùng dặn 2026-11-14; trước đây lần lượt, mỗi acc gà ~25s và chờ acc trước load xong): "user" ->
+        # {"luong", "taikhoan", "ga", "taoga", "xong", "bo"}. Luồng chỉ gọi dangnhap_xq (mở client vẫn lần lượt nhờ _khoamoclient,
+        # nhập tài khoản / chọn / tạo nhân vật / vào game chạy song song như tự đăng nhập thường); kết quả xử lý ở mot_luot (luồng tự
+        # đăng nhập) nên self.luot / tiến độ chỉ một luồng sửa. "bo": bấm dừng / bắt đầu lại / xong lượt lúc luồng còn chạy thì bỏ kết quả
+        # (nhân vật đã vào game thì lần sau _nhanlaigaonline nhận lại) nhưng vẫn giữ chỗ để không đăng nhập đè cùng tài khoản
+        self._luongdangnhap = {}
         tiendo = _docjson("keogatudong_tiendo.json", {})
         if tiendo.get("bat") and tiendo.get("idchinh"):
             # Mở lại bot giữa chừng: làm tiếp lượt cũ (acc gà còn online thì nhận lại theo ID)
@@ -167,6 +174,7 @@ class KeoGaTuDong:
         self._solanloi = {}
         self._is_chinhdabat = False
         self._lucbatchinh = 0.
+        self._boluongdangnhap()
         self.trangthai = "Bắt đầu"
         # Cờ "hết chỗ" của lần trước xét lại (người dùng có thể đã xoá nhân vật / đổi cấp kết thúc)
         tiendo = self._tiendo()
@@ -180,6 +188,7 @@ class KeoGaTuDong:
             return
         self.is_bat = False
         self.trangthai = lydo
+        self._boluongdangnhap()
         self._luutiendo()
         print(f"[KÉO GÀ A-Z] {lydo}")
 
@@ -239,6 +248,7 @@ class KeoGaTuDong:
             print(f"[KÉO GÀ A-Z] Lỗi: {e}")
 
     def _mot_luot(self):
+        self._xulyluongxong()
         now = time.time()
         cauhinh = taicauhinhkeoga()
         infos = self._infotheoid()
@@ -291,30 +301,31 @@ class KeoGaTuDong:
         self._lucchinhhetvai = 0.
 
         soga = max(1, min(SOGATOIDA, int(cauhinh.get("soga") or SOGAMACDINH)))
-        if not self._is_chinhdabat and len(self.luot) < soga:
-            dangdung = {g["user"] for g in self.luot}
+        # Acc gà mới đang đăng nhập (luồng chưa xong, không tính luồng vào lại acc đã trong lượt)
+        somoi = sum(1 for v in self._luongdangnhap.values() if not v["ga"] and not v["bo"])
+        if not self._is_chinhdabat and len(self.luot) + somoi < soga:
+            dangdung = {g["user"] for g in self.luot} | set(self._luongdangnhap)
             cho = [t for t in cauhinh["taikhoans"] if t["user"] not in dangdung and not self._is_het(t["user"])
                    and self._solanloi.get(t["user"], 0) < SOLANLOITOIDA]
             # Nhân vật của tài khoản đang online sẵn (bấm Bắt đầu lại / mở lại bot giữa lượt): nhận vào lượt luôn, không đăng nhập đè
             # (trước đây đăng nhập lần lượt từ tài khoản đầu dù đang online: client mới đá nhân vật đang chơi, hoặc báo tài khoản
             # đang online, 2026-11-08)
-            if self._nhanlaigaonline(cho, infos, online, soga, now):
+            if self._nhanlaigaonline(cho, infos, online, soga - somoi, now):
                 return
             chothoat = [t for t in cho if now - self._lucdong.get(t["user"], 0.) < THOIGIANCHOTHOATTAIKHOAN]
-            if chothoat and len(chothoat) == len(cho):
+            if chothoat and len(chothoat) == len(cho) and not somoi:
                 conlai = int(THOIGIANCHOTHOATTAIKHOAN - (now - self._lucdong[chothoat[0]["user"]])) + 1
                 self.trangthai = f"Chờ {chothoat[0]['user']} thoát hẳn khỏi máy chủ ({conlai}s) rồi đăng nhập"
                 return
             cho = [t for t in cho if t not in chothoat]
             if cho:
-                if dangnhap_xq.laycuasodangvaogame():
-                    self.trangthai = "Chờ acc gà vừa đăng nhập vào game..."
-                    return
-                taikhoan = cho[0]
-                self.trangthai = f"Đăng nhập acc gà {len(self.luot) + 1}/{soga}: {taikhoan['user']}"
-                self._dangnhap(taikhoan, cauhinh, len(self.luot))
+                # Mở luồng cho mọi chỗ còn thiếu cùng lúc (không chờ acc trước vào hẳn game như trước)
+                for taikhoan in cho[:soga - len(self.luot) - somoi]:
+                    self._batluongdangnhap(taikhoan, cauhinh, len(self.luot) + somoi)
+                    somoi += 1
+                self.trangthai = f"Đang đăng nhập {somoi} acc gà ({len(self.luot) + somoi}/{soga}): " + ", ".join(self._luongdangnhap)
                 return
-            if not self.luot:
+            if not self.luot and not self._luongdangnhap:
                 self._hoanthanh(cauhinh)
                 return
 
@@ -338,8 +349,9 @@ class KeoGaTuDong:
 
         # Đủ lượt (hết tài khoản chờ thì lượt ít hơn): bật acc chính
         if not self._is_chinhdabat:
-            if chuasan:
-                self.trangthai = f"Chờ acc gà vào game / nhận vai: {', '.join(chuasan)}"
+            dangvao = [u for u, v in self._luongdangnhap.items() if not v["bo"]]
+            if chuasan or dangvao:
+                self.trangthai = "Chờ acc gà vào game / nhận vai: " + ", ".join(chuasan + [f"{u} (đang đăng nhập)" for u in dangvao])
                 return
             self._batchinh(hwndchinh, kcchinh, now)
             return
@@ -392,23 +404,25 @@ class KeoGaTuDong:
         return dalam
 
     def _dangnhaplaigavang(self, cauhinh, now):
-        # Acc gà trong lượt vắng quá THOIGIANVANGDANGNHAPLAI giây: đăng nhập lại (cửa sổ bị dis thì vào lại trong chính nó). -> True: đã làm
-        if dangnhap_xq.laycuasodangvaogame():
-            return False
-        for g in self.luot:
-            if not g["lucvang"] or now - g["lucvang"] < THOIGIANVANGDANGNHAPLAI or now < g.get("lucthulai", 0.):
+        # Acc gà trong lượt vắng quá THOIGIANVANGDANGNHAPLAI giây: đăng nhập lại (cửa sổ bị dis thì vào lại trong chính nó), mỗi acc một
+        # luồng, nhiều acc vắng thì vào lại song song. -> True: đã làm
+        dalam = False
+        for g in list(self.luot):
+            if not g["lucvang"] or now - g["lucvang"] < THOIGIANVANGDANGNHAPLAI or now < g.get("lucthulai", 0.) \
+                    or g["user"] in self._luongdangnhap:
                 continue
             taikhoan = next((t for t in cauhinh["taikhoans"] if t["user"] == g["user"]), None)
             if not taikhoan:
                 print(f"[KÉO GÀ A-Z] Tài khoản {g['user']} không còn trong danh sách, bỏ {g['ten']} khỏi lượt")
                 self.luot.remove(g)
                 self._luutiendo()
-                return True
+                dalam = True
+                continue
             self.trangthai = f"Đăng nhập lại {g['ten']} ({g['user']})"
             print(f"[KÉO GÀ A-Z] {g['ten']} (ID {g['id']}) vắng {int(now - g['lucvang'])}s: đăng nhập lại {g['user']}")
-            self._dangnhap(taikhoan, cauhinh, len(self.luot), g)
-            return True
-        return False
+            self._batluongdangnhap(taikhoan, cauhinh, self.luot.index(g), g)
+            dalam = True
+        return dalam
 
     def _canhbaokhonglencap(self, infos, now):
         # Acc gà dưới cấp kết thúc mà THOIGIANKHONGLENCAP giây không lên cấp (chỉ tính khi acc chính đã bật kéo cấp lượt này): nhắn Telegram
@@ -471,26 +485,60 @@ class KeoGaTuDong:
         self._luutiendo()
         self.trangthai = "Đã bật acc chính kéo cấp"
 
-    def _dangnhap(self, taikhoan, cauhinh, vitri, ga = None):
-        # Đăng nhập 1 tài khoản gà: chọn nhân vật chưa xong / tạo mới. ga: acc gà đang trong lượt (vào lại đúng nhân vật đó)
+    def _batluongdangnhap(self, taikhoan, cauhinh, vitri, ga = None):
+        # Mở luồng đăng nhập 1 tài khoản gà: chọn nhân vật chưa xong / tạo mới. ga: acc gà đang trong lượt (vào lại đúng nhân vật đó).
+        # Dữ liệu cần (idsdaxong, cấu hình) đọc ở đây (luồng tự đăng nhập), luồng mới chỉ gọi dangnhap_xq
         user = taikhoan["user"]
         taoga = {"capketthuc": self.capketthuc, "idsdaxong": self._idsdaxong(user), "tiento": cauhinh.get("tiento") or TIENTOMACDINH,
                  "gioitinh": int(cauhinh.get("gioitinh") or 0), "idchon": ga["id"] if ga else 0}
         config = {"user": user, "pass": taikhoan["pass"], "group": int(taikhoan.get("group") or cauhinh.get("group") or 1),
                   "server": int(taikhoan.get("server") or cauhinh.get("server") or 1), "char_index": 1, "vitricuaso": vitri + 2,
                   "tennhanvat": ga["ten"] if ga else "", "idnguoichoi": ga["id"] if ga else None, "taoga": taoga}
-        ten = ga["ten"] if ga else user
-        hwndcu = ga.get("hwnd") if ga else 0
-        if ga and not (hwndcu and win32gui.IsWindow(hwndcu) and dangnhap_xq._is_cuasomanhinhdangnhap(hwndcu)):
-            # Mở lại bot giữa lượt thì hwnd = 0: tìm cửa sổ bị dis theo ID còn trong bộ nhớ, không thì mở thêm client trong khi
-            # cửa sổ dis vẫn chiếm chỗ (giới hạn số client)
-            hwndcu = _timcuasodistheoid(ga["id"]) or hwndcu
-        if hwndcu and win32gui.IsWindow(hwndcu) and dangnhap_xq._is_cuasomanhinhdangnhap(hwndcu):
-            # Bị dis về màn hình đăng nhập: vào lại trong chính cửa sổ đó
-            dangnhap_xq.dangnhaptrongcuaso(hwndcu, ten, config)
-        else:
-            dangnhap_xq.mogamevadangnhap(ten, config, dangnhap_xq.duongdangamemaynay(dangnhap_xq.taicauhinhdangnhap()))
-        ketqua = taoga.get("ketqua") or {}
+        viec = {"taikhoan": taikhoan, "ga": ga, "taoga": taoga, "xong": False, "bo": False}
+        viec["luong"] = threading.Thread(target = self._chayluongdangnhap, args = (viec, config), daemon = True)
+        self._luongdangnhap[user] = viec
+        print(f"[KÉO GÀ A-Z] Bắt đầu đăng nhập {user}" + (f" (vào lại {ga['ten']})" if ga else ""))
+        viec["luong"].start()
+
+    @staticmethod
+    def _chayluongdangnhap(viec, config):
+        ga = viec["ga"]
+        ten = ga["ten"] if ga else config["user"]
+        try:
+            hwndcu = ga.get("hwnd") if ga else 0
+            if ga and not (hwndcu and win32gui.IsWindow(hwndcu) and dangnhap_xq._is_cuasomanhinhdangnhap(hwndcu)):
+                # Mở lại bot giữa lượt thì hwnd = 0: tìm cửa sổ bị dis theo ID còn trong bộ nhớ, không thì mở thêm client trong khi
+                # cửa sổ dis vẫn chiếm chỗ (giới hạn số client)
+                hwndcu = _timcuasodistheoid(ga["id"]) or hwndcu
+            if hwndcu and win32gui.IsWindow(hwndcu) and dangnhap_xq._is_cuasomanhinhdangnhap(hwndcu):
+                # Bị dis về màn hình đăng nhập: vào lại trong chính cửa sổ đó
+                dangnhap_xq.dangnhaptrongcuaso(hwndcu, ten, config)
+            else:
+                dangnhap_xq.mogamevadangnhap(ten, config, dangnhap_xq.duongdangamemaynay(dangnhap_xq.taicauhinhdangnhap()))
+        except Exception as e:
+            print(f"[KÉO GÀ A-Z] Lỗi đăng nhập {config['user']}: {e}")
+        finally:
+            viec["xong"] = True
+
+    def _xulyluongxong(self):
+        # Luồng đăng nhập đã xong: xử lý kết quả (ghi lượt / tiến độ) ở luồng tự đăng nhập
+        for user, viec in list(self._luongdangnhap.items()):
+            if not viec["xong"] and viec["luong"].is_alive():
+                continue
+            self._luongdangnhap.pop(user, None)
+            if viec["bo"]:
+                print(f"[KÉO GÀ A-Z] Bỏ kết quả đăng nhập {user} (đã dừng / sang lượt khác lúc đang đăng nhập)")
+                continue
+            if viec["ga"] and viec["ga"] not in self.luot:
+                continue
+            self._xulyketquadangnhap(viec["taikhoan"], viec["taoga"].get("ketqua") or {}, viec["ga"])
+
+    def _boluongdangnhap(self):
+        for viec in self._luongdangnhap.values():
+            viec["bo"] = True
+
+    def _xulyketquadangnhap(self, taikhoan, ketqua, ga = None):
+        user = taikhoan["user"]
         for idnv, cap in (ketqua.get("caps") or {}).items():
             # Ghi cấp mọi nhân vật thấy ở màn chọn (nhân vật cũ đã đủ cấp cũng tính là xong)
             if cap >= self.capketthuc:
@@ -558,6 +606,7 @@ class KeoGaTuDong:
         self.luot = []
         self._is_chinhdabat = False
         self._lucchinhhetvai = 0.
+        self._boluongdangnhap()
         self._luutiendo()
         self.trangthai = "Xong lượt, chờ client đóng rồi đăng nhập lượt kế"
 

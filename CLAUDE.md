@@ -29,7 +29,6 @@ bằng Pymem, gửi lệnh game qua hook, giao diện Tkinter.
 | dichuyen | giữ khoảng cách, theo sau, đi tới bản đồ/phù, tìm đường, vật cản |
 | muctieu | lọc/chọn mục tiêu, tầm nhìn chia sẻ, ép đá |
 | kynang | ưu tiên chiêu, từng môn phái, tâm pháp, Đào Hoa |
-| tuhockynang | chế độ kỹ năng Tự học (học từ số bay, lập chuỗi chiêu) |
 | vatpham | thuốc, nhặt, vứt, mua, sửa, sắp xếp hành trang |
 | hoatdong | hội thoại NPC, tạm ngưng khi thấy người lạ, tổ đội |
 | baothu | bảo thú |

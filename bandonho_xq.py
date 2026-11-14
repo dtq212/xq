@@ -1,8 +1,10 @@
 import ctypes
+import ctypes.wintypes
 import math
 import time
 import tkinter as tk
 from tkinter import ttk
+from tkinter import font as tkfont
 
 from hangso_xq import (LOAIMUCTIEU_NGUOICHOICUNGNHOM, TRANPHAPVANMONGCOCs, NUACANHTRANVANMONGCOCs, MAHIEUUNGDATLACANHs, laytenbando)
 from chude_xq import doithanhtieude
@@ -137,14 +139,44 @@ class ThuThapBanDoNho:
 # ---------------------------------------------------------------------------------------------------------------------------------------
 # Phía giao diện
 
-# Màu theo loại đối tượng: khoá trong bảng màu chủ đề (chude_xq), riêng quái dùng màu cam cố định (bảng không có cam)
-MAUDOITUONG = {"quai": "#f08c2e", "thudich": "do", "nguoichoi": "chu_phu", "dongdoi": "luc", "npc": "xanh", "baothu": "chu_mo"}
+# Khung bản đồ dùng bảng màu tối riêng kiểu radar (người dùng chê bản nền trắng "phèn" 2026-11-14), không theo sáng / tối của giao diện:
+# nền tối thì chấm màu và chữ nổi hơn. Thanh công cụ, chú thích bên ngoài vẫn theo chủ đề.
+MAUBANDO = {
+    "vatcan": "#0b1118",       # ô vật cản bên trong
+    "vatcanmep": "#2c3d50",    # ô vật cản giáp đất đi được: viền địa hình
+    "dat": "#223245",          # đất đi được
+    "datmep": "#1b2838",      # đất sát vật cản: tối hơn chút cho có chiều sâu
+    "hoc": "#5a3d22",          # vật cản ghi tay (vatcanhoc.json)
+    "luoike": "#26364a",       # kẻ ô mỗi 10 ô
+    "chu": "#e2e8f0",
+    "chuphu": "#94a3b8",
+    "vienchu": "#05080c",
+    "hop": "#0f172a",
+    "hopvien": "#334155",
+    "banthan": "#f8fafc",
+    "banthanvong": "#22d3ee",
+    "muctieu": "#ff4d5e",
+    "duong": "#22d3ee",
+    "diemden": "#fbbf24",
+    "tamnhin": "#3b5068",
+}
+MAUDOITUONG = {"quai": "#f59e0b", "thudich": "#ff4d5e", "nguoichoi": "#cbd5e1", "dongdoi": "#4ade80", "npc": "#60a5fa", "baothu": "#8b9bb0"}
 TENLOAIDOITUONG = {"quai": "Quái", "thudich": "Thù địch", "nguoichoi": "Người chơi", "dongdoi": "Đồng đội", "npc": "NPC", "baothu": "Bảo thú"}
-MAUTRAN = {"Kỳ Môn Trận": "vang", "Độn Giáp Trận": "chinh", "Lạc Ảnh": "do"}
+MAUTRAN = {"Kỳ Môn Trận": "#facc15", "Độn Giáp Trận": "#a78bfa", "Lạc Ảnh": "#f472b6"}
+# Thứ tự ưu tiên giữ tên khi chồng nhau (nhỏ giữ trước); quái không ghi tên
+UUTIENTEN = {"thudich": 0, "dongdoi": 1, "nguoichoi": 2, "npc": 3, "baothu": 4, "quai": 5}
+# Tên quái chỉ giữ chừng này ký tự (người dùng muốn 2026-11-14): quái đông, tên dài thì rối; tên chồng nhau vẫn bị bỏ như tên khác
+DODAITENQUAI = 10
 # Số điểm ảnh mỗi ô: mặc định / nhỏ nhất / lớn nhất
 COOMACDINH, COOTOITHIEU, COOTOIDA = 8, 4, 16
 KICHTHUOCKHUNG = 488
 CHUKYVE = 250
+# Mặc định mép dưới cửa sổ bản đồ cao hơn mép dưới game chừng này điểm ảnh (người dùng muốn thấp hơn game "chút xíu xiu")
+BOTCAOBANDONHO = 12
+# Vòng tầm nhìn (ô vuông như tầm đánh): đối tượng xa hơn chừng này bot không thấy
+TAMNHINBANDONHO = 18
+PHONGCHU = ("Segoe UI", 8)
+PHONGCHUDAM = ("Segoe UI Semibold", 9)
 
 
 class CuaSoBanDoNho:
@@ -153,11 +185,13 @@ class CuaSoBanDoNho:
         self.gd = giaodien
         self.hwnd = None
         self.coo = COOMACDINH
-        # Ảnh lưới vật cản dựng lại khi lưới / cỡ ô / chủ đề đổi: (khoá, PhotoImage)
+        # Ảnh lưới vật cản dựng lại khi lưới / cỡ ô đổi: (khoá, PhotoImage)
         self._anhluoi = (None, None)
         self._dulieu = None
         self._henve = None
         self._lenhcho = {}
+        # Chỉ đặt cỡ / vị trí theo cửa sổ game lần đầu có nhân vật; sau đó người dùng kéo cỡ thì giữ
+        self._dadatco = False
 
         self.top = tk.Toplevel(giaodien.root)
         self.top.title("Bản đồ nhỏ")
@@ -165,40 +199,46 @@ class CuaSoBanDoNho:
         self.top.protocol("WM_DELETE_WINDOW", self.dong)
         self.top.after(0, lambda: doithanhtieude(self.top, getattr(giaodien, "is_chedotoi", False)))
         self._maunen = None
+        self._phongchu = tkfont.Font(family = PHONGCHU[0], size = PHONGCHU[1])
+        self._phongchudam = tkfont.Font(family = PHONGCHUDAM[0], size = PHONGCHUDAM[1])
 
-        thanh = ttk.Frame(self.top, padding = (8, 6))
+        # Hai hàng: cửa sổ hẹp thì các ô tích không bị cắt mất
+        thanh = ttk.Frame(self.top, padding = (8, 6, 8, 2))
         thanh.pack(side = tk.TOP, fill = tk.X)
         ttk.Label(thanh, text = "Nhân vật:").pack(side = tk.LEFT)
         self.cbo = ttk.Combobox(thanh, state = "readonly", width = 22)
-        self.cbo.pack(side = tk.LEFT, padx = (4, 8))
+        self.cbo.pack(side = tk.LEFT, padx = (4, 8), fill = tk.X, expand = True)
         self.cbo.bind("<<ComboboxSelected>>", lambda e: self._chonnhanvat(self._hwndtheonhan.get(self.cbo.get())))
         self.cbo.bind("<Button-1>", lambda e: self._napdanhsach())
-        ttk.Button(thanh, text = "−", width = 3, command = lambda: self._doico(-2)).pack(side = tk.LEFT)
-        ttk.Button(thanh, text = "+", width = 3, command = lambda: self._doico(2)).pack(side = tk.LEFT, padx = (2, 8))
+        ttk.Button(thanh, text = "+", width = 3, command = lambda: self._doico(2)).pack(side = tk.RIGHT)
+        ttk.Button(thanh, text = "−", width = 3, command = lambda: self._doico(-2)).pack(side = tk.RIGHT, padx = (0, 2))
+        thanh2 = ttk.Frame(self.top, padding = (8, 0, 8, 6))
+        thanh2.pack(side = tk.TOP, fill = tk.X)
         self.var_ten = tk.BooleanVar(value = True)
         self.var_duong = tk.BooleanVar(value = True)
-        ttk.Checkbutton(thanh, text = "Tên", variable = self.var_ten, command = self._ve).pack(side = tk.LEFT)
-        ttk.Checkbutton(thanh, text = "Đường đi", variable = self.var_duong, command = self._ve).pack(side = tk.LEFT, padx = (6, 0))
+        ttk.Checkbutton(thanh2, text = "Tên", variable = self.var_ten, command = self._ve).pack(side = tk.LEFT)
+        ttk.Checkbutton(thanh2, text = "Đường đi", variable = self.var_duong, command = self._ve).pack(side = tk.LEFT, padx = (10, 0))
         # Tự đổi sang nhân vật của cửa sổ game đang mở (người dùng muốn 2026-11-14); chọn tay trong ô Nhân vật vẫn được khi tắt ô này
         self.var_theoactive = tk.BooleanVar(value = True)
-        ttk.Checkbutton(thanh, text = "Theo cửa sổ game", variable = self.var_theoactive).pack(side = tk.LEFT, padx = (6, 0))
+        ttk.Checkbutton(thanh2, text = "Theo cửa sổ game", variable = self.var_theoactive).pack(side = tk.LEFT, padx = (10, 0))
 
-        self.canvas = tk.Canvas(self.top, width = KICHTHUOCKHUNG, height = KICHTHUOCKHUNG, highlightthickness = 0,
-                                background = self._mau("nen_o"))
-        self.canvas.pack(side = tk.TOP, fill = tk.BOTH, expand = True, padx = 8)
+        self.canvas = tk.Canvas(self.top, width = KICHTHUOCKHUNG, height = KICHTHUOCKHUNG, highlightthickness = 1,
+                                highlightbackground = MAUBANDO["hopvien"], background = MAUBANDO["vatcan"])
         self.canvas.bind("<Configure>", lambda e: (self._ve(), self._vechuthich()))
         self.canvas.bind("<Motion>", self._rechuot)
         self.canvas.bind("<Leave>", lambda e: self.lbl_chuot.configure(text = ""))
         self.canvas.bind("<MouseWheel>", lambda e: self._doico(1 if e.delta > 0 else -1))
 
-        duoi = ttk.Frame(self.top, padding = (8, 4, 8, 8))
-        duoi.pack(side = tk.TOP, fill = tk.X)
-        self.lbl_trangthai = ttk.Label(duoi, text = "")
+        duoi = ttk.Frame(self.top, padding = (8, 4, 8, 2))
+        duoi.pack(side = tk.BOTTOM, fill = tk.X)
+        self.lbl_trangthai = ttk.Label(duoi, text = "", style = "Phu.TLabel")
         self.lbl_trangthai.pack(side = tk.LEFT)
         self.lbl_chuot = ttk.Label(duoi, text = "", style = "Phu.TLabel")
         self.lbl_chuot.pack(side = tk.RIGHT)
         self.chuthich = tk.Canvas(self.top, height = 22, highlightthickness = 0, background = self._mau("nen"))
-        self.chuthich.pack(side = tk.TOP, fill = tk.X, padx = 8, pady = (0, 8))
+        self.chuthich.pack(side = tk.BOTTOM, fill = tk.X, padx = 8, pady = (0, 8), before = duoi)
+        # Khung vẽ xếp sau cùng: cửa sổ thấp thì khung co lại, dòng trạng thái và chú thích bên dưới không bị cắt
+        self.canvas.pack(side = tk.TOP, fill = tk.BOTH, expand = True, padx = 8)
 
         self._hwndtheonhan = {}
         self._napdanhsach()
@@ -244,12 +284,61 @@ class CuaSoBanDoNho:
         if self.hwnd:
             self._guilenh(self.hwnd, "set_bandonho:0")
         self.hwnd = hwnd
+        self._datcotheogame(hwnd)
         self._dulieu = None
         self._guilenh(hwnd, "set_bandonho:1")
         for nhan, h in self._hwndtheonhan.items():
             if h == hwnd:
                 self.cbo.set(nhan)
         self._ve()
+
+    def _datcotheogame(self, hwnd):
+        # Mặc định cao bằng cửa sổ game (người dùng muốn 2026-11-14), mép trên ngang mép trên game,
+        # đặt sát bên phải game nếu màn hình còn chỗ, không thì giữ chỗ Tk tự chọn. Hwnd khoá shared_data chính là hwnd cửa sổ game
+        if self._dadatco or not hwnd:
+            return
+        try:
+            khung, trong = ctypes.wintypes.RECT(), ctypes.wintypes.RECT()
+            if not ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(khung)) \
+                    or not ctypes.windll.user32.GetClientRect(hwnd, ctypes.byref(trong)) or trong.bottom < 200:
+                return
+        except Exception:
+            return
+        self._dadatco = True
+        self.top.update_idletasks()
+        # Chiều cao Tk là phần trong (không gồm thanh tiêu đề) nên lấy phần trong của game: hai cửa sổ cùng kiểu khung thì mép ngoài bằng nhau
+        cao = trong.bottom
+        rong = self.top.winfo_reqwidth()
+        vitri = ""
+        if khung.right + rong + 16 <= self.top.winfo_screenwidth():
+            vitri = f"+{khung.right}+{max(0, khung.top)}"
+        # Đặt ngay khi cửa sổ chưa hiện thì Windows tự xếp chồng lại (đo: ra +52+52): đặt thêm lần nữa sau khi cửa sổ đã hiện
+        hinh = f"{rong}x{max(300, cao)}{vitri}"
+        self.top.geometry(hinh)
+        self.top.after(150, lambda: (self.top.geometry(hinh), self.top.after(100, lambda: self._canhmeptheogame(hwnd))))
+
+    @staticmethod
+    def _khungnhinthay(hwnd):
+        # Mép cửa sổ nhìn thấy (DWMWA_EXTENDED_FRAME_BOUNDS = 9): GetWindowRect gồm cả viền kéo cỡ vô hình ~7px của cửa sổ kéo được cỡ
+        k = ctypes.wintypes.RECT()
+        if ctypes.windll.dwmapi.DwmGetWindowAttribute(hwnd, 9, ctypes.byref(k), ctypes.sizeof(k)) != 0:
+            ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(k))
+        return k
+
+    def _canhmeptheogame(self, hwnd):
+        # Cửa sổ game không kéo cỡ được, khung khác cửa sổ Tk nên lấy chiều cao phần trong thì mép dưới vẫn lệch (người dùng thấy cao hơn,
+        # 2026-11-14): canh mép trên / dưới nhìn thấy cho khớp game, rồi bớt thêm BOTCAOBANDONHO điểm ảnh cho thấp hơn chút
+        try:
+            game = self._khungnhinthay(hwnd)
+            minh = self._khungnhinthay(ctypes.windll.user32.GetParent(self.top.winfo_id()))
+            lechtren = game.top - minh.top
+            lechduoi = (game.bottom - BOTCAOBANDONHO) - minh.bottom
+            if lechtren == 0 and lechduoi == 0:
+                return
+            cao = max(300, self.top.winfo_height() + lechduoi - lechtren)
+            self.top.geometry(f"{self.top.winfo_width()}x{cao}+{self.top.winfo_x()}+{self.top.winfo_y() + lechtren}")
+        except Exception:
+            pass
 
     def _doico(self, buoc):
         self.coo = max(COOTOITHIEU, min(COOTOIDA, self.coo + buoc))
@@ -320,21 +409,34 @@ class CuaSoBanDoNho:
         return round(d["x"] + (px - rong / 2) / self.coo), round(d["y"] - (py - cao / 2) / self.coo)
 
     def _dunganhluoi(self, luoi, hocs):
-        # PhotoImage 1 điểm ảnh / ô rồi phóng lên self.coo: ~4.000 ô vẽ bằng hình chữ nhật thì khung ì
+        # PhotoImage 1 điểm ảnh / ô rồi phóng lên self.coo: ~4.000 ô vẽ bằng hình chữ nhật thì khung ì.
+        # Ô vật cản giáp đất tô sáng làm viền, đất giáp vật cản tô tối: địa hình có khối thay vì ô xám phẳng
         idbando, ox, oy, rong, cao, dulieu = luoi
-        khoa = (idbando, ox, oy, rong, cao, dulieu, tuple(hocs), self.coo, self.gd._mau.get("vien"))
+        khoa = (idbando, ox, oy, rong, cao, dulieu, tuple(hocs), self.coo)
         if self._anhluoi[0] == khoa:
             return self._anhluoi[1]
-        mautrong, mauvatcan, mauhoc = self._mau("nen_o"), self._mau("vien"), self._mau("chu_mo")
+        m = MAUBANDO
         tapphoc = set(hocs)
+
+        def is_chan(x, y):
+            # Ngoài vùng đã đọc coi như vật cản
+            if x < ox or y < oy or x >= ox + rong or y >= oy + cao:
+                return True
+            return bool(dulieu[(x - ox) * cao + (y - oy)])
+
         hangs = []
         for y in range(oy + cao - 1, oy - 1, -1):
             hang = []
             for x in range(ox, ox + rong):
                 if (x, y) in tapphoc:
-                    hang.append(mauhoc)
+                    hang.append(m["hoc"])
+                    continue
+                chan = is_chan(x, y)
+                giap = any(is_chan(x + a, y + b) != chan for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+                if chan:
+                    hang.append(m["vatcanmep"] if giap else m["vatcan"])
                 else:
-                    hang.append(mauvatcan if dulieu[(x - ox) * cao + (y - oy)] else mautrong)
+                    hang.append(m["datmep"] if giap else m["dat"])
             hangs.append("{" + " ".join(hang) + "}")
         anh = tk.PhotoImage(width = rong, height = cao)
         anh.put(" ".join(hangs))
@@ -342,15 +444,28 @@ class CuaSoBanDoNho:
         self._anhluoi = (khoa, anh)
         return anh
 
+    def _hopbo(self, x1, y1, x2, y2, r = 6, **kw):
+        # Hình chữ nhật bo góc (polygon smooth)
+        c = self.canvas
+        diem = [x1 + r, y1, x2 - r, y1, x2, y1, x2, y1 + r, x2, y2 - r, x2, y2, x2 - r, y2, x1 + r, y2, x1, y2, x1, y2 - r, x1, y1 + r, x1, y1]
+        return c.create_polygon(diem, smooth = True, **kw)
+
+    def _chuvien(self, x, y, chu, mau, anchor = tk.CENTER, font = PHONGCHU):
+        # Chữ có viền tối 1 điểm ảnh: đọc được trên cả đất lẫn vật cản
+        c = self.canvas
+        for a, b in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            c.create_text(x + a, y + b, text = chu, anchor = anchor, fill = MAUBANDO["vienchu"], font = font)
+        c.create_text(x, y, text = chu, anchor = anchor, fill = mau, font = font)
+
     def _ve(self):
         c = self.canvas
         c.delete("all")
-        c.configure(background = self._mau("nen_o"))
+        m = MAUBANDO
         d = self._dulieu
         rong, cao = c.winfo_width(), c.winfo_height()
         if not d:
             c.create_text(rong / 2, cao / 2, text = "Đang chờ dữ liệu từ bot…" if self.hwnd else "Chọn nhân vật",
-                          fill = self._mau("chu_phu"))
+                          fill = m["chuphu"], font = PHONGCHUDAM)
             self.lbl_trangthai.configure(text = "")
             return
         s = self.coo
@@ -362,12 +477,27 @@ class CuaSoBanDoNho:
             trai, tren = self._toado(ox, oy + caol - 1)
             c.create_image(trai - s / 2, tren - s / 2, image = anh, anchor = tk.NW)
 
+        # Kẻ ô mỗi 10 ô theo toạ độ game (dễ ước khoảng cách), mờ
+        x0, y0 = self._oduoichuot(0, 0)
+        x1, y1 = self._oduoichuot(rong, cao)
+        for gx in range((x0 // 10) * 10, x1 + 1, 10):
+            px = self._toado(gx, 0)[0] - s / 2
+            c.create_line(px, 0, px, cao, fill = m["luoike"], dash = (1, 3))
+        for gy in range((y1 // 10) * 10, y0 + 1, 10):
+            py = self._toado(0, gy)[1] + s / 2
+            c.create_line(0, py, rong, py, fill = m["luoike"], dash = (1, 3))
+
+        # Vùng tầm nhìn: ô vuông đứt nét quanh nhân vật
+        mx, my = rong / 2, cao / 2
+        t = TAMNHINBANDONHO * s + s / 2
+        c.create_rectangle(mx - t, my - t, mx + t, my + t, outline = m["tamnhin"], dash = (6, 4))
+
         # Trận pháp: ô vuông (tầm trận tính theo ô vuông như tầm đánh)
         for tx, ty, ten, nuacanh in d.get("trans") or ():
-            mau = self._mau(MAUTRAN.get(ten, "chu_phu"))
-            x1, y1 = self._toado(tx - nuacanh, ty + nuacanh)
-            x2, y2 = self._toado(tx + nuacanh, ty - nuacanh)
-            c.create_rectangle(x1 - s / 2, y1 - s / 2, x2 + s / 2, y2 + s / 2, outline = mau, width = 2, fill = mau, stipple = "gray25")
+            mau = MAUTRAN.get(ten, m["chuphu"])
+            xa, ya = self._toado(tx - nuacanh, ty + nuacanh)
+            xb, yb = self._toado(tx + nuacanh, ty - nuacanh)
+            c.create_rectangle(xa - s / 2, ya - s / 2, xb + s / 2, yb + s / 2, outline = mau, width = 2, fill = mau, stipple = "gray12")
             cx, cy = self._toado(tx, ty)
             c.create_line(cx - s / 2, cy, cx + s / 2, cy, fill = mau)
             c.create_line(cx, cy - s / 2, cx, cy + s / 2, fill = mau)
@@ -377,46 +507,92 @@ class CuaSoBanDoNho:
             duong = d.get("duong") or ()
             if len(duong) >= 2:
                 diem = [v for o in duong for v in self._toado(*o)]
-                c.create_line(*diem, fill = self._mau("luc"), width = 2, dash = (4, 2))
+                c.create_line(*diem, fill = m["duong"], width = 2, dash = (5, 3), capstyle = tk.ROUND, joinstyle = tk.ROUND)
             if d.get("dich"):
                 dx, dy = self._toado(*d["dich"])
-                r = max(3, s / 2)
-                c.create_line(dx - r, dy - r, dx + r, dy + r, fill = self._mau("luc"), width = 2)
-                c.create_line(dx - r, dy + r, dx + r, dy - r, fill = self._mau("luc"), width = 2)
+                r = max(4, s * 0.6)
+                c.create_oval(dx - r, dy - r, dx + r, dy + r, outline = m["duong"], width = 2)
+                c.create_oval(dx - 1.5, dy - 1.5, dx + 1.5, dy + 1.5, fill = m["duong"], outline = "")
             if d.get("diemden"):
                 ex, ey = self._toado(*d["diemden"])
-                r = max(4, s * 0.7)
-                c.create_polygon(ex, ey - r, ex + r, ey, ex, ey + r, ex - r, ey, outline = self._mau("xanh"), fill = "", width = 2)
+                r = max(5, s * 0.8)
+                c.create_polygon(ex, ey - r, ex + r, ey, ex, ey + r, ex - r, ey, outline = m["diemden"], fill = "", width = 2)
 
-        # Đối tượng
+        # Đối tượng: chấm có viền tối; tên gom lại vẽ sau cùng để nằm trên mọi chấm
         idmuctieu = d.get("muctieu") or 0
         r = max(2.5, s * 0.42)
         dems = {}
+        tens = []
         for ox_, oy_, loai, ten, iddoituong in d.get("doituongs") or ():
             dems[loai] = dems.get(loai, 0) + 1
             px, py = self._toado(ox_, oy_)
             if px < -s or py < -s or px > rong + s or py > cao + s:
                 continue
-            mau = self._mau(MAUDOITUONG.get(loai, "chu_phu"))
+            mau = MAUDOITUONG.get(loai, m["chuphu"])
             rr = r * 1.25 if loai in ("thudich", "nguoichoi", "dongdoi") else r
-            c.create_oval(px - rr, py - rr, px + rr, py + rr, fill = mau, outline = self._mau("nen_o"))
+            c.create_oval(px - rr, py - rr, px + rr, py + rr, fill = mau, outline = m["vienchu"], width = 1)
             if iddoituong == idmuctieu:
-                rm = rr + 3
-                c.create_oval(px - rm, py - rm, px + rm, py + rm, outline = self._mau("do"), width = 2)
-            if self.var_ten.get() and loai != "quai" and ten and s >= 6:
-                c.create_text(px, py - rr - 2, text = ten.split("(")[0].strip()[:16], anchor = tk.S, fill = mau, font = ("Segoe UI", 8))
+                # Khung ngắm 4 góc quanh mục tiêu
+                k, l = rr + 4, max(3, rr * 0.8)
+                for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1)):
+                    c.create_line(px + sx * k, py + sy * (k - l), px + sx * k, py + sy * k, px + sx * (k - l), py + sy * k,
+                                  fill = m["muctieu"], width = 2)
+            if self.var_ten.get() and loai in UUTIENTEN and ten and s >= 6:
+                ten = ten.split("(")[0].strip()
+                if loai == "quai" and len(ten) > DODAITENQUAI:
+                    ten = ten[:DODAITENQUAI].rstrip() + "…"
+                tens.append((UUTIENTEN[loai], px, py, rr, ten[:16], mau))
 
-        # Bản thân: tam giác ở giữa
-        mx, my = rong / 2, cao / 2
-        rb = max(4, s * 0.6)
-        c.create_polygon(mx, my - rb * 1.2, mx + rb, my + rb * 0.8, mx - rb, my + rb * 0.8,
-                         fill = self._mau("chinh"), outline = self._mau("nen_o"), width = 1)
+        # Tên: trên chấm, chồng tên đã vẽ thì thử dưới chấm, vẫn chồng thì bỏ (ưu tiên thù địch > đồng đội > người chơi > NPC)
+        dave = []
+        caochu = self._phongchu.metrics("linespace")
+        tenquai = []
+        for uutien, px, py, rr, ten, mau in sorted(tens, key = lambda t: t[0]):
+            # Quái cùng tên đứng gần (≤ 5 ô) chỉ ghi tên một lần: bầy quái cùng loại khỏi lặp chữ
+            if uutien == UUTIENTEN["quai"]:
+                if any(t == ten and abs(qx - px) <= 5 * s and abs(qy - py) <= 5 * s for t, qx, qy in tenquai):
+                    continue
+                tenquai.append((ten, px, py))
+            w = self._phongchu.measure(ten)
+            for day in (py - rr - 2, py + rr + 2 + caochu):
+                hop = (px - w / 2 - 2, day - caochu, px + w / 2 + 2, day)
+                if not any(hop[0] < b[2] and b[0] < hop[2] and hop[1] < b[3] and b[1] < hop[3] for b in dave):
+                    dave.append(hop)
+                    self._chuvien(px, day, ten, mau, anchor = tk.S)
+                    break
 
+        # Bản thân: chấm trắng có vòng xanh ở giữa (không có hướng mặt nên không vẽ mũi tên)
+        rb = max(4, s * 0.55)
+        c.create_oval(mx - rb - 4, my - rb - 4, mx + rb + 4, my + rb + 4, outline = m["banthanvong"], width = 1, dash = (2, 2))
+        c.create_oval(mx - rb, my - rb, mx + rb, my + rb, fill = m["banthan"], outline = m["banthanvong"], width = 2)
+
+        # Nhãn bản đồ + toạ độ góc trên trái
         tuoi = time.time() - d.get("thoidiem", 0)
-        tom = ", ".join(f"{TENLOAIDOITUONG[k]} {v}" for k, v in dems.items() if k in TENLOAIDOITUONG)
-        self.lbl_trangthai.configure(
-            text = f"{laytenbando(d['bando'])} ({round(d['x'])},{round(d['y'])})" + (f" · {tom}" if tom else "")
-                   + (f" · dữ liệu cũ {tuoi:.0f}s" if tuoi > 3 else ""))
+        nhan = f"{laytenbando(d['bando'])}   {round(d['x'])}, {round(d['y'])}"
+        w = self._phongchudam.measure(nhan) + 20
+        self._hopbo(8, 8, 8 + w, 30, r = 8, fill = m["hop"], outline = m["hopvien"])
+        c.create_text(18, 19, text = nhan, anchor = tk.W, fill = m["chu"], font = PHONGCHUDAM)
+        if tuoi > 3:
+            self._hopbo(8, 34, 150, 54, r = 8, fill = m["hop"], outline = m["muctieu"])
+            c.create_text(18, 44, text = f"Dữ liệu cũ {tuoi:.0f}s", anchor = tk.W, fill = m["muctieu"], font = PHONGCHU)
+
+        # La bàn góc trên phải: Bắc lên trên
+        lx, ly = rong - 22, 22
+        c.create_oval(lx - 13, ly - 13, lx + 13, ly + 13, fill = m["hop"], outline = m["hopvien"])
+        c.create_polygon(lx, ly - 10, lx + 4, ly, lx - 4, ly, fill = m["muctieu"], outline = "")
+        c.create_polygon(lx, ly + 10, lx + 4, ly, lx - 4, ly, fill = m["chuphu"], outline = "")
+        c.create_text(lx, ly + 22, text = "B", fill = m["chuphu"], font = PHONGCHU)
+
+        # Thước đo góc dưới trái: 10 ô
+        dai = 10 * s
+        bx, by = 12, cao - 14
+        c.create_line(bx, by, bx + dai, by, fill = m["chuphu"], width = 2)
+        c.create_line(bx, by - 4, bx, by + 1, fill = m["chuphu"], width = 2)
+        c.create_line(bx + dai, by - 4, bx + dai, by + 1, fill = m["chuphu"], width = 2)
+        self._chuvien(bx + dai + 6, by - 1, "10 ô", m["chuphu"], anchor = tk.W)
+
+        tom = " · ".join(f"{TENLOAIDOITUONG[k]} {v}" for k, v in dems.items() if k in TENLOAIDOITUONG)
+        self.lbl_trangthai.configure(text = tom)
 
     def _vechuthich(self):
         # Chú thích tự xuống dòng theo bề rộng khung
@@ -425,14 +601,13 @@ class CuaSoBanDoNho:
         rongtoida = max(200, self.canvas.winfo_width() or KICHTHUOCKHUNG)
         muc = [("cham", MAUDOITUONG[loai], TENLOAIDOITUONG[loai]) for loai in ("quai", "thudich", "nguoichoi", "dongdoi", "npc")]
         muc += [("tran", MAUTRAN[ten], ten.replace(" Trận", "")) for ten in ("Kỳ Môn Trận", "Độn Giáp Trận")]
-        muc += [("duong", "luc", "Đường bot đi"), ("diem", "xanh", "Điểm lộ trình")]
+        muc += [("duong", MAUBANDO["duong"], "Đường bot đi"), ("diem", MAUBANDO["diemden"], "Điểm lộ trình")]
         x, y = 4, 11
-        for kieu, khoamau, chu in muc:
-            idchu = c.create_text(0, 0, text = chu, anchor = tk.W, fill = self._mau("chu_phu"), font = ("Segoe UI", 8))
+        for kieu, mau, chu in muc:
+            idchu = c.create_text(0, 0, text = chu, anchor = tk.W, fill = self._mau("chu_phu"), font = PHONGCHU)
             rongchu = c.bbox(idchu)[2] - c.bbox(idchu)[0]
             if x + 18 + rongchu > rongtoida:
                 x, y = 4, y + 18
-            mau = self._mau(khoamau)
             if kieu == "cham":
                 c.create_oval(x, y - 4, x + 9, y + 5, fill = mau, outline = "")
             elif kieu == "tran":

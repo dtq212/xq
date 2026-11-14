@@ -20,7 +20,9 @@
 #           gà đó tới cạnh, acc chính "give <ID acc gà> <đồ>#1 ... $0" (chuyển thẳng, không cần đồng ý, như giao đồ) mọi món đủ cấp acc gà
 #   thuhoi  : mọi acc gà tới cấp kết thúc (người dùng dặn): trước khi xong, acc chính đứng yên (đang trong Phong Yêu Kính thì Thỏ Yêu về
 #           Chu Quốc), acc gà còn đồ Lam Kim tới cạnh give trả hết về acc chính; mọi acc gà báo đã trả (quá THOIGIANTHUHOIKC giây thì
-#           thôi); acc gà trả cả Tạo Hoá Đơn / Bổ Tâm Đơn + toàn bộ ngân lượng, acc chính đem bán ở Chủ Tiệm Y Dược (_banthuhoikc) rồi mới sang xong
+#           thôi); acc gà trả cả Tạo Hoá Đơn / Bổ Tâm Đơn / Phi Hành - Hồi Thành - Hồi Bang Phù + toàn bộ ngân lượng, acc chính đem
+#           bán ở Chủ Tiệm Y Dược (phù chỉ bán phần nhận thêm, Lam Kim cấp 25 giữ 4 món), trả cả sách "Nhập Môn" để acc chính cất
+#           kho (_catsachthuhoikc) rồi mới sang xong
 #   acc phụ (máy khác nối LAN, bật "Làm acc phụ"): tự nhận acc chính đang kéo cấp thấy qua LAN; tập hợp / bãi (cấp 1 -> 35) vào nhóm
 #           acc chính (còn chỗ sau acc gà) và theo sau như acc gà (người dùng dặn 2026-11-03), Phong Yêu Kính làm thành viên dò đánh quái
 #           như acc chính. Không nhận thưởng tân thủ / vào bang, không tính cấp acc phụ khi chọn bãi / kết thúc
@@ -37,7 +39,8 @@ from hangso_xq import *
 from tienich_xq import phatam, canhbao, taicauhinhphongyeu, taivitrithoyeu, laydieukienrapykeocap, taigiaodienkeocap, _thumucthietlap
 from thongbao_xq import baosuco
 from giaodo_xq import taolenhgiao
-from tactu_langlyson_xq import CAPDOLAMKIMTOITHIEU, laytenthoyeu, SOBOSSPHONGYEU, THOIGIANTOITHIEUPY, THOIGIANTOIDAPY
+from tactu_catkho_xq import LYDOCATKHO_KEOCAP
+from tactu_langlyson_xq import CAPDOLAMKIMTOITHIEU, laytenthoyeu, SOBOSSPHONGYEU, THOIGIANTOITHIEUPY, THOIGIANTOIDAPY, MAMAULAMKIM
 
 BANDO_BAKHAU = 162
 BANDO_THUYHOASON_KC = 82
@@ -104,6 +107,10 @@ CAPXUATSU = 60
 # Người give (acc gà) ra Phong Yêu Kính theo "Điều kiện thoát" ở cấu hình Phong Yêu Kính (tienich_xq.DIEUKIENRAPYKEOCAPs: số boss,
 # có chờ hết quái); hết quái = không thành viên nào (cùng bản đồ) còn mục tiêu liền chừng này giây; ở quá THOIGIANTOIDAPY thì thôi chờ
 THOIGIANHETMUCTIEUPYKC = 10.
+# Acc chính hơn người give (boss Phong Yêu Kính theo cấp người give) QUÁ chừng này cấp thì mọi "Điều kiện thoát" thành kiểu "85quai"
+# (đủ 85% quái là ra, không tìm / đánh boss): người dùng dặn 2026-11-14, acc chính 100 đánh boss 55 trở xuống không rơi đồ, đi tìm boss
+# phí thời gian. Chênh lệch <= mốc (acc gà kéo lên 60-70) thì đánh boss như cấu hình để có đồ Lam Kim đốt tiếp
+CHENHLECHCAPKHONGDANHBOSSKC = 40
 KHOANGCACHNOICHUYENKC = 3.
 THOIGIANCHOMENUKC = 3.
 SOLANTHUMENUKC = 3
@@ -153,11 +160,22 @@ THOIGIANTHUHOIKC = 300.
 # Quá THOIGIANBANTHUHOIKC giây chưa bán xong thì thôi, báo Telegram
 # Tên đúng theo máy chủ (log quay số 845 "Bổ Tâm Đơn", 321/844 "Tạo Hoá Đơn"; người dùng gọi "Tạp Hóa Đơn"). "Bổ Tâm Đan" là món khác
 VATPHAMTHUHOIBANKCs = ("Tạo Hoá Đơn", "Tạo Hóa Đơn", "Bổ Tâm Đơn")
+# Phù acc gà còn trong túi cũng trả về bán (người dùng dặn 2026-11-14). Acc chính cần phù để đi lại nên chỉ bán phần nhận thêm: giữ đúng
+# số phù có lúc bắt đầu thu hồi, bán nguyên chồng (lệnh sell bán cả chồng) miễn tổng bán không vượt phần nhận thêm
+PHUTHUHOIBANKCs = (PHIHANHPHU, HOITHANHPHU, HOIBANGPHU)
+# Đồ Lam Kim cấp này (acc gà trả về sau kéo cấp): acc chính luôn chỉ giữ tối đa SOLAMKIMGIULAIKC món (rẻ nhất, để đốt Phong Yêu Kính),
+# còn lại bán lúc thu hồi xong (người dùng dặn 2026-11-14). Chỉ xét món đem đốt được (_chondolamkim: không khoá, không ★)
+CAPLAMKIMBANKC = 25
+SOLAMKIMGIULAIKC = 4
+# Sách "Nhập Môn ..." (tên bắt đầu như vậy, game viết cả "Nhập Môn" lẫn "Nhập môn", vd Nhập Môn Tu Tâm, Nhập môn Khổ Luyện): acc gà trả
+# về, acc chính bán đồ xong thì tới Quản Khố cất hết vào rương (người dùng dặn 2026-11-14; dùng bộ cất kho tactu_catkho_xq, rương tự
+# động). Đang ở Chu Quốc cất ở Quản Khố Chu Quốc (X_KHO_CHU, Y_KHO_CHU), Tân Thủ Thôn ở Quản Khố, nơi khác thì về Chu Quốc
+TIENTOSACHTHUHOIKCs = ("Nhập Môn",)
 NPCBANTHUHOIKCs = {BANDO_CHUQUOC: ("Chủ Tiệm Y Dược", 250, 176), BANDO_TANTHUTHON: ("Chủ Tiệm Y Dược", 135, 170)}
 KHOANGCACHBANTHUHOIKC = 3.
 THOIGIANBANTHUHOIKC = 300.
 TENGIAIDOANKEOCAP = {"tanthu": "nhận thưởng tân thủ", "taphop": "tập hợp Tân Thủ Thôn", "phongyeu": "Phong Yêu Kính", "xuatsu": "xuất sư",
-                     "thuhoi": "thu hồi đồ Lam Kim + Trảo + Đơn", "xong": "xong"}
+                     "thuhoi": "thu hồi + bán đồ", "xong": "xong"}
 # Nhận đồ đệ (tuỳ chọn): trước khi lập nhóm / mời bang, acc chính lập nhóm riêng với acc gà đồ đệ, Mạnh Tử "2. Ta đem đệ tử đến làm lễ bái
 # sư" -> "1. Xác nhận", acc gà "1. Xác nhận" (tallk 17e5# welcome.13); mọi acc gà tới cấp kết thúc thì về Mạnh Tử "3. ... lễ xuất sư" như vậy.
 # Nhãn lựa chọn không có trong bộ nhớ (chỉ có lệnh), chưa dò được đuôi lệnh của acc chính nên chọn theo thứ tự (0 = lựa chọn 1)
@@ -511,6 +529,8 @@ class TacTuKeoCap:
             # Số Trảo trong túi mình lúc bắt đầu thu hồi và acc gà đang giữ Trảo: thu hồi xong đếm lại (_kiemtratraothuhoikc)
             s["sotraodauthuhoi"] = self._demtraokc()
             s["gacotraothuhoi"] = list(s.get("gacotrao") or [])
+            # Số phù của mình lúc bắt đầu thu hồi: bán phù chỉ bán phần acc gà trả thêm (_laydsbanthuhoikc)
+            s["phudauthuhoi"] = {ten: self._demvatphamkc((ten,)) for ten in PHUTHUHOIBANKCs}
         if self._is_trongphongyeu():
             return self._raphongyeukc(s)
         if self._langlyson:
@@ -535,6 +555,9 @@ class TacTuKeoCap:
         yeucau = self._banthuhoikc(s)
         if yeucau is not False:
             return yeucau
+        yeucau = self._catsachthuhoikc(s)
+        if yeucau is not False:
+            return yeucau
         self._sanggiaidoankc(s, "xong")
         s["lucxong"] = now
         s["trangthai"] = f"mọi acc gà đã tới cấp {s['capketthuc']}, báo acc gà dừng"
@@ -556,21 +579,24 @@ class TacTuKeoCap:
 
         if b["somon"] is not None:
             if self.get_is_dangbanrac() or now < self._thoidiemguibanractieptheo:
-                s["trangthai"] = f"bán Tạo Hoá Đơn / Bổ Tâm Đơn: còn {len(self._hangdoibanrac)}/{b['somon']} chồng"
+                s["trangthai"] = f"bán đồ thu hồi: còn {len(self._hangdoibanrac)}/{b['somon']} món"
                 return None
-            conlai = self._timcacvatphamkc(VATPHAMTHUHOIBANKCs)
-            return xong(f"Đã bán {b['somon']} chồng Tạo Hoá Đơn / Bổ Tâm Đơn" + (f" (⚠️ còn {len(conlai)} chồng chưa bán được)" if conlai else ""))
-        mons = self._timcacvatphamkc(VATPHAMTHUHOIBANKCs)
-        if not mons:
-            return xong("Không có Tạo Hoá Đơn / Bổ Tâm Đơn để bán")
+            conlai = set(self._idtrongtuikc()) & set(b["ids"])
+            return xong(f"Đã bán {b['somon']} món đồ thu hồi" + (f" (⚠️ còn {len(conlai)} món chưa bán được)" if conlai else ""))
         if now - b["luc"] > THOIGIANBANTHUHOIKC:
-            noidung = f"Quá {int(THOIGIANBANTHUHOIKC)}s chưa bán được {len(mons)} chồng Tạo Hoá Đơn / Bổ Tâm Đơn: vẫn kết thúc, bán tay giúp"
+            noidung = f"Quá {int(THOIGIANBANTHUHOIKC)}s chưa bán được đồ thu hồi (Đơn / phù / Lam Kim cấp {CAPLAMKIMBANKC}): vẫn kết thúc, bán tay giúp"
             baosuco(moitruong, "vatpham", f"Kéo cấp: {noidung}", khoa = "banthuhoikc", giancach = 0.)
             return xong("⚠️ " + noidung)
+        mons = self._laydsbanthuhoikc(s)
+        if mons == "doc":
+            s["trangthai"] = f"bán đồ thu hồi: đọc mô tả túi tìm đồ Lam Kim cấp {CAPLAMKIMBANKC}"
+            return None
+        if not mons:
+            return xong(f"Không có đồ thu hồi để bán (Đơn / phù nhận thêm / Lam Kim cấp {CAPLAMKIMBANKC} quá {SOLAMKIMGIULAIKC} món)")
         idbando = moitruong.get_idbandohientai()
         idbandoban = idbando if idbando in NPCBANTHUHOIKCs else BANDO_CHUQUOC
         tennpc, x, y = NPCBANTHUHOIKCs[idbandoban]
-        nhan = f"bán {len(mons)} chồng Tạo Hoá Đơn / Bổ Tâm Đơn: tới {tennpc} ({x}, {y})"
+        nhan = f"bán {len(mons)} món đồ thu hồi: tới {tennpc} ({x}, {y})"
         if idbando != idbandoban:
             s["trangthai"] = nhan
             return self._ditoikc(s, idbandoban, (x, y), nhan)
@@ -583,12 +609,82 @@ class TacTuKeoCap:
         if not idnpc or idnpc <= 0:
             return None
         moitruong.action_ngatdichuyen()
-        lenhs = ["sell ! {}# {}# 255".format(hex(idnpc).replace("0x", ""), hex(idmon).replace("0x", "")) for _, idmon in mons]
-        b["somon"] = len(lenhs)
+        lenhs = ["sell ! {}# {}# 255".format(hex(idnpc).replace("0x", ""), hex(idmon).replace("0x", "")) for idmon, _ in mons]
+        b.update(somon = len(lenhs), ids = [idmon for idmon, _ in mons])
         self._datnhangdoibanrac(lenhs)
-        self._logkc(f"Bán {len(lenhs)} chồng Tạo Hoá Đơn / Bổ Tâm Đơn ở {tennpc}")
-        s["trangthai"] = f"bán {len(lenhs)} chồng Tạo Hoá Đơn / Bổ Tâm Đơn ở {tennpc}"
+        self._logkc(f"Bán {len(lenhs)} món đồ thu hồi ở {tennpc}: " + ", ".join(mota for _, mota in mons))
+        s["trangthai"] = f"bán {len(lenhs)} món đồ thu hồi ở {tennpc}"
         return None
+
+    def _catsachthuhoikc(self, s):
+        # Bán xong: cất mọi sách "Nhập Môn" trong túi vào kho (bộ cất kho _buoccatkho, lọc theo tiền tố tên). -> yêu cầu / None khi đang
+        # làm, False khi xong
+        moitruong = self.moitruong
+        if s.get("dacatsach"):
+            return False
+        viec = s.get("catsach")
+        if not viec:
+            if not self._laymoncatkho(TIENTOSACHTHUHOIKCs):
+                s["dacatsach"] = True
+                self._logkc("Không có sách Nhập Môn để cất kho")
+                return False
+            viec = s["catsach"] = self._taoviec(LYDOCATKHO_KEOCAP)
+            viec["tientos"] = TIENTOSACHTHUHOIKCs
+            self._logkc("Cất sách Nhập Môn vào kho")
+        idbando = moitruong.get_idbandohientai()
+        if idbando not in (BANDO_CHUQUOC, BANDO_TANTHUTHON):
+            s["trangthai"] = "cất sách Nhập Môn: về Chu Quốc"
+            return self._ditoikc(s, BANDO_CHUQUOC, (X_KHO_CHU, Y_KHO_CHU), s["trangthai"])
+        ketqua = self._buoccatkho(viec)
+        s["trangthai"] = f"cất sách Nhập Môn: {viec['trangthai']}"
+        if isinstance(ketqua, tuple):
+            _, x, y = ketqua
+            return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x, y, idbando), "khoangcachtoida": 1.}
+        if ketqua == "dang":
+            return None
+        # "xong" / "lỗi": _ketthuccatkho đã ghi log, có món không cất được / lỗi thì đã báo Telegram
+        s["dacatsach"] = True
+        s.pop("catsach", None)
+        self._logkc("Cất sách Nhập Môn xong" if ketqua == "xong" else f"⚠️ Cất sách Nhập Môn lỗi: {self._ketquacatkho}")
+        return False
+
+    def _laydsbanthuhoikc(self, s):
+        # Đồ thu hồi đem bán: [(id, mô tả)], "doc" khi còn ô chưa đọc được mô tả (cần để nhận đồ Lam Kim)
+        #   - mọi chồng Tạo Hoá Đơn / Bổ Tâm Đơn
+        #   - phù (PHUTHUHOIBANKCs) phần nhận thêm so với lúc bắt đầu thu hồi: bán nguyên chồng, chồng lớn trước, tổng không vượt phần thêm
+        #   - đồ Lam Kim cấp CAPLAMKIMBANKC quá SOLAMKIMGIULAIKC món: giữ món rẻ nhất, bán món giá cao
+        moitruong = self.moitruong
+        lamkims = self._chondolamkim(s, captoithieu = CAPLAMKIMBANKC, is_tatca = True)
+        if lamkims == "doc":
+            return "doc"
+        ketquas = []
+        for vitri, idmon in self._timcacvatphamkc(VATPHAMTHUHOIBANKCs):
+            soluong = max(1, moitruong.get_soluongvatphamhanhtrang(vitri) or 1)
+            ketquas.append((idmon, f"{moitruong.get_tenvatphamhanhtrang(vitri) or 'Đơn'} x{soluong}"))
+        dau = s.get("phudauthuhoi") or {}
+        for ten in PHUTHUHOIBANKCs:
+            chongs = sorted(((max(1, moitruong.get_soluongvatphamhanhtrang(vitri) or 1), idmon)
+                             for vitri, idmon in self._timcacvatphamkc((ten,))), reverse = True)
+            thua = sum(sl for sl, _ in chongs) - dau.get(ten, 0)
+            for soluong, idmon in chongs:
+                if 0 < soluong <= thua:
+                    thua -= soluong
+                    ketquas.append((idmon, f"{ten} x{soluong}"))
+        cap25s = [mon for mon in (lamkims or []) if mon[0] == CAPLAMKIMBANKC
+                  and (moitruong.get_motathovatphamhanhtrangcosan(mon[2]) or "").startswith(MAMAULAMKIM)]
+        # Đã sắp (cấp, giá): giữ SOLAMKIMGIULAIKC món đầu (rẻ nhất), bán phần còn lại
+        for capdo, gia, vitri, idmon, ten in cap25s[SOLAMKIMGIULAIKC:]:
+            ketquas.append((idmon, f"{ten} (Lam Kim cấp {capdo})"))
+        return ketquas
+
+    def _idtrongtuikc(self):
+        # Id mọi món trong 4 túi hành trang
+        return [idmon for mons in self.moitruong.get_danhsachvatphamhanhtrang_map().values()
+                for vitri, idmon in mons if idmon and vitri < VITRITRANGBIDAUTIEN]
+
+    def _demvatphamkc(self, tens):
+        # Tổng số lượng (cộng các chồng) món có tên là 1 trong tens trong túi
+        return sum(max(1, self.moitruong.get_soluongvatphamhanhtrang(vitri) or 1) for vitri, _ in self._timcacvatphamkc(tens))
 
     def _demtraokc(self):
         # Số Cửu Long Thần Hỏa Trảo của mình: mọi ô 4 túi hành trang + pháp bảo đang đeo
@@ -1238,10 +1334,13 @@ class TacTuKeoCap:
         # Trảo trong túi trả cùng đồ Lam Kim: (id, số lượng, tên)
         trao = None if is_traocode else self._timvatphamkc(TRAOKEOCAPs)
         mons =[(mon[3], 1, f"{mon[4]} (cấp {mon[0]})") for mon in ds] + ([(trao[1], 1, TRAOKEOCAPs[0])] if trao else [])
-        # Tạo Hoá Đơn / Bổ Tâm Đơn: trả cả chồng, acc chính đem bán (_banthuhoikc)
-        for vitri, idmon in self._timcacvatphamkc(VATPHAMTHUHOIBANKCs):
+        # Tạo Hoá Đơn / Bổ Tâm Đơn / phù: trả cả chồng, acc chính đem bán (_banthuhoikc)
+        for vitri, idmon in self._timcacvatphamkc(VATPHAMTHUHOIBANKCs + PHUTHUHOIBANKCs):
             soluong = max(1, moitruong.get_soluongvatphamhanhtrang(vitri) or 1)
             mons.append((idmon, soluong, f"{moitruong.get_tenvatphamhanhtrang(vitri) or 'Đơn'} x{soluong}"))
+        # Sách "Nhập Môn": acc chính đem cất kho (_catsachthuhoikc)
+        for mon in self._laymoncatkho(TIENTOSACHTHUHOIKCs):
+            mons.append((mon["id"], max(1, mon["soluong"]), f"{mon['ten']} x{max(1, mon['soluong'])}"))
         # Toàn bộ ngân lượng mang theo cũng trả acc chính (người dùng dặn 2026-11-14), gửi kèm lệnh give đầu ("$<tiền>")
         tien = max(0, moitruong.get_nganluong() or 0)
         tenchinh = chinh.get("tennhanvat") or str(s["idchinh"])
@@ -1750,6 +1849,32 @@ class TacTuKeoCap:
     def _is_donguocphongyeukeocap(self):
         # Acc phụ dò Phong Yêu Kính ngược chiều acc chính (_dophongyeu)
         return bool(self._keocap) and self._keocap["vaitro"] == "phu"
+
+    def _is_khongdanhbosspykc(self):
+        # Đang kéo cấp trong Phong Yêu Kính mà acc chính hơn người give quá CHENHLECHCAPKHONGDANHBOSSKC cấp: không đánh boss (như "85quai").
+        # Cấp lấy từ shared_data (_keocap "capdo"); chưa đọc được cấp ai thì coi như không chênh (đánh boss như cấu hình)
+        s = self._keocap
+        if not s or s["giaidoan"] != "phongyeu" or not s["idgive"]:
+            return False
+        idtoi = self.moitruong.get_idnguoichoi()
+        cuasos = self._laycuasokeocap()
+
+        def capcua(idnguoichoi):
+            if idnguoichoi == idtoi:
+                return self.moitruong.get_capdonhanvat() or 0
+            info = cuasos.get(idnguoichoi)
+            return (info["_keocap"].get("capdo") or 0) if info else 0
+
+        capchinh = capcua(idtoi if s["vaitro"] == "chinh" else s["idchinh"])
+        capgive = capcua(s["idgive"])
+        if not capchinh or not capgive:
+            return False
+        is_khongdanh = capchinh - capgive > CHENHLECHCAPKHONGDANHBOSSKC
+        if is_khongdanh != s.get("khongdanhbosspy"):
+            s["khongdanhbosspy"] = is_khongdanh
+            self._logkc(f"Phong Yêu Kính: acc chính cấp {capchinh}, người give cấp {capgive} (chênh {capchinh - capgive}): "
+                        + ("không đánh boss, đủ 85% quái là ra" if is_khongdanh else "đánh boss theo Điều kiện thoát"))
+        return is_khongdanh
 
     def _laynhompykeocap(self):
         # Đang kéo cấp: (ID người give = acc gà acc chính chọn, [ID người khác: acc chính + acc gà online]) thay cho nhóm todoi, không thì None

@@ -2087,7 +2087,8 @@ class TacTuLangLySon:
         # Mình đang đánh / chờ xác nhận boss Phong Yêu Kính (báo qua shared_data: trưởng nhóm không ra khi thành viên đang đánh boss)
         s = self._langlyson
         py = s.get("py") if s and s["phoban"] == "phongyeukinh" else None
-        return bool(py and py["boss"] and self._is_trongphongyeu())
+        # Kéo cấp không đánh boss (acc chính hơn người give quá 40 cấp): thấy boss không tính là đang đánh
+        return bool(py and py["boss"] and self._is_trongphongyeu()) and not self._is_khongdanhbosspykc()
 
     def _nguoikhacdanhbosspy(self):
         # Tên người cùng nhóm đang đánh boss Phong Yêu Kính (cùng máy hoặc máy khác nối LAN), không ai thì None
@@ -2232,8 +2233,9 @@ class TacTuLangLySon:
             self._logpb(s, f"Bản đồ {idbando} (khó đi): ra mở bản đồ khác")
             s.update(giaidoan = "nhanthuong", hoithoai = None)
             return None
-        if not is_thanhvien and is_ra85quaipy() and (py.get("du85") or py["boss"]) and now - py["lucvao"] >= THOIGIANTOITHIEUPY:
-            # Điều kiện thoát "85quai": đủ mốc ra boss thì ra luôn, không đánh boss (chờ nhặt đồ rơi đã)
+        if not is_thanhvien and self._is_ra85quaipyhieuluc() and (py.get("du85") or py["boss"]) and now - py["lucvao"] >= THOIGIANTOITHIEUPY:
+            # Điều kiện thoát "85quai" (hoặc kéo cấp acc chính hơn người give quá 40 cấp): đủ mốc ra boss thì ra luôn, không đánh boss
+            # (chờ nhặt đồ rơi đã)
             if self._chonhatdoroipy(s):
                 s["trangthai"] = f"{tenpb}: đã đủ 85% quái, chờ nhặt đồ rồi ra"
                 return None
@@ -2282,18 +2284,22 @@ class TacTuLangLySon:
             return self._dungthoyeupy(s, py, idbando, is_thanhvien)
         diachi = self._timbossphongyeu(py)
         boss = py["boss"]
+        # Kéo cấp mà acc chính hơn người give quá 40 cấp: boss không rơi đồ, thấy thì chỉ ghi nhận (người give dựa vào đó để ra như
+        # "85quai"), không đuổi / đánh, dò đánh quái tiếp
+        is_bodanhboss = self._is_khongdanhbosspykc()
         if diachi:
             idboss = moitruong.get_iddoituong(diachi)
             if not boss or boss["id"] != idboss:
                 boss = py["boss"] = {"id": idboss, "ten": moitruong.get_tendoituong(diachi), "lucgan": 0.}
                 self._logpb(s, f"Thấy boss {boss['ten']} ở {moitruong.get_toado(diachi)}")
             boss.update(vitri = moitruong.get_toado(diachi), lucgan = 0.)
-            s["trangthai"] = f"{tenpb}: đánh boss {boss['ten']} (đã giết {len(py['bossdagiet'])}/{laydieukienrapykeocap()[0]})"
-            self._capnhatbuocdichuyen(f"{tenpb}: đánh boss {boss['ten']}")
-            if moitruong.get_khoangcach(diachi) > KHOANGCACHTOIBOSS:
-                return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (*boss["vitri"], idbando), "khoangcachtoida": 1.}
-            return None
-        if boss:
+            if not is_bodanhboss:
+                s["trangthai"] = f"{tenpb}: đánh boss {boss['ten']} (đã giết {len(py['bossdagiet'])}/{laydieukienrapykeocap()[0]})"
+                self._capnhatbuocdichuyen(f"{tenpb}: đánh boss {boss['ten']}")
+                if moitruong.get_khoangcach(diachi) > KHOANGCACHTOIBOSS:
+                    return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (*boss["vitri"], idbando), "khoangcachtoida": 1.}
+                return None
+        if boss and not is_bodanhboss:
             # Boss không còn thấy: chỉ coi là đã giết khi đứng gần chỗ thấy lần cuối THOIGIANBOSSBIENMAT giây (như _danhboss)
             xboss, yboss = boss["vitri"]
             if moitruong.get_khoangcachdiem(xboss, yboss) > KHOANGCACHTOIBOSS:
@@ -2335,9 +2341,14 @@ class TacTuLangLySon:
         s["trangthai"] = f"{tenpb}: không bật Tự động sử dụng kỹ năng, đứng ở Thỏ Yêu (boss {len(py['bossdagiet'])}/{laydieukienrapykeocap()[0]})"
         return self._dungthoyeukc(s, py, idbando)
 
+    def _is_ra85quaipyhieuluc(self):
+        # Kiểu "85quai" đang có hiệu lực: chọn ở cấu hình, hoặc kéo cấp mà acc chính hơn người give quá CHENHLECHCAPKHONGDANHBOSSKC cấp
+        # (boss cấp thấp không rơi đồ cho acc chính, người dùng dặn 2026-11-14)
+        return is_ra85quaipy() or self._is_khongdanhbosspykc()
+
     def _hoi85quaipy(self, s, py):
         # Điều kiện thoát "85quai", người give đứng ở Thỏ Yêu: hỏi số quái mỗi GIANCACHHOI85QUAIPY giây. -> (đang hỏi, yêu cầu di chuyển)
-        if not is_ra85quaipy() or py.get("du85"):
+        if not self._is_ra85quaipyhieuluc() or py.get("du85"):
             return False, None
         now = time.time()
         if not py["hoisoquai"]:

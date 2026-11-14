@@ -2,7 +2,7 @@
 # Chạy sau mỗi lần về bán rác (bước sau sửa đồ của _xulydangbanrac, nếu bật "is_catkhosauban") và khi bấm tay / Telegram (/catkho):
 # về Tân Thủ Thôn như giao đồ, trong lúc đó không chọn quái, lộ trình điểm đánh tạm dừng.
 # Lệnh game (7e# = id đối tượng Quản Khố hệ 16, tìm theo tên):
-# Lệnh tay khi đang ở Chu Quốc: cất luôn ở Chu chỗ Chủ Tiệm Sửa Chữa (X_KHO_CHU, Y_KHO_CHU), không Hồi Thành Phù về Tân Thủ Thôn.
+# Lệnh tay khi đang ở Chu Quốc: cất luôn ở Quản Khố Chu Quốc (X_KHO_CHU, Y_KHO_CHU), không Hồi Thành Phù về Tân Thủ Thôn.
 #   mở rương  : pawn 7e# <rương>                        (rương từ 1)
 #   cất vào   : pawn + 7e# <id món>#<số lượng> <ô rương>   (ô từ 1; ô đang có cùng món thì gộp chồng; số lượng nhỏ hơn chồng = cất 1 phần)
 # Đọc rương đang mở bằng moitruong.get_khodangmo (chỉ rương vừa mở có dữ liệu). Mỗi món: cất vào rương luật chỉ định (đầy thì bỏ món
@@ -11,6 +11,7 @@
 # rời túi / chồng đã giảm chưa: chưa thì ô đó không gộp được (đầy chồng...) / thử lại, quá SOLANTHUCATKHO lần thì bỏ món đó (đồ khoá...)
 # Mixin của TacTu (tactu_xq.py): chỉ chứa hàm, trạng thái (self._...) khởi tạo trong TacTu.__init__
 import time
+import unicodedata
 import uuid
 from collections import Counter
 
@@ -22,6 +23,8 @@ from tienich_xq import phatam
 
 LYDOCATKHO_BANRAC = "banrac"
 LYDOCATKHO_LENHTAY = "lenhtay"
+# Kéo cấp xong: acc chính cất sách "Nhập Môn" thu hồi từ acc gà (tactu_keocap_xq._catsachthuhoikc), việc giữ trong trạng thái kéo cấp
+LYDOCATKHO_KEOCAP = "keocap"
 KHOANGCACHQUANKHO = 3.
 # Các ô hành trang đầu bỏ qua (ô dùng nhanh)
 VITRICATKHODAUTIEN = 6
@@ -76,11 +79,20 @@ class TacTuCatKho:
                 "soruong": 1, "ruongdamo": 0, "lucmo": 0., "solanmo": 0, "ruongday": set(), "khongmo": set(), "khonggop": set(), "odadung": set(),
                 "solanloi": {}, "boqua": {}, "dangcho": None, "dacat": {}, "is_damokho": False}
 
-    def _laymoncatkho(self):
+    def _laymoncatkho(self, tientos = None):
         # Chồng trong túi cần cất theo bảng Cất kho, theo thứ tự ô: [{"vitri", "id", "ten", "soluong" (của chồng, 0 = không chồng được),
         # "cat" (số cất từ chồng này), "ruong" (0 = tự động)}]. Tính theo tên: tổng trong túi trừ "giữ lại" của luật, lấy dần từ ô đầu
         # (chồng cuối có thể chỉ cất 1 phần). Luật cần mô tả mà chưa đọc được thì bỏ qua lượt này
+        # tientos (việc cất riêng, vd kéo cấp cất sách "Nhập Môn"): bỏ bảng Cất kho, cất hết món có tên bắt đầu bằng 1 trong các tiền tố
+        # (không phân biệt hoa thường), rương tự động
         moitruong = self.moitruong
+        layluat = self._layluatcatkho
+        if tientos:
+            tientos = tuple(unicodedata.normalize("NFC", t).lower() for t in tientos)
+            luatrieng = {"ruong": 0, "giulai": 0}
+
+            def layluat(ten, vitri):
+                return luatrieng if unicodedata.normalize("NFC", ten).strip().lower().startswith(tientos) else None
         soluongo = moitruong.get_soluongvatphamhanhtrangtoida() + 1
         tens = moitruong._docdanhsachtenvatphamhanhtrang(soluongo)
         ids = moitruong._docdanhsachidvatphamhanhtrang(soluongo)
@@ -88,7 +100,7 @@ class TacTuCatKho:
         for vitri in range(VITRICATKHODAUTIEN, min(len(tens), len(ids))):
             if not ids[vitri] or ids[vitri] <= 0 or not tens[vitri]:
                 continue
-            luat = self._layluatcatkho(tens[vitri], vitri)
+            luat = layluat(tens[vitri], vitri)
             if luat:
                 nhoms.setdefault(tens[vitri], (luat, []))[1].append((vitri, ids[vitri], moitruong.get_soluongvatphamhanhtrang(vitri) or 0))
         mons = []
@@ -116,7 +128,9 @@ class TacTuCatKho:
 
     def _ketthuccatkho(self, viec, loi = None):
         # Báo kết quả (Telegram + log), xoá việc, đóng cửa sổ kho bot đã mở. -> "xong" / "lỗi"
-        self._catkho = None
+        # Việc cất riêng (kéo cấp cất sách, không nằm ở self._catkho) xong thì đừng xoá việc cất kho khác đang chạy
+        if self._catkho is viec or viec.get("lydo") != LYDOCATKHO_KEOCAP:
+            self._catkho = None
         if viec["is_damokho"]:
             self.moitruong.action_dongcuasokho()
         if viec["dacat"]:
@@ -173,19 +187,15 @@ class TacTuCatKho:
                     viec["boqua"][dangcho["ten"]] = f"thử {SOLANTHUCATKHO} lần không được, đồ khoá?"
             return "dang"
 
-        mons = [m for m in self._laymoncatkho() if m["ten"] not in viec["boqua"]]
+        mons = [m for m in self._laymoncatkho(viec.get("tientos")) if m["ten"] not in viec["boqua"]]
         if not mons:
             return self._ketthuccatkho(viec)
 
-        # Chu Quốc: cất ở chỗ Chủ Tiệm Sửa Chữa (X_KHO_CHU, Y_KHO_CHU); thấy Quản Khố thì dùng Quản Khố, không thì gửi lệnh pawn cho
-        # Chủ Tiệm Sửa Chữa
+        # Chu Quốc: cất ở Quản Khố Chu Quốc (X_KHO_CHU, Y_KHO_CHU). Không gửi pawn qua Chủ Tiệm Sửa Chữa nữa (chỉ mở được rương 1)
         tennpc = QUANKHO
         diachinpc = moitruong.action_timkiemnhanvat(tennhanvat = QUANKHO)
         if moitruong.get_idbandohientai() == BANDO_CHUQUOC:
             xmacdinh, ymacdinh = X_KHO_CHU, Y_KHO_CHU
-            if not diachinpc:
-                tennpc = CHUTIEMSUACHUA
-                diachinpc = moitruong.action_timkiemnhanvat(tennhanvat = CHUTIEMSUACHUA)
         else:
             xmacdinh, ymacdinh = X_QUANKHO_TANTHUTHON, Y_QUANKHO_TANTHUTHON
         if not diachinpc or moitruong.get_khoangcach(diachinpc) > KHOANGCACHQUANKHO:

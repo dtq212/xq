@@ -58,11 +58,17 @@ class TacTuDiChuyen:
         tenchunhanphe_map = {}
         ketancongs = []
         idthaytaichos = set()
+        # Người quen (nhân vật bot cùng máy / LAN, file tài khoản, tổ đội) không bao giờ là kẻ tấn công. Trước đây acc gà kéo cấp vừa bật
+        # lại (chưa vào chung nhóm), máu 2% ở Chu Quốc chạy trốn lẫn nhau: acc này chạy thì acc kia thấy "đang chạy về phía mình" => cả 4
+        # acc chạy loạn (log 842-845 2026-11-14 08:54). Tầm nhìn chung đã bỏ nhân vật cùng máy theo tên (_laytamnhinchung)
+        idquens = self.get_idnguoiquens()
         for diachi in self.moitruong._get_diachidoituongxungquanhs():
             idthaytaichos.add(self.moitruong.get_iddoituong(diachi))
             x, y = self.moitruong.get_toado(diachi)
             khoangcach = math.dist((x1, y1), (x, y))
             if khoangcach > bankinhxet:
+                continue
+            if self.moitruong.get_is_nguoichoi(diachi) and self.moitruong.get_idnguoichoi(diachi) in idquens:
                 continue
             # Chỉ mục tiêu PK: người chơi / bảo thú triệu hồi / bảo thú giang hồ (bỏ quái)
             if self._is_giukhoangcachchimuctieupk and not is_chaytron and not (self.moitruong.get_is_nguoichoi(diachi)

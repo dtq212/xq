@@ -27,6 +27,7 @@ from danhhieumuctieu_xq import DanhHieuMucTieu, CHUKYGHI as CHUKYDANHHIEUMUCTIEU
 from hangso_xq import CHISONHANVAT_MAP
 from bandonho_xq import ThuThapBanDoNho
 from ngoaihinh_xq import NgoaiHinh, khoidong_loopngoaihinh
+from tudongrao_xq import TuDongRao, khoidong_looptudongrao
 
 # Khí Huyết, Ngoại Kháng, Nội Kháng, Ngoại Công, Nội Công (ô thấp mỗi cặp)
 DICHCHISOPHONGTHU = (CHISONHANVAT_MAP["Khí Huyết"][0], CHISONHANVAT_MAP["Ngoại Kháng"][0], CHISONHANVAT_MAP["Nội Kháng"][0],
@@ -174,6 +175,8 @@ class CuaSo:
         self.bandonho = ThuThapBanDoNho(self.moitruong, self.tactu)
         # Ngoại hình chỉ mình thấy (ngoaihinh_xq): ghi đè ngoại trang / cánh / vũ khí / màu hào quang theo _internal/ngoaihinh.json
         self.ngoaihinh = NgoaiHinh(self.moitruong)
+        # Tự động rao (tudongrao_xq): rao lặp lại trên kênh chat theo _internal/tudongrao.json
+        self.tudongrao = TuDongRao(self.moitruong)
 
         self.tennhanvat = None
         # (ID bản đồ, phó bản mượn ID, x, y) lần cuối toạ độ ổn định: vừa đổi bản đồ thì chia sẻ cái này thay cho toạ độ cũ lẫn mã bản đồ mới
@@ -193,6 +196,7 @@ class CuaSo:
             threading.Thread(target = khoidong_loopuocluongmuctieu, args = [self.uocluongmuctieu, self.moitruong, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopdanhhieumuctieu, args = [self.danhhieumuctieu, self.tactu, self.moitruong, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopngoaihinh, args = [self.ngoaihinh, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_looptudongrao, args = [self.tudongrao, self.main_stop], daemon = True),
         )
 
         for luong in self.luongs:
@@ -369,8 +373,6 @@ class CuaSo:
                     "_danhhieulammoi": self.tactu._danhhieulammoi,
                     "_danhsachdanhhieu": self.tactu.get_danhsachdanhhieu(),
                     "_phantramnoiluckhaithientichdia": self.tactu._phantramnoiluckhaithientichdia,
-                    "_chedokynang": self.tactu._chedokynang,
-                    "_tinhhinhtuhoc": self.tactu.get_tinhhinhtuhoc(),
 
                     "_is_tudongdichuyendiemdanhxungquanh": self.tactu._is_tudongdichuyendiemdanhxungquanh,
                     "_diemdanhxungquanhs": self.tactu._diemdanhxungquanhs,
@@ -535,6 +537,8 @@ class CuaSo:
                     print(f"Lỗi ước lượng mục tiêu: {err}")
                 # Ngoại hình thật đang mặc + loại vũ khí cho cửa sổ Ngoại hình (lọc lựa chọn cùng giới tính / cùng loại vũ khí)
                 info["_ngoaihinh"] = self.ngoaihinh.get_share()
+                # Câu rao gần nhất / lần tới cho cửa sổ Tự động rao
+                info["_tudongrao"] = self.tudongrao.get_share()
                 try:
                     if self.bandonho.is_bat:
                         info["_bandonho"] = self.bandonho.lay(info.get("_diemdanhdangden"))
@@ -728,8 +732,6 @@ class CuaSo:
                         self.tactu.thietlap_muctieutheosau(int(idmuctieu), tenmuctieu)
                     except Exception as e:
                         print(f"Lỗi khi chọn người theo sau: {e}")
-                elif isinstance(cmd, str) and cmd.startswith("set_chedokynang:"):
-                    self.tactu.thietlap_chedokynang(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_danhhieulammoi:"):
                     self.tactu.thietlap_danhhieulammoi(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_khoangcachsudungkynangtamxa:"):

@@ -10,7 +10,7 @@ import time
 from hangso_xq import *
 from dexuatlotrinh_xq import taiviquai as util_taiviquai, luuviquai as util_luuviquai, taiviquaibando, ghinhanvitriquai, dexuatlotrinh
 from dexuatlotrinh_xq import THOIGIANGHIVITRIQUAI, THOIGIANLUUVITRIQUAI, SOLANTHAYQUAITOITHIEU, TENMAUDEXUAT
-from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, donbangthoidiem, khoangcachtamdanh
+from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, layidtaikhoans, donbangthoidiem, khoangcachtamdanh
 
 # Ép đá: 1->4 sao luôn thành công, 4->5 khoảng 65%, 5->6 khoảng 35%; chỉ ghi log từ 4 sao
 SAOEPDAGHILOG = 4
@@ -71,6 +71,10 @@ class TacTuMucTieu:
             return False
         if self.moitruong.get_idloainhanvat(diachidoituong) == LOAIMUCTIEU_NGUOICHOICUNGNHOM:
             return False
+        # Nhân vật của mình (danh sách Tổ đội tự động todoi.json, file tài khoản) chưa vào chung nhóm game vẫn là phe mình: trước đây
+        # chỉ xét cùng nhóm nên acc nhà đứng cạnh ra đòn quái quay mặt về mình bị báo "Bị ... tấn công" (người dùng báo 2026-11-14)
+        if self.moitruong.get_is_nguoichoi(diachidoituong) and self._is_idnhanvatcuaminh(self.moitruong.get_idnguoichoi(diachidoituong)):
+            return False
         if self.moitruong.get_idbandohientai() == BANDO_CHIENTRUONG and self.moitruong.get_idphechientruong() == self.moitruong.get_idphechientruong(diachidoituong):
             return False
         if self.moitruong.get_is_baothukynangtrieuhoi(diachidoituong) or self.moitruong.get_is_baothugiangho(diachidoituong):
@@ -80,10 +84,16 @@ class TacTuMucTieu:
                     # Bảo thú của mình / đồng đội thì cùng phe; chủ nhân không ở gần thì coi như thù địch
                     diachichunhan = None if tenchunhan == self.moitruong.get_tendoituong() else self.moitruong.action_timkiemnhanvat(tennhanvat = tenchunhan)
                     tenchunhanphe_map[tenchunhan] = tenchunhan == self.moitruong.get_tendoituong() or bool(
-                        diachichunhan and self.moitruong.get_idloainhanvat(diachichunhan) == LOAIMUCTIEU_NGUOICHOICUNGNHOM)
+                        diachichunhan and (self.moitruong.get_idloainhanvat(diachichunhan) == LOAIMUCTIEU_NGUOICHOICUNGNHOM
+                                           or self._is_idnhanvatcuaminh(self.moitruong.get_idnguoichoi(diachichunhan))))
                 if tenchunhanphe_map[tenchunhan]:
                     return False
         return True
+
+    @staticmethod
+    def _is_idnhanvatcuaminh(idnguoichoi):
+        # ID thuộc nhân vật của mình: có trong nhóm Tổ đội tự động (todoi.json) hoặc file tài khoản (cả 2 đều có cache theo thời điểm sửa file)
+        return bool(idnguoichoi) and (idnguoichoi in laynhanvattodoitudongs() or idnguoichoi in layidtaikhoans())
 
     def get_tamnhinchiase(self):
         # Tầm nhìn của cửa sổ này để chia sẻ cho nhân vật khác cùng máy (ghi vào shared_data mỗi lượt cập nhật giao diện):
@@ -128,6 +138,9 @@ class TacTuMucTieu:
                 danhsach = []
             idbandohientai = self.moitruong.get_idbandohientai()
             phobanmuon = self.moitruong.get_tenphobanmuonbando()
+            # Nhân vật bot cùng máy (kể cả mình) không phải thù địch dù cửa sổ khác thấy chưa cùng nhóm: bỏ theo tên (tầm nhìn không có ID
+            # người chơi). Không bỏ thì acc gà chưa vào nhóm chạy trốn lẫn nhau (2026-11-14)
+            tencungmays = {info["tennhanvat"] for _, info in danhsach if isinstance(info, dict) and info.get("tennhanvat")}
             for idcuaso, info in danhsach:
                 if idcuaso == self.idcuaso or not isinstance(info, dict):
                     continue
@@ -138,7 +151,10 @@ class TacTuMucTieu:
                 for doituong in tamnhin.get("doituongs", ()):
                     # Cửa sổ chưa khởi động lại sau khi cập nhật chỉ có 6 trường (chưa có tên)
                     iddoituong, x, y, tuthe, huong, is_muctieupk = doituong[:6]
-                    tamnhinchung[iddoituong] = (x, y, tuthe, huong, is_muctieupk, doituong[6] if len(doituong) > 6 else "")
+                    ten = doituong[6] if len(doituong) > 6 else ""
+                    if ten and ten in tencungmays:
+                        continue
+                    tamnhinchung[iddoituong] = (x, y, tuthe, huong, is_muctieupk, ten)
         self._tamnhinchung = tamnhinchung
         return tamnhinchung
 

@@ -36,7 +36,8 @@ from hangso_xq import CHEDOHIENMUCTIEU_TAT, CHEDOHIENMUCTIEU_DANHHIEU, CHEDOHIEN
 from danhhieumuctieu_xq import NHANHANHDONG
 from bandonho_xq import mobandonho
 from ngoaihinh_xq import mongoaihinh, taihienthi, luuhienthi
-from hangso_xq import CHEDOKYNANG_CODINH, CHEDOKYNANG_TUHOC, SOMAUTOITHIEUTUHOC, THOIGIANKEHOACHTUHOC, SOLICHSUHANHDONG
+from tudongrao_xq import motudongrao
+from hangso_xq import SOLICHSUHANHDONG
 from hangso_xq import PHAPBAOTHEOMAU_MAP, NGUONGPHAPBAOTHEOMAU_VUA, NGUONGPHAPBAOTHEOMAU_THAP, DOTREPHAPBAOTHEOMAU
 from dieuphoi_xq import taicauhinhdieuphoi, luucauhinhdieuphoi, chuanhoacauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
 
@@ -1055,115 +1056,6 @@ class GiaoDienHienThi:
         self._taonhomtamdanh(tab)
         # Mục tiêu đang chọn (Khí Huyết / Kháng ước lượng) ngay dưới Tầm đánh
         self._taonhomthongtinmuctieu(tab)
-        self._taonhomtuhockynang(tab)
-
-    def _taonhomtuhockynang(self, tab):
-        # Tình hình chế độ kỹ năng Tự học của nhân vật đang chọn (xem tactu_tuhockynang_xq.py): tổng quan, sát thương / giây cả trận theo
-        # chế độ, chuỗi chiêu đang định dùng với quái đang đánh, từng chiêu, hiệu ứng ảnh hưởng sát thương, lần đo gần nhất.
-        # Bot đo và lập kế hoạch ở cả chế độ Luật cố định nên bảng vẫn có số
-        nhom = self._taonhom(tab, "Tình hình Tự học kỹ năng (của nhân vật đang chọn)")
-        nhom.columnconfigure(0, weight = 1)
-        self.lbl_tuhoctongquan = ttk.Label(nhom, text = "", justify = tk.LEFT, wraplength = self._px(600))
-        self.lbl_tuhoctongquan.grid(row = 0, column = 0, columnspan = 2, sticky = tk.W)
-        self.lbl_tuhocdps = ttk.Label(nhom, text = "", justify = tk.LEFT, wraplength = self._px(600))
-        self.lbl_tuhocdps.grid(row = 1, column = 0, columnspan = 2, sticky = tk.W, pady = (2, 0))
-        self.lbl_tuhocchuoi = ttk.Label(nhom, text = "", justify = tk.LEFT, wraplength = self._px(600))
-        self.lbl_tuhocchuoi.grid(row = 2, column = 0, columnspan = 2, sticky = tk.W, pady = (2, 2))
-        khung = ttk.Frame(nhom)
-        khung.grid(row = 3, column = 0, columnspan = 2, sticky = tk.NSEW)
-        self.tree_tuhoc = BangCatChu(khung, columns = ("thutu", "ten", "dudoan", "goc", "khoa", "hoichieu", "gay", "solan", "trangthai"),
-                                     show = "headings", height = 7, selectmode = "none")
-        for cot, tieude, rong, canh in (("thutu", "Thứ tự", 45, tk.CENTER), ("ten", "Chiêu", 150, tk.W), ("dudoan", "Dự kiến lúc này", 95, tk.E),
-                                        ("goc", "Gốc/lần", 70, tk.E), ("khoa", "Ra chiêu", 60, tk.E), ("hoichieu", "Hồi chiêu", 65, tk.E),
-                                        ("gay", "Gây hiệu ứng", 120, tk.W), ("solan", "Mẫu", 45, tk.E), ("trangthai", "Trạng thái", 100, tk.W)):
-            self.tree_tuhoc.heading(cot, text = tieude)
-            self.tree_tuhoc.column(cot, width = self._px(rong), anchor = canh)
-        thanhcuon = ttk.Scrollbar(khung, orient = tk.VERTICAL, command = self.tree_tuhoc.yview)
-        self.tree_tuhoc.configure(yscrollcommand = thanhcuon.set)
-        self.tree_tuhoc.pack(side = tk.LEFT, fill = tk.BOTH, expand = True)
-        thanhcuon.pack(side = tk.RIGHT, fill = tk.Y)
-        self.lbl_tuhocanhhuong = ttk.Label(nhom, text = "", justify = tk.LEFT, wraplength = self._px(600))
-        self.lbl_tuhocanhhuong.grid(row = 4, column = 0, columnspan = 2, sticky = tk.W, pady = (4, 0))
-        self.lbl_tuhoclancuoi = ttk.Label(nhom, text = "", style = "Phu.TLabel", justify = tk.LEFT, wraplength = self._px(600))
-        self.lbl_tuhoclancuoi.grid(row = 5, column = 0, columnspan = 2, sticky = tk.W, pady = (2, 0))
-        ttk.Label(nhom, style = "Phu.TLabel", justify = tk.LEFT, wraplength = self._px(600),
-                  text = "Cách học: mỗi chiêu máy chủ nhận, bot ghi các số bay của chiêu đó cùng trạng thái lúc ra chiêu (hiệu ứng trên quái, "
-                         "buff trên mình), hiệu ứng mới chiêu gây ra, thời gian ra chiêu và nguyên khí. Từ đó học chiêu nào ra bao nhiêu trong "
-                         "trạng thái nào và hiệu ứng nào làm tăng / giảm sát thương. Mỗi lượt bot thử trước các chuỗi chiêu cho "
-                         f"{THOIGIANKEHOACHTUHOC:.0f} giây tới (theo hồi chiêu, nguyên khí, hiệu ứng còn hạn) và chọn chuỗi tổng sát thương lớn "
-                         f"nhất. Chiêu chưa đủ {SOMAUTOITHIEUTUHOC} mẫu được dùng thử. Điều kiện dùng chiêu (tầm, vật cản, giữ nguyên khí...), "
-                         "buff, di chuyển, đánh thường vẫn theo luật cố định.").grid(row = 6, column = 0, columnspan = 2, sticky = tk.W, pady = (4, 0))
-
-    def _capnhattuhockynang(self, info):
-        tinhhinh = info.get("_tinhhinhtuhoc") or {}
-        chedo = tinhhinh.get("chedo", info.get("_chedokynang", CHEDOKYNANG_CODINH))
-        if chedo == CHEDOKYNANG_TUHOC:
-            tongquan = "Đang dùng: Tự học - chiêu đánh theo chuỗi bot tự lập kế hoạch."
-            if tinhhinh.get("is_monphaikhonghoc"):
-                tongquan += " Riêng môn phái này vẫn đánh theo luật cố định, bot chỉ đo."
-        else:
-            tongquan = "Đang dùng: Luật cố định - đánh theo luật viết tay. Bot vẫn đo và lập kế hoạch để xem trước Tự học sẽ đánh thế nào."
-        tongquan += f" Đã đo {tinhhinh.get('somau', 0)} chiêu trên {tinhhinh.get('soquai', 0)} loại quái."
-        if self.lbl_tuhoctongquan.cget("text") != tongquan:
-            self.lbl_tuhoctongquan.config(text = tongquan)
-
-        tenquai = tinhhinh.get("tenquai")
-        cacdps = []
-        for ma, ten in ((CHEDOKYNANG_CODINH, "Luật cố định"), (CHEDOKYNANG_TUHOC, "Tự học")):
-            dps = (tinhhinh.get("dps") or {}).get(ma) or {}
-            tatca, quai = dps.get("tatca") or (None, 0), dps.get("quai") or (None, 0)
-            if not tatca[0]:
-                cacdps.append(f"{ten} chưa có")
-                continue
-            chu = f"{ten} {tatca[0]:,.0f}/s ({tatca[1]:.0f} con)"
-            if tenquai and quai[0]:
-                chu += f", với {tenquai} {quai[0]:,.0f}/s ({quai[1]:.0f} con)"
-            cacdps.append(chu)
-        chudps = "Sát thương/giây cả trận: " + " | ".join(cacdps)
-        if self.lbl_tuhocdps.cget("text") != chudps:
-            self.lbl_tuhocdps.config(text = chudps)
-
-        chuoi = tinhhinh.get("chuoi") or []
-        if chuoi:
-            chuchuoi = (f"Chuỗi định dùng với {tenquai} ({tinhhinh['giaytruoc']:.0f}s trước): " + " -> ".join(chuoi)
-                        + f"  (dự kiến {tinhhinh['tongchuoi']:,.0f} sát thương trong {tinhhinh['thoigianchuoi']:.1f}s)")
-        else:
-            chuchuoi = "Chưa có kế hoạch: chưa đánh quái nào từ lúc chạy bot"
-        if self.lbl_tuhocchuoi.cget("text") != chuchuoi:
-            self.lbl_tuhocchuoi.config(text = chuchuoi)
-
-        def so(giatri, dinhdang = "{:,.0f}"):
-            return dinhdang.format(giatri) if giatri is not None else "-"
-
-        tree = self.tree_tuhoc
-        dong = []
-        for c in tinhhinh.get("chieus") or []:
-            dong.append((c["thutu"] or "-", c["ten"], so(c["dudoan"]), so(c["goc"]), so(c["khoa"], "{:.2f}s"), so(c["hoichieu"], "{:.0f}s"),
-                         ", ".join(c["gay"]) or "-", so(c["tongsolan"], "{}"), c["trangthai"]))
-        cu = [tuple(str(v) for v in tree.item(iid, "values")) for iid in tree.get_children()]
-        if cu != [tuple(str(v) for v in d) for d in dong]:
-            tree.delete(*tree.get_children())
-            for d in dong:
-                tree.insert("", tk.END, values = d)
-
-        anhhuongs = tinhhinh.get("anhhuongs") or []
-        chuanhhuong = ("Hiệu ứng ảnh hưởng sát thương: " + "; ".join(f"{a['ten']} trên {a['tren']}: " + ", ".join(f"{ten} {pt:+.0f}%" for ten, pt in a["chieus"])
-                                                                     for a in anhhuongs)
-                       if anhhuongs else "Hiệu ứng ảnh hưởng sát thương: chưa đủ mẫu để thấy")
-        if self.lbl_tuhocanhhuong.cget("text") != chuanhhuong:
-            self.lbl_tuhocanhhuong.config(text = chuanhhuong)
-
-        lancuoi = tinhhinh.get("lancuoi")
-        if lancuoi:
-            satthuongs = lancuoi["satthuongs"]
-            chuso = " + ".join(f"{s:,}" for s in satthuongs) + (f" = {sum(satthuongs):,}" if len(satthuongs) > 1 else "")
-            gay = f", gây {', '.join(lancuoi['hieuungmoi'])}" if lancuoi.get("hieuungmoi") else ""
-            chulancuoi = (f"Lần đo gần nhất ({time.time() - lancuoi['thoidiem']:.0f}s trước): {lancuoi['ten']} -> {lancuoi['tenquai']}:"
-                          f" {chuso} trong {lancuoi['thoigiankhoa']:.2f}s{gay}")
-        else:
-            chulancuoi = "Chưa có lần đo nào từ lúc chạy bot"
-        if self.lbl_tuhoclancuoi.cget("text") != chulancuoi:
-            self.lbl_tuhoclancuoi.config(text = chulancuoi)
 
     def _taonhomgiukhoangcach(self, tab):
         # Giữ khoảng cách với đối tượng đang đánh mình (ra đòn và quay mặt về mình): lùi ra, chỉ buff / hồi máu, bỏ chiêu đánh
@@ -1320,23 +1212,6 @@ class GiaoDienHienThi:
         self.spin_phantramnoiluckhaithien.pack(side = tk.LEFT, padx = 4)
         self._ganspinboxapdung(self.spin_phantramnoiluckhaithien, on_khaithien_change)
         ttk.Label(hangkhaithien, text = "%", style = "Phu.TLabel").pack(side = tk.LEFT)
-
-        # Chế độ kỹ năng: Luật cố định (danh sách viết tay từng môn phái) / Tự học (cùng danh sách, chiêu đánh xếp lại theo sát thương đo
-        # bằng số bay, xem tactu_tuhockynang_xq.py). Lưu theo nhân vật
-        hangchedokynang = ttk.Frame(nhom)
-        hangchedokynang.grid(row = 2, column = 0, columnspan = 2, sticky = tk.W)
-        ttk.Label(hangchedokynang, text = "Chế độ kỹ năng:").pack(side = tk.LEFT)
-        self._chedokynang_map = {"Luật cố định": CHEDOKYNANG_CODINH, "Tự học": CHEDOKYNANG_TUHOC}
-
-        def on_chedokynang_change(event = None):
-            hwnd = self.get_selected_hwnd()
-            if hwnd:
-                self.command_dict[hwnd] = f"set_chedokynang:{self._chedokynang_map.get(self.cbo_chedokynang.get(), CHEDOKYNANG_CODINH)}"
-
-        self.cbo_chedokynang = ttk.Combobox(hangchedokynang, state = "readonly", width = 14, values = list(self._chedokynang_map))
-        self.cbo_chedokynang.set("Luật cố định")
-        self.cbo_chedokynang.pack(side = tk.LEFT, padx = 4)
-        self.cbo_chedokynang.bind("<<ComboboxSelected>>", on_chedokynang_change)
 
     def _taonhomnhiplenh(self, tab):
         nhom = self._taonhom(tab, "Nhịp lệnh (chung mọi nhân vật)")
@@ -2428,6 +2303,8 @@ class GiaoDienHienThi:
         ttk.Button(hangbando, text = "Mở bản đồ nhỏ", command = lambda: mobandonho(self)).pack(side = tk.LEFT)
         # Ngoại hình chỉ mình thấy (ngoaihinh_xq): đổi trang phục / cánh / vũ khí / màu hào quang trên client, máy chủ không biết
         ttk.Button(hangbando, text = "Ngoại hình chỉ mình thấy", command = lambda: mongoaihinh(self)).pack(side = tk.LEFT, padx = (6, 0))
+        # Tự động rao (tudongrao_xq): câu rao / kênh / chu kỳ theo từng nhân vật, lưu _internal/tudongrao.json
+        ttk.Button(hangbando, text = "Tự động rao", command = lambda: motudongrao(self)).pack(side = tk.LEFT, padx = (6, 0))
         # Ẩn hiển thị trong client (mọi cửa sổ game): lưu _internal/hienthi.json, bot đọc lại trong ~2s, hook vẽ đọc cờ nên có tác dụng ngay
         hienthi = taihienthi()
         vars_hienthi = {ten: tk.BooleanVar(value = hienthi[ten]) for ten in hienthi}
@@ -5409,10 +5286,6 @@ class GiaoDienHienThi:
         if self.cbo_mauhienmuctieu.get() != chumau:
             self.cbo_mauhienmuctieu.set(chumau)
 
-        chedokynang = info.get("_chedokynang", CHEDOKYNANG_CODINH)
-        chuchedo = next((chu for chu, ma in self._chedokynang_map.items() if ma == chedokynang), "Luật cố định")
-        if self.cbo_chedokynang.get() != chuchedo:
-            self.cbo_chedokynang.set(chuchedo)
 
         if widgetdangfocus != getattr(self, 'spin_captangcaptoida', None):
             try:
@@ -5460,7 +5333,6 @@ class GiaoDienHienThi:
 
         self._capnhatdanhsachmuctieu(hwnd_to_show, info)
         self._capnhatmuctieuboqua(info)
-        self._capnhattuhockynang(info)
         self._capnhatmuctieutheosau(hwnd_to_show, info)
 
         self._capnhatlotrinhmau(hwnd_to_show, info, idbando, tenbando)

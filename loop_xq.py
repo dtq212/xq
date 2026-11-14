@@ -324,7 +324,8 @@ class LoopPhu:
         if self.moitruong.get_is_nhanvatdachet() and self.moitruong.get_idbandohientai() != BANDO_CHIENTRUONG:
             if time.time() - self.thoidiemthongbaochetgannhat > 5.0:
                 self.thoidiemthongbaochetgannhat = time.time()
-                canhbao(self.moitruong, "Nhân vật đã chết", is_block = False)
+                # Không đọc lên (người dùng dặn 2026-11-14: nghe đau đầu, đã có Telegram báo chết - thongbao_xq.TheoDoiSuCo)
+                canhbao(self.moitruong, "Nhân vật đã chết", is_block = False, is_phatam = False)
 
     def loop(self):
         while not self.stop.is_set() and self.moitruong.get_is_cuasogametontai():

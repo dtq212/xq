@@ -1080,12 +1080,7 @@ class TacTuKyNang:
                     self._is_battudongtancongvatly = True
                     self._diachimuctieutancongvatly = diachimuctieu
             elif loaikynang == "sudungkynangmuctieu":
-                # Sẵn sàng đọc trước khi gửi (sau khi gửi cờ có thể đã chuyển sang hồi): chiêu gửi lúc còn hồi thì máy chủ không nhận
-                is_sansanglucgui = self.moitruong.get_is_kynangsansang(vitrikynang)
                 is_dasudung = self.moitruong.action_sudungkynangvitrimuctieu(vitrikynang, diachicosothongtinnhanvatmuctieu = diachimuctieu)
-                # Đo sát thương chiêu bằng số bay cho chế độ Tự học (đo ở cả chế độ Luật cố định)
-                if is_dasudung:
-                    self._ghichieututhoc(vitrikynang, diachimuctieu, is_sansanglucgui)
                 # Chiêu dùng tầm xa gửi từ đủ xa: theo dõi xem có ra không để học tầm (_capnhattamxa)
                 if is_dasudung and not self._chieuchonhantamxa and khoangcachyeucau >= self._khoangcachsudungkynangtamxa \
                         and khoangcach >= min(TAMXATOITHIEU, self._tamxatoida) - VUNGMEPTAMXA and self.moitruong.get_is_kynangsansang(vitrikynang):
@@ -1326,7 +1321,6 @@ class TacTuKyNang:
             (None, "dichuyentiepcantamxa", lambda: not is_bidaohoalacanh and diachimuctieu and khoangcach > self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, False),
         ]
 
-        danhsachuutien = self._sapxepuutientuhoc(danhsachuutien, diachimuctieu)
         for i, item in enumerate(danhsachuutien):
             vitrikynang, loaikynang, dieukien, khoangcachyeucau, target, is_yeucaukhongdichuyen = item
 
@@ -1459,7 +1453,6 @@ class TacTuKyNang:
         if nguyenkhiconlai >= NGUYENKHINGATTANCONGVATLYDAOHOA and not self._is_chidungtudongtancong:
             self._ngattancongvatlydaohoa(diachimuctieu)
 
-        danhsachuutien = self._sapxepuutientuhoc(danhsachuutien, diachimuctieu)
         for i, item in enumerate(danhsachuutien):
             # Phần tử thứ 8 (nếu có): hiệu ứng khống chế chiêu này gây ra, giữ chỗ giữa các bot để không cùng gửi lên 1 mục tiêu
             vitrikynang, loaikynang, dieukien, khoangcachyeucau, target, is_yeucaukhongdichuyen, is_ngatdichuyen, *phu = item
@@ -1680,7 +1673,6 @@ class TacTuKyNang:
 
         self._guikillcamvequan(diachimuctieu, khoangcach)
 
-        danhsachuutien = self._sapxepuutientuhoc(danhsachuutien, diachimuctieu)
         for i, item in enumerate(danhsachuutien):
             vitrikynang, loaikynang, dieukien, khoangcachyeucau, target, is_yeucaukhongdichuyen = item
 
@@ -1764,7 +1756,6 @@ class TacTuKyNang:
             (None, "dichuyentiepcantamxa", lambda: diachimuctieu and khoangcach > tamxa, tamxa, None, False),
         ]
 
-        danhsachuutien = self._sapxepuutientuhoc(danhsachuutien, diachimuctieu)
         for i, item in enumerate(danhsachuutien):
             vitrikynang, loaikynang, dieukien, khoangcachyeucau, target, is_yeucaukhongdichuyen = item
 
@@ -2161,7 +2152,6 @@ class TacTuKyNang:
 
         self._capnhatkynangquantrong("maoson", danhsachuutien, kynangchopheps)
 
-        danhsachuutien = self._sapxepuutientuhoc(danhsachuutien, diachimuctieu)
         for i, item in enumerate(danhsachuutien):
             vitrikynang, loaikynang, dieukien, khoangcachyeucau, target, is_yeucaukhongdichuyen, is_ngatdichuyen = item
             if vitrikynang and kynangchopheps is not None and vitrikynang not in kynangchopheps:
@@ -2347,7 +2337,6 @@ class TacTuKyNang:
 
         self._capnhatkynangquantrong("vanmongcoc", danhsachuutien)
 
-        danhsachuutien = self._sapxepuutientuhoc(danhsachuutien, diachimuctieu)
         for i, item in enumerate(danhsachuutien):
             vitrikynang, loaikynang, dieukien, khoangcachyeucau, target, is_yeucaukhongdichuyen = item
 
@@ -2427,7 +2416,7 @@ class TacTuKyNang:
                 and diachicu == self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon() \
                 and self.moitruong.get_is_nhanvattontai(diachicu) and not self.moitruong.get_is_nhanvatdachet(diachicu):
             dagiu = thoidiemhientai - self._thoidiemxuatyeucautancong
-            # Mục tiêu còn trong tầm đánh thì giữ lâu hơn: mọi chiêu đang hồi / chờ số bay (Tự học chờ ~0.84s mỗi chiêu) có khi >1.5s không
+            # Mục tiêu còn trong tầm đánh thì giữ lâu hơn: mọi chiêu đang hồi / chờ có khi >1.5s không
             # ra yêu cầu nào, hết giữ là rơi xuống Đi dạo chạy về điểm tuần sư môn / lộ trình rồi lượt sau lại quay về đánh (log 342
             # 07/11 00:47:06, 00:47:15: Đao Dũng cách 1-2 ô vẫn "ĐI DẠO (TỰ DO)" về điểm 6/24)
             if dagiu < THOIGIANGIUYEUCAUTANCONG or (dagiu < THOIGIANGIUYEUCAUTANCONGTRONGTAM
@@ -2436,8 +2425,6 @@ class TacTuKyNang:
         self._yeucautancongxuat = None
 
     def _tudongsudungkynang(self):
-        self._capnhattuhockynang()
-
         if self._is_battudongtancongvatly and self.moitruong.get_is_nhanvatbichoang():
             self._is_battudongtancongvatly = False
 
@@ -2640,9 +2627,8 @@ class TacTuKyNang:
             (VITRIKYNANG_BANGPHACHNGANTAM, "sudungkynangkhongmuctieu", lambda: not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_BANGPHACHNGANTAM, HIEUUNGKYNANG_LANHNGUYETTAMPHAP), True, is_hieuungcoloi = 1), 0, None, True),
             # Đang di chuyển tự do (farm): cụm quái đếm quanh mục tiêu, còn Ngự Kiếm Phi Tiên đánh quanh bản thân
             # => chạy vào sát mục tiêu (giữa cụm) rồi mới ra chiêu để trúng nhiều mục tiêu nhất
-            # Đặt TRƯỚC mọi chiêu đơn mục tiêu: chế độ Tự học (_sapxepuutientuhoc) đổi chỗ các chiêu "sudungkynangmuctieu" vào đúng các ô
-            # của chúng, nên chiêu đơn tốt nhất (Ngự Kiếm Quyết, gần như không hồi) bị dồn lên ô Lăng Không / Vạn Kiếm phía trên và
-            # Phi Tiên không bao giờ tới lượt (người dùng 2026-11-07, log 364: đứng giữa bầy quái chỉ đánh đơn)
+            # Đặt TRƯỚC mọi chiêu đơn mục tiêu, nếu không Phi Tiên không bao giờ tới lượt (người dùng 2026-11-07, log 364: đứng giữa bầy
+            # quái chỉ đánh đơn)
             (VITRIKYNANG_NGUKIEMPHITIEN, "dichuyentiepcandenkhoangcach", lambda: is_ngukiemtiepcan and khoangcach > KHOANGCACHTIEPCANNGUKIEMPHITIEN, KHOANGCACHTIEPCANNGUKIEMPHITIEN, None, False),
             (VITRIKYNANG_NGUKIEMPHITIEN, "sudungkynangkhongmuctieu", lambda: is_ngukiemdudieukien and khoangcach <= (KHOANGCACHTIEPCANNGUKIEMPHITIEN if is_ngukiemtiepcan else KHOANGCACHHIEUQUAKYNANGNGUKIEMPHITIEN), 0, None, True),
             (VITRIKYNANG_LANGKHONGCHIHUYET, "sudungkynangmuctieu", lambda: diachimuctieu and self.moitruong.get_is_cothegaychoang(diachimuctieu) and khoangcach <= self._khoangcachsudungkynangtamxa, self._khoangcachsudungkynangtamxa, None, True),
@@ -2666,13 +2652,12 @@ class TacTuKyNang:
         if is_bituocvukhi:
             danhsachuutien = [x for x in danhsachuutien if x[0] in (VITRIKYNANG_TIENKHI, VITRIKYNANG_TINHTAMQUYET, VITRIKYNANG_TIENTHANVODICH, VITRIKYNANG_TIEUCHUTHIEN)]
         # Đánh quái (mục tiêu không phải người chơi) bỏ hẳn 4 chiêu tốn pháp lực: Vạn Kiếm Xuyên Tâm, Vân Vũ Tiêu Diêu, Băng Tâm Thức,
-        # Lăng Không Chỉ Huyệt (người dùng 2026-11-14). Lọc khỏi danh sách để chế độ Tự học cũng không lập chuỗi với chúng; PK giữ nguyên
+        # Lăng Không Chỉ Huyệt (người dùng 2026-11-14); PK giữ nguyên
         if not is_muctieupk:
             danhsachuutien = [x for x in danhsachuutien if x[0] not in THUCSONKIEMBOCHIEUDANHQUAIs]
 
         self._capnhatkynangquantrong("thucsonkiem", danhsachuutien)
 
-        danhsachuutien = self._sapxepuutientuhoc(danhsachuutien, diachimuctieu)
         for vitrikynang, loaikynang, dieukien, khoangcachyeucau, target, is_yeucaukhongdichuyen in danhsachuutien:
             if callable(dieukien) and not dieukien():
                 continue
@@ -2811,7 +2796,6 @@ class TacTuKyNang:
             (None, "tancongvatly", lambda: diachimuctieu and noiluc < 150, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
         ]
 
-        danhsachuutien = self._sapxepuutientuhoc(danhsachuutien, diachimuctieu)
         for vitrikynang, loaikynang, dieukien, khoangcachyeucau, target, is_ngat in danhsachuutien:
             if callable(dieukien) and not dieukien(): continue
             if vitrikynang and not self._is_kynangdungduoc(vitrikynang): continue

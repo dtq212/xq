@@ -12,7 +12,6 @@ from dexuatlotrinh_xq import THOIGIANGHIVITRIQUAI, THOIGIANLUUVITRIQUAI, SOLANTH
 from tactu_dichuyen_xq import TacTuDiChuyen
 from tactu_muctieu_xq import TacTuMucTieu
 from tactu_kynang_xq import TacTuKyNang
-from tactu_tuhockynang_xq import TacTuTuHocKyNang
 from tactu_vatpham_xq import TacTuVatPham
 from tactu_baothu_xq import TacTuBaoThu
 from tactu_hoatdong_xq import TacTuHoatDong
@@ -38,7 +37,7 @@ THUOCTINHTHIETLAPs = (
     "_lotrinhmaudangdung", "_is_nguocchieulotrinh", "_is_chiavunglotrinh", "_is_tudonggomquai", "_is_tudongvebanrac", "_is_tudongvesuado", "_phantramvesuado",
     "_idbandoquaylaibanrac", "_is_tudongdichientruong", "_is_tudongkhaikhoang", "_is_tudongdaotangbaodo", "_tenmuctieutancongs", "_is_uutienbaothukynangtrieuhoi",
     "_tenmuctieukhongtancongs", "_tenvatphamnhats", "_phamchatnhats", "_khoangcachtoidatheosau", "_bankinhdiemdanh", "_tamxatoida",
-    "_danhhieulammoi", "_phantramnoiluckhaithientichdia", "_chedokynang", "_is_tudongtrieuhoibaothugiangho", "_is_tudongsudungkynangbaothu",
+    "_danhhieulammoi", "_phantramnoiluckhaithientichdia", "_is_tudongtrieuhoibaothugiangho", "_is_tudongsudungkynangbaothu",
     "_is_tudongbatnguyenkhiquynguyen", "_is_tranhvungcam", "_is_giukhoangcachketancong", "_khoangcachgiuketancong", "_mauchaytron",
     "_mauhetchaytron", "_is_doiphapbaotheomau", "_is_xoayvongtrao", "_mauphapbaovua", "_mauphapbaothap", "_dotrephapbao", "_is_giukhoangcachchimuctieupk", "_is_taphoa", "_is_timmuctieuchung", "_chedohienthongtinmuctieugame",
     "_mauhienthongtinmuctieugame", "_is_hienhanhdongtrendau", "_is_tutimduongtheosau", "_is_chaytoibuffthanhvien", "_is_diquocgiatanthutienco", "_is_doidokhitrieuhoi", "_bodotrieuhoi", "_baothutrieuhoimaoson",
@@ -47,7 +46,7 @@ THUOCTINHTHIETLAPs = (
 
 
 # Các nhóm việc nằm ở các file tactu_*_xq.py (mixin), TacTu giữ trạng thái (__init__), lưu / nạp thiết lập và các lệnh bật / tắt
-class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVatPham, TacTuBaoThu, TacTuHoatDong, TacTuGiaoDo, TacTuCatKho, TacTuSuMon,
+class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu, TacTuHoatDong, TacTuGiaoDo, TacTuCatKho, TacTuSuMon,
             TacTuLangLySon, TacTuSuGia, TacTuTapKich, TacTuMaTac, TacTuDanhVong, TacTuKeoCap,
             TacTuHangViec, TacTuDoiPhoBan):
     def __init__(self, moitruong: MoiTruong):
@@ -179,36 +178,6 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
         self._thoidiemlogthongketamxa = 0.
         # Thục Sơn: % nội lực tối thiểu để dùng Khai Thiên Tịch Địa lướt khi di chuyển (chỉnh ở giao diện, lưu theo nhân vật)
         self._phantramnoiluckhaithientichdia = PHANTRAMNOILUCKHAITHIENTICHDIA
-        # Chế độ kỹ năng (chỉnh ở giao diện, lưu theo nhân vật, xem tactu_tuhockynang_xq.py): luật cố định / tự học. Chiêu đã gửi đang chờ
-        # số bay, số bay đang theo dõi, số liệu học của nhân vật nào (ID) và có thay đổi chưa lưu, lần lưu / log gần nhất
-        self._chedokynang = CHEDOKYNANG_CODINH
-        self._chieuchotuhoc = []
-        self._sobaytuhoc = None
-        self._idnguoichoituhoc = None
-        self._dulieutuhoc = {}
-        self._is_tuhocthaydoi = False
-        self._thoidiemluutuhoc = 0.
-        self._thoidiemlogtuhoc = 0.
-        # Tên chiêu / hiệu ứng đọc từ game theo id, lần đo gần nhất, tình hình đã tính cho giao diện
-        self._tenkynangtuhoc_map = {}
-        self._lancuoituhoc = None
-        self._tinhhinhtuhoc = None
-        # Mô hình học (sát thương theo hiệu ứng, ra chiêu, nguyên khí, hiệu ứng chiêu gây ra), lần học gần nhất, số mẫu mới từ lần học đó
-        self._mohinhtuhoc = None
-        self._thoidiemhoctuhoc = 0.
-        self._somaumoituhoc = 0
-        # Lúc máy chủ nhận mỗi chiêu (tính hồi chiêu còn lại), nguyên khí cao nhất từng thấy, trận đang đánh (sát thương / giây cả trận),
-        # hiệu ứng đang theo dõi trên mục tiêu (lúc xuất hiện) và lần đọc gần nhất, kế hoạch chuỗi chiêu gần nhất và lúc tính
-        self._thoidiemnhantuhoc = {}
-        self._nguyenkhitoidatuhoc = 0
-        self._trantuhoc = None
-        self._hieuungtheodoituhoc = None
-        self._thoidiemdochieuungtuhoc = 0.
-        self._kehoachtuhoc = None
-        self._thoidiemkehoachtuhoc = 0.
-        self._sobaygantuhoc = []
-        self._boquatuhoc = {}
-        self._chieubotuhoc = {}
         # Côn Luân: hết mốc này mới gửi chiêu sau khi lướt Đằng Vân Giá Vũ (xem THOIGIANKHOACHIEUSAULUOT)
         self._thoidiemhetkhoachieusauluot = 0.
         # Tầm đánh thực tế của nhân vật (học từ lần tiếp cận mục tiêu gần nhất), mặc định tầm xa đã trừ hao
@@ -964,7 +933,6 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             "_khoangcachsudungkynangtamxa": self._tamxatoida,
             "_danhhieulammoi": self._danhhieulammoi,
             "_phantramnoiluckhaithientichdia": self._phantramnoiluckhaithientichdia,
-            "_chedokynang": self._chedokynang,
             "_is_tudongtrieuhoibaothugiangho": self._is_tudongtrieuhoibaothugiangho,
             "_is_tudongsudungkynangbaothu": self._is_tudongsudungkynangbaothu,
             "_is_tudongbatnguyenkhiquynguyen": self._is_tudongbatnguyenkhiquynguyen,
@@ -1103,7 +1071,6 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuTuHocKyNang, TacTuVat
             if "_khoangcachsudungkynangtamxa" in thietlap: self.thietlap_khoangcachsudungkynangtamxa(thietlap["_khoangcachsudungkynangtamxa"])
             if "_danhhieulammoi" in thietlap: self.thietlap_danhhieulammoi(thietlap["_danhhieulammoi"])
             if "_phantramnoiluckhaithientichdia" in thietlap: self.thietlap_phantramnoiluckhaithientichdia(thietlap["_phantramnoiluckhaithientichdia"])
-            if "_chedokynang" in thietlap: self.thietlap_chedokynang(thietlap["_chedokynang"])
             if "_is_tudongtrieuhoibaothugiangho" in thietlap: self._is_tudongtrieuhoibaothugiangho = thietlap["_is_tudongtrieuhoibaothugiangho"]
             if "_is_tudongsudungkynangbaothu" in thietlap: self._is_tudongsudungkynangbaothu = thietlap["_is_tudongsudungkynangbaothu"]
             if "_is_tudongbatnguyenkhiquynguyen" in thietlap: self._is_tudongbatnguyenkhiquynguyen = thietlap["_is_tudongbatnguyenkhiquynguyen"]

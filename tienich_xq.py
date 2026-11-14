@@ -275,14 +275,17 @@ CANHBAOGANDAYs = []
 SOCANHBAOGIULAI = 30
 
 
-def canhbao(moitruong, noidung, is_block = True):
-    # Phát âm cảnh báo của 1 nhân vật: đọc ID người chơi ở đầu câu (nhiều nhân vật cùng máy biết ai bị) và ghi vào danh sách cảnh báo
+def canhbao(moitruong, noidung, is_block = True, is_phatam = True):
+    # Phát âm cảnh báo của 1 nhân vật: đọc ID người chơi ở đầu câu (nhiều nhân vật cùng máy biết ai bị) và ghi vào danh sách cảnh báo.
+    # is_phatam = False: chỉ ghi vào tab Cảnh báo (việc đã có Telegram báo, đọc lên thì ồn)
+    CANHBAOGANDAYs.append((time.time(), noidung))
+    del CANHBAOGANDAYs[:-SOCANHBAOGIULAI]
+    if not is_phatam:
+        return
     try:
         idnguoichoi = moitruong.get_idnguoichoi()
     except Exception:
         idnguoichoi = 0
-    CANHBAOGANDAYs.append((time.time(), noidung))
-    del CANHBAOGANDAYs[:-SOCANHBAOGIULAI]
     phatam(f"ID {idnguoichoi}. {noidung}" if idnguoichoi else noidung, is_block)
 
 

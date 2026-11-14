@@ -32,11 +32,12 @@ CAUHINHMAU = {
     "tenmay": "",
     "phutbaocao": 120,
     "loaisuco": {"chet": True, "bipk": True, "tamngung": True, "giamsat": True, "vatpham": True, "dohiem": True, "dangnhap": True, "giaodo": True,
-                 "catkho": True, "sumon": True},
+                 "catkho": True, "sumon": True, "tinmat": True},
 }
 TENLOAISUCO = {"chet": "chết", "bipk": "bị người chơi đánh", "tamngung": "tạm ngưng", "giamsat": "kẹt / mở lại client", "vatpham": "vật phẩm",
                "dohiem": "nhặt được đồ hiếm (luật túi đồ có 📣)", "dangnhap": "rớt khỏi game / bị đá liên tục (giành tài khoản)",
-               "giaodo": "kết quả giao tiền / đồ", "catkho": "kết quả cất kho", "sumon": "nhiệm vụ sư môn (xong / kẹt / cần mua tay)"}
+               "giaodo": "kết quả giao tiền / đồ", "catkho": "kết quả cất kho", "sumon": "nhiệm vụ sư môn (xong / kẹt / cần mua tay)",
+               "tinmat": "có người nhắn tin mật (nói thầm)"}
 
 # Cùng một tin (khoá) của một tiến trình không gửi lại trong chừng này giây
 GIANCACHTINMACDINH = 120.
@@ -193,7 +194,7 @@ def guitin(noidung, khoa = None, giancach = GIANCACHTINMACDINH, is_html = False)
 
 
 BIEUTUONGSUCO = {"chet": "💀", "bipk": "⚔️", "tamngung": "🕵️", "giamsat": "🛠", "vatpham": "🎒", "dohiem": "🎁", "giaodo": "📦", "catkho": "🗄",
-                 "sumon": "📜"}
+                 "sumon": "📜", "tinmat": "💬"}
 
 
 def guitinmay(loai, noidung, khoa = None, giancach = GIANCACHTINMACDINH):
@@ -264,9 +265,13 @@ class TheoDoiSuCo:
         self.tactu = tactu
         self._is_chettruoc = None
         self._sinhluctruoc = None
+        # Mốc thời gian tin mật đến mới nhất đã báo (MoiTruong._tinmatdens giữ 5 phút gần nhất); bắt đầu từ lúc khởi động bot để
+        # không báo lại tin cũ
+        self._luctinmatdabao = time.time()
 
     def step(self):
         moitruong = self.moitruong
+        self._baotinmat()
         if not moitruong.get_is_nhanvattontai():
             self._is_chettruoc = self._sinhluctruoc = None
             return
@@ -284,6 +289,18 @@ class TheoDoiSuCo:
         if is_matmau and not is_chet:
             for ten in self._laykeketancong():
                 baosuco(moitruong, "bipk", f"Bị {ten} tấn công, còn {moitruong.get_phantramsinhlucconlai():.0f}% sinh lực", khoa = ten, giancach = 180.)
+
+    def _baotinmat(self):
+        # Có người nhắn tin mật ("<tên> nói thầm với bạn : ...", MoiTruong._xulydongtinmat) -> báo Telegram từng tin, kể cả ở chiến trường.
+        # Đọc thẳng danh sách (không qua get_tinmatdens để khỏi gửi "friend ?" dò ID từ luồng giám sát)
+        for tin in list(getattr(self.moitruong, "_tinmatdens", None) or []):
+            if tin["luc"] <= self._luctinmatdabao:
+                continue
+            self._luctinmatdabao = tin["luc"]
+            nguoigui = tin["ten"] or "?"
+            if tin.get("id"):
+                nguoigui += f" (ID {tin['id']})"
+            baosuco(self.moitruong, "tinmat", f"Tin mật từ {nguoigui}: {tin['noidung']}", khoa = tin["luc"], giancach = 1.)
 
     def _laykeketancong(self):
         moitruong = self.moitruong

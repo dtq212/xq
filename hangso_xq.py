@@ -1090,9 +1090,11 @@ Y_CHUTIEMTAPHOA_TANTHUTHON = 145
 
 X_QUANKHO_TANTHUTHON = 103
 Y_QUANKHO_TANTHUTHON = 127
-# Đang ở Chu Quốc thì cất kho ở đây luôn (chỗ Chủ Tiệm Sửa Chữa), không Hồi Thành Phù về Tân Thủ Thôn
-X_KHO_CHU = 234
-Y_KHO_CHU = 185
+# Đang ở Chu Quốc thì cất kho ở đây luôn (Quản Khố Chu Quốc), không Hồi Thành Phù về Tân Thủ Thôn. Trước đây cất qua Chủ Tiệm Sửa
+# Chữa (234, 185): log 364 2026-11-14 08:51 cất được rương 1 rồi không mở được rương 2, báo "kho đầy (1 rương)" => đổi sang Quản Khố
+# (người dùng chỉ 286, 150; vitridoituong ghi 286, 151)
+X_KHO_CHU = 286
+Y_KHO_CHU = 150
 # Mỗi rương kho 7 x 7 ô
 SOOMOIRUONGKHO = 49
 
@@ -1522,64 +1524,6 @@ THOIGIANGOIBAOTHUVE = 0.5
 # 0.15 làm cứ gửi 1 vòng lại bỏ 1 vòng => spam chiêu thực tế 0.25s/lần (đo log 2026-10-28), lúc server nhận bị làm tròn theo 0.25s
 THOIGIANCHOPHANUNGLENH = 0.1
 
-# Chế độ kỹ năng (tactu_tuhockynang_xq.py): Luật cố định = danh sách ưu tiên viết tay; Tự học = cùng danh sách, chiêu đánh mục tiêu xếp
-# lại theo chuỗi chiêu bộ lập kế hoạch chọn. Đo bằng số bay: số mới trên mục tiêu tính cho chiêu đã nhận gần nhất gửi cách >=
-# THOIGIANTRESOBAYTUHOC giây (máy chủ trả chậm), mỗi chiêu nhận số bay tối đa THOIGIANCUASOSOBAYTUHOC giây; chỉ tính chiêu máy chủ đã nhận
-# (vào hồi chiêu / sang tư thế TUTHEXUATCHIEUTUHOCs). Client chỉ hiện số bay của chính mình nên đánh nhóm vẫn đo được
-CHEDOKYNANG_CODINH = "codinh"
-CHEDOKYNANG_TUHOC = "tuhoc"
-THOIGIANTRESOBAYTUHOC = 0.3
-THOIGIANCUASOSOBAYTUHOC = 1.5
-THOIGIANKHOAMACDINHTUHOC = 0.7
-THOIGIANKHOATOITHIEUTUHOC = 0.25
-TUTHEXUATCHIEUTUHOCs = (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT, TUTHENHANVAT_DELAYSAUTANCONG)
-# Số liệu: phiên bản tệp (đổi thì học lại từ đầu), giữ SOMAUTOIDATUHOC chiêu đo gần nhất, SOTRANTOIDATUHOC con mỗi loại quái / chế độ
-# cho sát thương / giây cả trận (con đánh dưới THOIGIANTRANTOITHIEUTUHOC giây không tính)
-PHIENBANTUHOC = 2
-SOMAUTOIDATUHOC = 4000
-SOTRANTOIDATUHOC = 300
-THOIGIANTRANTOITHIEUTUHOC = 1.5
-# Học: mỗi THOIGIANHOCLAITUHOC giây khi có mẫu mới. Chiêu chưa đủ SOMAUTOITHIEUTUHOC mẫu coi như mạnh nhất đã biết (để dùng thử),
-# chưa biết chiêu nào thì SATTHUONGMACDINHTUHOC. Ảnh hưởng hiệu ứng chỉ xét hiệu ứng có >= SOMAUHIEUUNGTUHOC mẫu có và không có nó,
-# kéo về 0 với độ mạnh LAMDAHIEUUNGTUHOC. Chiêu "gây" hiệu ứng khi nó xuất hiện mới sau chiêu >= TILEGAYHIEUUNGTUHOC số lần;
-# hiệu ứng chưa đo được thời gian tồn tại thì coi THOIGIANHIEUUNGMACDINHTUHOC giây, chiêu không ghi hồi chiêu thì THOIGIANHOIMACDINHTUHOC
-SOMAUTOITHIEUTUHOC = 5
-SATTHUONGMACDINHTUHOC = 500.
-SOMAUHIEUUNGTUHOC = 8
-LAMDAHIEUUNGTUHOC = 3.
-TILEGAYHIEUUNGTUHOC = 0.5
-THOIGIANHIEUUNGMACDINHTUHOC = 5.
-THOIGIANHOIMACDINHTUHOC = 1.
-THOIGIANHOCLAITUHOC = 30.
-# Hiệu ứng mới do chiêu gây ra: so hiệu ứng trên quái lúc gửi với lúc này giây sau (hoặc lúc gửi chiêu kế nếu sớm hơn)
-THOIGIANDOHIEUUNGMOITUHOC = 0.6
-# Lập kế hoạch: chuỗi chiêu cho THOIGIANKEHOACHTUHOC giây tới, tìm chùm rộng DORONGCHUMTUHOC, tối đa SOBUOCTOIDATUHOC chiêu, tính lại
-# mỗi THOIGIANTINHKEHOACHTUHOC giây (chế độ Luật cố định: mỗi giây, chỉ để hiện ở giao diện)
-THOIGIANKEHOACHTUHOC = 8.
-# Sát thương dự kiến ra sau t giây nhân GIAMDANTUHOC ** t: cùng tổng thì chuỗi ra sát thương lớn sớm hơn được chọn
-GIAMDANTUHOC = 0.93
-DORONGCHUMTUHOC = 12
-SOBUOCTOIDATUHOC = 8
-THOIGIANTINHKEHOACHTUHOC = 0.25
-# Số bay nhỏ hơn TILESOBAYNHOTUHOC * trung vị SOSOBAYGANTUHOC số bay gần nhất là sát thương theo thời gian của hiệu ứng (Thấu Cốt Đinh /
-# chảy máu ra đều 25-29, log 9198 2026-11-04) chứ không phải đòn của chiêu vừa gửi: vẫn cộng vào trận, không tính cho chiêu
-TILESOBAYNHOTUHOC = 0.15
-SOSOBAYGANTUHOC = 200
-# Chiêu đứng đầu chuỗi, đang sẵn sàng mà bot gửi chiêu khác (luật viết tay chặn: điều kiện không hợp, chưa học...) ít nhất
-# SOLANBOQUATUHOC lần trong THOIGIANBOQUATUHOC giây => bỏ khỏi bộ lập kế hoạch THOIGIANBOCHIEUTUHOC giây (chiêu chưa có mẫu:
-# THOIGIANBOCHIEUCHUAHOCTUHOC; chiêu đã có mẫu bỏ ngắn vì có thể chỉ tạm bị chặn: xa quá tầm...), tránh chuỗi toàn chiêu không
-# dùng được (log 9325 2026-11-04: Phong Ma Quyết -> Mê Tung Quyền ...)
-SOLANBOQUATUHOC = 3
-THOIGIANBOQUATUHOC = 3.
-THOIGIANBOCHIEUTUHOC = 15.
-THOIGIANBOCHIEUCHUAHOCTUHOC = 600.
-THOIGIANLUUTUHOC = 60.
-THOIGIANLOGTUHOC = 300.
-IS_LOGTUHOC = True
-# Chiêu vẫn giữ chỗ viết tay ở chế độ Tự học (để trống: bộ lập kế hoạch tự học cả phá giáp / khống chế qua ảnh hưởng hiệu ứng)
-CHIEUGIULUATTUHOCs = ()
-# Môn phái vẫn dùng luật cố định ở chế độ Tự học (để trống: chế độ do người dùng chọn quyết định)
-MONPHAIKHONGTUHOCs = ()
 # Côn Luân Đằng Vân Giá Vũ: lướt xong máy chủ không nhận chiêu ~2s (log 273 2026-10-30: <1s sau lướt 64% chiêu không ra, 1-2s 53%,
 # >3s 16%) => trong ngần này giây không gửi chiêu (tránh khoá chống spam oan), đi bộ vào gần hơn tầm xa KHOANGCACHGANTHEMSAULUOT ô.
 # Khi đánh chỉ lướt lúc mục tiêu xa hơn tầm xa + KHOANGCACHLUOTTHEMKHITANCONG ô (đi bộ ngần đó ô ~ bằng thời gian chờ sau lướt),
