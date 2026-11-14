@@ -86,7 +86,13 @@ class TacTuHoatDong:
         # khác (người dùng dặn 2026-11-08); ẩn thân vẫn ngưng như cũ.
         # Bật Tự động khai khoáng cũng vậy: bãi khoáng đông người, thấy người lạ không ngưng (người dùng dặn 2026-11-10)
         is_bonguoila = bool(self._keocap) or self._is_tudongkhaikhoang
-        if is_bonguoila and phathien and "ẩn thân" not in phathien[0]:
+        # Tắt ô "Tạm ngưng khi gặp người lạ" (tab Khác): người lạ chỉ cảnh báo, không ngưng, không công bố cho cửa sổ khác.
+        # Ẩn thân (ADMIN kiểm tra) thì luôn ngưng
+        is_chicanhbaonguoila = not self._is_tamngungnguoila
+        if phathien and "ẩn thân" not in phathien[0] and (is_bonguoila or is_chicanhbaonguoila):
+            # Chỉ cảnh báo khi đang đi lộ trình điểm đánh (lúc bật ô cũng chỉ ngưng trong trường hợp này)
+            if not is_bonguoila and self._is_tudongdichuyendiemdanhxungquanh:
+                self._canhbaonguoila(phathien[0])
             phathien = None
         if phathien:
             # Chỉ công bố phát hiện trực tiếp (không công bố trạng thái tạm ngưng) để các nhân vật không gia hạn lẫn nhau mãi
@@ -101,8 +107,18 @@ class TacTuHoatDong:
             self._batdautamngung(f"phát hiện {phathien[0]}", phathien[1])
             return
         phathienkhac = self._layanthantucuasokhac()
-        if phathienkhac and (not (is_chianthan or is_bonguoila) or "ẩn thân" in phathienkhac[0]):
+        if phathienkhac and (not (is_chianthan or is_bonguoila or is_chicanhbaonguoila) or "ẩn thân" in phathienkhac[0]):
             self._batdautamngung(*phathienkhac)
+
+    def _canhbaonguoila(self, mota):
+        # Thấy người lạ khi đã tắt tạm ngưng: phát âm + tin Telegram, tối đa 1 lần mỗi THOIGIANTAMNGUNGNGUOILA giây (quét 0.5s/lần)
+        thoidiemhientai = time.time()
+        if thoidiemhientai - self._thoidiemcanhbaonguoila < THOIGIANTAMNGUNGNGUOILA:
+            return
+        self._thoidiemcanhbaonguoila = thoidiemhientai
+        print(f"[CẢNH BÁO] Phát hiện {mota} (không tạm ngưng)")
+        canhbao(self.moitruong, "Phát hiện người lạ")
+        baosuco(self.moitruong, "tamngung", f"Phát hiện {mota} (không tạm ngưng)", khoa = mota)
 
     def _layidnguoichoicungmays(self):
         # ID các nhân vật đang chạy ở mọi cửa sổ trên máy này (qua shared_data)

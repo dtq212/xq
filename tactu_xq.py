@@ -35,7 +35,7 @@ THUOCTINHTHIETLAPs = (
     "_is_tudongtodoi", "_is_thucsondao", "_is_chantangcapdo", "_is_tudongtangcap", "_captudongtangcaptoida",
     "_is_tudongdichuyendiemdanhxungquanh", "_diemdanhxungquanhs", "_is_lotrinhphobanmuonbando", "_is_dilotrinhkhacbando",
     "_lotrinhmaudangdung", "_is_nguocchieulotrinh", "_is_chiavunglotrinh", "_is_tudonggomquai", "_is_tudongvebanrac", "_is_tudongvesuado", "_phantramvesuado",
-    "_idbandoquaylaibanrac", "_is_tudongdichientruong", "_is_tudongkhaikhoang", "_is_tudongdaotangbaodo", "_tenmuctieutancongs", "_is_uutienbaothukynangtrieuhoi",
+    "_idbandoquaylaibanrac", "_is_tudongdichientruong", "_is_tudongkhaikhoang", "_is_tamngungnguoila", "_is_tudongdaotangbaodo", "_tenmuctieutancongs", "_is_uutienbaothukynangtrieuhoi",
     "_tenmuctieukhongtancongs", "_tenvatphamnhats", "_phamchatnhats", "_khoangcachtoidatheosau", "_bankinhdiemdanh", "_tamxatoida",
     "_danhhieulammoi", "_phantramnoiluckhaithientichdia", "_is_tudongtrieuhoibaothugiangho", "_is_tudongsudungkynangbaothu",
     "_is_tudongbatnguyenkhiquynguyen", "_is_tranhvungcam", "_is_giukhoangcachketancong", "_khoangcachgiuketancong", "_mauchaytron",
@@ -104,6 +104,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._is_tudongchaylenbandovuachet = True
         self._is_tudongxepchongvatpham = True
         self._is_tudongkhaikhoang = False
+        # Thấy người lạ ở map train thì tạm ngưng (ô tích tab Khác, mặc định bật); tắt thì chỉ cảnh báo (phát âm + Telegram), không ngưng.
+        # Ẩn thân luôn ngưng (ẩn thân là ADMIN đi kiểm tra)
+        self._is_tamngungnguoila = True
+        self._thoidiemcanhbaonguoila = 0.
         self._thoidiemkhaikhoanggannhat = 0.
         self._yeucaukhaikhoang = None
 
@@ -554,6 +558,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
 
         self._thoidiemphatamlacmapgannhat = 0.
         self._thoidiemphatamlotrinhkhacbandogannhat = 0.
+        # Lần gần nhất lộ trình điểm đánh đang dẫn sang bản đồ khác (tactu_dichuyen_xq): đang trên đường thì không nhắc "bản đồ không có điểm đánh"
+        self._thoidiemdilotrinhkhacbandogannhat = 0.
         self._thoidiemphatamdayhanhtrang = 0.
         self._thoidiemphatambaothuhethan = 0.
         self._thoidiemcanhbaokhongphapbao = 0.
@@ -921,6 +927,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_idbandoquaylaibanrac": self._idbandoquaylaibanrac,
             "_is_tudongdichientruong": self._is_tudongdichientruong,
             "_is_tudongkhaikhoang": self._is_tudongkhaikhoang,
+            "_is_tamngungnguoila": self._is_tamngungnguoila,
             "_is_tudongdaotangbaodo": self._is_tudongdaotangbaodo,
             "_tenmuctieutancongs": self._tenmuctieutancongs,
 
@@ -1059,6 +1066,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if "_idbandoquaylaibanrac" in thietlap: self.thietlap_bandoquaylaibanrac(thietlap["_idbandoquaylaibanrac"])
             if "_is_tudongdichientruong" in thietlap: self._is_tudongdichientruong = thietlap["_is_tudongdichientruong"]
             if "_is_tudongkhaikhoang" in thietlap: self._is_tudongkhaikhoang = thietlap["_is_tudongkhaikhoang"]
+            if "_is_tamngungnguoila" in thietlap: self._is_tamngungnguoila = thietlap["_is_tamngungnguoila"]
             if "_is_tudongdaotangbaodo" in thietlap: self._is_tudongdaotangbaodo = thietlap["_is_tudongdaotangbaodo"]
             if "_tenmuctieutancongs" in thietlap: self._tenmuctieutancongs = thietlap["_tenmuctieutancongs"]
 
@@ -1433,6 +1441,13 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             phatam("Bật tự động theo sau")
         else:
             phatam("Tắt tự động theo sau")
+
+    def battat_is_tamngungnguoila(self):
+        self._is_tamngungnguoila = not self._is_tamngungnguoila
+        if self._is_tamngungnguoila:
+            phatam("Bật tạm ngưng khi gặp người lạ")
+        else:
+            phatam("Tắt tạm ngưng khi gặp người lạ")
 
     def battat_is_tudongkhaikhoang(self):
         self._is_tudongkhaikhoang = not self._is_tudongkhaikhoang

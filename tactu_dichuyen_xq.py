@@ -1931,6 +1931,10 @@ class TacTuDiChuyen:
         # đúng, không nhắc - chỉ nhắc khi đứng ở bản đồ ngoài lộ trình mà không đi đâu (vd tắt "Đi tới điểm đánh ở bản đồ khác")
         if self._yeucautudo is not None or self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DICHUYEN:
             return
+        # Đang trên đường sang bản đồ của lộ trình: giữa chừng có nhiều lượt _yeucautudo = None (đang phù / vận khí, chờ toạ độ ổn định
+        # sau khi qua cổng, bước chờ, Hồi Thành Phù) hoặc khựng ở cổng => trước vẫn nhắc liên tục khi đi ngang bản đồ có quái
+        if time.time() - self._thoidiemdilotrinhkhacbandogannhat < 15.:
+            return
         if time.time() - self._thoidiemphatamlotrinhkhacbandogannhat > 10.:
             self._thoidiemphatamlotrinhkhacbandogannhat = time.time()
             canhbao(self.moitruong, "Bản đồ này không có điểm đánh trong lộ trình, bỏ qua mục tiêu")
@@ -2233,6 +2237,7 @@ class TacTuDiChuyen:
             if is_khacbando:
                 # Điểm đánh ở bản đồ khác: phù / chạy bộ từng bản đồ một (không Hồi Thành Phù như trước)
                 buoc = self._lapbuocditoibando(target_map)
+                self._thoidiemdilotrinhkhacbandogannhat = time.time()
                 yeucautudomoi = self._thuchienbuocditoibando(buoc, target_map, self._diemdanhxungquanhhientai[:2], f"[LỘ TRÌNH] Điểm đánh ở {laytenbando(target_map)}")
                 break
             chuvung = f" [vùng {vung['stt'] + 1}/{vung['tong']}: #{vung['chisos'][0] + 1}-#{vung['chisos'][-1] + 1}]" if vung else ""

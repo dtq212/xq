@@ -337,8 +337,26 @@ class _GhiLogChinh:
         return getattr(self.goc, ten)
 
 
+def _tatquickedit():
+    # Tắt QuickEdit của console: bấm chuột / bôi đen chữ trong cửa sổ console thì Windows treo mọi lệnh ghi ra console tới khi bỏ chọn,
+    # mọi tiến trình bot (dùng chung console) kẹt ở print, cả bot đứng (2026-11-14 19:51, đo bằng py-spy: luồng kéo gà A-Z và bot từng
+    # cửa sổ đều kẹt ở write). Chế độ đặt trên bộ đệm nhập của console nên tiến trình con cũng hết bị. Chạy không có console thì bỏ qua
+    try:
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.GetStdHandle(-10)  # STD_INPUT_HANDLE
+        chedo = ctypes.c_uint32()
+        if not kernel32.GetConsoleMode(handle, ctypes.byref(chedo)):
+            return
+        # ENABLE_QUICK_EDIT_MODE 0x40 bỏ đi; ENABLE_EXTENDED_FLAGS 0x80 bắt buộc có thì cờ QuickEdit mới được áp
+        kernel32.SetConsoleMode(handle, (chedo.value & ~0x40) | 0x80)
+    except Exception as err:
+        print(f"Không tắt được QuickEdit của console: {err}")
+
+
 if __name__ == "__main__":
     freeze_support()
+    _tatquickedit()
     sys.stdout = _GhiLogChinh(sys.stdout)
     jobdondep = _gantientrinhvaojob()
     manager = TroChoiManager()

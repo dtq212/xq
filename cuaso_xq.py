@@ -154,6 +154,7 @@ class CuaSo:
         self.moitruong.action_thietlaphookvetilenen()
         self.moitruong.action_thietlaphookvecuaso()
         self.moitruong.action_thietlaphookverle()
+        self.moitruong.action_thietlaphookdochimucgoi()
         self.moitruong.action_thietlaphookvehieuungnhanvat()
         self.moitruong.action_thietlaphookvedoituong()
         self.moitruong.action_gohookhoatanhtancong()
@@ -351,6 +352,7 @@ class CuaSo:
                     "_phantramvesuado": self.tactu._phantramvesuado,
                     "_idbandoquaylaibanrac": self.tactu._idbandoquaylaibanrac,
                     "_is_tudongkhaikhoang": self.tactu._is_tudongkhaikhoang,
+                    "_is_tamngungnguoila": self.tactu._is_tamngungnguoila,
                     "_is_tudongdichientruong": self.tactu._is_tudongdichientruong,
                     "_is_tudongdaotangbaodo": self.tactu._is_tudongdaotangbaodo,
 
@@ -634,16 +636,20 @@ class CuaSo:
                     self.tactu.huy_langlyson()
                 elif isinstance(cmd, str) and cmd.startswith("keocapchinh:"):
                     # Kéo cấp acc gà (tactu_keocap_xq), vai acc chính:
-                    # keocapchinh:<ID acc gà>,<ID acc gà>...[;<ID đồ đệ>[;<cấp kết thúc>[;<tên đồ đệ máy khác>[;<mời bang 1/0>]]]]
-                    # (danh sách acc gà có thể trống; thiếu cờ mời bang = mời như cũ)
+                    # keocapchinh:<ID acc gà>,<ID acc gà>...[;<ID đồ đệ>[;<cấp kết thúc>[;<tên đồ đệ máy khác>[;<mời bang 1/0>
+                    # [;<đã bái sư 1/0>;<đã xuất sư 1/0>]]]]] (danh sách acc gà có thể trống; thiếu cờ mời bang = mời như cũ;
+                    # hai cờ sư đồ: kéo gà A-Z bật lại acc chính giữa lượt thì không bái sư lần nữa)
                     dsga, _, conlai = cmd.split(":", 1)[1].partition(";")
                     iddode, _, conlai = conlai.partition(";")
                     capketthuc, _, conlai = conlai.partition(";")
-                    tendode, _, moibang = conlai.partition(";")
+                    tendode, _, conlai = conlai.partition(";")
+                    moibang, _, conlai = conlai.partition(";")
+                    dabaisu, _, daxuatsu = conlai.partition(";")
                     self.tactu.batdau_keocap("chinh", idgas = [int(i) for i in dsga.split(",") if i.strip().isdigit()],
                                              iddode = int(iddode) if iddode.strip().isdigit() else 0,
                                              capketthuc = int(capketthuc) if capketthuc.strip().isdigit() else 0, tendode = tendode,
-                                             moibang = moibang.strip() != "0")
+                                             moibang = moibang.strip() != "0", dabaisu = dabaisu.strip() == "1",
+                                             daxuatsu = daxuatsu.strip() == "1")
                 elif isinstance(cmd, str) and cmd.startswith("keocapga:"):
                     # Vai acc gà: keocapga:<ID acc chính> (0 = tự tìm acc chính cùng máy / qua LAN, nút "Làm acc gà")
                     self.tactu.batdau_keocap("ga", idchinh = int(cmd.split(":", 1)[1]))
@@ -857,6 +863,8 @@ class CuaSo:
                         pass
                 elif cmd == "battat_tudongkhaikhoang":
                     self.tactu.battat_is_tudongkhaikhoang()
+                elif cmd == "battat_tamngungnguoila":
+                    self.tactu.battat_is_tamngungnguoila()
                 elif cmd == "botoanbo_tenmuctieutancong":
                     self.tactu.botoanbo_tenmuctieutancong()
                 elif cmd == "botoanbo_tenmuctieukhongtancong":

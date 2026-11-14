@@ -19,7 +19,7 @@ from tienich_xq import thaythefile, _thumucthietlap
 # Số acc gà mỗi lượt mặc định (người dùng đang kéo tay 1 acc chính + 4 acc gà)
 SOGAMACDINH = 4
 SOGATOIDA = 7
-CAPKETTHUCMACDINH = 45
+CAPKETTHUCMACDINH = 50
 TIENTOMACDINH = "ga"
 # Lượt quét của luồng đăng nhập là 5s; acc gà vắng (dis / game đóng) quá chừng này giây thì đăng nhập lại
 THOIGIANVANGDANGNHAPLAI = 20.
@@ -41,6 +41,10 @@ THOIGIANKHONGLENCAP = 30 * 60.
 THOIGIANCHOTHOATTAIKHOAN = 45.
 # Acc gà trong lượt vào lại hỏng: lần thứ n chờ 30*n giây rồi thử lại, tối đa chừng này
 THOIGIANTHULAIGATOIDA = 180.
+# Nhận đồ đệ (ô "Nhận đồ đệ" của kéo cấp, người dùng dặn 2026-11-14): mỗi lượt chọn 1 acc gà cấp không quá chừng này (trùng
+# tactu_keocap_xq.CAPTOIDANHANDODE: quá cấp này acc chính coi như đã bái sư, chỉ đi xuất sư) làm đồ đệ, acc chính bái sư ở Mạnh Tử
+# trước khi lập nhóm, đồ đệ cấp 50 / cấp kết thúc thì xuất sư trước khi thu hồi đồ, lượt mới nhận đồ đệ mới
+CAPTOIDANHANDODEAZ = 30
 
 CAUHINHMAU = {"soga": SOGAMACDINH, "tiento": TIENTOMACDINH, "gioitinh": 0, "group": 1, "server": 1, "taikhoans": []}
 
@@ -140,6 +144,11 @@ class KeoGaTuDong:
         self.idchinh = 0
         self.capketthuc = CAPKETTHUCMACDINH
         self.moibang = True
+        # Nhận đồ đệ: iddode là acc gà đồ đệ của lượt (0 = chưa chọn / lượt không có), dabaisu / daxuatsu đọc từ acc chính
+        self.nhandode = False
+        self.iddode = 0
+        self.dabaisu = False
+        self.daxuatsu = False
         self._solanloi = {}
         self._lucbatchinh = 0.
         self._lucchinhhetvai = 0.
@@ -159,17 +168,23 @@ class KeoGaTuDong:
             self.idchinh = int(tiendo["idchinh"])
             self.capketthuc = int(tiendo.get("capketthuc") or CAPKETTHUCMACDINH)
             self.moibang = bool(tiendo.get("moibang", True))
+            self.nhandode = bool(tiendo.get("nhandode"))
+            self.iddode = int(tiendo.get("iddode") or 0)
+            self.dabaisu = bool(tiendo.get("dabaisu"))
+            self.daxuatsu = bool(tiendo.get("daxuatsu"))
             self.luot = [dict(g, hwnd = 0, lucvang = 0., lucguilenh = 0., lucvaogame = 0.) for g in tiendo.get("luot") or []]
             self._is_chinhdabat = bool(tiendo.get("chinhdabat"))
             self.trangthai = "Làm tiếp lượt kéo gà trước khi tắt bot"
             print(f"[KÉO GÀ A-Z] Làm tiếp: acc chính ID {self.idchinh}, lượt {', '.join(g['ten'] for g in self.luot) or 'trống'}")
 
     # --- Bật / tắt từ giao diện -----------------------------------------------------------------------------------------------------
-    def batdau(self, idchinh, capketthuc, moibang = True):
+    def batdau(self, idchinh, capketthuc, moibang = True, nhandode = False):
         self.is_bat = True
         self.idchinh = int(idchinh)
         self.capketthuc = int(capketthuc)
         self.moibang = bool(moibang)
+        self.nhandode = bool(nhandode)
+        self._datlaidode()
         self.luot = []
         self._solanloi = {}
         self._is_chinhdabat = False
@@ -181,7 +196,12 @@ class KeoGaTuDong:
         for tk in (tiendo.get("taikhoans") or {}).values():
             tk.pop("het", None)
         self._luutiendo(tiendo)
-        print(f"[KÉO GÀ A-Z] Bắt đầu: acc chính ID {idchinh}, kéo tới cấp {capketthuc}")
+        print(f"[KÉO GÀ A-Z] Bắt đầu: acc chính ID {idchinh}, kéo tới cấp {capketthuc}" + (", nhận đồ đệ mỗi lượt" if nhandode else ""))
+
+    def _datlaidode(self):
+        self.iddode = 0
+        self.dabaisu = False
+        self.daxuatsu = False
 
     def dung(self, lydo = "Đã dừng (bấm tay)"):
         if not self.is_bat:
@@ -199,6 +219,7 @@ class KeoGaTuDong:
     def _luutiendo(self, tiendo = None):
         tiendo = tiendo or self._tiendo()
         tiendo.update(bat = self.is_bat, idchinh = self.idchinh, capketthuc = self.capketthuc, moibang = self.moibang,
+                      nhandode = self.nhandode, iddode = self.iddode, dabaisu = self.dabaisu, daxuatsu = self.daxuatsu,
                       chinhdabat = self._is_chinhdabat, luot = [{"user": g["user"], "id": g["id"], "ten": g["ten"]} for g in self.luot])
         tiendo.setdefault("taikhoans", {})
         _ghijson("keogatudong_tiendo.json", tiendo)
@@ -258,6 +279,12 @@ class KeoGaTuDong:
             return
         hwndchinh, infochinh = chinh
         kcchinh = infochinh.get("_keocap") or {}
+        if self.iddode and kcchinh.get("vaitro") == "chinh" and kcchinh.get("iddode") == self.iddode \
+                and (bool(kcchinh.get("dabaisu")), bool(kcchinh.get("daxuatsu"))) != (self.dabaisu, self.daxuatsu):
+            # Nhớ bái sư / xuất sư acc chính đã làm: acc chính dừng giữa lượt mà bật lại thì không bái sư lần nữa
+            self.dabaisu, self.daxuatsu = bool(kcchinh.get("dabaisu")), bool(kcchinh.get("daxuatsu"))
+            print(f"[KÉO GÀ A-Z] Đồ đệ ID {self.iddode}: {'đã xuất sư' if self.daxuatsu else 'đã bái sư' if self.dabaisu else 'chưa bái sư'}")
+            self._luutiendo()
         online = dangnhap_xq.laydanhsachnhanvatonlines()
 
         # Cập nhật acc gà của lượt: cửa sổ, cấp
@@ -478,12 +505,28 @@ class KeoGaTuDong:
             return
         if not kcchinh:
             ids = ",".join(str(g["id"]) for g in self.luot)
-            self.command_dict[hwndchinh] = f"keocapchinh:{ids};;{self.capketthuc};;{int(self.moibang)}"
-            print(f"[KÉO GÀ A-Z] Bật acc chính kéo cấp lượt: {', '.join(g['ten'] for g in self.luot)}")
+            self._chondode()
+            self.command_dict[hwndchinh] = f"keocapchinh:{ids};{self.iddode or ''};{self.capketthuc};;{int(self.moibang)};" \
+                                           f"{int(self.dabaisu)};{int(self.daxuatsu)}"
+            dode = next((g for g in self.luot if g["id"] == self.iddode), None)
+            print(f"[KÉO GÀ A-Z] Bật acc chính kéo cấp lượt: {', '.join(g['ten'] for g in self.luot)}"
+                  + (f", đồ đệ {dode['ten']} (ID {dode['id']}{', đã bái sư' if self.dabaisu else ''})" if dode else ""))
         self._lucbatchinh = now
         self._is_chinhdabat = True
         self._luutiendo()
         self.trangthai = "Đã bật acc chính kéo cấp"
+
+    def _chondode(self):
+        # Chọn acc gà đồ đệ cho lượt (một lần mỗi lượt, giữ qua lúc bật lại acc chính): acc gà cấp thấp nhất, không quá CAPTOIDANHANDODEAZ
+        # (acc gà nhận lại giữa chừng đã cao cấp thì acc chính sẽ coi như đã bái sư mà thực ra chưa: không nhận)
+        if not self.nhandode or (self.iddode and any(g["id"] == self.iddode for g in self.luot)):
+            return
+        self._datlaidode()
+        chon = [g for g in self.luot if int(g.get("cap") or 0) <= CAPTOIDANHANDODEAZ]
+        if not chon:
+            print(f"[KÉO GÀ A-Z] Không acc gà nào của lượt từ cấp {CAPTOIDANHANDODEAZ} trở xuống: lượt này không nhận đồ đệ")
+            return
+        self.iddode = min(chon, key = lambda g: (int(g.get("cap") or 0), g["ten"]))["id"]
 
     def _batluongdangnhap(self, taikhoan, cauhinh, vitri, ga = None):
         # Mở luồng đăng nhập 1 tài khoản gà: chọn nhân vật chưa xong / tạo mới. ga: acc gà đang trong lượt (vào lại đúng nhân vật đó).
@@ -603,7 +646,10 @@ class KeoGaTuDong:
             tens.append(f"{g['ten']} ({g['user']})")
         print(f"[KÉO GÀ A-Z] ✅ Xong lượt (cấp {self.capketthuc}): {', '.join(tens)}. Đóng client, đăng nhập lượt kế")
         guitinmay("dangnhap", f"✅ Kéo gà A-Z xong lượt cấp {self.capketthuc}: {html.escape(', '.join(tens))}", khoa = "keogaluot", giancach = 0.)
+        if self.iddode and not self.daxuatsu:
+            print(f"[KÉO GÀ A-Z] ⚠️ Đồ đệ ID {self.iddode} chưa thấy acc chính báo xuất sư (lượt sau acc chính bái sư có thể hỏng)")
         self.luot = []
+        self._datlaidode()
         self._is_chinhdabat = False
         self._lucchinhhetvai = 0.
         self._boluongdangnhap()

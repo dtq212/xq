@@ -102,8 +102,8 @@ GIANCACHDUNGVATPHAMKC = 1.5
 BAIKEOCAPs = ((BANDO_BAKHAU, 10), (BANDO_THUYHOASON_KC, 20), (BANDO_CULOC, 30), (BANDO_RANHGIOIDAMLAY, 35))
 # Acc gà đồ đệ quá cấp này (chưa ghi bái sư) thì coi như đã bái sư: bỏ bước bái sư, chỉ nhớ để tới cấp kết thúc xuất sư
 CAPTOIDANHANDODE = 30
-# Đồ đệ tới cấp này là xuất sư được (người dùng dặn): xuất sư ngay, không chờ mọi acc gà tới cấp kết thúc, xong kéo tiếp như thường
-CAPXUATSU = 60
+# Đồ đệ tới cấp này là xuất sư được (người dùng xác nhận lại 14/11: cấp 50, trước ghi 60): xuất sư ngay, không chờ mọi acc gà tới cấp kết thúc, xong kéo tiếp như thường
+CAPXUATSU = 50
 # Người give (acc gà) ra Phong Yêu Kính theo "Điều kiện thoát" ở cấu hình Phong Yêu Kính (tienich_xq.DIEUKIENRAPYKEOCAPs: số boss,
 # có chờ hết quái); hết quái = không thành viên nào (cùng bản đồ) còn mục tiêu liền chừng này giây; ở quá THOIGIANTOIDAPY thì thôi chờ
 THOIGIANHETMUCTIEUPYKC = 10.
@@ -159,7 +159,10 @@ THOIGIANTHUHOIKC = 300.
 # bán hết ở Chủ Tiệm Y Dược (Chu Quốc cạnh Tả Khâu Minh, nơi ra Phong Yêu Kính; đang ở Tân Thủ Thôn thì tiệm ở đó) rồi mới báo xong.
 # Quá THOIGIANBANTHUHOIKC giây chưa bán xong thì thôi, báo Telegram
 # Tên đúng theo máy chủ (log quay số 845 "Bổ Tâm Đơn", 321/844 "Tạo Hoá Đơn"; người dùng gọi "Tạp Hóa Đơn"). "Bổ Tâm Đan" là món khác
-VATPHAMTHUHOIBANKCs = ("Tạo Hoá Đơn", "Tạo Hóa Đơn", "Bổ Tâm Đơn")
+# VATPHAMTHUHOIKCs: acc gà trả cả chồng về acc chính; VATPHAMTHUHOIBANKCs: phần acc chính đem bán. Bổ Tâm Đơn tạm thời giữ lại để
+# dùng, không bán (người dùng dặn 2026-11-14): muốn bán lại thì thêm "Bổ Tâm Đơn" vào VATPHAMTHUHOIBANKCs
+VATPHAMTHUHOIKCs = ("Tạo Hoá Đơn", "Tạo Hóa Đơn", "Bổ Tâm Đơn")
+VATPHAMTHUHOIBANKCs = ("Tạo Hoá Đơn", "Tạo Hóa Đơn")
 # Phù acc gà còn trong túi cũng trả về bán (người dùng dặn 2026-11-14). Acc chính cần phù để đi lại nên chỉ bán phần nhận thêm: giữ đúng
 # số phù có lúc bắt đầu thu hồi, bán nguyên chồng (lệnh sell bán cả chồng) miễn tổng bán không vượt phần nhận thêm
 PHUTHUHOIBANKCs = (PHIHANHPHU, HOITHANHPHU, HOIBANGPHU)
@@ -650,7 +653,7 @@ class TacTuKeoCap:
 
     def _laydsbanthuhoikc(self, s):
         # Đồ thu hồi đem bán: [(id, mô tả)], "doc" khi còn ô chưa đọc được mô tả (cần để nhận đồ Lam Kim)
-        #   - mọi chồng Tạo Hoá Đơn / Bổ Tâm Đơn
+        #   - mọi chồng VATPHAMTHUHOIBANKCs (Tạo Hoá Đơn; Bổ Tâm Đơn tạm giữ lại dùng)
         #   - phù (PHUTHUHOIBANKCs) phần nhận thêm so với lúc bắt đầu thu hồi: bán nguyên chồng, chồng lớn trước, tổng không vượt phần thêm
         #   - đồ Lam Kim cấp CAPLAMKIMBANKC quá SOLAMKIMGIULAIKC món: giữ món rẻ nhất, bán món giá cao
         moitruong = self.moitruong
@@ -759,6 +762,22 @@ class TacTuKeoCap:
             moitruong.action_moihoacxinvaonhom(idga)
             return
 
+    def _cosudokc(self, tendd):
+        # Acc chính có danh hiệu "Sư Phụ của <tên đồ đệ>" không (bảng Nhân Vật > Danh Hiệu; đồ đệ thì có "Đệ Tử của <sư phụ>", ảnh người
+        # dùng 2026-11-14): True / False; None khi không đọc được (danh sách trống: acc chính luôn có danh hiệu khác như VIP, bang)
+        try:
+            danhhieus = self.moitruong.get_danhsachdanhhieu()
+        except Exception:
+            return None
+        if not danhhieus:
+            return None
+        tendd = _chuanhoa(tendd).lower()
+        for _, tendh in danhhieus:
+            tendh = _chuanhoa(tendh).lower()
+            if tendh.startswith("sư phụ") and tendh.endswith(tendd):
+                return True
+        return False
+
     def _buocsuphuchinh(self, s, gas, loai):
         # loai "baisu" / "xuatsu": về Tân Thủ Thôn, nhóm với acc gà đồ đệ (bái sư: nhóm riêng 2 người), đồ đệ đứng gần Mạnh Tử thì chọn
         # "2. ... bái sư" / "3. ... xuất sư" -> lựa chọn đầu ("1. Xác nhận") rồi chờ đồ đệ báo đã xác nhận (_xacnhansuphuga).
@@ -776,7 +795,16 @@ class TacTuKeoCap:
         sp = s.setdefault("suphu", {"loai": loai, "buoc": "menu", "solan": 0, "luc": 0.})
         if sp["loai"] != loai:
             sp.update(loai = loai, buoc = "menu", solan = 0, luc = 0.)
-        if info["_keocap"].get(co):
+        cosudo = self._cosudokc(tendd)
+        if (loai == "baisu" and cosudo is True) or (loai == "xuatsu" and cosudo is False):
+            # Danh hiệu là chính xác nhất (người dùng chỉ 2026-11-14): bái sư xong sư phụ có "Sư Phụ của <đồ đệ>", xuất sư thì mất
+            s[co] = True
+            s.pop("suphu", None)
+            self._logkc(f"✅ {ten} {tendd}: danh hiệu \"Sư Phụ của {tendd}\" " + ("đã có" if cosudo else "đã mất"))
+            phatam(f"Xong {ten}")
+            return None
+        if cosudo is None and info["_keocap"].get(co):
+            # Không đọc được danh hiệu: tin đồ đệ báo đã chọn Xác nhận như cũ
             s[co] = True
             s.pop("suphu", None)
             self._logkc(f"✅ {tendd} đã xác nhận {ten}")
@@ -790,8 +818,19 @@ class TacTuKeoCap:
         yeucau = self._ditoikc(s, BANDO_TANTHUTHON, (xnpc, ynpc), ten)
         if moitruong.get_idbandohientai() != BANDO_TANTHUTHON:
             return yeucau
-        self._moinhomkc(s, {iddode: info})
         trongnhoms = set(moitruong.get_danhsachidnguoichoithanhviennhoms() or ()) if moitruong.get_is_dangnamtrongnhom() else set()
+        thuas = trongnhoms - {iddode, moitruong.get_idnguoichoi()}
+        if thuas:
+            # Bái sư / xuất sư phải là nhóm đúng 2 người, sư phụ làm trưởng nhóm (người dùng dặn 2026-11-14: đang nhóm đủ 4 acc gà thì
+            # Mạnh Tử không hiện hộp Xác nhận). Rời nhóm đông người; acc gà còn lại thấy trưởng nhóm không phải acc chính thì tự rời
+            # (_roinhomkhacchinhkc), acc chính lập nhóm mới chỉ mời đồ đệ; xong sư đồ thì bước bãi / tập hợp mời cả đám lại như thường
+            s["trangthai"] = f"{ten}: rời nhóm {len(trongnhoms)} người để lập nhóm riêng với {tendd}"
+            if now - s.get("lucroinhom", 0.) > GIANCACHROINHOMKC:
+                s["lucroinhom"] = now
+                self._logkc(f"{ten}: nhóm còn {len(thuas)} người ngoài đồ đệ, rời nhóm để lập nhóm 2 người với {tendd}")
+                moitruong.action_thoatkhoinhom()
+            return yeucau
+        self._moinhomkc(s, {iddode: info})
         if iddode not in trongnhoms:
             s["trangthai"] = f"{ten}: mời {tendd} vào nhóm"
             return yeucau
@@ -827,8 +866,9 @@ class TacTuKeoCap:
                 self._logkc(f"Mạnh Tử: {noidung[:80]!r} -> chọn {lenhs[0]!r}")
                 moitruong.xoa_noidungcuasotuychon()
                 moitruong.action_thucthicaulenh(lenhs[0])
-                if loai == "xuatsu":
-                    # Xuất sư không cần đồ đệ xác nhận: sư phụ chọn Xác nhận là xong (từng chờ đồ đệ báo, nói chuyện Mạnh Tử lại 3 lần)
+                if loai == "xuatsu" and self._cosudokc(tendd) is None:
+                    # Xuất sư không cần đồ đệ xác nhận: sư phụ chọn Xác nhận là xong (từng chờ đồ đệ báo, nói chuyện Mạnh Tử lại 3 lần).
+                    # Đọc được danh hiệu thì để bước đầu hàm xét danh hiệu "Sư Phụ của <đồ đệ>" mất hẳn mới coi là xong
                     s[co] = True
                     s.pop("suphu", None)
                     self._logkc(f"✅ {tendd} đã xuất sư")
@@ -1334,8 +1374,8 @@ class TacTuKeoCap:
         # Trảo trong túi trả cùng đồ Lam Kim: (id, số lượng, tên)
         trao = None if is_traocode else self._timvatphamkc(TRAOKEOCAPs)
         mons =[(mon[3], 1, f"{mon[4]} (cấp {mon[0]})") for mon in ds] + ([(trao[1], 1, TRAOKEOCAPs[0])] if trao else [])
-        # Tạo Hoá Đơn / Bổ Tâm Đơn / phù: trả cả chồng, acc chính đem bán (_banthuhoikc)
-        for vitri, idmon in self._timcacvatphamkc(VATPHAMTHUHOIBANKCs + PHUTHUHOIBANKCs):
+        # Tạo Hoá Đơn / Bổ Tâm Đơn / phù: trả cả chồng, acc chính đem bán (_banthuhoikc; Bổ Tâm Đơn giữ lại dùng)
+        for vitri, idmon in self._timcacvatphamkc(VATPHAMTHUHOIKCs + PHUTHUHOIBANKCs):
             soluong = max(1, moitruong.get_soluongvatphamhanhtrang(vitri) or 1)
             mons.append((idmon, soluong, f"{moitruong.get_tenvatphamhanhtrang(vitri) or 'Đơn'} x{soluong}"))
         # Sách "Nhập Môn": acc chính đem cất kho (_catsachthuhoikc)

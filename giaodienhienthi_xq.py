@@ -473,6 +473,7 @@ class GiaoDienHienThi:
             "chidanhnguoichoi": tk.BooleanVar(),
             "uutienmaoson": tk.BooleanVar(),
             "khaikhoang": tk.BooleanVar(),
+            "tamngungnguoila": tk.BooleanVar(value = True),
             "daobaodo": tk.BooleanVar(),
             "chientruong": tk.BooleanVar(),
             "chantangcap": tk.BooleanVar(),
@@ -2296,6 +2297,8 @@ class GiaoDienHienThi:
         self._create_check(nhom, "Tự động khai khoáng/Hái dược", self.vars["khaikhoang"], "battat_tudongkhaikhoang")
         self._create_check(nhom, "Đào tàng bảo đồ", self.vars["daobaodo"], "battat_tudongdaotangbaodo")
         self._create_check(nhom, "Đi chiến trường", self.vars["chientruong"], "battat_tudongdichientruong")
+        # Mặc định bật; tắt thì thấy người lạ ở map train chỉ cảnh báo (phát âm + Telegram), không ngưng. Ẩn thân luôn ngưng
+        self._create_check(nhom, "Tạm ngưng khi gặp người lạ", self.vars["tamngungnguoila"], "battat_tamngungnguoila")
         # Bản đồ nhỏ (bandonho_xq): cửa sổ riêng vẽ quanh nhân vật đang chọn, không đụng phần vẽ của game
         nhombando = self._taonhom(tab, "Tiện ích hiển thị")
         hangbando = ttk.Frame(nhombando)
@@ -3360,11 +3363,11 @@ class GiaoDienHienThi:
         tk.Label(hangnut, text = "Kéo tới cấp:").pack(side = tk.LEFT, padx = (12, 0))
         self.var_keocapcapketthuc = tk.IntVar(value = CAPKETTHUCKEOCAP)
         ttk.Spinbox(hangnut, from_ = 10, to = 200, increment = 1, width = 5, textvariable = self.var_keocapcapketthuc).pack(side = tk.LEFT, padx = 4)
-        # Nhận đồ đệ: acc gà chọn (trống = acc gà đầu tiên theo tên) bái sư với acc chính ở Mạnh Tử trước khi lập nhóm, đồ đệ cấp 60 thì xuất sư
+        # Nhận đồ đệ: acc gà chọn (trống = acc gà đầu tiên theo tên) bái sư với acc chính ở Mạnh Tử trước khi lập nhóm, đồ đệ cấp 50 thì xuất sư
         hangdode = tk.Frame(nhom)
         hangdode.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
         self.var_keocapnhandode = tk.BooleanVar(value = False)
-        ttk.Checkbutton(hangdode, text = "Nhận đồ đệ (Mạnh Tử bái sư, đồ đệ cấp 60 thì xuất sư) — tên đồ đệ:",
+        ttk.Checkbutton(hangdode, text = "Nhận đồ đệ (Mạnh Tử bái sư, đồ đệ cấp 50 thì xuất sư) — tên đồ đệ:",
                         variable = self.var_keocapnhandode).pack(side = tk.LEFT)
         self.str_keocapdode = tk.StringVar(value = "")
         self.cbo_keocapdode = ttk.Combobox(hangdode, textvariable = self.str_keocapdode, width = 20, values = [])
@@ -3655,7 +3658,7 @@ class GiaoDienHienThi:
             dode = next((i for _, i in gas if i.get("tennhanvat") == tendode), None) if tendode else gas[0][1]
             if dode:
                 iddode = dode["idnguoichoi"]
-                dongdode = f"\nĐồ đệ (bái sư ở Mạnh Tử, cấp {min(capketthuc, 60)} xuất sư): {dode.get('tennhanvat')} (ID {iddode})"
+                dongdode = f"\nĐồ đệ (bái sư ở Mạnh Tử, cấp {min(capketthuc, 50)} xuất sư): {dode.get('tennhanvat')} (ID {iddode})"
             else:
                 tendodelan = tendode.replace(";", "")
                 dongdode = (f"\nĐồ đệ: {tendode} (không thấy cùng máy, coi là acc gà máy khác: acc chính chờ acc gà tên này bấm "
@@ -3767,16 +3770,19 @@ class GiaoDienHienThi:
             hopthoai.showwarning("Kéo gà A-Z", "\"Kéo tới cấp\" phải là số từ 10 tới 200", parent = self._chahopthoai())
             return
         moibang = bool(self.var_keocapmoibang.get())
+        # Ô "Nhận đồ đệ" ở trên: mỗi lượt acc gà cấp thấp nhất làm đồ đệ (ô tên đồ đệ bỏ qua)
+        nhandode = bool(self.var_keocapnhandode.get())
         if not hopthoai.askyesno("Kéo gà A-Z", f"Acc chính: {info.get('tennhanvat')} (ID {info['idnguoichoi']})\n{sotaikhoan} tài khoản gà, "
                                                f"{self.var_keogasoga.get()} acc gà mỗi lượt\nKéo tới cấp: {capketthuc}\nMời vào bang: "
-                                               f"{'có' if moibang else 'không'}\n\nBot sẽ tự mở client, đăng nhập, tạo nhân vật mới khi tài khoản không còn "
+                                               f"{'có' if moibang else 'không'}\nNhận đồ đệ: "
+                                               f"{'có (mỗi lượt 1 acc gà, cấp ' + str(min(capketthuc, 50)) + ' xuất sư)' if nhandode else 'không'}\n\nBot sẽ tự mở client, đăng nhập, tạo nhân vật mới khi tài khoản không còn "
                                                f"nhân vật dưới cấp {capketthuc}, và đóng client acc gà khi xong lượt.\n\nBắt đầu?",
                                  parent = self._chahopthoai()):
             return
         if kc:
             # Acc chính đang kéo cấp tay: dừng để kéo gà A-Z bật lại với acc gà của lượt
             self.command_dict[int(hwnd)] = "huykeocap"
-        keoga.batdau(info["idnguoichoi"], capketthuc, moibang)
+        keoga.batdau(info["idnguoichoi"], capketthuc, moibang, nhandode)
         self._capnhatkeoga()
 
     def _capnhatkeoga(self):
@@ -5184,6 +5190,7 @@ class GiaoDienHienThi:
                 ("diquocgiatanthutienco", "_is_diquocgiatanthutienco"),
                 ("doidotrieuhoi", "_is_doidokhitrieuhoi"),
                 ("khaikhoang", "_is_tudongkhaikhoang"),
+                ("tamngungnguoila", "_is_tamngungnguoila"),
                 ("chientruong", "_is_tudongdichientruong"),
                 ("daobaodo", "_is_tudongdaotangbaodo"),
                 ("chidanhnguoichoi", "_is_chidanhnguoichoi"),

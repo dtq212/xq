@@ -1866,7 +1866,8 @@ VIECCOVONGs = ("tapkich", "langlyson", "thanhkieu", "phongyeukinh")
 VIECRIENG_MAP = {"matac": "Mã Tặc", "keocap": "Kéo cấp acc gà"}
 
 # Cấp kết thúc mặc định (ô "Kéo tới cấp" trên giao diện, lưu ở s["capketthuc"]; bản lưu cũ không có thì dùng số này).
-# 45 là tối ưu điểm thành thạo kỹ năng bang / phút (đo 2026-11-08, acc 526-528, 535-537): mỗi lần acc gà lên cấp bang cộng
-# 800 (<=25), 1200 (26-35), 1600 (36-40), 2000 (41-45), 2400 (46-50), 2800 (51-56); thời gian từ cấp 1: 30 ~20p, 45 ~57p, 60 ~148p,
-# 65 ~205p. Tính cả ~10p chuẩn bị acc mới: dừng 45 ~740 điểm/phút, 60 ~560, 65 ~490 -> thay acc gà mới ở 45 lợi hơn kéo tiếp
-CAPKETTHUCKEOCAP = 45
+# Điểm thành thạo kỹ năng bang mỗi lần acc gà lên cấp (người dùng xác nhận 2026-11-14): cấp 1-30 không có, 31-35 1200, cứ 5 cấp thêm 400.
+# Đo dàn 1002-1005 (2026-11-14, đăng nhập song song): tới 50 mất 42 phút, 60 mất 83, 64 mất 103 (từ 60 đánh boss nên vòng dài 12-14
+# phút) => điểm / phút mỗi acc gần ngang nhau (~745-760), nhưng mỗi vòng Phong Yêu Kính đốt 1 món Lam Kim mà boss không rơi lại:
+# dừng 50 ~48 nghìn điểm / món, 60 ~41 nghìn, 64 ~36 nghìn -> người dùng chọn dừng 50
+CAPKETTHUCKEOCAP = 50

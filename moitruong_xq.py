@@ -2028,6 +2028,59 @@ class MoiTruong:
         self._inlog("[CHẶN CRASH] đã vá chỗ vẽ RLE engine.dll (kẹp số hàng, bỏ bảng hàng đã nhả)")
         return True
 
+    # Hàm dò nhị phân trong bảng chỉ mục một gói tài nguyên của engine.dll (thiscall, ret 4; ecx = gói ở 0x1004E5E8 + i*16:
+    # +0 handle file, +4 bảng chỉ mục (mỗi ô 12 byte, khoá ở +0), +0xC số ô) và 15 byte đầu để đối chiếu trước khi vá
+    ENGINE_HAMDOCHIMUCGOI = 0x1B8E0
+    ENGINE_HAMDOCHIMUCGOI_MAGOC = "53 55 56 8B 71 0C 57 33 FF 4E 78 28 8B 69 04"
+
+    def action_thietlaphookdochimucgoi(self):
+        # Chặn crash engine.dll + 0x1B8FE (gacon0780 ID 1016 ngày 14/11 lúc 20:55:17, dump trong thư mục game
+        # xq.exe.2026-11-14.20.55.17.dmp, ~75s sau khi vào game lần đầu, đang đi bộ theo sau; lần trước Thọ 09/11 06:53).
+        # Luồng văng là luồng nền vẽ trước tile của game (hàm luồng xq+0x99EB0, xem action_thietlaphookvetilenen), đang dò
+        # bảng chỉ mục gói: bảng [gói+4] = 0 nhưng số ô [gói+0xC] = 13 => đọc [0 + i*12]. Hàm đóng gói engine+0x1B8A0 nhả bảng,
+        # gán [+4] = 0 mà không xoá số ô; luồng chính lúc đó đang vẽ RLE => tranh chấp của chính game, bot không gọi tới.
+        # Vá đầu hàm: bảng < 0x10000 thì trả 0 (không thấy) như nhánh không tìm ra của game; nơi gọi trả mã lỗi 'NPOf',
+        # luồng nền mất 1 ô nền (chỗ vẽ tile đã vá bỏ khung NULL). Kịch bản không giải phóng; thấy E9 thì thôi.
+        try:
+            enginemodule = pymem.process.module_from_name(self.tientrinh.process_handle, "engine.dll")
+        except Exception:
+            enginemodule = None
+        if not enginemodule:
+            self._inlog("[CHẶN CRASH] không tìm thấy engine.dll, bỏ vá chỗ dò chỉ mục gói")
+            return False
+        diachihook = enginemodule.lpBaseOfDll + self.ENGINE_HAMDOCHIMUCGOI
+        magoc = bytes.fromhex(self.ENGINE_HAMDOCHIMUCGOI_MAGOC)
+        try:
+            mahook = read_bytes(self.tientrinh, diachihook, len(magoc))
+        except Exception:
+            return False
+        if mahook[0] == 0xE9:
+            return True
+        if mahook != magoc:
+            self._inlog(f"[CHẶN CRASH] chỗ dò chỉ mục gói engine.dll không như dự kiến: {mahook.hex(' ')}")
+            return False
+        asm_script = f"""
+            cmp dword ptr [ecx + 4], 0x10000
+            jb boqua
+            push ebx
+            push ebp
+            push esi
+            mov esi, dword ptr [ecx + 0xC]
+            push {diachihook + 6}
+            ret
+        boqua:
+            xor eax, eax
+            ret 4
+        """
+        encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+        if not encoding:
+            return False
+        kichban = self.tientrinh.allocate(64)
+        write_bytes(self.tientrinh, kichban, bytes(encoding), len(encoding))
+        write_bytes(self.tientrinh, diachihook, b"\xE9" + struct.pack("<i", kichban - (diachihook + 5)) + b"\x90", 6)
+        self._inlog("[CHẶN CRASH] đã vá chỗ dò chỉ mục gói engine.dll (bỏ bảng chỉ mục đã nhả)")
+        return True
+
     def action_gohookhoatanhtancong(self):
         # Hook bỏ hoạt ảnh chiêu delay 0 (HOOK_HOATANHTANCONG, xq+0x1AE5B) đã GỠ 2026-11-12: người dùng thấy lâu lâu toạ độ đứng ở client
         # lệch so với máy chủ. Hàm này chỉ trả 6 byte gốc nếu client còn mang bản vá từ lần chạy bot cũ (lệnh nhảy E9 tới kịch bản)
