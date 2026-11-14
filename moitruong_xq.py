@@ -364,6 +364,8 @@ class MoiTruong:
         self._toadotrandolacanh = None
         # Hiệu ứng mặt đất: địa chỉ nút -> mã hiệu ứng đã thấy (sprite bị đẩy khỏi bộ đệm thì vẫn biết mã), xem get_danhsachhieuungdat
         self._mahieuungdattheonut = {}
+        # Khối cờ ẩn hiển thị (COHIENTHI_VITRI) cấp trong game cho các hook vẽ đọc, xem _get_diachicohienthi
+        self._diachicohienthi = None
         # Tâm trận mình vừa đặt: (x, y) -> thời điểm (THOIGIANNHOTAMTRANVUADAT); chữ ký danh sách trận đã ghi log gần nhất
         self._tamtranvuadat = {}
         self._logdanhsachtrangannhat = None
@@ -1609,6 +1611,7 @@ class MoiTruong:
         diachima = self.diachixq + DC.MAHIEUUNGDAT
         diachibangsprite = self.diachixq + DC.BANGSPRITEHIEUUNG + 4
         sosanhma = "\n".join(f"            cmp eax, {ma}\n            je boqua2" for ma in MAHIEUUNGDATKHONGVE)
+        cotranphap = self._get_diachicohienthi() + COHIENTHI_VITRI["tranphap"]
         ketqua = True
         for tenhang, magoc, sobyte, dotiep, lenhgoc in dsvongve:
             diachihook = self.diachixq + getattr(DC, tenhang)
@@ -1639,6 +1642,8 @@ class MoiTruong:
             jb timsprite
             jmp boqua2
         thaysprite:
+            cmp byte ptr [{cotranphap}], 0
+            je kiemtrasprite
             mov eax, dword ptr [ecx * 4 + {diachima}]
 {sosanhma}
         kiemtrasprite:
@@ -1683,7 +1688,7 @@ class MoiTruong:
                 mavanew = b"\xE9" + struct.pack("<i", kichban - (diachihook + 5)) + b"\x90" * (sobyte - 5)
                 write_bytes(self.tientrinh, diachihook, mavanew, sobyte)
         if ketqua:
-            self._inlog("[CHẶN CRASH] đã vá chỗ vẽ hiệu ứng mặt đất (bỏ sprite đã nhả, không vẽ Độn Giáp Trận)")
+            self._inlog("[CHẶN CRASH] đã vá chỗ vẽ hiệu ứng mặt đất (bỏ sprite đã nhả, ẩn trận theo cờ hiển thị)")
         return ketqua
 
     def action_thietlaphookvetilenen(self):
@@ -1776,6 +1781,44 @@ class MoiTruong:
         self._inlog("[CHẶN CRASH] đã vá chỗ vẽ cửa sổ (bỏ qua cửa sổ vừa tự đóng)")
         return True
 
+    def action_thietlaphookvedoituong(self):
+        # Ẩn phân thân chiêu (Ngự Kiếm Phi Tiên...): đầu hàm vẽ 1 đối tượng xq+0x14200 (thiscall, ecx = đối tượng, ret 8; chính hàm này có
+        # nhánh thoát sớm tương tự ở 0x414233). Cờ "phanthan" bật và lớp +0x29 = LOPDOITUONG_PHANTHAN thì ret 8 luôn, không vẽ gì.
+        # Lệnh gốc ghi đè: mov eax, fs:[0] (6 byte)
+        hook = self.diachixq + DC.HOOK_VEDOITUONG
+        cophanthan = self._get_diachicohienthi() + COHIENTHI_VITRI["phanthan"]
+        asm = f"""
+            cmp byte ptr [{cophanthan}], 0
+            je ve
+            cmp ecx, 0x10000
+            jb ve
+            cmp byte ptr [ecx + 0x29], {LOPDOITUONG_PHANTHAN}
+            jne ve
+            ret 8
+        ve:
+            mov eax, dword ptr fs:[0]
+            push {hook + 6}
+            ret
+        """
+        ok = self._vahook("HOOK_VEDOITUONG", "64 A1 00 00 00 00", asm, "ẨN PHÂN THÂN")
+        if ok:
+            self._inlog("[ẨN PHÂN THÂN] đã vá đầu hàm vẽ đối tượng (bỏ đối tượng lớp 0x40 theo cờ hiển thị)")
+        return ok
+
+    def _get_diachicohienthi(self):
+        # Khối 16 byte trong game, mỗi cờ 1 byte (COHIENTHI_VITRI), khác 0 = ẩn. Cấp 1 lần mỗi lần bot chạy (không giải phóng: kịch bản
+        # hook còn đọc sau khi bot tắt); hook của lần chạy trước khác kịch bản mới nên được trỏ lại sang khối mới
+        if not self._diachicohienthi:
+            self._diachicohienthi = self.tientrinh.allocate(16)
+            for ten, vitri in COHIENTHI_VITRI.items():
+                write_bytes(self.tientrinh, self._diachicohienthi + vitri, bytes([1 if COHIENTHI_MACDINH[ten] else 0]), 1)
+        return self._diachicohienthi
+
+    def set_cohienthi(self, ten, is_an):
+        # Bật / tắt 1 cờ ẩn hiển thị, có tác dụng ngay ở khung hình sau
+        if ten in COHIENTHI_VITRI:
+            write_bytes(self.tientrinh, self._get_diachicohienthi() + COHIENTHI_VITRI[ten], bytes([1 if is_an else 0]), 1)
+
     def _vahook(self, tenhang, magoc, asm_script, tenlog):
         # Vá 1 chỗ bằng jmp sang kịch bản (không giải phóng). Đã vá từ lần chạy trước: giống kịch bản mới thì thôi, khác thì trỏ lại.
         # magoc: byte gốc ở chỗ vá (số byte ghi đè = len, >= 5). -> True khi vá xong / đã đúng
@@ -1815,24 +1858,47 @@ class MoiTruong:
         # Bộ đệm đó xoay vòng nhả sprite cũ (gốc crash engine.dll+0x424D, xem action_thietlaphookvehieuungdat), và chỗ vẽ lớp riêng đọc
         # lại [sprite+0x1C] ở xq+0x151B5 mà không kiểm tra: crash 2026-11-07 / 347 ngày 09/11 ở xq+0x151BE. Người dùng báo 2026-11-14 dis
         # chủ yếu lúc PK (bị dính nhiều hiệu ứng chiêu), không cần xem hiệu ứng => bỏ vẽ.
-        #  - Vòng 10 lớp (HOOK_VELOPHIEUUNGNV, chỗ tra sprite "mov eax,[eax*4+bảng]"): IS_BOVEHIEUUNGNHANVAT thì nhảy thẳng tới cuối thân
+        #  - Vòng 10 lớp (HOOK_VELOPHIEUUNGNV, chỗ tra sprite "mov eax,[eax*4+bảng]"): cờ "hieuungnhanvat" bật thì nhảy thẳng tới cuối thân
         #    vòng (+0xAC) như nhánh "sprite NULL" của game. Bộ đếm khung do chỗ khác tăng nên hiệu ứng vẫn hết hạn như thường.
         #  - Lớp riêng 9003 (HOOK_VELOPDACBIETNV, chưa rõ là gì, có thể là dấu chọn): vẫn vẽ, nhưng sprite hỏng (vtable ngoài xq.exe /
         #    mảng khung ngoài [0x10000, 0x80000000)) thì bỏ (+0x2D, chưa push gì nên ngăn xếp cân).
         bang = self.diachixq + DC.BANGSPRITEHIEUUNG
         hook1 = self.diachixq + DC.HOOK_VELOPHIEUUNGNV
-        if IS_BOVEHIEUUNGNHANVAT:
-            asm1 = f"""
-            push {hook1 + 0xAC}
+        cohieuung = self._get_diachicohienthi() + COHIENTHI_VITRI["hieuungnhanvat"]
+        diachima = self.diachixq + DC.MAHIEUUNGDAT
+
+        def taoasmlop(hook, dobo):
+            # eax = chỉ số sprite của lớp (1..100, ô i ứng với mã [MAHIEUUNGDAT + (i-1)*4]). Cờ bật: lớp có mã trong
+            # MAHIEUUNGNHANVATGIULAI (hiệu ứng pháp bảo dưới chân...) vẫn vẽ, còn lại nhảy tới cuối thân vòng (hook + dobo).
+            # ecx sau chỗ vá bị ghi đè ngay ("mov ecx,[eax+0x1C]") nhưng vẫn push / pop cho chắc
+            giulai = "\n".join(f"            cmp ecx, {ma}\n            je giu" for ma in MAHIEUUNGNHANVATGIULAI)
+            return f"""
+            cmp byte ptr [{cohieuung}], 0
+            je ve
+            cmp eax, 1
+            jb boqua
+            cmp eax, 100
+            ja boqua
+            push ecx
+            mov ecx, dword ptr [eax * 4 + {diachima - 4}]
+{giulai}
+            pop ecx
+        boqua:
+            push {hook + dobo}
             ret
-            """
-        else:
-            asm1 = f"""
+        giu:
+            pop ecx
+        ve:
             mov eax, dword ptr [eax * 4 + {bang}]
-            push {hook1 + 7}
+            push {hook + 7}
             ret
             """
-        ok1 = self._vahook("HOOK_VELOPHIEUUNGNV", "8B 04 85" + struct.pack("<I", bang).hex(), asm1, "CHẶN CRASH")
+
+        ok1 = self._vahook("HOOK_VELOPHIEUUNGNV", "8B 04 85" + struct.pack("<I", bang).hex(), taoasmlop(hook1, 0xAC), "CHẶN CRASH")
+        # Vòng lớp thứ 2 (xq+0x1575A..0x1581C, vẽ sau thân những lớp có +0x1368 <= 1; vòng 1 chỉ vẽ lớp +0x1368 >= 2): cùng cờ, bỏ lớp
+        # -> cuối thân vòng (+0x94)
+        hook3 = self.diachixq + DC.HOOK_VELOPHIEUUNGNV2
+        ok1 = self._vahook("HOOK_VELOPHIEUUNGNV2", "8B 04 85" + struct.pack("<I", bang).hex(), taoasmlop(hook3, 0x94), "CHẶN CRASH") and ok1
         hook2 = self.diachixq + DC.HOOK_VELOPDACBIETNV
         asm2 = f"""
             mov edx, dword ptr [esi + ebp * 4 + 0x12A0]
@@ -1862,8 +1928,7 @@ class MoiTruong:
         """
         ok2 = self._vahook("HOOK_VELOPDACBIETNV", "8B 94 AE A0 12 00 00", asm2, "CHẶN CRASH")
         if ok1 and ok2:
-            self._inlog(f"[CHẶN CRASH] đã vá chỗ vẽ hiệu ứng trên người ({'bỏ vẽ hiệu ứng chiêu' if IS_BOVEHIEUUNGNHANVAT else 'vẫn vẽ'},"
-                        f" kiểm tra sprite lớp riêng)")
+            self._inlog("[CHẶN CRASH] đã vá chỗ vẽ hiệu ứng trên người (ẩn theo cờ hiển thị, kiểm tra sprite lớp riêng)")
         return ok1 and ok2
 
     # Hàm vẽ sprite nén RLE theo bảng màu trong engine.dll (stdcall 2 tham số, ret 8; tham số 2 = nút vẽ

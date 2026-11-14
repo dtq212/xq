@@ -2665,6 +2665,10 @@ class TacTuKyNang:
         # Bị tước vũ khí chỉ còn dùng được Tiên Khí, Định Tâm Quyết, Tiên Thân Vô Địch, Tiểu Chu Thiên
         if is_bituocvukhi:
             danhsachuutien = [x for x in danhsachuutien if x[0] in (VITRIKYNANG_TIENKHI, VITRIKYNANG_TINHTAMQUYET, VITRIKYNANG_TIENTHANVODICH, VITRIKYNANG_TIEUCHUTHIEN)]
+        # Đánh quái (mục tiêu không phải người chơi) bỏ hẳn 4 chiêu tốn pháp lực: Vạn Kiếm Xuyên Tâm, Vân Vũ Tiêu Diêu, Băng Tâm Thức,
+        # Lăng Không Chỉ Huyệt (người dùng 2026-11-14). Lọc khỏi danh sách để chế độ Tự học cũng không lập chuỗi với chúng; PK giữ nguyên
+        if not is_muctieupk:
+            danhsachuutien = [x for x in danhsachuutien if x[0] not in THUCSONKIEMBOCHIEUDANHQUAIs]
 
         self._capnhatkynangquantrong("thucsonkiem", danhsachuutien)
 

@@ -477,6 +477,8 @@ VITRIKYNANG_VANVUTIEUDIEU = 2315
 VITRIKYNANG_BANGTAMTHUC = 2313
 VITRIKYNANG_LANGKHONGCHIHUYET = 2314
 VITRIKYNANG_NGUKIEMPHITIEN = 2316
+# Thục Sơn Kiếm đánh quái không dùng các chiêu này, quá tốn pháp lực (người dùng 2026-11-14); PK vẫn dùng
+THUCSONKIEMBOCHIEUDANHQUAIs = (VITRIKYNANG_VANKIEMXUYENTAM, VITRIKYNANG_VANVUTIEUDIEU, VITRIKYNANG_BANGTAMTHUC, VITRIKYNANG_LANGKHONGCHIHUYET)
 
 VITRIKYNANG_TIENKHI = 3252
 VITRIKYNANG_TINHTAMQUYET = 3253
@@ -513,9 +515,21 @@ TRANPHAPVANMONGCOCs = {VITRIKYNANG_KYMONTRAN: "Kỳ Môn Trận", VITRIKYNANG_DO
 # Mã hiệu ứng mặt đất client bỏ vẽ (MoiTruong.action_thietlaphookvehieuungdat). Trận pháp Vân Mộng Cốc hay làm văng engine.dll+0x424D,
 # người dùng chấp nhận không thấy Kỳ Môn + Độn Giáp để khỏi dis (2026-11-14). Bot vẫn đọc nút trận nên né trận / chọn tâm vẫn chạy
 MAHIEUUNGDATKHONGVE = (VITRIKYNANG_KYMONTRAN, VITRIKYNANG_DONGIAPTRAN)
-# Bỏ vẽ hiệu ứng chiêu trên người nhân vật / quái (tia sét Lôi Động Cửu Thiên, vòng trúng chiêu...): 10 lớp hiệu ứng của đối tượng dùng
-# chung bộ đệm sprite hay nhả sớm, người dùng báo dis chủ yếu lúc PK (2026-11-14). MoiTruong.action_thietlaphookvehieuungnhanvat
-IS_BOVEHIEUUNGNHANVAT = True
+# Cờ ẩn hiển thị trong client (MoiTruong._get_diachicohienthi: 1 byte mỗi cờ, hook đọc mỗi lần vẽ nên bật / tắt có tác dụng ngay).
+# Người dùng chọn ở tab Khác (ô tích), lưu _internal/hienthi.json, bot đọc lại khi file đổi (ngoaihinh_xq.NgoaiHinh)
+#  - hieuungnhanvat: 10 lớp hiệu ứng chiêu trên người nhân vật / quái (tia sét Lôi Động Cửu Thiên, hào quang 9321 / 9325 / 9326...),
+#    dùng chung bộ đệm sprite hay nhả sớm; người dùng báo dis chủ yếu lúc PK (2026-11-14). action_thietlaphookvehieuungnhanvat
+#  - tranphap: trận trên đất có mã trong MAHIEUUNGDATKHONGVE. action_thietlaphookvehieuungdat
+#  - phanthan: đối tượng phân thân của chiêu (Ngự Kiếm Phi Tiên Thục Sơn: cả chục bóng đen bay tới mục tiêu). Đo trên 364 2026-11-14:
+#    lớp +0x29 = 0x40, id +0x20 = 0 / -1, không tên, chép ngoại hình người dùng chiêu, tư thế 6, sống 0,06-15s.
+#    action_thietlaphookvedoituong (bot vốn bỏ qua đối tượng id <= 0 nên không ảnh hưởng chọn mục tiêu)
+COHIENTHI_VITRI = {"hieuungnhanvat": 0, "tranphap": 1, "phanthan": 2}
+COHIENTHI_MACDINH = {"hieuungnhanvat": True, "tranphap": True, "phanthan": True}
+LOPDOITUONG_PHANTHAN = 0x40
+# Mã lớp hiệu ứng trên người vẫn vẽ khi bật Ẩn hiệu ứng chiêu trên người: hiệu ứng pháp bảo dưới chân (người dùng muốn giữ, 2026-11-14).
+# Thử trên Gạ 364: giữ 9111 thì pháp bảo chưa hiện; giữ 9111 + 9326 + 9154 lúc Gạ chỉ còn lớp 9326 thì hiện => pháp bảo Gạ = 9326.
+# Người chơi khác thấy 9321 / 9325 cùng kiểu thường trực => coi 9320-9329 là nhóm pháp bảo (chưa kiểm từng mã). 9111 / 9154 vẫn ẩn
+MAHIEUUNGNHANVATGIULAI = tuple(range(9320, 9330))
 # Tâm mình vừa đặt trận: gói máy chủ tạo nút về sau vài trăm ms, trong lúc đó vẫn coi ô là đã có trận
 THOIGIANNHOTAMTRANVUADAT = 3.
 # Vùng tác dụng trận Vân Mộng Cốc (người dùng báo 2026-11-10): Kỳ Môn 3x3 ô, Độn Giáp 5x5 ô quanh tâm => nửa cạnh (ô vuông)

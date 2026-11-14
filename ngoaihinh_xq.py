@@ -7,6 +7,7 @@ import tkinter as tk
 from tkinter import ttk, colorchooser
 
 from diachi_xq import DC
+from hangso_xq import COHIENTHI_MACDINH
 from tienich_xq import read_int, write_int, read_bytes, write_bytes
 
 # Ngoại hình chỉ mình thấy (người dùng muốn 2026-11-14): ghi đè ngoại trang / cánh / vũ khí / màu hào quang của nhân vật mình trong bộ
@@ -73,6 +74,21 @@ def taingoaihinhdathay():
     return _docjson(duongdanngoaihinhdathay())
 
 
+def duongdanhienthi():
+    # Cờ ẩn hiển thị chung mọi cửa sổ (ô tích tab Khác): {"hieuungnhanvat": bool, "tranphap": bool}, xem hangso COHIENTHI_VITRI
+    return os.path.join(_thumucinternal(), "hienthi.json")
+
+
+def taihienthi():
+    hienthi = dict(COHIENTHI_MACDINH)
+    hienthi.update({k: bool(v) for k, v in _docjson(duongdanhienthi()).items() if k in COHIENTHI_MACDINH})
+    return hienthi
+
+
+def luuhienthi(hienthi):
+    _ghijson(duongdanhienthi(), hienthi)
+
+
 def rgbsangbgr(mau):
     return bytes.fromhex(mau)[::-1]
 
@@ -83,6 +99,8 @@ class NgoaiHinh:
         self.moitruong = moitruong
         self._cauhinh = {}
         self._mtimecauhinh = None
+        # Cờ ẩn hiển thị (hienthi.json): mtime lần áp gần nhất; "chua" = chưa áp lần nào (áp ngay cả khi chưa có file)
+        self._mtimehienthi = "chua"
         self._thoidiemdoccauhinh = 0.
         self._thoidiemghinhan = 0.
         # Giá trị thật trước khi đè: {khoá ô: bytes}, theo con trỏ nhân vật (đổi bản đồ / đăng nhập lại thì đọc lại)
@@ -97,6 +115,7 @@ class NgoaiHinh:
         if bayh - self._thoidiemdoccauhinh < CHUKYDOCCAUHINH:
             return
         self._thoidiemdoccauhinh = bayh
+        self._dochienthi()
         try:
             mtime = os.path.getmtime(duongdancauhinhngoaihinh())
         except OSError:
@@ -105,6 +124,18 @@ class NgoaiHinh:
             return
         self._mtimecauhinh = mtime
         self._cauhinh = taicauhinhngoaihinh().get(str(idnguoichoi)) or {}
+
+    def _dochienthi(self):
+        # Ô tích ẩn hiển thị ở tab Khác đổi thì ghi cờ vào game (hook vẽ đọc mỗi khung hình)
+        try:
+            mtime = os.path.getmtime(duongdanhienthi())
+        except OSError:
+            mtime = None
+        if mtime == self._mtimehienthi:
+            return
+        self._mtimehienthi = mtime
+        for ten, is_an in taihienthi().items():
+            self.moitruong.set_cohienthi(ten, is_an)
 
     def _danhsachghide(self):
         # [(khoá ô, offset, bytes muốn ghi)] theo cấu hình đang bật

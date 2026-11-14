@@ -154,6 +154,7 @@ class CuaSo:
         self.moitruong.action_thietlaphookvecuaso()
         self.moitruong.action_thietlaphookverle()
         self.moitruong.action_thietlaphookvehieuungnhanvat()
+        self.moitruong.action_thietlaphookvedoituong()
         self.moitruong.action_gohookhoatanhtancong()
         self.tactu = TacTu(self.moitruong)
         # Bot đọc gộp cả cửa sổ máy khác trong LAN (lan_xq), ghi vẫn vào máy này. Không bật LAN cũng bọc để đọc qua bản chụp nhớ tạm

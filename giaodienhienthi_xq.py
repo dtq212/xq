@@ -35,7 +35,7 @@ from hangso_xq import CHUTIEMTAPHOA, CHUTUULAU, TRANBAOKHO, TENMONPHAI, PHAMCHAT
 from hangso_xq import CHEDOHIENMUCTIEU_TAT, CHEDOHIENMUCTIEU_DANHHIEU, CHEDOHIENMUCTIEU_TEN, MAUHIENMUCTIEU_MAP, MAUHIENMUCTIEU_THEOMAU
 from danhhieumuctieu_xq import NHANHANHDONG
 from bandonho_xq import mobandonho
-from ngoaihinh_xq import mongoaihinh
+from ngoaihinh_xq import mongoaihinh, taihienthi, luuhienthi
 from hangso_xq import CHEDOKYNANG_CODINH, CHEDOKYNANG_TUHOC, SOMAUTOITHIEUTUHOC, THOIGIANKEHOACHTUHOC, SOLICHSUHANHDONG
 from hangso_xq import PHAPBAOTHEOMAU_MAP, NGUONGPHAPBAOTHEOMAU_VUA, NGUONGPHAPBAOTHEOMAU_THAP, DOTREPHAPBAOTHEOMAU
 from dieuphoi_xq import taicauhinhdieuphoi, luucauhinhdieuphoi, chuanhoacauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
@@ -2428,6 +2428,30 @@ class GiaoDienHienThi:
         ttk.Button(hangbando, text = "Mở bản đồ nhỏ", command = lambda: mobandonho(self)).pack(side = tk.LEFT)
         # Ngoại hình chỉ mình thấy (ngoaihinh_xq): đổi trang phục / cánh / vũ khí / màu hào quang trên client, máy chủ không biết
         ttk.Button(hangbando, text = "Ngoại hình chỉ mình thấy", command = lambda: mongoaihinh(self)).pack(side = tk.LEFT, padx = (6, 0))
+        # Ẩn hiển thị trong client (mọi cửa sổ game): lưu _internal/hienthi.json, bot đọc lại trong ~2s, hook vẽ đọc cờ nên có tác dụng ngay
+        hienthi = taihienthi()
+        vars_hienthi = {ten: tk.BooleanVar(value = hienthi[ten]) for ten in hienthi}
+
+        def on_hienthi():
+            try:
+                luuhienthi({ten: var.get() for ten, var in vars_hienthi.items()})
+            except Exception as err:
+                print(f"Lỗi lưu hienthi.json: {err}")
+
+        hangan = ttk.Frame(nhombando)
+        hangan.grid(row = 1, column = 0, sticky = tk.W, pady = (6, 0))
+        luoian = ttk.Frame(hangan)
+        luoian.pack(side = tk.LEFT)
+        for i, (ten, nhan) in enumerate((("hieuungnhanvat", "Ẩn hiệu ứng chiêu trên người"), ("phanthan", "Ẩn phân thân chiêu"),
+                                         ("tranphap", "Ẩn trận Kỳ Môn / Độn Giáp"))):
+            ttk.Checkbutton(luoian, text = nhan, variable = vars_hienthi[ten], command = on_hienthi).grid(
+                row = i // 2, column = i % 2, sticky = tk.W, padx = (0, 10))
+        self._taohuongdan(hangan, "Áp cho mọi cửa sổ game, có tác dụng sau ~2 giây, không cần khởi động lại.\n"
+                                  "• Hiệu ứng chiêu trên người: tia sét Lôi Động Cửu Thiên, vòng trúng chiêu, hào quang trên người chơi..."
+                                  " Ẩn thì đỡ giật lúc đông người và bớt văng game (các lớp này dùng chung bộ đệm ảnh hay bị nhả sớm).\n"
+                                  "• Phân thân chiêu: các bóng đen bay tới mục tiêu của Ngự Kiếm Phi Tiên (Thục Sơn)... Chỉ là hình ảnh,"
+                                  " không ảnh hưởng sát thương hay chọn mục tiêu.\n"
+                                  "• Trận Kỳ Môn / Độn Giáp: bot vẫn biết trận ở đâu để né / chọn tâm (xem ở Bản đồ nhỏ).")
         self._taohuongdan(hangbando, "Cửa sổ riêng vẽ quanh nhân vật chọn trong ô Nhân vật: vật cản (ô xám), quái, người chơi (thù địch đỏ,"
                                      " đồng đội xanh lá), NPC, mục tiêu đang chọn (vòng đỏ), trận Kỳ Môn / Độn Giáp / Lạc Ảnh trên đất (kể cả"
                                      " trận đã ẩn trong game), đường bot đang đi (nét đứt xanh lá) và điểm lộ trình sắp tới (hình thoi).\n"
