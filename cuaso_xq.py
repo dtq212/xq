@@ -109,8 +109,13 @@ def khoidong_loopdanhhieumuctieu(danhhieu, tactu, moitruong, stop):
     while not stop.is_set() and moitruong.get_is_cuasogametontai():
         try:
             if moitruong.get_is_nhanvattontai():
+                # Dòng Theo sau trên cùng (cùng ô "hiện hành động trên đầu"): người được theo 0 = trưởng nhóm
+                theosau = None
+                if tactu._is_hienhanhdongtrendau:
+                    theosau = (tactu._is_tudongtheosau,
+                               (tactu._tenmuctieutheosau or str(tactu._idmuctieutheosau)) if tactu._idmuctieutheosau else "trưởng nhóm")
                 danhhieu.step(tactu._chedohienthongtinmuctieugame, tactu._mauhienthongtinmuctieugame,
-                              tactu._hanhdong[0] if tactu._is_hienhanhdongtrendau else "", tactu._is_tatbot)
+                              tactu._hanhdong[0] if tactu._is_hienhanhdongtrendau else "", tactu._is_tatbot, theosau)
         except Exception as e:
             print(f"[Loop DANH HIỆU MỤC TIÊU] Lỗi: {e}")
             time.sleep(1)
@@ -361,6 +366,7 @@ class CuaSo:
                     "_is_tudongdaotangbaodo": self.tactu._is_tudongdaotangbaodo,
 
                     "_is_chidanhnguoichoi": self.tactu._is_chidanhnguoichoi,
+                    "_is_chidanhtinhanh": self.tactu._is_chidanhtinhanh,
                     "_is_uutienbaothukynangtrieuhoi": self.tactu._is_uutienbaothukynangtrieuhoi,
                     "_is_chantangcapdo": self.tactu._is_chantangcapdo,
                     "_is_tudongtangcap": self.tactu._is_tudongtangcap,
@@ -425,6 +431,8 @@ class CuaSo:
                     # Chia vùng lộ trình giữa các bot cùng máy: bot khác chỉ tính mình vào khi mình cũng bật; vùng đang giữ để hiện giao diện
                     "_is_chiavunglotrinh": self.tactu._is_chiavunglotrinh,
                     "_vunglotrinh": self.tactu.get_vunglotrinhshare(),
+                    # Chia nhặt đồ giữa các bot cùng máy: món mình sẽ nhặt + khoảng cách, món đang nhặt (tactu_vatpham_xq._chianhatdo)
+                    "_nhatdo": self.tactu.get_nhatdoshare(),
                     # Vòng dò bản đồ của lộ trình ẩn (chưa có điểm đánh) khi bật Chia vùng, để bot cùng máy chia vùng cả lộ trình ẩn
                     "_diemdobando": self.tactu.get_diemdobandoshare(),
                     "_iddiemdobando": self.tactu.get_iddiemdobandoshare(),
@@ -485,6 +493,10 @@ class CuaSo:
                     "_is_dangmatac": self.tactu.get_is_dangmatac(),
                     "_matac_bandos": self.tactu._matac_bandos,
                     "_is_tubatmatac": self.tactu._is_tubatmatac,
+                    # Săn Tinh Anh (tactu_tinhanh_xq): trạng thái, danh sách id bản đồ chọn cho giao diện
+                    "_trangthaitinhanh": self.tactu.get_trangthaitinhanh(),
+                    "_is_dangtinhanh": self.tactu.get_is_dangtinhanh(),
+                    "_tinhanh_bandos": list(self.tactu._tinhanh_bandos),
                     # Nhiệm vụ Danh Vọng (tactu_danhvong_xq): trạng thái cho giao diện
                     "_trangthaidanhvong": self.tactu.get_trangthaidanhvong(),
                     "_is_dangdanhvong": self.tactu.get_is_dangdanhvong(),
@@ -698,6 +710,14 @@ class CuaSo:
                     self.tactu.batdau_matac()
                 elif cmd == "huymatac":
                     self.tactu.huy_matac()
+                elif isinstance(cmd, str) and cmd.startswith("tinhanh:"):
+                    # Săn Tinh Anh (tactu_tinhanh_xq): "tinhanh:<id bản đồ cách dấu phẩy>" lưu bản đồ chọn rồi bắt đầu
+                    self.tactu.thietlap_bandotinhanh(cmd.split(":", 1)[1])
+                    self.tactu.batdau_tinhanh()
+                elif cmd == "huytinhanh":
+                    self.tactu.huy_tinhanh()
+                elif isinstance(cmd, str) and cmd.startswith("set_tinhanh_bando:"):
+                    self.tactu.thietlap_bandotinhanh(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_matac_bando:"):
                     self.tactu.thietlap_bandomatac(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_matac_tubat:"):
@@ -824,6 +844,8 @@ class CuaSo:
                     self.tactu.battat_giukhoangcachchimuctieupk()
                 elif cmd == "battat_taphoa":
                     self.tactu.battat_taphoa()
+                elif cmd == "battat_chidanhtinhanh":
+                    self.tactu.battat_chidanhtinhanh()
                 elif isinstance(cmd, str) and cmd.startswith("set_mauhienthongtinmuctieugame:"):
                     self.tactu.thietlap_mauhienthongtinmuctieugame(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_chedohienthongtinmuctieugame:"):

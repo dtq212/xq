@@ -228,7 +228,7 @@ class TacTuCatKho:
         print(f"[CẤT KHO] Túi Càn Khôn hết hạn còn {len(mons)} món ({', '.join(sorted({m['ten'] for m in mons})[:5])}...), về Tân Thủ Thôn cất kho")
         return True
 
-    def _laymoncatkho(self, tientos = None, is_chituihethan = False):
+    def _laymoncatkho(self, tientos = None, is_chituihethan = False, mamaus = ()):
         # Chồng trong túi cần cất theo bảng Cất kho, theo thứ tự ô: [{"vitri", "id", "ten", "soluong" (của chồng, 0 = không chồng được),
         # "cat" (số cất từ chồng này), "ruong" (0 = tự động)}]. Tính theo tên: tổng trong túi trừ "giữ lại" của luật, lấy dần từ ô đầu
         # (chồng cuối có thể chỉ cất 1 phần). Luật cần mô tả mà chưa đọc được thì bỏ qua lượt này
@@ -236,19 +236,25 @@ class TacTuCatKho:
         # (không phân biệt hoa thường), rương tự động
         # Không có tientos thì luôn cất thêm cả chồng trong túi hết hạn (_laymontuihethan, bảng Cất kho chỉ xét các túi còn hạn);
         # is_chituihethan (việc tạo vì túi hết hạn khi tắt "Tự cất sau bán rác"): chỉ cất đồ túi hết hạn
+        # mamaus (việc của Săn Tinh Anh, viec["mamaus"]): cất thêm trang bị tên màu này dù không khớp bảng Cất kho (_is_cattheomau)
         if tientos:
             return self._laymoncatkhotheoluat(tientos)
         # Còn chuyển được về túi còn hạn thì chưa cất đồ túi hết hạn (action_dontuihethan chuyển trước, _buoccatkho chờ)
         montuihethans = [] if self._is_dangdontuihethan() else self._laymontuihethan()
         if is_chituihethan:
             return montuihethans
-        mons = self._laymoncatkhotheoluat(vitriboquas = {m["vitri"] for m in montuihethans})
+        mons = self._laymoncatkhotheoluat(vitriboquas = {m["vitri"] for m in montuihethans}, mamaus = mamaus)
         return sorted(mons + montuihethans, key = lambda m: m["vitri"])
 
-    def _laymoncatkhotheoluat(self, tientos = None, vitriboquas = ()):
+    def _laymoncatkhotheoluat(self, tientos = None, vitriboquas = (), mamaus = ()):
         # vitriboquas: ô không xét theo luật (đồ túi hết hạn, cất riêng cả chồng), "giữ lại" chỉ tính trên các ô còn lại
         moitruong = self.moitruong
         layluat = self._layluatcatkho
+        if mamaus and not tientos:
+            luatmau = {"ruong": 0, "giulai": 0}
+
+            def layluat(ten, vitri):
+                return self._layluatcatkho(ten, vitri) or (luatmau if self._is_cattheomau(ten, vitri, mamaus) else None)
         if tientos:
             tientos = tuple(unicodedata.normalize("NFC", t).lower() for t in tientos)
             luatrieng = {"ruong": 0, "giulai": 0}
@@ -275,6 +281,17 @@ class TacTuCatKho:
                 mons.append({"vitri": vitri, "id": iddoituong, "ten": ten, "soluong": soluong, "cat": cat, "ruong": luat["ruong"]})
                 can -= cat
         return sorted(mons, key = lambda m: m["vitri"])
+
+    def _is_cattheomau(self, ten, vitri, mamaus):
+        # Săn Tinh Anh cất đồ rơi (Lam Kim) không cần luật trong bảng Cất kho. Chỉ việc của Săn Tinh Anh dùng: luật chung "Màu tên" sẽ
+        # chặn bán rác Phong Yêu Kính bán bớt Lam Kim / kéo cấp give đồ Lam Kim (tactu_langlyson_xq: món khớp Cất kho không bán).
+        # Bỏ món bot cần dùng (bảo thú vật phẩm, Bùa Giấy, kỵ thú giữ, Mua bù) và Pháp Bảo (Trảo kéo cấp...); chưa đọc được thì chưa cất
+        if self._chuanhoatenvatpham(ten) in self._laytengiutuihethan() or self._is_kythugiu(ten):
+            return False
+        if self._laymautenluat(ten, vitri) not in mamaus:
+            return False
+        mota = self._laymotaluat(ten, vitri)
+        return bool(mota) and "pháp bảo" not in unicodedata.normalize("NFC", mota[0] or "").lower()
 
     def _chonokho(self, viec, kho, mon):
         # (ô rương từ 0, is_gop) cho món, (None, False) khi rương này không còn chỗ. Gộp chỉ với món xếp chồng được (số lượng > 0)
@@ -353,7 +370,8 @@ class TacTuCatKho:
                     viec["boqua"][dangcho["ten"]] = f"thử {SOLANTHUCATKHO} lần không được, đồ khoá?"
             return "dang"
 
-        mons = [m for m in self._laymoncatkho(viec.get("tientos"), viec.get("is_chituihethan", False)) if m["ten"] not in viec["boqua"]]
+        mons = [m for m in self._laymoncatkho(viec.get("tientos"), viec.get("is_chituihethan", False), viec.get("mamaus", ()))
+                if m["ten"] not in viec["boqua"]]
         if not mons:
             if not viec.get("tientos") and self._is_dangdontuihethan():
                 # Đồ túi hết hạn đang được chuyển về túi còn hạn: chờ chuyển xong rồi cất phần còn lại

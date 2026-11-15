@@ -20,6 +20,7 @@ from bandonho_xq import battatbandonho, hwndbandonho
 from bannganluong_xq import BanNganLuong
 from cuaso_xq import CuaSo
 from dangnhap_xq import TuDongDangNhap
+from dongbo_xq import DongBoDuLieu
 from keogatudong_xq import KeoGaTuDong
 from dieuphoi_xq import taicauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
 from giaodienhienthi_xq import GiaoDienHienThi
@@ -84,6 +85,10 @@ class TroChoiManager:
             ctypes.windll.shcore.SetProcessDpiAwareness(1)
         except Exception:
             pass
+        # Đồng bộ taikhoan_chung.json / todoi.json giữa các máy qua nhánh git "dulieu" (dongbo_xq). Chạy trước tự đăng nhập: lượt
+        # đầu chờ kéo về (tối đa ~25s) để không đăng nhập theo bản cũ trên máy
+        self.dongbo = DongBoDuLieu()
+        self.dongbo.batdau()
         # Tự động đăng nhập lại nhân vật vắng mặt (thay cho các kịch bản tudongdangnhap*.py chạy riêng)
         self.dangnhap = TuDongDangNhap()
         # Kéo gà A-Z: đăng nhập / tạo nhân vật acc gà lần lượt, chạy trong luồng tự đăng nhập

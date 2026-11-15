@@ -21,7 +21,7 @@ import time
 import unicodedata
 
 from hangso_xq import *
-from bando_xq import timduongbando, CAPQUAI_MAP, BANDOCONG_MAP
+from bando_xq import timduongbando, CAPQUAI_MAP, BANDOCONG_MAP, ghicapquaibando, laycapquaibando
 from dexuatlotrinh_xq import taiviquaibando, dexuatlotrinh, dexuatlotrinhdo, layvungtoiduoc, SOLANTHAYQUAITOITHIEU, TENMAUDO, CANHKHOIDO
 from giaodo_xq import taolenhgiao
 from nhiemvu_xq import *
@@ -29,6 +29,8 @@ from nhiemvu_xq import _laynpcbandonho as nhiemvu_layvitri_soluong
 from thongbao_xq import baosuco
 from tienich_xq import phatam, canhbao, tailotrinhmau as util_tailotrinhmau, luulotrinhmau as util_luulotrinhmau
 
+# Cấp trong tên gốc quái (+0x10AC): "Yên Quốc Thương Binh (cấp 57)" / "( Cấp 57 )"
+MAUCAPTRONGTEN = re.compile(r"\(\s*[Cc]ấp\s*(\d+)\s*\)")
 DAYCANKHON = "Dây Càn Khôn"
 # Hết Dây Càn Khôn thì về Chủ Tiệm Tạp Hóa ở Tân Thủ Thôn mua chừng này (ô / giá tra theo tên trong cửa hàng)
 SOLUONGMUADAYCANKHON = 30
@@ -152,7 +154,16 @@ class TacTuSuMon:
 
     def get_is_sumondichuyen(self):
         # Sư môn đang tự lo di chuyển (đi đường, nói chuyện NPC, bắt yêu quái): không chọn quái dọc đường, đi trước đánh / nhặt
-        return bool(self._sumon) and self._sumon["chedo"] in ("dichuyen", "cho")
+        if not self._sumon:
+            return False
+        if self._sumon["chedo"] in ("dichuyen", "cho"):
+            return True
+        # Luyện tập / Du lịch farm theo lộ trình mà chưa tới bản đồ nào của lộ trình: đang đi đường, không đánh quái dọc đường
+        # (Ngốc cấp 100 đi Du lịch tới Thiên Môn Trận 3, dừng đánh Thích Vị Phong cấp thấp ở Đào Hoa Nguyên, 2026-11-16)
+        if self._sumon["chedo"] == "farm":
+            bandolotrinhs = {int(d[2]) for d in self._diemdanhxungquanhs if len(d) >= 3}
+            return bool(bandolotrinhs) and self.moitruong.get_idbandohientai() not in bandolotrinhs
+        return False
 
     def get_is_sumonfarm(self):
         # Luyện tập / Du lịch: farm như thường theo lộ trình điểm đánh của nhân vật (kể cả khi chưa bật ô lộ trình)
@@ -264,9 +275,17 @@ class TacTuSuMon:
         if moitruong.get_is_phobanmuonbando() is not False:
             return
         self._sovitri.nap(idnguoichoi, moitruong.is_nietban)
+        # Cấp quái thấy được ở bản đồ này (tên gốc "Tên (cấp N)"), ghi cho bản đồ file game không có cấp (laycapquaibando). Bỏ thành /
+        # môn phái (quái sự kiện, Tay Sai), phó bản, quái Phong Yêu Kính "<nước> Quốc Kính ..." (phó bản mượn ID lọt qua)
+        is_ghicap = idbando not in CAPQUAI_MAP and idbando not in BANDOTIMDUONGs and idbando not in BANDOPHOBANs
+        capquais = []
         for diachi in moitruong._get_diachidoituongxungquanhs():
             if not moitruong.get_is_nhanvattontai(diachi) or moitruong.get_is_nguoichoi(diachi):
                 continue
+            if is_ghicap and moitruong.get_is_quai(diachi):
+                khop = MAUCAPTRONGTEN.search(moitruong._get_tenthucte(diachi) or "")
+                if khop and "Quốc Kính" not in khop.string:
+                    capquais.append(int(khop.group(1)))
             ten = moitruong.get_tendoituong(diachi)
             # Bảo thú có tên chủ trong ngoặc
             if not ten or "(" in ten:
@@ -288,6 +307,8 @@ class TacTuSuMon:
                 if diachi:
                     self._sovitri.ghicuahang(idbando, (moitruong.get_tendoituong(diachi), moitruong.get_danhhieudoituong(diachi)), cuahang["hang"])
         self._sovitri.luu()
+        if capquais and ghicapquaibando(idbando, min(capquais), max(capquais)):
+            moitruong._inlog(f"[CẤP QUÁI] {laytenbando(idbando) or idbando}: ghi cấp quái {laycapquaibando(idbando)}")
 
     def _timnpcganhat(self, khoangcachtoida):
         moitruong = self.moitruong
@@ -901,6 +922,10 @@ class TacTuSuMon:
                 return None
         else:
             s.pop("luctrongmota", None)
+        # Vừa "(Xong)" thì máy chủ gửi lại tên mà mô tả trống (Thỏ 342, 16/11: Truy Sát Phản Đồ lượt 4 xong -> đọc ra lượt 0, đếm nhầm
+        # "Đã trả lượt 4" rồi mất Tổng Quản): mô tả trống thì giữ lượt đang nhận
+        if nv and not nv["mucdich"] and not nv["mota"] and not nv["luot"] and s["luotdangnhan"]:
+            nv["luot"] = s["luotdangnhan"]
         # Nhiệm vụ thất bại / quá thời gian (Truy Bắt Thích Khách quá hạn 60 phút): huỷ rồi về nhận lượt mới, không đi làm nữa.
         # Không tính là đã trả (bỏ lượt đang nhận)
         if nv and nv["is_thatbai"]:
@@ -1114,13 +1139,30 @@ class TacTuSuMon:
     def _buoctruybat(self, s, nv):
         # Truy Bắt Thích Khách: tới Tổng Quản Vương Phủ của nước giao, bấm NPC là nhận; sang nước thích khách trốn, đi khắp bản đồ đánh
         # các loại còn thiếu ở dòng tiến độ (Thủ Lĩnh / Mộng Diện Thích Khách); đủ hết (hoặc Xong) thì về Tổng Quản trả
+        # Nhớ Tổng Quản theo lượt: lúc "(Xong)" mô tả có thể trống (xem _xulysumon) thì vẫn biết về đâu trả
         tongquan = nv.get("tongquan")
+        if tongquan:
+            s["tongquantruybat"] = (nv["luot"], tongquan)
+        elif s.get("tongquantruybat") and s["tongquantruybat"][0] == nv["luot"]:
+            tongquan = s["tongquantruybat"][1]
         if nv.get("buoc") == "tim":
             return self._noichuyen(s, nv, nv["npc"], ["look", "ghimenu"], f"nhận {nv['ten']}", tenthaythe(nv["npc"])[1], is_chibandogoiy = True)
         if nv["is_xong"] or is_dutiendo(nv):
             if not tongquan:
-                self._ketthucsumon(f"không rõ Tổng Quản nào để trả Truy Bắt Thích Khách: {nv['mota']}")
+                # Không nhớ được (vd bật bot khi đã Xong): xin mô tả "quest intro", chờ tối đa THOIGIANCHOMOTANHIEMVU giây rồi mới dừng
+                s.setdefault("luctrongtongquan", time.time())
+                ma = self.moitruong.get_manhiemvu(MUCSUMON)
+                if ma and time.time() - s.get("lucxinmota", 0.) > GIANCACHXINNHIEMVU:
+                    s["lucxinmota"] = time.time()
+                    self.moitruong._inlog(f"[SƯ MÔN] {nv['ten']} Xong mà mô tả trống: gửi \"quest intro {ma[0]} {ma[1]} {ma[2]}\"")
+                    self.moitruong.action_thucthicaulenh(f"quest intro {ma[0]} {ma[1]} {ma[2]}")
+                if time.time() - s["luctrongtongquan"] < THOIGIANCHOMOTANHIEMVU:
+                    s["trangthai"] = f"chờ mô tả {nv['ten']} để biết Tổng Quản"
+                    return None
+                s.pop("luctrongtongquan", None)
+                self._ketthucsumon(f"không rõ Tổng Quản nào để trả {nv['ten']}: {nv['mota']}")
                 return None
+            s.pop("luctrongtongquan", None)
             return self._noichuyen(s, nv, tongquan, ["look", "thamvieng"], f"trả {nv['ten']}", tenthaythe(tongquan)[1],
                                    is_chibandogoiy = True)
         idbando = nv.get("bando")

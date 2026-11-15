@@ -10,7 +10,7 @@ import time
 import unicodedata
 
 from hangso_xq import *
-from luattuido_xq import tailuat, timluat, timluatbao, timluatcatkho, timhanhdongnhat, HANHDONG_GIU, HANHDONG_BAN, HANHDONG_VUT, CHIKHI_TRIEUHOIBAOTHU, \
+from luattuido_xq import tailuat, is_apdungnhanvat, timluat, timluatbao, timluatcatkho, timhanhdongnhat, HANHDONG_GIU, HANHDONG_BAN, HANHDONG_VUT, CHIKHI_TRIEUHOIBAOTHU, \
     NHAT_NHAT, NHAT_UUTIEN, NHAT_KHONGNHAT, NOI_BANDOPK, NOI_DANGPK, NOI_KHAIKHOANG, NOI_PHOBAN, NOI_KHAC
 from thongbao_xq import baosuco, LYDOTAMNGUNGTUXA
 from moitruong_xq import MoiTruong, DOUUTIEN_THAP, DOUUTIEN_KHANCAP, DOUUTIEN_CAO, SOLUONGDOITUONGXUNGQUANHTOIDA, tinh_is_huongmatvediem
@@ -21,6 +21,16 @@ from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, donbangthoid
 # túi cập nhật rồi bán lại các món còn trong túi, tối đa chừng này lần
 THOIGIANCHOKIEMTRABANRAC = 1.
 SOLANTHULAIBANRAC = 2
+# Ô hành trang chỉ giữ 31 byte UTF-8 tên (HT_TEN mỗi ô 0x20, có ký tự kết thúc), bot đọc xong còn strip(): vd "Nhập Môn Cơ Bản
+# Thương Pháp" (36 byte) trong túi là "Nhập Môn Cơ Bản Thương" (đo 2026-11-16 trên Gạ, 7/10 sách Nhập Môn bị cắt nên luật dùng ghi tên
+# đầy đủ không bao giờ khớp)
+SOBYTETENHANHTRANG = 31
+
+
+def cattenhanhtrang(ten):
+    # Tên như game lưu trong ô hành trang: cắt 31 byte (bỏ nửa ký tự cuối nếu bị cắt giữa chừng) rồi strip như lúc đọc
+    return ten.encode("utf-8")[:SOBYTETENHANHTRANG].decode("utf-8", "ignore").strip()
+
 # Điều kiện hiệu ứng của bảng Tự động sử dụng vật phẩm (luattuido_xq TENHIEUUNGDUNG): khoá -> (mã hiệu ứng, True = cần đang CÓ hiệu
 # ứng / False = cần CHƯA có, đọc lỗi thì coi như có hay không, is_hieuungcoloi, có giãn nhịp kiểm tra không).
 # - Buff ("thieu_" món): đọc lỗi coi như đang có (khỏi dùng phí); giãn nhịp: lần kiểm tra cũng tính vào "giancach" của luật (đọc bảng
@@ -59,6 +69,17 @@ THOIGIANCHOVESUADOLAI = 300.
 # vì chỉ số khác tự đổi liên tục (Đào Hoa: Ngoại / Nội Kháng chớp ±77, Ngoại Công đổi theo nguyên khí)
 THOIGIANCHOCHISOBAOTHUVATPHAM = 3.
 SAISODAUVANTAYBAOTHU = 0.05
+# Chia nhặt đồ giữa các bot cùng máy (trước đây 5 acc cùng xúm vào 1 món, người dùng 2026-11-16). Mỗi bot đăng các món nó sẽ nhặt
+# (khoá = toạ độ ô + tên, máy chủ cấp nên mọi cửa sổ thấy giống nhau) kèm khoảng cách và món đang nhặt. Chủ món: bot đang nhặt nó
+# (nhiều bot thì ID nhỏ nhất), chưa ai nhặt thì bot gần nhất. Bot chết / tắt / kẹt vòng lặp thì bản đăng cũ quá THOIGIANHIEULUCNHATDOCHUNG
+# là bị bỏ; đi xa (ngoài KHOANGCACHNHATDO) hoặc bỏ món sau 10s không nhặt được thì nó tự không đăng món đó nữa => bot khác nhận.
+# Nhường quá THOIGIANNHUONGNHATDOTOIDA giây mà món vẫn còn thì nhặt luôn (chủ bận đánh / kẹt kiểu khác)
+THOIGIANHIEULUCNHATDOCHUNG = 3.
+THOIGIANDOCNHATDOCHUNG = 0.5
+THOIGIANNHUONGNHATDOTOIDA = 25.
+SOMONNHATDOCHIASETOIDA = 30
+# Lệnh nhặt xung quanh của game tự chạy tới món gần (không chọn được món): có bot khác đăng món trong chừng này ô quanh mình thì không dùng
+KHOANGCACHNHATXUNGQUANHNHOM = 10.
 # Phòng dấu vân tay lệch (đổi đồ / lên cấp làm mức cộng khác): nghĩ đang có mà chừng này giây không thấy con nào cùng tên trong bảng
 # đối tượng thì không chắc nữa, dùng vật phẩm để xét lại (công tắc: tụt thì dùng thêm lần nữa).
 # Trước đây 15s và chỉ xét trong 18 ô (toàn màn hình) => cứ vài phút lại thu hồi rồi gọi lại con đang có (log 347 / 364, 2026-11-13):
@@ -738,7 +759,8 @@ class TacTuVatPham:
         # và đã hết thời gian hồi (_sudungvatphamhoi). Mỗi luật có mốc riêng trong _thoidiemluatdung: dùng được thì chờ "giancach" giây
         # mới xét lại; luật có điều kiện hiệu ứng thì cả lần kiểm tra hiệu ứng cũng tính (đọc bảng hiệu ứng tối đa mỗi "giancach" giây,
         # như mốc 2,5s viết cứng trước đây)
-        luats = tailuat()["dung"]
+        tennhanvat = self._tennhanvatluattuido()
+        luats = [l for l in tailuat()["dung"] if is_apdungnhanvat(l, tennhanvat)]
         if not luats:
             return
         bayh = time.time()
@@ -769,7 +791,8 @@ class TacTuVatPham:
             # kịp hiện thì luật sau tưởng chưa có mà dùng thêm lần nữa; mã cũ gộp 1 lần kiểm tra mỗi 2,5s nên không bị)
             if not luat["bat"]:
                 continue
-            vatphams = [ten for ten in luat["vatpham"] if co(ten) and bayh >= self._thoidiemluatdung.get(("cho", ten), 0.)]
+            # Tên trong luật có thể là tên đầy đủ dài hơn 31 byte => so bằng tên đã cắt như trong ô hành trang
+            vatphams = [ten for ten in map(cattenhanhtrang, luat["vatpham"]) if co(ten) and bayh >= self._thoidiemluatdung.get(("cho", ten), 0.)]
             if not vatphams:
                 continue
             khoa = (tuple(luat["vatpham"]), luat["noi"], luat["hieuung"], luat["monphai"], luat["sinhluc"], luat["noiluc"])
@@ -856,6 +879,7 @@ class TacTuVatPham:
 
         if not self._is_tudongnhatvatpham:
             self._yeucaunhatvatpham = None
+            self._nhatdochiase = None
             return
 
         # Đang theo sau trưởng nhóm / người chơi được chọn thì chỉ nhặt vật phẩm ưu tiên
@@ -869,16 +893,18 @@ class TacTuVatPham:
 
             self._diachicosovatphamdangnhat = False
             self._yeucaunhatvatpham = None
+            self._nhatdochiase = None
             return
 
         # Luật nhặt ở tab Hành trang (luattuido_xq "nhat"), đọc 1 lần mỗi lượt; luật "chỉ khi về bán rác" chỉ xét khi bật Tự động về bán rác
         # (ngoài Phong Yêu Kính) hoặc đang đi Phong Yêu Kính có bật Bán rác ở cấu hình Phong Yêu Kính (xong vòng bán ở Chu Quốc,
         # tactu_langlyson_xq._banracphongyeu). Trong Phong Yêu Kính ô Tự động về bán rác không tính: hai luồng bán tách riêng
         dulieuluat = tailuat()
+        tennhanvat = self._tennhanvatluattuido()
         is_banrac = self.get_is_nhatbanracphongyeu() if self.get_is_dangphongyeukinh() else self._is_tudongvebanrac
 
         def hanhdongnhat(tenvatphamkiemtra):
-            return timhanhdongnhat(tenvatphamkiemtra, is_banrac, dulieuluat)
+            return timhanhdongnhat(tenvatphamkiemtra, is_banrac, dulieuluat, tennhanvat)
 
         def kiemtradieukiennhat(tenvatphamkiemtra, diachikiemtra):
             hanhdong = hanhdongnhat(tenvatphamkiemtra)
@@ -967,7 +993,12 @@ class TacTuVatPham:
                 continue
 
             if kiemtradieukiennhat(tenvatpham, diachivatpham) and khoangcach < KHOANGCACHNHATDO:
-                danhsachvatpham.append((hanhdongnhat(tenvatpham) != NHAT_UUTIEN, khoangcach, diachivatpham))
+                danhsachvatpham.append((hanhdongnhat(tenvatpham) != NHAT_UUTIEN, khoangcach, diachivatpham, self._khoanhatdo(diachivatpham, tenvatpham)))
+
+        # Chia nhặt với bot cùng máy: bỏ món bot khác nhận; không còn bot nào khác đăng món thì danh sách giữ nguyên (chạy 1 acc như cũ)
+        danhsachvatpham, is_conhomnhat = self._chianhatdo(danhsachvatpham, idbandohientai, (xnhanvat, ynhanvat))
+        if is_conhomnhat:
+            is_covatphamvungcamgan = True
 
         if danhsachvatpham:
             # Vật phẩm ưu tiên lên đầu, sau đó mới xét gần nhất
@@ -1001,6 +1032,7 @@ class TacTuVatPham:
                     "is_uutien": is_vatphamuutien,
                 }
             if khoangcach <= 3.:
+                self._kiemtranhatkhongvao()
                 if self._is_tudongvebanrac and not is_vatphamuutien and not is_covatphamvungcamgan:
                     self.moitruong.action_nhatvatphamxungquanh(delay = 0.2)
                 elif time.time() - self._thoidiemnhatvatphamgannhat_map.get(self._diachicosovatphamdangnhat, 0) > 0.2:
@@ -1013,6 +1045,107 @@ class TacTuVatPham:
             self.moitruong.action_nhatvatphamxungquanh(delay = 0.5)
 
         self._yeucaunhatvatpham = yeucaunhatvatphammoi
+        # Món đang nhặt cho bot cùng máy (bản đăng đã tạo trong _chianhatdo, cùng lượt)
+        if self._nhatdochiase is not None:
+            diachi = self._diachicosovatphamdangnhat
+            self._nhatdochiase["dangnhat"] = next((m[3] for m in danhsachvatpham if m[2] == diachi), None) if diachi else None
+
+    def _khoanhatdo(self, diachi, ten):
+        # Khoá món dưới đất dùng chung giữa các cửa sổ: địa chỉ đối tượng mỗi tiến trình một khác, toạ độ ô + tên thì như nhau
+        x, y = self.moitruong.get_toado(diachi)
+        return f"{int(x)},{int(y)},{ten}"
+
+    def get_nhatdoshare(self):
+        # Bản chia nhặt cho shared_data (cuaso_xq): None khi chết hoặc vòng nhặt không chạy lại quá THOIGIANHIEULUCNHATDOCHUNG (kẹt / tắt nhặt)
+        chiase = self._nhatdochiase
+        if not chiase or time.time() - chiase["thoidiem"] > THOIGIANHIEULUCNHATDOCHUNG:
+            return None
+        try:
+            if self.moitruong.get_is_nhanvatdachet():
+                return None
+        except Exception:
+            return None
+        return chiase
+
+    def _laynhatdokhac(self):
+        # Bản chia nhặt còn hiệu lực của bot khác cùng máy, cùng bản đồ: [(id người chơi, tên, {khoá: khoảng cách}, khoá đang nhặt)].
+        # Đọc shared_data tốn 1 lần gọi qua Manager nên nhớ THOIGIANDOCNHATDOCHUNG giây
+        thoidiem, ketqua = self._bonhonhatdokhac
+        bayh = time.time()
+        if bayh - thoidiem < THOIGIANDOCNHATDOCHUNG:
+            return ketqua
+        ketqua = []
+        if self.shared_data is not None:
+            try:
+                danhsach = list(self.shared_data.items())
+            except Exception:
+                danhsach = []
+            idbanthan = self.moitruong.get_idnguoichoi()
+            idbando = self.moitruong.get_idbandohientai()
+            for idcuaso, info in danhsach:
+                if idcuaso == self.idcuaso or not isinstance(info, dict):
+                    continue
+                idkhac = info.get("idnguoichoi")
+                chiase = info.get("_nhatdo")
+                if not idkhac or idkhac == idbanthan or not chiase or info.get("_is_tatbot"):
+                    continue
+                if bayh - info.get("thoidiemcapnhat", 0.) > THOIGIANHIEULUCNHATDOCHUNG or bayh - chiase.get("thoidiem", 0.) > THOIGIANHIEULUCNHATDOCHUNG                         or chiase.get("bando") != idbando or not self.moitruong.get_is_cungbando(info, idbando):
+                    continue
+                ketqua.append((idkhac, info.get("tennhanvat") or str(idkhac), chiase.get("thay") or {}, chiase.get("dangnhat")))
+        self._bonhonhatdokhac = (bayh, ketqua)
+        return ketqua
+
+    def _chianhatdo(self, danhsachvatpham, idbando, toadonhanvat):
+        # danhsachvatpham [(không ưu tiên, khoảng cách, địa chỉ, khoá)] => (các món mình được nhặt, có bot khác cùng bản đồ đang đăng món không).
+        # Đăng bản của mình (mọi món mình sẽ nhặt, chưa lọc) vào self._nhatdochiase; "dangnhat" ghi sau khi chọn món
+        bayh = time.time()
+        gannhat = sorted(danhsachvatpham, key = lambda m: m[1])[:SOMONNHATDOCHIASETOIDA]
+        thay = {m[3]: round(m[1], 1) for m in gannhat}
+        cu = self._nhatdochiase
+        self._nhatdochiase = {"thoidiem": bayh, "bando": idbando, "thay": thay, "dangnhat": cu.get("dangnhat") if cu else None}
+        khac = self._laynhatdokhac()
+        if not khac:
+            return danhsachvatpham, False
+        # Lệnh nhặt xung quanh: chỉ chặn khi bot khác có món gần mình (game có thể chạy tới món của nó)
+        is_conhomnhat = False
+        for _, _, thaykhac, _ in khac:
+            for khoa in thaykhac:
+                try:
+                    x, y = khoa.split(",", 2)[:2]
+                    if math.dist(toadonhanvat, (int(x), int(y))) <= KHOANGCACHNHATXUNGQUANHNHOM:
+                        is_conhomnhat = True
+                        break
+                except (ValueError, AttributeError):
+                    continue
+            if is_conhomnhat:
+                break
+        if not danhsachvatpham:
+            return danhsachvatpham, is_conhomnhat
+        idbanthan = self.moitruong.get_idnguoichoi()
+        dangnhatminh = self._nhatdochiase["dangnhat"]
+        ketqua = []
+        for mon in danhsachvatpham:
+            khoa = mon[3]
+            thaylandau = self._thoidiemthaynhatdo_map.setdefault(khoa, bayh)
+            dangnhats = [idkhac for idkhac, _, thaykhac, dangnhat in khac if dangnhat == khoa and khoa in thaykhac]
+            if dangnhatminh == khoa:
+                dangnhats.append(idbanthan)
+            if dangnhats:
+                chu = min(dangnhats)
+            else:
+                ungvien = [(thaykhac[khoa], idkhac) for idkhac, _, thaykhac, _ in khac if khoa in thaykhac]
+                ungvien.append((round(mon[1], 1), idbanthan))
+                chu = min(ungvien)[1]
+            if chu == idbanthan or bayh - thaylandau > THOIGIANNHUONGNHATDOTOIDA:
+                ketqua.append(mon)
+                continue
+            if khoa not in self._nhatdodanhuong_map:
+                tenchu = next((ten for idkhac, ten, _, _ in khac if idkhac == chu), str(chu))
+                print(f"[NHẶT] Nhường {khoa.split(',', 2)[2]} ({','.join(khoa.split(',', 2)[:2])}) cho {tenchu}")
+            self._nhatdodanhuong_map[khoa] = bayh
+        self._thoidiemthaynhatdo_map = donbangthoidiem(self._thoidiemthaynhatdo_map, 120.)
+        self._nhatdodanhuong_map = donbangthoidiem(self._nhatdodanhuong_map, 120.)
+        return ketqua, is_conhomnhat
 
     def action_tudongmuavatpham(self, delay = 3.):
         if self._is_tudongmuavatpham:
@@ -1084,7 +1217,8 @@ class TacTuVatPham:
         # Các mục mua bù đang dùng được cho nhân vật này (bật, đủ thông tin, đúng môn phái / điều kiện). is_tranbaokho: chỉ lấy dòng TRANBAOKHO
         # (mua bằng KNB), không thì chỉ lấy dòng NPC ở Tân Thủ Thôn
         tenmonphai = self.moitruong.get_tenmonphai()
-        return [m for m in tailuat()["muabu"] if m["bat"] and m["vatpham"] and m["npc"] and m["muatoi"]
+        tennhanvat = self._tennhanvatluattuido()
+        return [m for m in tailuat()["muabu"] if m["bat"] and m["vatpham"] and m["npc"] and m["muatoi"] and is_apdungnhanvat(m, tennhanvat)
                 and (m["npc"] == TRANBAOKHO) == is_tranbaokho
                 and (not m["monphai"] or m["monphai"] == tenmonphai)
                 and (m["chikhi"] != CHIKHI_TRIEUHOIBAOTHU or self._is_tudongtrieuhoibaothugiangho)]
@@ -1191,7 +1325,9 @@ class TacTuVatPham:
     def _is_canve(self):
         # Luồng về bán rác có cần về không: túi đầy / thiếu đồ mua bù (khi bật về bán rác) hoặc độ bền thấp (khi bật về sửa đồ)
         # túi Càn Khôn hết hạn còn đồ thì về cất kho (bước cất kho sau bán, tactu_catkho_xq._is_canvecatkhotuihethan), không cần bật gì
-        if self._is_tudongvebanrac and (self.moitruong.get_is_dayhanhtrang() or self._is_canvemuabu()):
+        # Đang Săn Tinh Anh: túi đầy thì Săn Tinh Anh tự về cất kho (tactu_tinhanh_xq), không bán rác đồ rơi (Lam Kim)
+        is_dayhanhtrang = self.moitruong.get_is_dayhanhtrang() and not self._is_tinhanhdangchay()
+        if self._is_tudongvebanrac and (is_dayhanhtrang or self._is_canvemuabu()):
             return True
         return self._is_canvesuado() or self._is_canvecatkhotuihethan()
 
@@ -1293,17 +1429,50 @@ class TacTuVatPham:
                 return None
         return self._loaivatpham_map.get(ten, ""), self._motavatpham_map.get(ten, "")
 
+    def _tennhanvatluattuido(self):
+        # Tên nhân vật này để lọc luật túi đồ theo "nhanvat" (luattuido_xq.is_apdungnhanvat). Nhớ 5s; chưa đọc được tên thì đọc lại
+        # ngay lần sau (luật có lọc nhân vật tạm không áp dụng)
+        bayh = time.monotonic()
+        if not self._tennhanvatdocluattuido or bayh - self._thoidiemdoctennhanvatluattuido > 5.:
+            self._tennhanvatdocluattuido = self.moitruong.get_tendoituong() or ""
+            self._thoidiemdoctennhanvatluattuido = bayh
+        return self._tennhanvatdocluattuido
+
+    def _laymautenluat(self, ten, vitri):
+        # Mã màu tên món ở ô vitri cho điều kiện "Màu tên" của luật túi đồ (luattuido_xq.MAUTEN): mã ESC đầu mô tả thô ("\x1bC" Lam Kim...),
+        # "" = tên không màu, None = chưa đọc được. Mô tả giữ theo ô (có thể còn của món trước): dòng đầu phải khớp tên, không thì desc lại
+        # (theo ô, mỗi ô hỏng thì 60s sau mới desc lại như _laymotaluat). Màu theo từng món, không nhớ theo tên (cùng tên có thể khác màu)
+        tenchuan = unicodedata.normalize("NFC", re.sub(r"\x1b.", "", ten or "")).strip()
+
+        def mautheoten(tho):
+            sach = unicodedata.normalize("NFC", re.sub(r"\x1b.", "", tho or ""))
+            dongs = [d.strip() for d in sach.split("\n") if d.strip()]
+            if not (dongs and tenchuan and dongs[0].startswith(tenchuan)):
+                return None
+            return tho[:2] if tho.startswith("\x1b") else ""
+
+        mau = mautheoten(self.moitruong.get_motathovatphamhanhtrangcosan(vitri))
+        if mau is None and time.time() >= self._thoidiemdoclaimau_map.get(vitri, 0.):
+            self.moitruong.get_motavatphamhanhtrang(vitri, thoigianchotoida = 1., is_napmoi = True)
+            mau = mautheoten(self.moitruong.get_motathovatphamhanhtrangcosan(vitri))
+            if mau is None:
+                self._thoidiemdoclaimau_map[vitri] = time.time() + 60.
+        return mau
+
     def _layluatvatpham(self, ten, vitri):
         # Luật túi đồ đầu tiên khớp món ở ô vitri (dict), None / "chuabiet" như luattuido_xq.timluat
-        return timluat(self._chuanhoatenvatpham(ten), lambda: self._laymotaluat(ten, vitri))
+        return timluat(self._chuanhoatenvatpham(ten), lambda: self._laymotaluat(ten, vitri), tennhanvat = self._tennhanvatluattuido(),
+                       laymau = lambda: self._laymautenluat(ten, vitri))
 
     def _layluatbaovatpham(self, ten, vitri):
         # Luật 📣 đầu tiên khớp món ở ô vitri, xét riêng với hành động (luật khác đứng trên quyết định bán / giữ cũng không chặn báo)
-        return timluatbao(self._chuanhoatenvatpham(ten), lambda: self._laymotaluat(ten, vitri))
+        return timluatbao(self._chuanhoatenvatpham(ten), lambda: self._laymotaluat(ten, vitri), tennhanvat = self._tennhanvatluattuido(),
+                          laymau = lambda: self._laymautenluat(ten, vitri))
 
     def _layluatcatkho(self, ten, vitri):
         # Luật bảng Cất kho khớp món ở ô vitri (dict có "ruong" / "giulai") hoặc None; xét riêng với luật hành động
-        return timluatcatkho(self._chuanhoatenvatpham(ten), lambda: self._laymotaluat(ten, vitri))
+        return timluatcatkho(self._chuanhoatenvatpham(ten), lambda: self._laymotaluat(ten, vitri), tennhanvat = self._tennhanvatluattuido(),
+                             laymau = lambda: self._laymautenluat(ten, vitri))
 
     def _is_catkhovatpham(self, ten, vitri):
         # Món khớp bảng Cất kho: không bán, không vứt (kể cả phần "giữ lại trong túi"). Kỵ thú quý thì để trong túi để đeo, không cất
@@ -1364,7 +1533,8 @@ class TacTuVatPham:
         if time.time() - self._thoidiemvuttheoluatgannhat < 1.:
             return
         self._thoidiemvuttheoluatgannhat = time.time()
-        if not any(luat["bat"] and luat["hanhdong"] == HANHDONG_VUT for luat in tailuat()["luat"]):
+        tennhanvat = self._tennhanvatluattuido()
+        if not any(luat["bat"] and luat["hanhdong"] == HANHDONG_VUT and is_apdungnhanvat(luat, tennhanvat) for luat in tailuat()["luat"]):
             return
         if self.get_is_dangbanrac() or self._is_dangsapxephanhtrang or self.moitruong.get_is_nhanvatdachet():
             return
@@ -1479,6 +1649,72 @@ class TacTuVatPham:
     # 2026-11-13), so không phân biệt hoa thường. Món không có ở đây (Nhân Sâm) thì nhận mọi thông báo "còn ... giây"
     CHISOTHUOC1GIO_MAP = {TIEUDAOTAN: "ngoại công", QUYNGUYENDON: "nội kháng", KIMTANGTAN: "ngoại kháng", KHIMACHDON: "khí huyết",
                           TUTAMDON: "nội công"}
+
+    # Túi Càn Khôn vừa hết hạn mà client chưa cập nhật (dung lượng chưa thành mã 1/2/3 nên get_danhsachtuihethan rỗng, hành trang
+    # vẫn vẽ ô trống): máy chủ đã tính đầy, nhặt gì cũng báo "Bạn mang theo quá nhiều đồ" mà bot cứ nhặt mãi. Thoát client vào lại là
+    # client nhận đúng túi hết hạn (người dùng 2026-11-16, xem tay ở ảnh: túi 1 còn nhiều ô trống vẫn báo).
+    # Sắp xếp hành trang đôi khi cũng ra đúng câu này, nên không dựa riêng thông báo (nó giữ tới lần sau): chỉ tính khi đang ở gần món
+    # cần nhặt và đã gửi lệnh nhặt, thông báo là câu này, bot đếm còn ô trống, và suốt THOIGIANNHATKHONGVAO giây (ít nhất
+    # SOLANNHATKHONGVAO lần kiểm) không vào thêm món nào, và có túi Càn Khôn chữ hạn dùng ghi "còn 0 ngày" / "đã hết hạn" mà client chưa
+    # coi là túi hết hạn (MoiTruong.get_songayconlaituis; game làm tròn xuống nên còn nửa ngày vẫn ghi 0 ngày). Chỉ khi bật Tự động về
+    # bán rác; đóng client qua giamsat_xq (cùng điều kiện và giới hạn số lần mở lại với kẹt lâu), báo Telegram
+    THONGBAOMANGQUANHIEUDO = "mang theo quá nhiều đồ"
+    THOIGIANNHATKHONGVAO = 30.
+    SOLANNHATKHONGVAO = 8
+    # Lâu không gửi lệnh nhặt (hết đồ dưới đất) quá chừng này thì tính lại từ đầu
+    THOIGIANNGATNHATKHONGVAO = 60.
+    # Đã đóng client / báo không đóng được thì chừng này giây sau mới xét lại
+    THOIGIANCHOXULYNHATKHONGVAOLAI = 1800.
+
+    def _kiemtranhatkhongvao(self):
+        now = time.time()
+        if not self._is_tudongvebanrac or self._is_dangsapxephanhtrang or self.get_is_dangbanrac()                 or now - self._thoidiemxulynhatkhongvao < self.THOIGIANCHOXULYNHATKHONGVAOLAI:
+            self._nhatkhongvao = None
+            return
+        t = self._nhatkhongvao
+        if t and now - t["lankiem"] < 1.:
+            return
+        thongbao = self._docthongbaogiuamanhinh().lower()
+        sootrong = self.moitruong.get_sootronghanhtrang()
+        if self.THONGBAOMANGQUANHIEUDO not in thongbao or sootrong <= 0:
+            self._nhatkhongvao = None
+            return
+        # Nhặt vào được thì tổng số lượng đồ (cả món xếp chồng, không tốn ô mới) hoặc ngân lượng tăng
+        soluongtheoten = self.moitruong.get_soluongvatphamhanhtrangtheoten()
+        if soluongtheoten is None:
+            return
+        tongsoluong, nganluong = sum(soluongtheoten.values()), self.moitruong.get_nganluong() or 0
+        if not t or tongsoluong > t["tongsoluong"] or nganluong > t["nganluong"] or now - t["lankiem"] > self.THOIGIANNGATNHATKHONGVAO:
+            # Mới thấy / vừa nhặt vào được / lâu không nhặt: tính lại từ đầu
+            self._nhatkhongvao = {"batdau": now, "lankiem": now, "tongsoluong": tongsoluong, "nganluong": nganluong, "solan": 1}
+            return
+        # Dùng thuốc / bán làm giảm thì lấy mốc mới thấp hơn
+        t["lankiem"] = now
+        t["tongsoluong"] = tongsoluong
+        t["nganluong"] = nganluong
+        t["solan"] += 1
+        if now - t["batdau"] < self.THOIGIANNHATKHONGVAO or t["solan"] < self.SOLANNHATKHONGVAO:
+            return
+        # Bảo vệ thêm: phải có túi sắp / đã hết hạn mà client chưa đổi sang mã túi hết hạn; không có thì là lý do khác, không đóng client
+        tuihethans = set(self.moitruong.get_danhsachtuihethan())
+        songays = self.moitruong.get_songayconlaituis() or {}
+        tuinghis = [tui for tui, songay in songays.items() if songay <= 0 and tui not in tuihethans]
+        if not tuinghis:
+            if not t.get("is_dabaokhongtui"):
+                t["is_dabaokhongtui"] = True
+                print(f"[TÚI HẾT HẠN] {self.moitruong.get_tendoituong()}: nhặt không vào nhưng không túi nào còn 0 ngày ({songays}), không thoát")
+            return
+        self._nhatkhongvao = None
+        self._thoidiemxulynhatkhongvao = now
+        from giamsat_xq import dongclientdangnhaplai
+        mota = 'Máy chủ báo "Bạn mang theo quá nhiều đồ" {}s liền khi nhặt dù hành trang còn {} ô trống (túi Càn Khôn {} còn 0 ngày, client chưa cập nhật)'.format(
+            int(now - t["batdau"]), sootrong, ", ".join(str(tui + 1) for tui in sorted(tuinghis)))
+        print(f"[TÚI HẾT HẠN] {self.moitruong.get_tendoituong()}: {mota}")
+        lydo = dongclientdangnhaplai(self.moitruong, mota, mota)
+        if lydo:
+            canhbao(self.moitruong, "Túi Càn Khôn hết hạn, cần thoát vào lại", is_block = False)
+            baosuco(self.moitruong, "giamsat", f"{mota}. Không tự thoát vào lại được ({lydo}), cần thoát client vào lại bằng tay",
+                    khoa = "nhatkhongvao", giancach = self.THOIGIANCHOXULYNHATKHONGVAOLAI)
 
     def _demvatphamhanhtrang(self, ten):
         # Tổng số lượng các ô tên ten trong túi (không tính ô trang bị)
@@ -2529,6 +2765,7 @@ class TacTuVatPham:
         idbando = self.moitruong.get_idbandohientai()
         if idbando and idbando not in (BANDO_TANTHUTHON, BANDO_CHUQUOC) and idbando not in BANDOPHOBANs:
             self._idbandolucveban = idbando
+        self.moitruong._inlog(f"[AUTO-SELL] Bắt đầu về: đang ở bản đồ {idbando}, bản đồ lúc về {self._idbandolucveban}")
 
     def _get_idbandoquaylaibanrac(self):
         # Bản đồ quay lại sau khi bán theo ô "Quay lại" (tab Hành trang) -> id bản đồ, 0 = không biết đi đâu
@@ -2545,10 +2782,30 @@ class TacTuVatPham:
     def _batdauquaylaibando(self, idbando):
         # Quay lại bản đồ không theo lộ trình: giao cho "Đi tới bản đồ" (phù / chạy bộ / Hồi Thành Phù từng bản đồ, tới nơi thì dừng),
         # tới nơi mà không có lộ trình thì bot tự dò bản đồ (_dobandokhonglotrinh)
-        print(f"[AUTO-SELL] Quay lại {laytenbando(idbando)}")
+        self.moitruong._inlog(f"[AUTO-SELL] Quay lại {laytenbando(idbando)}")
         self._idbandocandi = int(idbando)
         self._trangthaiveban = 0
         self._yeucautudo = None
+
+    def _is_quaylaibangphumaoson(self):
+        # Mao Sơn bán xong: True = đi bằng phù / chạy bộ tới bản đồ chọn sẵn ở ô "Quay lại", False = dùng Xuyên Không Hành (Quay lại)
+        # về chỗ cũ. Chỉ đi phù khi chọn sẵn 1 bản đồ mà chắc chắn lúc về đang ở bản đồ khác. Chọn đúng bản đồ của lộ trình, hoặc chưa ghi
+        # được bản đồ lúc về, thì vẫn dùng chiêu: 2026-11-16 con 430 train Trường Bạch Sơn, ô Quay lại chọn Trường Bạch Sơn, mấy lượt
+        # cất kho đều dùng chiêu nhưng lượt bán + mua bù lại phù Dịch Trạm Yên Quốc rồi chạy bộ (bản đồ lúc về ghi khác, chưa rõ vì sao).
+        # Chiêu đưa về chỗ khác bản đồ lộ trình thì lộ trình tự chạy tiếp, cũng không xa hơn đi phù từ Tân Thủ Thôn
+        idquaylai, idlucve = self._idbandoquaylaibanrac, self._idbandolucveban
+        if idquaylai <= 0 or idquaylai == idlucve or not idlucve:
+            return False
+        diems = self._diemdanhxungquanhs
+        idlotrinh = diems[0][2] if diems and len(diems[0]) >= 3 else 0
+        is_phu = idquaylai != idlotrinh
+        # Bước 4 xét mỗi lượt tới khi chiêu vào hồi: mỗi lần quay lại chỉ ghi log 1 lần
+        if self._khoalogquaylaimaoson == self._thoidiemchuyentrangthai:
+            return is_phu
+        self._khoalogquaylaimaoson = self._thoidiemchuyentrangthai
+        self.moitruong._inlog(f"[AUTO-SELL] Quay lại {laytenbando(idquaylai)} ({idquaylai}), lúc về ở {laytenbando(idlucve)} ({idlucve}),"
+                              f" lộ trình {idlotrinh}: {'đi phù / chạy bộ' if is_phu else 'vẫn dùng Xuyên Không Hành'}")
+        return is_phu
 
     def _is_coxuyenkhonghanh(self):
         # Mao Sơn đã học Xuyên Không Hành (pf 4182) mới về bán / quay lại bãi bằng chiêu
@@ -2581,11 +2838,11 @@ class TacTuVatPham:
 
             if is_dangganchutiemtaphoa:
                 if is_dayhanhtrang:
-                    print("[AUTO-RECOVERY] Phát hiện đang ở cạnh NPC và túi đầy -> Tiếp tục bán.")
+                    self.moitruong._inlog("[AUTO-RECOVERY] Phát hiện đang ở cạnh NPC và túi đầy -> Tiếp tục bán.")
                     self._trangthaiveban = 2
                     self._thoidiemchuyentrangthai = time.time()
                 else:
-                    print("[AUTO-RECOVERY] Đang ở cạnh NPC và túi đã gọn -> Quay lại bãi train.")
+                    self.moitruong._inlog("[AUTO-RECOVERY] Đang ở cạnh NPC và túi đã gọn -> Quay lại bãi train.")
                     self._trangthaiveban = 4
                     self._thoidiemchuyentrangthai = time.time()
 
@@ -2596,14 +2853,14 @@ class TacTuVatPham:
 
         elif self._trangthaiveban == 1:
             if not self.moitruong.get_is_kynangsansang(VITRIKYNANG_XUYENKHONGHANH):
-                print("[AUTO-SELL] Xuyên không hành thành công (đang hồi chiêu). Chuyển bước.")
+                self.moitruong._inlog("[AUTO-SELL] Xuyên không hành thành công (đang hồi chiêu). Chuyển bước.")
                 self._trangthaiveban = 2
                 self._thoidiemchuyentrangthai = time.time()
                 return
 
             if time.time() - self._thoidiemchuyentrangthai > 1.5:
                 if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
-                    print("[AUTO-SELL] Đã đứng yên. Sử dụng Xuyên không hành (Về thành)")
+                    self.moitruong._inlog("[AUTO-SELL] Đã đứng yên. Sử dụng Xuyên không hành (Về thành)")
                     self.moitruong.action_ngatdichuyen()
                     self.moitruong.action_thucthicaulenh("pf 4182.1")
                     self._thoidiemchuyentrangthai = time.time()
@@ -2614,31 +2871,31 @@ class TacTuVatPham:
                 if diachi_npc:
                     khoangcach = self.moitruong.get_khoangcach(diachi_npc)
                     if khoangcach <= 3.0:
-                        print("[AUTO-SELL] Đã gặp NPC, bắt đầu bán")
+                        self.moitruong._inlog("[AUTO-SELL] Đã gặp NPC, bắt đầu bán")
                         self._trangthaiveban = 3
                     else:
                         self.moitruong.action_dichuyengiukhoangcachtoida(diachi_npc, 3.)
                 else:
                     print("[AUTO-SELL] Đang tìm NPC Tạp Hóa...")
                     if time.time() - self._thoidiemchuyentrangthai > 6.0:
-                        print("[AUTO-SELL] Lỗi: Không tìm thấy NPC quá lâu -> Reset.")
+                        self.moitruong._inlog("[AUTO-SELL] Lỗi: Không tìm thấy NPC quá lâu -> Reset.")
                         self._trangthaiveban = 0
 
         elif self._trangthaiveban == 3:
             if self._xulybanracvamuabu():
-                print("[AUTO-SELL] Đã bán xong, chuẩn bị quay lại")
+                self.moitruong._inlog("[AUTO-SELL] Đã bán xong, chuẩn bị quay lại")
                 self._trangthaiveban = 4
                 self._thoidiemchuyentrangthai = time.time()
 
         elif self._trangthaiveban == 4:
             # Chọn sẵn bản đồ quay lại khác bản đồ lúc về: Xuyên Không Hành (Quay lại) chỉ về chỗ cũ, nên đi bằng phù / chạy bộ
-            if self._idbandoquaylaibanrac > 0 and self._idbandoquaylaibanrac != self._idbandolucveban:
+            if self._is_quaylaibangphumaoson():
                 self._diachicosokhaikhoang = 0
                 self._thoidiemphatamlacmapgannhat = time.time()
                 self._batdauquaylaibando(self._idbandoquaylaibanrac)
                 return
             if not self.moitruong.get_is_kynangsansang(VITRIKYNANG_XUYENKHONGHANH):
-                print("[AUTO-SELL] Xuyên không hành (Quay lại) thành công. Kết thúc quy trình.")
+                self.moitruong._inlog("[AUTO-SELL] Xuyên không hành (Quay lại) thành công. Kết thúc quy trình.")
                 self._trangthaiveban = 0
                 self._yeucautudo = None
                 self._diachicosokhaikhoang = 0
@@ -2647,7 +2904,7 @@ class TacTuVatPham:
 
             if time.time() - self._thoidiemchuyentrangthai > 1.0:
                 if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
-                    print("[AUTO-SELL] Đã đứng yên. Sử dụng Xuyên không hành (Quay lại)")
+                    self.moitruong._inlog("[AUTO-SELL] Đã đứng yên. Sử dụng Xuyên không hành (Quay lại)")
                     self.moitruong.action_ngatdichuyen()
                     self.moitruong.action_thucthicaulenh("pf 4182.2")
                     self._thoidiemchuyentrangthai = time.time()
@@ -2662,27 +2919,27 @@ class TacTuVatPham:
                     and self.moitruong.get_khoangcach(diachinpc) <= 3.0:
                 if not self.moitruong.get_is_dayhanhtrang():
                     if self._get_idbandoquaylaibanrac():
-                        print("[AUTO-SELL] Đứng cạnh NPC và túi đã gọn. Tiếp tục quay lại bãi farm.")
+                        self.moitruong._inlog("[AUTO-SELL] Đứng cạnh NPC và túi đã gọn. Tiếp tục quay lại bãi farm.")
                         self._trangthaiveban = 4
                         return
                 else:
-                    print("[AUTO-SELL] Đứng cạnh NPC nhưng túi đầy. Tiếp tục bán.")
+                    self.moitruong._inlog("[AUTO-SELL] Đứng cạnh NPC nhưng túi đầy. Tiếp tục bán.")
                     self._trangthaiveban = 2
                     return
             if self._is_canve():
-                print("[AUTO-SELL] Hành trang đầy / cần mua bù / cần sửa đồ. Bắt đầu quy trình về bán.")
+                self.moitruong._inlog("[AUTO-SELL] Hành trang đầy / cần mua bù / cần sửa đồ. Bắt đầu quy trình về bán.")
                 self._ghibandolucveban()
                 self._trangthaiveban = 1
                 self._thoidiemhoithanhphu = 0
 
         elif self._trangthaiveban == 1:
             if self.moitruong.get_idbandohientai() == BANDO_TANTHUTHON:
-                print("[AUTO-SELL] Đã về thành công. Chuyển sang di chuyển.")
+                self.moitruong._inlog("[AUTO-SELL] Đã về thành công. Chuyển sang di chuyển.")
                 self._trangthaiveban = 2
                 return
 
             if time.time() - self._thoidiemhoithanhphu > 12.0 and not self.moitruong.get_is_dangvankhi():
-                print("[AUTO-SELL] Đang dùng Hồi Thành Phù...")
+                self.moitruong._inlog("[AUTO-SELL] Đang dùng Hồi Thành Phù...")
                 self.moitruong.action_ngatdichuyen()
                 self.action_sudunghoithanhphu()
                 self._thoidiemhoithanhphu = time.time()
@@ -2695,7 +2952,7 @@ class TacTuVatPham:
             if not self._thoidiembatdautimnpcbanrac:
                 self._thoidiembatdautimnpcbanrac = time.time()
             if time.time() - self._thoidiembatdautimnpcbanrac > thoigiantoida:
-                print(f"[AUTO-SELL] Quá {thoigiantoida}s không tới được Tiệm Tạp Hóa. Thử lại.")
+                self.moitruong._inlog(f"[AUTO-SELL] Quá {thoigiantoida}s không tới được Tiệm Tạp Hóa. Thử lại.")
                 self._thoidiembatdautimnpcbanrac = 0.
                 self._trangthaiveban = 1
                 return
@@ -2709,7 +2966,7 @@ class TacTuVatPham:
                 else:
                     khoangcach = self.moitruong.get_khoangcach(diachinpc)
                     if khoangcach <= 3.0:
-                        print("[AUTO-SELL] Đã tìm thấy NPC, chuẩn bị bán đồ...")
+                        self.moitruong._inlog("[AUTO-SELL] Đã tìm thấy NPC, chuẩn bị bán đồ...")
                         self._thoidiembatdautimnpcbanrac = 0.
                         self._trangthaiveban = 3
                         return
@@ -2721,13 +2978,13 @@ class TacTuVatPham:
 
         elif self._trangthaiveban == 3:
             if self._xulybanracvamuabu():
-                print("[AUTO-SELL] Đã bán xong.")
+                self.moitruong._inlog("[AUTO-SELL] Đã bán xong.")
                 self._trangthaiveban = 4
 
         elif self._trangthaiveban == 4:
             idbandodich = self._get_idbandoquaylaibanrac()
             if not idbandodich:
-                print("[AUTO-SELL] Lỗi: Không biết quay lại bản đồ nào (chưa có lộ trình, chưa chọn bản đồ quay lại)!")
+                self.moitruong._inlog("[AUTO-SELL] Lỗi: Không biết quay lại bản đồ nào (chưa có lộ trình, chưa chọn bản đồ quay lại)!")
                 self._trangthaiveban = 0
                 return
             if not self._is_quaylaitheolotrinh():
@@ -2737,9 +2994,9 @@ class TacTuVatPham:
             self.action_dichuyenlenbandofarm()
             danhsachbandohople = [diem[2] for diem in self._diemdanhxungquanhs if len(diem) >= 3]
             if self.moitruong.get_idbandohientai() in danhsachbandohople:
-                print("[AUTO-SELL] Đã tới bãi farm hợp lệ.")
+                self.moitruong._inlog("[AUTO-SELL] Đã tới bãi farm hợp lệ.")
                 self._trangthaiveban = 0
             elif self.moitruong.get_idbandohientai() not in (BANDO_TANTHUTHON, BANDO_CHUQUOC):
                 # Đã phù tới bản đồ gần bãi farm: để lộ trình điểm đánh chạy bộ tiếp
-                print(f"[AUTO-SELL] Đã phù tới {laytenbando(self.moitruong.get_idbandohientai())}, chạy bộ tiếp tới bãi farm.")
+                self.moitruong._inlog(f"[AUTO-SELL] Đã phù tới {laytenbando(self.moitruong.get_idbandohientai())}, chạy bộ tiếp tới bãi farm.")
                 self._trangthaiveban = 0

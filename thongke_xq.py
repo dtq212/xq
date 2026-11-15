@@ -188,7 +188,8 @@ class ThongKe:
         # Nhặt được (không phải chuyển từ nhân vật khác) món khớp luật túi đồ có 📣 thì báo Telegram kèm ảnh (thongbao_xq.baodohiem).
         # Chạy sau THOIGIANCHOKHOP giây kể từ lúc nhặt vì phải chờ xem có phải đồ chuyển không
         from luattuido_xq import is_coluatbao
-        if not is_coluatbao():
+        tennhanvat = self.tactu._tennhanvatluattuido()
+        if not is_coluatbao(tennhanvat = tennhanvat):
             return
         try:
             vitri = self.moitruong.action_timkiemvitrivatphamhanhtrang(tenvatpham)
@@ -196,7 +197,7 @@ class ThongKe:
             if vitri is False:
                 # Món đã rời túi (bán / vứt / dùng ngay): chỉ xét được luật theo tên
                 from luattuido_xq import timluatbao
-                luat = timluatbao(tenvatpham, lambda: None)
+                luat = timluatbao(tenvatpham, lambda: None, tennhanvat = tennhanvat)
             else:
                 luat = self.tactu._layluatbaovatpham(tenvatpham, vitri)
             if luat:

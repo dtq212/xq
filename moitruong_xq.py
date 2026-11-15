@@ -37,6 +37,11 @@ MAUBANGHITRANBAOKHO = re.compile(rb"\x45\x03([\x01-\x0f])([\x01-\x7f])(.{12})(.{
 # Thông tin túi hành trang: con trỏ tại [thông tin game] + 0xADFE0C (cạnh con trỏ hành trang + 0xADFD78),
 # số ô mở của 4 túi là 4 int32 tại + 0xD4 (đo: túi đủ [24, 24, 24, 24], mới mở túi 2 loại 4 ô [24, 4, 0, 0])
 OFFSET_DUNGLUONGTUIHANHTRANG = 0xD4
+# Chữ hạn dùng của túi 2-4 (đúng chữ tooltip khi rê chuột lên tab túi), mỗi túi 1 ô 0x12C byte bắt đầu + 0x164, có sẵn cả khi không
+# rê chuột (đo 16/11 trên 6 client): "Túi Càn Khôn còn 9 ngày để sử dụng.", túi hết hạn "<ESC>RTúi Càn Khôn đã hết hạn sử dụng.",
+# túi 1 (không có hạn) không có ô. Game làm tròn xuống: còn nửa ngày vẫn ghi "còn 0 ngày" (người dùng 2026-11-16)
+OFFSET_HANTUIHANHTRANG = 0x164
+KICHTHUOCHANTUIHANHTRANG = 0x12C
 # Trong ô kỹ năng, tính từ chỗ chứa id (KN_ID): cờ đã học (3 = đã học, 0 = chưa học), xem MoiTruong.get_is_kynangdahoc
 OFFSET_KYNANGDAHOC = 0x1C
 # Bảng vị trí kỹ năng đã học đọc lại sau chừng này giây
@@ -6775,6 +6780,29 @@ class MoiTruong:
         if not all(0 <= dungluong <= SOLUONGOMOITUI for dungluong in dungluongs) or not dungluongs[0]:
             return None
         return dungluongs
+
+    def get_songayconlaituis(self):
+        # Số ngày còn dùng của túi 2-4 theo chữ hạn dùng (OFFSET_HANTUIHANHTRANG): {chỉ số túi 1..3: số ngày}, -1 = đã hết hạn;
+        # túi không có chữ / chữ lạ thì không có trong kết quả. Đọc lỗi thì None
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        p = read_int(self.tientrinh, x + DC.TG_TUIHANHTRANG) if x else 0
+        if not p:
+            return None
+        try:
+            dulieu = read_bytes(self.tientrinh, p + OFFSET_HANTUIHANHTRANG, 3 * KICHTHUOCHANTUIHANHTRANG)
+        except Exception:
+            return None
+        ketqua = {}
+        for i in range(3):
+            o = dulieu[i * KICHTHUOCHANTUIHANHTRANG:(i + 1) * KICHTHUOCHANTUIHANHTRANG].strip(b"\x00")
+            chu = re.sub(r'\x1b[a-zA-Z0-9]', '', o.split(b"\x00")[0].decode("utf-8", errors = "ignore"))
+            if "hết hạn" in chu:
+                ketqua[i + 1] = -1
+                continue
+            m = re.search(r"còn\s*(\d+)\s*ngày", chu)
+            if m:
+                ketqua[i + 1] = int(m.group(1))
+        return ketqua
 
     def get_danhsachtuihethan(self):
         # Chỉ số (0..3) các túi Càn Khôn đã hết hạn: dung lượng đọc ra là mã DUNGLUONGTUIHETHANs (1/2/3), không phải số ô

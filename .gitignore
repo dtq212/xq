@@ -187,3 +187,11 @@ _internal/bannganluong.json
 _internal/ngoaihinh_dathay.json
 _internal/ngoaihinh_dathay.json.tmp
 _internal/ngoaihinh.json.tmp
+
+# Tài khoản / tổ đội đồng bộ giữa các máy bằng nhánh git "dulieu" do bot tự đẩy / kéo (dongbo_xq, 2026-11-15), không để trên main nữa
+# (mỗi máy sửa là conflict). Hai file dưới là bản gộp bot ghi ra; _internal/dongbo/ là trạng thái đồng bộ của máy
+_internal/taikhoan_chung.json
+_internal/taikhoan_chung.json.tmp
+_internal/todoi.json
+_internal/todoi.json.tmp
+_internal/dongbo/

@@ -7,7 +7,10 @@
 # Có những bản đồ không có trên bản đồ thế giới (Khốn Ma Trận 291 vào từ Trường Bạch Sơn 171, Hư Lăng Động 381 vào từ Hoa Sơn 283...)
 # Toạ độ cùng hệ với toạ độ nhân vật trong game (tâm vùng cổng / tâm điểm xuất hiện)
 import heapq
+import json
 import math
+import os
+import sys
 import unicodedata
 
 # Đi quá số lần chuyển bản đồ này thì không nên tự đi bộ tới bản đồ đích
@@ -270,9 +273,75 @@ CAPQUAI_MAP = {
     528: (50, 64), 529: (50, 64), 530: (50, 64), 531: (105, 114), 532: (105, 114), 549: (55, 65),
 }
 
+# Bản đồ file tips trống (hang động, trận...) nhưng bot đã gặp quái: cấp ghép từ vị trí quái đã ghi (_internal/vitridoituong) với cấp
+# trong tên quái (thongtinquai.json), 2026-11-16. Đã bỏ thành / môn phái / phó bản và quái Phong Yêu Kính ("<nước> Quốc Kính Yêu/Quỷ/Ma":
+# Phong Yêu Kính mượn ID bản đồ ngoài nên từng bị ghi lẫn vào Thiên Môn Trận, Thần Bí Động, Linh Cốc Động, Hư Lăng Động)
+CAPQUAI_DAGAP_MAP = {
+    91: (106, 109), 92: (106, 109), 93: (106, 109), 291: (91, 94), 292: (91, 94), 293: (91, 94), 311: (75, 78), 312: (75, 78),
+    313: (75, 83), 321: (72, 74), 322: (72, 74), 323: (72, 74), 331: (80, 83), 332: (80, 83), 333: (80, 83), 334: (80, 83), 335: (80, 83),
+    341: (85, 88), 342: (85, 88), 343: (85, 88), 344: (85, 88), 345: (85, 88), 372: (100, 103), 373: (100, 103), 374: (100, 103),
+    381: (96, 99), 383: (96, 99),
+}
+
+
+def _duongdancapquaidahoc():
+    thumucgoc = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(thumucgoc, "_internal", "capquaibando.json")
+
+
+# Cấp quái bot tự ghi khi gặp quái (ghicapquaibando, mọi nhân vật / tiến trình ghi chung 1 file): {id bản đồ: (thấp nhất, cao nhất)}.
+# Đọc lại file khi file đổi (tiến trình khác vừa ghi)
+_capquaidahoc = {"luc": None, "bang": {}}
+
+
+def _laycapquaidahoc():
+    duongdan = _duongdancapquaidahoc()
+    try:
+        luc = os.path.getmtime(duongdan)
+    except OSError:
+        return _capquaidahoc["bang"]
+    if luc != _capquaidahoc["luc"]:
+        try:
+            with open(duongdan, "r", encoding = "utf-8") as file:
+                _capquaidahoc["bang"] = {int(k): (int(v[0]), int(v[1])) for k, v in json.load(file).items()}
+            _capquaidahoc["luc"] = luc
+        except Exception:
+            pass
+    return _capquaidahoc["bang"]
+
+
+def _gopcap(*caps):
+    caps = [c for c in caps if c]
+    return (min(c[0] for c in caps), max(c[1] for c in caps)) if caps else None
+
+
 def laycapquaibando(idbando):
-    # -> (cấp thấp nhất, cấp cao nhất) của quái trên bản đồ, không biết thì None
-    return CAPQUAI_MAP.get(idbando)
+    # -> (cấp thấp nhất, cấp cao nhất) của quái trên bản đồ, không biết thì None. File game (tips) có thì lấy file game; không có thì
+    # gộp cấp đã gặp (CAPQUAI_DAGAP_MAP) với cấp bot tự ghi
+    return CAPQUAI_MAP.get(idbando) or _gopcap(CAPQUAI_DAGAP_MAP.get(idbando), _laycapquaidahoc().get(idbando))
+
+
+def ghicapquaibando(idbando, capthap, capcao):
+    # Bot thấy quái cấp capthap..capcao ở bản đồ (không phải thành / phó bản, nơi gọi lọc): bản đồ đã có cấp trong file game thì thôi;
+    # nới khoảng đã biết thì ghi file (đọc lại trước khi ghi để không đè số tiến trình khác vừa ghi). -> True nếu có ghi
+    if idbando in CAPQUAI_MAP or not capthap:
+        return False
+    cu = _gopcap(CAPQUAI_DAGAP_MAP.get(idbando), _laycapquaidahoc().get(idbando))
+    if cu and cu[0] <= capthap and capcao <= cu[1]:
+        return False
+    from tienich_xq import thaythefile
+    bang = dict(_laycapquaidahoc())
+    bang[idbando] = _gopcap(bang.get(idbando), (capthap, capcao))
+    duongdan = _duongdancapquaidahoc()
+    try:
+        with open(duongdan + ".tmp", "w", encoding = "utf-8") as file:
+            json.dump({str(k): list(v) for k, v in sorted(bang.items())}, file, separators = (",", ":"))
+        thaythefile(duongdan + ".tmp", duongdan)
+    except Exception as err:
+        print(f"[CẤP QUÁI] Lỗi ghi {duongdan}: {err}")
+        return False
+    _capquaidahoc.update(bang = bang, luc = None)
+    return True
 
 
 def laytenbandogame(idbando):

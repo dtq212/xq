@@ -201,7 +201,7 @@ class LoopChinh:
             # Đọc tên hành trang 1 lần rồi chỉ gửi lệnh với món đang có: trước đây mỗi món gọi action_sudungvatphamhanhtrang đọc lại cả
             # ~96 ô (9 lần đọc cả hành trang mỗi lượt kể cả khi không có túi nào; py-spy 2026-11-14: ~8% thời gian bận của tiến trình)
             tenhanhtrangs = set(self.moitruong.get_danhsachtenvatphamhanhtrang())
-            for tenvatpham in ("Lễ Bao Khai Quốc", "Túi Ngân Lượng", "Túi Ngân Lượng Lớn", "Túi Kim Bảo", "Túi Quà Vô Song", "Túi Pháp Bảo", "Lăng Mộ Bảo Rương", "Túi Quà Thành Kiều", "Túi Tử Kim 85"):
+            for tenvatpham in ("Lễ Bao Khai Quốc", "Túi Ngân Lượng", "Túi Ngân Lượng Lớn", "Túi Kim Bảo", "Túi Quà Vô Song", "Túi Pháp Bảo", "Lăng Mộ Bảo Rương", "Túi Quà Thành Kiều", ):
                 if tenvatpham in tenhanhtrangs and self.tactu.action_sudungvatphamhanhtrang(tenvatpham):
                     break
 

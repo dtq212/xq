@@ -2,7 +2,7 @@
 # Dùng chung mọi nhân vật trên máy; chưa có file thì tạo từ LUATMACDINH / MUABUMACDINH (luật viết cứng trước đây, chuyển sang đây 2026-10-29).
 #   "luat": hành động (Giữ / Bán / Vứt): xét từ trên xuống, luật ĐẦU TIÊN khớp quyết định. Mỗi luật: {"bat": true,
 #           "hanhdong": "giu" | "ban" | "vut", "ten": [tên đúng...], "tenchua": [tên có chứa...], "loai": [loại trong ［］ có chứa...],
-#           "mota": [mô tả có chứa...], "ghichu": ...,
+#           "mota": [mô tả có chứa...], "mau": [màu tên: "Lam Kim" / "Hoàng Kim" / "Tím", xem MAUTEN], "ghichu": ...,
 #           "is_bao": true = 📣 nhặt được món khớp luật này thì báo về Telegram kèm ảnh chụp (đồ hiếm), xem thongke_xq; xét riêng với
 #           hành động: có luật bật nào khớp là báo, thứ tự không quan trọng}.
 #           Mỗi điều kiện là danh sách, khớp 1 giá trị bất kỳ là được; để trống là không xét; có nhiều điều kiện thì phải khớp hết;
@@ -37,6 +37,8 @@
 #           "giancach": tối thiểu chừng này giây giữa 2 lần dùng của luật, "ghichu": ...}. Có nhiều điều kiện thì phải đủ hết.
 #           File cũ chưa có "dung" thì lấy DUNGMACDINH (đúng các điều kiện viết cứng trước đây, chuyển sang 2026-11-14).
 #           Pháp bảo theo sinh lực, An Xá Phù, bảo thú vật phẩm vẫn viết cứng (có tuỳ chọn riêng)
+#   Mọi luật / mục ở cả 5 bảng có thêm "nhanvat": [tên nhân vật...] = chỉ áp dụng cho các nhân vật này (so tên đúng, không phân biệt
+#           hoa thường); trống = mọi nhân vật (người dùng 2026-11-15). Nhân vật không nằm trong danh sách thì coi như luật không có
 import copy
 import functools
 import json
@@ -62,8 +64,14 @@ HANHDONG_VUT = "vut"
 HANHDONG_CATKHO = "catkho"
 RUONGTUDONG = 0
 TENHANHDONG = {HANHDONG_GIU: "Giữ", HANHDONG_BAN: "Bán", HANHDONG_VUT: "Vứt"}
-DIEUKIENs = ("ten", "tenchua", "loai", "mota")
-TENDIEUKIEN = {"ten": "Tên đúng", "tenchua": "Tên chứa", "loai": "Loại chứa", "mota": "Mô tả chứa"}
+DIEUKIENs = ("ten", "tenchua", "loai", "mota", "mau")
+TENDIEUKIEN = {"ten": "Tên đúng", "tenchua": "Tên chứa", "loai": "Loại chứa", "mota": "Mô tả chứa", "mau": "Màu tên"}
+# Nhãn ô nhập ở form sửa luật (giao diện): như TENDIEUKIEN, "Màu tên" kèm các giá trị gõ được
+NHANDIEUKIEN = {**TENDIEUKIEN, "mau": "Màu tên (Lam Kim / Hoàng Kim / Tím)"}
+# Điều kiện "mau": tên màu người dùng gõ (đã chuanhoa) -> mã màu ESC đầu mô tả thô của món (MoiTruong.get_motathovatphamhanhtrangcosan;
+# Lam Kim \x1bC, Hoàng Kim \x1bY, tím \x1bp như tactu_langlyson_xq). 16/11: Săn Tinh Anh rơi đồ Lam Kim, về bán rác thường bán mất
+# (chỉ bán rác Phong Yêu Kính mới chừa màu) -> cho bảng Cất kho / luật Giữ lọc theo màu tên
+MAUTEN = {"lam kim": "\x1bC", "xanh": "\x1bC", "hoàng kim": "\x1bY", "vàng": "\x1bY", "tím": "\x1bp"}
 TRUONGMUABU = ("vatpham", "tencuahang", "npc", "xepchong", "duoi", "muatoi", "thapnhat", "monphai", "chikhi")
 TENTRUONGMUABU = {"vatpham": "Vật phẩm", "tencuahang": "Tên ở cửa hàng (nếu khác)", "npc": "NPC bán", "xepchong": "Xếp chồng tối đa / ô",
                   "duoi": "Mua khi dưới", "muatoi": "Mua cho đủ",
@@ -221,8 +229,26 @@ def _danhsach(giatri):
     return [str(g).strip() for g in giatri or [] if str(g).strip()]
 
 
+def is_apdungnhanvat(luat, tennhanvat):
+    # Luật có "nhanvat" (danh sách tên) thì chỉ áp dụng cho các nhân vật đó; trống = mọi nhân vật. tennhanvat None = không lọc
+    # (chỗ gọi không biết nhân vật nào); chuỗi rỗng (chưa đọc được tên) thì luật có lọc không áp dụng
+    if not luat.get("nhanvat") or tennhanvat is None:
+        return True
+    tenchuan = chuanhoa(tennhanvat)
+    return bool(tenchuan) and any(chuanhoa(t) == tenchuan for t in luat["nhanvat"])
+
+
+def motanhanvat(luat, sohienthi = 2):
+    # 'NV: Abc, Xyz +3' cho giao diện, "" khi áp dụng mọi nhân vật
+    tens = luat.get("nhanvat") or []
+    if not tens:
+        return ""
+    return "NV: " + ", ".join(tens[:sohienthi]) + (f" +{len(tens) - sohienthi}" if len(tens) > sohienthi else "")
+
+
 def _chuanhoaluat(luat):
     luat = dict(luat)
+    luat["nhanvat"] = _danhsach(luat.get("nhanvat"))
     luat["bat"] = bool(luat.get("bat", True))
     luat["is_bao"] = bool(luat.get("is_bao", False))
     luat.pop("is_catkho", None)
@@ -239,6 +265,7 @@ def _chuanhoamuabu(muc):
     muc["bat"] = bool(muc.get("bat", True))
     for truong in ("vatpham", "tencuahang", "npc", "monphai"):
         muc[truong] = str(muc.get(truong) or "").strip()
+    muc["nhanvat"] = _danhsach(muc.get("nhanvat"))
     # Bản cũ ghi tay ô / đơn giá: bỏ, bot tự tra theo tên trong cửa hàng
     muc.pop("o", None)
     muc.pop("dongia", None)
@@ -271,7 +298,8 @@ def _chuanhoacatkho(luat):
         except (TypeError, ValueError):
             luat[truong] = 0
     luat["ghichu"] = str(luat.get("ghichu") or "")
-    return {k: luat[k] for k in ("bat", *DIEUKIENs, "ruong", "giulai", "ghichu")}
+    luat["nhanvat"] = _danhsach(luat.get("nhanvat"))
+    return {k: luat[k] for k in ("bat", *DIEUKIENs, "ruong", "giulai", "nhanvat", "ghichu")}
 
 
 def _danhsachgiukhoangtrang(giatri):
@@ -290,7 +318,8 @@ def _chuanhoanhat(luat):
     luat["ten"] = _danhsach(luat.get("ten"))
     luat["tenchua"] = _danhsachgiukhoangtrang(luat.get("tenchua"))
     luat["ghichu"] = str(luat.get("ghichu") or "")
-    return {k: luat[k] for k in ("bat", "hanhdong", *DIEUKIENNHATs, "chibanrac", "ghichu")}
+    luat["nhanvat"] = _danhsach(luat.get("nhanvat"))
+    return {k: luat[k] for k in ("bat", "hanhdong", *DIEUKIENNHATs, "chibanrac", "nhanvat", "ghichu")}
 
 
 def _chuanhoadung(luat):
@@ -312,6 +341,7 @@ def _chuanhoadung(luat):
     kq["monphai"] = str(luat.get("monphai") or "").strip()
     kq["chikhidanh"] = bool(luat.get("chikhidanh", False))
     kq["khongphobanrieng"] = bool(luat.get("khongphobanrieng", False))
+    kq["nhanvat"] = _danhsach(luat.get("nhanvat"))
     kq["ghichu"] = str(luat.get("ghichu") or "")
     return kq
 
@@ -402,10 +432,11 @@ def is_cancanmota(luat):
     return bool(luat.get("loai") or luat.get("mota"))
 
 
-def khopluat(luat, ten, laymota):
-    # laymota() -> (loại, mô tả) hoặc None khi chưa đọc được (chỉ gọi khi luật có điều kiện loại / mô tả). Trả về True / False / None
-    # (None = chưa biết, cần mô tả mà chưa đọc được). Luật không có điều kiện nào thì không khớp gì (khớp mọi món mà là luật vứt / bán
-    # thì mất cả túi)
+def khopluat(luat, ten, laymota, laymau = None):
+    # laymota() -> (loại, mô tả) hoặc None khi chưa đọc được (chỉ gọi khi luật có điều kiện loại / mô tả). laymau() -> mã màu tên món
+    # ("\x1bC"..., "" = không màu) hoặc None khi chưa đọc được (chỉ gọi khi luật có điều kiện màu; không truyền = chưa biết).
+    # Trả về True / False / None (None = chưa biết, cần mô tả / màu mà chưa đọc được). Luật không có điều kiện nào thì không khớp gì
+    # (khớp mọi món mà là luật vứt / bán thì mất cả túi)
     if not any(luat.get(d) for d in DIEUKIENs):
         return False
     tenchuan = chuanhoa(ten)
@@ -413,6 +444,15 @@ def khopluat(luat, ten, laymota):
         return False
     if luat["tenchua"] and not any(chuanhoa(g) in tenchuan for g in luat["tenchua"]):
         return False
+    if luat.get("mau"):
+        mamaus = {MAUTEN.get(chuanhoa(g)) for g in luat["mau"]} - {None}
+        if not mamaus:
+            return False
+        mau = laymau() if laymau else None
+        if mau is None:
+            return None
+        if mau not in mamaus:
+            return False
     if not is_cancanmota(luat):
         return True
     mota = laymota()
@@ -426,14 +466,15 @@ def khopluat(luat, ten, laymota):
     return True
 
 
-def timluat(ten, laymota, dulieu = None):
-    # Luật đầu tiên khớp món tên ten (dict), None = không luật nào khớp, "chuabiet" = có luật cần mô tả mà chưa đọc được
+def timluat(ten, laymota, dulieu = None, tennhanvat = None, laymau = None):
+    # Luật đầu tiên khớp món tên ten (dict), None = không luật nào khớp, "chuabiet" = có luật cần mô tả mà chưa đọc được.
+    # tennhanvat: bỏ qua luật chỉ dành cho nhân vật khác (is_apdungnhanvat)
     if not ten:
         return None
     for luat in (dulieu or tailuat())["luat"]:
-        if not luat["bat"]:
+        if not luat["bat"] or not is_apdungnhanvat(luat, tennhanvat):
             continue
-        khop = khopluat(luat, ten, laymota)
+        khop = khopluat(luat, ten, laymota, laymau)
         if khop is None:
             return "chuabiet"
         if khop:
@@ -441,37 +482,37 @@ def timluat(ten, laymota, dulieu = None):
     return None
 
 
-def timhanhdong(ten, laymota, dulieu = None):
+def timhanhdong(ten, laymota, dulieu = None, tennhanvat = None, laymau = None):
     # Hành động của luật đầu tiên khớp món tên ten: "giu" / "ban" / "vut", None = không luật nào khớp,
     # "chuabiet" = có luật cần mô tả mà chưa đọc được (lượt này đừng làm gì món đó)
-    luat = timluat(ten, laymota, dulieu)
+    luat = timluat(ten, laymota, dulieu, tennhanvat, laymau)
     return luat["hanhdong"] if isinstance(luat, dict) else luat
 
 
-def timluatbao(ten, laymota, dulieu = None):
+def timluatbao(ten, laymota, dulieu = None, tennhanvat = None, laymau = None):
     # Luật 📣 đầu tiên khớp món tên ten (dict) hoặc None. Xét riêng với hành động: chỉ các luật có 📣, nên luật Giữ / Bán đứng trên
     # không chặn báo (vd luật Giữ 114 tên ở đầu cũng có "Hoa Cầu" mà luật 📣 "Hoa Cầu" đặt bên dưới vẫn báo). Chưa đọc được mô tả coi
     # như không khớp
     if not ten:
         return None
     for luat in (dulieu or tailuat())["luat"]:
-        if luat["bat"] and luat["is_bao"] and khopluat(luat, ten, laymota):
+        if luat["bat"] and luat["is_bao"] and is_apdungnhanvat(luat, tennhanvat) and khopluat(luat, ten, laymota, laymau):
             return luat
     return None
 
 
-def timluatcatkho(ten, laymota, dulieu = None):
+def timluatcatkho(ten, laymota, dulieu = None, tennhanvat = None, laymau = None):
     # Luật bật đầu tiên trong bảng Cất kho khớp món tên ten (dict, có "ruong" / "giulai") hoặc None. Xét riêng với bảng luật hành động
     # (vd luật Giữ mặc định có "Nhiếp Hồn Linh" mà bảng Cất kho có "Nhiếp Hồn Linh" thì vẫn cất). Chưa đọc được mô tả coi như không khớp
     if not ten:
         return None
     for luat in (dulieu or tailuat())["catkho"]:
-        if luat["bat"] and khopluat(luat, ten, laymota):
+        if luat["bat"] and is_apdungnhanvat(luat, tennhanvat) and khopluat(luat, ten, laymota, laymau):
             return luat
     return None
 
 
-def timhanhdongnhat(ten, is_banrac, dulieu = None):
+def timhanhdongnhat(ten, is_banrac, dulieu = None, tennhanvat = None):
     # Hành động nhặt của luật nhặt bật đầu tiên khớp món tên ten dưới đất: "nhat" / "uutien" / "khongnhat", None = không luật nào
     # khớp. Luật "chibanrac" chỉ xét khi is_banrac (bật Tự động về bán rác). So không phân biệt hoa thường; "tenchua" giữ khoảng trắng
     if not ten:
@@ -480,7 +521,7 @@ def timhanhdongnhat(ten, is_banrac, dulieu = None):
     # Tên chứa: chỉ dựng sẵn dấu + chữ thường, không gộp / cắt khoảng trắng (" Y" ở đầu mỗi từ)
     tenthuong = unicodedata.normalize("NFC", ten).lower()
     for luat in (dulieu or tailuat())["nhat"]:
-        if not luat["bat"] or (luat["chibanrac"] and not is_banrac) or not any(luat.get(d) for d in DIEUKIENNHATs):
+        if not luat["bat"] or (luat["chibanrac"] and not is_banrac) or not any(luat.get(d) for d in DIEUKIENNHATs)                 or not is_apdungnhanvat(luat, tennhanvat):
             continue
         if luat["ten"] and not any(chuanhoa(g) == tenchuan for g in luat["ten"]):
             continue
@@ -490,8 +531,8 @@ def timhanhdongnhat(ten, is_banrac, dulieu = None):
     return None
 
 
-def is_coluatbao(dulieu = None):
-    return any(luat["bat"] and luat["is_bao"] for luat in (dulieu or tailuat())["luat"])
+def is_coluatbao(dulieu = None, tennhanvat = None):
+    return any(luat["bat"] and luat["is_bao"] and is_apdungnhanvat(luat, tennhanvat) for luat in (dulieu or tailuat())["luat"])
 
 
 def motaluat(luat, sohienthi = 3):
@@ -501,4 +542,8 @@ def motaluat(luat, sohienthi = 3):
         if luat.get(d):
             giatris = ", ".join(f'"{g}"' for g in luat[d][:sohienthi]) + (f" +{len(luat[d]) - sohienthi}" if len(luat[d]) > sohienthi else "")
             phans.append(f"{TENDIEUKIEN[d]} {giatris}")
-    return " · ".join(phans) if phans else "(chưa có điều kiện, không khớp món nào)"
+    if not phans:
+        return "(chưa có điều kiện, không khớp món nào)"
+    if luat.get("nhanvat"):
+        phans.append(motanhanvat(luat))
+    return " · ".join(phans)

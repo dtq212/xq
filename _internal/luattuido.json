@@ -19,7 +19,8 @@
       ],
       "tenchua": [],
       "loai": [],
-      "mota": []
+      "mota": [],
+      "nhanvat": []
     },
     {
       "bat": true,
@@ -31,7 +32,8 @@
       ],
       "tenchua": [],
       "loai": [],
-      "mota": []
+      "mota": [],
+      "nhanvat": []
     },
     {
       "bat": true,
@@ -181,7 +183,8 @@
       ],
       "tenchua": [],
       "loai": [],
-      "mota": []
+      "mota": [],
+      "nhanvat": []
     },
     {
       "bat": true,
@@ -202,7 +205,8 @@
         "Kỵ Thú"
       ],
       "loai": [],
-      "mota": []
+      "mota": [],
+      "nhanvat": []
     },
     {
       "hanhdong": "giu",
@@ -216,7 +220,8 @@
       "is_bao": false,
       "ten": [],
       "tenchua": [],
-      "mota": []
+      "mota": [],
+      "nhanvat": []
     },
     {
       "bat": true,
@@ -233,7 +238,8 @@
       ],
       "tenchua": [],
       "loai": [],
-      "mota": []
+      "mota": [],
+      "nhanvat": []
     },
     {
       "bat": true,
@@ -246,7 +252,8 @@
       "mota": [
         "ngự thạch",
         "phân giải từ trang bị"
-      ]
+      ],
+      "nhanvat": []
     },
     {
       "bat": true,
@@ -258,7 +265,8 @@
         "Công thức"
       ],
       "loai": [],
-      "mota": []
+      "mota": [],
+      "nhanvat": []
     }
   ],
   "muabu": [
@@ -272,7 +280,8 @@
       "thapnhat": 0,
       "monphai": "vanmongcoc",
       "chikhi": "",
-      "bat": true
+      "bat": true,
+      "nhanvat": []
     },
     {
       "vatpham": "Đậu Nành",
@@ -284,7 +293,8 @@
       "chikhi": "",
       "tencuahang": "",
       "xepchong": 100,
-      "thapnhat": -1
+      "thapnhat": -1,
+      "nhanvat": []
     },
     {
       "vatpham": "Bùa Giấy",
@@ -296,7 +306,8 @@
       "thapnhat": 0,
       "monphai": "maoson",
       "chikhi": "",
-      "bat": true
+      "bat": true,
+      "nhanvat": []
     },
     {
       "vatpham": "Cao Cấp Bảo Thú Thực Ph",
@@ -308,7 +319,8 @@
       "monphai": "",
       "tencuahang": "Thức Ăn Bảo Thú Cao Cấp",
       "xepchong": 100,
-      "thapnhat": -1
+      "thapnhat": -1,
+      "nhanvat": []
     },
     {
       "vatpham": "Lão Tửu",
@@ -320,7 +332,8 @@
       "monphai": "",
       "tencuahang": "",
       "xepchong": 100,
-      "thapnhat": -1
+      "thapnhat": -1,
+      "nhanvat": []
     },
     {
       "vatpham": "Dưa hấu",
@@ -332,7 +345,8 @@
       "monphai": "",
       "tencuahang": "",
       "xepchong": 100,
-      "thapnhat": -1
+      "thapnhat": -1,
+      "nhanvat": []
     },
     {
       "vatpham": "Bùa Giấy",
@@ -344,10 +358,11 @@
       "chikhi": "",
       "bat": true,
       "xepchong": 100,
-      "thapnhat": -1
+      "thapnhat": -1,
+      "nhanvat": []
     },
     {
-      "vatpham": "Bát Tiên Đơn",
+      "vatpham": "Nhân Sâm",
       "tencuahang": "",
       "npc": "Trân Bảo Khố (Kim Nguyên Bảo)",
       "xepchong": 1,
@@ -356,7 +371,14 @@
       "thapnhat": -1,
       "monphai": "",
       "chikhi": "",
-      "bat": true
+      "bat": true,
+      "nhanvat": [
+        "Gạ",
+        "Thỏ",
+        "Ngốc",
+        "Thk",
+        "Kng"
+      ]
     }
   ],
   "catkho": [
@@ -371,6 +393,7 @@
       "mota": [],
       "ruong": 0,
       "giulai": 1,
+      "nhanvat": [],
       "ghichu": ""
     },
     {
@@ -387,6 +410,7 @@
       "mota": [],
       "ruong": 0,
       "giulai": 0,
+      "nhanvat": [],
       "ghichu": ""
     },
     {
@@ -399,6 +423,7 @@
       "mota": [],
       "ruong": 0,
       "giulai": 0,
+      "nhanvat": [],
       "ghichu": ""
     },
     {
@@ -416,6 +441,7 @@
       "mota": [],
       "ruong": 0,
       "giulai": 0,
+      "nhanvat": [],
       "ghichu": ""
     }
   ],
@@ -429,6 +455,7 @@
       ],
       "tenchua": [],
       "chibanrac": false,
+      "nhanvat": [],
       "ghichu": ""
     },
     {
@@ -477,6 +504,7 @@
       ],
       "tenchua": [],
       "chibanrac": false,
+      "nhanvat": [],
       "ghichu": "Tự động nhặt (cũ)"
     },
     {
@@ -555,6 +583,7 @@
       ],
       "tenchua": [],
       "chibanrac": true,
+      "nhanvat": [],
       "ghichu": "Nhặt thêm khi về bán rác (cũ)"
     },
     {
@@ -595,6 +624,7 @@
         "Kim Cương"
       ],
       "chibanrac": true,
+      "nhanvat": [],
       "ghichu": "Tên có chữ, khi về bán rác (cũ)"
     },
     {
@@ -605,6 +635,7 @@
         "Công thức"
       ],
       "chibanrac": false,
+      "nhanvat": [],
       "ghichu": ""
     },
     {
@@ -615,6 +646,7 @@
       ],
       "tenchua": [],
       "chibanrac": false,
+      "nhanvat": [],
       "ghichu": "Tàng Bảo Đồ"
     }
   ],
@@ -635,6 +667,7 @@
       "monphai": "",
       "chikhidanh": false,
       "khongphobanrieng": false,
+      "nhanvat": [],
       "ghichu": "Pháp Lực Thạch"
     },
     {
@@ -653,6 +686,7 @@
       "monphai": "",
       "chikhidanh": false,
       "khongphobanrieng": false,
+      "nhanvat": [],
       "ghichu": "Huyết Thạch khi PK / khai khoáng"
     },
     {
@@ -671,6 +705,7 @@
       "monphai": "maoson",
       "chikhidanh": false,
       "khongphobanrieng": false,
+      "nhanvat": [],
       "ghichu": "Huyết Thạch Mao Sơn"
     },
     {
@@ -689,6 +724,7 @@
       "monphai": "",
       "chikhidanh": false,
       "khongphobanrieng": false,
+      "nhanvat": [],
       "ghichu": "Huyết Thạch máu thấp"
     },
     {
@@ -707,6 +743,7 @@
       "monphai": "daohoanguyen",
       "chikhidanh": false,
       "khongphobanrieng": false,
+      "nhanvat": [],
       "ghichu": "Buff khi PK"
     },
     {
@@ -725,6 +762,7 @@
       "monphai": "",
       "chikhidanh": false,
       "khongphobanrieng": false,
+      "nhanvat": [],
       "ghichu": "Buff khi PK"
     },
     {
@@ -743,6 +781,7 @@
       "monphai": "",
       "chikhidanh": false,
       "khongphobanrieng": false,
+      "nhanvat": [],
       "ghichu": "Buff khi PK"
     },
     {
@@ -765,6 +804,7 @@
       "monphai": "",
       "chikhidanh": true,
       "khongphobanrieng": true,
+      "nhanvat": [],
       "ghichu": "Hồi sinh lực khi PK"
     },
     {
@@ -787,6 +827,7 @@
       "monphai": "",
       "chikhidanh": true,
       "khongphobanrieng": true,
+      "nhanvat": [],
       "ghichu": "Hồi sinh lực khi PK (Dã Tính)"
     },
     {
@@ -809,6 +850,7 @@
       "monphai": "",
       "chikhidanh": false,
       "khongphobanrieng": true,
+      "nhanvat": [],
       "ghichu": "Hồi sinh lực ở phó bản"
     },
     {
@@ -831,6 +873,7 @@
       "monphai": "",
       "chikhidanh": false,
       "khongphobanrieng": true,
+      "nhanvat": [],
       "ghichu": "Hồi sinh lực ở phó bản (Dã Tính)"
     },
     {
@@ -849,6 +892,7 @@
       "monphai": "",
       "chikhidanh": true,
       "khongphobanrieng": true,
+      "nhanvat": [],
       "ghichu": "Hồi sinh lực"
     },
     {
@@ -867,6 +911,7 @@
       "monphai": "",
       "chikhidanh": true,
       "khongphobanrieng": true,
+      "nhanvat": [],
       "ghichu": "Hồi sinh lực (Dã Tính)"
     },
     {
@@ -888,6 +933,7 @@
       "monphai": "",
       "chikhidanh": true,
       "khongphobanrieng": true,
+      "nhanvat": [],
       "ghichu": "Hồi nội lực khi PK"
     },
     {
@@ -909,6 +955,7 @@
       "monphai": "",
       "chikhidanh": true,
       "khongphobanrieng": true,
+      "nhanvat": [],
       "ghichu": "Hồi nội lực ở phó bản"
     },
     {
@@ -928,6 +975,7 @@
       "monphai": "",
       "chikhidanh": true,
       "khongphobanrieng": false,
+      "nhanvat": [],
       "ghichu": "Giải hiệu ứng xấu"
     },
     {
@@ -946,6 +994,7 @@
       "monphai": "",
       "chikhidanh": false,
       "khongphobanrieng": false,
+      "nhanvat": [],
       "ghichu": "Hồi thể lực"
     },
     {
@@ -965,6 +1014,7 @@
       "monphai": "thucson",
       "chikhidanh": true,
       "khongphobanrieng": false,
+      "nhanvat": [],
       "ghichu": ""
     },
     {
@@ -984,7 +1034,36 @@
       "monphai": "vanmongcoc",
       "chikhidanh": false,
       "khongphobanrieng": false,
+      "nhanvat": [],
       "ghichu": "Sử dụng nhập môn Y Thuật"
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Nhập Môn Cơ Bản Thương Pháp",
+        "Nhập Môn Cơ Bản Bổng Pháp",
+        "Nhập Môn Cơ Bản Đao Pháp",
+        "Nhập Môn Cơ Bản Kiếm Pháp",
+        "Nhập Môn Tụng Kinh",
+        "Nhập Môn Chiêu Giá Chi Thuật",
+        "Nhập Môn Thiền Định",
+        "Nhập Môn Đạo Gia Học Thuyết",
+        "Nhập Môn Kinh Lạc Học Thuyết",
+        "Nhập Môn Tu Tâm"
+      ],
+      "sinhluc": 0,
+      "matsinhluc": 0,
+      "noiluc": 0,
+      "matnoiluc": 0,
+      "theluc": -1,
+      "giancach": 60.0,
+      "hieuung": "",
+      "noi": "moinoi",
+      "monphai": "thucson",
+      "chikhidanh": false,
+      "khongphobanrieng": false,
+      "nhanvat": [],
+      "ghichu": "Đọc nhập môn cho Gạ"
     }
   ]
 }

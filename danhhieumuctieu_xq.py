@@ -144,6 +144,17 @@ def tomauhanhdong(hanhdong):
     return ketqua
 
 
+def taodongtheosau(is_bat, ten = ""):
+    # Dòng trên cùng đầu nhân vật mình: "Theo sau: BẬT (tên)" (xanh lá, tên vàng) / "Theo sau: TẮT" (đỏ)
+    dong = mamau(MAUHANHDONGTRENDAU["dau"]) + "Theo sau: ".encode("utf-8")
+    if not is_bat:
+        return dong + mamau("R") + "TẮT".encode("utf-8")
+    dong += mamau("G") + "BẬT".encode("utf-8")
+    if ten:
+        dong += mamau(MAUHANHDONGTRENDAU["doituong"]) + f" ({ten})".encode("utf-8")
+    return dong
+
+
 def dinhdangthoigian(giay):
     # 12 -> "12 giây", 65 -> "1 phút 5 giây", quá 10 phút -> "hơn 10 phút"
     giay = int(round(giay))
@@ -313,25 +324,31 @@ class ODauNhanVat(ODoiTuong):
             pass
         self._daghi = b""
 
-    def ghi(self, diachi, chu):
-        # chu: bytes UTF-8 có mã màu, 1 dòng
+    def ghi(self, diachi, dongs):
+        # dongs: các dòng bytes UTF-8 có mã màu, từ trên xuống (dòng cuối sát danh hiệu / nằm trong ô danh hiệu)
         chedo = CHEDOHIENMUCTIEU_DANHHIEU
-        chu = catutf8(chu, KICHTHUOCDONGVEDANHHIEU - 1)
+        dongs = [catutf8(d, KICHTHUOCDONGVEDANHHIEU - 1) for d in dongs if d]
+        if not dongs:
+            self.khoiphuc()
+            return
         iddoituong = self.moitruong.get_iddoituong(diachi)
         if self._dangghi != (diachi, iddoituong, chedo):
             self.khoiphuc()
             self._dangghi = (diachi, iddoituong, chedo)
         hientai = self._docoi(diachi, chedo).split(b"\0")[0]
         if hientai and hientai != self._daghi:
-            # Danh hiệu thật (có sẵn / máy chủ vừa ghi sau "title show"): vẽ dòng trên nó, thôi mượn ô. Hook lỗi thì thôi, không đè
+            # Danh hiệu thật (có sẵn / máy chủ vừa ghi sau "title show"): vẽ các dòng trên nó, thôi mượn ô. Hook lỗi thì thôi, không đè
             self._daghi = b""
-            self._datdongthem(diachi, [chu])
+            self._datdongthem(diachi, list(reversed(dongs)))
             return
-        # Ô rỗng ("title hide" / chưa có danh hiệu) hoặc chữ mình: chữ vừa ô thì ghi thẳng, dài thì ô giữ " " cho game gọi vẽ, hook vẽ chữ
-        if len(chu) <= KICHTHUOCDANHHIEU - 1:
+        # Ô rỗng ("title hide" / chưa có danh hiệu) hoặc chữ mình: dòng cuối vừa ô thì ghi thẳng (hook vẽ các dòng trên), dài thì ô giữ " "
+        # cho game gọi vẽ, hook vẽ hết
+        chu = dongs[-1]
+        if len(chu) <= KICHTHUOCDANHHIEU - 1 and (len(dongs) == 1 or self._datdongthem(diachi, list(reversed(dongs[:-1])))):
             noidung = chu
-            self._datdongthem(0, [])
-        elif self._datdongthem(diachi, [chu]):
+            if len(dongs) == 1:
+                self._datdongthem(0, [])
+        elif self._datdongthem(diachi, list(reversed(dongs))):
             noidung = b" "
         else:
             noidung = catutf8(chu, KICHTHUOCDANHHIEU - 1)
@@ -465,21 +482,25 @@ class DanhHieuMucTieu:
             return
         self._muctieu.ghi(diachi, chedo, [dongketluan] + taodongs(mau, gop["khihuyet"], gop["khangs"], gop["congs"], chumau))
 
-    def _buocnhanvat(self, hanhdong, chedomuctieu, is_tatbot = False):
-        # Hành động hiện tại lên đầu nhân vật mình; rỗng (tắt ô / chưa có hành động) thì trả ô. Đang tắt Foxia thì luôn hiện
-        # CHUTATFOXIATRENDAU (màu đỏ) thay hành động. Đang tự chọn mình làm mục tiêu và đang ghi thông tin mục tiêu thì nhường ô cho phần mục tiêu
+    def _buocnhanvat(self, hanhdong, chedomuctieu, is_tatbot = False, theosau = None):
+        # Trên đầu nhân vật mình, từ trên xuống: dòng Theo sau (theosau = (is_bật, tên người được theo) / None = không hiện), rồi hành động
+        # hiện tại. Không còn dòng nào thì trả ô. Đang tắt Foxia thì dòng dưới luôn là CHUTATFOXIATRENDAU (màu đỏ) thay hành động. Đang tự
+        # chọn mình làm mục tiêu và đang ghi thông tin mục tiêu thì nhường ô cho phần mục tiêu
         mt = self.moitruong
         diachi = mt.get_diachicosothongtinnhanvat1()
-        if (not hanhdong and not is_tatbot) or not diachi \
-                or (chedomuctieu == CHEDOHIENMUCTIEU_DANHHIEU and diachi == self._muctieu.get_diachi()):
+        dongs = []
+        if theosau is not None:
+            dongs.append(taodongtheosau(*theosau))
+        if is_tatbot:
+            dongs.append(mamau(MAUTATFOXIATRENDAU) + CHUTATFOXIATRENDAU.encode("utf-8"))
+        elif hanhdong:
+            dongs.append(tomauhanhdong(hanhdong))
+        if not dongs or not diachi or (chedomuctieu == CHEDOHIENMUCTIEU_DANHHIEU and diachi == self._muctieu.get_diachi()):
             self._nhanvat.khoiphuc()
             return
-        if is_tatbot:
-            self._nhanvat.ghi(diachi, mamau(MAUTATFOXIATRENDAU) + CHUTATFOXIATRENDAU.encode("utf-8"))
-        else:
-            self._nhanvat.ghi(diachi, tomauhanhdong(hanhdong))
+        self._nhanvat.ghi(diachi, dongs)
 
-    def step(self, chedo, chumau = MAUHIENMUCTIEU_THEOMAU, hanhdong = "", is_tatbot = False):
+    def step(self, chedo, chumau = MAUHIENMUCTIEU_THEOMAU, hanhdong = "", is_tatbot = False, theosau = None):
         chedo = chedo if chedo in (CHEDOHIENMUCTIEU_DANHHIEU, CHEDOHIENMUCTIEU_TEN) else None
         self._buocmuctieu(chedo, chumau)
-        self._buocnhanvat(hanhdong, chedo, is_tatbot)
+        self._buocnhanvat(hanhdong, chedo, is_tatbot, theosau)

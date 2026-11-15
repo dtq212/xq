@@ -1867,6 +1867,101 @@ NHANVATTODOITUDONGs_LIST = [
     [132, 133, 134, 135]
 ]
 
+# Quái Tinh Anh (tên màu vàng trong game). Tên quái trong bộ nhớ không có mã màu, game tô theo loại quái máy chủ gửi => lấy danh sách
+# từ map/tips/%03d.txt (từng byte XOR 0xFF), mục "Quái vật": tinh anh ghi "<#ffff66,0,Tên (cấp a ~ b)#>", boss "<#f076fc,...>" (không lấy).
+# Gom từ bản Aegis 2026-11-16 (Yên Quốc Tinh Vệ ở 71/72/73/528-530 người dùng đã giết xác nhận tên vàng). Thêm tên mới thì ghi vào đây.
+# id bản đồ -> ((tên tinh anh, cấp thấp nhất, cấp cao nhất), ...): chế độ Săn Tinh Anh (tactu_tinhanh_xq) chọn bản đồ từ bảng này
+QUAITINHANH_MAP = {
+    4: (('Đạo Điền Thủ Vệ', 6, 9),), 5: (('Gà Đế Vương', 6, 9),), 6: (('Thỏ Đế Vương', 6, 9),), 7: (('Đạo Điền Thủ Vệ', 6, 9),),
+    8: (('Gà Đế Vương', 6, 9),), 9: (('Thỏ Đế Vương', 6, 9),), 11: (('Quy Thừa Tướng', 46, 49),), 12: (('Quy Thừa Tướng', 46, 49),),
+    13: (('Quy Thừa Tướng', 46, 49),), 14: (('Quy Thừa Tướng', 46, 49),), 15: (('Quy Thừa Tướng', 46, 49),),
+    21: (('Giang Dương Đại Đạo', 26, 29),), 31: (('Triệu Quốc Tinh Vệ', 67, 70),), 32: (('Triệu Quốc Tinh Vệ', 67, 70),),
+    33: (('Triệu Quốc Tinh Vệ', 67, 70),), 42: (('Oan Quỷ', 26, 29),), 51: (('Tần Quốc Tinh Vệ', 71, 74),),
+    52: (('Tần Quốc Tinh Vệ', 71, 74),), 53: (('Tần Quốc Tinh Vệ', 71, 74),), 61: (('Sở Quốc Tinh Binh', 16, 19),),
+    62: (('Sở Quốc Tinh Binh', 16, 19),), 63: (('Sở Quốc Tinh Binh', 16, 19),), 71: (('Yên Quốc Tinh Vệ', 61, 63),),
+    72: (('Yên Quốc Tinh Vệ', 61, 63),), 73: (('Yên Quốc Tinh Vệ', 61, 63),), 81: (('Ác Thiếu Gia', 21, 23),),
+    82: (('Ác Thiếu Gia', 21, 23),), 89: (('Tiểu Đội Trưởng', 30, 33),), 111: (('Gấu Xám', 40, 43),), 112: (('Gấu Xám', 40, 43),),
+    131: (('Tần Bộ Tiên Phong', 35, 38),), 132: (('Thủ Lĩnh Cường Đạo', 33, 36),), 141: (('Ác Bá', 27, 30),), 142: (('Ác Bá', 27, 30),),
+    151: (('Đốc Công Kênh Trịnh Quốc', 51, 54),), 152: (('Đốc Công Kênh Trịnh Quốc', 51, 54),),
+    153: (('Đốc Công Kênh Trịnh Quốc', 51, 54),), 155: (('Thủ Lĩnh Thổ Phỉ', 34, 37),), 161: (('Kiến Lính', 6, 9), ('Ếch Tinh', 6, 9)),
+    162: (('Kiến Lính', 6, 9), ('Ếch Tinh', 6, 9)), 163: (('Bò Cạp Độc', 35, 38), ('Nhện Độc', 35, 38)),
+    164: (('Bò Cạp Độc', 35, 38), ('Nhện Độc', 35, 38)), 171: (('Võng Lượng Quỷ', 56, 59),), 172: (('Võng Lượng Quỷ', 56, 59),),
+    173: (('Võng Lượng Quỷ', 56, 59),), 174: (('Võng Lượng Quỷ', 56, 59),), 181: (('Tiểu Đội Trưởng', 30, 33),),
+    182: (('Yên Bộ Tiên Phong', 35, 38),), 211: (('Ác Bá', 27, 30),), 231: (('Đăng Hồn', 35, 38),), 241: (('Thủ Lĩnh Cường Đạo', 33, 36),),
+    242: (('Thủ Lĩnh Cường Đạo', 33, 36),), 243: (('Thủ Lĩnh Mã Tặc', 34, 37),), 251: (('Ác Thiếu Gia', 21, 23),),
+    261: (('Lang Yêu Thủ Lĩnh', 35, 38),), 262: (('Lang Yêu Thủ Lĩnh', 35, 38),), 263: (('Sài Cẩu Vũ Giả', 35, 38),),
+    264: (('Sài Cẩu Vũ Giả', 35, 38),), 265: (('Thuỷ Tặc Thủ Lĩnh', 40, 43),), 266: (('Thuỷ Tặc Thủ Lĩnh', 40, 43),),
+    271: (('Triệu Cung Tiên Phong', 35, 38),), 272: (('Triệu Cung Tiên Phong', 35, 38),), 281: (('Tinh Tinh Vương', 16, 19),),
+    282: (('Giáp Trùng Đại Tướng Quân', 16, 19),), 283: (('Gấu Đen', 16, 19),), 284: (('Sở Quốc Tinh Binh', 16, 19),),
+    501: (('Võng Lượng Quỷ', 50, 54),), 502: (('Võng Lượng Quỷ', 55, 59),), 503: (('Quyền Pháp Sư Thủ Lĩnh', 60, 64),),
+    504: (('Khô Lâu Thị Vệ', 120, 124),), 505: (('Khô Lâu Thị Vệ', 125, 129),), 506: (('Hư Lăng Đạo Nhân', 130, 134),),
+    507: (('Hư Lăng Đạo Nhân', 135, 139),), 508: (('Bệnh Ma', 140, 144),), 509: (('Bệnh Ma', 145, 149),),
+    510: (('Tần Quốc Tinh Vệ', 125, 129),), 511: (('Tần Quốc Tinh Vệ', 130, 134),), 512: (('Triệu Quốc Tinh Vệ', 135, 139),),
+    513: (('Triệu Quốc Tinh Vệ', 140, 144),), 514: (('Thực Ma', 83, 86),), 515: (('Thực Ma', 83, 86),), 516: (('Đậu Tướng Quân', 82, 85),),
+    517: (('Đậu Tướng Quân', 82, 85),), 518: (('Đao Quỷ', 118, 121),), 519: (('Đao Quỷ', 118, 121),),
+    520: (('Tử Vân Đạo Nhân', 104, 107),), 521: (('Quán Trung Ma', 109, 112),), 522: (('Tử Vân Đạo Nhân', 104, 107),),
+    523: (('Quán Trung Ma', 109, 112),), 524: (('Thủ Lĩnh Thích Khách', 76, 79),), 525: (('Thủ Lĩnh Thích Khách', 76, 79),),
+    526: (('Thủ Lĩnh Thích Khách', 76, 79),), 527: (('Thủ Lĩnh Thích Khách', 76, 79),), 528: (('Yên Quốc Tinh Vệ', 61, 64),),
+    529: (('Yên Quốc Tinh Vệ', 61, 64),), 530: (('Yên Quốc Tinh Vệ', 61, 64),), 531: (('Thần Binh', 111, 114),),
+    532: (('Thần Binh', 111, 114),), 549: (('Tôm Hùm Chúa Đông Hải', 60, 65), ('Cua Đại Tướng', 60, 65)),
+}
+QUAITINHANHs = frozenset(ten for ds in QUAITINHANH_MAP.values() for ten, _, _ in ds)
+
+
+# Tên trong tips khác tên thật trong game (đối chiếu _internal/vitridoituong 16/11): tips "Thủ Lĩnh Lang Yêu" -> game "Lang Yêu Thủ Lĩnh",
+# "Thủ Lĩnh Thủy Tặc" -> "Thuỷ Tặc Thủ Lĩnh", "Sài Cẩu Võ Giả" -> "Sài Cẩu Vũ Giả", "Kênh" -> "Kệnh"; tips Bành Thành (503) ghi
+# Võng Lượng Quỷ nhưng gặp thật "Quyền Pháp Sư Thủ Lĩnh". Người dùng: mỗi bản đồ 1 con Tinh Anh, tên không cố định, thường là quái thường
+# của bản đồ được cường hoá (vd "Lang Yêu Thủ Lĩnh" hoặc "Ngưu ... Thủ Lĩnh") => so tên đã chuẩn hoá (bỏ dấu khác nhau, không kể thứ tự
+# chữ "Thủ Lĩnh") + mọi tên có "Thủ Lĩnh"/"Thống Lĩnh"/"Vũ Giả" ở đầu/cuối đều tính là Tinh Anh
+_THAYTENTINHANHs = (("Thuỷ", "Thủy"), ("Vũ Giả", "Võ Giả"), ("Kệnh", "Kênh"))
+_HAUTOTINHANHs = ("Thủ Lĩnh", "Thống Lĩnh", "Võ Giả")
+
+
+def _chuanhoatentinhanh(ten):
+    ten = " ".join(ten.split("(")[0].replace("\xa0", " ").split())
+    for cu, moi in _THAYTENTINHANHs:
+        ten = ten.replace(cu, moi)
+    for hauto in _HAUTOTINHANHs:
+        if ten.startswith(hauto + " "):
+            ten = ten[len(hauto) + 1:] + " " + hauto
+    return ten
+
+
+_QUAITINHANHCHUANHOAs = frozenset(_chuanhoatentinhanh(ten) for ten in QUAITINHANHs)
+
+
+# Mỗi loại quái thường của bản đồ đều có thể ra 1 biến thể Tinh Anh (người dùng 16/11), tên đủ kiểu => nhận thêm theo CẤP: Tinh Anh cao
+# hơn hẳn quái thường cùng bản đồ (đo: Vu Sơn Sài Cẩu 32~33 / Trư Yêu 34, Sài Cẩu Vũ Giả 38; Chân Núi Đại Biệt Lang Yêu 33 / Ngưu Đầu Quái
+# 33~34, Lang Yêu Thủ Lĩnh 37; Yên Trường Thành lính 56~58, Tinh Vệ 61~63). Bản đồ có trong QUAITINHANH_MAP: quái cấp nằm trong khoảng
+# cấp Tinh Anh của bản đồ đó (đúng khoảng ghi trong tips, người dùng: cấp Tinh Anh giống mô tả bản đồ, chỉ tên thay theo loại quái) là
+# Tinh Anh. Bỏ quái sự kiện đi khắp nơi, bảo bảo, quái Phong Yêu Kính mượn ID bản đồ
+CAPTINHANH_MAP = {idbando: (min(a for _, a, _ in ds), max(b for _, _, b in ds)) for idbando, ds in QUAITINHANH_MAP.items()
+                  if all(a for _, a, _ in ds)}
+TENKHONGPHAITINHANHs = frozenset(("Hung Nô Tàn Bạo", "Kỵ Binh Tướng Lĩnh", "Chiến Quốc Tống Bảo Tiểu Yêu"))
+_MAUCAPTINHANH = re.compile(r"[Cc]ấp\s*(\d+)")
+
+
+def laycaptrongten(tenthucte):
+    # "Sài Cẩu Vũ Giả (cấp 38)" -> 38; không có cấp -> None
+    m = _MAUCAPTINHANH.search(tenthucte or "")
+    return int(m.group(1)) if m else None
+
+
+def is_quaitinhanh(ten, idbando = None, cap = None):
+    # ten: tên đã bỏ "(cấp ...)" hoặc còn (chỉ so phần trước "("). idbando + cap (cấp đọc từ tên thực tế) có thì xét thêm theo cấp
+    if not ten:
+        return False
+    tenchuan = _chuanhoatentinhanh(ten)
+    if tenchuan in _QUAITINHANHCHUANHOAs or any(tenchuan.endswith(" " + hauto) for hauto in _HAUTOTINHANHs):
+        return True
+    if cap is None or idbando not in CAPTINHANH_MAP:
+        return False
+    if tenchuan in TENKHONGPHAITINHANHs or "Bảo Bảo" in ten or "Quốc Kính" in ten or "Tàn Phách" in ten:
+        return False
+    capthap, capcao = CAPTINHANH_MAP[idbando]
+    return capthap <= cap <= capcao
+
+
 # Bảo thú vật phẩm (cả Thuỷ Bình) không tấn công / không mất máu
 TENMUCTIEUKHONGTANCONGs = (*BAOTHUVATPHAMs, "Tần QuốcBinh Sĩ", "Triệu QuốcBinh Sĩ", QUYTOT, THIENBINH, DAUBINH, "CAVE1", "CAVE.2", 'Đỗ Độc', 'Ôn Thần', "Liễu Vọng Tháp")
 # "Chiến Quốc Tống Bảo Tiểu Yêu" dài 28 ký tự / 39 byte UTF-8 nhưng tên đối tượng (+0x10AC) không bị cắt 31 byte như tên vật phẩm:

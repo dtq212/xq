@@ -62,6 +62,40 @@ def _solankillgiogannhat(idnguoichoi):
     return sum(1 for t in _tailankill().get(str(idnguoichoi), []) if t > moc)
 
 
+def lydokhongmolaiclient(moitruong):
+    # Lý do không được đóng client để dangnhap_xq tự đăng nhập lại (None = được): đang ở phó bản, nhân vật không có trong file tài khoản /
+    # tắt tự đăng nhập trên máy này, đang có nhân vật tạm ngưng, đã mở lại SOLANKILLTOIDA lần trong 1 giờ
+    idnguoichoi = moitruong.get_idnguoichoi()
+    cauhinh = taicauhinhdangnhap()
+    if moitruong.get_is_dangophobandocbonho():
+        # Kill giữa phó bản là nhân vật bị out, phải chạy lại 1-2 tầng mới lên được chỗ cũ (người dùng 2026-11-08)
+        return "đang ở phó bản"
+    if not any(str(tk.get("idnguoichoi") or "") == str(idnguoichoi) for tk in cauhinh.get("taikhoans", [])):
+        return "nhân vật không có trong file tài khoản"
+    if not any(str(tk.get("idnguoichoi") or "") == str(idnguoichoi) for tk in taikhoanbatchomaynay(cauhinh)):
+        return "tài khoản đang tắt tự đăng nhập trên máy này"
+    if laytamngungdanghieuluc():
+        return "đang có nhân vật tạm ngưng"
+    if _solankillgiogannhat(idnguoichoi) >= SOLANKILLTOIDA:
+        return f"đã mở lại {SOLANKILLTOIDA} lần trong 1 giờ"
+    return None
+
+
+def dongclientdangnhaplai(moitruong, motalog, motatin):
+    # Đóng client (taskkill) cho dangnhap_xq mở lại và đăng nhập, báo Telegram (loại "giamsat"); dùng chung cho kẹt lâu và túi Càn Khôn
+    # hết hạn mà client chưa cập nhật (tactu_vatpham_xq). Không đóng được thì ghi log, trả lý do (người gọi tự báo); đóng rồi trả None
+    lydo = lydokhongmolaiclient(moitruong)
+    if lydo:
+        moitruong._inlog(f"[GIÁM SÁT] {motalog} nhưng không mở lại client: {lydo}")
+        return lydo
+    idnguoichoi = moitruong.get_idnguoichoi()
+    moitruong._inlog(f"[GIÁM SÁT] {motalog}: đóng client để tự đăng nhập lại")
+    baosuco(moitruong, "giamsat", f"{motatin}: đóng client để tự đăng nhập lại (lần {_solankillgiogannhat(idnguoichoi) + 1} trong 1 giờ)")
+    _ghinhankill(idnguoichoi)
+    subprocess.run(["taskkill", "/F", "/PID", str(moitruong.tientrinh.process_id)], capture_output = True)
+    return None
+
+
 class DoNhip:
     # Đo nhịp 1 vòng lặp để biết chậm do bot hay do game / mạng: thời gian chạy 1 lượt và độ ngủ trễ so với time.sleep yêu cầu
     # (máy hết RAM / CPU nặng thì ngủ trễ tăng vọt). Mỗi CHUKYBAONHIP giây in 1 dòng, chỉ khi có lượt chậm
@@ -156,31 +190,11 @@ class GiamSat:
 
     def _killclient(self, thoigianket):
         moitruong = self.moitruong
-        idnguoichoi = moitruong.get_idnguoichoi()
-        cauhinh = taicauhinhdangnhap()
-        lydo = None
-        if moitruong.get_is_dangophobandocbonho():
-            # Kill giữa phó bản là nhân vật bị out, phải chạy lại 1-2 tầng mới lên được chỗ cũ (người dùng 2026-11-08)
-            lydo = "đang ở phó bản"
-        elif not any(str(tk.get("idnguoichoi") or "") == str(idnguoichoi) for tk in cauhinh.get("taikhoans", [])):
-            lydo = "nhân vật không có trong file tài khoản"
-        elif not any(str(tk.get("idnguoichoi") or "") == str(idnguoichoi) for tk in taikhoanbatchomaynay(cauhinh)):
-            lydo = "tài khoản đang tắt tự đăng nhập trên máy này"
-        elif laytamngungdanghieuluc():
-            lydo = "đang có nhân vật tạm ngưng"
-        elif _solankillgiogannhat(idnguoichoi) >= SOLANKILLTOIDA:
-            lydo = f"đã mở lại {SOLANKILLTOIDA} lần trong 1 giờ"
+        lydo = dongclientdangnhaplai(moitruong, f"Kẹt {int(thoigianket)}s", f"Kẹt {int(thoigianket) // 60} phút")
         if lydo:
             # Không mở lại được thì nhắc mỗi lần đủ THOIGIANKETLAMMOI nữa, tính lại từ đầu
-            moitruong._inlog(f"[GIÁM SÁT] Kẹt {int(thoigianket)}s nhưng không mở lại client: {lydo}")
             canhbao(moitruong, "Nhân vật bị kẹt lâu, cần kiểm tra", is_block = False)
             baosuco(moitruong, "giamsat", f"Kẹt {int(thoigianket) // 60} phút, không tự mở lại client được ({lydo}), cần kiểm tra", khoa = "khongmolai", giancach = 1800.)
-            self._datlai()
-            return
-        moitruong._inlog(f"[GIÁM SÁT] Kẹt {int(thoigianket)}s: đóng client để tự đăng nhập lại")
-        baosuco(moitruong, "giamsat", f"Kẹt {int(thoigianket) // 60} phút: đóng client để tự đăng nhập lại (lần {_solankillgiogannhat(idnguoichoi) + 1} trong 1 giờ)")
-        _ghinhankill(idnguoichoi)
-        subprocess.run(["taskkill", "/F", "/PID", str(moitruong.tientrinh.process_id)], capture_output = True)
         self._datlai()
 
     def _kiemtratreoluong(self):

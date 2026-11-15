@@ -97,7 +97,8 @@ class TacTuMucTieu:
 
     def get_tamnhinchiase(self):
         # Tầm nhìn của cửa sổ này để chia sẻ cho nhân vật khác cùng máy (ghi vào shared_data mỗi lượt cập nhật giao diện):
-        # các đối tượng thù địch nó thấy, gần nhất trước. Mỗi phần tử: (id đối tượng, x, y, tư thế, hướng mặt, là mục tiêu PK, tên)
+        # các đối tượng thù địch nó thấy, gần nhất trước. Mỗi phần tử: (id đối tượng, x, y, tư thế, hướng mặt, là mục tiêu PK, tên, cấp)
+        # Cấp (trong tên "(cấp N)", None nếu không có): nhận Tinh Anh theo cấp ở cửa sổ khác (tên Tinh Anh đổi theo loại quái)
         # ID đối tượng do máy chủ cấp nên mọi cửa sổ thấy giống nhau (đã đo); tọa độ là tọa độ ô tuyệt đối trên bản đồ
         x1, y1 = self.moitruong.get_toado()
         tenchunhanphe_map = {}
@@ -108,7 +109,8 @@ class TacTuMucTieu:
             x, y = self.moitruong.get_toado(diachi)
             is_muctieupk = self.moitruong.get_is_nguoichoi(diachi) or self.moitruong.get_is_baothukynangtrieuhoi(diachi) or self.moitruong.get_is_baothugiangho(diachi)
             doituongs.append((math.dist((x1, y1), (x, y)), (self.moitruong.get_iddoituong(diachi), x, y, self.moitruong.get_idtuthenhanvat(diachi),
-                                                             self.moitruong.get_huongmat(diachi), bool(is_muctieupk), self.moitruong.get_tendoituong(diachi))))
+                                                             self.moitruong.get_huongmat(diachi), bool(is_muctieupk), self.moitruong.get_tendoituong(diachi),
+                                                             laycaptrongten(self.moitruong._get_tenthucte(diachi)))))
         doituongs.sort(key = lambda d: d[0])
         # Ghi vị trí quái (không phải người chơi / bảo thú, không nằm trong danh sách không tấn công) để tự đề xuất lộ trình
         # Phó bản mượn ID bản đồ ngoài (Phong Yêu Kính, Tập Kích): không ghi, quái trong đó không có ở bản đồ thật cùng ID
@@ -124,7 +126,7 @@ class TacTuMucTieu:
         }
 
     def _laytamnhinchung(self):
-        # Đối tượng thù địch mà nhân vật khác cùng máy, cùng bản đồ đang thấy (tầm nhìn còn mới): {id đối tượng: (x, y, tư thế, hướng, là PK, tên)}.
+        # Đối tượng thù địch mà nhân vật khác cùng máy, cùng bản đồ đang thấy (tầm nhìn còn mới): {id đối tượng: (x, y, tư thế, hướng, là PK, tên, cấp)}.
         # Đọc shared_data tốn 1 lần gọi qua Manager nên nhớ THOIGIANDOCTAMNHIN giây
         thoidiemhientai = time.time()
         if thoidiemhientai - self._thoidiemdoctamnhinchunggannhat < THOIGIANDOCTAMNHIN:
@@ -152,9 +154,10 @@ class TacTuMucTieu:
                     # Cửa sổ chưa khởi động lại sau khi cập nhật chỉ có 6 trường (chưa có tên)
                     iddoituong, x, y, tuthe, huong, is_muctieupk = doituong[:6]
                     ten = doituong[6] if len(doituong) > 6 else ""
+                    cap = doituong[7] if len(doituong) > 7 else None
                     if ten and ten in tencungmays:
                         continue
-                    tamnhinchung[iddoituong] = (x, y, tuthe, huong, is_muctieupk, ten)
+                    tamnhinchung[iddoituong] = (x, y, tuthe, huong, is_muctieupk, ten, cap)
         self._tamnhinchung = tamnhinchung
         return tamnhinchung
 
@@ -215,6 +218,8 @@ class TacTuMucTieu:
         is_muctieupk = is_nguoichoi or is_baothukynangtrieuhoi or is_baothugiangho
 
         if self._is_chidanhnguoichoi and not is_muctieupk:
+            return False
+        if self._is_loctinhanh() and not is_muctieupk and not self._is_doituongtinhanh(diachidoituong, tendoituong):
             return False
 
         idbandohientai = self.moitruong.get_idbandohientai()
@@ -277,7 +282,9 @@ class TacTuMucTieu:
         idthaytaichos = {self.moitruong.get_iddoituong(diachi) for diachi in self.moitruong._get_diachidoituongxungquanhs()}
         is_hoabinh = self.moitruong.get_idmaupk() == MAUPK_HOABINH or self.moitruong.get_idbandohientai() in BANDOKHONGPKs
         tot = None
-        for iddoituong, (x, y, _, _, is_muctieupk, ten) in self._laytamnhinchung().items():
+        # Nhận Tinh Anh theo cấp ở tầm nhìn chung: chỉ ở bản đồ thật (phó bản mượn ID thì cấp quái không theo bản đồ)
+        idbandotinhanh = self.moitruong.get_idbandohientai() if self._is_loctinhanh() and self.moitruong.get_is_phobanmuonbando() is False else None
+        for iddoituong, (x, y, _, _, is_muctieupk, ten, cap) in self._laytamnhinchung().items():
             if iddoituong in idthaytaichos or iddoituong in self._idmuctieubiloi_map:
                 continue
             if thoidiemhientai < self._thoidiemhetboquamuctieuchung_map.get(iddoituong, 0.):
@@ -287,6 +294,8 @@ class TacTuMucTieu:
                     or self._is_tenbiboqua(ten):
                 continue
             if (self._is_chidanhnguoichoi and not is_muctieupk) or (is_muctieupk and is_hoabinh):
+                continue
+            if self._is_loctinhanh() and not is_muctieupk and not is_quaitinhanh(ten, idbandotinhanh, cap):
                 continue
             khoangcach = math.dist(toadobanthan, (x, y))
             if khoangcach > KHOANGCACHTIMMUCTIEUCHUNGTOIDA:
@@ -309,7 +318,7 @@ class TacTuMucTieu:
             self._muctieuchungdangtim = (iddoituong, thoidiemhientai)
         elif thoidiemhientai - self._muctieuchungdangtim[1] > THOIGIANTOIDATIMMUCTIEUCHUNG:
             self._thoidiemhetboquamuctieuchung_map[iddoituong] = thoidiemhientai + THOIGIANBOQUAMUCTIEUCHUNG
-            self._ghimuctieuboqua(iddoituong, "Đi tới mãi không thấy", self._laytamnhinchung().get(iddoituong, ("",) * 6)[5])
+            self._ghimuctieuboqua(iddoituong, "Đi tới mãi không thấy", self._laytamnhinchung().get(iddoituong, ("",) * 7)[5])
             self._thoidiemhetboquamuctieuchung_map = {k: v for k, v in self._thoidiemhetboquamuctieuchung_map.items() if v > thoidiemhientai}
             self._muctieuchungdangtim = None
             return None
@@ -520,7 +529,7 @@ class TacTuMucTieu:
         # Đang Đi tới bản đồ người dùng chọn / đi giao đồ / cất kho / đi làm sư môn: không chọn quái dọc đường (trước đây gặp quái là đứng
         # lại đánh), tới nơi mới đánh
         if self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangcatkho() or self.get_is_sumondichuyen() or self.get_is_langlysondichuyen() \
-                or self.get_is_sugiadichuyen() or self.get_is_tapkichdichuyen() or self.get_is_matacdichuyen() or self.get_is_danhvongdichuyen() or self.get_is_thienxudichuyen()                 or self.get_is_keocapchuyendo():
+                or self.get_is_sugiadichuyen() or self.get_is_tapkichdichuyen() or self.get_is_matacdichuyen() or self.get_is_danhvongdichuyen() or self.get_is_thienxudichuyen()                 or self.get_is_keocapchuyendo() or self.get_is_tinhanhdichuyen():
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             return
 
@@ -886,6 +895,8 @@ class TacTuMucTieu:
         is_muctieupk = is_nguoichoi or is_baothu
 
         if self._is_chidanhnguoichoi and not is_muctieupk:
+            return False
+        if self._is_loctinhanh() and not is_muctieupk and not self._is_doituongtinhanh(diachidoituong, tendoituong):
             return False
         if self.moitruong.get_is_nhanvatanthan(diachidoituong):
             return False
@@ -1429,8 +1440,8 @@ class TacTuMucTieu:
     def action_tudongxulygomquai(self):
         yeucaugomquaimoi = None
 
-        # Chỉ đánh người chơi thì quái không phải mục tiêu, gom về cũng không đánh
-        if not self._is_tudonggomquai or not self._is_tudongsudungkynang or self._is_chidanhnguoichoi:
+        # Chỉ đánh người chơi / chỉ đánh tinh anh thì quái thường không phải mục tiêu, gom về cũng không đánh
+        if not self._is_tudonggomquai or not self._is_tudongsudungkynang or self._is_chidanhnguoichoi or self._is_loctinhanh():
             self._is_danggomquai = False
             self._yeucaugomquai = None
             self._idquaidangkeo = 0
