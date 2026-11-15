@@ -43,6 +43,8 @@ SOLUONGDUPHONGCONGVAN = 2
 # liền chừng này lần không ra gì (không menu, không vị trí, tới chấm không thấy) thì đi dò khắp bản đồ như cũ tới khi gặp đối thủ
 THOIGIANCHOTRUYNA = 4.
 KHOANGCACHTOICHAMTRUYNA = 4
+# Đi tới chấm vàng chừng này giây mà không gần thêm được 2 ô (chấm trong vật cản, không có đường) thì bỏ chấm, dùng lại công văn
+THOIGIANKETCHAMTRUYNA = 45.
 SOLANTRUYNALOI = 5
 # Liền SOLANTRUYNALOI lần không ra gì thì vừa đi dò bản đồ vừa cứ chừng này giây dùng lại công văn 1 lần (không bỏ hẳn): vừa nhận nhiệm vụ
 # máy chủ chưa trả vị trí một lúc (log 2026-11-14: Ám Sát lượt 29 dùng 5 lần trong 25s không có vị trí rồi đi dò cả 40 điểm Tề Quốc;
@@ -79,6 +81,8 @@ CHIEUDANHGIAMMAU_MAP = {
 GIANCACHNGATDANH = 1.
 THOIGIANNGATDANHTOIDA = 15.
 KHOANGCACHNOICHUYEN = 3.
+# Cửa hàng người chơi tự mở chỉ ghi khi trong ngần này ô có đúng 1 NPC (bán / list được từ 6-9 ô, các tiệm một nước đứng sát nhau)
+KHOANGCACHNPCCUAHANGDUYNHAT = 10.
 # Gần NPC dưới chừng này ô mà không đi lại gần hơn được (vật cản) thì vẫn thử nói chuyện
 KHOANGCACHNOICHUYENKET = 6.
 # Gửi xong hội thoại chừng này giây mà nhiệm vụ chưa đổi thì thử lại, quá SOLANTHUSUMON lần thì dừng
@@ -299,16 +303,24 @@ class TacTuSuMon:
                     self._sovitri.ghinpc(danhhieu, idbando, x, y)
             elif moitruong.get_is_cothetancong(diachi):
                 self._sovitri.ghiquai(ten, idbando, x, y)
-        # Cửa hàng đang mở (người chơi tự mở): nhớ hàng theo NPC gần nhất
+        # Cửa hàng đang mở (người chơi tự mở / bot bán đồ): nhớ hàng theo NPC chỉ khi quanh đó có đúng 1 NPC. Cấu trúc cửa hàng không
+        # ghi NPC chủ; các tiệm một nước đứng sát nhau nên lấy NPC gần nhất ghi nhầm: 2026-11-15 acc 511 bán đồ cho Y Dược (38#, bán
+        # được từ xa) -> hàng Y Dược ghi thành "40|Trương Nghi"/"Chủ Tiệm Vũ Khí", Danh Vọng mua Thạch Tín thay vũ khí Vân Mộng Cốc
         if not self._mocuahang:
             cuahang = moitruong.get_cuahangdangmo()
             if cuahang and cuahang["is_danghien"] and cuahang["hang"]:
                 diachi = self._timnpcganhat(KHOANGCACHNOICHUYEN + 2)
-                if diachi:
+                if diachi and self._demnpcquanh(KHOANGCACHNPCCUAHANGDUYNHAT) == 1:
                     self._sovitri.ghicuahang(idbando, (moitruong.get_tendoituong(diachi), moitruong.get_danhhieudoituong(diachi)), cuahang["hang"])
         self._sovitri.luu()
         if capquais and ghicapquaibando(idbando, min(capquais), max(capquais)):
             moitruong._inlog(f"[CẤP QUÁI] {laytenbando(idbando) or idbando}: ghi cấp quái {laycapquaibando(idbando)}")
+
+    def _demnpcquanh(self, khoangcachtoida):
+        moitruong = self.moitruong
+        return sum(1 for diachi in moitruong._get_diachidoituongxungquanhs()
+                   if not moitruong.get_is_nguoichoi(diachi) and moitruong.get_is_npc(diachi)
+                   and moitruong.get_khoangcach(diachi) <= khoangcachtoida)
 
     def _timnpcganhat(self, khoangcachtoida):
         moitruong = self.moitruong
@@ -1194,7 +1206,7 @@ class TacTuSuMon:
             return self._dentoi(s, idbando, x, y, f"{nhan}: đuổi {self.moitruong.get_tendoituong(gannhat)}",
                                 khoangcach = self._khoangcachsudungkynangtamxa, is_dioo = self._is_dioo(idbando))
         t = s.get("truyna")
-        if not socongvan and not (t and t["luot"] == nv["luot"] and (t["dich"] or t["buoc"])):
+        if not socongvan and not (t and t["luot"] == nv["luot"] and t.get("bando") == idbando and (t["dich"] or t["buoc"])):
             # Đang ở nước thích khách mà hết công văn, không còn chấm vàng đang tới: về mua đủ rồi quay lại, không chạy bộ dò cả bản đồ
             khoa = f"{nv['luot']}|hetcongvan"
             if khoa not in s["thu"]:
@@ -1248,17 +1260,32 @@ class TacTuSuMon:
         # khi hết công văn hoặc liền SOLANTRUYNALOI lần không ra gì (đi dò khắp bản đồ, giữa chừng cứ GIANCACHTHULAITRUYNA giây dùng lại)
         moitruong = self.moitruong
         t = s.get("truyna")
-        if not t or t["luot"] != nv["luot"]:
-            t = s["truyna"] = {"luot": nv["luot"], "buoc": None, "luc": 0., "solan": 0, "solanloi": 0, "dich": None, "mau": [], "bo": set()}
+        # Khoá theo cả bản đồ: "lượt" là thứ tự trong chuỗi, lặp lại (log 359 2026-11-16: Truy Bắt lượt 9 ở Triệu Quốc để lại chấm
+        # (133, 136), Truy Bắt lượt 9 kế tiếp ở Tần Quốc dùng luôn chấm đó => chỗ đó ở Tần Quốc là vật cản, đứng im 30 phút)
+        if not t or t["luot"] != nv["luot"] or t.get("bando") != idbando:
+            t = s["truyna"] = {"luot": nv["luot"], "bando": idbando, "buoc": None, "luc": 0., "solan": 0, "solanloi": 0, "dich": None,
+                               "mau": [], "bo": set()}
+        now = time.time()
         if t["dich"]:
             x, y = t["dich"][1:]
-            if moitruong.get_khoangcachdiem(x, y) > KHOANGCACHTOICHAMTRUYNA:
+            khoangcach = moitruong.get_khoangcachdiem(x, y)
+            # Không lại gần chấm được (chấm nằm trong vật cản / không có đường, đi mãi tại chỗ): THOIGIANKETCHAMTRUYNA giây (chỉ tính lúc
+            # đang đi tới chấm, đuổi đánh chen giữa thì đếm lại) không gần hơn 2 ô thì coi như tới nơi không thấy
+            tiendo = t.get("tiendodich")
+            if not tiendo or tiendo[0] != t["dich"] or khoangcach < tiendo[1] - 2 or now - tiendo[3] > 2.:
+                tiendo = t["tiendodich"] = [t["dich"], khoangcach, now, now]
+            tiendo[3] = now
+            is_ket = now - tiendo[2] > THOIGIANKETCHAMTRUYNA
+            if khoangcach > KHOANGCACHTOICHAMTRUYNA and not is_ket:
                 s["trangthai"] = f"{nhan}: tới chấm Truy Nã ({x}, {y})"
                 return True, self._dentoi(s, idbando, x, y, s["trangthai"], is_dioo = self._is_dioo(idbando))
-            moitruong._inlog(f"[SƯ MÔN] Tới chấm Truy Nã ({x}, {y}) không thấy đối thủ, dùng lại công văn")
+            if is_ket:
+                moitruong._inlog(f"[SƯ MÔN] {THOIGIANKETCHAMTRUYNA:.0f}s không lại gần được chấm Truy Nã ({x}, {y}) (còn {khoangcach:.0f} ô, "
+                                 f"vật cản / không có đường?): bỏ chấm, dùng lại công văn")
+            else:
+                moitruong._inlog(f"[SƯ MÔN] Tới chấm Truy Nã ({x}, {y}) không thấy đối thủ, dùng lại công văn")
             t["bo"].add(t["dich"])
-            t["dich"], t["solanloi"] = None, t["solanloi"] + 1
-        now = time.time()
+            t["dich"], t["solanloi"], t["tiendodich"] = None, t["solanloi"] + 1, None
         if t["solanloi"] >= SOLANTRUYNALOI and t["buoc"] is None:
             # Đang đi dò: vị trí máy chủ trả muộn (của lần dùng trước) thì tới luôn; quá GIANCACHTHULAITRUYNA giây thì dùng lại 1 lần
             moi = [v for v in self._locvitritruyna() if v not in t["mau"] and v not in t["bo"]]

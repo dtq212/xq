@@ -64,13 +64,14 @@ def taivitritinhanh(idbando):
 
 
 def tachbandotinhanh(chuoi):
-    # "71, 72, 528" -> [71, 72, 528] (chỉ bản đồ có trong QUAITINHANH_MAP, bỏ trùng, giữ thứ tự)
+    # "71, 528, 263" -> [71, 528, 263] (chỉ bản đồ có trong QUAITINHANH_MAP, bỏ trùng). Thứ tự đi: cấp Tinh Anh CAO trước, thấp sau
+    # (người dùng 16/11: đi từ dưới lên danh sách chọn xếp cấp tăng dần); cùng cấp thì id lớn trước
     ids = []
     for so in re.findall(r"\d+", str(chuoi or "")):
         idbando = int(so)
         if idbando in QUAITINHANH_MAP and idbando not in ids:
             ids.append(idbando)
-    return ids
+    return sorted(ids, key = lambda i: (CAPTINHANH_MAP.get(i, (0, 0)), i), reverse = True)
 
 
 class TacTuTinhAnh:

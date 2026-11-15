@@ -20,7 +20,8 @@
       "tenchua": [],
       "loai": [],
       "mota": [],
-      "nhanvat": []
+      "nhanvat": [],
+      "mau": []
     },
     {
       "bat": true,
@@ -33,7 +34,8 @@
       "tenchua": [],
       "loai": [],
       "mota": [],
-      "nhanvat": []
+      "nhanvat": [],
+      "mau": []
     },
     {
       "bat": true,
@@ -184,7 +186,8 @@
       "tenchua": [],
       "loai": [],
       "mota": [],
-      "nhanvat": []
+      "nhanvat": [],
+      "mau": []
     },
     {
       "bat": true,
@@ -206,7 +209,8 @@
       ],
       "loai": [],
       "mota": [],
-      "nhanvat": []
+      "nhanvat": [],
+      "mau": []
     },
     {
       "hanhdong": "giu",
@@ -221,7 +225,8 @@
       "ten": [],
       "tenchua": [],
       "mota": [],
-      "nhanvat": []
+      "nhanvat": [],
+      "mau": []
     },
     {
       "bat": true,
@@ -239,7 +244,8 @@
       "tenchua": [],
       "loai": [],
       "mota": [],
-      "nhanvat": []
+      "nhanvat": [],
+      "mau": []
     },
     {
       "bat": true,
@@ -253,7 +259,8 @@
         "ngự thạch",
         "phân giải từ trang bị"
       ],
-      "nhanvat": []
+      "nhanvat": [],
+      "mau": []
     },
     {
       "bat": true,
@@ -266,7 +273,8 @@
       ],
       "loai": [],
       "mota": [],
-      "nhanvat": []
+      "nhanvat": [],
+      "mau": []
     }
   ],
   "muabu": [
@@ -391,6 +399,7 @@
       "tenchua": [],
       "loai": [],
       "mota": [],
+      "mau": [],
       "ruong": 0,
       "giulai": 1,
       "nhanvat": [],
@@ -408,6 +417,7 @@
       "tenchua": [],
       "loai": [],
       "mota": [],
+      "mau": [],
       "ruong": 0,
       "giulai": 0,
       "nhanvat": [],
@@ -421,6 +431,7 @@
         "Tinh luyện"
       ],
       "mota": [],
+      "mau": [],
       "ruong": 0,
       "giulai": 0,
       "nhanvat": [],
@@ -439,6 +450,7 @@
       "tenchua": [],
       "loai": [],
       "mota": [],
+      "mau": [],
       "ruong": 0,
       "giulai": 0,
       "nhanvat": [],
@@ -658,12 +670,12 @@
       ],
       "sinhluc": 0,
       "matsinhluc": 0,
-      "noiluc": 50,
+      "noiluc": 25,
       "matnoiluc": 0,
       "theluc": -1,
       "giancach": 2.5,
       "hieuung": "thieu_phapluc",
-      "noi": "bandopk",
+      "noi": "moinoi",
       "monphai": "",
       "chikhidanh": false,
       "khongphobanrieng": false,
@@ -879,44 +891,6 @@
     {
       "bat": true,
       "vatpham": [
-        "Hoạt Lạc Hoàn"
-      ],
-      "sinhluc": 75,
-      "matsinhluc": 0,
-      "noiluc": 0,
-      "matnoiluc": 0,
-      "theluc": -1,
-      "giancach": 1.0,
-      "hieuung": "thieu_datinh",
-      "noi": "khac",
-      "monphai": "",
-      "chikhidanh": true,
-      "khongphobanrieng": true,
-      "nhanvat": [],
-      "ghichu": "Hồi sinh lực"
-    },
-    {
-      "bat": true,
-      "vatpham": [
-        "Hoạt Lạc Hoàn"
-      ],
-      "sinhluc": 15,
-      "matsinhluc": 0,
-      "noiluc": 0,
-      "matnoiluc": 0,
-      "theluc": -1,
-      "giancach": 1.0,
-      "hieuung": "co_datinh",
-      "noi": "khac",
-      "monphai": "",
-      "chikhidanh": true,
-      "khongphobanrieng": true,
-      "nhanvat": [],
-      "ghichu": "Hồi sinh lực (Dã Tính)"
-    },
-    {
-      "bat": true,
-      "vatpham": [
         "Phục Dược",
         "Long Tiên Thảo",
         "Thí Luyện Đơn",
@@ -1011,10 +985,13 @@
       "giancach": 15.0,
       "hieuung": "",
       "noi": "moinoi",
-      "monphai": "thucson",
+      "monphai": "",
       "chikhidanh": true,
       "khongphobanrieng": false,
-      "nhanvat": [],
+      "nhanvat": [
+        "Thk",
+        "Gạ"
+      ],
       "ghichu": ""
     },
     {

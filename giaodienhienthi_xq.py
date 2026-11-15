@@ -29,7 +29,7 @@ from thongke_xq import taithongke, gopthongke
 from luattuido_xq import tailuat, luuluat, motaluat, motanhanvat, TENHANHDONG, DIEUKIENs, TENDIEUKIEN, NHANDIEUKIEN, TRUONGMUABU, TENTRUONGMUABU, TENCHIKHI, CHIKHI_LUON, XEPCHONGMACDINH, \
     THAPNHATMACDINH, TENHANHDONGNHAT, DIEUKIENNHATs, NHAT_NHAT, TENNOIDUNG, NOI_MOINOI, TENHIEUUNGDUNG, HIEUUNG_KHONG, GIANCACHDUNGMACDINH, \
     motadieukiendung
-from hangso_xq import VIECHANG_MAP, VIECDOI_MAP, VIECCOVONGs, VIECRIENG_MAP, QUAITINHANH_MAP
+from hangso_xq import VIECHANG_MAP, VIECDOI_MAP, VIECCOVONGs, VIECRIENG_MAP, QUAITINHANH_MAP, CAPTINHANH_MAP
 from hangso_xq import CAPKETTHUCKEOCAP
 from hangso_xq import CHUTIEMTAPHOA, CHUTUULAU, TRANBAOKHO, TENMONPHAI, PHAMCHATVATPHAM_MAP, CAPTUDONGTANGCAPTOIDA, PHANTRAMVESUADO, BANDOQUAYLAI_THEOLOTRINH, BANDOQUAYLAI_LUCVE, DANHHIEULAMMOI_KHONG, DANHHIEULAMMOI_AN
 from hangso_xq import CHEDOHIENMUCTIEU_TAT, CHEDOHIENMUCTIEU_DANHHIEU, CHEDOHIENMUCTIEU_TEN, MAUHIENMUCTIEU_MAP, MAUHIENMUCTIEU_THEOMAU
@@ -1366,9 +1366,10 @@ class GiaoDienHienThi:
         capnhatdem()
 
         def on_luu():
-            chuoi = ",".join(str(ids[i]) for i in ds.curselection())
-            self.command_dict[int(hwnd)] = f"set_tinhanh_bando:{chuoi}"
-            self._bandotinhanhchoxacnhan = (hwnd, [ids[i] for i in ds.curselection()], time.time())
+            # Đi từ dưới lên: bản đồ cấp cao (cuối danh sách) trước (người dùng 16/11); tachbandotinhanh bên bot cũng xếp như vậy
+            dachon = sorted((ids[i] for i in ds.curselection()), key = lambda i: (CAPTINHANH_MAP.get(i, (0, 0)), i), reverse = True)
+            self.command_dict[int(hwnd)] = "set_tinhanh_bando:" + ",".join(str(i) for i in dachon)
+            self._bandotinhanhchoxacnhan = (hwnd, dachon, time.time())
             hop.destroy()
 
         hangnut = ttk.Frame(khung)
