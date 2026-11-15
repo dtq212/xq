@@ -511,6 +511,7 @@ class LoopGiuOTrongHanhTrang:
             try:
                 if self.moitruong.get_is_nhanvattontai():
                     # Cập nhật mốc xuất chiêu đủ dày để biết chính xác lúc hết tư thế xuất chiêu (khựng tính từ mốc này)
+                    self.moitruong.action_cathoatanhkhicosobay()
                     self.moitruong.get_is_dangxuatchieu()
                     self.moitruong.action_baogiuluotkhixuatchieu()
                     self.tactu.action_giuotrongcuoihanhtrang()

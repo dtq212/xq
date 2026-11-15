@@ -23,6 +23,7 @@ from nhiemvu_xq import chuanhoaten, boma, timbandotheoten, laydiemluoi, _thumucg
 from thongbao_xq import baosuco
 from tienich_xq import phatam, canhbao, thaythefile
 from tactu_sumon_xq import THOIGIANCHOTRUYNA, KHOANGCACHTOICHAMTRUYNA
+from tactu_thienxu_xq import MUCTHIENXU, laynhiemvuthienxu
 
 MUCDANHVONG = "Nhiệm vụ Danh Vọng"
 TETONGQUAN = "Tề Tổng Quản"
@@ -268,7 +269,8 @@ class TacTuDanhVong:
         mucs = self.moitruong.get_danhsachmucnhiemvu()
         if not mucs:
             return
-        for tenmuccha, laynv in ((MUCSUMON, laynhiemvusumon), (MUCDANHVONG, laynhiemvudanhvong)):
+        for tenmuccha, laynv in ((MUCSUMON, laynhiemvusumon), (MUCDANHVONG, laynhiemvudanhvong),
+                                    (MUCTHIENXU, laynhiemvuthienxu)):
             nv = laynv(mucs)
             if nv and nv["is_thatbai"]:
                 self.action_huynhiemvuthatbai(None, tenmuccha, nv, lambda chu: self.moitruong._inlog(f"[HUỶ NHIỆM VỤ] {chu}"))
@@ -290,14 +292,29 @@ class TacTuDanhVong:
         if not dich or (yeucau or {}).get("yeucau") != YEUCAUDICHUYENDICHUYENTUDO or (len(dich) >= 3 and dich[2] != idbando):
             s["ket"] = None
             return yeucau
+        # Vừa phù / qua cổng: mã bản đồ đã mới mà toạ độ còn của bản đồ cũ => "gần nhất" ghi theo toạ độ cũ (Tân Thủ Thôn (148, 149) cách
+        # (205, 278) 141 ô, ra Chu ở (327, 123) cách 197 ô), đi đúng đường 12s vẫn chưa "gần hơn" => báo kẹt oan, chạy theo ô đã đi vào
+        # ngõ cụt trong thành (364 Thiên Xu 2026-11-15 18:35: lặp kẹt ở (217, 183) ~7 phút). Chờ toạ độ ổn định rồi mới bắt đầu đo
+        if moitruong.get_is_toadochuaondinh():
+            s["ket"] = None
+            return yeucau
         now = time.time()
         toado = moitruong.get_toado()
         khoangcach = math.dist(toado, dich[:2])
+        # Đo tiến độ bằng số bước A* cả bản đồ (lưới vật cản), không bằng đường chim bay: ở Chu Quốc (205, 278) phía tây nam ngoài thành
+        # chỉ vào được qua cổng tây (đường ~300 bước, vòng ra xa đích), đi đúng đường mà chim bay không gần thêm => báo kẹt oan, ô đã đi
+        # dẫn vào ngõ cụt (230, 214) trong thành, rồi lại kẹt, lặp mãi. Kẹt thật (máy chủ chặn, đứng im) thì số bước cũng không giảm.
+        # Không có đường trên lưới / chưa đọc được thì đo chim bay như cũ. A* C cả bản đồ 80 ~1.5 ms
+        sobuoc = moitruong.get_sobuocduongtoi(dich[0], dich[1], 1., is_cabando = True) if khoangcach > 6 else None
+        kieudo, tiendo = ("buoc", sobuoc) if sobuoc is not None else ("chimbay", khoangcach)
         k = s.get("ket")
         if not k or k["idbando"] != idbando or math.dist(k["dich"], dich[:2]) > 5:
-            k = s["ket"] = {"idbando": idbando, "dich": tuple(dich[:2]), "ganhat": khoangcach, "luc": now, "lotrinh": None}
-        if khoangcach < k["ganhat"] - 1:
-            k["ganhat"], k["luc"] = khoangcach, now
+            k = s["ket"] = {"idbando": idbando, "dich": tuple(dich[:2]), "ganhat": tiendo, "kieudo": kieudo, "luc": now, "lotrinh": None}
+        if k.get("kieudo") != kieudo:
+            # Đổi cách đo (vừa có / mất đường trên lưới): đo lại từ đây, không so số bước với chim bay
+            k.update(kieudo = kieudo, ganhat = tiendo, luc = now)
+        if tiendo < k["ganhat"] - 1:
+            k["ganhat"], k["luc"] = tiendo, now
         if not k["lotrinh"]:
             if now - k["luc"] < THOIGIANKETDV or khoangcach <= 6:
                 return yeucau
@@ -306,13 +323,14 @@ class TacTuDanhVong:
             if not k["lotrinh"]:
                 self._logdv(f"Kẹt {THOIGIANKETDV:.0f}s ở {tuple(toado)} khi tới {tuple(dich[:2])}, không có lộ trình ô đã đi")
                 return yeucau
-            self._logdv(f"Kẹt ở {tuple(toado)} khi tới {tuple(dich[:2])}: đi theo {len(k['lotrinh'])} ô đã đi "
+            self._logdv(f"Kẹt ở {tuple(toado)} khi tới {tuple(dich[:2])} ({THOIGIANKETDV:.0f}s không bớt "
+                        f"{'bước A*' if kieudo == 'buoc' else 'khoảng cách chim bay'}, còn {tiendo:.0f}): đi theo {len(k['lotrinh'])} ô đã đi "
                         f"{k['lotrinh'][::max(1, len(k['lotrinh']) // 6)]}")
         lotrinh = k["lotrinh"]
         i = min(range(len(lotrinh)), key = lambda j: math.dist(lotrinh[j], toado))
         if math.dist(lotrinh[-1], toado) <= 3 or now - k["luc"] > THOIGIANLOTRINHDADI:
             # Hết lộ trình (hoặc đi mãi chưa hết): đi thẳng như cũ, kẹt nữa thì tính lại
-            k.update(lotrinh = None, luc = now, ganhat = khoangcach)
+            k.update(lotrinh = None, luc = now, ganhat = tiendo)
             return yeucau
         x, y = lotrinh[min(i + DIEMTRUOCDV, len(lotrinh) - 1)]
         return dict(yeucau, toadodich = (x, y, idbando), khoangcachtoida = 1., is_dioo = True)

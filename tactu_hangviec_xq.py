@@ -85,6 +85,8 @@ class TacTuHangViec:
             return "sugia"
         if self._danhvong:
             return "danhvong"
+        if self._thienxu:
+            return "thienxu"
         if self._tapkich:
             return "tapkich"
         if self._langlyson:
@@ -120,6 +122,8 @@ class TacTuHangViec:
             return self.get_trangthaisugia()
         if viec == "danhvong":
             return self.get_trangthaidanhvong()
+        if viec == "thienxu":
+            return self.get_trangthaithienxu()
         if viec == "tapkich":
             return self.get_trangthaitapkich()
         if viec in ("langlyson", "thanhkieu", "phongyeukinh"):
@@ -196,6 +200,8 @@ class TacTuHangViec:
             self.batdau_sumon()
         elif viec == "danhvong":
             self.batdau_danhvong()
+        elif viec == "thienxu":
+            self.batdau_thienxu()
 
     def _dungviec(self, viec):
         if viec == "sumon":
@@ -204,6 +210,8 @@ class TacTuHangViec:
             self.huy_sugia()
         elif viec == "danhvong":
             self.huy_danhvong()
+        elif viec == "thienxu":
+            self.huy_thienxu()
         elif viec == "tapkich":
             self.huy_tapkich()
         elif viec in ("langlyson", "thanhkieu", "phongyeukinh"):

@@ -37,8 +37,10 @@ from danhhieumuctieu_xq import NHANHANHDONG
 from bandonho_xq import mobandonho
 from ngoaihinh_xq import mongoaihinh, taihienthi, luuhienthi
 from tudongrao_xq import motudongrao
+from taythuoctinh_xq import motaythuoctinh
 from hangso_xq import SOLICHSUHANHDONG
-from hangso_xq import PHAPBAOTHEOMAU_MAP, NGUONGPHAPBAOTHEOMAU_VUA, NGUONGPHAPBAOTHEOMAU_THAP, DOTREPHAPBAOTHEOMAU
+from hangso_xq import PHAPBAOTHEOMAU_MAP, NGUONGPHAPBAOTHEOMAU_VUA, NGUONGPHAPBAOTHEOMAU_THAP, DOTREPHAPBAOTHEOMAU, THOIGIANONDINHDOIPHAPBAO, \
+    NGUONGBOMMAUDONGDOI, NGUONGBOMMAUDATINH
 from dieuphoi_xq import taicauhinhdieuphoi, luucauhinhdieuphoi, chuanhoacauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
 
 # Thanh taskbar gom cửa sổ theo AppUserModelID của tiến trình: chạy bằng python.exe thì mặc định là của Python nên hiện icon Python.
@@ -500,6 +502,9 @@ class GiaoDienHienThi:
             "mauhetchaytron": tk.IntVar(value = NGUONGMAUHETCHAYTRON),
             "doiphapbaotheomau": tk.BooleanVar(value = True),
             "xoayvongtrao": tk.BooleanVar(value = True),
+            "hettraodeomuccao": tk.BooleanVar(value = False),
+            "maubommaudongdoi": tk.IntVar(value = NGUONGBOMMAUDONGDOI),
+            "maubommaudatinh": tk.IntVar(value = NGUONGBOMMAUDATINH),
             "mauphapbaovua": tk.IntVar(value = NGUONGPHAPBAOTHEOMAU_VUA),
             "mauphapbaothap": tk.IntVar(value = NGUONGPHAPBAOTHEOMAU_THAP),
             "dotrephapbao": tk.IntVar(value = DOTREPHAPBAOTHEOMAU),
@@ -1052,6 +1057,7 @@ class GiaoDienHienThi:
 
         self._taonhombaothu(tab)
         self._taonhomphapbaotheomau(tab)
+        self._taonhomhoimaudongdoi(tab)
 
         # Tầm đánh ít khi chỉnh: để cuối tab
         self._taonhomtamdanh(tab)
@@ -1105,6 +1111,35 @@ class GiaoDienHienThi:
         self.spin_mauchaytron = taoochaytron("mauchaytron", "set_mauchaytron", "Máu dưới", "% thì chạy trốn,")
         self.spin_mauhetchaytron = taoochaytron("mauhetchaytron", "set_mauhetchaytron", " trên", "% đánh lại (0 = tắt)")
 
+    def _taonhomhoimaudongdoi(self, tab):
+        # Ngưỡng hồi máu của Vân Mộng Cốc / Tiên Khí (tactu_kynang_xq._laynguongbommau), lưu theo nhân vật hồi máu
+        nhom = self._taonhom(tab, "Hồi máu đồng đội (Vân Mộng Cốc, Tiên Khí)")
+        hang = ttk.Frame(nhom)
+        hang.grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W)
+
+        def taoo(ten, nhan_truoc, nhan_sau):
+            ttk.Label(hang, text = nhan_truoc).pack(side = tk.LEFT)
+
+            def on_change(hwnd = None):
+                hwnd = hwnd or self.get_selected_hwnd()
+                if hwnd:
+                    try:
+                        self.command_dict[hwnd] = f"set_{ten}:{self.vars[ten].get()}"
+                    except tk.TclError:
+                        pass
+
+            spin = ttk.Spinbox(hang, from_ = 1, to = 100, increment = 5, width = 4, textvariable = self.vars[ten], command = on_change)
+            spin.pack(side = tk.LEFT, padx = 4)
+            self._ganspinboxapdung(spin, on_change)
+            ttk.Label(hang, text = nhan_sau).pack(side = tk.LEFT)
+            setattr(self, f"spin_{ten}", spin)
+
+        taoo("maubommaudongdoi", "Hồi khi máu đồng đội <=", "%,")
+        taoo("maubommaudatinh", " Đào Hoa đang Dã Tính <=", "%")
+        ttk.Label(nhom, text = "Đào Hoa đang Dã Tính cố ý giữ máu thấp để tăng Ngoại Công nên hồi ở ngưỡng riêng; "
+                               "khi nhân vật hồi máu đang bật PK thì dùng ngưỡng thường cho cả Đào Hoa.",
+                  style = "Phu.TLabel", wraplength = self._px(520), justify = tk.LEFT).grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W, pady = (2, 0))
+
     def _taonhomphapbaotheomau(self, tab):
         # Đổi pháp bảo theo sinh lực (tactu_vatpham_xq._laymucphapbaotheomau): 3 mức cao / vừa / thấp theo PHAPBAOTHEOMAU_MAP,
         # ở mọi bản đồ. Ngưỡng và độ trễ lưu theo nhân vật; phái không có trong bảng thì ô này không tác dụng
@@ -1148,13 +1183,19 @@ class GiaoDienHienThi:
                 text = tens[0] if cot < 3 else (f"Tháo ({tens[0]} khi Dã Tính)" if phai == "daohoanguyen" else "Tháo pháp bảo")
                 ttk.Label(bang, text = text).grid(row = dong, column = cot, sticky = tk.W, padx = (0, 12))
         ttk.Label(nhom, text = "Mức thấp: tháo pháp bảo (đang đeo Kiếm / Cuốc / Liềm thì giữ); chỉ Đào Hoa đang Dã Tính "
-                               "Cuồng Lực (không tháo được) mới đổi sang Kiếm. Áp dụng ở mọi bản đồ.",
+                               "Cuồng Lực (không tháo được) mới đổi sang Kiếm. Áp dụng ở mọi bản đồ. Đổi lên mức cao hơn khi "
+                               f"máu hồi thêm đủ %, hoặc khi máu ở trên ngưỡng liên tục {THOIGIANONDINHDOIPHAPBAO:g} giây.",
                   style = "Phu.TLabel", wraplength = self._px(520), justify = tk.LEFT).grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W, pady = (2, 0))
 
         # Xoay vòng Cửu Long Thần Hỏa Trảo theo khí huyết (tactu_vatpham_xq._xoayvongtraotheokhihuyet), mọi phái
         self._create_check(nhom, "Xoay vòng Cửu Long Thần Hỏa Trảo theo khí huyết", self.vars["xoayvongtrao"], "battat_xoayvongtrao")
         ttk.Label(nhom, text = "Đang đánh: Trảo đang đeo hết khí huyết thì đeo Trảo khác trong túi còn khí huyết. Ở thành / quốc gia "
                                "không PK, không có mục tiêu: đeo Trảo chưa đầy khí huyết cho nó tự hồi (đầy thì đổi Trảo khác).",
+                  style = "Phu.TLabel", wraplength = self._px(520), justify = tk.LEFT).grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W, pady = (2, 0))
+        # Mức vừa hết Trảo còn khí huyết thì đeo món mức cao (tactu_vatpham_xq._is_contraocokhihuyet), bật riêng từng nhân vật
+        self._create_check(nhom, "Mức vừa hết Trảo còn khí huyết thì đeo món mức cao", self.vars["hettraodeomuccao"], "battat_hettraodeomuccao")
+        ttk.Label(nhom, text = "Máu ở mức vừa mà cả Trảo đang đeo lẫn Trảo trong túi đều hết khí huyết: đeo món mức cao "
+                               "(Đào Hoa: Nhiếp Hồn Linh) thay vì giữ Trảo rỗng.",
                   style = "Phu.TLabel", wraplength = self._px(520), justify = tk.LEFT).grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W, pady = (2, 0))
 
     def _taonhomtamdanh(self, tab):
@@ -2220,7 +2261,7 @@ class GiaoDienHienThi:
             info = self.shared_data.get(self.get_selected_hwnd()) if self.get_selected_hwnd() else None
             taikhoan = {"tennhanvat": (info or {}).get("tennhanvat") or "", "idnguoichoi": (info or {}).get("idnguoichoi") or "", "group": 1,
                         "server": 1, "char_index": 1, "maydangnhap": tenmaynay(),
-                        "vitricuaso": next((v for v in range(1, 6) if v not in {t.get("vitricuaso") for t in taikhoanbatchomaynay(cauhinh)}), 1)}
+                        "vitricuaso": next((v for v in range(1, 8) if v not in {t.get("vitricuaso") for t in taikhoanbatchomaynay(cauhinh)}), 1)}
         else:
             taikhoan = dict(taikhoans[vitri])
         giatris = {k: ("" if taikhoan.get(k) is None else str(taikhoan.get(k))) for k in ("tennhanvat", "idnguoichoi", "user", "pass", "group", "server",
@@ -2228,7 +2269,7 @@ class GiaoDienHienThi:
         truongs = [("tennhanvat", "Tên nhân vật", None), ("idnguoichoi", "ID người chơi (cố định, ưu tiên để nhận ra)", None),
                    ("user", "Tài khoản", None), ("pass", "Mật khẩu", None),
                    ("group", "Cụm máy chủ", ["1", "2", "3", "4"]), ("server", "Máy chủ", ["1", "2"]),
-                   ("char_index", "Ô nhân vật (1-6)", ["1", "2", "3", "4", "5", "6"]), ("vitricuaso", "Vị trí cửa sổ (1-4 góc, 5 giữa)", ["1", "2", "3", "4", "5"]),
+                   ("char_index", "Ô nhân vật (1-6)", ["1", "2", "3", "4", "5", "6"]), ("vitricuaso", "Vị trí cửa sổ (trên: 1 5 6 2, dưới: 3 7 4)", ["1", "2", "3", "4", "5", "6", "7"]),
                    ("duongdangame", "Đường dẫn game riêng (trống = đường dẫn chung, vd bản Niết Bàn)", None)]
 
         def kiemtra(kq):
@@ -2238,7 +2279,7 @@ class GiaoDienHienThi:
                 return "Cần ID người chơi hoặc tên nhân vật để biết nhân vật đã online chưa"
             if kq["idnguoichoi"].strip() and not kq["idnguoichoi"].strip().isdigit():
                 return "ID người chơi phải là số"
-            for t, toida in (("group", 4), ("server", 2), ("char_index", 6), ("vitricuaso", 5)):
+            for t, toida in (("group", 4), ("server", 2), ("char_index", 6), ("vitricuaso", 7)):
                 if not kq[t].strip().isdigit() or not 1 <= int(kq[t]) <= toida:
                     return f"Ô \"{dict((k, n) for k, n, _ in truongs)[t]}\" phải từ 1 tới {toida}"
             if kq["duongdangame"].strip() and not os.path.isfile(kq["duongdangame"].strip()):
@@ -2303,11 +2344,13 @@ class GiaoDienHienThi:
         nhombando = self._taonhom(tab, "Tiện ích hiển thị")
         hangbando = ttk.Frame(nhombando)
         hangbando.grid(row = 0, column = 0, sticky = tk.W)
-        ttk.Button(hangbando, text = "Mở bản đồ nhỏ", command = lambda: mobandonho(self)).pack(side = tk.LEFT)
+        ttk.Button(hangbando, text = "Mở bản đồ nhỏ (Ctrl+M)", command = lambda: mobandonho(self)).pack(side = tk.LEFT)
         # Ngoại hình chỉ mình thấy (ngoaihinh_xq): đổi trang phục / cánh / vũ khí / màu hào quang trên client, máy chủ không biết
         ttk.Button(hangbando, text = "Ngoại hình chỉ mình thấy", command = lambda: mongoaihinh(self)).pack(side = tk.LEFT, padx = (6, 0))
         # Tự động rao (tudongrao_xq): câu rao / kênh / chu kỳ theo từng nhân vật, lưu _internal/tudongrao.json
         ttk.Button(hangbando, text = "Tự động rao", command = lambda: motudongrao(self)).pack(side = tk.LEFT, padx = (6, 0))
+        # Tẩy thuộc tính đồ ô đầu hành trang ở NPC Lương Phan Tiên tới khi đạt giá trị mong muốn (taythuoctinh_xq), hộp thoại riêng
+        ttk.Button(hangbando, text = "Tẩy thuộc tính đồ", command = lambda: motaythuoctinh(self)).pack(side = tk.LEFT, padx = (6, 0))
         # Ẩn hiển thị trong client (mọi cửa sổ game): lưu _internal/hienthi.json, bot đọc lại trong ~2s, hook vẽ đọc cờ nên có tác dụng ngay
         hienthi = taihienthi()
         vars_hienthi = {ten: tk.BooleanVar(value = hienthi[ten]) for ten in hienthi}
@@ -3265,6 +3308,7 @@ class GiaoDienHienThi:
                         "Cấm Vệ Quân - Chu, Đường Môn - Hàn, Mao Sơn - Tề, Thục Sơn - Yên, Đào Hoa Nguyên - Triệu) rồi give Tề Tổng Quản. "
                         "Truy Sát Kẻ Phản Bội / Ám Sát: dùng Công Văn Truy Nã (hết thì mua ở Tạp Hóa Tề Quốc) tìm kẻ phản bội ở Tề Quốc, giết rồi về trả. "
                         "Thăm Hỏi <NPC>: tới NPC → \"1. Thăm Hỏi\" → \"1. Hoàn thành nhiệm vụ\". Làm tới khi bấm dừng / Tề Tổng Quản không giao nữa.",
+            "thienxu": "Nhiệm vụ bang phái (10 lượt/ngày). Nhận ở <Tên bang> Tổng Quản trên bản đồ bang (tự dùng Hồi Bang Phù về bang): \"5. Lãnh nhiệm vụ Thiên Xu Viện\" → \"1. Nhận\". Cứu Nguy Giải Nạn: tới toạ độ trong mô tả tìm <Tên bang> Người Đưa Tin → \"1. Hoàn thành nhiệm vụ\". Gửi Thư Nhà: tới NPC người thân ở nước trong mô tả → lựa chọn hoàn thành. Làm tới khi đủ lượt / Tổng Quản không giao nữa / bấm dừng.",
             "tapkich": "Chạy theo đội ở bảng Phó bản chung (đội 1 người = đi một mình), môn phái chọn ở trên theo đội: trưởng đội tìm "
                        "NPC, thành viên tự bật Tập Kích (chỉ tự chọn menu vào / mua Lễ Bao) và Theo sau trưởng đội. Mỗi vòng: tới bản đồ môn phái đã chọn, dò khắp bản đồ tìm "
                        "Võ Lâm Bại Hoại → \"1. Bớt nói nhảm đi, ta oánh nè !\" → \"1. Dùng 5 Ngân Bảo gia tăng 50% kinh nghiệm\" (thành "
@@ -4001,7 +4045,7 @@ class GiaoDienHienThi:
             return
         danglam = hv.get("danglam") or ""
         if danglam == viec:
-            self.command_dict[int(hwnd)] = {"sumon": "huysumon", "danhvong": "huydanhvong"}[viec]
+            self.command_dict[int(hwnd)] = {"sumon": "huysumon", "danhvong": "huydanhvong", "thienxu": "huythienxu"}[viec]
             return
         if danglam:
             ten = VIECHANG_MAP.get(danglam) or VIECDOI_MAP.get(danglam) or VIECRIENG_MAP.get(danglam, danglam)
@@ -5197,6 +5241,7 @@ class GiaoDienHienThi:
                 ("uutienmaoson", "_is_uutienbaothukynangtrieuhoi"),
                 ("doiphapbaotheomau", "_is_doiphapbaotheomau"),
                 ("xoayvongtrao", "_is_xoayvongtrao"),
+                ("hettraodeomuccao", "_is_hettraodeomuccao"),
                 ("chantangcap", "_is_chantangcapdo"),
                 ("tudongtangcap", "_is_tudongtangcap"),
                 ("diemdanhxungquanh", "_is_tudongdichuyendiemdanhxungquanh")):
@@ -5243,7 +5288,9 @@ class GiaoDienHienThi:
         for ten, khoa, macdinh in (("mauchaytron", "_mauchaytron", NGUONGMAUCHAYTRON), ("mauhetchaytron", "_mauhetchaytron", NGUONGMAUHETCHAYTRON),
                                    ("mauphapbaovua", "_mauphapbaovua", NGUONGPHAPBAOTHEOMAU_VUA),
                                    ("mauphapbaothap", "_mauphapbaothap", NGUONGPHAPBAOTHEOMAU_THAP),
-                                   ("dotrephapbao", "_dotrephapbao", DOTREPHAPBAOTHEOMAU)):
+                                   ("dotrephapbao", "_dotrephapbao", DOTREPHAPBAOTHEOMAU),
+                                   ("maubommaudongdoi", "_maubommaudongdoi", NGUONGBOMMAUDONGDOI),
+                                   ("maubommaudatinh", "_maubommaudatinh", NGUONGBOMMAUDATINH)):
             if widgetdangfocus != getattr(self, f"spin_{ten}", None):
                 try:
                     giatri_moi = int(info.get(khoa, macdinh))

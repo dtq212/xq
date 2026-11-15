@@ -1469,24 +1469,43 @@ def chotientrinhthoat(pids, thoigiantoida = 15.):
     time.sleep(1.)
 
 
+# Vị trí cửa sổ game (1..SOCLIENTTOIDA) -> (cột, số cột của hàng, hàng). Game mở được 7 client: màn 1920x1080 chỉ vừa 2 cửa sổ
+# 810x630 mỗi chiều nên chia 2 hàng, hàng trên 4 cửa sổ, hàng dưới 3, trải đều từ mép trái tới mép phải (chồng lên nhau, còn
+# thấy được phần trái mỗi cửa sổ ~370px hàng trên / ~555px hàng dưới). Giữ 1-4 là 4 góc như bản cũ (taikhoan_*.json đang lưu 1-4):
+# máy chạy 4 cửa sổ vẫn y như trước, cửa sổ 5-7 chen vào giữa. Bản cũ 5 = giữa màn hình, nay 5 = hàng trên ô 2.
+#   hàng trên:  1   5   6   2
+#   hàng dưới:  3     7     4
+VITRICUASOs = {1: (0, 4, 0), 5: (1, 4, 0), 6: (2, 4, 0), 2: (3, 4, 0),
+               3: (0, 3, 1), 7: (1, 3, 1), 4: (2, 3, 1)}
+
+
+def _vungmanhinhlamviec():
+    # Vùng màn hình chính trừ thanh taskbar (SPI_GETWORKAREA), lỗi thì lấy cả màn hình trừ 40px taskbar
+    try:
+        return win32gui.SystemParametersInfo(win32con.SPI_GETWORKAREA)
+    except Exception:
+        return 0, 0, win32api.GetSystemMetrics(0), win32api.GetSystemMetrics(1) - 40
+
+
 def dichuyencuasotheovitri(hwnd, vitricuaso):
-    screen_width = win32api.GetSystemMetrics(0)
-    screen_height = win32api.GetSystemMetrics(1)
-    window_width = 810
-    window_height = 630
-    taskbar_height = 40
+    trai, tren, phai, duoi = _vungmanhinhlamviec()
+    window_width, window_height = 810, 630
+    try:
+        r = win32gui.GetWindowRect(hwnd)
+        if 400 <= r[2] - r[0] <= 3000 and 300 <= r[3] - r[1] <= 2000:
+            window_width, window_height = r[2] - r[0], r[3] - r[1]
+    except Exception:
+        pass
 
-    index_goc = (vitricuaso - 1) % 5
-
-    toa_do_4_goc = [
-        (0, 0),                                                                       # 1: Trái Trên
-        (screen_width - window_width, 0),                                             # 2: Phải Trên
-        (0, screen_height - window_height - taskbar_height),                          # 3: Trái Dưới
-        (screen_width - window_width, screen_height - window_height - taskbar_height),  # 4: Phải Dưới
-        ((screen_width - window_width) // 2, (screen_height - window_height - taskbar_height) // 2)  # 5: Giữa màn hình
-    ]
-
-    toado_x, toado_y = toa_do_4_goc[index_goc]
+    try:
+        vitricuaso = int(vitricuaso)
+    except (TypeError, ValueError):
+        vitricuaso = 1
+    cot, socot, hang = VITRICUASOs[(vitricuaso - 1) % len(VITRICUASOs) + 1]
+    # Màn rộng đủ thì các cửa sổ không chồng nhau (bước = bề rộng cửa sổ), hẹp thì dồn đều cho cửa sổ cuối chạm mép phải
+    buocx = min(window_width, (phai - trai - window_width) // (socot - 1)) if socot > 1 else 0
+    toado_x = trai + max(0, cot * buocx)
+    toado_y = tren + max(0, (duoi - tren - window_height) * hang)
 
     _bokieuan(hwnd)
     try:

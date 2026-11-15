@@ -188,6 +188,9 @@ class TacTuSuMon:
         # Danh Vọng Truy Sát: chỉ đánh kẻ phản bội mang ID mình
         if self.get_is_danhvongdanhquai():
             return self._danhvong["tenquai"]
+        # Thiên Xu Viện Trừ Ác Giúp Yếu: chỉ đánh ác nhân của nhiệm vụ
+        if self.get_is_thienxudanhquai():
+            return self._thienxu["tenquai"]
         # Sư Gia: chỉ đánh tội phạm của nhiệm vụ
         if self.get_is_sugiadanhquai() and self._sugia["tenquai"]:
             return self._sugia["tenquai"]

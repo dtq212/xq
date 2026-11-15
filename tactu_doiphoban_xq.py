@@ -295,7 +295,7 @@ class TacTuDoiPhoBan:
         # Mình còn bận gì phải xong trước khi đi đội ("" = sẵn sàng). viecdoi: việc đội mình đang làm theo (không tính là bận)
         dang = self.get_viecdanglam()
         if dang and dang != viecdoi:
-            if dang in ("sumon", "danhvong"):
+            if dang in ("sumon", "danhvong", "thienxu"):
                 return f"làm nốt lượt {VIECHANG_MAP[dang]} đang dở"
             if dang in VIECDOI_MAP:
                 return f"đang làm {VIECDOI_MAP[dang]} riêng"

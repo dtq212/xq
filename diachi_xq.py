@@ -73,6 +73,7 @@ CHUKY = {
     "HOOK_VELOPHIEUUNGNV": ("ma", "C6 44 24 3C 01 8B 04 85 ?? ?? ?? ??", 5, 0x15029),  # vòng vẽ 10 lớp hiệu ứng trên đối tượng: mov eax,[eax*4+0x5BE614] (7 byte), eax = chỉ số sprite lớp; bỏ lớp -> +0xAC
     "HOOK_VELOPDACBIETNV": ("ma", "FF 15 ?? ?? ?? ?? 8B 94 AE A0 12 00 00", 6, 0x15194),  # vẽ lớp hiệu ứng đặc biệt (mã 9003) sau vòng lớp: mov edx,[esi+ebp*4+0x12A0] (7 byte); bỏ vẽ -> +0x2D
     "HOOK_VELOPHIEUUNGNV2": ("ma", "0F 8F ?? ?? ?? ?? 8B 04 85 ?? ?? ?? ?? 85 C0", 6, 0x1577c),  # vòng vẽ 10 lớp hiệu ứng thứ 2 (lớp +0x1368 <= 1) sau thân: mov eax,[eax*4+0x5BE614] (7 byte); bỏ lớp -> +0x94
+    "HOOK_VETHANDOITUONG": ("ma", "8D 04 F0 50 8B CF FF 52 30 8A 47 35 84 C0", 3, 0x1451D),  # vẽ khung thân đối tượng: push eax; mov ecx,edi; call [edx+0x30] (6 byte), eax = khung; bỏ -> +6 và bỏ 1 tham số đã push
     "HOOK_VEDOITUONG": ("ma", "64 A1 00 00 00 00 6A FF 68 ?? ?? ?? ?? 50 A0 ?? ?? ?? ?? 64 89 25 00 00 00 00 8B 15 ?? ?? ?? ??", 0, 0x14200),  # đầu hàm vẽ 1 đối tượng (thiscall, ecx = đối tượng, ret 8): mov eax,fs:[0] (6 byte)
     "HOOK_VECUASO": ("ma", "8B 06 39 78 1C 7E 3E", 0, 0x4b2ae),  # vòng vẽ cửa sổ giao diện: sau call vẽ cửa sổ, mov eax,[esi]; cmp [eax+0x1C],edi (5 byte), esi = ô mảng cửa sổ
     "DSHIEUUNGDAT": ("bien", "8B 3D ?? ?? ?? ?? 39 1F 75 2C", 2, 0x376ca4),  # đầu danh sách hiệu ứng mặt đất (trận pháp...), nút 0x2C byte, kế tiếp +0x28

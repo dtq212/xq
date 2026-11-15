@@ -650,3 +650,26 @@ def mobandonho(giaodien):
         except tk.TclError:
             pass
     giaodien._bandonho = CuaSoBanDoNho(giaodien)
+
+
+def battatbandonho(giaodien):
+    # Ctrl+M (người dùng muốn 2026-11-15): đang mở thì đóng (tắt gom dữ liệu ở bot), chưa mở thì mở. Gọi trong luồng Tk
+    cuaso = getattr(giaodien, "_bandonho", None)
+    if cuaso:
+        try:
+            if cuaso.top.winfo_exists():
+                cuaso.dong()
+                return
+        except tk.TclError:
+            pass
+        giaodien._bandonho = None
+    mobandonho(giaodien)
+
+
+def hwndbandonho(giaodien):
+    # Hwnd khung ngoài cửa sổ bản đồ nhỏ (0 nếu chưa mở), để phím tắt vẫn nhận khi đang đứng ở cửa sổ này
+    cuaso = getattr(giaodien, "_bandonho", None)
+    try:
+        return int(cuaso.top.wm_frame(), 16) if cuaso else 0
+    except Exception:
+        return 0

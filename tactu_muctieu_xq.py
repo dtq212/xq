@@ -520,7 +520,7 @@ class TacTuMucTieu:
         # Đang Đi tới bản đồ người dùng chọn / đi giao đồ / cất kho / đi làm sư môn: không chọn quái dọc đường (trước đây gặp quái là đứng
         # lại đánh), tới nơi mới đánh
         if self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangcatkho() or self.get_is_sumondichuyen() or self.get_is_langlysondichuyen() \
-                or self.get_is_sugiadichuyen() or self.get_is_tapkichdichuyen() or self.get_is_matacdichuyen() or self.get_is_danhvongdichuyen()                 or self.get_is_keocapchuyendo():
+                or self.get_is_sugiadichuyen() or self.get_is_tapkichdichuyen() or self.get_is_matacdichuyen() or self.get_is_danhvongdichuyen() or self.get_is_thienxudichuyen()                 or self.get_is_keocapchuyendo():
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             return
 
@@ -1012,8 +1012,8 @@ class TacTuMucTieu:
                 is_chibuffthuccot = not is_nguoichoi and not is_baothu and tendoituong == "Phá Thiên Yêu" \
                     and diachicosothongtindoituongmuctieuxemxet != diachimuctieudangchon
 
-                # Thực Cốt / Thực Giáp / Thực Tâm: chỉ có tác dụng 1 lần mỗi 120s trên 1 mục tiêu, nên ngoài mục tiêu chưa dính hiệu ứng
-                # còn bỏ mục tiêu bot khác (cùng máy / LAN) vừa buff hoặc đã dính trong 120s qua (_is_canbuffmaoson), chọn mục tiêu gần kế tiếp
+                # Thực Cốt / Thực Giáp / Thực Tâm: buff lên mục tiêu chưa dính hiệu ứng (hết icon / bị giải là buff lại), ngoài ra
+                # bỏ mục tiêu bot khác (cùng máy / LAN) vừa gửi chiêu đó (_is_canbuffmaoson), chọn mục tiêu gần kế tiếp
                 idmuctieugiucho = self._get_idmuctieugiucho(diachicosothongtindoituongmuctieuxemxet)
 
                 if self._is_canbuffmaoson(diachicosothongtindoituongmuctieuxemxet, HIEUUNGKYNANG_THUCCOT, idmuctieugiucho, khoabichan) and khoangcach < khoangcachthuccotgannhat:
@@ -1218,7 +1218,7 @@ class TacTuMucTieu:
                 is_datinhcuongluc = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_DATINCUONGLUC,), macdinh = False, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 1)
                 is_dangbatpk = self.moitruong.get_idmaupk() != MAUPK_HOABINH
 
-                if is_khongbithieudot and (phantramsinhlucconlai <= 35 or ((not is_datinhcuongluc or is_dangbatpk) and phantramsinhlucconlai <= 75)):
+                if is_khongbithieudot and phantramsinhlucconlai <= self._laynguongbommau(is_datinhcuongluc, is_dangbatpk):
                     danhsachcanbommau.append((diachidoituongdangxemxet, self.moitruong.get_toado(diachidoituongdangxemxet)))
                     if is_uutiennhom:
                         if phantramsinhlucconlai < phantramsinhlucthapnhat:

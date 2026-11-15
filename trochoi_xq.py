@@ -16,6 +16,7 @@ import subprocess
 import win32process
 
 from amthanh_xq import khoitaocom, datamthanhtientrinhs, NhacNenClient
+from bandonho_xq import battatbandonho, hwndbandonho
 from bannganluong_xq import BanNganLuong
 from cuaso_xq import CuaSo
 from dangnhap_xq import TuDongDangNhap
@@ -218,6 +219,17 @@ class TroChoiManager:
     def loop_hotkey(self):
         while True:
             hwnd = win32gui.GetForegroundWindow()
+            # Ctrl+M: bật/tắt cửa sổ Bản đồ nhỏ, nhận khi đang ở cửa sổ game, giao diện bot (không gõ chữ) hoặc chính bản đồ nhỏ.
+            # Mở/đóng cửa sổ Tk phải chạy trong luồng Tk nên đẩy qua root.after
+            if hwnd and keyboard.is_pressed("ctrl+m") and not keyboard.is_pressed("alt") and not keyboard.is_pressed("shift") \
+                    and (hwnd in self.bot_processes or (hwnd == self.gui.hwndgiaodien and not self.gui.is_dangnhapchu)
+                         or hwnd == hwndbandonho(self.gui)):
+                try:
+                    self.gui.root.after(0, lambda: battatbandonho(self.gui))
+                except Exception as err:
+                    print(f"Lỗi bật/tắt bản đồ nhỏ: {err}")
+                time.sleep(0.3)
+                continue
             # Đang ở cửa sổ giao diện bot: phím tắt áp dụng cho nhân vật của dòng đang chọn (trừ lúc đang gõ trong ô nhập)
             if hwnd and hwnd == self.gui.hwndgiaodien:
                 hwnd = None if self.gui.is_dangnhapchu else self.gui.hwnddangchon

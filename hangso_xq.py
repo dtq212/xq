@@ -677,6 +677,14 @@ KHOANGCACHTOITHIEUBADONG = 3.
 # chiêu delay 0 gần như ra số bay ngay, không cần chờ lâu)
 THOIGIANGIUCHANDELAY0 = 0.25
 DEMSOBAYMOI = 20
+# THỬ LẠI 2026-11-15 (người dùng yêu cầu: đánh xong boss hoạt ảnh kéo dài mãi): đang tư thế xuất chiêu 6/9 mà mục tiêu hiện số bay mới
+# (máy chủ đã tính đòn) hoặc mục tiêu chết / mất thì cắt về đứng im (MoiTruong.action_cathoatanhkhicosobay), ghi tư thế khựng 11 (LoopBoKhungSauTanCong tự về 1). Khác bản cũ đã gỡ
+# 2026-11-09: không tua cả hàng đợi (bỏ cả bước đi => hình lệch chỗ thật) mà chỉ bỏ các ô ĐÒN ĐÁNH (mã >= 0x28) liền nhau ở đầu hàng,
+# ô bước đi / quay hướng giữ nguyên; bỏ hết đòn đang xếp nên game không đặt lại tư thế 6. Chiêu lướt (không khựng sau, vd Khai Thiên)
+# không cắt. Chỉ cắt khi đã ở tư thế xuất chiêu ít nhất THOIGIANTOITHIEUCATHOATANH giây (số bay của đòn trước đến trễ không cắt nhầm
+# đòn vừa bắt đầu). Lỗi lệch toạ độ / giật thì đặt False
+IS_CATHOATANHKHICOSOBAY = True
+THOIGIANTOITHIEUCATHOATANH = 0.1
 # Đo tạm mã hoạt ảnh (2026-11-11, MoiTruong._dohoatanhchieu): danh sách khác rỗng thì log "[ĐO HOẠT ẢNH]" mọi đòn đánh của mình có
 # mã hoạt ảnh ngoài MAHOATANHDABIETs (bắt cả chiêu bấm tay), và mọi đòn trong THOIGIANDOHOATANH giây sau khi bot gửi chiêu trong danh
 # sách.
@@ -1201,6 +1209,14 @@ PHAPBAOTHEOMAU_MAP = {
 NGUONGPHAPBAOTHEOMAU_VUA = 50
 NGUONGPHAPBAOTHEOMAU_THAP = 25
 DOTREPHAPBAOTHEOMAU = 25
+# Nhánh đổi lên thứ hai (người dùng 2026-11-15): máu ở trên ngưỡng của mức cao hơn liên tục chừng này giây thì đổi lên luôn,
+# không cần hồi tới ngưỡng + độ trễ. Đào Hoa Dã Tính giữ máu ~35% (không ai hồi) thì cách cũ (phải lên 50%) gần như không đổi lại Trảo
+THOIGIANONDINHDOIPHAPBAO = 5.
+# Vân Mộng Cốc / Tiên Khí hồi máu đồng đội (tab Chiến đấu, lưu theo nhân vật hồi máu): máu <= NGUONGBOMMAUDONGDOI% thì hồi;
+# Đào Hoa đang Dã Tính Cuồng Lực (cố ý giữ máu thấp để tăng Ngoại Công) chỉ hồi khi <= NGUONGBOMMAUDATINH%, trừ khi mình đang bật PK
+# thì dùng ngưỡng thường (người dùng 2026-11-13, đưa vào cấu hình 2026-11-15)
+NGUONGBOMMAUDONGDOI = 75
+NGUONGBOMMAUDATINH = 35
 # Pháp bảo đang đeo: "desc 7" lại mỗi chừng này giây để biết đã hỏng (độ bền 0/x) chưa, hỏng thì đổi món tương tự trong túi.
 # 30s là chậm khi luyện đơn (Lư mòn nhanh, người dùng báo 2026-11-12); mô tả ô trang bị chỉ giữ ~10s rồi bị xoá nên đọc ngay lượt sau
 THOIGIANKIEMTRADOBENPHAPBAO = 10.
@@ -1825,10 +1841,11 @@ HIEUUNGGIUCHOKYNANG_MAP = {
     "maoson": {VITRIKYNANG_THUCCOT: HIEUUNGKYNANG_THUCCOT, VITRIKYNANG_THUCGIAP: HIEUUNGKYNANG_THUCGIAP, VITRIKYNANG_THUCTAM: HIEUUNGKYNANG_THUCTAM},
     "thucsonkiem": {VITRIKYNANG_LANGKHONGCHIHUYET: HIEUUNGKYNANG_CHOANG},
 }
-# Thực Cốt / Thực Giáp / Thực Tâm lên 1 mục tiêu dù buff bao nhiêu lần cũng chỉ có tác dụng 1 lần trong 120s (người dùng 2026-11-04,
-# 6 acc Mao Sơn qua LAN cứ hết icon là buff lại vô ích). Bot nào thấy hiệu ứng dính trên mục tiêu thì đánh dấu, trong chừng này giây
-# (tính từ lúc thấy dính) mọi bot (cùng máy và qua LAN) không buff lại hiệu ứng đó lên mục tiêu đó, chọn mục tiêu khác
-THOIGIANHIEULUCBUFFMAOSON_MAP = {HIEUUNGKYNANG_THUCCOT: 120., HIEUUNGKYNANG_THUCGIAP: 120., HIEUUNGKYNANG_THUCTAM: 120.}
+# Khoá hiệu lực: bot thấy hiệu ứng dính trên mục tiêu thì đánh dấu, trong chừng này giây (tính từ lúc thấy dính) mọi bot (cùng máy / LAN)
+# không buff lại hiệu ứng đó lên mục tiêu đó dù đã hết icon. Thực Cốt / Thực Giáp / Thực Tâm KHÔNG khoá (người dùng 2026-11-15): mục tiêu
+# tự giải buff được, Thực Tâm chỉ 20s, nên khoá 120s cũ (2026-11-04) làm mục tiêu trống buff (trận boss 72s chỉ buff Thực Tâm 1 lần).
+# Chỉ dựa vào icon: hết icon là buff lại; giữ chỗ giữa các bot (HIEUUNGGIUCHOKYNANG_MAP) vẫn còn nên mỗi lần chỉ 1 bot gửi
+THOIGIANHIEULUCBUFFMAOSON_MAP = {}
 # Mệnh Tế hồi cả nhóm: 1 bot Mao Sơn vừa Mệnh Tế cho những người thấp máu quanh nó thì bot khác (cùng máy / LAN) không Mệnh Tế cho
 # chính những người đó trong chừng này giây (chờ máu hồi hiện ra rồi mới xét lại). Còn người thấp máu chưa ai lo thì vẫn Mệnh Tế
 KHOAGIUCHO_MENHTE = "menhte"
@@ -1857,7 +1874,7 @@ TENBOSSBUFFMAOSONs = ("Mã Quỷ", "Lương Hưng", "Yến Thập Tam", "Tư Tà
                       "Hào Quật", "Thủ Lĩnh Thích Khách", "Chiến Quốc Tống Bảo Tiểu Yêu")
 
 # Hàng việc (tab Nhiệm vụ, tactu_hangviec_xq): mã việc -> tên, theo thứ tự mặc định; việc có vòng thì đặt được giới hạn số vòng
-VIECHANG_MAP = {"sumon": "Sư môn", "danhvong": "Danh Vọng"}
+VIECHANG_MAP = {"sumon": "Sư môn", "danhvong": "Danh Vọng", "thienxu": "Thiên Xu Viện"}
 # Việc đi chung theo đội phó bản (bảng "Phó bản chung", tactu_doiphoban_xq): mã việc -> tên, theo thứ tự mặc định; việc có vòng thì đặt
 # được giới hạn số vòng
 VIECDOI_MAP = {"sugia": "Sư Gia", "tapkich": "Tập Kích", "langlyson": "Lăng Ly Sơn", "thanhkieu": "Thành Kiều", "phongyeukinh": "Phong Yêu Kính"}

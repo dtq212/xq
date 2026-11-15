@@ -96,8 +96,54 @@ class TacTuGiaoDo:
         print(f"[GIAO ĐỒ] Về giao ngay: {dems} yêu cầu")
 
     def get_is_danggiaodo(self):
-        # Đang về giao do bấm tay (thay lộ trình điểm đánh); giao trong chuyến bán rác nằm trong quy trình về bán rác
-        return any(_is_chuaxong(y) and y.get("kichhoat") == KICHHOAT_TAY for y in self._hangchogiaodo)
+        # Đang về giao do bấm tay (thay lộ trình điểm đánh); giao trong chuyến bán rác nằm trong quy trình về bán rác.
+        # Mao Sơn về bằng Xuyên Không Hành: giao xong vẫn tính là đang giao tới khi "Quay lại" chỗ cũ (chờ hồi chiêu 30s)
+        return self._buocxkhgiao == 1 or any(_is_chuaxong(y) and y.get("kichhoat") == KICHHOAT_TAY for y in self._hangchogiaodo)
+
+    def _xulyxuyenkhonghanhgiaodo(self, is_conyeucau):
+        # Về giao ngay của Mao Sơn đã học Xuyên Không Hành: về bằng "pf 4182.1" (như về bán rác), giao xong đứng chờ hồi chiêu rồi
+        # "pf 4182.2" quay lại đúng chỗ cũ. -> True khi lượt này đã lo (đứng chờ / vừa gửi chiêu), False thì đi tiếp như thường
+        moitruong = self.moitruong
+        idbando = moitruong.get_idbandohientai()
+        now = time.time()
+        if is_conyeucau:
+            if self._buocxkhgiao != 0:
+                return False
+            if self._thoidiemxkhgiao and (idbando == BANDO_TANTHUTHON or not moitruong.get_is_kynangsansang(VITRIKYNANG_XUYENKHONGHANH)):
+                # Đã gửi và chiêu vào hồi / đã sang Tân Thủ Thôn: về thành xong (đi tiếp tới Tiệm Tạp Hóa như thường)
+                print("[GIAO ĐỒ] Xuyên Không Hành (Về thành) thành công")
+                self._buocxkhgiao, self._thoidiemxkhgiao, self._solanxkhgiao = 1, 0., 0
+                return True
+            if idbando == BANDO_TANTHUTHON or idbando in BANDOPHOBANs or not self._is_coxuyenkhonghanh():
+                return False
+        else:
+            if self._buocxkhgiao != 1:
+                self._buocxkhgiao, self._thoidiemxkhgiao, self._solanxkhgiao = 0, 0., 0
+                return False
+            if idbando != BANDO_TANTHUTHON:
+                # Đã rời Tân Thủ Thôn (chiêu Quay lại xong, hoặc luồng bán rác đã đưa đi): hết việc
+                if self._thoidiemxkhgiao:
+                    print("[GIAO ĐỒ] Xuyên Không Hành (Quay lại) thành công")
+                self._buocxkhgiao, self._thoidiemxkhgiao, self._solanxkhgiao = 0, 0., 0
+                return False
+        lenh, giancach = ("pf 4182.1", 1.5) if is_conyeucau else ("pf 4182.2", 1.0)
+        if not moitruong.get_is_kynangsansang(VITRIKYNANG_XUYENKHONGHANH):
+            # Đang hồi chiêu (30s): đứng chờ
+            moitruong.action_ngatdichuyen()
+            return True
+        if self._solanxkhgiao >= 3 and now - self._thoidiemxkhgiao > giancach:
+            # Gửi 3 lần chiêu vẫn sẵn sàng (bản đồ cấm chiêu?): về / quay lại bằng phù, chạy bộ như phái khác
+            print(f"[GIAO ĐỒ] Xuyên Không Hành ({lenh}) không được, đi như thường")
+            self._buocxkhgiao, self._thoidiemxkhgiao, self._solanxkhgiao = (-1 if is_conyeucau else 0), 0., 0
+            return False
+        if now - self._thoidiemxkhgiao > giancach:
+            moitruong.action_ngatdichuyen()
+            if moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
+                print(f"[GIAO ĐỒ] Đứng yên, dùng Xuyên Không Hành ({'Về thành' if is_conyeucau else 'Quay lại'})")
+                moitruong.action_thucthicaulenh(lenh)
+                self._thoidiemxkhgiao = now
+                self._solanxkhgiao += 1
+        return True
 
     def batdau_giaodo_sauban(self):
         # Bán rác (+ sửa đồ, cất kho) xong: yêu cầu đang chờ mà người nhận đang ở gần (thấy được) thì giao luôn trong chuyến này
@@ -161,12 +207,16 @@ class TacTuGiaoDo:
         yeucau = next((y for y in dangchos if y.get("lucgui")), None) or (next((y for y in dangchos if self._timnguoinhan(y)), None)
                                                                          if moitruong.get_idbandohientai() == BANDO_TANTHUTHON else None)
         yeucau = yeucau or (dangchos[0] if dangchos else None)
-        if yeucau is None:
+        if yeucau is None and not (kichhoat == KICHHOAT_TAY and self._buocxkhgiao == 1):
             return None
         if moitruong.get_is_nhanvatdachet() or moitruong.get_is_dangvankhi() or self.get_is_danghoithoainpc():
             return None
-        if kichhoat == KICHHOAT_TAY and self._trangthaiveban != 0:
-            return None
+        if kichhoat == KICHHOAT_TAY:
+            if self._trangthaiveban != 0:
+                return None
+            # Mao Sơn: về / quay lại bằng Xuyên Không Hành; giao xong (yeucau None) chỉ còn việc quay lại
+            if self._xulyxuyenkhonghanhgiaodo(yeucau is not None) or yeucau is None:
+                return None
         now = time.time()
 
         if moitruong.get_idbandohientai() != BANDO_TANTHUTHON:

@@ -4,18 +4,6 @@
       "bat": true,
       "is_bao": false,
       "hanhdong": "vut",
-      "ghichu": "",
-      "ten": [],
-      "tenchua": [
-        "Thần Thú - Sửu"
-      ],
-      "loai": [],
-      "mota": []
-    },
-    {
-      "bat": true,
-      "is_bao": false,
-      "hanhdong": "vut",
       "ghichu": "Vứt tàng bảo đồ",
       "ten": [
         "Tàng Bảo Đồ",
@@ -26,10 +14,6 @@
         "Khu Thần Lệnh",
         "Chiến Quốc Lệnh",
         "Linh Tê Hoàn",
-        "Thần Thú - Tuất",
-        "Thần Phong Phi Phong",
-        "Thần Thú - Chuột",
-        "Thần Thú - Mùi",
         "Hà Thủ Ô",
         "Điền Thất"
       ],
@@ -188,7 +172,12 @@
         "Hồng Bảo Thạch",
         "Hồng Ngọc Thạch",
         "Hạt Mè Khai Môn",
-        "Cá"
+        "Cá",
+        "Da Sói",
+        "Thần Uy Chiến Y",
+        "Thần Uy Chiến Khôi",
+        "Thần Uy Chiến Ngoa",
+        "Đằng Long Khôi Giáp"
       ],
       "tenchua": [],
       "loai": [],
@@ -965,6 +954,25 @@
       "chikhidanh": true,
       "khongphobanrieng": false,
       "ghichu": ""
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Nhập Môn Y Thuật",
+        "Nhập Môn Tu Tâm"
+      ],
+      "sinhluc": 0,
+      "matsinhluc": 0,
+      "noiluc": 0,
+      "matnoiluc": 0,
+      "theluc": -1,
+      "giancach": 30.0,
+      "hieuung": "",
+      "noi": "moinoi",
+      "monphai": "vanmongcoc",
+      "chikhidanh": false,
+      "khongphobanrieng": false,
+      "ghichu": "Sử dụng nhập môn Y Thuật"
     }
   ]
 }

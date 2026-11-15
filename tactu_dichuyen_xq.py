@@ -486,7 +486,7 @@ class TacTuDiChuyen:
             lydochon = "THEO SAU SANG BẢN ĐỒ KHÁC"
         elif (self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangcatkho() or self.get_is_sumondichuyen()
               or self.get_is_langlysondichuyen() or self.get_is_sugiadichuyen() or self.get_is_tapkichdichuyen() or self.get_is_matacdichuyen()
-              or self.get_is_danhvongdichuyen()) and self._yeucautudo:
+              or self.get_is_danhvongdichuyen() or self.get_is_thienxudichuyen()) and self._yeucautudo:
             # Đang Đi tới bản đồ / đi giao đồ / cất kho / đi làm sư môn: đi tiếp trước tấn công / gom quái / nhặt đồ
             yeucauduocchon = self._yeucautudo
             lydochon = "ĐI TỚI BẢN ĐỒ"
@@ -955,8 +955,8 @@ class TacTuDiChuyen:
                 # Không biết hiệu ứng thì coi như không có Đa Tình Cường Lực (ngưỡng rộng nhất)
                 is_datinhcuongluc = is_biethieuung and co((HIEUUNGKYNANG_DATINCUONGLUC,), 1)
                 is_dangbatpk = self.moitruong.get_idmaupk() != MAUPK_HOABINH
-                if mau <= 35 or ((not is_datinhcuongluc or is_dangbatpk) and mau <= 75):
-                    for vitri in (VITRIKYNANG_CAMLOTRI, VITRIKYNANG_SOTRI, VITRIKYNANG_VODINHLUUTHUY, VITRIKYNANG_KHIETVANQUYET):
+                if mau <= self._laynguongbommau(is_datinhcuongluc, is_dangbatpk):
+                    for vitri in self._get_kynangbommauvanmongcocs():
                         viecs.append((2, vitri, f"bơm máu ({mau}%)"))
             if is_biethieuung and co((HIEUUNGKYNANG_THUCTAM, HIEUUNGKYNANG_LACKICH, HIEUUNGKYNANG_DONGBANG), 0):
                 viecs.append((3, VITRIKYNANG_TAYTRANQUYET, "Tẩy Trần Quyết"))
@@ -1005,8 +1005,7 @@ class TacTuDiChuyen:
             for diachi, vitris in ((self._diachidoituongcanhoisinhvanmongcoc, (VITRIKYNANG_CAITUHOANSINH,)),
                                    (self._diachidoituongcanbufftaytranquyetvanmongcoc, (VITRIKYNANG_TAYTRANQUYET,)),
                                    (self._diachidoituongcanbufftaytranquyet2vanmongcoc, (VITRIKYNANG_TAYTRANQUYET,)),
-                                   (self._diachidoituongcanbommauvanmongcoc, (VITRIKYNANG_CAMLOTRI, VITRIKYNANG_KHIETVANQUYET,
-                                                                              VITRIKYNANG_SOTRI, VITRIKYNANG_VODINHLUUTHUY)),
+                                   (self._diachidoituongcanbommauvanmongcoc, self._get_kynangbommauvanmongcocs()),
                                    (self._diachidoituongcanbuffnganchamvanmongcoc, (VITRIKYNANG_NGANCHAMDOACH,)),
                                    (self._diachidoituongcanbuffkimchamvanmongcoc, (VITRIKYNANG_KIMCHAMDOACH,)),
                                    (self._diachidoituongcanbuffcuongthethuatvanmongcoc, (VITRIKYNANG_CUONGTHETHUAT,)),
@@ -1431,7 +1430,8 @@ class TacTuDiChuyen:
             # chuyện Xa Phu, giành nhau mãi (TieuLyPhiDao ở Đường Môn 20:38)
             self._xaphunietban = None
         if loai == "chaybo":
-            return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (*buoc["cong"], idbandohientai), "khoangcachtoida": 0, "is_chitrongbando": True}
+            return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (*self._layditoicong(buoc["cong"], idbandohientai), idbandohientai),
+                    "khoangcachtoida": 0, "is_chitrongbando": True}
         if loai == "phu":
             return self._phutoibando(idbandodich, idbandohientai, nhanlog, buoc.get("phuongan"))
         if loai == "npc":
@@ -1447,6 +1447,33 @@ class TacTuDiChuyen:
             return None
         # Đã tới bản đồ đích / không có đường trong dữ liệu cổng: đi thẳng tới điểm đích (client tự tìm đường)
         return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (*toadodich, idbandodich), "khoangcachtoida": 0} if toadodich else None
+
+    def _layditoicong(self, cong, idbando):
+        # Điểm đi tới khi chạy bộ sang cổng: bình thường là tâm cổng. Đã đứng trong cổng (<= 1 ô) quá 3s mà chưa sang bản đồ (rơi vào cổng
+        # bằng chiêu lướt / bị kéo vào, không có "go" bước vào cổng nên máy chủ không đưa sang) thì lùi ra 5 ô chỗ đi được rồi đi bộ vào lại
+        now = time.time()
+        x, y = self.moitruong.get_toado()
+        trongcong = max(abs(x - cong[0]), abs(y - cong[1])) <= 1
+        kecong = self._kecong
+        if not kecong or kecong["cong"] != cong or kecong["idbando"] != idbando:
+            kecong = self._kecong = {"cong": cong, "idbando": idbando, "tu": now if trongcong else None, "lui": None}
+        if kecong["lui"]:
+            if now < kecong["lui"][2] and max(abs(x - kecong["lui"][0]), abs(y - kecong["lui"][1])) > 1:
+                return kecong["lui"][:2]
+            kecong["lui"], kecong["tu"] = None, None
+        if not trongcong:
+            kecong["tu"] = None
+            return cong
+        if kecong["tu"] is None:
+            kecong["tu"] = now
+        elif now - kecong["tu"] > 3.:
+            for dx, dy in ((-5, 0), (5, 0), (0, -5), (0, 5), (-4, -4), (4, 4), (-4, 4), (4, -4)):
+                xl, yl = cong[0] + dx, cong[1] + dy
+                if not self.moitruong.get_is_vatcan(xl, yl):
+                    print(f"[ĐI TỚI BẢN ĐỒ] Đứng trong cổng {cong} {now - kecong['tu']:.0f}s chưa sang, lùi ra ({xl}, {yl}) rồi đi vào lại")
+                    kecong["lui"] = (xl, yl, now + 6.)
+                    return xl, yl
+        return cong
 
     def ghi_hanhdong(self, hanhdong, nguon, khoa = None):
         # Hành động hiện tại + nguồn (việc nào sinh ra) cho dòng dưới "Đang điều khiển"; đổi khoá (mặc định chữ + nguồn) thì thêm 1 dòng
@@ -1471,7 +1498,7 @@ class TacTuDiChuyen:
         for is_dang, ten in ((self.get_is_danggiaodo, "Giao đồ"), (self.get_is_dangcatkho, "Cất kho"), (self.get_is_dangsumon, "Sư môn"),
                              (self.get_is_dangkeocap, "Kéo cấp"), (self.get_is_danglanglyson, None), (self.get_is_dangsugia, "Sư Gia"),
                              (self.get_is_dangtapkich, "Tập Kích"), (self.get_is_matacdichuyen, "Mã Tặc"),
-                             (self.get_is_danhvongdichuyen, "Danh Vọng")):
+                             (self.get_is_danhvongdichuyen, "Danh Vọng"), (self.get_is_thienxudichuyen, "Thiên Xu Viện")):
             try:
                 if not is_dang():
                     continue
@@ -1505,8 +1532,14 @@ class TacTuDiChuyen:
                 khoangcach = self.moitruong.get_khoangcach(diachi) if diachi else None
                 toida = yeucau.get("khoangcachtoida")
                 is_tiepcan = khoangcach is not None and toida is not None and khoangcach > toida + 0.5
-                hanhdong = f"{'Tiếp cận để tấn công' if is_tiepcan else 'Tấn công'} {muctieu or 'mục tiêu'}{chodich}"
-                nguon = "Tự động sử dụng kỹ năng (mục tiêu đang chọn)"
+                # Yêu cầu "tấn công" cũng dùng để tới gần đồng đội buff / hồi (Mệnh Tế, Hộ Thể...): đừng ghi là tấn công đồng đội
+                is_dongdoi = bool(diachi) and self.moitruong.get_idnguoichoi(diachi) in (self.moitruong.get_danhsachidnguoichoithanhviennhoms() or ())
+                if is_dongdoi:
+                    hanhdong = f"{'Tới gần' if is_tiepcan else 'Ở cạnh'} đồng đội {muctieu or ''} để buff / hồi{chodich}".replace("  ", " ")
+                    nguon = "Tự động sử dụng kỹ năng (buff / hồi đồng đội)"
+                else:
+                    hanhdong = f"{'Tiếp cận để tấn công' if is_tiepcan else 'Tấn công'} {muctieu or 'mục tiêu'}{chodich}"
+                    nguon = "Tự động sử dụng kỹ năng (mục tiêu đang chọn)"
             elif lydochon == "GIỮ KHOẢNG CÁCH" and yeucau and yeucau.get("duongchaytron"):
                 hanhdong, nguon = f"Chạy trốn theo đường tính sẵn{chodich}", "Máu thấp: chạy xa kẻ tấn công"
             elif lydochon == "GIỮ KHOẢNG CÁCH":
@@ -1828,7 +1861,7 @@ class TacTuDiChuyen:
         # Sư môn (Thu thập, bắt quái...), Lăng Ly Sơn / Thành Kiều, Sư Gia, Tập Kích đang đánh quái của việc đó: bỏ qua lộ trình điểm đánh
         # (bản đồ không có điểm đánh / quái ngoài tầm điểm đánh vẫn đánh)
         return bool(self._sumon and self._sumon["chedo"] == "danhquai") or self.get_is_langlysondanhquai() or self.get_is_sugiadanhquai() \
-            or self.get_is_tapkichdanhquai() or self.get_is_matacdanhquai() or self.get_is_danhvongdanhquai()
+            or self.get_is_tapkichdanhquai() or self.get_is_matacdanhquai() or self.get_is_danhvongdanhquai() or self.get_is_thienxudanhquai()
 
     def _kiemtra_tamdiemdanh(self, x, y):
         # Đang chạy theo lộ trình điểm đánh: mục tiêu phải nằm trong bán kính _bankinhdiemdanh quanh ít nhất 1 điểm đánh của bản đồ hiện tại.
@@ -2021,6 +2054,11 @@ class TacTuDiChuyen:
         # Nhiệm vụ Danh Vọng (tactu_danhvong_xq): nhận / trả ở Tề Tổng Quản, mua vũ khí môn phái, truy sát kẻ phản bội, thăm hỏi NPC
         if self.get_is_dangdanhvong():
             self._yeucautudo = self._xulydanhvong()
+            return
+
+        # Nhiệm vụ Thiên Xu Viện (tactu_thienxu_xq): nhận / trả ở Tổng Quản bang (Hồi Bang Phù), Cứu Nguy Giải Nạn, Gửi Thư Nhà
+        if self.get_is_dangthienxu():
+            self._yeucautudo = self._xulythienxu()
             return
 
         if not self._is_tudongdichuyendiemdanhxungquanh and not self.get_is_sumonfarm():

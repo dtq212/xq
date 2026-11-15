@@ -249,7 +249,7 @@ class DieuPhoiLuot:
 
 
 # Loại chỗ trong GiuKyNangMucTieu: GIUCHO = bot vừa gửi chiêu (chờ hiệu ứng hiện, THOIGIANGIUKYNANGMUCTIEU giây);
-# HIEULUC = hiệu ứng đã dính, trong khoảng này gửi lại cũng vô ích (vd Thực Cốt / Thực Giáp / Thực Tâm 120s) nên mọi bot kể cả bot giữ đều không gửi
+# HIEULUC = hiệu ứng đã dính, trong khoảng này gửi lại cũng vô ích (THOIGIANHIEULUCBUFFMAOSON_MAP) nên mọi bot kể cả bot giữ đều không gửi
 LOAIGIU_GIUCHO = "giu"
 LOAIGIU_HIEULUC = "hieuluc"
 

@@ -240,9 +240,20 @@ class TacTuVatPham:
     def _laymucphapbaotheomau(self, phantramsinhluc, muchientai):
         # Mức 0 cao / 1 vừa / 2 thấp. Tụt máu: < _mauphapbaovua% xuống vừa, <= _mauphapbaothap% xuống thấp.
         # Đang đeo món mức thấp hơn thì chỉ đổi lên khi máu vượt ngưỡng + _dotrephapbao%, tránh đổi qua lại liên tục khi máu
-        # dao động quanh ngưỡng (người dùng báo 2026-11-12). Ngưỡng thấp nhập >= ngưỡng vừa thì ép xuống dưới ngưỡng vừa 1%
+        # dao động quanh ngưỡng (người dùng báo 2026-11-12), hoặc khi máu ở trên ngưỡng đủ lâu (nhánh thứ hai bên dưới). Ngưỡng thấp nhập >= ngưỡng vừa thì ép xuống dưới ngưỡng vừa 1%
+        # Nhánh thứ hai (người dùng 2026-11-15): máu nằm trên ngưỡng của mức mới liên tục THOIGIANONDINHDOIPHAPBAO giây thì đổi lên
+        # luôn (Dã Tính giữ máu ~35% thì không bao giờ hồi tới 50% để đeo lại Trảo). Mốc "lần cuối máu dưới ngưỡng" cập nhật mỗi lượt;
+        # bỏ lượt quá 1s (tắt tuỳ chọn, bot dừng) thì coi như vừa dưới ngưỡng để đếm lại từ đầu
+        bayh = time.time()
         nguongvua = self._mauphapbaovua
         nguongthap = min(self._mauphapbaothap, nguongvua - 1)
+        if bayh - self._thoidiemxetmucphapbao > 1.:
+            self._thoidiemmauduoinguongvua = self._thoidiemmauduoinguongthap = bayh
+        self._thoidiemxetmucphapbao = bayh
+        if phantramsinhluc < nguongvua:
+            self._thoidiemmauduoinguongvua = bayh
+        if phantramsinhluc <= nguongthap:
+            self._thoidiemmauduoinguongthap = bayh
         if phantramsinhluc >= nguongvua:
             muc = 0
         elif phantramsinhluc > nguongthap:
@@ -252,7 +263,11 @@ class TacTuVatPham:
         if muchientai is not None and muc < muchientai:
             if phantramsinhluc >= nguongvua + self._dotrephapbao:
                 muc = 0
-            elif phantramsinhluc >= nguongthap + self._dotrephapbao:
+            elif muc == 0 and bayh - self._thoidiemmauduoinguongvua >= THOIGIANONDINHDOIPHAPBAO:
+                pass
+            elif phantramsinhluc >= nguongthap + self._dotrephapbao \
+                    or bayh - self._thoidiemmauduoinguongthap >= THOIGIANONDINHDOIPHAPBAO:
+                # Máu trên ngưỡng thấp đủ lâu (dù có thể đã qua ngưỡng vừa nhưng chưa đủ lâu): lên tối đa mức vừa
                 muc = min(1, muchientai)
             else:
                 muc = muchientai
@@ -331,6 +346,16 @@ class TacTuVatPham:
                 if totnhat is None or khoa(khihuyet) < khoa(totnhat[3]):
                     totnhat = (vitri, iddoituong, ten, khihuyet)
         return totnhat
+
+    def _is_contraocokhihuyet(self, tenphapbaohientai):
+        # Còn Trảo dùng được không: Trảo đang đeo còn khí huyết (chưa đọc được thì coi như còn) hoặc trong túi có Trảo còn khí huyết.
+        # Khí huyết Trảo (600) chỉ hồi khi đang đeo, đánh lâu thì hết cả 12 cái => mức vừa đeo món mức cao thay (người dùng 2026-11-15)
+        if tenphapbaohientai in PHAPBAOTHEOMAU_TRAO:
+            iddeo = self.moitruong.get_iddoituongvatphamhanhtrang(VITRITRANGBI_PHAPBAO)
+            khihuyetdeo = self._khihuyetphapbaodeo
+            if not khihuyetdeo or khihuyetdeo[0] != iddeo or khihuyetdeo[1] > 0:
+                return True
+        return self._timtraotrongtui(lambda kh: kh[0] > 0, lambda kh: -kh[0]) is not None
 
     def _xoayvongtraotheokhihuyet(self, tenphapbaohientai, mucphapbaos, idbandohientai, phantramsinhlucconlai):
         # Xoay vòng Cửu Long Thần Hỏa Trảo theo khí huyết pháp bảo (người dùng dặn 2026-11-14). Trả (is_giu, is_daralenh):
@@ -565,6 +590,11 @@ class TacTuVatPham:
                     muchientai = next((i for i, ds in enumerate(mucphapbaos) if tenphapbaohientai in ds), None)
                 muc = self._laymucphapbaotheomau(phantramsinhlucconlai, muchientai)
                 tenphapbaocans = mucphapbaos[muc]
+                # Mức vừa là Trảo mà mọi Trảo (đang đeo lẫn trong túi) đã hết khí huyết: đeo món mức cao (Nhiếp Hồn Linh / Chuông)
+                # cho tới khi máu xuống mức thấp; Trảo chỉ hồi lúc nghỉ (_xoayvongtraotheokhihuyet). Chỉ khi bật ô riêng (người dùng 2026-11-15)
+                if self._is_hettraodeomuccao and muc == 1 and any(ten in PHAPBAOTHEOMAU_TRAO for ten in tenphapbaocans) \
+                        and not self._is_contraocokhihuyet(tenphapbaohientai):
+                    tenphapbaocans = mucphapbaos[0]
                 is_cotrongtui = any(co(ten) for ten in tenphapbaocans)
 
                 def doi():
@@ -2496,7 +2526,8 @@ class TacTuVatPham:
             is_dangganchutiemtaphoa = False
             # Chỉ bật về sửa đồ thì không tự bán / quay lại bãi khi đứng cạnh tiệm; đang Đi tới bản đồ (vừa bán xong, quay lại bản đồ
             # chọn sẵn) thì không xét lại
-            if diachi_npc and self._is_tudongvebanrac and not self._idbandocandi:
+            # Đang Về giao ngay (đứng chờ người nhận cạnh tiệm / chờ hồi Xuyên Không Hành để quay lại) cũng không xét
+            if diachi_npc and self._is_tudongvebanrac and not self._idbandocandi and not self.get_is_danggiaodo():
                 if self.moitruong.get_khoangcach(diachi_npc) <= 3.0:
                     is_dangganchutiemtaphoa = True
 
@@ -2579,7 +2610,8 @@ class TacTuVatPham:
 
             # Chỉ bật về sửa đồ thì không tự bán / quay lại bãi khi đứng cạnh tiệm; đang Đi tới bản đồ (vừa bán xong, quay lại bản đồ
             # chọn sẵn / lúc về) thì không xét lại, không thì lượt nào cũng đặt lại việc đi
-            if self._is_tudongvebanrac and not self._idbandocandi and diachinpc and self.moitruong.get_khoangcach(diachinpc) <= 3.0:
+            if self._is_tudongvebanrac and not self._idbandocandi and not self.get_is_danggiaodo() and diachinpc \
+                    and self.moitruong.get_khoangcach(diachinpc) <= 3.0:
                 if not self.moitruong.get_is_dayhanhtrang():
                     if self._get_idbandoquaylaibanrac():
                         print("[AUTO-SELL] Đứng cạnh NPC và túi đã gọn. Tiếp tục quay lại bãi farm.")

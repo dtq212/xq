@@ -232,6 +232,8 @@ class MoiTruong:
         self._is_dasetupactionthietlaphooknoidungtrochuyen = False
         # Giữ chân sau chiêu delay 0 tới khi có số bay (action_giuchansauchieudelay0): {diachi, id, sobay, batdau} hoặc None
         self._giuchandelay0 = None
+        # Cắt hoạt ảnh khi có số bay (action_cathoatanhkhicosobay): None hoặc {nhanvat, diachi, id, sobay, batdau} của lượt tư thế xuất chiêu hiện tại
+        self._cathoatanh = None
         # Đo mã hoạt ảnh chiêu (_dohoatanhchieu): None hoặc {nhanvat, ghi}; (id kỹ năng, lúc gửi) chiêu đo gần nhất bot gửi
         self._dohoatanh = None
         self._thoidiembotguidohoatanh = None
@@ -1927,9 +1929,35 @@ class MoiTruong:
             ret
         """
         ok2 = self._vahook("HOOK_VELOPDACBIETNV", "8B 94 AE A0 12 00 00", asm2, "CHẶN CRASH")
-        if ok1 and ok2:
-            self._inlog("[CHẶN CRASH] đã vá chỗ vẽ hiệu ứng trên người (ẩn theo cờ hiển thị, kiểm tra sprite lớp riêng)")
-        return ok1 and ok2
+        # Thân đối tượng (sprite lớp 0 [+0x12A0] tra bảng 0x5BE614, hoặc khung lấy từ [0x5B7D84]) vẽ ở xq+0x1451D:
+        # "push eax; mov ecx, edi; call [edx+0x30]" (đã push ebp trước), eax = khung = [sprite+0x1C] + chỉ số*8. Game chỉ kiểm tra
+        # [sprite+0x1C] khác 0 => Thỏ 342 ngày 15/11 lúc 00:54:44 (C:\CrashDumps\XQ.exe.1622880.dmp) văng engine+0x4251 vì khung có
+        # vtable = 0 (mảng khung đã nhả, các ô quanh đó là rác). Khung lành có vtable xq+0x190F50. Vtable ngoài xq.exe thì bỏ lời gọi
+        # (bỏ luôn tham số ebp đã push; hàm vẽ ret 8), mất thân đối tượng 1 khung hình.
+        hook4 = self.diachixq + DC.HOOK_VETHANDOITUONG
+        asm4 = f"""
+            cmp eax, 0x10000
+            jb boqua
+            push ecx
+            mov ecx, dword ptr [eax]
+            sub ecx, {self.diachixq}
+            cmp ecx, 0x400000
+            pop ecx
+            jae boqua
+            push eax
+            mov ecx, edi
+            call dword ptr [edx + 0x30]
+            push {hook4 + 6}
+            ret
+        boqua:
+            add esp, 4
+            push {hook4 + 6}
+            ret
+        """
+        ok3 = self._vahook("HOOK_VETHANDOITUONG", "50 8B CF FF 52 30", asm4, "CHẶN CRASH")
+        if ok1 and ok2 and ok3:
+            self._inlog("[CHẶN CRASH] đã vá chỗ vẽ hiệu ứng trên người (ẩn theo cờ hiển thị, kiểm tra sprite lớp riêng, khung thân)")
+        return ok1 and ok2 and ok3
 
     # Hàm vẽ sprite nén RLE theo bảng màu trong engine.dll (stdcall 2 tham số, ret 8; tham số 2 = nút vẽ
     # [+0 x, +4 y, +8 rộng, +0xC cao, +0x10 bảng con trỏ hàng, +0x14 bảng màu]) và 17 byte đầu để đối chiếu trước khi vá
@@ -4572,9 +4600,14 @@ class MoiTruong:
         return re.sub(r'\x1b.', '', read_bytes(self.tientrinh, x + 0x34, 1024).split(b"\0")[0].decode("utf-8", "ignore"))
 
     def xoa_noidungcuasotuychon(self):
-        # Xoá lời thoại đang giữ để biết khi nào menu mới (trả lời của lệnh vừa gửi) về tới
+        # Xoá lời thoại đang giữ để biết khi nào menu mới (trả lời của lệnh vừa gửi) về tới. Menu đang hiện thì ẩn luôn (vtable[1]):
+        # hàm vẽ (xq + 0xCB3B0) gặp lời thoại rỗng thì không vẽ gì mà + 0x1E38 vẫn 1, cửa sổ vẫn đứng đầu danh sách cửa sổ => lớp trong
+        # suốt chặn chuột, phải bấm chuột phải mới mất (menu mới không về, vd Tả Khâu Minh "Tiến vào Phong Yêu Kính", 2026-11-15).
+        # Menu mới về thì game tự hiện lại; lệnh hội thoại gửi thẳng qua action_thucthicaulenh nên menu ẩn không ảnh hưởng
         x = self._get_diachicuasotuychon()
         if x:
+            if read_boolean(self.tientrinh, x + 0x1E38):
+                self._goivtableanhien(DC.TG_CUASOTUYCHON, False)
             write_bytes(self.tientrinh, x + 0x34, b"\0", 1)
 
     def get_lenhcuasotuychons(self):
@@ -6361,6 +6394,69 @@ class MoiTruong:
         if self._is_muctieuxuatchieudahet() or self._is_muctieudatrungchieu():
             self._thoidiemxuatchieugannhat = 0.
             return False
+        return True
+
+    def action_cathoatanhkhicosobay(self):
+        # Đang tư thế xuất chiêu (6 / 9) mà mục tiêu hiện số bay mới so với lúc vào tư thế (máy chủ đã tính đòn) hoặc mục tiêu chết / mất
+        # => ghi tư thế khựng sau tấn công 11 (xem IS_CATHOATANHKHICOSOBAY). Hàng đợi hành động +0x100 (100 ô x 0x28, đọc +0x10A0, ghi +0x10A4): chỉ bỏ
+        # các ô đòn đánh (mã >= 0x28) liền nhau từ chỉ số đọc, gặp ô bước đi / quay hướng thì dừng => không mất bước đi, hình không lệch
+        if not IS_CATHOATANHKHICOSOBAY:
+            return False
+        try:
+            nhanvat = self.get_diachicosothongtinnhanvat1()
+            idtuthe = self.get_idtuthenhanvat(nhanvat)
+        except Exception:
+            return False
+        if idtuthe not in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT):
+            self._cathoatanh = None
+            return False
+        thoidiemhientai = time.time()
+        cat = self._cathoatanh
+        if not cat or cat["nhanvat"] != nhanvat:
+            # Mục tiêu: mục tiêu chiêu bot gửi gần nhất, không có thì mục tiêu đang chọn (đánh thường / bấm tay)
+            diachi = self._diachimuctieuxuatchieu or self.get_diachicosothongtinnhanvatmuctieudangchon()
+            self._cathoatanh = {"nhanvat": nhanvat, "diachi": diachi, "id": self.get_iddoituong(diachi) if diachi else None,
+                                "sobay": self._docsobaydoituong(diachi) if diachi else None, "batdau": thoidiemhientai}
+            return False
+        if not self._is_khungsauxuatchieu or thoidiemhientai - cat["batdau"] < THOIGIANTOITHIEUCATHOATANH:
+            return False
+        diachi = cat["diachi"]
+        if not diachi:
+            return False
+        lydo = None
+        if self.get_iddoituong(diachi) != cat["id"] or self.get_is_nhanvatdachet(diachi):
+            lydo = "mục tiêu chết / mất"
+        else:
+            sobay = self._docsobaydoituong(diachi)
+            if sobay and cat["sobay"]:
+                (giatri, dem), (giatricu, demcu) = sobay, cat["sobay"]
+                for i in range(10):
+                    if giatri[i] and (giatri[i] != giatricu[i] or dem[i] < demcu[i]):
+                        lydo = f"số bay {giatri[i]}"
+                        break
+                if not lydo:
+                    cat["sobay"] = sobay
+        if not lydo:
+            return False
+        try:
+            doc, ghi = struct.unpack("<II", read_bytes(self.tientrinh, nhanvat + DC.NV_HOATANH, 8))
+            if not (0 <= doc < 100 and 0 <= ghi < 100):
+                return False
+            moi, sobo = doc, 0
+            while moi != ghi and read_bytes(self.tientrinh, nhanvat + 0x100 + moi * 0x28, 1)[0] >= 0x28:
+                moi = (moi + 1) % 100
+                sobo += 1
+            # Client có thể vừa đọc tiếp 1 ô trong lúc dò: chỉ ghi khi chỉ số đọc chưa đổi
+            if sobo and read_int(self.tientrinh, nhanvat + DC.NV_HOATANH) == doc:
+                write_int(self.tientrinh, nhanvat + DC.NV_HOATANH, moi)
+            # Ghi tư thế khựng sau tấn công 11 (người dùng chốt 2026-11-15), không ghi thẳng đứng im: LoopBoKhungSauTanCong tự đổi 11 -> 1
+            # sau THOIGIANCHOBOKHUNGSAUTANCONG giây
+            write_int(self.tientrinh, nhanvat + DC.NV_TUTHE, TUTHENHANVAT_DELAYSAUTANCONG)
+        except Exception:
+            return False
+        self._inlog(f"[CẮT HOẠT ẢNH] {lydo} sau {thoidiemhientai - cat['batdau']:.2f}s tư thế {idtuthe} => tư thế 11, bỏ {sobo} ô đòn"
+                    f" (còn {(ghi - moi) % 100} ô khác)")
+        self._cathoatanh = None
         return True
 
     def action_giuchansauchieudelay0(self, diachimuctieu, tenchieu = ""):

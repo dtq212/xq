@@ -28,6 +28,7 @@ from hangso_xq import CHISONHANVAT_MAP
 from bandonho_xq import ThuThapBanDoNho
 from ngoaihinh_xq import NgoaiHinh, khoidong_loopngoaihinh
 from tudongrao_xq import TuDongRao, khoidong_looptudongrao
+from taythuoctinh_xq import TayThuocTinh, khoidong_looptaythuoctinh
 
 # Khí Huyết, Ngoại Kháng, Nội Kháng, Ngoại Công, Nội Công (ô thấp mỗi cặp)
 DICHCHISOPHONGTHU = (CHISONHANVAT_MAP["Khí Huyết"][0], CHISONHANVAT_MAP["Ngoại Kháng"][0], CHISONHANVAT_MAP["Nội Kháng"][0],
@@ -178,6 +179,8 @@ class CuaSo:
         self.ngoaihinh = NgoaiHinh(self.moitruong)
         # Tự động rao (tudongrao_xq): rao lặp lại trên kênh chat theo _internal/tudongrao.json
         self.tudongrao = TuDongRao(self.moitruong)
+        # Tẩy thuộc tính đồ ở Lương Phan Tiên (taythuoctinh_xq): bật / dừng từ cửa sổ ở tab Khác
+        self.taythuoctinh = TayThuocTinh(self.moitruong)
 
         self.tennhanvat = None
         # (ID bản đồ, phó bản mượn ID, x, y) lần cuối toạ độ ổn định: vừa đổi bản đồ thì chia sẻ cái này thay cho toạ độ cũ lẫn mã bản đồ mới
@@ -198,6 +201,7 @@ class CuaSo:
             threading.Thread(target = khoidong_loopdanhhieumuctieu, args = [self.danhhieumuctieu, self.tactu, self.moitruong, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopngoaihinh, args = [self.ngoaihinh, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_looptudongrao, args = [self.tudongrao, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_looptaythuoctinh, args = [self.taythuoctinh, self.main_stop], daemon = True),
         )
 
         for luong in self.luongs:
@@ -397,6 +401,9 @@ class CuaSo:
                     "_mauhetchaytron": self.tactu._mauhetchaytron,
                     "_is_doiphapbaotheomau": self.tactu._is_doiphapbaotheomau,
                     "_is_xoayvongtrao": self.tactu._is_xoayvongtrao,
+                    "_is_hettraodeomuccao": self.tactu._is_hettraodeomuccao,
+                    "_maubommaudongdoi": self.tactu._maubommaudongdoi,
+                    "_maubommaudatinh": self.tactu._maubommaudatinh,
                     "_mauphapbaovua": self.tactu._mauphapbaovua,
                     "_mauphapbaothap": self.tactu._mauphapbaothap,
                     "_dotrephapbao": self.tactu._dotrephapbao,
@@ -541,6 +548,8 @@ class CuaSo:
                 info["_ngoaihinh"] = self.ngoaihinh.get_share()
                 # Câu rao gần nhất / lần tới cho cửa sổ Tự động rao
                 info["_tudongrao"] = self.tudongrao.get_share()
+                # Tiến độ tẩy thuộc tính cho cửa sổ Tẩy thuộc tính đồ
+                info["_taythuoctinh"] = self.taythuoctinh.get_share()
                 try:
                     if self.bandonho.is_bat:
                         info["_bandonho"] = self.bandonho.lay(info.get("_diemdanhdangden"))
@@ -613,6 +622,13 @@ class CuaSo:
                     if idnhan.strip().isdigit() and noidung.strip():
                         if not self.moitruong.action_thucthicaulenh2(f"tell {int(idnhan)} {noidung.strip()}", delay = 0., is_khancap = True):
                             print(f"[BÁN NL] Chưa gửi được tin mật cho {idnhan}")
+                elif isinstance(cmd, str) and cmd.startswith("taythuoctinh:"):
+                    # Tẩy thuộc tính đồ ô đầu hành trang (taythuoctinh_xq): taythuoctinh:{"dieukiens": [[tên, giá trị]...], ...}
+                    self.taythuoctinh.batdau(json.loads(cmd.split(":", 1)[1]))
+                elif cmd == "huytaythuoctinh":
+                    self.taythuoctinh.huy()
+                elif cmd == "docthuoctinh":
+                    self.taythuoctinh.yeucaudoc()
                 elif cmd == "catkho":
                     # Cất kho ngay (tactu_catkho_xq) từ giao diện / Telegram
                     self.tactu.yeucau_catkho()
@@ -691,6 +707,11 @@ class CuaSo:
                     self.tactu.batdau_danhvong()
                 elif cmd == "huydanhvong":
                     self.tactu.huy_danhvong()
+                elif cmd == "thienxu":
+                    # Nhiệm vụ Thiên Xu Viện (tactu_thienxu_xq) bật / tắt từ giao diện
+                    self.tactu.batdau_thienxu()
+                elif cmd == "huythienxu":
+                    self.tactu.huy_thienxu()
                 elif isinstance(cmd, str) and cmd.startswith("set_hangviec:"):
                     # Hàng việc: set_hangviec:{"thutu": [...], "chon": [...]} (thiếu khoá nào thì giữ cũ)
                     self.tactu.thietlap_hangviec(json.loads(cmd.split(":", 1)[1]))
@@ -830,7 +851,10 @@ class CuaSo:
                     self.tactu.battat_doiphapbaotheomau()
                 elif cmd == "battat_xoayvongtrao":
                     self.tactu.battat_xoayvongtrao()
-                elif isinstance(cmd, str) and cmd.startswith(("set_mauphapbaovua:", "set_mauphapbaothap:", "set_dotrephapbao:")):
+                elif cmd == "battat_hettraodeomuccao":
+                    self.tactu.battat_hettraodeomuccao()
+                elif isinstance(cmd, str) and cmd.startswith(("set_mauphapbaovua:", "set_mauphapbaothap:", "set_dotrephapbao:",
+                                                                   "set_maubommaudongdoi:", "set_maubommaudatinh:")):
                     lenh, giatri = cmd.split(":", 1)
                     try:
                         getattr(self.tactu, "thietlap_" + lenh[len("set_"):])(giatri)
