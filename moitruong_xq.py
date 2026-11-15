@@ -2404,7 +2404,9 @@ class MoiTruong:
             hethan = time.time() + thoigiancho
             hang = {}
             while time.time() < hethan:
-                time.sleep(0.5)
+                time.sleep(0.25)
+                # Hàng đọc từ gói tin trong heap, không cần cửa sổ: "buyitem <tab>" bật lại cửa sổ thì ẩn ngay cho khỏi che màn hình
+                self._ancuasotranbaokho()
                 banghis, vungthays = self._quetbanghitranbaokho(vungs)
                 moi = {dc: bh for dc, bh in banghis.items() if dc not in cu and bh[0] == tab}
                 if moi:
@@ -2452,34 +2454,91 @@ class MoiTruong:
             # Quét heap tìm gói tin hàng: Niết Bàn không quét bộ nhớ (ChienQuocNietBan.dll), hàng và lệnh cũng chưa dò
             self._inlog(f"[TRÂN BẢO KHỐ] Niết Bàn chưa hỗ trợ mua tự động, bỏ mua {tenvatpham}")
             return 0, None
-        knbtruoc = self.get_kimnguyenbao(is_dongmenu = False)
+        try:
+            return self._muavatphamtranbaokho(tenvatpham, soluong)
+        finally:
+            self.action_dongtranbaokho()
+
+    def action_dongtranbaokho(self):
+        # Đóng những gì "buyitem" mở ra như bấm tay: hộp "Bạn quyết định mua ... phải không?" (TG_CUASOYESNO, lệnh + 0x7C "zip 123": mình
+        # gửi thẳng "zip 123" nên hộp không tự tắt), menu chọn tiền tệ (cửa sổ tuỳ chọn) và cửa sổ Trân Bảo Khố (TG_TRANBAOKHO, + 0x34
+        # đang hiện). Đều ẩn bằng vtable[1] để gỡ khỏi danh sách cửa sổ (chỉ ghi cờ thì còn lớp trong suốt chặn chuột). 2026-11-15
+        x, lenh = self.get_hopxacnhannpc()
+        if x and CAULENHXACNHANTRANBAOKHO in lenh:
+            self._goivtableanhien(DC.TG_CUASOYESNO, False)
+        if self._doc_kimnguyenbaotumenu() is not None and self.get_is_danghiencuasotuychon():
+            self.set_is_danghiencuasotuychon(False)
+        self._ancuasotranbaokho()
+
+    def _ancuasotranbaokho(self):
+        # Ẩn cửa sổ Trân Bảo Khố nếu đang hiện (TG_TRANBAOKHO + 0x34). Chỉ ẩn phía client, máy chủ vẫn nhận "buyitem <tab> <ô> <n>"
+        tg = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        x = read_int(self.tientrinh, tg + DC.TG_TRANBAOKHO) if tg else 0
+        if x and read_boolean(self.tientrinh, x + 0x34):
+            self._goivtableanhien(DC.TG_TRANBAOKHO, False)
+
+    def get_sodutranbaokho(self):
+        # (Kim Bảo, Ngân Bảo) hiện ở góc trên cửa sổ Trân Bảo Khố (TG_TRANBAOKHO + 0x6F8 / + 0x6FC), cập nhật khi mở bằng "buyitem paytype 1".
+        # Đo 2026-11-15 trên 3 acc: 128/3 khớp màn hình, 126 và 148 khớp menu "Kim Nguyên Bảo". None nếu chưa có cửa sổ
+        tg = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        x = read_int(self.tientrinh, tg + DC.TG_TRANBAOKHO) if tg else 0
+        if not x:
+            return None
+        return read_int(self.tientrinh, x + 0x6F8), read_int(self.tientrinh, x + 0x6FC)
+
+    def _muavatphamtranbaokho(self, tenvatpham, soluong):
+        # Đọc nhanh rồi đóng ngay từng hộp thoại cho khỏi che màn hình người đang thao tác (2026-11-15): KNB đọc xong ẩn menu chọn
+        # tiền tệ; số dư đọc xong ẩn cửa sổ Trân Bảo Khố; hàng từng tab đọc trong heap (cửa sổ bật lại thì ẩn); hộp xác nhận mua ẩn
+        # ngay sau "zip 123". Lệnh mua gửi thẳng máy chủ nên không cần cửa sổ client
+        knbtruoc = self.get_kimnguyenbao(is_dongmenu = True)
         if knbtruoc is None:
             self._inlog(f"[TRÂN BẢO KHỐ] không đọc được Kim Nguyên Bảo (menu chọn tiền tệ không về), bỏ mua {tenvatpham}")
             return None, None
-        time.sleep(0.5)
+        time.sleep(0.2)
         self.action_thucthicaulenh2("buyitem paytype 1", delay = 0., is_khancap = True)
-        time.sleep(0.5)
+        # Chờ cửa sổ cập nhật số dư (Kim Bảo khớp số menu vừa đọc), tối đa 1,5s, đọc xong ẩn cửa sổ
+        hethan = time.time() + 1.5
+        sodu = None
+        while time.time() < hethan:
+            time.sleep(0.1)
+            sodu = self.get_sodutranbaokho()
+            if sodu and sodu[0] == knbtruoc:
+                break
+        self.action_dongtranbaokho()
         hang = self._timhangtranbaokho(tenvatpham)
+        self.action_dongtranbaokho()
         if not hang:
             self._inlog(f"[TRÂN BẢO KHỐ] không thấy \"{tenvatpham}\" ở tab nào của Trân Bảo Khố "
                         f"(đang bán: {', '.join(self._hangtranbaokho) or '?'})")
             return 0, knbtruoc
         tab, o, gia = hang
-        # Giá đơn vị 0,1 KNB; chỉ tính phần KNB (Ngân Bảo lẻ không biết số dư)
-        soluong = min(soluong, knbtruoc * 10 // gia) if gia > 0 else soluong
+        # Giá đơn vị 0,1 KNB (25 = 2 Kim Bảo 5 Ngân Bảo). Số dư đủ cả Ngân Bảo lẻ đọc ở cửa sổ Trân Bảo Khố; cửa sổ chưa cập nhật (Kim
+        # Bảo khác số menu vừa đọc) thì chỉ tính phần Kim Bảo
+        sodu = sodu[0] * 10 + sodu[1] if sodu and sodu[0] == knbtruoc else knbtruoc * 10
+        if gia > 0:
+            soluong = min(soluong, sodu // gia)
         if soluong <= 0:
-            self._inlog(f"[TRÂN BẢO KHỐ] KNB {knbtruoc} không đủ mua {tenvatpham} (giá {gia / 10:g})")
+            self._inlog(f"[TRÂN BẢO KHỐ] số dư {sodu // 10} Kim Bảo {sodu % 10} Ngân Bảo không đủ mua {tenvatpham} "
+                        f"(giá {gia // 10} Kim Bảo {gia % 10} Ngân Bảo)")
             return 0, knbtruoc
         demtruoc = self._demvatphamtheoten(tenvatpham)
         conlai = soluong
         while conlai > 0:
             n = min(conlai, SOLUONGMUATRANBAOKHOTOIDA)
-            time.sleep(0.5)
+            time.sleep(0.3)
             self.action_thucthicaulenh2(f"buyitem {tab} {o} {n}", delay = 0., is_khancap = True)
             time.sleep(0.05)
             self.action_thucthicaulenh2(CAULENHXACNHANTRANBAOKHO, delay = 0., is_khancap = True)
             conlai -= n
-        time.sleep(1.5)
+            # Hộp "Bạn quyết định mua..." tới sau lệnh mua một chút: ẩn ngay khi thấy (tối đa 1s)
+            hethan = time.time() + 1.
+            while time.time() < hethan:
+                time.sleep(0.1)
+                x, lenh = self.get_hopxacnhannpc()
+                if x and CAULENHXACNHANTRANBAOKHO in lenh:
+                    break
+            self.action_dongtranbaokho()
+        time.sleep(1.)
         demsau = self._demvatphamtheoten(tenvatpham)
         damua = demsau - demtruoc if demtruoc is not None and demsau is not None else None
         knbsau = self.get_kimnguyenbao()
@@ -6717,15 +6776,32 @@ class MoiTruong:
             return None
         return dungluongs
 
+    def get_danhsachtuihethan(self):
+        # Chỉ số (0..3) các túi Càn Khôn đã hết hạn: dung lượng đọc ra là mã DUNGLUONGTUIHETHANs (1/2/3), không phải số ô
+        # (túi thật chỉ 4/6/12/24 ô). Client (xq+0x12B8D6) gặp mã này thì vẽ mọi ô trống của túi là ô cấm; đồ cũ vẫn nằm trong túi,
+        # lấy ra / dùng được nhưng không bỏ thêm vào được (đo 15/11: túi hết hạn đọc [24, 3, 3, 3], túi 2-4 vẫn còn 24/15/18 món)
+        dungluongs = self.get_dungluongtuihanhtrangs() or []
+        return [tui for tui, dungluong in enumerate(dungluongs) if dungluong in DUNGLUONGTUIHETHANs]
+
     def get_danhsachvitrimohanhtrang(self):
-        # Vị trí các ô hành trang đang mở (ô ngoài dung lượng túi là ô khoá, trống nhưng không đặt được vật phẩm).
-        # Không đọc được dung lượng túi thì coi cả SOLUONGTUIHANHTRANG túi mở đủ
+        # Vị trí các ô hành trang đặt được vật phẩm (ô ngoài dung lượng túi là ô khoá, trống nhưng không đặt được vật phẩm;
+        # túi hết hạn coi như không có ô mở). Không đọc được dung lượng túi thì coi cả SOLUONGTUIHANHTRANG túi mở đủ
         dungluongs = self.get_dungluongtuihanhtrangs() or [SOLUONGOMOITUI] * SOLUONGTUIHANHTRANG
-        return [tui * SOLUONGOMOITUI + o for tui, dungluong in enumerate(dungluongs) for o in range(dungluong)]
+        return [tui * SOLUONGOMOITUI + o for tui, dungluong in enumerate(dungluongs) if dungluong not in DUNGLUONGTUIHETHANs
+                for o in range(dungluong)]
+
+    def get_vitriomocuoihanhtrang(self):
+        # Ô mở (đặt được vật phẩm) cuối cùng: ô bảo thú vật phẩm được chọn để triệu hồi
+        return self.get_danhsachvitrimohanhtrang()[-1]
 
     def get_soluongvatphamhanhtrangtoida(self):
-        # Vị trí ô mở cuối cùng (các vòng lặp dùng range(... + 1)); ô khoá xen giữa vẫn nằm trong khoảng này, đọc ra id 0
-        return self.get_danhsachvitrimohanhtrang()[-1]
+        # Vị trí ô cuối cần đọc (các vòng lặp dùng range(... + 1)): ô mở cuối, hoặc hết túi hết hạn nằm sau nó (đồ trong túi hết hạn
+        # vẫn dùng / bán / cất kho được). Ô khoá xen giữa vẫn nằm trong khoảng này, đọc ra id 0
+        vitricuoi = self.get_vitriomocuoihanhtrang()
+        tuihethans = self.get_danhsachtuihethan()
+        if tuihethans:
+            vitricuoi = max(vitricuoi, (tuihethans[-1] + 1) * SOLUONGOMOITUI - 1)
+        return vitricuoi
 
     def _docdanhsachtenvatphamhanhtrang(self, soluongo):
         # Tên của soluongo ô đầu hành trang trong 1 lần đọc (mỗi ô 0x20 byte), thay vì mỗi ô đọc lại địa chỉ gốc + đọc tên riêng.
@@ -6937,11 +7013,16 @@ class MoiTruong:
     def set_is_vohieuhoadichuyen(self, is_vohieuhoadichuyen):
         if self._is_vohieuhoadichuyen != is_vohieuhoadichuyen: self._is_vohieuhoadichuyen = is_vohieuhoadichuyen
 
-    def get_is_dayhanhtrang(self):
-        # Chỉ xét ô đang mở: ô khoá luôn trống (id 0) nhưng không chứa được vật phẩm
+    def get_sootronghanhtrang(self):
+        # Số món còn nhận thêm được. Máy chủ tính đầy theo TỔNG số ô đang có đồ ở mọi túi (cả túi Càn Khôn hết hạn) so với tổng số ô
+        # của các túi còn hạn: vd túi 2-4 hết hạn còn 57 món thì chỉ còn túi 1 (24 ô) => đầy ("Bạn mang theo quá nhiều đồ") dù túi 1
+        # còn ô trống. Có thể âm (đồ cũ nhiều hơn sức chứa)
         vitrimos = self.get_danhsachvitrimohanhtrang()
-        ids = self._docdanhsachidvatphamhanhtrang(vitrimos[-1] + 1)
-        return all(ids[vitri] for vitri in vitrimos)
+        ids = self._docdanhsachidvatphamhanhtrang(self.get_soluongvatphamhanhtrangtoida() + 1)
+        return len(vitrimos) - sum(1 for iddoituong in ids if iddoituong)
+
+    def get_is_dayhanhtrang(self):
+        return self.get_sootronghanhtrang() <= 0
 
     def get_tenmonphai(self, diachicosothongtinnhanvat = None):
         # Không truyền địa chỉ (hoặc là mình): theo kỹ năng ô đầu. Người chơi khác: theo dòng "Môn phái" của lần "desc user" gần nhất

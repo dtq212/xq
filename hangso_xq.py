@@ -898,6 +898,8 @@ TRANGTHAIVANKHI_VANKHITHATBAI = 3
 # không đọc được thì coi cả 4 túi mở đủ
 SOLUONGTUIHANHTRANG = 4
 SOLUONGOMOITUI = 24
+# Dung lượng túi đọc ra 1/2/3 = túi Càn Khôn đã hết hạn (client xq+0x12B8D6 vẽ cả túi là ô cấm), không phải số ô mở
+DUNGLUONGTUIHETHANs = (1, 2, 3)
 
 # Trang bị đang mặc nằm ngay sau 96 ô hành trang, cùng cấu trúc ô (id ở +ô*4, tên ở +0x1A8 + ô*0x20):
 # 96 mũ, 97 dây chuyền, 98 vũ khí, 99 áo, 100 đai, 101 giày, 102 pháp bảo, 103 ngọc, 104 cánh, 105 ngoại trang (đã đo trên 3 nhân vật)

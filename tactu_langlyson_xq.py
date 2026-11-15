@@ -1755,13 +1755,11 @@ class TacTuLangLySon:
         lamkims = []
         cauhinh = taicauhinhphongyeu()
         captoithieu = self._laycapdolamkimtoithieu()
-        vitrimos = set(moitruong.get_danhsachvitrimohanhtrang())
-        sootrong = 0
+        # Máy chủ tính chỗ trống theo tổng số món ở mọi túi (cả túi hết hạn) so với sức chứa túi còn hạn (MoiTruong.get_sootronghanhtrang)
+        sootrong = max(0, moitruong.get_sootronghanhtrang())
         for vitri in range(min(moitruong.get_soluongvatphamhanhtrangtoida() + 1, VITRITRANGBIDAUTIEN)):
             iddoituong = moitruong.get_iddoituongvatphamhanhtrang(vitri)
             if not iddoituong or iddoituong <= 0:
-                if vitri in vitrimos:
-                    sootrong += 1
                 continue
             ten = moitruong.get_tenvatphamhanhtrang(vitri)
             if not ten:

@@ -72,7 +72,7 @@ class TacTuVatPham:
     def _get_baothuvatphamocuoi(self):
         # Chỉ triệu hồi bảo thú vật phẩm đặt ở ô mở cuối cùng của hành trang (người chơi tự chọn con nào bằng cách đặt vào ô đó):
         # (vị trí, tên) nếu ô đó là bảo thú vật phẩm còn hạn, không thì None
-        vitri = self.moitruong.get_soluongvatphamhanhtrangtoida()
+        vitri = self.moitruong.get_vitriomocuoihanhtrang()
         tenvatpham = self.moitruong.get_tenvatphamhanhtrang(vitri)
         if tenvatpham not in BAOTHUVATPHAMs or not self.moitruong.get_iddoituongvatphamhanhtrang(vitri):
             return None
@@ -475,7 +475,7 @@ class TacTuVatPham:
         # is_luutencu: lưu tên để máu hồi lại thì đeo lại (đổi theo sinh lực thì không cần, tự đeo theo mức). False = túi đầy
         if not self.moitruong.get_iddoituongvatphamhanhtrang(VITRITRANGBI_PHAPBAO):
             return False
-        if all(self.moitruong.get_iddoituongvatphamhanhtrang(vitri) for vitri in self.moitruong.get_danhsachvitrimohanhtrang()):
+        if self.moitruong.get_is_dayhanhtrang():
             return False
         if self.moitruong.action_thucthicaulenh("remove {}".format(VITRITRANGBI_PHAPBAO - VITRITRANGBIDAUTIEN + 1), douutien = DOUUTIEN_CAO):
             self._thoidiemhoandoiphapbao = time.time()
@@ -517,6 +517,46 @@ class TacTuVatPham:
             s["luc"] = time.time()
             s["pk"] = diempk
 
+    def _is_hethoicaoboctacdan(self):
+        # Cao Bộc Tạc Đạn là vật phẩm hành trang: hồi cố định 30s, không kỹ năng nào ảnh hưởng. Đọc hồi thật của client
+        # (get_thoigianhoiconlaivatphams, người dùng xác nhận đọc được 15/11). Vừa gửi lệnh thì chờ THOIGIANCHOXACNHANHOIVATPHAM
+        # cho client nhận hồi; quá mốc đó mà hồi vẫn 0 => lệnh hụt (ngoài tầm/bị chắn...), gửi lại được
+        if time.time() - self._thoidiemsudungcaoboctacdangannhat < THOIGIANCHOXACNHANHOIVATPHAM:
+            return False
+        return self.moitruong.get_thoigianhoiconlaivatphams([CAOBOCTACDAN]).get(CAOBOCTACDAN, 0.) <= 0
+
+    def _thunemcaoboctacdan(self, idbandohientai, tenmonphai):
+        # Ném Cao Bộc Tạc Đạn vào người chơi đang chọn, mọi phái (người dùng chọn 15/11). Chạy ở luồng vật phẩm, song song với chiêu:
+        # không chiếm lượt chiêu, dùng vật phẩm không ngắt vận khí. Không tự đi lại gần, chỉ ném khi đã trong tầm xa (bảng chiêu
+        # tự kéo vào tầm). Trước đây là 1 dòng trong bảng ưu tiên chiêu Đường Môn / Đào Hoa / Vân Mộng Cốc
+        if not self._is_tudongsudungkynang:
+            return
+        # Giữ như cũ: không ném ở Tỉ Võ; Chiến Trường chỉ Đường Môn ném
+        if idbandohientai == BANDO_TIVO or (idbandohientai == BANDO_CHIENTRUONG and tenmonphai != "duongmon"):
+            return
+        # Bảng chiêu đang nhường cho về bán / gom quái / nhặt đồ thì cũng không ném
+        if self._trangthaiveban != 0 or self._is_danggomquai or self._is_danguutiennhatdo:
+            return
+        # Ẩn thân: ném là lộ thân trước Bí Sát
+        if self.moitruong.get_is_nhanvatanthan():
+            return
+        diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+        if not diachimuctieu or not self.moitruong.get_is_nguoichoi(diachimuctieu):
+            return
+        if self.moitruong.get_khoangcachtamdanh(diachimuctieu) > self._khoangcachsudungkynangtamxa:
+            return
+        if not self._is_hethoicaoboctacdan():
+            return
+        # Ám khí không bay qua vật cản
+        if self.moitruong.get_is_doanthangcovatcan(*self.moitruong.get_toado(), *self.moitruong.get_toado(diachimuctieu)):
+            return
+        iddoituongvatpham = self.moitruong.action_timkiemvatphamhanhtrang(CAOBOCTACDAN)
+        if not iddoituongvatpham:
+            return
+        caulenh = "use {}# for {}".format(hex(iddoituongvatpham).replace("0x", ""), self.moitruong.get_idnguoichoi(diachimuctieu))
+        if self.moitruong.action_thucthicaulenh(caulenh, douutien = DOUUTIEN_CAO):
+            self._thoidiemsudungcaoboctacdangannhat = time.time()
+
     def action_tudongsudungvatpham(self):
         if self._is_tudongsudungvatpham:
             if self.moitruong.get_is_nhanvatdachet():
@@ -542,6 +582,9 @@ class TacTuVatPham:
 
             if co(ANXAPHU):
                 self._action_dunganxaphu()
+
+            if co(CAOBOCTACDAN):
+                self._thunemcaoboctacdan(idbandohientai, tenmonphai)
 
             # Máu thấp: lưu tên pháp bảo đang đeo (đọc ô trang bị, không dò hành trang) rồi đổi sang pháp bảo không hư hỏng;
             # máu hồi lại (cao hơn lúc đổi 15%) thì tìm pháp bảo cũ trong hành trang đeo lại, xác nhận bằng cách đọc lại ô trang bị
@@ -1147,9 +1190,10 @@ class TacTuVatPham:
 
     def _is_canve(self):
         # Luồng về bán rác có cần về không: túi đầy / thiếu đồ mua bù (khi bật về bán rác) hoặc độ bền thấp (khi bật về sửa đồ)
+        # túi Càn Khôn hết hạn còn đồ thì về cất kho (bước cất kho sau bán, tactu_catkho_xq._is_canvecatkhotuihethan), không cần bật gì
         if self._is_tudongvebanrac and (self.moitruong.get_is_dayhanhtrang() or self._is_canvemuabu()):
             return True
-        return self._is_canvesuado()
+        return self._is_canvesuado() or self._is_canvecatkhotuihethan()
 
     def _xulychomuabu(self):
         # Đã về tới tiệm (bán rác xong): còn món mua bù dưới "Mua khi dưới" mà thấy NPC bán thì đi tới đứng chờ action_tudongmuavatpham
@@ -1966,6 +2010,10 @@ class TacTuVatPham:
         if len(ids) < soluongo:
             return
         idhientais = {ids[vitri] for vitri in vitrimos if ids[vitri]}
+        # Món trong túi Càn Khôn hết hạn coi như đã có (action_dontuihethan chuyển về túi còn hạn thì không phải đồ mới nhặt)
+        soluongodoc = self.moitruong.get_soluongvatphamhanhtrangtoida() + 1
+        if soluongodoc > soluongo:
+            idhientais |= {i for i in self.moitruong._docdanhsachidvatphamhanhtrang(soluongodoc)[soluongo:] if i}
         idmois = idhientais - self._idhanhtrangtruoc if self._idhanhtrangtruoc is not None else set()
         if idmois:
             tens = self.moitruong._docdanhsachtenvatphamhanhtrang(soluongo)

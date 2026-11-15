@@ -407,6 +407,8 @@ class LoopPhu:
         self.tactu.action_chantangcapdo()
         self.tactu.action_tudongxepchongvatpham()
         self.tactu.action_sapxephanhtrang()
+        # Túi Càn Khôn hết hạn: chuyển đồ về túi còn hạn còn ô trống, phần dư về cất kho (tactu_catkho_xq)
+        self.tactu.action_dontuihethan()
         self.tactu.action_sapxepkho()
         self.tactu.action_tudongdatvatphammoi()
         self.tactu.action_tudongtodoi()

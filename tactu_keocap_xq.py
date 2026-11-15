@@ -1343,7 +1343,7 @@ class TacTuKeoCap:
             # Đang đeo Cửu Long Thần Hỏa Trảo của acc chính: tháo ra túi ("remove 7") rồi trả cùng đồ Lam Kim. Trảo từ code welcome2d
             # bị khoá không give được: cứ đeo, không trả (_is_traocodekc)
             if s.get("solanthaotrao", 0) < SOLANTHAOTRAOKC:
-                if all(moitruong.get_iddoituongvatphamhanhtrang(vitri) for vitri in moitruong.get_danhsachvitrimohanhtrang()):
+                if moitruong.get_is_dayhanhtrang():
                     # Túi đầy: tháo không được, vứt Chiến Quốc Bảo Điển trước
                     mon = self._timvatphamkc(VATPHAMVUTKHIDAYTUIKC)
                     if mon:
@@ -1786,7 +1786,7 @@ class TacTuKeoCap:
         if cach == "baothu":
             # Phần tự triệu hồi (action_tudongsudungvatpham) chỉ gọi bảo thú vật phẩm ở ô mở cuối cùng, cần bật Tự động sử dụng vật phẩm
             self._datkc(s, "_is_tudongsudungvatpham", True, "Tự động sử dụng vật phẩm")
-            ocuoi = moitruong.get_soluongvatphamhanhtrangtoida()
+            ocuoi = moitruong.get_vitriomocuoihanhtrang()
             tencuoi = moitruong.get_tenvatphamhanhtrang(ocuoi)
             if vitri == ocuoi or (tencuoi in BAOTHUVATPHAMs and tencuoi not in THUYBINHs):
                 return False

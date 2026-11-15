@@ -345,6 +345,18 @@
       "bat": true,
       "xepchong": 100,
       "thapnhat": -1
+    },
+    {
+      "vatpham": "Bát Tiên Đơn",
+      "tencuahang": "",
+      "npc": "Trân Bảo Khố (Kim Nguyên Bảo)",
+      "xepchong": 1,
+      "duoi": 1,
+      "muatoi": 1,
+      "thapnhat": -1,
+      "monphai": "",
+      "chikhi": "",
+      "bat": true
     }
   ],
   "catkho": [

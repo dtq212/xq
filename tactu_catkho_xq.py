@@ -1,6 +1,8 @@
 # Cất kho: món trong túi khớp bảng Cất kho (luattuido_xq "catkho") đem gửi Quản Khố ở Tân Thủ Thôn (X_QUANKHO_TANTHUTHON, ...).
 # Chạy sau mỗi lần về bán rác (bước sau sửa đồ của _xulydangbanrac, nếu bật "is_catkhosauban") và khi bấm tay / Telegram (/catkho):
 # về Tân Thủ Thôn như giao đồ, trong lúc đó không chọn quái, lộ trình điểm đánh tạm dừng.
+# Túi Càn Khôn hết hạn còn đồ: luồng về bán rác tự về (_is_canvecatkhotuihethan) và bước cất kho cất hết đồ trong túi đó (rương tự động),
+# kể cả khi tắt "Tự cất sau bán rác"; cất tay cũng kèm đồ túi hết hạn.
 # Lệnh game (7e# = id đối tượng Quản Khố hệ 16, tìm theo tên):
 # Lệnh tay khi đang ở Chu Quốc: cất luôn ở Quản Khố Chu Quốc (X_KHO_CHU, Y_KHO_CHU), không Hồi Thành Phù về Tân Thủ Thôn.
 #   mở rương  : pawn 7e# <rương>                        (rương từ 1)
@@ -40,6 +42,15 @@ THOIGIANCATKHOTOIDA = 300.
 THOIGIANCATKHOLENHTAYTOIDA = 600.
 # Lịch sử cất kho giữ chừng này giây (báo cáo định kỳ Telegram chỉ cần từ kỳ trước, tối đa vài giờ)
 THOIGIANGIULICHSUCATKHO = 24 * 3600.
+# Túi Càn Khôn hết hạn còn đồ: về Tân Thủ Thôn (theo quy trình về bán rác) cất hết vào kho. Xét lại mỗi chừng này giây; mỗi lần đã cho về
+# thì chừng kia giây sau mới cho về lại (kho đầy / cất hỏng thì khỏi chạy về liên tục)
+GIANCACHXETTUIHETHAN = 10.
+THOIGIANCHOVECATTUIHETHANLAI = 1800.
+# Trước khi cất, chuyển đồ túi hết hạn về túi còn hạn (ưu tiên túi 1) bằng "move <id># to <túi>" mỗi chừng này giây 1 món; chờ chừng
+# này giây xem món đã rời túi hết hạn chưa, hỏng chừng ấy lần thì bỏ món đó (để cất kho)
+GIANCACHDONTUIHETHAN = 0.6
+THOIGIANCHODONTUIHETHAN = 1.5
+SOLANDONTUIHETHANTOIDA = 3
 
 
 def is_trungtenkho(tenkho, ten):
@@ -79,12 +90,163 @@ class TacTuCatKho:
                 "soruong": 1, "ruongdamo": 0, "lucmo": 0., "solanmo": 0, "ruongday": set(), "khongmo": set(), "khonggop": set(), "odadung": set(),
                 "solanloi": {}, "boqua": {}, "dangcho": None, "dacat": {}, "is_damokho": False}
 
-    def _laymoncatkho(self, tientos = None):
+    def _laytengiutuihethan(self):
+        # Tên món bot cần dùng, không đem cất kho dù nằm trong túi hết hạn (vẫn dùng được từ túi hết hạn, chuyển về túi còn hạn trước):
+        # bảo thú vật phẩm, Bùa Giấy (Mao Sơn: chiêu + Xuyên Không Hành), kỵ thú giữ, món trong bảng Mua bù (thuốc...)
+        tens = set(BAOTHUVATPHAMs) | {BUAGIAY} | set(KYTHUGIUs)
+        try:
+            tens |= {m["vatpham"] for m in self._laymucmuabus()} | {m["vatpham"] for m in self._laymucmuabus(is_tranbaokho = True)}
+        except Exception as e:
+            print(f"[TÚI HẾT HẠN] Không đọc được bảng Mua bù: {e}")
+        return tens
+
+    def _laymontuihethan(self, is_cagiu = False):
+        # Chồng nằm trong túi Càn Khôn đã hết hạn (không bỏ thêm đồ vào được, MoiTruong.get_danhsachtuihethan), theo thứ tự ô:
+        # [{"vitri", "id", "ten", "soluong", "cat" (cả chồng), "ruong": 0}]. Cất hết, không theo bảng Cất kho / "giữ lại", trừ món cần
+        # dùng (_laytengiutuihethan; is_cagiu = lấy cả các món đó)
+        moitruong = self.moitruong
+        tuihethans = moitruong.get_danhsachtuihethan()
+        if not tuihethans:
+            return []
+        soluongo = (tuihethans[-1] + 1) * SOLUONGOMOITUI
+        tens = moitruong._docdanhsachtenvatphamhanhtrang(soluongo)
+        ids = moitruong._docdanhsachidvatphamhanhtrang(soluongo)
+        tengius = set() if is_cagiu else self._laytengiutuihethan()
+        mons = []
+        for tui in tuihethans:
+            for vitri in range(tui * SOLUONGOMOITUI, min((tui + 1) * SOLUONGOMOITUI, len(tens), len(ids))):
+                if not ids[vitri] or ids[vitri] <= 0 or not tens[vitri]:
+                    continue
+                if tens[vitri] in tengius or self._is_kythugiu(tens[vitri]):
+                    continue
+                soluong = moitruong.get_soluongvatphamhanhtrang(vitri) or 0
+                mons.append({"vitri": vitri, "id": ids[vitri], "ten": tens[vitri], "soluong": soluong, "cat": max(1, soluong), "ruong": 0})
+        return mons
+
+    def _laycachdontuihethan(self):
+        # Lần chuyển kế, None khi không còn gì chuyển được (túi còn hạn hết ô trống thật - không phải sức chứa máy chủ: chuyển chỗ không
+        # đổi tổng số món - hoặc túi hết hạn không còn món chưa bỏ):
+        #   ("o", id, ô đích từ 0): bảo thú vật phẩm từng ở ô cuối túi hết hạn (con được chọn triệu hồi) đã về túi còn hạn, đưa vào ô mở
+        #                           cuối (_get_baothuvatphamocuoi chỉ gọi con ở ô đó)
+        #   ("tui", id, túi đích từ 0): chuyển món trong túi hết hạn sang túi còn hạn còn ô trống (túi 1 trước). Món cần dùng
+        #                           (_laytengiutuihethan, con bảo thú ô cuối trước hết) chuyển trước
+        moitruong = self.moitruong
+        tuihethans = moitruong.get_danhsachtuihethan()
+        if not tuihethans:
+            self._idbaothuocuoituihethan = 0
+            return None
+        vitrimos = moitruong.get_danhsachvitrimohanhtrang()
+        soluongo = max(vitrimos[-1] + 1, (tuihethans[-1] + 1) * SOLUONGOMOITUI)
+        ids = moitruong._docdanhsachidvatphamhanhtrang(soluongo)
+        tens = moitruong._docdanhsachtenvatphamhanhtrang(soluongo)
+        if len(ids) < soluongo or len(tens) < soluongo:
+            return None
+        vitrihethans = [vitri for tui in tuihethans for vitri in range(tui * SOLUONGOMOITUI, (tui + 1) * SOLUONGOMOITUI)]
+        # Ô mở cuối cũ (trước khi hết hạn) là ô cuối của túi hết hạn cuối cùng: bảo thú vật phẩm ở đó là con đang được chọn
+        ocuoicu = vitrihethans[-1]
+        if ocuoicu > vitrimos[-1] and ids[ocuoicu] and tens[ocuoicu] in BAOTHUVATPHAMs:
+            self._idbaothuocuoituihethan = ids[ocuoicu]
+        idbaothu = self._idbaothuocuoituihethan
+        if idbaothu and idbaothu in ids and ids.index(idbaothu) not in vitrihethans:
+            vitri, ocuoi = ids.index(idbaothu), vitrimos[-1]
+            if vitri == ocuoi or idbaothu in self._iddontuihethanloi:
+                self._idbaothuocuoituihethan = 0
+            elif vitri // SOLUONGOMOITUI == ocuoi // SOLUONGOMOITUI:
+                return "o", idbaothu, ocuoi
+            elif any(not ids[o] for o in vitrimos if o // SOLUONGOMOITUI == ocuoi // SOLUONGOMOITUI):
+                return "tui", idbaothu, ocuoi // SOLUONGOMOITUI
+        # Túi đích: túi còn hạn đầu tiên còn ô trống (túi 1 trước)
+        tuidich = next((vitri // SOLUONGOMOITUI for vitri in vitrimos if not ids[vitri]), None)
+        if tuidich is None:
+            return None
+        tengius = self._laytengiutuihethan()
+        ungviens = [vitri for vitri in vitrihethans if ids[vitri] and ids[vitri] > 0 and ids[vitri] not in self._iddontuihethanloi]
+        if not ungviens:
+            return None
+        vitri = min(ungviens, key = lambda v: (ids[v] != idbaothu, not (tens[v] in tengius or self._is_kythugiu(tens[v])), v))
+        return "tui", ids[vitri], tuidich
+
+    def action_dontuihethan(self):
+        # LoopPhu: chuyển dần đồ trong túi Càn Khôn hết hạn về túi còn hạn còn ô trống (ưu tiên túi 1), mỗi lần 1 món; phần không còn
+        # chỗ thì về cất kho (_is_canvecatkhotuihethan / bước cất kho). Lệnh "move <id># to <túi>" rơi vào ô trống đầu của túi đích
+        now = time.time()
+        if now - self._thoidiemdontuihethan < GIANCACHDONTUIHETHAN:
+            return
+        self._thoidiemdontuihethan = now
+        moitruong = self.moitruong
+        if self._is_dangsapxephanhtrang or moitruong.get_is_nhanvatdachet() or (self._catkho and self._catkho.get("dangcho")):
+            return
+        dangchuyen = self._dontuihethan
+        if dangchuyen:
+            if now - dangchuyen["luc"] < THOIGIANCHODONTUIHETHAN:
+                return
+            self._dontuihethan = None
+            # Thành công khi món đã rời ô cũ (đúng id ở đúng ô lúc gửi là chưa chuyển)
+            ids = moitruong._docdanhsachidvatphamhanhtrang(moitruong.get_soluongvatphamhanhtrangtoida() + 1)
+            if dangchuyen["vitri"] < len(ids) and ids[dangchuyen["vitri"]] == dangchuyen["id"]:
+                solan = self._solandontuihethanloi.get(dangchuyen["id"], 0) + 1
+                self._solandontuihethanloi[dangchuyen["id"]] = solan
+                print(f"[TÚI HẾT HẠN] {dangchuyen['ten']} chưa rời ô {dangchuyen['vitri'] + 1} sau lệnh chuyển (lần {solan})")
+                if solan >= SOLANDONTUIHETHANTOIDA:
+                    self._iddontuihethanloi.add(dangchuyen["id"])
+                    print(f"[TÚI HẾT HẠN] Bỏ chuyển {dangchuyen['ten']}")
+            return
+        cach = self._laycachdontuihethan()
+        if not cach:
+            return
+        kieu, iddoituong, dich = cach
+        ids = moitruong._docdanhsachidvatphamhanhtrang(moitruong.get_soluongvatphamhanhtrangtoida() + 1)
+        if iddoituong not in ids:
+            return
+        vitri = ids.index(iddoituong)
+        ten = moitruong.get_tenvatphamhanhtrang(vitri) or ""
+        if kieu == "o":
+            is_ok = moitruong.action_dichuyenvatphamhanhtrang(iddoituong, dich + 1, delay = 0.)
+            mota = f"vào ô mở cuối {dich + 1} (bảo thú được chọn triệu hồi)"
+        else:
+            is_ok = moitruong.action_dichuyenvatphamsanghanhtrangkhac(iddoituong, dich + 1, delay = 0.)
+            mota = f"về hành trang {dich + 1}"
+        if is_ok:
+            print(f"[TÚI HẾT HẠN] Chuyển {ten} (ô {vitri + 1}) {mota}")
+            self._dontuihethan = {"id": iddoituong, "ten": ten, "vitri": vitri, "luc": now}
+
+    def _is_dangdontuihethan(self):
+        # Còn món túi hết hạn chuyển được về túi còn hạn (đang chuyển dở hoặc chưa chuyển): cất kho đồ túi hết hạn phải chờ
+        return bool(self._dontuihethan) or self._laycachdontuihethan() is not None
+
+    def _is_canvecatkhotuihethan(self):
+        # Luồng về bán rác (tactu_vatpham_xq._is_canve): túi hết hạn còn món cất được thì về, tới bước cất kho sẽ cất hết các món đó.
+        # Còn chuyển được về túi còn hạn thì chuyển trước (action_dontuihethan), chưa về
+        now = time.time()
+        if now < self._thoidiemxetcatkhotuihethan or self._is_dangdontuihethan():
+            return False
+        self._thoidiemxetcatkhotuihethan = now + GIANCACHXETTUIHETHAN
+        mons = [m for m in self._laymontuihethan() if m["ten"] not in self._tenkhongcattuihethan]
+        if not mons:
+            return False
+        self._thoidiemxetcatkhotuihethan = now + THOIGIANCHOVECATTUIHETHANLAI
+        print(f"[CẤT KHO] Túi Càn Khôn hết hạn còn {len(mons)} món ({', '.join(sorted({m['ten'] for m in mons})[:5])}...), về Tân Thủ Thôn cất kho")
+        return True
+
+    def _laymoncatkho(self, tientos = None, is_chituihethan = False):
         # Chồng trong túi cần cất theo bảng Cất kho, theo thứ tự ô: [{"vitri", "id", "ten", "soluong" (của chồng, 0 = không chồng được),
         # "cat" (số cất từ chồng này), "ruong" (0 = tự động)}]. Tính theo tên: tổng trong túi trừ "giữ lại" của luật, lấy dần từ ô đầu
         # (chồng cuối có thể chỉ cất 1 phần). Luật cần mô tả mà chưa đọc được thì bỏ qua lượt này
         # tientos (việc cất riêng, vd kéo cấp cất sách "Nhập Môn"): bỏ bảng Cất kho, cất hết món có tên bắt đầu bằng 1 trong các tiền tố
         # (không phân biệt hoa thường), rương tự động
+        # Không có tientos thì luôn cất thêm cả chồng trong túi hết hạn (_laymontuihethan, bảng Cất kho chỉ xét các túi còn hạn);
+        # is_chituihethan (việc tạo vì túi hết hạn khi tắt "Tự cất sau bán rác"): chỉ cất đồ túi hết hạn
+        if tientos:
+            return self._laymoncatkhotheoluat(tientos)
+        # Còn chuyển được về túi còn hạn thì chưa cất đồ túi hết hạn (action_dontuihethan chuyển trước, _buoccatkho chờ)
+        montuihethans = [] if self._is_dangdontuihethan() else self._laymontuihethan()
+        if is_chituihethan:
+            return montuihethans
+        mons = self._laymoncatkhotheoluat(vitriboquas = {m["vitri"] for m in montuihethans})
+        return sorted(mons + montuihethans, key = lambda m: m["vitri"])
+
+    def _laymoncatkhotheoluat(self, tientos = None, vitriboquas = ()):
+        # vitriboquas: ô không xét theo luật (đồ túi hết hạn, cất riêng cả chồng), "giữ lại" chỉ tính trên các ô còn lại
         moitruong = self.moitruong
         layluat = self._layluatcatkho
         if tientos:
@@ -98,7 +260,7 @@ class TacTuCatKho:
         ids = moitruong._docdanhsachidvatphamhanhtrang(soluongo)
         nhoms = {}
         for vitri in range(VITRICATKHODAUTIEN, min(len(tens), len(ids))):
-            if not ids[vitri] or ids[vitri] <= 0 or not tens[vitri]:
+            if not ids[vitri] or ids[vitri] <= 0 or not tens[vitri] or vitri in vitriboquas:
                 continue
             luat = layluat(tens[vitri], vitri)
             if luat:
@@ -133,6 +295,10 @@ class TacTuCatKho:
             self._catkho = None
         if viec["is_damokho"]:
             self.moitruong.action_dongcuasokho()
+        # Món trong túi hết hạn thử cất không được (đồ khoá...): thôi không vì nó mà về Tân Thủ Thôn nữa
+        if viec["boqua"] and not viec.get("tientos"):
+            tenhethans = {m["ten"] for m in self._laymontuihethan()}
+            self._tenkhongcattuihethan |= {ten for ten in viec["boqua"] if ten in tenhethans}
         if viec["dacat"]:
             now = time.time()
             self._lichsucatkho = [l for l in self._lichsucatkho if now - l[0] < THOIGIANGIULICHSUCATKHO] + [[now, dict(viec["dacat"])]]
@@ -187,8 +353,12 @@ class TacTuCatKho:
                     viec["boqua"][dangcho["ten"]] = f"thử {SOLANTHUCATKHO} lần không được, đồ khoá?"
             return "dang"
 
-        mons = [m for m in self._laymoncatkho(viec.get("tientos")) if m["ten"] not in viec["boqua"]]
+        mons = [m for m in self._laymoncatkho(viec.get("tientos"), viec.get("is_chituihethan", False)) if m["ten"] not in viec["boqua"]]
         if not mons:
+            if not viec.get("tientos") and self._is_dangdontuihethan():
+                # Đồ túi hết hạn đang được chuyển về túi còn hạn: chờ chuyển xong rồi cất phần còn lại
+                viec["trangthai"] = "chờ chuyển đồ túi hết hạn về hành trang"
+                return "dang"
             return self._ketthuccatkho(viec)
 
         # Chu Quốc: cất ở Quản Khố Chu Quốc (X_KHO_CHU, Y_KHO_CHU). Không gửi pawn qua Chủ Tiệm Sửa Chữa nữa (chỉ mở được rương 1)
@@ -661,10 +831,16 @@ class TacTuCatKho:
 
     def batdau_catkho_sauban(self):
         # Gọi khi bán rác + sửa đồ xong: bật "Tự cất sau bán rác" và có món cần cất thì tạo việc (đang có việc bấm tay thì làm tiếp việc đó)
-        if self._catkho or not tailuat()["is_catkhosauban"] or not self._laymoncatkho():
+        # Tắt "Tự cất sau bán rác" thì vẫn cất đồ trong túi Càn Khôn hết hạn (chỉ đồ đó)
+        if self._catkho:
+            return
+        is_chituihethan = not tailuat()["is_catkhosauban"]
+        # Đồ túi hết hạn tính cả khi đang chuyển dở về túi còn hạn (bán rác xong túi 1 có chỗ): việc cất chờ chuyển xong rồi cất phần dư
+        if not self._laymoncatkho(is_chituihethan = is_chituihethan) and not self._laymontuihethan():
             return
         self._catkho = self._taoviec(LYDOCATKHO_BANRAC)
-        print("[CẤT KHO] Bắt đầu cất kho sau bán rác")
+        self._catkho["is_chituihethan"] = is_chituihethan
+        print("[CẤT KHO] Bắt đầu cất kho sau bán rác{}".format(" (đồ túi Càn Khôn hết hạn)" if is_chituihethan else ""))
 
     def _xulycatkhobanrac(self):
         # Bước cất kho trong quy trình về bán rác (đang đứng ở Tân Thủ Thôn, di chuyển trực tiếp như sửa đồ). -> True khi xong / không có việc

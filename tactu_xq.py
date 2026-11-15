@@ -149,7 +149,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._yeucaugomquai = None
 
         self._is_uutienmuctieupk = True
-        self._khoangcachtoidatheosau = 6.
+        self._khoangcachtoidatheosau = 5.
         # Tầm dùng kỹ năng tầm xa: tối đa (chỉnh ở giao diện, lưu theo nhân vật) và hiện tại (tự co / nới theo chiêu ra được hay không,
         # xem _capnhattamxa); chiêu tầm xa đang chờ xem có ra không
         self._tamxatoida = KHOANGCACHSUDUNGKYNANGTAMXA
@@ -211,6 +211,18 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         # Việc cất kho đang làm (tactu_catkho_xq, None = không) và kết quả lần gần nhất cho giao diện
         self._catkho = None
         self._ketquacatkho = ""
+        # Cất đồ trong túi Càn Khôn hết hạn (tactu_catkho_xq._is_canvecatkhotuihethan): chưa tới thời điểm này thì chưa xét / chưa về lại;
+        # tên món đã thử cất không được (đồ khoá...) thì không vì nó mà về nữa
+        self._thoidiemxetcatkhotuihethan = 0.
+        self._tenkhongcattuihethan = set()
+        # Chuyển đồ túi hết hạn về túi còn hạn (action_dontuihethan): lần chuyển đang chờ {"id", "luc"} (None = không),
+        # số lần chuyển hỏng theo id, id đã bỏ (hỏng quá số lần), thời điểm xét gần nhất
+        self._dontuihethan = None
+        self._solandontuihethanloi = {}
+        self._iddontuihethanloi = set()
+        self._thoidiemdontuihethan = 0.
+        # Bảo thú vật phẩm từng nằm ở ô cuối túi hết hạn (con được chọn triệu hồi): id, 0 = không; chuyển về ô mở cuối mới
+        self._idbaothuocuoituihethan = 0
         # Việc sắp xếp kho đang làm (battat_sapxepkho / action_sapxepkho trong tactu_catkho_xq), None = không xếp
         self._sapxepkho = None
         # Các lần cất kho trong THOIGIANGIULICHSUCATKHO giây gần nhất: [[thời điểm, {tên món: số lượng}]] cho báo cáo định kỳ Telegram

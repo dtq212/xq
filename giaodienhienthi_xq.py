@@ -481,7 +481,7 @@ class GiaoDienHienThi:
             "chantangcap": tk.BooleanVar(),
             "tudongtangcap": tk.BooleanVar(),
             "captangcaptoida": tk.IntVar(value = CAPTUDONGTANGCAPTOIDA),
-            "khoangcachtheosau": tk.DoubleVar(value = 9.0),
+            "khoangcachtheosau": tk.DoubleVar(value = 5.0),
             "bankinhdiemdanh": tk.DoubleVar(value = 40.0),
             "khoangcachtamxa": tk.DoubleVar(value = KHOANGCACHSUDUNGKYNANGTAMXA),
             "phantramnoiluckhaithien": tk.DoubleVar(value = PHANTRAMNOILUCKHAITHIENTICHDIA),
