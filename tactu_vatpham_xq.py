@@ -2787,25 +2787,62 @@ class TacTuVatPham:
         self._trangthaiveban = 0
         self._yeucautudo = None
 
-    def _is_quaylaibangphumaoson(self):
-        # Mao Sơn bán xong: True = đi bằng phù / chạy bộ tới bản đồ chọn sẵn ở ô "Quay lại", False = dùng Xuyên Không Hành (Quay lại)
-        # về chỗ cũ. Chỉ đi phù khi chọn sẵn 1 bản đồ mà chắc chắn lúc về đang ở bản đồ khác. Chọn đúng bản đồ của lộ trình, hoặc chưa ghi
-        # được bản đồ lúc về, thì vẫn dùng chiêu: 2026-11-16 con 430 train Trường Bạch Sơn, ô Quay lại chọn Trường Bạch Sơn, mấy lượt
-        # cất kho đều dùng chiêu nhưng lượt bán + mua bù lại phù Dịch Trạm Yên Quốc rồi chạy bộ (bản đồ lúc về ghi khác, chưa rõ vì sao).
-        # Chiêu đưa về chỗ khác bản đồ lộ trình thì lộ trình tự chạy tiếp, cũng không xa hơn đi phù từ Tân Thủ Thôn
-        idquaylai, idlucve = self._idbandoquaylaibanrac, self._idbandolucveban
-        if idquaylai <= 0 or idquaylai == idlucve or not idlucve:
+    def _capnhatdinhtieu(self):
+        # Mao Sơn: đọc ô Định Tiêu nào ở bản đồ nào để Xuyên Không Hành "pf 4182.<ô>" bay đúng ô (lệnh bay tới ô định tiêu, không phải
+        # "về chỗ cũ"). Mở menu "pf 4181" (chỉ mở, không chọn ô nên không ghi đè định tiêu), đọc nhãn rồi ẩn menu; đọc rồi thì
+        # GIANCACHDOCDINHTIEU giây sau mới đọc lại. -> True khi đang chờ menu (lượt này chưa bay), False khi đã xong / đọc hỏng
+        moitruong = self.moitruong
+        now = time.time()
+        if self._lucguidinhtieu:
+            ds = moitruong.get_danhsachdinhtieu()
+            if ds is None and now - self._lucguidinhtieu < THOIGIANCHODINHTIEU:
+                return True
+            self._lucguidinhtieu = 0.
+            self._lucdocdinhtieu = now
+            if ds is None:
+                moitruong._inlog(f"[ĐỊNH TIÊU] Quá {THOIGIANCHODINHTIEU:.0f}s không thấy menu Định Tiêu, "
+                                 f"{'giữ danh sách cũ' if self._dinhtieus is not None else 'dùng ô mặc định (về 1, quay lại 2)'}")
+                return False
+            moitruong.xoa_noidungcuasotuychon()
+            self._dinhtieus = {o: (layidbandotheoten(ten) or 0, x, y) for o, (ten, x, y) in ds.items()}
+            moitruong._inlog("[ĐỊNH TIÊU] " + (", ".join(f"ô {o}: {ten} ({self._dinhtieus[o][0]}) ({x}, {y})"
+                                                         for o, (ten, x, y) in sorted(ds.items())) or "chưa định tiêu ô nào"))
             return False
-        diems = self._diemdanhxungquanhs
-        idlotrinh = diems[0][2] if diems and len(diems[0]) >= 3 else 0
-        is_phu = idquaylai != idlotrinh
-        # Bước 4 xét mỗi lượt tới khi chiêu vào hồi: mỗi lần quay lại chỉ ghi log 1 lần
-        if self._khoalogquaylaimaoson == self._thoidiemchuyentrangthai:
-            return is_phu
-        self._khoalogquaylaimaoson = self._thoidiemchuyentrangthai
-        self.moitruong._inlog(f"[AUTO-SELL] Quay lại {laytenbando(idquaylai)} ({idquaylai}), lúc về ở {laytenbando(idlucve)} ({idlucve}),"
-                              f" lộ trình {idlotrinh}: {'đi phù / chạy bộ' if is_phu else 'vẫn dùng Xuyên Không Hành'}")
-        return is_phu
+        # Đang hội thoại NPC / đang hiện menu khác (Công Văn Truy Nã...) thì không mở đè; đang vận khí (Hồi Thành Phù) gửi chiêu là ngắt
+        if now - self._lucdocdinhtieu < GIANCACHDOCDINHTIEU or self.get_is_danghoithoainpc() or moitruong.get_is_danghiencuasotuychon() \
+                or moitruong.get_is_dangvankhi():
+            return False
+        moitruong.xoa_noidungcuasotuychon()
+        moitruong.action_thucthicaulenh(f"pf {VITRIKYNANG_DINHTIEU}")
+        self._lucguidinhtieu = now
+        return True
+
+    def _layodinhtieu(self, is_banbando):
+        # Ô định tiêu nhỏ nhất có bản đồ thoả is_banbando(id bản đồ), None khi chưa đọc danh sách / không ô nào
+        for o, (idbando, x, y) in sorted((self._dinhtieus or {}).items()):
+            if idbando and is_banbando(idbando):
+                return o
+        return None
+
+    def _layovethanhmaoson(self):
+        # Ô định tiêu ở Tân Thủ Thôn (có Tiệm Tạp Hóa, kho) để Xuyên Không Hành về bán; chưa đọc được danh sách thì ô 1 như trước
+        o = self._layodinhtieu(lambda idbando: laytenbando(idbando).startswith("Tân Thủ Thôn"))
+        return o or 1
+
+    def _layoquaylaimaoson(self):
+        # Mao Sơn bán xong -> (ô định tiêu để Xuyên Không Hành bay tới, id bản đồ quay lại); ô None = không ô nào ở bản đồ cần tới,
+        # đi phù / chạy bộ. Bản đồ cần tới theo ô "Quay lại" (_get_idbandoquaylaibanrac: chọn sẵn / lộ trình / lúc về).
+        # 2026-11-16 con 430 train Trường Bạch Sơn, ô Quay lại chọn Trường Bạch Sơn: lượt bán + mua bù phù Dịch Trạm Yên Quốc rồi chạy bộ
+        # vì bot tưởng "pf 4182.2" là về chỗ cũ (so với bản đồ lúc về); thật ra lệnh bay tới ô định tiêu 2
+        idquaylai = self._get_idbandoquaylaibanrac()
+        if self._dinhtieus is None:
+            # Chưa đọc được danh sách: như trước, ô 2 (người chơi thường định tiêu ô 2 ở bãi), chọn sẵn bản đồ khác lúc về thì đi phù
+            if self._idbandoquaylaibanrac > 0 and self._idbandoquaylaibanrac != self._idbandolucveban:
+                return None, idquaylai
+            return 2, idquaylai
+        if not idquaylai:
+            return 2, idquaylai
+        return self._layodinhtieu(lambda idbando: idbando == idquaylai), idquaylai
 
     def _is_coxuyenkhonghanh(self):
         # Mao Sơn đã học Xuyên Không Hành (pf 4182) mới về bán / quay lại bãi bằng chiêu
@@ -2850,6 +2887,8 @@ class TacTuVatPham:
                 self._ghibandolucveban()
                 self._trangthaiveban = 1
                 self._thoidiemchuyentrangthai = time.time()
+                # Đọc lại danh sách Định Tiêu (nếu đã lâu) trước khi bay: bước 1 chờ đọc xong mới gửi chiêu
+                self._capnhatdinhtieu()
 
         elif self._trangthaiveban == 1:
             if not self.moitruong.get_is_kynangsansang(VITRIKYNANG_XUYENKHONGHANH):
@@ -2858,11 +2897,15 @@ class TacTuVatPham:
                 self._thoidiemchuyentrangthai = time.time()
                 return
 
+            if self._capnhatdinhtieu():
+                return
+
             if time.time() - self._thoidiemchuyentrangthai > 1.5:
                 if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
-                    self.moitruong._inlog("[AUTO-SELL] Đã đứng yên. Sử dụng Xuyên không hành (Về thành)")
+                    o = self._layovethanhmaoson()
+                    self.moitruong._inlog(f"[AUTO-SELL] Đã đứng yên. Sử dụng Xuyên không hành về ô định tiêu {o} (Tân Thủ Thôn)")
                     self.moitruong.action_ngatdichuyen()
-                    self.moitruong.action_thucthicaulenh("pf 4182.1")
+                    self.moitruong.action_thucthicaulenh(f"pf {VITRIKYNANG_XUYENKHONGHANH}.{o}")
                     self._thoidiemchuyentrangthai = time.time()
 
         elif self._trangthaiveban == 2:
@@ -2888,11 +2931,23 @@ class TacTuVatPham:
                 self._thoidiemchuyentrangthai = time.time()
 
         elif self._trangthaiveban == 4:
-            # Chọn sẵn bản đồ quay lại khác bản đồ lúc về: Xuyên Không Hành (Quay lại) chỉ về chỗ cũ, nên đi bằng phù / chạy bộ
-            if self._is_quaylaibangphumaoson():
+            # Xuyên Không Hành bay tới ô định tiêu ở bản đồ cần quay lại; không ô nào ở đó thì đi bằng phù / chạy bộ
+            o, idquaylai = self._layoquaylaimaoson()
+            if self._khoalogquaylaimaoson != self._thoidiemchuyentrangthai:
+                # Bước 4 xét mỗi lượt tới khi chiêu vào hồi: mỗi lần quay lại chỉ ghi log 1 lần
+                self._khoalogquaylaimaoson = self._thoidiemchuyentrangthai
+                self.moitruong._inlog(f"[AUTO-SELL] Quay lại {laytenbando(idquaylai) if idquaylai else '?'} ({idquaylai}): "
+                                      + (f"Xuyên Không Hành ô định tiêu {o}" if o else "không ô định tiêu nào ở đó, đi phù / chạy bộ")
+                                      + f" | định tiêu {self._dinhtieus}")
+            if o is None:
                 self._diachicosokhaikhoang = 0
                 self._thoidiemphatamlacmapgannhat = time.time()
-                self._batdauquaylaibando(self._idbandoquaylaibanrac)
+                if self._is_quaylaitheolotrinh() or not idquaylai:
+                    # Theo lộ trình: lộ trình tự phù / chạy tới điểm đánh
+                    self._trangthaiveban = 0
+                    self._yeucautudo = None
+                else:
+                    self._batdauquaylaibando(idquaylai)
                 return
             if not self.moitruong.get_is_kynangsansang(VITRIKYNANG_XUYENKHONGHANH):
                 self.moitruong._inlog("[AUTO-SELL] Xuyên không hành (Quay lại) thành công. Kết thúc quy trình.")
@@ -2904,9 +2959,9 @@ class TacTuVatPham:
 
             if time.time() - self._thoidiemchuyentrangthai > 1.0:
                 if self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM:
-                    self.moitruong._inlog("[AUTO-SELL] Đã đứng yên. Sử dụng Xuyên không hành (Quay lại)")
+                    self.moitruong._inlog(f"[AUTO-SELL] Đã đứng yên. Sử dụng Xuyên không hành tới ô định tiêu {o}")
                     self.moitruong.action_ngatdichuyen()
-                    self.moitruong.action_thucthicaulenh("pf 4182.2")
+                    self.moitruong.action_thucthicaulenh(f"pf {VITRIKYNANG_XUYENKHONGHANH}.{o}")
                     self._thoidiemchuyentrangthai = time.time()
 
     def _action_xulyvebanrac_phaikhac(self):

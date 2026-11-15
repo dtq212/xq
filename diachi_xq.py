@@ -75,6 +75,7 @@ CHUKY = {
     "HOOK_VELOPHIEUUNGNV2": ("ma", "0F 8F ?? ?? ?? ?? 8B 04 85 ?? ?? ?? ?? 85 C0", 6, 0x1577c),  # vòng vẽ 10 lớp hiệu ứng thứ 2 (lớp +0x1368 <= 1) sau thân: mov eax,[eax*4+0x5BE614] (7 byte); bỏ lớp -> +0x94
     "HOOK_VETHANDOITUONG": ("ma", "8D 04 F0 50 8B CF FF 52 30 8A 47 35 84 C0", 3, 0x1451D),  # vẽ khung thân đối tượng: push eax; mov ecx,edi; call [edx+0x30] (6 byte), eax = khung; bỏ -> +6 và bỏ 1 tham số đã push
     "HOOK_VEDOITUONG": ("ma", "64 A1 00 00 00 00 6A FF 68 ?? ?? ?? ?? 50 A0 ?? ?? ?? ?? 64 89 25 00 00 00 00 8B 15 ?? ?? ?? ??", 0, 0x14200),  # đầu hàm vẽ 1 đối tượng (thiscall, ecx = đối tượng, ret 8): mov eax,fs:[0] (6 byte)
+    "HAMDATTHONGBAO": ("ma", "8B 44 24 04 56 68 C7 00 00 00 8B F1 50 E8", 0, 0xa4350),  # đặt thông báo giữa màn hình: thiscall [TG + TG_THONGBAO], (chuỗi), ret 4; chép vào +0x24, +0x174 = 0x1FE thời gian hiện, +0x17C = 1 hiện
     "HOOK_VECUASO": ("ma", "8B 06 39 78 1C 7E 3E", 0, 0x4b2ae),  # vòng vẽ cửa sổ giao diện: sau call vẽ cửa sổ, mov eax,[esi]; cmp [eax+0x1C],edi (5 byte), esi = ô mảng cửa sổ
     "DSHIEUUNGDAT": ("bien", "8B 3D ?? ?? ?? ?? 39 1F 75 2C", 2, 0x376ca4),  # đầu danh sách hiệu ứng mặt đất (trận pháp...), nút 0x2C byte, kế tiếp +0x28
     "MAHIEUUNGDAT": ("bien", "53 55 57 B8 ?? ?? ?? ?? 39 30", 4, 0x376a48),  # bộ đệm 100 mã hiệu ứng (perform/<mã>) đã nạp sprite, ô i ứng với BANGSPRITEHIEUUNG[i + 1]

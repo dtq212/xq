@@ -71,6 +71,7 @@ MUCTIEU = [
     ("HOOK_VELOPHIEUUNGNV2", 0x1577C, "ma", "vòng vẽ 10 lớp hiệu ứng thứ 2 (lớp +0x1368 <= 1) sau thân: mov eax,[eax*4+0x5BE614] (7 byte); bỏ lớp -> +0x94"),
     ("HOOK_VETHANDOITUONG", 0x1451D, "ma", "vẽ khung thân đối tượng: push eax; mov ecx,edi; call [edx+0x30] (6 byte), eax = khung; bỏ -> +6 và bỏ 1 tham số đã push"),
     ("HOOK_VEDOITUONG", 0x14200, "ma","đầu hàm vẽ 1 đối tượng (thiscall, ecx = đối tượng, ret 8): mov eax,fs:[0] (6 byte)"),
+    ("HAMDATTHONGBAO", 0xA4350, "ma", "đặt thông báo giữa màn hình: thiscall [TG + TG_THONGBAO], (chuỗi), ret 4; chép vào +0x24, +0x174 = 0x1FE thời gian hiện, +0x17C = 1 hiện"),
     ("HOOK_VECUASO", 0x4B2AE, "ma", "vòng vẽ cửa sổ giao diện: sau call vẽ cửa sổ, mov eax,[esi]; cmp [eax+0x1C],edi (5 byte), esi = ô mảng cửa sổ"),
     ("DSHIEUUNGDAT", 0x376CA4, "bien", "đầu danh sách hiệu ứng mặt đất (trận pháp...), nút 0x2C byte, kế tiếp +0x28"),
     ("MAHIEUUNGDAT", 0x376A48, "bien", "bộ đệm 100 mã hiệu ứng (perform/<mã>) đã nạp sprite, ô i ứng với BANGSPRITEHIEUUNG[i + 1]"),

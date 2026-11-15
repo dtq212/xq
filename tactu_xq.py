@@ -579,8 +579,17 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         # file) để quay lại khi chọn "Bản đồ lúc về" hoặc theo lộ trình mà không có lộ trình (bot đang dò bản đồ)
         self._idbandoquaylaibanrac = BANDOQUAYLAI_THEOLOTRINH
         self._idbandolucveban = 0
-        # Mao Sơn quay lại sau bán (_is_quaylaibangphumaoson): mốc _thoidiemchuyentrangthai đã ghi log, mỗi lần quay lại ghi 1 lần
+        # Mao Sơn quay lại sau bán (_xulyquaylaimaoson): mốc _thoidiemchuyentrangthai đã ghi log, mỗi lần quay lại ghi 1 lần
         self._khoalogquaylaimaoson = None
+        # Định Tiêu của Mao Sơn (_capnhatdinhtieu): {ô: (id bản đồ, x, y)}, None = chưa đọc được; lúc gửi "pf 4181" đang chờ menu
+        # (0 = không chờ), lúc đọc gần nhất
+        self._dinhtieus = None
+        self._lucguidinhtieu = 0.
+        self._lucdocdinhtieu = 0.
+        # Xuyên Không Hành khi đi tới bản đồ (tactu_dichuyen_xq._xuyenkhongtoio): lúc gửi gần nhất, số lần gửi mà chưa bay, nghỉ dùng tới lúc
+        self._lucguixuyenkhong = 0.
+        self._solanguixuyenkhong = 0
+        self._lucnghixuyenkhong = 0.
         # Mao Sơn đã học Xuyên Không Hành thì về bán bằng chiêu; chưa học thì phù + chạy bộ như phái khác. Chốt lúc rảnh (trạng thái 0)
         # để giữa chừng (chuyển bản đồ đọc hụt bảng kỹ năng) không nhảy sang luồng kia
         self._is_vebanxuyenkhonghanh = False

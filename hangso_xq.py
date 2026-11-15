@@ -609,6 +609,12 @@ VITRIKYNANG_THUCHON = 4148
 VITRIKYNANG_AMMANHAPTHE = 4141
 
 VITRIKYNANG_XUYENKHONGHANH = 4182
+# Định Tiêu (Mao Sơn): "pf 4181" mở menu 16 ô định tiêu (tối đa bao nhiêu ô theo cấp), Xuyên Không Hành "pf 4182.<ô>" bay tới ô đó.
+# Bot chỉ mở menu đọc ô nào ở bản đồ nào (moitruong.get_danhsachdinhtieu), không chọn ô (chọn là ghi đè định tiêu)
+VITRIKYNANG_DINHTIEU = 4181
+# Chờ menu Định Tiêu về tối đa chừng này giây; danh sách đọc rồi thì chừng này giây sau mới đọc lại (người chơi đổi định tiêu)
+THOIGIANCHODINHTIEU = 4.
+GIANCACHDOCDINHTIEU = 600.
 
 VITRIKYNANG_LUUHUYETTHUAT = 4172
 VITRIKYNANG_DITINHDAIPHAP = 4173

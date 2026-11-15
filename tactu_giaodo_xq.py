@@ -101,8 +101,8 @@ class TacTuGiaoDo:
         return self._buocxkhgiao == 1 or any(_is_chuaxong(y) and y.get("kichhoat") == KICHHOAT_TAY for y in self._hangchogiaodo)
 
     def _xulyxuyenkhonghanhgiaodo(self, is_conyeucau):
-        # Về giao ngay của Mao Sơn đã học Xuyên Không Hành: về bằng "pf 4182.1" (như về bán rác), giao xong đứng chờ hồi chiêu rồi
-        # "pf 4182.2" quay lại đúng chỗ cũ. -> True khi lượt này đã lo (đứng chờ / vừa gửi chiêu), False thì đi tiếp như thường
+        # Về giao ngay của Mao Sơn đã học Xuyên Không Hành: bay tới ô Định Tiêu ở Tân Thủ Thôn (như về bán rác), giao xong đứng chờ hồi
+        # chiêu rồi bay tới ô Định Tiêu ở bản đồ quay lại. -> True khi lượt này đã lo (đứng chờ / vừa gửi chiêu), False thì đi tiếp như thường
         moitruong = self.moitruong
         idbando = moitruong.get_idbandohientai()
         now = time.time()
@@ -126,7 +126,17 @@ class TacTuGiaoDo:
                     print("[GIAO ĐỒ] Xuyên Không Hành (Quay lại) thành công")
                 self._buocxkhgiao, self._thoidiemxkhgiao, self._solanxkhgiao = 0, 0., 0
                 return False
-        lenh, giancach = ("pf 4182.1", 1.5) if is_conyeucau else ("pf 4182.2", 1.0)
+        # "pf 4182.<ô>" bay tới ô Định Tiêu <ô>: về = ô ở Tân Thủ Thôn, quay lại = ô ở bản đồ quay lại (ô "Quay lại" / lộ trình);
+        # không ô nào ở đó thì thôi chiêu, lộ trình / Đi tới bản đồ tự lo (có thể Xuyên Không Hành tới ô gần nhất)
+        if is_conyeucau:
+            o = self._layovethanhmaoson()
+        else:
+            o, idquaylai = self._layoquaylaimaoson()
+            if o is None:
+                print(f"[GIAO ĐỒ] Không ô định tiêu nào ở {laytenbando(idquaylai) if idquaylai else 'bản đồ quay lại'}, đi như thường")
+                self._buocxkhgiao, self._thoidiemxkhgiao, self._solanxkhgiao = 0, 0., 0
+                return False
+        lenh, giancach = (f"pf {VITRIKYNANG_XUYENKHONGHANH}.{o}", 1.5 if is_conyeucau else 1.0)
         if not moitruong.get_is_kynangsansang(VITRIKYNANG_XUYENKHONGHANH):
             # Đang hồi chiêu (30s): đứng chờ
             moitruong.action_ngatdichuyen()

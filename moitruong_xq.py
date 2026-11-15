@@ -1788,6 +1788,119 @@ class MoiTruong:
         self._inlog("[CHẶN CRASH] đã vá chỗ vẽ cửa sổ (bỏ qua cửa sổ vừa tự đóng)")
         return True
 
+    # Thông báo giữa màn hình bỏ qua luôn: chuỗi chứa ĐỦ các mẩu ASCII trong 1 nhóm thì không hiện. So phần ASCII để khỏi lệ thuộc
+    # dạng mã hoá dấu tiếng Việt. "Kinh nghiệm đã đạt hạn mức cao nhất" (16/11): máy chủ báo liên tục khi kinh nghiệm chạm trần,
+    # khung che mất các thông báo khác.
+    THONGBAOBOQUAs = (
+        (b"Kinh nghi", b"cao nh"),
+    )
+
+    def action_thietlaphookthongbao(self):
+        # Đầu hàm đặt thông báo giữa màn hình xq+0xA4350 (thiscall ecx = khung [TG + TG_THONGBAO], tham số chuỗi, ret 4; mọi chỗ gọi
+        # đều qua hàm này, đo 16/11: 50+ lời gọi). Chuỗi khớp 1 nhóm THONGBAOBOQUAs thì ret 4 luôn: khung giữ nguyên thông báo cũ,
+        # không bật lại thời gian hiện (+0x174) và cờ hiện (+0x17C). Lệnh gốc ghi đè: mov eax,[esp+4]; push esi (5 byte).
+        # get_noidungthongbaogannhat (dò buff thuốc 1 giờ) đọc +0x24 nên vẫn thấy các thông báo khác như cũ.
+        # Kịch bản không giải phóng (game còn nhảy vào sau khi bot tắt); lần chạy sau thấy E9 thì thôi.
+        diachihook = self.diachixq + DC.HAMDATTHONGBAO
+        try:
+            mahook = read_bytes(self.tientrinh, diachihook, 5)
+        except Exception:
+            return False
+        if mahook[0] == 0xE9:
+            return True
+        if mahook != bytes.fromhex("8B 44 24 04 56"):
+            self._inlog(f"[THÔNG BÁO] đầu hàm đặt thông báo không như dự kiến: {mahook.hex(' ')}")
+            return False
+        kichban = self.tientrinh.allocate(0x400)
+        # Bảng mẩu chuỗi ở kichban + 0x200: mỗi nhóm là các chuỗi kết thúc 0 nối nhau, hết nhóm thêm 1 byte 0; hết bảng thêm 1 byte 0
+        bang = b"".join(b"".join(m + b"\0" for m in nhom) + b"\0" for nhom in self.THONGBAOBOQUAs) + b"\0"
+        diachibang = kichban + 0x200
+        asm_script = f"""
+            push ecx
+            push edx
+            push ebx
+            push esi
+            push edi
+            mov esi, dword ptr [esp + 0x18]
+            test esi, esi
+            je hien
+            mov ebx, {diachibang}
+        vongnhom:
+            cmp byte ptr [ebx], 0
+            je hien
+            mov eax, 1
+        vongmau:
+            cmp byte ptr [ebx], 0
+            je hetnhom
+            mov edi, ebx
+            push eax
+            call timchuoi
+            mov edx, eax
+            pop eax
+            and eax, edx
+        boqua:
+            cmp byte ptr [ebx], 0
+            je quamau
+            inc ebx
+            jmp boqua
+        quamau:
+            inc ebx
+            jmp vongmau
+        hetnhom:
+            inc ebx
+            test eax, eax
+            je vongnhom
+            pop edi
+            pop esi
+            pop ebx
+            pop edx
+            pop ecx
+            ret 4
+        hien:
+            pop edi
+            pop esi
+            pop ebx
+            pop edx
+            pop ecx
+            mov eax, dword ptr [esp + 4]
+            push esi
+            push {diachihook + 5}
+            ret
+        timchuoi:
+            push esi
+        vongngoai:
+            xor ecx, ecx
+        vongtrong:
+            mov dl, byte ptr [edi + ecx]
+            test dl, dl
+            je thay
+            cmp byte ptr [esi + ecx], dl
+            jne tieptheo
+            inc ecx
+            jmp vongtrong
+        tieptheo:
+            cmp byte ptr [esi], 0
+            je khongthay
+            inc esi
+            jmp vongngoai
+        thay:
+            mov eax, 1
+            pop esi
+            ret
+        khongthay:
+            xor eax, eax
+            pop esi
+            ret
+        """
+        encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script, kichban)
+        if not encoding or len(encoding) > 0x200 or len(bang) > 0x200:
+            return False
+        write_bytes(self.tientrinh, kichban, bytes(encoding), len(encoding))
+        write_bytes(self.tientrinh, diachibang, bang, len(bang))
+        write_bytes(self.tientrinh, diachihook, b"\xE9" + struct.pack("<i", kichban - (diachihook + 5)), 5)
+        self._inlog("[THÔNG BÁO] đã chặn thông báo giữa màn hình: " + ", ".join("+".join(m.decode() for m in nhom) for nhom in self.THONGBAOBOQUAs))
+        return True
+
     def action_thietlaphookvedoituong(self):
         # Ẩn phân thân chiêu (Ngự Kiếm Phi Tiên...): đầu hàm vẽ 1 đối tượng xq+0x14200 (thiscall, ecx = đối tượng, ret 8; chính hàm này có
         # nhánh thoát sớm tương tự ở 0x414233). Cờ "phanthan" bật và lớp +0x29 = LOPDOITUONG_PHANTHAN thì ret 8 luôn, không vẽ gì.
@@ -4701,6 +4814,25 @@ class MoiTruong:
             nhan = read_bytes(self.tientrinh, o + 0x24, 0x80).split(b"\0")[0].decode("utf-8", "ignore") if o else ""
             nhans.append(re.sub(r'\x1b.', '', nhan))
         return nhans
+
+    def get_danhsachdinhtieu(self):
+        # Menu Định Tiêu của Mao Sơn ("pf 4181") đang giữ trong cửa sổ tuỳ chọn -> {ô: (tên bản đồ, x, y)} các ô đã định tiêu, None khi menu
+        # đang giữ không phải Định Tiêu. Đọc trên Kng (359) 2026-11-16: lời thoại "Bạn muốn định tiêu ở chỗ này? (Tối đa là 2 địa điểm)",
+        # 16 lựa chọn "pf 4181.<ô>", nhãn "1.Tân Thủ Thôn（1）(113,147)", "2.Hoa Sơn(134,121)", ô trống "3.(Định tiêu)".
+        # Xuyên Không Hành "pf 4182.<ô>" bay tới đúng ô đó (không phải "về chỗ cũ")
+        if "định tiêu" not in self.get_noidungcuasotuychon().lower():
+            return None
+        lenhs = self.get_lenhcuasotuychons()
+        if not lenhs or not lenhs[0].startswith("pf 4181."):
+            return None
+        dinhtieus = {}
+        for lenh, nhan in zip(lenhs, self.get_nhanluachoncuasotuychons()):
+            khop = re.match(r"\s*(\d+)\.(.+?)\((\d+),\s*(\d+)\)\s*$", nhan)
+            if khop:
+                # Số trong ngoặc toàn khổ là số thứ tự bản đồ: "Tân Thủ Thôn（1）" = "Tân Thủ Thôn 1" (bando_xq, id 1)
+                ten = re.sub(r"\s*（([^）]*)）", r" \1", khop.group(2)).strip()
+                dinhtieus[int(khop.group(1))] = (ten, int(khop.group(3)), int(khop.group(4)))
+        return dinhtieus
 
     def get_danhsachmucnhiemvu(self):
         # Các mục của cửa sổ nhiệm vụ ([thông tin game] + TG_NHIEMVU) theo thứ tự hiển thị: [(tên, mô tả)]. Tên mục ở + 0x90, mô tả cùng
