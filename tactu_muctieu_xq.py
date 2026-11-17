@@ -284,6 +284,11 @@ class TacTuMucTieu:
         tot = None
         # Nhận Tinh Anh theo cấp ở tầm nhìn chung: chỉ ở bản đồ thật (phó bản mượn ID thì cấp quái không theo bản đồ)
         idbandotinhanh = self.moitruong.get_idbandohientai() if self._is_loctinhanh() and self.moitruong.get_is_phobanmuonbando() is False else None
+        # Đang dò Phong Yêu Kính: bỏ quái người khác thấy mà nằm ngược hướng điểm dò đang tới (như _is_quainguochuongdo của dò bản đồ).
+        # Log 364 (Gạ) 2026-11-16 07:14: điểm dò (182, 59) phía đông, quái chung (68, 130) phía tây 58 bước => "dò đánh quái" và
+        # "Tới mục tiêu" thay nhau thắng mỗi ~1s, đứng giật qua lại ở (108, 125). Quái tự thấy vẫn đánh như cũ (không nhường ai)
+        diemdopy = self.get_diemdophongyeu()
+        idbandohientai = self.moitruong.get_idbandohientai()
         for iddoituong, (x, y, _, _, is_muctieupk, ten, cap) in self._laytamnhinchung().items():
             if iddoituong in idthaytaichos or iddoituong in self._idmuctieubiloi_map:
                 continue
@@ -305,6 +310,8 @@ class TacTuMucTieu:
             if self._kiemtra_divaovungcam(x, y):
                 continue
             if not is_muctieupk and not self._kiemtra_tamdiemdanh(x, y):
+                continue
+            if diemdopy and not is_muctieupk and self._is_nguochuongdiemdo(x, y, idbandohientai, diemdopy):
                 continue
             if not tot or khoangcach < tot[0]:
                 tot = (khoangcach, iddoituong, x, y)
@@ -347,6 +354,88 @@ class TacTuMucTieu:
             if self.moitruong.get_iddoituong(diachi) == iddoituongmuctieu:
                 return diachi
         return 0
+
+    def _danhgiacumvabotkhac(self, thongtins, toadohoples, toadobanthan, muctieuhientai, tamdanhchon, tenbossuutien, is_theosau):
+        # Ghi "thuongcum" (bước 3, ưu tiên cụm quái) và "phatbotkhac" (bước 4, chia mục tiêu giữa các bot) theo ô vào thông tin từng ứng
+        # viên cho _khoangcachsosanh. Chỉ áp cho quái; người chơi / bảo thú giữ nguyên (tập trung đánh, không chia). toadohoples: mọi con
+        # hợp lệ quanh mình (cả con bị lọc khỏi chọn vì ngoài vùng theo sau: chiêu diện rộng vẫn trúng nó)
+        if not thongtins:
+            return
+        is_cum = self._is_uutiencumquai and len(toadohoples) > 1
+        # Đang theo sau mà bật tập hỏa: cố ý đánh chung mục tiêu người theo sau, không chia
+        muctieubots = self._laymuctieubotkhac() if self._is_chiamuctieubotkhac and not (self._is_taphoa and is_theosau) else {}
+        idbanthan = str(self.moitruong.get_idnguoichoi() or "")
+        for thongtin in thongtins:
+            thongtin["thuongcum"] = thongtin["phatbotkhac"] = 0.
+            if thongtin["is_muctieupk"]:
+                continue
+            toado = thongtin["toado"]
+            if is_cum:
+                socum = sum(1 for t in toadohoples if t != toado and khoangcachtamdanh(t, toado) <= BANKINHCUMQUAI)
+                thongtin["socum"] = socum
+                thongtin["thuongcum"] = THUONGMOICONCUM * min(socum, SOCONCUMTOIDA)
+            if not muctieubots:
+                continue
+            bots = muctieubots.get(self.moitruong.get_iddoituong(thongtin["diachi"]))
+            if not bots:
+                continue
+            # Đã đánh tới con đang chọn thì giữ (hai bot cùng nhường nhau là chạy qua lại); boss thì đánh chung
+            if thongtin is muctieuhientai and thongtin["khoangcachtamdanh"] <= tamdanhchon:
+                continue
+            if tenbossuutien and (thongtin.get("ten") or "").strip() in tenbossuutien:
+                continue
+            khoangcachminh = thongtin["khoangcachtamdanh"]
+            for idbot, toadobot in bots:
+                khoangcachbot = khoangcachtamdanh(toadobot, toado)
+                # Bot gần hơn giữ; bằng nhau thì ID nhỏ hơn giữ (hai bên tính cùng một luật nên không cùng nhường)
+                if khoangcachbot < khoangcachminh or (khoangcachbot == khoangcachminh and str(idbot) < idbanthan):
+                    thongtin["phatbotkhac"] = PHATMUCTIEUBOTKHAC
+                    thongtin["botgiu"] = idbot
+                    break
+
+    def _laymuctieubotkhac(self):
+        # {id quái: [(ID người chơi bot, (x, y) của bot)]} mục tiêu bot khác cùng bản đồ đang chọn (shared_data: cùng máy và LAN). Bỏ bot
+        # tắt Tự động sử dụng kỹ năng (không đánh) và bot theo sau bật tập hỏa (chép mục tiêu người khác). Đọc qua proxy Manager tốn nên
+        # nhớ THOIGIANDOCMUCTIEUBOTKHAC giây
+        thoidiem, ketqua = self._bonhomuctieubotkhac
+        bayh = time.time()
+        if bayh - thoidiem < THOIGIANDOCMUCTIEUBOTKHAC:
+            return ketqua
+        ketqua = {}
+        idbanthan = self.moitruong.get_idnguoichoi()
+        idbando = self.moitruong.get_idbandohientai()
+        try:
+            danhsach = list(self.shared_data.values()) if self.shared_data is not None else []
+        except Exception:
+            danhsach = []
+        for info in danhsach:
+            if not isinstance(info, dict):
+                continue
+            idnguoichoi = info.get("idnguoichoi")
+            iddoituong = info.get("iddoituongmuctieu")
+            if not idnguoichoi or idnguoichoi == idbanthan or not iddoituong or iddoituong <= 0:
+                continue
+            if not info.get("_is_tudongsudungkynang", True) or (info.get("_is_tudongtheosau") and info.get("_is_taphoa")):
+                continue
+            if bayh - info.get("thoidiemcapnhat", 0.) > 5. or not self.moitruong.get_is_cungbando(info, idbando):
+                continue
+            ketqua.setdefault(iddoituong, []).append((idnguoichoi, (info.get("x", 0), info.get("y", 0))))
+        self._bonhomuctieubotkhac = (bayh, ketqua)
+        return ketqua
+
+    def _logchonmuctieu(self, thongtin):
+        # Đổi mục tiêu mà đường đi / cụm quái / bot khác giữ có ảnh hưởng thì ghi log để kiểm tra trong game
+        phans = []
+        khoangcach = thongtin["khoangcach"]
+        khoangcachduongdi = thongtin.get("khoangcachduongdi", khoangcach)
+        if khoangcachduongdi > khoangcach + 1.:
+            phans.append(f"đường đi {khoangcachduongdi:.0f} (thẳng {khoangcach:.1f})")
+        if thongtin.get("thuongcum"):
+            phans.append(f"cụm {thongtin.get('socum', 0)} con quanh")
+        if thongtin.get("phatbotkhac"):
+            phans.append(f"bot {thongtin.get('botgiu')} đang giữ")
+        if phans:
+            self.moitruong._inlog(f"[CHỌN MỤC TIÊU] {thongtin.get('ten')} {tuple(round(v) for v in thongtin['toado'])}: " + ", ".join(phans))
 
     def _ghinhanchieuguivaomuctieu(self, diachimuctieu):
         # Đếm chiêu gửi vào mục tiêu đang theo dõi trúng chiêu; chiêu đầu tiên sau lần trúng gần nhất là mốc bắt đầu tính giờ
@@ -495,6 +584,13 @@ class TacTuMucTieu:
                 return True
         return True
 
+    def get_is_duocdanhthanhantoan(self):
+        # Tân Thủ Thôn / Chu Quốc (BANDOKHONGTANCONGs) vốn không chọn mục tiêu, không ra chiêu. Ngoại lệ: Thiên Xu Viện Trừ Ác Giúp Yếu
+        # có Ác Nhân xuất hiện ở Chu Quốc (log 354 2026-11-16 06:09 Ác Nhân Tương Miêu Nhân (113, 136)): thấy, tự gán mục tiêu nhưng bị
+        # bỏ chọn liên tục, đứng cạnh không đánh. Lúc đang đánh quái nhiệm vụ thì danh sách mục tiêu chỉ còn tên ác nhân nên không lan
+        # sang quái khác
+        return self.get_is_thienxudanhquai()
+
     def action_tudongtimkiemmuctieu(self):
         # Yêu cầu đi tới mục tiêu nhân vật khác thấy chỉ tạo lại ở cuối hàm khi mình không có mục tiêu nào
         self._yeucautimmuctieuchung = None
@@ -502,7 +598,7 @@ class TacTuMucTieu:
             return
 
         idbandohientai = self.moitruong.get_idbandohientai()
-        if idbandohientai in BANDOKHONGTANCONGs:
+        if idbandohientai in BANDOKHONGTANCONGs and not self.get_is_duocdanhthanhantoan():
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             return
 
@@ -572,11 +668,32 @@ class TacTuMucTieu:
             tamdungim = KHOANGCACHSUDUNGKYNANGCANCHIEN if self._khoangcachvoitoimuctieu <= KHOANGCACHSUDUNGKYNANGCANCHIEN \
                 else self._khoangcachsudungkynangtamxa
 
+        # Khoảng cách theo đường đi thật (_is_muctieutheoduongdi): một lần loang BFS từ ô mình cho mọi ứng viên. Đứng im đánh thì chỉ chọn
+        # con trong tầm (không đi) nên khỏi loang. Tầm đánh như tamdungim: cận chiến 1 ô, còn lại tầm xa. Đường Môn (ám khí không bay qua
+        # vật cản) thì con trong tầm mà bị chắn đường bắn vẫn tính theo đường đi
+        loang = self.moitruong.get_loangbuocdi() if self._is_muctieutheoduongdi and not self._is_dungimdanh else None
+        tamdanhchon = KHOANGCACHSUDUNGKYNANGCANCHIEN if self._khoangcachvoitoimuctieu <= KHOANGCACHSUDUNGKYNANGCANCHIEN \
+            else self._khoangcachsudungkynangtamxa
+        is_kiemtraduongban = bool(loang) and self.moitruong.get_tenmonphai() == "duongmon"
+
+        def _khoangcachduongdi(toado, khoangcach, khoangcachtd):
+            if not loang:
+                return khoangcach
+            if khoangcachtd <= tamdanhchon and not (is_kiemtraduongban and self.moitruong.get_is_chanduongbanloang(loang, *toadobanthan, *toado)):
+                return khoangcach
+            # Đường Môn bị chắn trong tầm: phải tới sát hơn (tầm 1) mới chắc bắn được; còn lại chỉ cần tới ô trong tầm đánh
+            tam = KHOANGCACHSUDUNGKYNANGCANCHIEN if khoangcachtd <= tamdanhchon else tamdanhchon
+            sobuoc = self.moitruong.get_sobuoctoitamloang(loang, toado[0], toado[1], tam)
+            if sobuoc is None:
+                return khoangcach + PHATMUCTIEUKHONGDUONG
+            return max(khoangcach, sobuoc + tam)
+
         def _bosungvitri(thongtin, toado = None):
             toado = toado or self.moitruong.get_toado(thongtin["diachi"])
             thongtin["toado"] = toado
             thongtin["khoangcach"] = math.dist(toado, toadobanthan)
             thongtin["khoangcachtamdanh"] = khoangcachtamdanh(toado, toadobanthan)
+            thongtin["khoangcachduongdi"] = _khoangcachduongdi(toado, thongtin["khoangcach"], thongtin["khoangcachtamdanh"])
             # Mục tiêu quanh người theo sau: đo theo tầm đánh (đứng trong vùng quanh họ là bắn tới được)
             thongtin["khoangcachtheosau"] = khoangcachtamdanh(toado, toadotheosau) if is_anhhuongboimuctieutheosau else 0.
             return thongtin
@@ -734,7 +851,8 @@ class TacTuMucTieu:
                 huongdichuyen = (xsap - toadobanthan[0], ysap - toadobanthan[1])
 
         def _khoangcachsosanh(thongtin):
-            khoangcach = thongtin["khoangcach"]
+            # Đường đi thật (bước 1) thay đường chim bay, trừ thưởng cụm quái (bước 3), cộng phạt quái bot khác đang giữ (bước 4)
+            khoangcach = thongtin.get("khoangcachduongdi", thongtin["khoangcach"]) - thongtin.get("thuongcum", 0.) + thongtin.get("phatbotkhac", 0.)
             toado = thongtin.get("toado")
             if huongdichuyen and toado and (toado[0] - toadobanthan[0]) * huongdichuyen[0] + (toado[1] - toadobanthan[1]) * huongdichuyen[1] < 0:
                 khoangcach += PHATMUCTIEUSAULUNG
@@ -751,6 +869,7 @@ class TacTuMucTieu:
         muctieutotnhi = None
         toadomuctieuhoples = []
         diachimuctieuhoples = []
+        ungviens = []
 
         iii = 0
         while True:
@@ -802,7 +921,13 @@ class TacTuMucTieu:
             # Tập hỏa đã có mục tiêu của người theo sau: cũng chỉ đếm, không cho con khác thay
             if is_khoamuctieukhaithien or is_khoamuctieutaphoa:
                 continue
+            # So sau vòng này: thưởng cụm quái cần toạ độ mọi con hợp lệ
+            ungviens.append(thongtinmuctieuxemxet)
 
+        # Thưởng cụm quái (bước 3) / phạt quái bot khác đang giữ (bước 4) cho mục tiêu hiện tại và mọi ứng viên, rồi mới so
+        self._danhgiacumvabotkhac([muctieuhientai] + ungviens if muctieuhientai else ungviens, toadomuctieuhoples, toadobanthan,
+                                  muctieuhientai, tamdanhchon, tenbossuutien, is_anhhuongboimuctieutheosau)
+        for thongtinmuctieuxemxet in ungviens:
             if not muctieutotnhat or _is_uutienhon(thongtinmuctieuxemxet, muctieutotnhat):
                 muctieutotnhi = muctieutotnhat
                 muctieutotnhat = thongtinmuctieuxemxet
@@ -817,6 +942,8 @@ class TacTuMucTieu:
             if diachiduphong:
                 self._diachicosomuctieuduphong = diachiduphong
             _thaydoimuctieu(diachimuctieumoi)
+            if muctieutotnhat:
+                self._logchonmuctieu(muctieutotnhat)
 
         # Quanh mình không còn mục tiêu nào: xem tầm nhìn của nhân vật khác cùng máy, có thì tìm đường tới đó
         if not muctieutotnhat and not self._is_dungimdanh:
@@ -1202,7 +1329,9 @@ class TacTuMucTieu:
                                 diachidoituongcanhoisinhduphong = diachidoituongdangxemxet
                     continue
 
-                is_cantaytran = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCCOT, HIEUUNGKYNANG_THUCGIAP, HIEUUNGKYNANG_THIEUDOT, HIEUUNGKYNANG_THAUCOTDINH, HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN), macdinh = False, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 0)
+                # Bất Động (9002 thời gian ngắn) Tẩy Trần Quyết cũng giải được (người dùng 2026-11-17)
+                is_cantaytran = (self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_THUCCOT, HIEUUNGKYNANG_THUCGIAP, HIEUUNGKYNANG_THIEUDOT, HIEUUNGKYNANG_THAUCOTDINH, HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN), macdinh = False, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 0)
+                                 or self.moitruong.get_loaihieuung9002(diachidoituongdangxemxet) == "batdong")
 
                 if is_cantaytran:
                     if is_uutiennhom and not diachidoituongcanbufftaytranquyet:
@@ -1666,12 +1795,13 @@ class TacTuMucTieu:
             return
 
         if is_gomhetquaithay:
-            # Còn con thấy được chưa gom lần nào (idquaicankeogannhat) thì kéo tiếp, không dừng vì đủ số; quá tải nâng lên 50
+            # Còn con thấy được chưa gom lần nào (idquaicankeogannhat) thì kéo tiếp, không dừng vì đủ số (tới SOQUAIGOMTOIDA)
             is_dusoluongquaigan = idquaicankeogannhat == 0
-            is_quatai = soluongquaidagom >= 20
+            is_quatai = soluongquaidagom >= SOQUAIGOMTOIDA
         else:
+            # Số tối thiểu đặt cao hơn SOQUAIGOMTOIDA thì quá tải vẫn chặn ở SOQUAIGOMTOIDA
             is_dusoluongquaigan = soluongquaigan >= self._soluongquaigomtoithieu
-            is_quatai = soluongquaidagom >= 20
+            is_quatai = soluongquaidagom >= SOQUAIGOMTOIDA
 
         # Số tối thiểu chỉ là ngưỡng dưới: đang chạy gom, đủ số mà sát đám đang gom vẫn còn quái chưa kéo thì kéo nốt, chưa dừng lại đánh.
         # Đã dừng lại đánh thì giữ như cũ (quái tự lại gần <= 4.5m vẫn được tính vào đám)

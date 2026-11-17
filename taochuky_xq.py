@@ -118,6 +118,7 @@ MUCTIEU = [
     ("TG_THONGBAO", 0xADFD70, "hang", "thông báo gần nhất"),
     ("TG_NHOM", 0xADFDA4, "hang", "thành viên nhóm"),
     ("TG_MONPHAI", 0xADFDDC, "hang", "môn phái"),
+    ("MP_THANHVIENBANG", 0x2A6A8, "hang", "danh sách thành viên bang trong TG_MONPHAI (trả lời \"org status\"): tối đa 200 ô 0x48, ID +0, cấp byte +0x14, tên +0x15, chức vụ +0x29; hết danh sách ID 0"),
     ("TG_MAUPK", 0xAED6CC, "hang", "màu PK"),
     ("TG_CHUCNANGMORONG", 0xAEBC0C, "hang", "chức năng mở rộng"),
     ("TG_CUASOTUYCHON", 0xADFD74, "hang", "cửa sổ tuỳ chọn"),

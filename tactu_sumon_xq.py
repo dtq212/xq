@@ -27,7 +27,7 @@ from giaodo_xq import taolenhgiao
 from nhiemvu_xq import *
 from nhiemvu_xq import _laynpcbandonho as nhiemvu_layvitri_soluong
 from thongbao_xq import baosuco
-from tienich_xq import phatam, canhbao, tailotrinhmau as util_tailotrinhmau, luulotrinhmau as util_luulotrinhmau
+from tienich_xq import phatam, canhbao, read_short_int, tailotrinhmau as util_tailotrinhmau, luulotrinhmau as util_luulotrinhmau
 
 # Cấp trong tên gốc quái (+0x10AC): "Yên Quốc Thương Binh (cấp 57)" / "( Cấp 57 )"
 MAUCAPTRONGTEN = re.compile(r"\(\s*[Cc]ấp\s*(\d+)\s*\)")
@@ -306,9 +306,15 @@ class TacTuSuMon:
         # Cửa hàng đang mở (người chơi tự mở / bot bán đồ): nhớ hàng theo NPC chỉ khi quanh đó có đúng 1 NPC. Cấu trúc cửa hàng không
         # ghi NPC chủ; các tiệm một nước đứng sát nhau nên lấy NPC gần nhất ghi nhầm: 2026-11-15 acc 511 bán đồ cho Y Dược (38#, bán
         # được từ xa) -> hàng Y Dược ghi thành "40|Trương Nghi"/"Chủ Tiệm Vũ Khí", Danh Vọng mua Thạch Tín thay vũ khí Vân Mộng Cốc
+        # Chỉ ghi lúc cửa hàng vừa hiện / hàng vừa đổi, không ghi lại khi cửa sổ vẫn hiện: 2026-11-17 acc 359 cờ hiện của cửa hàng Kỵ Thú
+        # (Tề Tổng Quản) kẹt bật, đi tới đâu cũng gán "Kỵ Thú Tiểu Quai" cho NPC đứng một mình ở đó (~20 NPC, có Chủ Tiệm Vũ Khí Ngụy
+        # Quốc) -> Danh Vọng "buy ô 2" mua nhầm Vân Mộng Kiếm cấp thấp 3 lần
         if not self._mocuahang:
             cuahang = moitruong.get_cuahangdangmo()
-            if cuahang and cuahang["is_danghien"] and cuahang["hang"]:
+            khoacuahang = (idbando, tuple(cuahang["hang"])) if cuahang and cuahang["is_danghien"] and cuahang["hang"] else None
+            is_moi = khoacuahang and self._cuahangdathay != "batdau" and khoacuahang != self._cuahangdathay
+            self._cuahangdathay = khoacuahang
+            if is_moi:
                 diachi = self._timnpcganhat(KHOANGCACHNOICHUYEN + 2)
                 if diachi and self._demnpcquanh(KHOANGCACHNPCCUAHANGDUYNHAT) == 1:
                     self._sovitri.ghicuahang(idbando, (moitruong.get_tendoituong(diachi), moitruong.get_danhhieudoituong(diachi)), cuahang["hang"])
@@ -421,6 +427,10 @@ class TacTuSuMon:
             if is_quai:
                 if chuanhoaten(moitruong.get_tendoituong(diachi)) != chuanhoaten(ten) or not moitruong.get_is_cothetancong(diachi):
                     continue
+            # Tìm NPC: bỏ bảo thú (lớp +0x29 0xA0 / 0xA1, hoặc tên gốc có chủ nhân trong ngoặc). Bảo thú triệu hồi "Quỷ Tốt ( Cấp N)(chủ)"
+            # cắt phần cấp còn đúng "Quỷ Tốt" => sư môn Mao Sơn nói chuyện nhầm với Quỷ Tốt của người chơi khác thay NPC Quỷ Tốt
+            elif self._is_baothukhongphainpc(diachi):
+                continue
             elif not any(is_trungten(t, moitruong.get_tendoituong(diachi)) or is_trungten(t, moitruong.get_danhhieudoituong(diachi))
                          for t in tenthaythe(ten)[0]):
                 continue
@@ -428,6 +438,14 @@ class TacTuSuMon:
             if khoangcachtot is None or khoangcach < khoangcachtot:
                 tot, khoangcachtot = diachi, khoangcach
         return tot
+
+    def _is_baothukhongphainpc(self, diachi):
+        moitruong = self.moitruong
+        if moitruong.get_is_npc(diachi):
+            return False
+        if read_short_int(moitruong.tientrinh, diachi + 0x29) in (0xA0, 0xA1):
+            return True
+        return moitruong.get_is_baothukynangtrieuhoi(diachi) or moitruong.get_is_baothugiangho(diachi)
 
     def _layquairieng(self, tens):
         # Quái nhiệm vụ riêng mang ID người chơi trong tên ("Cuồng Đồ (30)", "Quan Viên Đào Tẩu (29)", "Tùy Tùng (32)"), tên trong nhiệm vụ

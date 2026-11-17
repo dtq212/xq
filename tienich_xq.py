@@ -24,6 +24,32 @@ def is_tieudecuasogame(title):
     return bool(title) and any(tieude in title for tieude in TIEUDECUASOGAMEs)
 
 
+# Dịch mã x86 32 bit bằng Keystone, có dò cơ số. Thỏ (342) văng 16/11 lúc 23:50:41 (C:\CrashDumps\XQ.exe.265176.dmp), 21s sau khi
+# bot chạy lại và vá hook vẽ hiệu ứng mặt đất: kịch bản vòng 1 bị Keystone đọc MỌI số thập phân thành hex ("push 4520018" = xq+0x4F852
+# ra push 0x4520018, "cmp ecx, 100" ra cmp ecx, 0x100), game nhảy vào 0x04520018 trong heap. Kịch bản vòng 2 dịch ngay sau đó thì đúng,
+# thử lại 20.000 lần không tái hiện => lỗi ngẫu nhiên theo từng đối tượng Ks. Vì vậy dịch "push 100" trên cùng đối tượng trước và sau
+# kịch bản, ra khác 6A 64 thì bỏ đối tượng đó, dịch lại. Có khoá: các luồng bot không dịch song song.
+_KHOAKEYSTONE = threading.Lock()
+_MADOCOSO = b"\x6a\x64"
+
+
+def asm_x86(asm_script, diachi = None):
+    # -> (encoding, count) như Ks.asm; encoding None khi 5 lần đều sai cơ số / lỗi dịch
+    from keystone import Ks, KS_ARCH_X86, KS_MODE_32
+    with _KHOAKEYSTONE:
+        for lan in range(5):
+            ks = Ks(KS_ARCH_X86, KS_MODE_32)
+            if bytes(ks.asm("push 100")[0] or b"") != _MADOCOSO:
+                print(f"[KEYSTONE] đối tượng Ks đọc số sai cơ số (lần {lan + 1}), tạo lại")
+                continue
+            encoding, count = ks.asm(asm_script, diachi) if diachi is not None else ks.asm(asm_script)
+            if bytes(ks.asm("push 100")[0] or b"") != _MADOCOSO:
+                print(f"[KEYSTONE] cơ số đổi trong lúc dịch (lần {lan + 1}), dịch lại")
+                continue
+            return encoding, count
+    return None, 0
+
+
 class _PROCESS_POWER_THROTTLING_STATE(ctypes.Structure):
     _fields_ = [("Version", ctypes.c_ulong), ("ControlMask", ctypes.c_ulong), ("StateMask", ctypes.c_ulong)]
 

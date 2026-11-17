@@ -9,7 +9,6 @@ import unicodedata
 from dataclasses import dataclass, field
 
 import pymem
-from keystone import Ks, KS_ARCH_X86, KS_MODE_32
 
 import astar_c_xq
 import diachi_xq
@@ -33,6 +32,50 @@ _VirtualQueryEx.argtypes = [ctypes.wintypes.HANDLE, ctypes.c_void_p, ctypes.POIN
 _VirtualQueryEx.restype = ctypes.c_size_t
 # 1 bản ghi hàng: 45 03 <tab> <stt> <3 giá int> <6 byte> <tên> <>=2 dấu cách> (xem _quetbanghitranbaokho)
 MAUBANGHITRANBAOKHO = re.compile(rb"\x45\x03([\x01-\x0f])([\x01-\x7f])(.{12})(.{6})([^\x00]{2,80}?) {2,}", re.S)
+
+# Đệm hàng Trân Bảo Khố theo phiên bản game, dùng chung mọi nhân vật / tiến trình (xem TABTRANBAOKHOs):
+# {phiên bản: {"tabs": {"<tab>": {tên: [ô, giá 0,1 KNB]}}, "luc": giờ đọc}}
+DUONGDANHANGTRANBAOKHO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_internal", "hangtranbaokho_cache.json")
+
+
+def _docphienbangame(duongdanexe):
+    # "DatVersion=2.01.10" trong patch.ini cạnh xq.exe (launcher ghi khi cập nhật), "" nếu không đọc được
+    try:
+        with open(os.path.join(os.path.dirname(duongdanexe), "patch.ini"), "r", encoding = "utf-8", errors = "ignore") as f:
+            khop = re.search(r"^\s*DatVersion\s*=\s*(\S+)", f.read(), re.M | re.I)
+        return khop.group(1) if khop else ""
+    except Exception:
+        return ""
+
+
+def _docdemtranbaokho():
+    try:
+        with open(DUONGDANHANGTRANBAOKHO, "r", encoding = "utf-8") as f:
+            dem = json.load(f)
+        return dem if isinstance(dem, dict) else {}
+    except Exception:
+        return {}
+
+
+def _ghidemtranbaokho(phienban, tabs = None):
+    # Gộp tabs ({tab: {tên: (ô, giá)}}) vào đệm của phiên bản (đọc lại file ngay trước khi ghi, tiến trình khác có thể vừa ghi);
+    # tabs None = xoá đệm phiên bản này. Ghi file tạm rồi thay để tiến trình khác không đọc phải file dở
+    if not phienban:
+        return
+    dem = _docdemtranbaokho()
+    if tabs is None:
+        dem.pop(phienban, None)
+    else:
+        muc = dem.setdefault(phienban, {"tabs": {}})
+        muc.setdefault("tabs", {}).update({str(tab): {ten: list(og) for ten, og in hang.items()} for tab, hang in tabs.items()})
+        muc["luc"] = time.strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        tam = DUONGDANHANGTRANBAOKHO + f".{os.getpid()}.tmp"
+        with open(tam, "w", encoding = "utf-8") as f:
+            json.dump(dem, f, ensure_ascii = False, indent = 1)
+        os.replace(tam, DUONGDANHANGTRANBAOKHO)
+    except Exception:
+        pass
 
 # Thông tin túi hành trang: con trỏ tại [thông tin game] + 0xADFE0C (cạnh con trỏ hành trang + 0xADFD78),
 # số ô mở của 4 túi là 4 int32 tại + 0xD4 (đo: túi đủ [24, 24, 24, 24], mới mở túi 2 loại 4 ô [24, 4, 0, 0])
@@ -157,6 +200,8 @@ class MoiTruong:
         self.gamemodule = xqmodule
         # Địa chỉ trong xq.exe (DC.<tên>, tính từ base) dò bằng chữ ký trên file xq.exe (1 lần cho mọi cửa sổ, có lưu đệm)
         diachi_xq.khoitao(xqmodule.filename)
+        # Phiên bản game (patch.ini, vd "2.01.10"): khoá đệm hàng Trân Bảo Khố dùng chung
+        self.phienbangame = _docphienbangame(xqmodule.filename)
 
         kichthuoccuaso = win32gui.GetWindowRect(self.idcuaso)
         if not kichthuoccuaso:
@@ -206,6 +251,8 @@ class MoiTruong:
         self._oditduoc_cache = {}
         # (bản đồ, từ x, từ y, tới x, tới y) -> lúc thấy đoạn cụt (action_dichuyenoo): khỏi tìm đường lại liên tục cùng 1 đoạn
         self._doancut_cache = {}
+        # (bản đồ, lúc loang, x, y, kết quả) của get_loangbuocdi: dùng lại khi mình chưa đi xa
+        self._loangbuocdi_cache = None
         # (bản đồ, lúc đọc, lưới cả bản đồ) cho A* cả bản đồ (_timduongkhongcatgoc lechtoida = None): lưới tĩnh theo bản đồ, khỏi đọc
         # lại ~300 cột mỗi lần tìm
         self._luoicabando_cache = None
@@ -412,6 +459,19 @@ class MoiTruong:
         self._idnguoichoitheoten_map = {}
         # Môn phái người chơi theo "desc user": ID người chơi -> mã môn phái (khoá của TENMONPHAI) hoặc tên game in ra nếu chưa có trong TENMONPHAI
         self._monphainguoichoi_map = {}
+        # Môn phái / bang gần như cố định nên đã biết thì không tự hỏi lại người khác (tình cờ có trả lời mới, kể cả người dùng tự bấm
+        # xem, thì vẫn ghi đè). Câu trả lời "desc user" nhận ở cửa sổ này: ID -> (tên, mã môn phái, bang, thời điểm), chia sẻ qua
+        # shared_data cho cửa sổ khác khỏi hỏi lại, giao diện ghi vào thongtinnguoichoi.json; ID đã hỏi trong phiên này (bang của chính
+        # mình vẫn hỏi lại 1 lần mỗi lần khởi động dù đã có trong file)
+        self._thongtinnguoichoimoi_map = {}
+        self._idnguoichoidahoiphien = set()
+        self._napthongtinnguoichoitufile()
+        # Danh sách thành viên bang (action_capnhatthanhvienbang): lần gửi "org status" / hỏi bang mình gần nhất, danh sách đọc lần
+        # trước (chờ 2 lần đọc giống nhau mới dùng, tránh đọc lúc game đang ghi dở) và danh sách đã áp vào cache
+        self._thoidiemhoithanhvienbang = 0.
+        self._thoidiemhoibangminhphien = 0.
+        self._thanhvienbangvuadoc = None
+        self._thanhvienbangdaapdung = None
         # (ID, tên, thời điểm gửi) lần "desc user" đang chờ trả lời; tên người chơi đang gom dòng trả lời (sau dòng "Danh tính") và môn phái đã gom
         self._yeucaubangphai = None
         self._tendanggomthongtin = None
@@ -444,6 +504,8 @@ class MoiTruong:
         # Trân Bảo Khố: vùng heap lần trước thấy gói tin hàng [(đầu, cỡ)], hàng đã đọc {tên: (tab, ô, giá 0,1 KNB)}
         self._vungtranbaokho = []
         self._hangtranbaokho = {}
+        # Lúc gửi "buyitem paytype 1": gói hàng nó kéo về tới trễ, đọc tab phải chờ gói này vào heap trước (get_hangtranbaokho)
+        self._thoidiempaytypetranbaokho = 0.
         self._thoidiemmakhoganday = 0.
         # Dò cửa sổ kho (action_dokho): cờ đang hiện lần đọc trước, ảnh vùng đầu cấu trúc kho lúc kho đóng (so khi mở)
         self._is_khodanghientruoc = False
@@ -545,7 +607,6 @@ class MoiTruong:
         self.diachihamthucthicaulenh = self.tientrinh.allocate(256)
         diachidulieu = self.diachihamthucthicaulenh + 0x40
 
-        ks = Ks(KS_ARCH_X86, KS_MODE_32)
         asm_code = f"""
             mov eax, dword ptr [{hex(diachidulieu)}]
             push eax
@@ -556,7 +617,7 @@ class MoiTruong:
             ret
         """
 
-        encoding, _ = ks.asm(asm_code)
+        encoding, _ = asm_x86(asm_code)
         write_bytes(self.tientrinh, self.diachihamthucthicaulenh, bytes(encoding), len(encoding))
 
     def _is_chuatoiluotlenh(self, caulenh = None, is_khancap = False):
@@ -1099,8 +1160,7 @@ class MoiTruong:
             ketthuc:
                 ret
             """
-            ks = Ks(KS_ARCH_X86, KS_MODE_32)
-            encoding, count = ks.asm(asm_script)
+            encoding, count = asm_x86(asm_script)
             if not encoding:
                 return
             write_bytes(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando, bytes(encoding), len(encoding))
@@ -1122,7 +1182,6 @@ class MoiTruong:
             self._diachibodemnoidungtrochuyen = self.tientrinh.allocate(4 + SOLUONGDONGTROCHUYEN * KICHTHUOCDONGTROCHUYEN)
             write_int(self.tientrinh, self._diachibodemnoidungtrochuyen, 0)
 
-            ks = Ks(KS_ARCH_X86, KS_MODE_32)
             for addr_at_hook, lenhgoc, tenbien in diachihooks:
                 diachikichban = self.tientrinh.allocate(256)
                 setattr(self, tenbien, diachikichban)
@@ -1154,7 +1213,7 @@ class MoiTruong:
                     ret
                 """
 
-                encoding, count = ks.asm(asm_script)
+                encoding, count = asm_x86(asm_script)
                 if not encoding:
                     raise Exception("Lỗi compile ASM Keystone")
 
@@ -1313,7 +1372,7 @@ class MoiTruong:
             push {dichcuoi}
             ret
         """
-        encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+        encoding, _ = asm_x86(asm_script)
         if not encoding or len(encoding) > KICHTHUOCKICHBANVEDANHHIEU - 0x10:
             self._inlog("[DANH HIỆU] lỗi dịch mã hook vẽ danh hiệu")
             return None
@@ -1364,7 +1423,7 @@ class MoiTruong:
             ketthuc:
                 ret 4
             """
-            encoding, count = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+            encoding, count = asm_x86(asm_script)
             if not encoding or len(encoding) > 0x40:
                 return False
             write_bytes(self.tientrinh, diachi, bytes(encoding), len(encoding))
@@ -1438,7 +1497,7 @@ class MoiTruong:
                 push {addr_at_hook + 6}
                 ret
             """
-            encoding, count = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+            encoding, count = asm_x86(asm_script)
             if not encoding:
                 return False
             write_bytes(self.tientrinh, diachikichban, bytes(encoding), len(encoding))
@@ -1513,7 +1572,7 @@ class MoiTruong:
                 push {addr_at_hook + 7}
                 ret
             """
-            encoding, count = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+            encoding, count = asm_x86(asm_script)
             if not encoding:
                 return False
             write_bytes(self.tientrinh, diachikichban, bytes(encoding), len(encoding))
@@ -1583,7 +1642,7 @@ class MoiTruong:
             push {diachiboqua}
             ret
         """
-        encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+        encoding, _ = asm_x86(asm_script)
         if not encoding:
             return False
         kichban = self.tientrinh.allocate(64)
@@ -1674,7 +1733,7 @@ class MoiTruong:
             push {diachihook + dotiep}
             ret
             """
-            encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+            encoding, _ = asm_x86(asm_script)
             if not encoding:
                 ketqua = False
                 continue
@@ -1739,7 +1798,7 @@ class MoiTruong:
             push {diachihook + dotiep}
             ret
             """
-            encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+            encoding, _ = asm_x86(asm_script)
             if not encoding:
                 ketqua = False
                 continue
@@ -1779,7 +1838,7 @@ class MoiTruong:
             push {diachihook + 0x45}
             ret
         """
-        encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+        encoding, _ = asm_x86(asm_script)
         if not encoding:
             return False
         kichban = self.tientrinh.allocate(64)
@@ -1892,7 +1951,7 @@ class MoiTruong:
             pop esi
             ret
         """
-        encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script, kichban)
+        encoding, _ = asm_x86(asm_script, kichban)
         if not encoding or len(encoding) > 0x200 or len(bang) > 0x200:
             return False
         write_bytes(self.tientrinh, kichban, bytes(encoding), len(encoding))
@@ -1951,7 +2010,7 @@ class MoiTruong:
         if mahook[0] != 0xE9 and mahook != magoc:
             self._inlog(f"[{tenlog}] chỗ vá {tenhang} không như dự kiến: {mahook.hex(' ')}")
             return False
-        encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+        encoding, _ = asm_x86(asm_script)
         if not encoding:
             return False
         encoding = bytes(encoding)
@@ -2169,7 +2228,7 @@ class MoiTruong:
             pop eax
             ret 8
         """
-        encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+        encoding, _ = asm_x86(asm_script)
         if not encoding:
             return None
         encoding = bytes(encoding)
@@ -2232,7 +2291,7 @@ class MoiTruong:
             xor eax, eax
             ret 4
         """
-        encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+        encoding, _ = asm_x86(asm_script)
         if not encoding:
             return False
         kichban = self.tientrinh.allocate(64)
@@ -2514,26 +2573,40 @@ class MoiTruong:
         # Hàng 1 tab Trân Bảo Khố đọc mới: gửi "buyitem <tab>" (cửa sổ phải đã mở bằng "buyitem paytype 1") rồi lấy các bản ghi của tab
         # vừa xuất hiện trong heap (so với trước khi gửi, bản cũ có thể từ lần mở trước). -> {tên: (ô, giá 0,1 KNB)}, {} nếu không đọc được.
         # Lần đầu quét cả bộ nhớ, sau đó chỉ quét vùng đã thấy bản ghi; vùng cũ không ra gì thì quét lại cả bộ nhớ 1 lần
+        # Lỗi 1163 2026-11-17 05:35: "buyitem 2" gửi 0,11s sau "buyitem paytype 1", game thật sự gửi trễ ~0,5s nên lần quét thứ 2 (0,5s)
+        # đã "đủ" với gói của paytype (chỉ ô 0-6) => thiếu Tiểu Huyết Thạch ô 7, báo không bán. Nay: bản ghi mới = địa chỉ mới HOẶC nội
+        # dung đổi (máy chủ hay ghi gói mới đè đúng chỗ gói cũ), gom theo ô (bản ở địa chỉ cao hơn thắng), chỉ nhận khi các ô liền từ 0,
+        # đã qua THOIGIANCHOTOITHIEU sau khi gửi và số món đứng yên giữa 2 lần quét
+        THOIGIANCHOTOITHIEU = 1.
+        # Gói của "buyitem paytype 1" phải vào heap trước khi chụp bản cũ, không thì lẫn với gói của tab
+        chopaytype = self._thoidiempaytypetranbaokho + THOIGIANCHOTOITHIEU - time.time()
+        if chopaytype > 0:
+            time.sleep(chopaytype)
         for is_quetca in ((False, True) if self._vungtranbaokho else (True, )):
             vungs = None if is_quetca else self._vungtranbaokho
             cu, _ = self._quetbanghitranbaokho(vungs)
             if not self.action_thucthicaulenh2(f"buyitem {tab}", delay = 0., is_khancap = True):
                 return {}
-            hethan = time.time() + thoigiancho
+            thoidiemgui = time.time()
+            hethan = thoidiemgui + thoigiancho
             hang = {}
             while time.time() < hethan:
                 time.sleep(0.25)
                 # Hàng đọc từ gói tin trong heap, không cần cửa sổ: "buyitem <tab>" bật lại cửa sổ thì ẩn ngay cho khỏi che màn hình
                 self._ancuasotranbaokho()
                 banghis, vungthays = self._quetbanghitranbaokho(vungs)
-                moi = {dc: bh for dc, bh in banghis.items() if dc not in cu and bh[0] == tab}
+                theoo = {}
+                for dc, bh in sorted(banghis.items()):
+                    if bh[0] == tab and cu.get(dc) != bh:
+                        theoo[bh[1]] = bh
+                moi = theoo if sorted(theoo) == list(range(len(theoo))) else {}
                 if moi:
-                    # Gói tới đủ thì số món không đổi giữa 2 lần quét
-                    if len(moi) == len(hang):
-                        break
-                    hang = moi
                     if vungthays:
                         self._vungtranbaokho = vungthays
+                    # Gói tới đủ thì số món không đổi giữa 2 lần quét
+                    if len(moi) == len(hang) and time.time() - thoidiemgui >= THOIGIANCHOTOITHIEU:
+                        break
+                    hang = moi
             if hang:
                 ketqua = {ten: (o, gia) for _, o, gia, ten in sorted(hang.values(), key = lambda bh: bh[1])}
                 self._hangtranbaokho.update({ten: (tab, o, gia) for ten, (o, gia) in ketqua.items()})
@@ -2542,15 +2615,46 @@ class MoiTruong:
         return {}
 
     def _timhangtranbaokho(self, tenvatpham):
-        # (tab, ô, giá) của món ở Trân Bảo Khố, đọc mới từ máy chủ (không tin ô nhớ cũ, Trân Bảo Khố đổi thứ tự là mua nhầm): xem tab đã
-        # thấy món lần trước trước, không có thì lần lượt các tab. Cửa sổ phải đã mở ("buyitem paytype 1"). None nếu không bán
+        # (tab, ô, giá, is_tudem) của món ở Trân Bảo Khố, None nếu không bán. Tra đệm dùng chung của phiên bản game trước
+        # (_docdemtranbaokho, is_tudem True); không có thì đọc từ máy chủ mọi tab (1 lần cho cả phiên bản, các nhân vật khác
+        # dùng lại) rồi ghi đệm. Đọc phải mở cửa sổ trước ("buyitem paytype 1"). Không biết phiên bản thì đọc mới như cũ, không đệm
         from nhiemvu_xq import is_trungtenvatpham
+        phienban = self.phienbangame
+        tabdems = {}
+        if phienban:
+            for tab, hang in _docdemtranbaokho().get(phienban, {}).get("tabs", {}).items():
+                try:
+                    tabdems[int(tab)] = {ten: (int(og[0]), int(og[1])) for ten, og in hang.items()}
+                except (TypeError, ValueError, IndexError):
+                    continue
+            for tab, hang in tabdems.items():
+                self._hangtranbaokho.update({ten: (tab, o, gia) for ten, (o, gia) in hang.items()})
+                for ten, (o, gia) in hang.items():
+                    if is_trungtenvatpham(tenvatpham, ten):
+                        return tab, o, gia, True
+            # Không thấy trong đệm: đọc lại MỌI tab (kể cả tab đã đệm, lỡ lần đọc trước thiếu món như lỗi 1163 05:35). Món không bán
+            # thì tactu chờ THOIGIANCHOKHONGDUKNB mới hỏi lại nên không đọc liên tục
+            tabmois = {}
+            for tab in TABTRANBAOKHOs:
+                hang = self.get_hangtranbaokho(tab)
+                # Tab không đọc được thì không đệm, lần sau đọc lại tab đó
+                if hang:
+                    tabmois[tab] = hang
+            if tabmois:
+                _ghidemtranbaokho(phienban, tabmois)
+                self._inlog(f"[TRÂN BẢO KHỐ] đã đọc và lưu đệm hàng phiên bản {phienban}: "
+                            + ", ".join(f"tab {tab} {len(hang)} món" for tab, hang in sorted(tabmois.items())))
+            for tab, hang in sorted(tabmois.items()):
+                for ten, (o, gia) in hang.items():
+                    if is_trungtenvatpham(tenvatpham, ten):
+                        return tab, o, gia, False
+            return None
         tabtruoc = self._hangtranbaokho.get(tenvatpham, (None, ))[0]
         for tab in ([tabtruoc] if tabtruoc else []) + [t for t in TABTRANBAOKHOs if t != tabtruoc]:
             hang = self.get_hangtranbaokho(tab)
             for ten, (o, gia) in hang.items():
                 if is_trungtenvatpham(tenvatpham, ten):
-                    return tab, o, gia
+                    return tab, o, gia, False
         return None
 
     def _demvatphamtheoten(self, tenvatpham):
@@ -2563,8 +2667,8 @@ class MoiTruong:
 
     def action_muavatphamtranbaokho(self, tenvatpham, soluong):
         # Mua soluong món (tên như trên Trân Bảo Khố) bằng Kim Nguyên Bảo, không cần đứng gần NPC. Làm như client: "buyitem" (đọc KNB) ->
-        # "buyitem paytype 1" -> đọc hàng từng tab tìm ô của món (get_hangtranbaokho, không ghi cứng ô) -> mỗi lần tối đa
-        # SOLUONGMUATRANBAOKHOTOIDA "buyitem <tab> <ô> <n>" + "zip 123". Không đủ KNB thì chỉ mua phần đủ tiền. Số mua được đếm bằng túi
+        # "buyitem paytype 1" -> tìm ô của món (_timhangtranbaokho: đệm theo phiên bản game, chưa có thì đọc các tab) -> mỗi lần tối đa
+        # SOLUONGMUATRANBAOKHOTOIDA 1 lệnh "buyitem ! <tab> <ô> <n>" (mua luôn, không hộp xác nhận). Không đủ KNB thì chỉ mua phần đủ tiền. Số mua được đếm bằng túi
         # trước / sau. Trả (số mua được, KNB còn): số mua được None nếu không kiểm được, 0 nếu không mua
         if soluong <= 0:
             return 0, None
@@ -2614,6 +2718,7 @@ class MoiTruong:
             return None, None
         time.sleep(0.2)
         self.action_thucthicaulenh2("buyitem paytype 1", delay = 0., is_khancap = True)
+        self._thoidiempaytypetranbaokho = time.time()
         # Chờ cửa sổ cập nhật số dư (Kim Bảo khớp số menu vừa đọc), tối đa 1,5s, đọc xong ẩn cửa sổ
         hethan = time.time() + 1.5
         sodu = None
@@ -2629,7 +2734,7 @@ class MoiTruong:
             self._inlog(f"[TRÂN BẢO KHỐ] không thấy \"{tenvatpham}\" ở tab nào của Trân Bảo Khố "
                         f"(đang bán: {', '.join(self._hangtranbaokho) or '?'})")
             return 0, knbtruoc
-        tab, o, gia = hang
+        tab, o, gia, is_tudem = hang
         # Giá đơn vị 0,1 KNB (25 = 2 Kim Bảo 5 Ngân Bảo). Số dư đủ cả Ngân Bảo lẻ đọc ở cửa sổ Trân Bảo Khố; cửa sổ chưa cập nhật (Kim
         # Bảo khác số menu vừa đọc) thì chỉ tính phần Kim Bảo
         sodu = sodu[0] * 10 + sodu[1] if sodu and sodu[0] == knbtruoc else knbtruoc * 10
@@ -2644,24 +2749,21 @@ class MoiTruong:
         while conlai > 0:
             n = min(conlai, SOLUONGMUATRANBAOKHOTOIDA)
             time.sleep(0.3)
-            self.action_thucthicaulenh2(f"buyitem {tab} {o} {n}", delay = 0., is_khancap = True)
-            time.sleep(0.05)
-            self.action_thucthicaulenh2(CAULENHXACNHANTRANBAOKHO, delay = 0., is_khancap = True)
+            # 1 lệnh "buyitem ! <tab> <ô> <n>" = mua luôn, không qua hộp "Bạn quyết định mua..." (client gửi "buyitem <tab> <ô> <n>"
+            # để hiện hộp rồi mới xác nhận). Người dùng xác nhận chạy cả Aegis lẫn Niết Bàn, 2026-11-17
+            self.action_thucthicaulenh2(f"buyitem ! {tab} {o} {n}", delay = 0., is_khancap = True)
             conlai -= n
-            # Hộp "Bạn quyết định mua..." tới sau lệnh mua một chút: ẩn ngay khi thấy (tối đa 1s)
-            hethan = time.time() + 1.
-            while time.time() < hethan:
-                time.sleep(0.1)
-                x, lenh = self.get_hopxacnhannpc()
-                if x and CAULENHXACNHANTRANBAOKHO in lenh:
-                    break
-            self.action_dongtranbaokho()
         time.sleep(1.)
         demsau = self._demvatphamtheoten(tenvatpham)
         damua = demsau - demtruoc if demtruoc is not None and demsau is not None else None
         knbsau = self.get_kimnguyenbao()
-        self._inlog(f"[TRÂN BẢO KHỐ] mua {soluong} {tenvatpham} (tab {tab} ô {o}, giá {gia / 10:g}): KNB {knbtruoc} -> {knbsau}, "
-                    f"túi {demtruoc} -> {demsau}, mua được {damua if damua is not None else '?'}")
+        self._inlog(f"[TRÂN BẢO KHỐ] mua {soluong} {tenvatpham} (tab {tab} ô {o}, giá {gia / 10:g}{', ô từ đệm' if is_tudem else ''}): "
+                    f"KNB {knbtruoc} -> {knbsau}, túi {demtruoc} -> {demsau}, mua được {damua if damua is not None else '?'}")
+        # Mua theo ô đệm mà túi không thêm đủ: có thể Trân Bảo Khố đã đổi thứ tự (mua nhầm món) => xoá đệm phiên bản, lần sau đọc lại
+        if is_tudem and damua is not None and damua < soluong:
+            _ghidemtranbaokho(self.phienbangame, None)
+            self._inlog(f"[TRÂN BẢO KHỐ] mua theo ô đệm chỉ được {damua}/{soluong} {tenvatpham}: xoá đệm hàng phiên bản "
+                        f"{self.phienbangame}, lần mua sau đọc lại từ Trân Bảo Khố")
         return damua, knbsau
 
     def get_danhsachdanhhieu(self):
@@ -2786,6 +2888,21 @@ class MoiTruong:
         # Phong Yêu Kính mượn ID 1 bản đồ ngẫu nhiên: chỉ nhận ra qua đầu tên bản đồ game
         tenbandogame = self.get_tenbandogame()
         return bool(tenbandogame) and unicodedata.normalize("NFC", tenbandogame).startswith(TIENTOTENBANDOPHONGYEU)
+
+    def get_is_bovungcam(self, idbando = None):
+        # Trong mọi phó bản (BANDOPHOBANs: Lăng Ly Sơn, Thành Kiều, Bát Quái Trận...; phó bản mượn ID: Phong Yêu Kính, Tập Kích) điểm
+        # chuyển tiếp chỉ tượng trưng, đi vào không bị chuyển bản đồ (người dùng 2026-11-17) => không né vùng cấm quanh cổng.
+        # Đọc tên bản đồ tốn nên nhớ 0.5s (gọi theo từng ô khi tạo điểm dò / xét đường chạy)
+        idbando = self.get_idbandohientai() if idbando is None else idbando
+        if idbando in BANDOPHOBANs:
+            return True
+        now = time.time()
+        dem = getattr(self, "_bovungcamdem", None)
+        if dem and dem[0] == idbando and now - dem[1] < 0.5:
+            return dem[2]
+        ketqua = bool(self.get_is_phobanmuonbando())
+        self._bovungcamdem = (idbando, now, ketqua)
+        return ketqua
 
     def get_is_bandotapkichmonphai(self):
         # Tập Kích Môn Phái mượn ID 151 (Kênh Trịnh Quốc 1) nên chỉ nhận ra qua tên bản đồ game
@@ -3865,7 +3982,7 @@ class MoiTruong:
         return thongtin[1] if thongtin else 0.
 
     def action_hoibangphaicuaminh(self):
-        # "desc user <ID mình>" hỏi lại bang của chính mình ngay (bỏ qua THOIGIANLAMMOIBANGPHAI, vd kéo cấp kiểm tra đã vào bang chưa);
+        # "desc user <ID mình>" hỏi lại bang của chính mình ngay (dù đã biết, vd kéo cấp kiểm tra đã vào bang chưa);
         # trả lời ghi vào get_bangphai / get_thoidiembangphai. -> True nếu đã gửi
         thoidiemhientai = time.time()
         if thoidiemhientai - self._thoidiemhoibangphaiganhat < GIANCACHHOIBANGPHAI:
@@ -3911,12 +4028,12 @@ class MoiTruong:
         cans = [self.get_diachicosothongtinnhanvat1()] + [diachi for diachi in self._get_diachidoituongxungquanhs(is_nguoichoi = True)
                                                           if self.get_idloainhanvat(diachi) == LOAIMUCTIEU_NGUOICHOIKHACNHOM
                                                           and self.get_khoangcach(diachi) <= KHOANGCACHHOIBANGPHAI]
-        for diachi in cans:
+        for vitri, diachi in enumerate(cans):
             idnguoichoi = self.get_idnguoichoi(diachi)
             if not idnguoichoi or idnguoichoi < 0:
                 continue
-            thongtin = self._bangphainguoichoi_map.get(idnguoichoi)
-            if thongtin and thoidiemhientai - thongtin[1] < THOIGIANLAMMOIBANGPHAI:
+            # Đã biết bang thì không hỏi lại; riêng mình (đầu danh sách) hỏi 1 lần mỗi phiên vì bang mình có thể đổi lúc bot tắt
+            if idnguoichoi in self._bangphainguoichoi_map and (vitri or idnguoichoi in self._idnguoichoidahoiphien):
                 continue
             if self.action_thucthicaulenh("desc user {}".format(idnguoichoi), douutien = DOUUTIEN_THAP):
                 self._yeucaubangphai = (idnguoichoi, self.get_tendoituong(diachi), thoidiemhientai)
@@ -3934,8 +4051,8 @@ class MoiTruong:
         idnguoichoi = self.get_idnguoichoi(diachicosothongtinnhanvat)
         if not idnguoichoi or idnguoichoi < 0 or self.get_khoangcach(diachicosothongtinnhanvat) > KHOANGCACHHOIBANGPHAI:
             return False
-        thongtin = self._bangphainguoichoi_map.get(idnguoichoi)
-        if thongtin and thoidiemhientai - thongtin[1] < THOIGIANLAMMOIBANGPHAI:
+        # Đã biết bang thì thôi (môn phái biết cùng lần trả lời đó; bản Aegis không có dòng Bang phái vẫn ghi bang "")
+        if idnguoichoi in self._bangphainguoichoi_map:
             return False
         if self.action_thucthicaulenh("desc user {}".format(idnguoichoi), douutien = DOUUTIEN_THAP):
             self._yeucaubangphai = (idnguoichoi, self.get_tendoituong(diachicosothongtinnhanvat), thoidiemhientai)
@@ -3987,13 +4104,136 @@ class MoiTruong:
             return
         if self.get_bangphai(idnguoichoi) != tenbang:
             self._inlog(f"[BANG PHÁI] {ten} ({idnguoichoi}): {tenbang or 'không có bang'}")
-        self._bangphainguoichoi_map[idnguoichoi] = (tenbang, time.time())
+        luc = time.time()
+        self._bangphainguoichoi_map[idnguoichoi] = (tenbang, luc)
         self._idnguoichoitheoten_map[ten] = idnguoichoi
+        self._idnguoichoidahoiphien.add(idnguoichoi)
+        monphai = None
         if tenmonphaigame:
             monphai = self._mamonphaitheoten(tenmonphaigame)
             if self._monphainguoichoi_map.get(idnguoichoi) != monphai:
                 self._inlog(f"[MÔN PHÁI] {ten} ({idnguoichoi}): {tenmonphaigame}" + ("" if monphai in TENMONPHAI else " (chưa có trong TENMONPHAI)"))
             self._monphainguoichoi_map[idnguoichoi] = monphai
+        self._thongtinnguoichoimoi_map[idnguoichoi] = (ten, monphai or self._monphainguoichoi_map.get(idnguoichoi), tenbang, luc)
+
+    def _napthongtinnguoichoitufile(self):
+        # Môn phái / bang đã lưu (_internal/thongtinnguoichoi.json, giao diện ghi) nạp sẵn khi khởi động: khỏi "desc user" lại người quen,
+        # và khỏi coi người chưa biết bang là cùng bang (không đánh) tới lúc hỏi xong. File ghi tên môn phái hiển thị -> đổi về mã
+        try:
+            kho = taithongtinnguoichoi()
+        except Exception as err:
+            print(f"Lỗi nạp thông tin người chơi: {err}")
+            return
+        for khoa, muc in kho.items():
+            try:
+                idnguoichoi = int(khoa)
+            except (TypeError, ValueError):
+                continue
+            if not isinstance(muc, dict):
+                continue
+            luc = muc.get("lucthongtin") or 0.
+            if isinstance(muc.get("bangphai"), str):
+                self._bangphainguoichoi_map[idnguoichoi] = (muc["bangphai"], luc)
+            if muc.get("monphai"):
+                self._monphainguoichoi_map[idnguoichoi] = self._mamonphaitheoten(muc["monphai"])
+            if muc.get("ten"):
+                self._idnguoichoitheoten_map.setdefault(muc["ten"], idnguoichoi)
+
+    def get_thongtinnguoichoimoi(self):
+        # Câu trả lời "desc user" cửa sổ này nhận trong THOIGIANCHIASETHONGTINNGUOICHOI giây gần nhất: [(ID, tên, mã môn phái, bang, thời điểm)]
+        # cho cửa sổ khác (action_napthongtinnguoichoi) và giao diện (ghi file)
+        moc = time.time() - THOIGIANCHIASETHONGTINNGUOICHOI
+        for idnguoichoi in [k for k, v in list(self._thongtinnguoichoimoi_map.items()) if v[3] < moc]:
+            self._thongtinnguoichoimoi_map.pop(idnguoichoi, None)
+        return [(idnguoichoi,) + v for idnguoichoi, v in list(self._thongtinnguoichoimoi_map.items())]
+
+    def get_thanhvienbangs(self):
+        # Danh sách thành viên bang mình (bảng Alt+B, tab Thành Viên Bang) {ID: tên}: game ghi khi nhận trả lời "org status"
+        # (TG_MONPHAI + MP_THANHVIENBANG, tối đa SOTHANHVIENBANGTOIDA ô KICHTHUOCTHANHVIENBANG byte: ID +0, cấp byte +0x14, tên +0x15,
+        # chức vụ +0x29; xoá hết rồi ghi lại mỗi lần trả lời, hết danh sách là ID 0). Đo 2026-11-17 Gạ (364) bang Nghề: 68 người khớp bảng
+        x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+        x = read_int(self.tientrinh, x + DC.TG_MONPHAI) if x else 0
+        if not x:
+            return {}
+        try:
+            du = read_bytes(self.tientrinh, x + DC.MP_THANHVIENBANG, SOTHANHVIENBANGTOIDA * KICHTHUOCTHANHVIENBANG)
+        except Exception:
+            return {}
+        thanhviens = {}
+        for vitri in range(0, len(du), KICHTHUOCTHANHVIENBANG):
+            idnguoichoi = struct.unpack_from("<i", du, vitri)[0]
+            if idnguoichoi <= 0:
+                break
+            ten = du[vitri + 0x15:vitri + 0x29].split(b"\0")[0].decode("utf-8", "ignore").strip(" ")
+            thanhviens[idnguoichoi] = ten
+        return thanhviens
+
+    def action_capnhatthanhvienbang(self):
+        # Người vào / rời bang mình cập nhật ngay vào cache bang (không cần "desc user" lại): hỏi bang mình 1 lần mỗi phiên, có bang
+        # thì gửi "org status" (như mở tab Bang Phái ở Alt+B) mỗi THOIGIANLAMMOITHANHVIENBANG giây rồi đọc danh sách thành viên.
+        # Người trong danh sách = cùng bang mình; người cache ghi bang mình mà không còn trong danh sách = đã rời bang: bỏ bang đã biết
+        # (desc user hỏi lại khi gặp). Thay đổi chia sẻ cho cửa sổ khác + ghi file như câu trả lời "desc user" (bang None = đã rời)
+        thoidiemhientai = time.time()
+        idminh = self.get_idnguoichoi()
+        if not idminh or idminh < 0:
+            return
+        if idminh not in self._idnguoichoidahoiphien:
+            if thoidiemhientai - self._thoidiemhoibangminhphien > 60.:
+                if self.action_hoibangphaicuaminh():
+                    self._thoidiemhoibangminhphien = thoidiemhientai
+            return
+        bangminh = self.get_bangphai(idminh)
+        if not bangminh:
+            return
+        if thoidiemhientai - self._thoidiemhoithanhvienbang > THOIGIANLAMMOITHANHVIENBANG:
+            if self.action_thucthicaulenh("org status", douutien = DOUUTIEN_THAP):
+                self._thoidiemhoithanhvienbang = thoidiemhientai
+        thanhviens = self.get_thanhvienbangs()
+        # Chưa nhận trả lời / danh sách của nhân vật khác (đổi nhân vật trong cùng cửa sổ) thì không có mình
+        if idminh not in thanhviens:
+            return
+        khoa = tuple(sorted(thanhviens.items()))
+        if khoa != self._thanhvienbangvuadoc:
+            self._thanhvienbangvuadoc = khoa
+            return
+        if khoa == self._thanhvienbangdaapdung:
+            return
+        self._thanhvienbangdaapdung = khoa
+        for idtv, ten in thanhviens.items():
+            cu = self._bangphainguoichoi_map.get(idtv)
+            if ten:
+                self._idnguoichoitheoten_map[ten] = idtv
+            if cu and cu[0] == bangminh:
+                continue
+            self._inlog(f"[BANG PHÁI] {ten} ({idtv}): {bangminh} (danh sách thành viên bang)")
+            self._bangphainguoichoi_map[idtv] = (bangminh, thoidiemhientai)
+            self._thongtinnguoichoimoi_map[idtv] = (ten, self._monphainguoichoi_map.get(idtv), bangminh, thoidiemhientai)
+        for idnguoichoi, (tenbang, _) in list(self._bangphainguoichoi_map.items()):
+            if tenbang == bangminh and idnguoichoi not in thanhviens:
+                self._inlog(f"[BANG PHÁI] {idnguoichoi}: đã rời bang {bangminh} (không còn trong danh sách thành viên)")
+                self._bangphainguoichoi_map.pop(idnguoichoi, None)
+                self._thongtinnguoichoimoi_map[idnguoichoi] = (None, self._monphainguoichoi_map.get(idnguoichoi), None, thoidiemhientai)
+
+    def action_napthongtinnguoichoi(self, danhsach):
+        # Nhận get_thongtinnguoichoimoi của cửa sổ khác: chỉ lấy câu trả lời mới hơn cái mình đang có (không đưa vào
+        # _thongtinnguoichoimoi_map, cửa sổ gốc tự chia sẻ)
+        for muc in danhsach or ():
+            try:
+                idnguoichoi, ten, monphai, tenbang, luc = muc
+            except (TypeError, ValueError):
+                continue
+            cu = self._bangphainguoichoi_map.get(idnguoichoi)
+            if cu and cu[1] >= luc:
+                continue
+            if tenbang is None:
+                # Cửa sổ kia thấy người này đã rời bang (action_capnhatthanhvienbang): bỏ bang đã biết để "desc user" hỏi lại
+                self._bangphainguoichoi_map.pop(idnguoichoi, None)
+                continue
+            self._bangphainguoichoi_map[idnguoichoi] = (tenbang, luc)
+            if monphai:
+                self._monphainguoichoi_map[idnguoichoi] = monphai
+            if ten:
+                self._idnguoichoitheoten_map[ten] = idnguoichoi
 
     @staticmethod
     def _mamonphaitheoten(tenmonphaigame):
@@ -4953,7 +5193,7 @@ class MoiTruong:
             ketthuc:
                 ret
             """
-            encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(asm_script)
+            encoding, _ = asm_x86(asm_script)
             if not encoding:
                 return
             diachi = self.tientrinh.allocate(64)
@@ -5005,7 +5245,7 @@ class MoiTruong:
             ketthuc:
                 ret
             """
-            encoding, _ = Ks(KS_ARCH_X86, KS_MODE_32).asm(ma)
+            encoding, _ = asm_x86(ma)
             write_bytes(self.tientrinh, vung, bytes(encoding), len(encoding))
             self._diachitimduongcucbo = vung
         if not self.get_is_cotimduongcucbo():
@@ -5431,6 +5671,103 @@ class MoiTruong:
             chuoihuong = self._timduongkhongcatgoc(x1, y1, x2, y2, max(1., khoangcachtoida))
         return len(chuoihuong) if chuoihuong else None
 
+    def get_loangbuocdi(self, bankinh = BANKINHLOANGMUCTIEU):
+        # Loang BFS từ ô mình trên lưới vật cản ±bankinh ô (cộng ô ghi tay vatcanhoc.json): số bước đi bộ tới mọi ô trong một lần, thay cho
+        # A* từng mục tiêu. Mỗi bước thẳng hay chéo là 1 nhịp "go" (như get_duongchaytron), chéo chỉ khi 2 ô kề đều trống (máy chủ không cho
+        # lách góc). Lưới có viền vật cản 1 ô nên khỏi kiểm tra biên. Kết quả dùng lại THOIGIANNHOLOANGMUCTIEU giây khi mình chưa đi quá
+        # SOOLECHLOANGMUCTIEU ô (sai số số bước không quá ngần đó). Khung ±24: 49x49 ô, ~5-8 ms bản Python
+        # -> {"ox", "oy", "m" (cạnh có viền), "trong" (1 = đi được), "buoc" (-1 = chưa tới)} hoặc None (chưa đọc được lưới)
+        diachinhanvat = self.get_diachicosothongtinnhanvat1()
+        if not diachinhanvat:
+            return None
+        x1, y1 = struct.unpack("<ii", read_bytes(self.tientrinh, diachinhanvat + 0x18, 8))
+        idbando = self.get_idbandohientai()
+        bayh = time.time()
+        cache = self._loangbuocdi_cache
+        if cache and cache[0] == idbando and bayh - cache[1] < THOIGIANNHOLOANGMUCTIEU \
+                and max(abs(cache[2] - x1), abs(cache[3] - y1)) <= SOOLECHLOANGMUCTIEU:
+            return cache[4]
+        n = 2 * bankinh + 1
+        ox, oy = x1 - bankinh, y1 - bankinh
+        luoi = self._get_luoivatcan(ox, oy, x1 + bankinh, y1 + bankinh)
+        if not luoi:
+            return None
+        m = n + 2
+        trong = bytearray(m * m)
+        for i in range(n):
+            goc = (i + 1) * m + 1
+            trong[goc:goc + n] = bytes(0 if o else 1 for o in luoi[i])
+        for x, y in taivatcanhoc(idbando):
+            i, j = x - ox, y - oy
+            if 0 <= i < n and 0 <= j < n:
+                trong[(i + 1) * m + j + 1] = 0
+        buoc = [-1] * (m * m)
+        # Ô đứng có thể bị lưới ghi là vật cản (đứng mép rào): vẫn loang ra từ nó
+        batdau = (bankinh + 1) * m + bankinh + 1
+        buoc[batdau] = 0
+        thangs = (m, -m, 1, -1)
+        cheos = ((m + 1, m, 1), (m - 1, m, -1), (-m + 1, -m, 1), (-m - 1, -m, -1))
+        hang = deque([batdau])
+        while hang:
+            k = hang.popleft()
+            b = buoc[k] + 1
+            for d in thangs:
+                nk = k + d
+                if trong[nk] and buoc[nk] < 0:
+                    buoc[nk] = b
+                    hang.append(nk)
+            for d, a, c in cheos:
+                nk = k + d
+                if trong[nk] and buoc[nk] < 0 and trong[k + a] and trong[k + c]:
+                    buoc[nk] = b
+                    hang.append(nk)
+        ketqua = {"ox": ox, "oy": oy, "m": m, "trong": trong, "buoc": buoc}
+        self._loangbuocdi_cache = (idbando, bayh, x1, y1, ketqua)
+        thoigian = time.time() - bayh
+        if thoigian > THOIGIANASTARCHAM:
+            self._inlog(f"[A* CHẬM] Loang số bước chọn mục tiêu ±{bankinh} quanh {(x1, y1)}: {thoigian * 1000:.0f} ms")
+        return ketqua
+
+    @staticmethod
+    def get_sobuoctoitamloang(loang, x, y, tam = 0.):
+        # Số bước ít nhất (theo get_loangbuocdi) tới một ô cách (x, y) không quá tam ô (ô vuông max(|dx|, |dy|) như tầm đánh); tam < 1 vẫn
+        # xét 8 ô kề (quái đứng trên ô lưới ghi vật cản) cộng 1 bước. None: ngoài khung / không tới được
+        ox, oy, m, buoc = loang["ox"], loang["oy"], loang["m"], loang["buoc"]
+        r = int(tam)
+        x, y = round(x), round(y)
+        if r < 1:
+            k = (x - ox + 1) * m + (y - oy + 1)
+            if 0 < x - ox + 1 < m - 1 and 0 < y - oy + 1 < m - 1 and buoc[k] >= 0:
+                return buoc[k]
+            r, them = 1, 1
+        else:
+            them = 0
+        i1, i2 = max(1, x - r - ox + 1), min(m - 2, x + r - ox + 1)
+        j1, j2 = max(1, y - r - oy + 1), min(m - 2, y + r - oy + 1)
+        tot = None
+        for i in range(i1, i2 + 1):
+            goc = i * m
+            for b in buoc[goc + j1:goc + j2 + 1]:
+                if b >= 0 and (tot is None or b < tot):
+                    tot = b
+        return None if tot is None else tot + them
+
+    @staticmethod
+    def get_is_chanduongbanloang(loang, x1, y1, x2, y2):
+        # Đoạn thẳng (x1, y1) -> (x2, y2) đi qua ô vật cản của lưới loang không (như get_is_doanthangcovatcan: mẫu mỗi 0.5 ô, bỏ 2 ô đầu
+        # mút; không đọc lại bộ nhớ). Ngoài khung coi như không chắn
+        ox, oy, m, trong = loang["ox"], loang["oy"], loang["m"], loang["trong"]
+        dau, cuoi = (round(x1), round(y1)), (round(x2), round(y2))
+        sobuoc = max(1, math.ceil(math.dist((x1, y1), (x2, y2)) * 2))
+        for i in range(1, sobuoc):
+            x, y = round(x1 + (x2 - x1) * i / sobuoc), round(y1 + (y2 - y1) * i / sobuoc)
+            if (x, y) in (dau, cuoi):
+                continue
+            ci, cj = x - ox + 1, y - oy + 1
+            if 0 < ci < m - 1 and 0 < cj < m - 1 and not trong[ci * m + cj]:
+                return True
+        return False
+
     def _get_luoicabando(self):
         # Lưới vật cản cả bản đồ hiện tại (luoi[x][y]), nhớ THOIGIANNHOLUOICABANDO giây theo bản đồ
         idbando = self.get_idbandohientai()
@@ -5623,7 +5960,7 @@ class MoiTruong:
         # Khu vực cấm khai tay (KHUVUCCAM_MAP: chỗ đi vào là kẹt, vd Tập Kích Môn Phái (103, 53), (96, 96)): mỗi ô trong đó tính thêm
         # PHATKHUVUCCAMKHONGCATGOC bước (né được thì né; đang đứng / đích ở trong thì vẫn đi ra / vào được)
         cams = self._layokhuvuccam(ox, oy, ox + rong - 1, oy + cao - 1)
-        if self.is_tranhvungcam:
+        if self.is_tranhvungcam and not self.get_is_bovungcam(idbando):
             # Vòng quanh cổng (VUNGCAM_MAP) cũng phạt như khu vực cấm: A* giờ chạy trên mọi bản đồ (IS_BOTTUTIMDUONGMOIBANDO), đường cắt
             # qua cổng là lọt sang bản đồ khác. Đích nằm trong vòng cổng (chạy tới cổng) vẫn vào được, chỉ né khi có đường khác
             cams = cams | self._layotrongvung(VUNGCAM_MAP.get(idbando, ()), ox, oy, ox + rong - 1, oy + cao - 1)
@@ -5708,7 +6045,7 @@ class MoiTruong:
         idbando = self.get_idbandohientai()
         hocs = taivatcanhoc(idbando)
         cams = self._layokhuvuccam(ox, oy, ox + n - 1, oy + n - 1)
-        if is_tranhvungcam and not self.get_is_bandophongyeu():
+        if is_tranhvungcam and not self.get_is_bovungcam():
             cams |= self._layotrongvung(VUNGCAM_MAP.get(idbando, ()), ox, oy, ox + n - 1, oy + n - 1)
         tran = self._toadotrandolacanh
         trong = bytearray(n * n)
@@ -5875,8 +6212,8 @@ class MoiTruong:
     def get_is_duongdicatvungcam(self, x1, y1, x2, y2):
         # Đường chạy thẳng (x1, y1) -> (x2, y2) có chạm vùng cấm của bản đồ hiện tại không (VUNGCAM_MAP: đi vào sẽ bị chuyển bản đồ)
         danhsachvungcam = VUNGCAM_MAP.get(self.get_idbandohientai())
-        # Phong Yêu Kính: cổng của bản đồ thật mượn ID không có tác dụng, không né
-        if not danhsachvungcam or self.get_is_bandophongyeu():
+        # Trong phó bản: điểm chuyển tiếp chỉ tượng trưng, không né
+        if not danhsachvungcam or self.get_is_bovungcam():
             return False
         dx, dy = x2 - x1, y2 - y1
         dodai2 = dx * dx + dy * dy

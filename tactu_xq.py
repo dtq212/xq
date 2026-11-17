@@ -42,8 +42,8 @@ THUOCTINHTHIETLAPs = (
     "_danhhieulammoi", "_phantramnoiluckhaithientichdia", "_is_tudongtrieuhoibaothugiangho", "_is_tudongsudungkynangbaothu",
     "_is_tudongbatnguyenkhiquynguyen", "_is_tranhvungcam", "_is_giukhoangcachketancong", "_khoangcachgiuketancong", "_mauchaytron",
     "_mauhetchaytron", "_is_doiphapbaotheomau", "_is_xoayvongtrao", "_is_hettraodeomuccao", "_maubommaudongdoi", "_maubommaudatinh", "_mauphapbaovua","_mauphapbaothap", "_dotrephapbao", "_is_giukhoangcachchimuctieupk", "_is_taphoa", "_is_timmuctieuchung", "_chedohienthongtinmuctieugame",
-    "_mauhienthongtinmuctieugame", "_is_hienhanhdongtrendau", "_is_tutimduongtheosau", "_is_chaytoibuffthanhvien", "_is_diquocgiatanthutienco", "_is_doidokhitrieuhoi", "_bodotrieuhoi", "_baothutrieuhoimaoson",
-    "_sumon_npcgiao", "_tapkich_phai", "_matac_bandos", "_is_tubatmatac", "_tinhanh_bandos", "_hangviec_thutu", "_hangviec_chon",
+    "_is_muctieutheoduongdi", "_is_uutiencumquai", "_is_chiamuctieubotkhac", "_mauhienthongtinmuctieugame", "_is_hienhanhdongtrendau", "_is_tutimduongtheosau", "_is_chaytoibuffthanhvien", "_is_diquocgiatanthutienco", "_is_doidokhitrieuhoi", "_bodotrieuhoi", "_baothutrieuhoimaoson",
+    "_sumon_npcgiao", "_tapkich_phai", "_matac_bandos", "_is_tubatmatac", "_tinhanh_bandos", "_is_tinhanhthaplencao", "_hangviec_thutu", "_hangviec_chon",
 )
 
 
@@ -267,6 +267,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._thoidiemroinhomlanglyson = 0.
         # Lần đọc gần nhất (lúc, kết quả) "mình là thành viên vòng Lăng Ly Sơn đang đi" từ shared_data
         self._bonhogiunhomlanglyson = (0., False)
+        # (thời điểm đọc, kết quả) get_is_chotruongnhomvankhivao: nhớ 0.3s, đọc shared_data tốn
+        self._bonhovankhivaolanglyson = (0., False)
         # Lần chọn menu "ta muốn vào" Phong Yêu Kính gần nhất (tactu_langlyson_xq._xulymenuphongyeu)
         self._lucchonmenuphongyeu = 0.
         # Lần đọc gần nhất (lúc, (ID người give, [ID thành viên online])) nhóm todoi đi Phong Yêu Kính (_laynhompy)
@@ -299,6 +301,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._tinhanh = None
         self._ketquatinhanh = ""
         self._tinhanh_bandos = []
+        # Tên món đồ trắng KHÔNG phải trang bị nhặt vì Săn Tinh Anh (Tử Giả Di Vật, Khô Đầu Lâu...): về Tân Thủ Thôn bán cùng đồ trắng
+        self._tenractinhanhs = set()
+        # Săn Tinh Anh đi bản đồ cấp thấp trước rồi lên cao (tắt = cao xuống thấp)
+        self._is_tinhanhthaplencao = True
         # Nhiệm vụ Danh Vọng (tactu_danhvong_xq): việc đang làm (None = không), kết quả lần gần nhất cho giao diện
         self._danhvong = None
         self._ketquadanhvong = ""
@@ -334,6 +340,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         # Mua bù: lần mở cửa hàng gần nhất theo NPC, các lệch ô / giá giữa luật và cửa hàng đã báo
         self._mocuahang = None
         self._ketquamocuahang = {}
+        # Tự ghi hàng cửa hàng đang hiện (tactu_sumon_xq): (bản đồ, hàng) lần thấy gần nhất, chỉ ghi khi đổi; "batdau" = lần thấy đầu
+        # sau khi chạy bot thì bỏ qua (cờ hiện có thể kẹt từ trước, không biết của NPC nào)
+        self._cuahangdathay = "batdau"
         self._lucmocuahangmuabu_map = {}
         self._lechmuabudabao = set()
         # Mua bù: desc ô cửa hàng trước khi mua (_kiemhangcuahang) {"<id NPC>|<ô>": số lần desc, lúc}
@@ -657,6 +666,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._khoalogdichuyencuoi = None
         self._thoidiemtodoigannhat_map = {}
         self._thoidiemxulytodoigannhat = 0.
+        # Tổ đội tự động: trưởng nhóm mời lần lượt từng người {"dangmoi": ID đang mời, "lucmoi"} (_moilanluot); (lúc, [ID trưởng nhóm được
+        # đồng ý lời mời]) do luồng phụ ghi khi mình chưa có nhóm, luồng tổ đội 1 lần đọc để đồng ý ngay (luồng phụ ~1s/lượt dễ lỡ hộp mời)
+        self._moiluottodoitudong = {"dangmoi": 0, "lucmoi": 0.}
+        self._dongytodoitudong = (0., [])
         # Tổ đội 1 lần (Ctrl+Alt+T, tactu_hoatdong_xq): mình là trưởng nhóm đang gom người {"lucbatdau", "thanhviens", "dangmoi": ID đang mời,
         # "lucmoi"}, None = không;
         # trạng thái lần gần nhất cho giao diện; (lúc, id trưởng nhóm) lần đọc shared_data "có ai đang gom mình không"; lúc rời nhóm cũ gần nhất
@@ -772,6 +785,12 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         # Hết mục tiêu thì đi tới mục tiêu nhân vật khác cùng máy thấy (_timmuctieuchung): tùy chọn, yêu cầu di chuyển,
         # (id, lúc bắt đầu) mục tiêu đang đi tới, id -> thời điểm hết bỏ qua
         self._is_timmuctieuchung = True
+        # Chọn mục tiêu (tactu_muctieu_xq): so theo đường đi thật bằng loang BFS, ưu tiên con giữa cụm quái, không giành quái bot khác gần
+        # hơn đang giữ (xem BANKINHLOANGMUCTIEU / BANKINHCUMQUAI / PHATMUCTIEUBOTKHAC); (lúc đọc, {id quái: [(ID bot, toạ độ)]})
+        self._is_muctieutheoduongdi = True
+        self._is_uutiencumquai = True
+        self._is_chiamuctieubotkhac = True
+        self._bonhomuctieubotkhac = (0., {})
         # Ghi thông tin ước lượng (Khí Huyết / Kháng / Công) lên mục tiêu đang chọn trong client (danhhieumuctieu_xq): CHEDOHIENMUCTIEU_*
         self._chedohienthongtinmuctieugame = CHEDOHIENMUCTIEU_TAT
         self._mauhienthongtinmuctieugame = MAUHIENMUCTIEU_THEOMAU
@@ -1031,6 +1050,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_is_giukhoangcachchimuctieupk": self._is_giukhoangcachchimuctieupk,
             "_is_taphoa": self._is_taphoa,
             "_is_timmuctieuchung": self._is_timmuctieuchung,
+            "_is_muctieutheoduongdi": self._is_muctieutheoduongdi,
+            "_is_uutiencumquai": self._is_uutiencumquai,
+            "_is_chiamuctieubotkhac": self._is_chiamuctieubotkhac,
             "_chedohienthongtinmuctieugame": self._chedohienthongtinmuctieugame,
             "_mauhienthongtinmuctieugame": self._mauhienthongtinmuctieugame,
             "_is_hienhanhdongtrendau": self._is_hienhanhdongtrendau,
@@ -1045,6 +1067,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_matac_bandos": self._matac_bandos,
             "_is_tubatmatac": self._is_tubatmatac,
             "_tinhanh_bandos": list(self._tinhanh_bandos),
+            "_is_tinhanhthaplencao": self._is_tinhanhthaplencao,
             "_is_tatbot": self._is_tatbot,
             "_hangviec": {"thutu": self._hangviec_thutu, "chon": self._hangviec_chon,
                           "chay": self._is_chayhangviec, "dangchay": self._viechangdangchay, "ketqua": self._ketquahangviec},
@@ -1178,6 +1201,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if "_is_giukhoangcachchimuctieupk" in thietlap: self._is_giukhoangcachchimuctieupk = thietlap["_is_giukhoangcachchimuctieupk"]
             if "_is_taphoa" in thietlap: self._is_taphoa = thietlap["_is_taphoa"]
             if "_is_timmuctieuchung" in thietlap: self._is_timmuctieuchung = thietlap["_is_timmuctieuchung"]
+            for khoa in CHONMUCTIEUBATTAT_MAP:
+                if khoa in thietlap: setattr(self, khoa, bool(thietlap[khoa]))
             if "_chedohienthongtinmuctieugame" in thietlap: self.thietlap_chedohienthongtinmuctieugame(thietlap["_chedohienthongtinmuctieugame"])
             if "_mauhienthongtinmuctieugame" in thietlap: self.thietlap_mauhienthongtinmuctieugame(thietlap["_mauhienthongtinmuctieugame"])
             if "_is_hienhanhdongtrendau" in thietlap: self._is_hienhanhdongtrendau = bool(thietlap["_is_hienhanhdongtrendau"])
@@ -1191,7 +1216,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if "_tapkich_phai" in thietlap: self._tapkich_phai = thietlap["_tapkich_phai"] or ""
             if "_matac_bandos" in thietlap: self._matac_bandos = thietlap["_matac_bandos"] or ""
             if "_is_tubatmatac" in thietlap: self._is_tubatmatac = bool(thietlap["_is_tubatmatac"])
-            if "_tinhanh_bandos" in thietlap: self._tinhanh_bandos = tachbandotinhanh(thietlap["_tinhanh_bandos"])
+            if "_is_tinhanhthaplencao" in thietlap: self._is_tinhanhthaplencao = bool(thietlap["_is_tinhanhthaplencao"])
+            if "_tinhanh_bandos" in thietlap: self._tinhanh_bandos = tachbandotinhanh(thietlap["_tinhanh_bandos"], self._is_tinhanhthaplencao)
             if "_is_tatbot" in thietlap: self._is_tatbot = bool(thietlap["_is_tatbot"])
             if isinstance(thietlap.get("_hangviec"), dict):
                 hangviec = thietlap["_hangviec"]
@@ -1252,6 +1278,13 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
     def thietlap_chedohienthongtinmuctieugame(self, chedo):
         chedo = str(chedo).strip()
         self._chedohienthongtinmuctieugame = chedo if chedo in (CHEDOHIENMUCTIEU_DANHHIEU, CHEDOHIENMUCTIEU_TEN) else CHEDOHIENMUCTIEU_TAT
+
+    def battat_chonmuctieu(self, khoa):
+        # Ô tích nhóm Chọn mục tiêu (CHONMUCTIEUBATTAT_MAP): đường đi thật / cụm quái / chia mục tiêu giữa các bot
+        if khoa not in CHONMUCTIEUBATTAT_MAP:
+            return
+        setattr(self, khoa, not getattr(self, khoa))
+        phatam(("Bật " if getattr(self, khoa) else "Tắt ") + CHONMUCTIEUBATTAT_MAP[khoa])
 
     def battat_timmuctieuchung(self):
         self._is_timmuctieuchung = not self._is_timmuctieuchung

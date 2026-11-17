@@ -25,7 +25,7 @@ KHOANGCACHGOPVITRITINHANH = 15.
 GIANCACHGHIVITRITINHANH = 3.
 # Thấy Tinh Anh mà chừng này giây chưa đánh được (bị chắn, chọn mục tiêu bỏ qua...) thì thôi đi tới con đó, dò tiếp
 THOIGIANDUOITINHANHTOIDA = 40.
-# Túi đầy lúc săn: về Tân Thủ Thôn cất kho (bảng Cất kho + đồ Lam Kim rơi từ Tinh Anh), không bán rác; cất xong săn tiếp. Cất xong
+# Túi đầy lúc săn: về Tân Thủ Thôn cất kho CHỈ đồ Lam Kim rơi từ Tinh Anh (không theo bảng Cất kho), không bán rác; cất xong săn tiếp. Cất xong
 # chưa tới chừng này giây mà túi vẫn đầy (không có món nào cất được) thì dừng săn, kẻo đi về Tân Thủ Thôn mãi
 MAUCATTINHANHs = (MAUTEN["lam kim"],)
 THOIGIANCATLAITINHANH = 300.
@@ -35,6 +35,87 @@ THOIGIANCHONHATSAUTINHANH = 3.
 THOIGIANCHONHATSAUTINHANHTOIDA = 20.
 # Bản đồ không có đường / không đọc được lưới chừng này lần liền thì bỏ bản đồ đó khỏi lượt này
 SOLANLOIBANDOTINHANH = 3
+
+
+# Tinh Anh chết LUÔN rơi ít nhất 1 món Lam Kim (người dùng 16/11; phẩm chất đồ dưới đất 1 = xanh lam). Con chỉ nhận theo CẤP (tên không có
+# trong bảng) mà chết xong chừng này giây không có món Lam Kim MỚI nào hiện trong BANKINHDOROITINHANH ô quanh chỗ chết => không phải Tinh
+# Anh (16/11 Yên Trường Thành: Tam Đao Quỷ / Tâm Chi Ma cấp 61~63 chết không rơi gì). Có Lam Kim => học là Tinh Anh. Học theo bản đồ + tên,
+# chung mọi nhân vật: _internal/tinhanhhoc.json {"co"/"khong": {"<id bản đồ>": [tên, ...]}}
+PHAMCHATLAMKIM = 1
+# Đang săn thì nhặt cả đồ trắng (phẩm chất 0) lẫn Lam Kim, không cần ô Phẩm chất ở tab Hành trang: Tinh Anh rơi cả đồ trắng, nhặt về bán
+# gỡ vốn (người dùng 16/11). Luật nhặt "Không nhặt" vẫn thắng
+PHAMCHATNHATTINHANHs = (0, PHAMCHATLAMKIM)
+THOIGIANCHODOROITINHANH = 5.
+BANKINHDOROITINHANH = 5.
+# Chết không rơi Lam Kim chừng này lần (cộng dồn mọi nhân vật, đếm ở "nghi") mới ghi "khong" (bỏ hẳn). 16/11 Tướng Quân Cổ Mộ 1-3:
+# Thủ Mộ Thạch Sư / Thạch Hổ là Tinh Anh thật (cấp 93, quái thường 85~88) mà bị ghi "khong" sau 1 lần do lỗi ảnh chụp đồ cũ (đồ rơi
+# cùng lúc thấy chết bị tính là đồ cũ, bot nhặt luôn) -> bỏ lỡ Tinh Anh cả buổi. Đếm 2 lần cho chắc
+SOLANKHONGROITINHANH = 2
+# Ảnh chụp đồ Lam Kim dưới đất ở lượt trước (lúc con còn sống) cũ hơn chừng này giây thì không dùng làm "đồ cũ"
+THOIGIANANHCHUPLAMKIM = 3.
+_tinhanhhoc = {"luc": 0., "mtime": None, "bang": {"co": {}, "khong": {}, "nghi": {}}}
+
+
+def _duongdantinhanhhoc():
+    return os.path.join(os.path.dirname(_thumucvitritinhanh()), "tinhanhhoc.json")
+
+
+def taitinhanhhoc():
+    # Đọc lại file tối đa 5 giây 1 lần (các cửa sổ khác cũng ghi), chỉ khi file đổi
+    if time.time() - _tinhanhhoc["luc"] > 5.:
+        _tinhanhhoc["luc"] = time.time()
+        try:
+            mtime = os.path.getmtime(_duongdantinhanhhoc())
+            if mtime != _tinhanhhoc["mtime"]:
+                with open(_duongdantinhanhhoc(), "r", encoding = "utf-8") as file:
+                    bang = json.load(file)
+                _tinhanhhoc["bang"] = {"co": bang.get("co") or {}, "khong": bang.get("khong") or {}, "nghi": bang.get("nghi") or {}}
+                _tinhanhhoc["mtime"] = mtime
+        except Exception:
+            pass
+    return _tinhanhhoc["bang"]
+
+
+def tentinhanhhoc(ten):
+    return " ".join((ten or "").split("(")[0].split())
+
+
+def ghitinhanhhoc(loai, idbando, ten):
+    # loai "co" / "khong"; ghi vào loại này thì bỏ khỏi loại kia. "khong" chỉ ghi thật khi đủ SOLANKHONGROITINHANH lần (đếm ở "nghi")
+    # -> trả về True khi đã ghi "khong" (bỏ hẳn), False khi mới đếm
+    _tinhanhhoc["luc"] = 0.
+    bang = taitinhanhhoc()
+    ten, khoa = tentinhanhhoc(ten), str(idbando)
+    khac = "khong" if loai == "co" else "co"
+    if ten in bang[khac].get(khoa, []):
+        bang[khac][khoa].remove(ten)
+    nghi = bang["nghi"].get(khoa) or {}
+    if loai == "co":
+        nghi.pop(ten, None)
+    else:
+        nghi[ten] = nghi.get(ten, 0) + 1
+        bang["nghi"][khoa] = nghi
+        if nghi[ten] < SOLANKHONGROITINHANH:
+            _luutinhanhhoc(bang)
+            return False
+        nghi.pop(ten, None)
+    if not nghi:
+        bang["nghi"].pop(khoa, None)
+    if ten not in bang[loai].setdefault(khoa, []):
+        bang[loai][khoa].append(ten)
+    _luutinhanhhoc(bang)
+    return True
+
+
+def _luutinhanhhoc(bang):
+    try:
+        from tienich_xq import thaythefile
+        duongdan = _duongdantinhanhhoc()
+        with open(duongdan + ".tmp", "w", encoding = "utf-8") as file:
+            json.dump(bang, file, ensure_ascii = False, indent = 1)
+        thaythefile(duongdan + ".tmp", duongdan)
+    except Exception:
+        pass
 
 
 def _thumucvitritinhanh():
@@ -63,15 +144,24 @@ def taivitritinhanh(idbando):
     return diems
 
 
-def tachbandotinhanh(chuoi):
-    # "71, 528, 263" -> [71, 528, 263] (chỉ bản đồ có trong QUAITINHANH_MAP, bỏ trùng). Thứ tự đi: cấp Tinh Anh CAO trước, thấp sau
-    # (người dùng 16/11: đi từ dưới lên danh sách chọn xếp cấp tăng dần); cùng cấp thì id lớn trước
+def tachbandotinhanh(chuoi, is_thaplencao = True):
+    # "71, 528, 263" -> [71, 528, 263] (chỉ bản đồ có trong QUAITINHANH_MAP, bỏ trùng). Thứ tự đi theo tuỳ chọn "Đi từ cấp thấp lên cao"
+    # (is_thaplencao, mặc định bật: người dùng 16/11 các bản đồ nối nhau chạy 1 mạch từ thấp lên cao, vd Cầu Cửu Khúc -> Thiên Môn Trận);
+    # tắt thì cấp CAO trước như trước (đi từ dưới lên danh sách chọn xếp cấp tăng dần); cùng cấp thì id NHỎ trước = chiều thuận của các bản đồ nối nhau
+    # (Yên Trường Thành 1 -> 2 -> 3, Chân Núi Đại Biệt 261 -> Đại Biệt Sơn 262 -> Vu Sơn 263), vào bản đồ ở đầu lộ trình dò chứ không
+    # phải ở cuối (16/11 đi ngược Vu Sơn -> Đại Biệt Sơn, đứng cuối bản đồ)
     ids = []
     for so in re.findall(r"\d+", str(chuoi or "")):
         idbando = int(so)
         if idbando in QUAITINHANH_MAP and idbando not in ids:
             ids.append(idbando)
-    return sorted(ids, key = lambda i: (CAPTINHANH_MAP.get(i, (0, 0)), i), reverse = True)
+    return sorted(ids, key = lambda i: thutubandotinhanh(i, is_thaplencao))
+
+
+def thutubandotinhanh(idbando, is_thaplencao = True):
+    # Khoá xếp thứ tự đi: cấp Tinh Anh tăng dần (is_thaplencao) / giảm dần, cùng cấp thì id bản đồ tăng dần (giao diện chọn bản đồ dùng chung)
+    capthap, capcao = CAPTINHANH_MAP.get(idbando, (0, 0))
+    return (capthap, capcao, idbando) if is_thaplencao else (-capthap, -capcao, idbando)
 
 
 class TacTuTinhAnh:
@@ -84,6 +174,8 @@ class TacTuTinhAnh:
         self._logta(f"Bắt đầu săn Tinh Anh ở: {self._motabandotinhanh() or '(chưa chọn bản đồ)'}")
         # Tự đi một mình: Theo sau đang bật thì bot bị kéo về người được theo sau; tạm tắt, dừng thì trả lại
         self._doituychontinhanh("_is_tudongtheosau", False, "Theo sau")
+        # Nhặt đồ trắng / Lam Kim rơi từ Tinh Anh (PHAMCHATNHATTINHANHs)
+        self._doituychontinhanh("_is_tudongnhatvatpham", True, "Tự động nhặt vật phẩm")
         phatam("Bắt đầu săn tinh anh")
 
     def huy_tinhanh(self):
@@ -91,10 +183,21 @@ class TacTuTinhAnh:
             self._ketthuctinhanh("Đã dừng săn Tinh Anh (bấm tay)")
 
     def thietlap_bandotinhanh(self, chuoi):
-        self._tinhanh_bandos = tachbandotinhanh(chuoi)
+        self._tinhanh_bandos = tachbandotinhanh(chuoi, self._is_tinhanhthaplencao)
         self._logta(f"Bản đồ: {self._motabandotinhanh() or '(trống)'}")
         if self._tinhanh:
             self._tinhanh.update(ibando = 0, do = None, duoi = None)
+
+    def thietlap_tinhanhthaplencao(self, is_thaplencao):
+        # Đổi thứ tự đi giữa chừng: xếp lại, đang săn thì giữ bản đồ đang tới (ibando tìm lại theo bản đồ hiện tại khi tới nơi)
+        self._is_tinhanhthaplencao = bool(is_thaplencao)
+        dangtoi = None
+        if self._tinhanh and self._tinhanh_bandos:
+            dangtoi = self._tinhanh_bandos[self._tinhanh["ibando"] % len(self._tinhanh_bandos)]
+        self._tinhanh_bandos = tachbandotinhanh(self._tinhanh_bandos, self._is_tinhanhthaplencao)
+        if dangtoi in self._tinhanh_bandos:
+            self._tinhanh["ibando"] = self._tinhanh_bandos.index(dangtoi)
+        self._logta(f"Thứ tự đi: {'cấp thấp lên cao' if self._is_tinhanhthaplencao else 'cấp cao xuống thấp'}: {self._motabandotinhanh() or '(trống)'}")
 
     def get_is_dangtinhanh(self):
         return bool(self._tinhanh)
@@ -122,10 +225,74 @@ class TacTuTinhAnh:
         # thì không xét cấp: quái trong đó cấp không theo bản đồ thật
         moitruong = self.moitruong
         ten = ten or moitruong.get_tendoituong(diachi)
-        if is_quaitinhanh(ten):
-            return True
         idbando = moitruong.get_idbandohientai() if moitruong.get_is_phobanmuonbando() is False else None
+        if idbando is not None:
+            # Đã học (theo đồ rơi): có Lam Kim => Tinh Anh, không => bỏ hẳn, khỏi xét cấp
+            bang, khoa, tenhoc = taitinhanhhoc(), str(idbando), tentinhanhhoc(ten)
+            if tenhoc in bang["co"].get(khoa, ()):
+                return True
+            if tenhoc in bang["khong"].get(khoa, ()):
+                return False
         return is_quaitinhanh(ten, idbando, laycaptrongten(moitruong._get_tenthucte(diachi)))
+
+    def _is_tinhanhchacchan(self, idbando, ten):
+        # Nhận theo TÊN ghi cho chính bản đồ này hoặc đã học là Tinh Anh nhờ rơi Lam Kim: giết xong là xong bản đồ. Tên Tinh Anh của bản
+        # đồ khác (vd Võng Lượng Quỷ ở Linh Cốc Động 2) / đuôi "Thủ Lĩnh" thì chờ xem rơi Lam Kim như con nhận theo cấp
+        return is_tentinhanhcuabando(ten, idbando) or tentinhanhhoc(ten) in taitinhanhhoc()["co"].get(str(idbando), ())
+
+    def _diachilamkimquanh(self, x, y):
+        # Địa chỉ đồ Lam Kim dưới đất trong BANKINHDOROITINHANH ô quanh (x, y)
+        moitruong = self.moitruong
+        kq = set()
+        i = -1
+        while True:
+            i += 1
+            diachi = moitruong.get_diachicosothongtindoituongx(i)
+            if not diachi:
+                break
+            if (moitruong.get_is_vatphamtontai(diachi) and moitruong.get_phamchatvatpham(diachi) == PHAMCHATLAMKIM
+                    and math.dist(moitruong.get_toado(diachi), (x, y)) <= BANKINHDOROITINHANH):
+                kq.add(diachi)
+        return kq
+
+    def _tatcalamkimduoidat(self):
+        moitruong = self.moitruong
+        kq = set()
+        i = -1
+        while True:
+            i += 1
+            diachi = moitruong.get_diachicosothongtindoituongx(i)
+            if not diachi:
+                break
+            if moitruong.get_is_vatphamtontai(diachi) and moitruong.get_phamchatvatpham(diachi) == PHAMCHATLAMKIM:
+                kq.add(diachi)
+        return kq
+
+    def _kiemdoroitinhanh(self, s, idbando):
+        # Con nhận theo cấp vừa chết: chờ đồ rơi. Có món Lam Kim mới => học là Tinh Anh (tính như giết Tinh Anh của bản đồ), hết giờ không
+        # có => học là không phải (đủ SOLANKHONGROITINHANH lần mới bỏ hẳn). Đổi bản đồ thì bỏ dở
+        conlai = []
+        for cho in s.get("chodoroi") or ():
+            if cho["idbando"] != idbando:
+                continue
+            ten, x, y = cho["ten"], cho["x"], cho["y"]
+            if self._diachilamkimquanh(x, y) - cho["cu"]:
+                ghitinhanhhoc("co", idbando, ten)
+                self._logta(f"{ten} ở {laytenbando(idbando)} rơi Lam Kim: là Tinh Anh (ghi tinhanhhoc.json)")
+                if s.get("bandogiet") != idbando:
+                    s["bandogiet"], s["loaidagiet"] = idbando, set()
+                s["loaidagiet"].add(tentinhanhhoc(ten))
+                s["lucgiet"] = time.time()
+            elif time.time() - cho["luc"] > THOIGIANCHODOROITINHANH:
+                if ghitinhanhhoc("khong", idbando, ten):
+                    self._logta(f"{ten} ở {laytenbando(idbando)} chết không rơi Lam Kim lần thứ {SOLANKHONGROITINHANH}: không phải Tinh Anh, "
+                                f"lần sau bỏ qua (ghi tinhanhhoc.json)")
+                else:
+                    self._logta(f"{ten} ở {laytenbando(idbando)} chết không thấy rơi Lam Kim: nghi không phải Tinh Anh, lần sau vẫn đánh "
+                                f"(đủ {SOLANKHONGROITINHANH} lần mới bỏ)")
+            else:
+                conlai.append(cho)
+        s["chodoroi"] = conlai
 
     def get_trangthaitinhanh(self):
         if self._tinhanh:
@@ -180,15 +347,17 @@ class TacTuTinhAnh:
             if self._catkho:
                 return None
             if time.time() - s.get("luccatkho", 0.) < THOIGIANCATLAITINHANH:
-                self._ketthuctinhanh("Túi đầy mà về cất kho không bớt được món nào (thêm luật ở bảng Cất kho / dọn túi)")
+                self._ketthuctinhanh("Túi đầy mà về không có đồ trắng để bán / đồ Lam Kim để cất (dọn túi)")
                 return None
             s["luccatkho"] = time.time()
-            s["trangthai"] = "túi đầy: về Tân Thủ Thôn cất kho"
-            self._logta("Túi đầy: về Tân Thủ Thôn cất kho (bảng Cất kho + đồ Lam Kim), xong săn tiếp")
-            # Việc "Cất kho ngay" (tactu_catkho_xq): vòng di chuyển xét nó trước Săn Tinh Anh, cất xong thì đây tự đi lại bản đồ đang săn
+            s["trangthai"] = "túi đầy: về Tân Thủ Thôn bán đồ trắng, cất kho Lam Kim"
+            self._logta("Túi đầy: về Tân Thủ Thôn bán đồ trắng, cất kho đồ Lam Kim, xong săn tiếp")
+            # Việc "Cất kho ngay" (tactu_catkho_xq): vòng di chuyển xét nó trước Săn Tinh Anh, cất xong thì đây tự đi lại bản đồ đang săn.
+            # "banrac": bán trang bị trắng ở Chủ Tiệm Tạp Hóa trước (_buocbantrangtinhanh)
             self.yeucau_catkho()
             if self._catkho:
                 self._catkho["mamaus"] = MAUCATTINHANHs
+                self._catkho["banrac"] = "cho"
             return None
         idbando = moitruong.get_idbandohientai()
         # Lúc bắt đầu (bấm Bắt đầu / mở lại bot) mà đang đứng ở 1 bản đồ trong danh sách: dò luôn bản đồ đó trước. Chỉ xét 1 lần, kẻo dò
@@ -199,6 +368,18 @@ class TacTuTinhAnh:
                 s["ibando"] = bandos.index(idbando)
         s["ibando"] %= len(bandos)
         bandodich = bandos[s["ibando"]]
+        # Đang đi ngang 1 bản đồ trong danh sách (vd. Yên Trường Thành 2 -> 1) mà thấy Tinh Anh nhận theo TÊN còn sống: đánh luôn, coi bản
+        # đồ này là bản đồ đang săn (giết xong thì sang bản đồ kế của nó như thường). Con đã đuổi quá giờ / bị đánh dấu lỗi thì thôi
+        if idbando != bandodich and idbando in bandos:
+            duoi = s["duoi"] or {}
+            for _, iddoituong, x, y, ten in self._timtinhanhxungquanh(s, idbando):
+                if (self._is_tinhanhchacchan(idbando, ten) and iddoituong not in self._idmuctieubiloi_map
+                        and time.time() - duoi.get(iddoituong, time.time()) <= THOIGIANDUOITINHANHTOIDA):
+                    self._logta(f"Thấy {ten} ở {laytenbando(idbando)} ({x}, {y}) trên đường đi: đánh luôn")
+                    s["ibando"] = bandos.index(idbando)
+                    s["do"] = None
+                    bandodich = idbando
+                    break
         if idbando != bandodich:
             s["chedo"] = "dichuyen"
             s["trangthai"] = f"tới {laytenbando(bandodich)} săn {self._tentinhanhbando(bandodich)}"
@@ -265,7 +446,9 @@ class TacTuTinhAnh:
         # sống), ghi chỗ thấy Tinh Anh cho lần sau
         moitruong = self.moitruong
         toado = moitruong.get_toado()
+        self._kiemdoroitinhanh(s, idbando)
         songs, vitris = [], []
+        cokiem = False
         for diachi in moitruong._get_diachidoituongxungquanhs():
             if not moitruong.get_is_nhanvattontai(diachi) or moitruong.get_is_nguoichoi(diachi) or moitruong.get_is_npc(diachi):
                 continue
@@ -279,6 +462,18 @@ class TacTuTinhAnh:
                 if iddoituong in s["idsong"] and iddoituong not in s["iddachet"]:
                     s["iddachet"].add(iddoituong)
                     s["sogiet"] += 1
+                    # Chỉ con nhận ra theo TÊN mới tính "đã giết Tinh Anh của bản đồ" -> sang bản đồ kế. Con chỉ khớp theo cấp có thể là
+                    # quái nhiệm vụ / sự kiện lạc vào (16/11 Yên Trường Thành 2-3: Tam Đao Quỷ, Tâm Chi Ma cấp 61~63 chết sau 1-2 giây, bot
+                    # tưởng xong bản đồ, bỏ đi sót Yên Quốc Tinh Vệ to lù lù) -> giết xong vẫn dò tiếp
+                    if not self._is_tinhanhchacchan(idbando, ten):
+                        self._logta(f"Đã giết {ten} ở {laytenbando(idbando)} ({x}, {y}) (nhận theo cấp, chờ xem rơi Lam Kim): tổng {s['sogiet']} con")
+                        # Đồ cũ = ảnh chụp lượt trước lúc con còn sống: đồ rơi ra cùng lúc thấy chết mà chụp bây giờ thì bị tính là đồ cũ,
+                        # bot lại nhặt ngay (get sau 3ms) -> tưởng không rơi (16/11 Thủ Mộ Thạch Sư). Kiểm ngay lượt này, kẻo bị nhặt mất
+                        anhchup = s.get("lamkimtruoc")
+                        cu = anhchup[1] if anhchup and time.time() - anhchup[0] < THOIGIANANHCHUPLAMKIM else self._diachilamkimquanh(x, y)
+                        s.setdefault("chodoroi", []).append({"idbando": idbando, "ten": ten, "x": x, "y": y, "luc": time.time(), "cu": cu})
+                        cokiem = True
+                        continue
                     # Loại đã giết ở bản đồ đang dò (đổi bản đồ thì tính lại) -> đủ loại thì sang bản đồ kế (_xulytinhanh)
                     if s.get("bandogiet") != idbando:
                         s["bandogiet"], s["loaidagiet"] = idbando, set()
@@ -291,6 +486,10 @@ class TacTuTinhAnh:
             s["idsong"].add(iddoituong)
             vitris.append((int(x), int(y)))
             songs.append((math.dist(toado, (x, y)), iddoituong, int(x), int(y), ten))
+        if cokiem:
+            self._kiemdoroitinhanh(s, idbando)
+        # Còn con sống (có thể sắp chết): chụp đồ Lam Kim dưới đất để lượt sau so đồ mới rơi
+        s["lamkimtruoc"] = (time.time(), self._tatcalamkimduoidat()) if songs else None
         # Id cũ chất đống cả phiên: giữ gọn
         if len(s["idsong"]) > 2000:
             s["idsong"] = set(i for _, i, _, _, _ in songs)

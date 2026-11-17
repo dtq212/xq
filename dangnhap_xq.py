@@ -558,6 +558,24 @@ _khoavaogame = threading.Lock()
 # Mở client lần lượt (xem SODANGNHAPSONGSONG). RLock: kéo gà gọi mogamevadangnhap từ cùng luồng tự đăng nhập
 _khoamoclient = threading.RLock()
 
+# Giãn cách giữa các lần bấm Đăng nhập / Vào game của mọi acc (luồng song song): từ v2.01.10 máy chủ ghi dòng "@CQ2DAUDIT|tài khoản|
+# giờ đăng nhập|..." cho từng phiên; 2026-11-16 nhiều acc chỉ cách nhau 2s (trucdiep / chaothit) => tách ra, cộng thêm ngẫu nhiên.
+# Mốc ghi theo giây, ~2s sau lúc bấm Vào game (Thk bấm 23:27:40 -> mốc 23:27:42) => tối thiểu 1s để mốc các acc không trùng giây;
+# 2026-11-17 người dùng thấy 1s vẫn sát quá, tăng gấp đôi lên 2s (+ ngẫu nhiên tới 1s)
+GIANCACHDANGNHAPTOITHIEU = 2.
+GIANCACHDANGNHAPNGAUNHIEN = 1.
+_khoagiancachdangnhap = threading.Lock()
+_thoidiembamdangnhap = [0.]
+
+
+def _chogiancachdangnhap():
+    # Gọi ngay trước khi bấm Đăng nhập / Vào game; giữ khoá suốt lúc chờ để các luồng lần lượt qua
+    with _khoagiancachdangnhap:
+        cho = _thoidiembamdangnhap[0] + GIANCACHDANGNHAPTOITHIEU + random.uniform(0., GIANCACHDANGNHAPNGAUNHIEN) - time.time()
+        if cho > 0:
+            time.sleep(cho)
+        _thoidiembamdangnhap[0] = time.time()
+
 
 def _danhdauvaogame(hwnd):
     with _khoavaogame:
@@ -1020,6 +1038,7 @@ class _DangNhapBangHam:
         self.goiham("HAMDATCHUOTONHAP", this = self._doc(menudangnhap + MDN_OTAIKHOAN), thamsos = ("chuoi0",), chuois = (taikhoan.encode("latin1"),))
         self.goiham("HAMDATCHUOTONHAP", this = self._doc(menudangnhap + MDN_OMATKHAU), thamsos = ("chuoi0",), chuois = (matkhau.encode("latin1"),))
         print("   -> [Hàm] Đã điền tài khoản & mật khẩu, bấm Đăng nhập")
+        _chogiancachdangnhap()
         self.goiham("HAMNUTDANGNHAP")
 
     def danhsachnhanvat(self):
@@ -1066,6 +1085,7 @@ class _DangNhapBangHam:
             print(f"   -> [Hàm] Chọn ô nhân vật {o + 1} không được")
             return False
         print(f"   -> [Hàm] Chọn ô nhân vật {o + 1}, bấm Vào game")
+        _chogiancachdangnhap()
         self.goiham("HAMVAOGAME")
         return True
 
@@ -1272,6 +1292,7 @@ def _dangnhaptrongcuaso(hwnd_game, char_name, config):
         time.sleep(0.5)
         type_text(hwnd_game, config["pass"])
         time.sleep(0.5)
+        _chogiancachdangnhap()
         press_key(hwnd_game, win32con.VK_RETURN)
 
         print("   -> Chờ load nhân vật (2.5s)...")
@@ -1286,6 +1307,7 @@ def _dangnhaptrongcuaso(hwnd_game, char_name, config):
         else:
             print("   -> Chọn nhân vật số 1 (Mặc định)")
 
+        _chogiancachdangnhap()
         press_key(hwnd_game, win32con.VK_RETURN)
         time.sleep(1)
         press_key(hwnd_game, win32con.VK_RETURN)
@@ -1469,14 +1491,13 @@ def chotientrinhthoat(pids, thoigiantoida = 15.):
     time.sleep(1.)
 
 
-# Vị trí cửa sổ game (1..SOCLIENTTOIDA) -> (cột, số cột của hàng, hàng). Game mở được 7 client: màn 1920x1080 chỉ vừa 2 cửa sổ
-# 810x630 mỗi chiều nên chia 2 hàng, hàng trên 4 cửa sổ, hàng dưới 3, trải đều từ mép trái tới mép phải (chồng lên nhau, còn
-# thấy được phần trái mỗi cửa sổ ~370px hàng trên / ~555px hàng dưới). Giữ 1-4 là 4 góc như bản cũ (taikhoan_*.json đang lưu 1-4):
-# máy chạy 4 cửa sổ vẫn y như trước, cửa sổ 5-7 chen vào giữa. Bản cũ 5 = giữa màn hình, nay 5 = hàng trên ô 2.
-#   hàng trên:  1   5   6   2
-#   hàng dưới:  3     7     4
-VITRICUASOs = {1: (0, 4, 0), 5: (1, 4, 0), 6: (2, 4, 0), 2: (3, 4, 0),
-               3: (0, 3, 1), 7: (1, 3, 1), 4: (2, 3, 1)}
+# Vị trí cửa sổ game 1..6 -> (cột, số cột của hàng, hàng). Màn 1920x1080 chỉ vừa 2 cửa sổ 810x630 mỗi chiều nên chia 2 hàng,
+# mỗi hàng 3 cửa sổ trải đều từ mép trái tới mép phải (chồng lên nhau, còn thấy ~555px phần trái mỗi cửa sổ). 1-4 là 4 góc
+# như bản cũ (taikhoan_*.json đang lưu 1-4), 5 và 6 chia nhau phần giữa (5 giữa trên, 6 giữa dưới). Số cũ 7 quay vòng về 1.
+#   hàng trên:  1   5   2
+#   hàng dưới:  3   6   4
+VITRICUASOs = {1: (0, 3, 0), 5: (1, 3, 0), 2: (2, 3, 0),
+               3: (0, 3, 1), 6: (1, 3, 1), 4: (2, 3, 1)}
 
 
 def _vungmanhinhlamviec():

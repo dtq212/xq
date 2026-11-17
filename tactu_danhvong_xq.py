@@ -44,6 +44,8 @@ THOIGIANCHOMENU = 2.
 KHOANGCACHNOICHUYEN = 3.
 # Giá vũ khí thấp nhất ở Chủ Tiệm Vũ Khí (Tân Thủ Thôn 450, các nước từ 1000), dưới mức này là hàng ghi nhầm tiệm
 GIAVUKHITHAPNHAT = 450
+# Số món ít nhất của một Chủ Tiệm Vũ Khí (đọc vitridoituong 2026-11-17: Niết Bàn 40 có 4, còn lại 5-12)
+SOMONTIEMVUKHITOITHIEU = 4
 KHOANGCACHNOICHUYENKET = 6.
 THOIGIANKHONGNHICH = 10.
 GIANCACHXINNHIEMVU = 10.
@@ -675,7 +677,9 @@ class TacTuDanhVong:
             return yeucau
         # Vũ khí rẻ nhất 450 (Tân Thủ Thôn); có món rẻ hơn là hàng tiệm khác ghi nhầm (2026-11-16: hàng Y Dược ghi thành Chủ Tiệm Vũ Khí
         # Ngụy Quốc, mua Thạch Tín giá 40) -> mở cửa hàng đọc lại, lần đọc mới ghi đè
-        if not hang or min(g for _, g, _ in hang) < GIAVUKHITHAPNHAT:
+        # Tiệm vũ khí nào cũng có >= 4 món (Niết Bàn Vân Mộng Cốc 4, còn lại 5-12); ít hơn là hàng ghi nhầm (2026-11-17 acc 359: một món
+        # "Kỵ Thú Tiểu Quai" của Tề Tổng Quản ghi cho Chủ Tiệm Vũ Khí Ngụy Quốc) -> đọc lại
+        if not hang or len(hang) < SOMONTIEMVUKHITOITHIEU or min(g for _, g, _ in hang) < GIAVUKHITHAPNHAT:
             return self._mocuahangdv(s, nv, diachi, CHUTIEMVUKHI)
         chon = self._chonovukhi(hang, nv["cap"])
         if not chon:

@@ -11,11 +11,12 @@ import unicodedata
 
 from hangso_xq import *
 from luattuido_xq import tailuat, is_apdungnhanvat, timluat, timluatbao, timluatcatkho, timhanhdongnhat, HANHDONG_GIU, HANHDONG_BAN, HANHDONG_VUT, CHIKHI_TRIEUHOIBAOTHU, \
-    NHAT_NHAT, NHAT_UUTIEN, NHAT_KHONGNHAT, NOI_BANDOPK, NOI_DANGPK, NOI_KHAIKHOANG, NOI_PHOBAN, NOI_KHAC
+    NHAT_NHAT, NHAT_UUTIEN, NHAT_KHONGNHAT, NOI_BANDOPK, NOI_DANGPK, NOI_KHAIKHOANG, NOI_PHOBAN, NOI_KHONGPK
 from thongbao_xq import baosuco, LYDOTAMNGUNGTUXA
 from moitruong_xq import MoiTruong, DOUUTIEN_THAP, DOUUTIEN_KHANCAP, DOUUTIEN_CAO, SOLUONGDOITUONGXUNGQUANHTOIDA, tinh_is_huongmatvediem
 from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam, canhbao
 from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, donbangthoidiem
+from tactu_tinhanh_xq import PHAMCHATNHATTINHANHs
 
 # Bán rác: máy chủ thỉnh thoảng bỏ lệnh sell (chắc do giới hạn tốc độ gửi lệnh) => gửi hết hàng đợi xong, chờ thêm chừng này giây cho
 # túi cập nhật rồi bán lại các món còn trong túi, tối đa chừng này lần
@@ -766,6 +767,9 @@ class TacTuVatPham:
         bayh = time.time()
         is_dangpk = is_dangbatpk and is_bandopk
         is_phoban = not is_dangpk and idbandohientai in BANDOPHOBANs
+        # Vùng "Ở đâu" (luattuido_xq TENNOIDUNG): mỗi lúc thuộc đúng 1 vùng
+        vungdung = NOI_DANGPK if is_dangpk else NOI_PHOBAN if is_phoban \
+            else (NOI_KHAIKHOANG if self._is_tudongkhaikhoang else NOI_BANDOPK) if is_bandopk else NOI_KHONGPK
         # Đọc lười: chỉ đọc khi có luật cần
         docs = {}
 
@@ -795,15 +799,13 @@ class TacTuVatPham:
             vatphams = [ten for ten in map(cattenhanhtrang, luat["vatpham"]) if co(ten) and bayh >= self._thoidiemluatdung.get(("cho", ten), 0.)]
             if not vatphams:
                 continue
-            khoa = (tuple(luat["vatpham"]), luat["noi"], luat["hieuung"], luat["monphai"], luat["sinhluc"], luat["noiluc"])
+            khoa = (tuple(luat["vatpham"]), tuple(luat["noi"]), tuple(luat["hieuung"]), tuple(luat["monphai"]), luat["sinhluc"], luat["noiluc"])
             if bayh - self._thoidiemluatdung.get(khoa, 0.) < luat["giancach"]:
                 continue
-            noi = luat["noi"]
-            if noi == NOI_BANDOPK and not is_bandopk or noi == NOI_DANGPK and not is_dangpk \
-                    or noi == NOI_KHAIKHOANG and not (is_bandopk and (is_dangbatpk or self._is_tudongkhaikhoang)) \
-                    or noi == NOI_PHOBAN and not is_phoban or noi == NOI_KHAC and (is_dangpk or is_phoban):
+            # Ở đâu: các vùng không chồng nhau, đang ở vùng nào trong danh sách là được; không tích = mọi nơi
+            if luat["noi"] and vungdung not in luat["noi"]:
                 continue
-            if luat["monphai"] and luat["monphai"] != tenmonphai:
+            if luat["monphai"] and tenmonphai not in luat["monphai"]:
                 continue
             if luat["chikhidanh"] and not self._is_tudongsudungkynang:
                 continue
@@ -819,12 +821,22 @@ class TacTuVatPham:
                 continue
             if luat["khongphobanrieng"] and doc("khongphobanrieng"):
                 continue
-            if luat["hieuung"]:
-                idhieuungs, is_canco, macdinhdocloi, is_hieuungcoloi, is_giannhip = HIEUUNGLUATDUNG[luat["hieuung"]]
+            # Hiệu ứng: tích nhiều điều kiện thì phải đủ hết (như các điều kiện khác của luật)
+            is_duhieuung = True
+            for mahieuung in luat["hieuung"]:
+                idhieuungs, is_canco, macdinhdocloi, is_hieuungcoloi, is_giannhip = HIEUUNGLUATDUNG[mahieuung]
                 if is_giannhip:
                     self._thoidiemluatdung[khoa] = bayh
-                if bool(self.moitruong.get_is_cohieuungs(idhieuungs, macdinhdocloi, is_hieuungcoloi = is_hieuungcoloi)) != is_canco:
-                    continue
+                is_co = bool(self.moitruong.get_is_cohieuungs(idhieuungs, macdinhdocloi, is_hieuungcoloi = is_hieuungcoloi))
+                # Bất Động dùng chung mã 9002 với Choáng / Hôn Mê nên không nằm trong bảng mã: Khu Ma Tán / Thanh Tâm Đơn giải được
+                # (người dùng 2026-11-17)
+                if mahieuung == "bikhongche" and not is_co:
+                    is_co = self.moitruong.get_is_nhanvatbibatdong()
+                if is_co != is_canco:
+                    is_duhieuung = False
+                    break
+            if not is_duhieuung:
+                continue
             tendadung = self._sudungvatphamhoi(vatphams, co)
             if tendadung:
                 self._thoidiemluatdung[khoa] = time.time()
@@ -902,6 +914,7 @@ class TacTuVatPham:
         dulieuluat = tailuat()
         tennhanvat = self._tennhanvatluattuido()
         is_banrac = self.get_is_nhatbanracphongyeu() if self.get_is_dangphongyeukinh() else self._is_tudongvebanrac
+        is_tinhanh = self._is_tinhanhdangchay()
 
         def hanhdongnhat(tenvatphamkiemtra):
             return timhanhdongnhat(tenvatphamkiemtra, is_banrac, dulieuluat, tennhanvat)
@@ -923,6 +936,12 @@ class TacTuVatPham:
                 return True
             # Món có màu (xanh lam, vàng...) theo cài đặt Phẩm chất
             if self._phamchatnhats and self.moitruong.get_phamchatvatpham(diachikiemtra) in self._phamchatnhats:
+                return True
+            # Săn Tinh Anh: nhặt cả đồ trắng (bán gỡ vốn) và Lam Kim
+            if is_tinhanh and self.moitruong.get_phamchatvatpham(diachikiemtra) in PHAMCHATNHATTINHANHs:
+                # Nhớ tên món trắng nhặt chỉ vì Săn Tinh Anh để lúc túi đầy về bán luôn (trước chỉ bán trang bị, vật liệu rác nằm lại đầy túi)
+                if self.moitruong.get_phamchatvatpham(diachikiemtra) == 0 and len(self._tenractinhanhs) < 500:
+                    self._tenractinhanhs.add(self._chuanhoatenvatpham(tenvatphamkiemtra))
                 return True
             return False
 
@@ -964,8 +983,9 @@ class TacTuVatPham:
         # cổng chuyển bản đồ thì bản đồ nào cũng có nên chỉ chặn khi đang đứng gần cổng
         idbandohientai = self.moitruong.get_idbandohientai()
         xnhanvat, ynhanvat = self.moitruong.get_toado()
-        is_covatphamvungcamgan = bool(KHUVUCCAM_MAP.get(idbandohientai)) or any(
-            math.dist((xnhanvat, ynhanvat), (x, y)) <= KHOANGCACHGANCONGKHONGNHATXUNGQUANH for _, x, y, _, _ in BANDOCONG_MAP.get(idbandohientai, ("", ()))[1])
+        # Trong phó bản cổng chỉ tượng trưng (_is_bovungcam) nên đứng gần cổng vẫn nhặt xung quanh được
+        is_covatphamvungcamgan = bool(KHUVUCCAM_MAP.get(idbandohientai)) or (not self._is_bovungcam() and any(
+            math.dist((xnhanvat, ynhanvat), (x, y)) <= KHOANGCACHGANCONGKHONGNHATXUNGQUANH for _, x, y, _, _ in BANDOCONG_MAP.get(idbandohientai, ("", ()))[1]))
         # Phá Thiên Tháp (ID 894) đang có mục tiêu: không dùng lệnh nhặt xung quanh (game tự chạy tới vật phẩm), chỉ nhặt đích danh món
         # trong tầm tại chỗ; di chuyển nhặt đồ chặn ở tactu_dichuyen (người dùng 2026-11-13)
         if idbandohientai == BANDO_BATQUAITRAN and self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
@@ -1220,7 +1240,7 @@ class TacTuVatPham:
         tennhanvat = self._tennhanvatluattuido()
         return [m for m in tailuat()["muabu"] if m["bat"] and m["vatpham"] and m["npc"] and m["muatoi"] and is_apdungnhanvat(m, tennhanvat)
                 and (m["npc"] == TRANBAOKHO) == is_tranbaokho
-                and (not m["monphai"] or m["monphai"] == tenmonphai)
+                and (not m["monphai"] or tenmonphai in m["monphai"])
                 and (m["chikhi"] != CHIKHI_TRIEUHOIBAOTHU or self._is_tudongtrieuhoibaothugiangho)]
 
     def _muabutranbaokho(self):
@@ -1244,7 +1264,7 @@ class TacTuVatPham:
         if soluongtheoten is None:
             return
         for muc in mucs:
-            # Ô của món đọc mới ở Trân Bảo Khố mỗi lần mua (moitruong.action_muavatphamtranbaokho), không bán thì chờ lâu rồi thử lại
+            # Ô của món tra đệm theo phiên bản game, chưa có thì đọc Trân Bảo Khố (moitruong.action_muavatphamtranbaokho), không bán thì chờ lâu rồi thử lại
             tenmon = muc["tencuahang"] or muc["vatpham"]
             if thoidiemhientai < self._thoidiemchomuatranbaokho_map.get(tenmon, 0.):
                 continue
@@ -1540,7 +1560,8 @@ class TacTuVatPham:
             return
         soluongvatphamhanhtrangtoida = self.moitruong.get_soluongvatphamhanhtrangtoida()
         tens = self.moitruong._docdanhsachtenvatphamhanhtrang(soluongvatphamhanhtrangtoida + 1)
-        for i in range(6, min(soluongvatphamhanhtrangtoida, len(tens))):
+        # Xét cả 6 ô dòng đầu (không còn là ô dùng nhanh phải chừa, người dùng 16/11)
+        for i in range(min(soluongvatphamhanhtrangtoida, len(tens))):
             if not tens[i]:
                 continue
             iddoituongvatpham = self.moitruong.get_iddoituongvatphamhanhtrang(i)

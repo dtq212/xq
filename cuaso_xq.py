@@ -193,6 +193,8 @@ class CuaSo:
         self._vitrichiase = None
         self.idnguoichoi = 0
         self.thoidiemluuthietlap = time.time()
+        # Lần cuối nhận môn phái / bang người chơi từ cửa sổ khác (loop_hienthigiaodien)
+        self._lucnapthongtinnguoichoi = 0.
 
         self.luongs = (
             threading.Thread(target = khoidong_looptonghop, args = [self.moitruong, self.tactu, self.main_stop, self.giamsat], daemon = True),
@@ -339,6 +341,9 @@ class CuaSo:
                     "phantramsinhluc": phantramsinhluc,
                     "phantramnoiluc": phantramnoiluc,
                     "hieuungs": hieuungs,
+                    # Bất Động dùng chung mã 9002 với Choáng / Hôn Mê (phân theo thời gian tối đa, hieuungs không có) => gửi riêng để
+                    # Vân Mộng Cốc cùng máy Tẩy Trần Quyết
+                    "is_batdong": self.moitruong.get_is_nhanvatbibatdong(),
                     "is_window_active": self.moitruong.get_is_cuasogamekichhoat(),
 
                     "_is_tudongtheosau": self.tactu._is_tudongtheosau,
@@ -417,6 +422,9 @@ class CuaSo:
                     "_is_giukhoangcachchimuctieupk": self.tactu._is_giukhoangcachchimuctieupk,
                     "_is_taphoa": self.tactu._is_taphoa,
                     "_is_timmuctieuchung": self.tactu._is_timmuctieuchung,
+                    "_is_muctieutheoduongdi": self.tactu._is_muctieutheoduongdi,
+                    "_is_uutiencumquai": self.tactu._is_uutiencumquai,
+                    "_is_chiamuctieubotkhac": self.tactu._is_chiamuctieubotkhac,
                     "_chedohienthongtinmuctieugame": self.tactu._chedohienthongtinmuctieugame,
                     "_mauhienthongtinmuctieugame": self.tactu._mauhienthongtinmuctieugame,
                     "_is_hienhanhdongtrendau": self.tactu._is_hienhanhdongtrendau,
@@ -470,6 +478,8 @@ class CuaSo:
                     "_langlysonchothanhvien": self.tactu.get_is_langlysonchothanhvien(),
                     "_langlysontattodoi": self.tactu.get_dsidtattodoilanglyson(),
                     "_langlysongiunhom": self.tactu.get_dsidgiunhomlanglyson(),
+                    # Thành Kiều: trưởng nhóm đang nói chuyện / vận khí vào phó bản, thành viên theo sau đứng im (đi là mất vận khí)
+                    "_langlysonvankhivao": self.tactu.get_is_langlysonvankhivao(),
                     # Phong Yêu Kính: ID boss mình đã giết vòng này, người cùng nhóm cộng vào (boss chết xa họ vẫn được tính)
                     "_bossdagietphongyeu": self.tactu.get_bossdagietphongyeu(),
                     "_dangdanhbossphongyeu": self.tactu.get_is_dangdanhbossphongyeu(),
@@ -498,6 +508,7 @@ class CuaSo:
                     "_trangthaitinhanh": self.tactu.get_trangthaitinhanh(),
                     "_is_dangtinhanh": self.tactu.get_is_dangtinhanh(),
                     "_tinhanh_bandos": list(self.tactu._tinhanh_bandos),
+                    "_is_tinhanhthaplencao": self.tactu._is_tinhanhthaplencao,
                     # Nhiệm vụ Danh Vọng (tactu_danhvong_xq): trạng thái cho giao diện
                     "_trangthaidanhvong": self.tactu.get_trangthaidanhvong(),
                     "_is_dangdanhvong": self.tactu.get_is_dangdanhvong(),
@@ -557,6 +568,19 @@ class CuaSo:
                             if info["_idnguoichoimuctieu"] else (None, None)
                 except Exception as err:
                     print(f"Lỗi ước lượng mục tiêu: {err}")
+                # Môn phái / bang người chơi vừa biết qua "desc user": gửi cho cửa sổ khác (cả máy khác trong LAN) và giao diện ghi file;
+                # nhận của cửa sổ khác để khỏi hỏi lại cùng người
+                try:
+                    if time.time() - self._lucnapthongtinnguoichoi > 2.:
+                        self._lucnapthongtinnguoichoi = time.time()
+                        # Người vào / rời bang mình theo danh sách thành viên bang ("org status")
+                        self.moitruong.action_capnhatthanhvienbang()
+                        for khoa, infokhac in self.tactu.shared_data.items():
+                            if khoa != self.idcuaso and isinstance(infokhac, dict) and infokhac.get("_thongtinnguoichoimoi"):
+                                self.moitruong.action_napthongtinnguoichoi(infokhac["_thongtinnguoichoimoi"])
+                    info["_thongtinnguoichoimoi"] = self.moitruong.get_thongtinnguoichoimoi()
+                except Exception as err:
+                    print(f"Lỗi chia sẻ thông tin người chơi: {err}")
                 # Ngoại hình thật đang mặc + loại vũ khí cho cửa sổ Ngoại hình (lọc lựa chọn cùng giới tính / cùng loại vũ khí)
                 info["_ngoaihinh"] = self.ngoaihinh.get_share()
                 # Câu rao gần nhất / lần tới cho cửa sổ Tự động rao
@@ -719,6 +743,8 @@ class CuaSo:
                     self.tactu.huy_tinhanh()
                 elif isinstance(cmd, str) and cmd.startswith("set_tinhanh_bando:"):
                     self.tactu.thietlap_bandotinhanh(cmd.split(":", 1)[1])
+                elif isinstance(cmd, str) and cmd.startswith("set_tinhanh_thaplencao:"):
+                    self.tactu.thietlap_tinhanhthaplencao(cmd.split(":", 1)[1] == "1")
                 elif isinstance(cmd, str) and cmd.startswith("set_matac_bando:"):
                     self.tactu.thietlap_bandomatac(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_matac_tubat:"):
@@ -855,6 +881,8 @@ class CuaSo:
                     self.tactu._is_hienhanhdongtrendau = not self.tactu._is_hienhanhdongtrendau
                 elif cmd == "battat_timmuctieuchung":
                     self.tactu.battat_timmuctieuchung()
+                elif isinstance(cmd, str) and cmd.startswith("battat_chonmuctieu:"):
+                    self.tactu.battat_chonmuctieu(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_khoangcachgiuketancong:"):
                     try:
                         self.tactu.thietlap_khoangcachgiuketancong(float(cmd.split(":")[1]))

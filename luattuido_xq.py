@@ -32,7 +32,8 @@
 #           đều được xét mỗi lượt (không phải luật đầu tiên). Luật đủ điều kiện thì dùng món đầu tiên trong "vatpham" còn trong túi và đã
 #           hết thời gian hồi. Mỗi luật: {"bat": true, "vatpham": [tên đúng, ưu tiên từ trên], "sinhluc": dùng khi sinh lực < x% (0 = không
 #           xét), "matsinhluc": và mất ít nhất N sinh lực, "noiluc" / "matnoiluc" như trên cho nội lực, "theluc": thể lực ≤ N (-1 = không
-#           xét), "hieuung": điều kiện hiệu ứng (TENHIEUUNGDUNG), "noi": nơi dùng (TENNOIDUNG), "monphai": "" = mọi môn phái,
+#           xét), "hieuung": [mã điều kiện hiệu ứng (TENHIEUUNGDUNG)], trống = không xét, nhiều thì phải đủ hết, "noi": [mã nơi dùng
+#           (TENNOIDUNG)], trống = mọi nơi, nhiều thì ở 1 nơi khớp là đủ (16/11 chuyển từ 1 chuỗi sang ô tích), "monphai": [] = mọi môn phái,
 #           "chikhidanh": chỉ khi bật Tự động sử dụng kỹ năng, "khongphobanrieng": không dùng ở Lăng Ly Sơn / Phong Yêu Kính / Tập Kích,
 #           "giancach": tối thiểu chừng này giây giữa 2 lần dùng của luật, "ghichu": ...}. Có nhiều điều kiện thì phải đủ hết.
 #           File cũ chưa có "dung" thì lấy DUNGMACDINH (đúng các điều kiện viết cứng trước đây, chuyển sang 2026-11-14).
@@ -75,7 +76,7 @@ MAUTEN = {"lam kim": "\x1bC", "xanh": "\x1bC", "hoàng kim": "\x1bY", "vàng": "
 TRUONGMUABU = ("vatpham", "tencuahang", "npc", "xepchong", "duoi", "muatoi", "thapnhat", "monphai", "chikhi")
 TENTRUONGMUABU = {"vatpham": "Vật phẩm", "tencuahang": "Tên ở cửa hàng (nếu khác)", "npc": "NPC bán", "xepchong": "Xếp chồng tối đa / ô",
                   "duoi": "Mua khi dưới", "muatoi": "Mua cho đủ",
-                  "thapnhat": "Chạy về mua khi còn ≤", "monphai": "Môn phái (trống = tất cả)", "chikhi": "Chỉ mua khi"}
+                  "thapnhat": "Chạy về mua khi còn ≤", "monphai": "Môn phái (không tích = tất cả)", "chikhi": "Chỉ mua khi"}
 XEPCHONGMACDINH = 100
 # -1 = không tự chạy về mua bù (chỉ mua khi đang đứng gần NPC)
 THAPNHATMACDINH = -1
@@ -88,15 +89,21 @@ NHAT_KHONGNHAT = "khongnhat"
 TENHANHDONGNHAT = {NHAT_NHAT: "Nhặt", NHAT_UUTIEN: "Nhặt ưu tiên", NHAT_KHONGNHAT: "Không nhặt"}
 DIEUKIENNHATs = ("ten", "tenchua")
 # Nơi dùng của luật "dung" (bản đồ PK = không thuộc BANDOKHONGPKs; phó bản = BANDOPHOBANs khi không đang PK ở bản đồ PK)
+# 16/11 (ô tích): 5 vùng KHÔNG chồng nhau, mỗi lúc nhân vật thuộc đúng 1 vùng (tactu_vatpham_xq xét theo thứ tự: đang PK -> phó bản ->
+# bản đồ PK có khai khoáng / không -> bản đồ không PK). Phó bản 701-704, 891-899 cũng là bản đồ PK (không thuộc BANDOKHONGPKs)
 NOI_MOINOI = "moinoi"
-NOI_BANDOPK = "bandopk"
 NOI_DANGPK = "dangpk"
-NOI_KHAIKHOANG = "khaikhoang"
+NOI_KHAIKHOANG = "khaikhoangpk"
+NOI_BANDOPK = "bandopkthuong"
 NOI_PHOBAN = "phoban"
-NOI_KHAC = "khac"
-TENNOIDUNG = {NOI_MOINOI: "Mọi nơi", NOI_BANDOPK: "Bản đồ PK", NOI_DANGPK: "Bản đồ PK, đang bật PK",
-              NOI_KHAIKHOANG: "Bản đồ PK, đang bật PK hoặc khai khoáng", NOI_PHOBAN: "Phó bản (không đang PK)",
-              NOI_KHAC: "Nơi khác (không đang PK, không phó bản)"}
+NOI_KHONGPK = "khongpk"
+TENNOIDUNG = {NOI_MOINOI: "Mọi nơi", NOI_DANGPK: "Bản đồ PK, đang bật PK", NOI_KHAIKHOANG: "Bản đồ PK, đang khai khoáng (không bật PK)",
+              NOI_BANDOPK: "Bản đồ PK, không bật PK, không khai khoáng", NOI_PHOBAN: "Phó bản (không bật PK)",
+              NOI_KHONGPK: "Bản đồ không PK (thành thị...)"}
+# Mã cũ (lựa chọn lồng nhau, trước 16/11) -> các vùng tương ứng, giữ đúng cách bot đã hiểu: "Bản đồ PK" gồm cả phó bản,
+# "Nơi khác" = không đang PK và không phó bản
+NOIDUNGCU = {"bandopk": (NOI_DANGPK, NOI_KHAIKHOANG, NOI_BANDOPK, NOI_PHOBAN), "khaikhoang": (NOI_DANGPK, NOI_KHAIKHOANG),
+             "khac": (NOI_KHAIKHOANG, NOI_BANDOPK, NOI_KHONGPK)}
 # Điều kiện hiệu ứng của luật "dung": "thieu_..." = chỉ dùng khi CHƯA có hiệu ứng của món (buff), "co_..." / "bikhongche" = khi đang có.
 # Mã hiệu ứng ứng với từng khoá ở tactu_vatpham_xq (HIEUUNGLUATDUNG)
 HIEUUNG_KHONG = ""
@@ -104,7 +111,7 @@ TENHIEUUNGDUNG = {HIEUUNG_KHONG: "Không xét", "thieu_huyetthach": "Chưa có h
                   "thieu_phapluc": "Chưa có hiệu ứng Pháp Lực Thạch", "thieu_thiennguyen": "Chưa có hiệu ứng Thiên Nguyên Đơn",
                   "thieu_nganhanh": "Chưa có hiệu ứng Ngân Hạnh Tử", "thieu_xaloi": "Chưa có hiệu ứng Xá Lợi Tử",
                   "co_datinh": "Đang có Dã Tính Cuồng Lực", "thieu_datinh": "Chưa có Dã Tính Cuồng Lực",
-                  "bikhongche": "Đang dính Thực Cốt / Thực Giáp / Thiêu Đốt..."}
+                  "bikhongche": "Đang dính Thực Cốt / Thực Giáp / Thiêu Đốt / Bất Động..."}
 TRUONGSODUNG = ("sinhluc", "matsinhluc", "noiluc", "matnoiluc", "theluc", "giancach")
 # Giãn cách mặc định giữa 2 lần dùng của 1 luật (giây): bằng THOIGIANCHOXACNHANHOIVATPHAM, gửi rồi mà chưa vào hồi thì chừng này giây
 # sau gửi lại
@@ -170,9 +177,9 @@ MUABUMACDINH = [
 _HOISINHLUCPK = [TRIDUOC, THILUYENQUA, THILUYENDON, CAPCUUDON, HOATLACHOAN]
 _HOINOILUCPK = [PHUCDUOC, LONGTIENTHAO, THILUYENDON, HOATTAMDON]
 DUNGMACDINH = [
-    {"vatpham": [TIEUPHAPLUCTHACH], "noiluc": 50, "hieuung": "thieu_phapluc", "noi": NOI_BANDOPK, "giancach": 2.5,
+    {"vatpham": [TIEUPHAPLUCTHACH], "noiluc": 50, "hieuung": "thieu_phapluc", "noi": list(NOIDUNGCU["bandopk"]), "giancach": 2.5,
      "ghichu": "Pháp Lực Thạch"},
-    {"vatpham": [TIEUHUYETTHACH], "sinhluc": 75, "hieuung": "thieu_huyetthach", "noi": NOI_KHAIKHOANG, "giancach": 2.5,
+    {"vatpham": [TIEUHUYETTHACH], "sinhluc": 75, "hieuung": "thieu_huyetthach", "noi": [NOI_DANGPK, NOI_KHAIKHOANG], "giancach": 2.5,
      "ghichu": "Huyết Thạch khi PK / khai khoáng"},
     {"vatpham": [TIEUHUYETTHACH], "sinhluc": 50, "hieuung": "thieu_huyetthach", "monphai": "maoson", "giancach": 2.5,
      "ghichu": "Huyết Thạch Mao Sơn"},
@@ -191,9 +198,9 @@ DUNGMACDINH = [
      "ghichu": "Hồi sinh lực ở phó bản"},
     {"vatpham": _HOISINHLUCPK[::-1], "sinhluc": 15, "matsinhluc": 2500, "hieuung": "co_datinh", "noi": NOI_PHOBAN, "khongphobanrieng": True,
      "ghichu": "Hồi sinh lực ở phó bản (Dã Tính)"},
-    {"vatpham": [HOATLACHOAN], "sinhluc": 75, "hieuung": "thieu_datinh", "noi": NOI_KHAC, "chikhidanh": True, "khongphobanrieng": True,
+    {"vatpham": [HOATLACHOAN], "sinhluc": 75, "hieuung": "thieu_datinh", "noi": list(NOIDUNGCU["khac"]), "chikhidanh": True, "khongphobanrieng": True,
      "ghichu": "Hồi sinh lực"},
-    {"vatpham": [HOATLACHOAN], "sinhluc": 15, "hieuung": "co_datinh", "noi": NOI_KHAC, "chikhidanh": True, "khongphobanrieng": True,
+    {"vatpham": [HOATLACHOAN], "sinhluc": 15, "hieuung": "co_datinh", "noi": list(NOIDUNGCU["khac"]), "chikhidanh": True, "khongphobanrieng": True,
      "ghichu": "Hồi sinh lực (Dã Tính)"},
     {"vatpham": list(_HOINOILUCPK), "noiluc": 75, "matnoiluc": 3000, "noi": NOI_DANGPK, "chikhidanh": True, "khongphobanrieng": True,
      "ghichu": "Hồi nội lực khi PK"},
@@ -227,6 +234,30 @@ def _danhsach(giatri):
     if isinstance(giatri, str):
         giatri = giatri.split("\n")
     return [str(g).strip() for g in giatri or [] if str(g).strip()]
+
+
+def _danhsachmonphai(giatri):
+    # Môn phái của luật Dùng / Mua bù: danh sách mã, trống = mọi môn phái. Bản cũ lưu 1 chuỗi mã ("maoson") -> [mã]; có dấu phẩy thì tách
+    if isinstance(giatri, str):
+        giatri = giatri.replace(",", "\n")
+    return _danhsach(giatri)
+
+
+def _danhsachma(giatri, tens, makhong, macus = None):
+    # "noi" / "hieuung" của luật Dùng: danh sách mã (ô tích, 16/11), trống = mọi nơi / không xét. Bản cũ lưu 1 chuỗi mã -> [mã];
+    # mã cũ trong macus đổi sang các mã mới tương ứng; bỏ mã lạ và mã "không xét" (NOI_MOINOI / HIEUUNG_KHONG), không trùng.
+    # Tích đủ mọi lựa chọn = như không tích
+    if isinstance(giatri, str):
+        giatri = [giatri]
+    kq = []
+    for macu in giatri or []:
+        for ma in (macus or {}).get(macu, (macu,)):
+            if ma in tens and ma != makhong and ma not in kq:
+                kq.append(ma)
+    if len(kq) == len(tens) - 1:
+        return []
+    # Giữ thứ tự như danh sách lựa chọn
+    return [ma for ma in tens if ma in kq]
 
 
 def is_apdungnhanvat(luat, tennhanvat):
@@ -263,8 +294,9 @@ def _chuanhoaluat(luat):
 def _chuanhoamuabu(muc):
     muc = dict(muc)
     muc["bat"] = bool(muc.get("bat", True))
-    for truong in ("vatpham", "tencuahang", "npc", "monphai"):
+    for truong in ("vatpham", "tencuahang", "npc"):
         muc[truong] = str(muc.get(truong) or "").strip()
+    muc["monphai"] = _danhsachmonphai(muc.get("monphai"))
     muc["nhanvat"] = _danhsach(muc.get("nhanvat"))
     # Bản cũ ghi tay ô / đơn giá: bỏ, bot tự tra theo tên trong cửa hàng
     muc.pop("o", None)
@@ -336,9 +368,9 @@ def _chuanhoadung(luat):
     kq["theluc"] = max(-1, kq["theluc"])
     for truong in ("sinhluc", "noiluc", "matsinhluc", "matnoiluc"):
         kq[truong] = max(0, kq[truong])
-    kq["hieuung"] = luat.get("hieuung") if luat.get("hieuung") in TENHIEUUNGDUNG else HIEUUNG_KHONG
-    kq["noi"] = luat.get("noi") if luat.get("noi") in TENNOIDUNG else NOI_MOINOI
-    kq["monphai"] = str(luat.get("monphai") or "").strip()
+    kq["hieuung"] = _danhsachma(luat.get("hieuung"), TENHIEUUNGDUNG, HIEUUNG_KHONG)
+    kq["noi"] = _danhsachma(luat.get("noi"), TENNOIDUNG, NOI_MOINOI, NOIDUNGCU)
+    kq["monphai"] = _danhsachmonphai(luat.get("monphai"))
     kq["chikhidanh"] = bool(luat.get("chikhidanh", False))
     kq["khongphobanrieng"] = bool(luat.get("khongphobanrieng", False))
     kq["nhanvat"] = _danhsach(luat.get("nhanvat"))
@@ -359,8 +391,7 @@ def motadieukiendung(luat):
         phans.append(f"mất ≥ {luat['matnoiluc']} nội lực")
     if luat["theluc"] >= 0:
         phans.append(f"Thể lực ≤ {luat['theluc']}")
-    if luat["hieuung"]:
-        phans.append(TENHIEUUNGDUNG[luat["hieuung"]])
+    phans.extend(TENHIEUUNGDUNG[ma] for ma in luat["hieuung"])
     if luat["chikhidanh"]:
         phans.append("đang bật đánh")
     return " · ".join(phans) if phans else "Luôn (mỗi lần hết hồi)"

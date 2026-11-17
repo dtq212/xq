@@ -962,7 +962,7 @@ class TacTuKyNang:
         # Thủ Thôn cứ chạy về phía acc gà (log ghi "Tiếp cận để tấn công gacon2191"), giành với bước chạy ra cổng Ba Khâu (2026-11-15 19:03)
         if ((vitrikynang is not None and (loaikynang.startswith("sudungkynang") or loaikynang.startswith("dichuyen")))
                 or loaikynang == "dichuyentiepcanbuff") \
-                and self.moitruong.get_idbandohientai() in BANDOKHONGTANCONGs:
+                and self.moitruong.get_idbandohientai() in BANDOKHONGTANCONGs and not self.get_is_duocdanhthanhantoan():
             return False, False
 
         # Đang lùi giữ khoảng cách (vài bước): không ra chiêu đánh / tiếp cận, ra chiêu sẽ ngắt bước lùi
@@ -2649,7 +2649,8 @@ class TacTuKyNang:
         is_ngukiemtiepcan = is_ngukiemdudieukien and not is_muctieupk and self.moitruong.get_idbandohientai() != BANDO_BATQUAITRAN
         danhsachuutien = [
             # Bị tước vũ khí: dùng Định Tâm Quyết ngay để giải, không chờ đủ nội lực ngưỡng
-            (VITRIKYNANG_TINHTAMQUYET, "sudungkynangkhongmuctieu", lambda: is_bituocvukhi or self.moitruong.get_is_cohieuungs(HIEUUNGBATLOITHUCSONCOTHEGIAIs, macdinh = False, is_hieuungcoloi = 0), 0, None, True),
+            # Bất Động (9002 thời gian ngắn, get_is_nhanvatbibatdong) cũng giải được (người dùng 2026-11-17)
+            (VITRIKYNANG_TINHTAMQUYET, "sudungkynangkhongmuctieu", lambda: is_bituocvukhi or self.moitruong.get_is_nhanvatbibatdong() or self.moitruong.get_is_cohieuungs(HIEUUNGBATLOITHUCSONCOTHEGIAIs, macdinh = False, is_hieuungcoloi = 0), 0, None, True),
             # (VITRIKYNANG_TIENKHI, "sudungkynanglenbanthan", lambda: phantramsinhluc <= 75 and noilucconlai > 100, 0, None, True),
             (VITRIKYNANG_TIENTHANVODICH, "sudungkynangkhongmuctieu", lambda: (phantramsinhluc <= 25 or (is_muctieupk and phantramsinhluc <= 50)), 0, None, True),
             (VITRIKYNANG_TIEUCHUTHIEN, "sudungkynanglendongdoi", lambda: diachidongdoicanbuff, self._khoangcachsudungkynangtamxa, diachidongdoicanbuff, False),
@@ -2813,7 +2814,7 @@ class TacTuKyNang:
                     return
 
         danhsachuutien = [
-            (VITRIKYNANG_TINHTAMQUYET, "sudungkynangkhongmuctieu", lambda: noiluc > 150 and self.moitruong.get_is_cohieuungs(HIEUUNGBATLOITHUCSONCOTHEGIAIs, macdinh = False, is_hieuungcoloi = 0), 0, None, True),
+            (VITRIKYNANG_TINHTAMQUYET, "sudungkynangkhongmuctieu", lambda: noiluc > 150 and (self.moitruong.get_is_nhanvatbibatdong() or self.moitruong.get_is_cohieuungs(HIEUUNGBATLOITHUCSONCOTHEGIAIs, macdinh = False, is_hieuungcoloi = 0)), 0, None, True),
             (VITRIKYNANG_TIENKHI, "sudungkynanglenbanthan", lambda: noiluc > 150 and phantramsinhluc <= 75, 0, None, True),
             (VITRIKYNANG_TIEUCHUTHIEN, "sudungkynanglendongdoi", lambda: noiluc > 150 and diachidongdoicanbuff, self._khoangcachsudungkynangtamxa, diachidongdoicanbuff, True),
             (VITRIKYNANG_BANGPHACHNGANTAM, "sudungkynangkhongmuctieu", lambda: not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_BANGPHACHNGANTAM, HIEUUNGKYNANG_LANHNGUYETTAMPHAP), True, is_hieuungcoloi = 1), 0, None, True),

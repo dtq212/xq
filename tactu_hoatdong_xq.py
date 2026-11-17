@@ -277,6 +277,13 @@ class TacTuHoatDong:
         if idtruongnhommotlan:
             self._xulytodoimotlanthanhvien(idtruongnhommotlan, is_dangmoitoi)
             return True
+        # Tổ đội tự động, mình chưa có nhóm: đồng ý lời mời ở đây (0.25s/lượt) thay vì đợi luồng phụ ~1s/lượt. Danh sách luồng phụ ghi
+        # quá 3s (luồng phụ nghỉ / Tổ đội tự động tạm nghỉ) thì bỏ
+        lucdongy, idsdongy = self._dongytodoitudong
+        if idsdongy and time.time() - lucdongy < 3. and self._is_tudongtodoi and not self._matac \
+                and not self.moitruong.get_is_dangnamtrongnhom():
+            self.moitruong.action_kiemtravadongyloimoinhom(idsdongy)
+            return True
         return False
 
     def _xulytodoimotlantruongnhom(self):
@@ -401,6 +408,8 @@ class TacTuHoatDong:
         if time.time() - self._thoidiemxulytodoigannhat < 0.5:
             return
         self._thoidiemxulytodoigannhat = time.time()
+        # Chỉ nhánh "chưa có nhóm" bên dưới ghi lại danh sách được đồng ý
+        self._dongytodoitudong = (0., [])
 
         idnguoichoi = self.moitruong.get_idnguoichoi()
         is_dangtrongnhom = self.moitruong.get_is_dangnamtrongnhom()
@@ -449,6 +458,7 @@ class TacTuHoatDong:
         self._nhomuutiencaohon = (0, 0.)
         if not is_dangtrongnhom and idtruongnhomtotnhat:
             # Chỉ nhận lời mời / xin vào nhóm ưu tiên cao nhất, tránh bị nhóm cũ mời lại
+            self._dongytodoitudong = (time.time(), [idtruongnhomtotnhat])
             self.moitruong.action_kiemtravadongyloimoinhom([idtruongnhomtotnhat])
             if time.time() - self._thoidiemtodoigannhat_map.get(idtruongnhomtotnhat, 0) > 5.0:
                 self.moitruong.action_moihoacxinvaonhom(idtruongnhomtotnhat)
@@ -493,17 +503,19 @@ class TacTuHoatDong:
                 self._idmoihangcaohon = 0
 
             if len(danhsachthanhviens) < SOLUONGTHANHVIENNHOMTOIDA:
-                # Mời cả người đang lẻ cùng bản đồ (vd: vừa rời nhóm hạng thấp hơn) dù chưa đứng gần
-                for iddongdoi in dongdoicanxulys + [id_ for id_ in nguoichoilecungbandos if id_ not in dongdoicanxulys]:
-                    if iddongdoi in danhsachthanhviens:
-                        continue
-                    if time.time() - self._thoidiemtodoigannhat_map.get(iddongdoi, 0) > 5.0:
-                        self.moitruong.action_moihoacxinvaonhom(iddongdoi)
-                        self._thoidiemtodoigannhat_map[iddongdoi] = time.time()
-                        self._thoidiemtodoigannhat_map = donbangthoidiem(self._thoidiemtodoigannhat_map, 120.)
-                        break
+                # Mời cả người đang lẻ cùng bản đồ (vd: vừa rời nhóm hạng thấp hơn) dù chưa đứng gần. Mời lần lượt: trước đây mỗi lượt mời
+                # 1 người khác nên lời mời trước bị đè, người trước bấm đồng ý thành "xin vào nhóm" (không ai nhận) => chờ 5s mời lại, nhóm
+                # đông vào rất chậm
+                chuavaos = [i for i in dongdoicanxulys + [id_ for id_ in nguoichoilecungbandos if id_ not in dongdoicanxulys]
+                            if i not in danhsachthanhviens]
+                if chuavaos:
+                    self._moilanluot(self._moiluottodoitudong, chuavaos, self._laybotkhacs())
+                    self._thoidiemtodoigannhat_map = donbangthoidiem(self._thoidiemtodoigannhat_map, 120.)
+                else:
+                    self._moiluottodoitudong["dangmoi"] = 0
 
         elif not is_dangtrongnhom:
+            self._dongytodoitudong = (time.time(), list(danhsachuutientodoi))
             self.moitruong.action_kiemtravadongyloimoinhom(danhsachuutientodoi)
 
             if idnguoichoixephangcaonhat != idnguoichoi:

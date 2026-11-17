@@ -286,7 +286,9 @@
       "duoi": 1999,
       "muatoi": 1999,
       "thapnhat": 0,
-      "monphai": "vanmongcoc",
+      "monphai": [
+        "vanmongcoc"
+      ],
       "chikhi": "",
       "bat": true,
       "nhanvat": []
@@ -296,7 +298,9 @@
       "npc": "Chủ Tiệm Tạp Hóa",
       "duoi": 30,
       "muatoi": 30,
-      "monphai": "vanmongcoc",
+      "monphai": [
+        "vanmongcoc"
+      ],
       "bat": true,
       "chikhi": "",
       "tencuahang": "",
@@ -312,7 +316,9 @@
       "duoi": 999,
       "muatoi": 999,
       "thapnhat": 0,
-      "monphai": "maoson",
+      "monphai": [
+        "maoson"
+      ],
       "chikhi": "",
       "bat": true,
       "nhanvat": []
@@ -324,7 +330,7 @@
       "muatoi": 30,
       "chikhi": "trieuhoibaothu",
       "bat": true,
-      "monphai": "",
+      "monphai": [],
       "tencuahang": "Thức Ăn Bảo Thú Cao Cấp",
       "xepchong": 100,
       "thapnhat": -1,
@@ -337,7 +343,7 @@
       "muatoi": 30,
       "chikhi": "trieuhoibaothu",
       "bat": true,
-      "monphai": "",
+      "monphai": [],
       "tencuahang": "",
       "xepchong": 100,
       "thapnhat": -1,
@@ -350,7 +356,7 @@
       "muatoi": 30,
       "chikhi": "trieuhoibaothu",
       "bat": true,
-      "monphai": "",
+      "monphai": [],
       "tencuahang": "",
       "xepchong": 100,
       "thapnhat": -1,
@@ -362,7 +368,9 @@
       "npc": "Chủ Tiệm Tạp Hóa",
       "duoi": 10000,
       "muatoi": 10000,
-      "monphai": "conluan",
+      "monphai": [
+        "conluan"
+      ],
       "chikhi": "",
       "bat": true,
       "xepchong": 100,
@@ -377,7 +385,7 @@
       "duoi": 1,
       "muatoi": 1,
       "thapnhat": -1,
-      "monphai": "",
+      "monphai": [],
       "chikhi": "",
       "bat": true,
       "nhanvat": [
@@ -386,6 +394,44 @@
         "Ngốc",
         "Thk",
         "Kng"
+      ]
+    },
+    {
+      "vatpham": "Tiểu Pháp Lực Thạch",
+      "tencuahang": "",
+      "npc": "Trân Bảo Khố (Kim Nguyên Bảo)",
+      "xepchong": 100,
+      "duoi": 1,
+      "muatoi": 1,
+      "thapnhat": -1,
+      "monphai": [],
+      "chikhi": "",
+      "bat": true,
+      "nhanvat": [
+        "Thk",
+        "Gạ",
+        "Thien Dao"
+      ]
+    },
+    {
+      "vatpham": "Tiểu Huyết Thạch",
+      "tencuahang": "",
+      "npc": "Trân Bảo Khố (Kim Nguyên Bảo)",
+      "xepchong": 100,
+      "duoi": 1,
+      "muatoi": 1,
+      "thapnhat": -1,
+      "monphai": [],
+      "chikhi": "",
+      "bat": true,
+      "nhanvat": [
+        "Thỏ",
+        "Ngốc",
+        "Gạ",
+        "Kng",
+        "Thk",
+        "Atula Dao",
+        "Thien Dao"
       ]
     }
   ],
@@ -509,7 +555,6 @@
         "Tinh Nguyên Đơn",
         "Bổ Tâm Đơn",
         "Toái Sa",
-        "Ma Tinh Thạch",
         "Da Bò",
         "Nhiếp Hồn Thạch",
         "Da Sói"
@@ -674,9 +719,11 @@
       "matnoiluc": 0,
       "theluc": -1,
       "giancach": 2.5,
-      "hieuung": "thieu_phapluc",
-      "noi": "moinoi",
-      "monphai": "",
+      "hieuung": [
+        "thieu_phapluc"
+      ],
+      "noi": [],
+      "monphai": [],
       "chikhidanh": false,
       "khongphobanrieng": false,
       "nhanvat": [],
@@ -693,9 +740,14 @@
       "matnoiluc": 0,
       "theluc": -1,
       "giancach": 2.5,
-      "hieuung": "thieu_huyetthach",
-      "noi": "khaikhoang",
-      "monphai": "",
+      "hieuung": [
+        "thieu_huyetthach"
+      ],
+      "noi": [
+        "dangpk",
+        "khaikhoangpk"
+      ],
+      "monphai": [],
       "chikhidanh": false,
       "khongphobanrieng": false,
       "nhanvat": [],
@@ -712,9 +764,13 @@
       "matnoiluc": 0,
       "theluc": -1,
       "giancach": 2.5,
-      "hieuung": "thieu_huyetthach",
-      "noi": "moinoi",
-      "monphai": "maoson",
+      "hieuung": [
+        "thieu_huyetthach"
+      ],
+      "noi": [],
+      "monphai": [
+        "maoson"
+      ],
       "chikhidanh": false,
       "khongphobanrieng": false,
       "nhanvat": [],
@@ -731,9 +787,11 @@
       "matnoiluc": 0,
       "theluc": -1,
       "giancach": 2.5,
-      "hieuung": "thieu_huyetthach",
-      "noi": "moinoi",
-      "monphai": "",
+      "hieuung": [
+        "thieu_huyetthach"
+      ],
+      "noi": [],
+      "monphai": [],
       "chikhidanh": false,
       "khongphobanrieng": false,
       "nhanvat": [],
@@ -750,9 +808,15 @@
       "matnoiluc": 0,
       "theluc": -1,
       "giancach": 2.5,
-      "hieuung": "thieu_thiennguyen",
-      "noi": "dangpk",
-      "monphai": "daohoanguyen",
+      "hieuung": [
+        "thieu_thiennguyen"
+      ],
+      "noi": [
+        "dangpk"
+      ],
+      "monphai": [
+        "daohoanguyen"
+      ],
       "chikhidanh": false,
       "khongphobanrieng": false,
       "nhanvat": [],
@@ -769,9 +833,13 @@
       "matnoiluc": 0,
       "theluc": -1,
       "giancach": 2.5,
-      "hieuung": "thieu_nganhanh",
-      "noi": "dangpk",
-      "monphai": "",
+      "hieuung": [
+        "thieu_nganhanh"
+      ],
+      "noi": [
+        "dangpk"
+      ],
+      "monphai": [],
       "chikhidanh": false,
       "khongphobanrieng": false,
       "nhanvat": [],
@@ -788,9 +856,13 @@
       "matnoiluc": 0,
       "theluc": -1,
       "giancach": 2.5,
-      "hieuung": "thieu_xaloi",
-      "noi": "dangpk",
-      "monphai": "",
+      "hieuung": [
+        "thieu_xaloi"
+      ],
+      "noi": [
+        "dangpk"
+      ],
+      "monphai": [],
       "chikhidanh": false,
       "khongphobanrieng": false,
       "nhanvat": [],
@@ -811,9 +883,13 @@
       "matnoiluc": 0,
       "theluc": -1,
       "giancach": 1.0,
-      "hieuung": "thieu_datinh",
-      "noi": "dangpk",
-      "monphai": "",
+      "hieuung": [
+        "thieu_datinh"
+      ],
+      "noi": [
+        "dangpk"
+      ],
+      "monphai": [],
       "chikhidanh": true,
       "khongphobanrieng": true,
       "nhanvat": [],
@@ -834,9 +910,13 @@
       "matnoiluc": 0,
       "theluc": -1,
       "giancach": 1.0,
-      "hieuung": "co_datinh",
-      "noi": "dangpk",
-      "monphai": "",
+      "hieuung": [
+        "co_datinh"
+      ],
+      "noi": [
+        "dangpk"
+      ],
+      "monphai": [],
       "chikhidanh": true,
       "khongphobanrieng": true,
       "nhanvat": [],
@@ -857,9 +937,13 @@
       "matnoiluc": 0,
       "theluc": -1,
       "giancach": 1.0,
-      "hieuung": "thieu_datinh",
-      "noi": "phoban",
-      "monphai": "",
+      "hieuung": [
+        "thieu_datinh"
+      ],
+      "noi": [
+        "phoban"
+      ],
+      "monphai": [],
       "chikhidanh": false,
       "khongphobanrieng": true,
       "nhanvat": [],
@@ -880,9 +964,13 @@
       "matnoiluc": 0,
       "theluc": -1,
       "giancach": 1.0,
-      "hieuung": "co_datinh",
-      "noi": "phoban",
-      "monphai": "",
+      "hieuung": [
+        "co_datinh"
+      ],
+      "noi": [
+        "phoban"
+      ],
+      "monphai": [],
       "chikhidanh": false,
       "khongphobanrieng": true,
       "nhanvat": [],
@@ -902,9 +990,11 @@
       "matnoiluc": 3000,
       "theluc": -1,
       "giancach": 1.0,
-      "hieuung": "",
-      "noi": "dangpk",
-      "monphai": "",
+      "hieuung": [],
+      "noi": [
+        "dangpk"
+      ],
+      "monphai": [],
       "chikhidanh": true,
       "khongphobanrieng": true,
       "nhanvat": [],
@@ -924,9 +1014,11 @@
       "matnoiluc": 3000,
       "theluc": -1,
       "giancach": 1.0,
-      "hieuung": "",
-      "noi": "phoban",
-      "monphai": "",
+      "hieuung": [],
+      "noi": [
+        "phoban"
+      ],
+      "monphai": [],
       "chikhidanh": true,
       "khongphobanrieng": true,
       "nhanvat": [],
@@ -944,9 +1036,13 @@
       "matnoiluc": 0,
       "theluc": -1,
       "giancach": 1.0,
-      "hieuung": "bikhongche",
-      "noi": "dangpk",
-      "monphai": "",
+      "hieuung": [
+        "bikhongche"
+      ],
+      "noi": [
+        "dangpk"
+      ],
+      "monphai": [],
       "chikhidanh": true,
       "khongphobanrieng": false,
       "nhanvat": [],
@@ -963,9 +1059,9 @@
       "matnoiluc": 0,
       "theluc": 5,
       "giancach": 30.0,
-      "hieuung": "",
-      "noi": "moinoi",
-      "monphai": "",
+      "hieuung": [],
+      "noi": [],
+      "monphai": [],
       "chikhidanh": false,
       "khongphobanrieng": false,
       "nhanvat": [],
@@ -983,9 +1079,9 @@
       "matnoiluc": 0,
       "theluc": -1,
       "giancach": 15.0,
-      "hieuung": "",
-      "noi": "moinoi",
-      "monphai": "",
+      "hieuung": [],
+      "noi": [],
+      "monphai": [],
       "chikhidanh": true,
       "khongphobanrieng": false,
       "nhanvat": [
@@ -1006,9 +1102,11 @@
       "matnoiluc": 0,
       "theluc": -1,
       "giancach": 30.0,
-      "hieuung": "",
-      "noi": "moinoi",
-      "monphai": "vanmongcoc",
+      "hieuung": [],
+      "noi": [],
+      "monphai": [
+        "vanmongcoc"
+      ],
       "chikhidanh": false,
       "khongphobanrieng": false,
       "nhanvat": [],
@@ -1034,9 +1132,11 @@
       "matnoiluc": 0,
       "theluc": -1,
       "giancach": 60.0,
-      "hieuung": "",
-      "noi": "moinoi",
-      "monphai": "thucson",
+      "hieuung": [],
+      "noi": [],
+      "monphai": [
+        "thucson"
+      ],
       "chikhidanh": false,
       "khongphobanrieng": false,
       "nhanvat": [],

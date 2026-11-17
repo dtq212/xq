@@ -29,6 +29,7 @@
 # "1. Ta muốn về Chu Quốc", không có thưởng phải lĩnh, đổi tổ đội như dưới.
 # Mixin của TacTu (tactu_xq.py): chỉ chứa hàm, trạng thái (self._...) khởi tạo trong TacTu.__init__
 import math
+import random
 import re
 import time
 import unicodedata
@@ -251,6 +252,11 @@ GIANCACHROINHOM = 5.
 THOIGIANGIAITANRAPY = 20.
 # Trưởng nhóm lĩnh xong chờ thành viên cùng máy tự lĩnh tối đa chừng này giây rồi mới giải tán tổ đội
 THOIGIANCHOTHANHVIENLANH = 120.
+# Thành viên cùng máy (cả máy nối LAN) lĩnh thưởng ngay khi trưởng nhóm lĩnh xong thì cả loạt nói chuyện NPC cùng lúc, dễ sinh nghi
+# => giãn ra theo thứ tự ID: thành viên thứ i (tính từ 1) chờ i * GIANCACHLANHTHUONG giây (+ ngẫu nhiên tới GIANCACHLANHTHUONGNGAUNHIEN)
+# kể từ lúc thấy mã thưởng rồi mới tới NPC lĩnh, mỗi người cách nhau ~2s (2026-11-17: 1s vẫn nhanh quá, gấp đôi)
+GIANCACHLANHTHUONG = 2.
+GIANCACHLANHTHUONGNGAUNHIEN = 0.8
 # Giải tán tổ đội cũ: tạm tắt Tổ đội tự động ở mọi người, chờ hết người trong nhóm cũ tối đa chừng này giây rồi bật lại
 THOIGIANCHOGIAITAN = 30.
 # Mỗi vòng quá chừng này giây chưa xong thì báo (vẫn chạy tiếp)
@@ -264,6 +270,11 @@ SOLANDOTLAIPYSAUVANGRA = 2
 # Trước khi vào: nhóm phải đủ người như vòng trước và đứng yên chừng này giây; chờ quá THOIGIANBAONHOMTHIEU giây chưa đủ thì báo
 THOIGIANNHOMONDINH = 5.
 THOIGIANBAONHOMTHIEU = 120.
+# Thành Kiều: vận khí xong game chỉ đưa vào người đứng gần NPC. 17/11 00:58 trưởng nhóm tới NPC là vận khí ngay, thành viên theo sau còn
+# tụt 15-30 ô => chỉ 2/5 vào, 3 acc kẹt ngoài. Trưởng nhóm cách NPC trong KHOANGCACHTRUONGNHOMTOINPC ô thì đứng chờ mọi thành viên trong
+# nhóm về trong KHOANGCACHTHANHVIENVAO ô quanh mình mới nói chuyện (chờ mãi, quá THOIGIANBAONHOMTHIEU giây thì báo)
+KHOANGCACHTRUONGNHOMTOINPC = 8.
+KHOANGCACHTHANHVIENVAO = 5.
 # Tiến độ trong phó bản (bước từng tầng, đã hoàn thành chưa) lưu ra _internal/tiendophoban.json: bật lại bot khi đang đứng trong phó bản
 # thì làm tiếp từ bước đã lưu (không thì làm lại từ boss đầu, boss đã chết phải chờ THOIGIANCHOBOSS mỗi con, boss cuối chờ mãi). Lưu quá
 # chừng này giây thì bỏ (phó bản cũ)
@@ -327,6 +338,32 @@ class TacTuLangLySon:
         # Trưởng nhóm đang chờ đủ thành viên trước boss cuối: báo qua shared_data để thành viên theo sau cũng không đánh
         # (theo mốc bắt đầu chờ chứ không theo chedo: chedo mỗi lượt đặt lại từ đầu, thành viên đọc giữa chừng không bị chập chờn)
         return bool(self._langlyson) and bool(self._langlyson["lucchodoi"])
+
+    def get_is_langlysonvankhivao(self):
+        # Trưởng nhóm đang nói chuyện NPC / vận khí vào phó bản (Thành Kiều: vận khí xong cả nhóm được đưa vào, thành viên di chuyển lúc
+        # đó là mất vận khí, người dùng 2026-11-17): báo qua shared_data để thành viên theo sau đứng im
+        s = self._langlyson
+        if not s or s["giaidoan"] != "vao" or s.get("chedodoc") == "thanhvien":
+            return False
+        cauhinh = PHOBAN_MAP[s["phoban"]]
+        if cauhinh["luachonvao"] in (None, "give") or self.moitruong.get_idbandohientai() != cauhinh["bandonpc"]:
+            return False
+        return bool(s["hoithoai"]) or self.moitruong.get_is_dangvankhi()
+
+    def get_is_chotruongnhomvankhivao(self):
+        # Mình theo sau trưởng nhóm cùng máy / LAN đang vận khí vào phó bản (get_is_langlysonvankhivao) và cùng bản đồ: không di chuyển.
+        # Gọi mỗi lượt di chuyển nên nhớ kết quả 0.3s
+        if not self._is_tudongtheosau:
+            return False
+        thoidiem, ketqua = self._bonhovankhivaolanglyson
+        if time.time() - thoidiem > 0.3:
+            info = self._laythongtinmuctieutheosaucuasokhac()
+            ketqua = bool(info and info.get("_langlysonvankhivao")
+                          and self.moitruong.get_is_cungbando(info, self.moitruong.get_idbandohientai()))
+            if ketqua != self._bonhovankhivaolanglyson[1]:
+                self.moitruong._inlog(f"[PHÓ BẢN] {'Trưởng nhóm đang vận khí vào phó bản: đứng im' if ketqua else 'Trưởng nhóm hết vận khí vào phó bản: đi lại'}")
+            self._bonhovankhivaolanglyson = (time.time(), ketqua)
+        return ketqua
 
     def get_dsidgiunhomlanglyson(self):
         # Vòng đang đi dở (đã vào phó bản, chưa lĩnh thưởng xong / chưa bắt đầu giải tán): ID mình và thành viên vòng này, báo qua
@@ -512,6 +549,13 @@ class TacTuLangLySon:
             # Đã vào Phong Yêu Kính, bật Bán rác ở cấu hình Phong Yêu Kính: ra tới Chu Quốc thì bán rác trước khi vào vòng sau
             # (_banracphongyeu)
             s["canbanracpy"] = True
+        if s["phoban"] == "phongyeukinh" and s["giaidoan"] == "vao" and "py" in s and not s.get("dagive") and not self._is_trongphongyeu():
+            # Thành viên bị đưa ra khỏi Phong Yêu Kính giữa vòng (trưởng nhóm / người dùng giải tán nhóm): phó bản đó đã hết, bỏ boss / điểm
+            # dò / toạ độ Thỏ Yêu của nó (trước đây giữ nguyên sang phó bản kế, cùng ID bản đồ thì còn tưởng boss đã giết)
+            self._logpb(s, "Đã ra khỏi Phong Yêu Kính giữa vòng, phó bản kế làm lại từ đầu")
+            s.pop("py", None)
+            s["diemvao"] = {}
+            self._xoabosspy()
         if s["giaidoan"] == "vao" and moitruong.get_is_dangnamtrongnhom() and not moitruong.get_is_truongnhom() \
                 and s["phoban"] == "phongyeukinh" and not self._is_tudongtheosau and self._is_trongphongyeu():
             # Phong Yêu Kính, thành viên KHÔNG bật Theo sau (bật thì Theo sau lo như cũ): tự đi lộ trình dò khắp bản đồ đánh hết quái / đánh
@@ -569,12 +613,20 @@ class TacTuLangLySon:
         return self._buocvao(s)
 
     def _ghithanhvienvong(self, s):
-        # Mọi người từng ở trong nhóm trong phó bản vòng này (id -> tên): bị dis rớt khỏi nhóm vẫn nhớ để chờ trước boss cuối
+        # Mọi người trong nhóm đã có mặt trong phó bản vòng này (id -> tên): bị dis rớt khỏi nhóm vẫn nhớ để chờ trước boss cuối.
+        # Chỉ ghi người thấy cùng bản đồ (thấy trên màn hình hoặc shared_data / LAN báo cùng bản đồ): 17/11 01:05 Thành Kiều 3 acc không
+        # kịp vận khí vào, kẹt ngoài Tần Quốc mà vẫn bị ghi là thành viên => trưởng nhóm về điểm vào chờ họ mãi, bỏ boss cuối
+        # Đọc shared_data tốn (chép qua Manager) nên xét mỗi giây 1 lần
+        if time.time() - s.get("lucghithanhvien", 0.) < 1.:
+            return
+        s["lucghithanhvien"] = time.time()
         moitruong = self.moitruong
         idtoi = moitruong.get_idnguoichoi()
         for idtv in moitruong.get_danhsachidnguoichoithanhviennhoms() or ():
             if idtv and idtv != idtoi and not s["thanhviens"].get(idtv):
                 diachi = moitruong.action_timkiemnhanvat(idnguoichoi = idtv)
+                if not diachi and not moitruong.get_is_cungbando(self._laythongtinnguoichoi(idtv)):
+                    continue
                 s["thanhviens"][idtv] = (moitruong.get_tendoituong(diachi) if diachi else "") or self._laytencungmay(idtv)
 
     def _laytencungmay(self, idnguoichoi):
@@ -701,6 +753,9 @@ class TacTuLangLySon:
                                                           f"{tennpc} vào lại")
         if not s["hoithoai"] and not self._is_nhomdu(s):
             return None
+        if not s["hoithoai"] and moitruong.get_khoangcachdiem(x, y) <= KHOANGCACHTRUONGNHOMTOINPC and not self._is_thanhviengannpc(s):
+            return None
+        s.pop("lucchogan", None)
         s["trangthai"] = f"vào {ten} (vòng {s['sovong'] + 1}): nói chuyện {tennpc}"
         ketqua, yeucau = self._noichuyenlls(s, tennpc, x, y, luachon = cauhinh["luachonvao"], is_xacnhan = True)
         h = s["hoithoai"]
@@ -746,6 +801,31 @@ class TacTuLangLySon:
             return False
         s.pop("lucchonhom", None)
         return True
+
+    def _is_thanhviengannpc(self, s):
+        # Mọi thành viên trong nhóm phải đứng trong KHOANGCACHTHANHVIENVAO ô quanh mình (trưởng nhóm, đã tới NPC) thì mới vận khí vào
+        moitruong = self.moitruong
+        now = time.time()
+        idminh = moitruong.get_idnguoichoi()
+        xas = []
+        for idtv in moitruong.get_danhsachidnguoichoithanhviennhoms() or ():
+            if not idtv or idtv == idminh:
+                continue
+            diachi = moitruong.action_timkiemnhanvat(idnguoichoi = idtv)
+            kc = moitruong.get_khoangcach(diachi) if diachi else None
+            if kc is None or kc > KHOANGCACHTHANHVIENVAO:
+                ten = self._laytencungmay(idtv) or f"ID {idtv}"
+                xas.append(f"{ten} ({'chưa thấy' if kc is None else f'{kc:.0f} ô'})")
+        if not xas:
+            return True
+        if not s.get("lucchogan"):
+            s["lucchogan"] = now
+            self._logpb(s, f"Chờ thành viên tới gần NPC rồi mới vận khí vào: {', '.join(xas)}")
+        s["trangthai"] = f"vào {self._tenpb(s)}: chờ thành viên tới gần (≤{KHOANGCACHTHANHVIENVAO:.0f} ô): {', '.join(xas)}"
+        if now - s["lucchogan"] > THOIGIANBAONHOMTHIEU:
+            self._baolanglyson(s, f"chogan|{s['sovong']}|{int(s['lucchogan'])}",
+                               f"⚠️ {self._tenpb(s)}: chờ {int(THOIGIANBAONHOMTHIEU)}s thành viên chưa tới gần NPC: {', '.join(xas)}")
+        return False
 
     def _buoctrongphoban(self, s, idbando):
         buocs = BUOCLANGLYSON_MAP[idbando]
@@ -1176,8 +1256,13 @@ class TacTuLangLySon:
         tennpc, x, y = cauhinh["npc"]
         s = self._lanhthuonglanglyson
         if not s or s["khoa"] != khoathuong:
-            s = self._lanhthuonglanglyson = {"khoa": khoathuong, "hoithoai": None}
-            moitruong._inlog(f"[{cauhinh['ten'].upper()}] Trưởng nhóm đã lĩnh thưởng, tới {tennpc} tự lĩnh")
+            thutu = self._laythutulanhthuong(khoathuong)
+            cho = thutu * GIANCACHLANHTHUONG + random.uniform(0., GIANCACHLANHTHUONGNGAUNHIEN)
+            s = self._lanhthuonglanglyson = {"khoa": khoathuong, "hoithoai": None, "lucbatdau": time.time() + cho}
+            moitruong._inlog(f"[{cauhinh['ten'].upper()}] Trưởng nhóm đã lĩnh thưởng, thứ tự {thutu}, {cho:.1f}s nữa tới {tennpc} tự lĩnh")
+        if time.time() < s["lucbatdau"]:
+            self._capnhatbuocdichuyen(f"{cauhinh['ten']}: chờ lượt lĩnh thưởng")
+            return None
         self._capnhatbuocdichuyen(f"{cauhinh['ten']}: tới {tennpc} lĩnh thưởng")
         ketqua, yeucau = self._noichuyenlls(s, tennpc, x, y, is_chovankhi = False, luachon = cauhinh["luachonthuong"],
                                             kiemtramenu = self._is_menunhanthuong if cauhinh["is_kiemtrathuong"] else None)
@@ -1187,6 +1272,27 @@ class TacTuLangLySon:
             moitruong._inlog(f"[{cauhinh['ten'].upper()}] {'Đã lĩnh thưởng' if ketqua == 'xong' else f'{tennpc} không có phần thưởng cho mình'}")
             return None
         return yeucau
+
+    def _laythutulanhthuong(self, khoathuong):
+        # Thứ tự (từ 1) của mình trong các thành viên cùng máy (shared_data, cả LAN) chưa lĩnh mã thưởng này, xếp theo ID người chơi
+        # để mỗi người một lượt không trùng nhau. Không đọc được shared_data thì 1
+        idminh = self.moitruong.get_idnguoichoi()
+        thanhviens = set(self.moitruong.get_danhsachidnguoichoithanhviennhoms() or ())
+        ids = {idminh}
+        try:
+            danhsach = list(self.shared_data.items()) if self.shared_data is not None else []
+        except Exception:
+            danhsach = []
+        for idcuaso, info in danhsach:
+            if idcuaso == self.idcuaso or not isinstance(info, dict) or info.get("idnguoichoi") not in thanhviens:
+                continue
+            if time.time() - info.get("thoidiemcapnhat", 0.) > 5. or info.get("_khoathuonglanglysondalanh") == khoathuong:
+                continue
+            # Trưởng nhóm (người phát mã) đã lĩnh rồi, không tính
+            if info.get("_khoathuonglanglyson") == khoathuong:
+                continue
+            ids.add(info.get("idnguoichoi"))
+        return sorted(ids, key = str).index(idminh) + 1
 
     def _laynpcra(self, cauhinh, idbando):
         # NPC trong phó bản nói chuyện để được đưa về chỗ NPC nhận thưởng: npcra cố định ở tầng bandora (Lăng Ly Sơn: Lăng Mộ Thạch Sư),
@@ -1992,6 +2098,7 @@ class TacTuLangLySon:
             # bước đổi tổ đội nên không ai xoá: Laotsezu vào bản đồ 41 vẫn đi tới chỗ Thỏ Yêu của bản đồ 131 vòng trước)
             s.pop("py", None)
             self._xoabosspy()
+            self._xoabosspy()
             s["diemvao"] = {}
             return None
         # Lời lạ: không xác nhận gì, đóng menu, thử lại sau
@@ -2080,6 +2187,16 @@ class TacTuLangLySon:
             lydo = f"chưa chia, đi cả vòng {'ngược' if do.get('chieu', 1) < 0 else 'xuôi'} chiều"
         is_khongdo = self._is_tudongtheosau or not self._is_tudongsudungkynang
         return {"diems": [(x, y, do["idbando"]) for x, y in do["diems"]], "i": None if is_khongdo else do["i"], "vung": vung, "lydo": lydo}
+
+    def get_diemdophongyeu(self):
+        # Điểm dò Phong Yêu Kính đang đi tới (x, y) khi mình đang tự dò (không Theo sau, bật kỹ năng, không đuổi boss), không thì None
+        s = self._langlyson
+        py = s.get("py") if s and s["phoban"] == "phongyeukinh" and s["giaidoan"] == "vao" else None
+        do = py.get("do") if py else None
+        if not do or py.get("boss") or self._is_tudongtheosau or not self._is_tudongsudungkynang \
+                or do["idbando"] != self.moitruong.get_idbandohientai() or not self._is_trongphongyeu():
+            return None
+        return do["diems"][do["i"]]
 
     def get_is_dangdanhbossphongyeu(self):
         # Mình đang đánh / chờ xác nhận boss Phong Yêu Kính (báo qua shared_data: trưởng nhóm không ra khi thành viên đang đánh boss)
@@ -2214,6 +2331,11 @@ class TacTuLangLySon:
         py = self._taopy(s)
         if is_pymoi:
             self._khoiphucbosspy(s, py, idbando)
+            # Watchdog "vòng quá 40 phút" tính từ lúc vào phó bản này (mở lại bot giữa phó bản thì lucvao lấy lại từ file): người dùng
+            # giải tán nhóm giữa chừng rồi đốt cái mới thì vòng không qua bước đổi tổ đội, trước đây cứ cộng dồn từ phó bản cũ và báo
+            # "vòng 1 quá 40 phút" (2026-11-16, thành viên vào 3 phó bản liền trong 1 "vòng")
+            s["lucbatdauvong"] = py["lucvao"]
+            s["dabao"].discard(f"cham|{s['sovong']}")
         if not py.get("vitrithoyeu") or py.get("bandothoyeu") != idbando:
             # Vừa vào Thỏ Yêu đứng ngay cạnh: nhớ toạ độ (tuỳ bản đồ) để lúc hỏi số quái / ra quay về đúng chỗ
             self._vitrithoyeu(s, py, idbando)

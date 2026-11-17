@@ -2,7 +2,7 @@ from collections import defaultdict
 from math import sqrt
 import re
 
-from bando_xq import laytenbandogame, layidbandotheoten, get_solanchuyenbando, BANDOCONG_MAP, SOLANCHUYENBANDOTOIDA
+from bando_xq import laytenbandogame, layidbandotheoten, get_solanchuyenbando, BANDOCONG_MAP, SOLANCHUYENBANDOTOIDA, CAPQUAI_DAGAP_MAP
 
 CHUACHONHANVAT = "Chưa chọn nhân vật"
 STRING_ENCODING = "mbcs"
@@ -112,7 +112,12 @@ def is_lenhtinvat(caulenh):
 
 TENXAPHU_NIETBANs = ("Xa Phu", "Thị Giả")
 THOIGIANXAPHUNIETBAN = 90.
+# Tân Thủ Tiên Cô lấy chừng này lượng mỗi lần phù từ cấp CAPTINHTIENPHUTANTHUTIENCO (người dùng 16/11 lúc đầu nói miễn phí rồi nói hình
+# như có tính tiền: giữ kiểm tra; vẫn rẻ hơn hẳn Hồi Thành Phù 1.500 và Dịch Trạm)
 GIAPHUTANTHUTIENCO = 500
+# Đích cách chừng này cổng chạy bộ trở xuống thì chạy bộ luôn, không Hồi Thành Phù / Tín Vật về rồi phù lại (người dùng 16/11: Săn Tinh
+# Anh từ Bà Dương Hồ sang Vu Sơn 1 cổng mà Hồi Thành Phù về Tân Thủ Thôn rồi phù). Về Tân Thủ Thôn vẫn không bao giờ chạy bộ
+SOCONGCHAYBOLUON = 2
 CAPTINHTIENPHUTANTHUTIENCO = 50
 # Mua đồ luôn chừa lại bấy nhiêu ngân lượng (đủ Hồi Thành Phù về rồi phù đi)
 NGANLUONGGIULAI = GIAHOITHANHPHU + GIAPHUTANTHUTIENCO
@@ -438,10 +443,17 @@ IS_LOGLENHGAME = True
 SOLUONGDONGLENHGAME = 32
 KICHTHUOCDONGLENHGAME = 160
 # Bang phái người chơi khác hỏi bằng "desc user <ID>" (máy chủ trả các dòng " Danh tính: ...", " Bang phái: ..." vào khung tin hệ thống):
-# mỗi lần hỏi cách nhau GIANCACHHOIBANGPHAI giây, chờ trả lời tối đa THOIGIANCHOTRALOIBANGPHAI giây, đã biết thì hỏi lại sau THOIGIANLAMMOIBANGPHAI giây
+# mỗi lần hỏi cách nhau GIANCACHHOIBANGPHAI giây, chờ trả lời tối đa THOIGIANCHOTRALOIBANGPHAI giây. Đã biết (kể cả nạp từ
+# thongtinnguoichoi.json) thì không tự hỏi lại người khác: môn phái / bang gần như cố định, cần thì người dùng tự bấm xem để cập nhật
 GIANCACHHOIBANGPHAI = 1.5
 THOIGIANCHOTRALOIBANGPHAI = 3.
-THOIGIANLAMMOIBANGPHAI = 600.
+# Câu trả lời "desc user" mới nhận giữ trong shared_data chừng này giây cho cửa sổ khác / giao diện (ghi file mỗi 5s) lấy
+THOIGIANCHIASETHONGTINNGUOICHOI = 120.
+# Danh sách thành viên bang mình (moitruong_xq.get_thanhvienbangs): gửi "org status" (lệnh client gửi khi mở tab Bang Phái ở Alt+B)
+# mỗi chừng này giây để biết người vào / rời bang; tối đa 200 người, mỗi người 0x48 byte (xq + 0x143487 xoá 0xE10 dword trước khi ghi)
+THOIGIANLAMMOITHANHVIENBANG = 600.
+SOTHANHVIENBANGTOIDA = 200
+KICHTHUOCTHANHVIENBANG = 0x48
 # Máy chủ chỉ trả lời "desc user" khi người đó cách mình trong chừng này ô (người dùng thấy), xa hơn thì chờ lại gần mới hỏi
 KHOANGCACHHOIBANGPHAI = 12.
 # Game gửi cả khối nhiều dòng (nối "\n", tới 0x640 byte) vào 1 tin, vd trả lời "desc user": ô 128 byte cắt mất dòng Bang phái
@@ -953,9 +965,12 @@ PHAPBAOKHONGHUHONGs = ("Thượng Phương Bảo Kiếm", )
 #   "buyitem desc <tab> <ô>" -> xem mô tả; "buyitem <tab> <ô> <số lượng>" -> mua (ô đếm từ 0 qua các trang, 7 ô / trang)
 #   Client gửi ngay sau lệnh mua "\nzip 123\n" (cùng chuỗi ở mọi acc, không có trong xq.exe: DLL ngoài thêm vào) -> bot gửi giống.
 #   Đã thấy mua 50, 57, 59 cái 1 lần. Niết Bàn (9302) có thêm "buyitem ! <tab> <ô> <số lượng>" (xác nhận) ngay sau lệnh mua.
+#   Bot gửi thẳng 1 lệnh "buyitem ! <tab> <ô> <số lượng>" = mua luôn không qua hộp xác nhận (người dùng xác nhận chạy cả Aegis, 17/11)
 # Số KNB không lưu thành số nguyên ở TG/KDK (quét 3 acc không có ô chung), chỉ có trong lời thoại menu trên => đọc bằng "buyitem"
-# Hàng KHÔNG ghi cứng ô (Trân Bảo Khố đổi thứ tự là mua nhầm): mỗi lần mua bot gửi "buyitem <tab>" rồi đọc gói tin hàng trong heap
-# (MoiTruong.get_hangtranbaokho), tra ô theo tên. Các tab xét lần lượt khi chưa biết món nằm tab nào
+# Hàng KHÔNG ghi cứng ô: bot gửi "buyitem <tab>" rồi đọc gói tin hàng trong heap (MoiTruong.get_hangtranbaokho), tra ô theo tên.
+# Đọc 1 lần cho mỗi phiên bản game (DatVersion trong patch.ini cạnh xq.exe, vd 2.01.10), lưu _internal/hangtranbaokho_cache.json dùng
+# chung mọi nhân vật / tiến trình (quét heap mất vài giây mỗi tab). Mua theo ô đệm mà túi không thêm đủ thì xoá đệm phiên bản đó, lần
+# sau đọc lại (Trân Bảo Khố đổi thứ tự mà không lên phiên bản)
 TABTRANBAOKHOs = (1, 2, 3, 4, 5, 6)
 CAULENHXACNHANTRANBAOKHO = "zip 123"
 # Trân Bảo Khố là cửa hàng KNB mở bằng lệnh, KHÁC NPC kho "Bảo Khố" (mở rương kho đồ, lệnh pawn) - đừng nhầm.
@@ -1560,6 +1575,33 @@ PHATMUCTIEUSAULUNG = 3.
 # Mục tiêu đang đánh chỉ bị thay bằng con khác chỉ vì gần hơn khi con đó gần hơn ít nhất ngần này ô (giữa các ứng viên khác chỉ cần 0.5):
 # hai con hai bên gần ngang nhau thì cứ chạy về phía con này vài bước là con kia lại "gần hơn" => đổi qua lại liên tục, đứng một chỗ
 CHENHLECHKHOANGCACHDOIMUCTIEU = 1.5
+# Chọn mục tiêu theo đường đi thật (_is_muctieutheoduongdi): một lần loang BFS 8 hướng từ ô mình trên lưới vật cản ±BANKINHLOANGMUCTIEU ô
+# (chéo chỉ khi 2 ô kề đều trống như máy chủ; bước thẳng hay chéo đều 1 nhịp "go", tầm đánh theo ô vuông nên số bước BFS là đúng thời
+# gian đi). Con ngoài tầm đánh so bằng max(đường chim bay, số bước tới ô trong tầm nó + tầm) => quái "gần" mà sau vách đá bị tính xa đúng
+# quãng phải đi vòng; con không tới được trong khung tính xa thêm PHATMUCTIEUKHONGDUONG ô (vẫn chọn được khi chỉ còn nó). Kết quả loang
+# dùng lại tới THOIGIANNHOLOANGMUCTIEU giây nếu mình chưa đi quá SOOLECHLOANGMUCTIEU ô (vòng tìm mục tiêu chạy mỗi 0.15s)
+BANKINHLOANGMUCTIEU = 24
+THOIGIANNHOLOANGMUCTIEU = 0.6
+SOOLECHLOANGMUCTIEU = 2
+PHATMUCTIEUKHONGDUONG = 15.
+# Ưu tiên cụm quái (_is_uutiencumquai): mỗi con hợp lệ khác đứng trong BANKINHCUMQUAI ô (ô vuông, như chiêu diện rộng quanh mình 3 ô)
+# quanh ứng viên làm nó "gần" thêm THUONGMOICONCUM ô khi so, tối đa SOCONCUMTOIDA con => chọn con giữa cụm, đi tới đó là đứng giữa cụm
+# (chiêu quanh mình / quanh mục tiêu trúng nhiều con nhất). Chỉ áp cho quái, không cho người chơi / bảo thú
+BANKINHCUMQUAI = 3.
+THUONGMOICONCUM = 1.
+SOCONCUMTOIDA = 4
+# Chia mục tiêu giữa các bot (_is_chiamuctieubotkhac): quái bot khác cùng bản đồ (cùng máy / LAN, bật Tự động sử dụng kỹ năng, không
+# phải bot theo sau tập hỏa) đang chọn mà nó gần con đó hơn mình (ô vuông; bằng nhau thì ID người chơi nhỏ hơn giữ) thì tính xa thêm
+# PHATMUCTIEUBOTKHAC ô: phạt mềm, chỉ còn con đó thì vẫn đánh chung. Mục tiêu mình đã đánh tới (trong tầm đánh) không bị phạt, kẻo hai
+# bot cùng nhường nhau chạy qua lại (lỗi nhường theo ID trước 2026-11-08). Boss Lăng Ly Sơn / Thành Kiều không chia
+PHATMUCTIEUBOTKHAC = 5.
+THOIGIANDOCMUCTIEUBOTKHAC = 1.
+# Ô tích nhóm Chọn mục tiêu: thuộc tính TacTu -> lời phát âm khi bật / tắt (lệnh giao diện "battat_chonmuctieu:<thuộc tính>")
+CHONMUCTIEUBATTAT_MAP = {
+    "_is_muctieutheoduongdi": "chọn mục tiêu theo đường đi",
+    "_is_uutiencumquai": "ưu tiên cụm quái",
+    "_is_chiamuctieubotkhac": "chia mục tiêu với bot khác",
+}
 
 # Khựng sau đòn (tư thế 11) chỉ là hiệu ứng che mắt ở client (máy chủ không tính): luồng nhanh thấy tư thế 11 là ghi về đứng im ngay
 IS_BOKHUNGSAUTANCONG = True
@@ -1620,6 +1662,8 @@ IDKYNANGKHONGCHANSPAMs = (
 BANKINHVUNGNHUONGQUAIDONGDOI = 15.
 # Gom quái: đủ số tối thiểu rồi mà còn quái chưa kéo cách đám đang gom (con neo) không quá bấy nhiêu mét thì kéo nốt rồi mới đánh
 BANKINHKEOTHEMGOMQUAI = 8.
+# Gom quái: đã gom bấy nhiêu con thì thôi kéo thêm, tụ về neo rồi đánh (cả Tập Kích Môn Phái). Trước 20, người dùng hạ 16 (2026-11-17)
+SOQUAIGOMTOIDA = 16
 
 # Chỗ đứng NPC trên từng bản đồ (khi chưa thấy NPC thì chạy tới đây)
 VITRITANTHUTIENCO_MAP = {
@@ -1701,6 +1745,35 @@ BANDOGANQUOCGIA_TANTHUTIENCO = {
     BANDO_HANQUOC: 21,     # Tương Lăng
     BANDO_TANQUOC: 151,    # Kênh Trịnh Quốc 1
 }
+_bandotanthutiencogan_cache = {}
+SOCONGTHEMTHAYDICHTRAM = 3
+
+
+def laybandotanthutiencogan(idbando):
+    # Tuỳ chọn "Đi quốc gia bằng Tân Thủ Tiên Cô" cho cả đích SAU quốc gia (người dùng 16/11: Săn Tinh Anh tới Yên Trường Thành 1 vẫn
+    # Hồi Thành Phù + Chủ Dịch Trạm qua Yên Quốc): -> (bản đồ Tân Thủ Tiên Cô phù tới, số cổng chạy tiếp) hoặc None.
+    # Quốc gia: bản đồ gần trong BANDOGANQUOCGIA_TANTHUTIENCO. Bản đồ khác: khi cách phù tốt nhất (layphuongandichuyen) là Chủ Dịch Trạm
+    if idbando not in _bandotanthutiencogan_cache:
+        kq = None
+        idgan = BANDOGANQUOCGIA_TANTHUTIENCO.get(idbando)
+        if idgan is not None:
+            solan = get_solanchuyenbando(idgan, idbando, is_chicongclienttudi = True)
+            kq = (idgan, 1 if solan is None else solan)
+        else:
+            # Mọi đích mà cách phù tốt nhất là Chủ Dịch Trạm (người dùng 16/11: Dịch Trạm rất tốn), trừ Chu Quốc (đi như cũ): thay bằng
+            # bản đồ Tân Thủ Tiên Cô chạy tiếp ít cổng nhất, nếu chạy thêm không quá SOCONGTHEMTHAYDICHTRAM cổng so với Dịch Trạm
+            phuongan = layphuongandichuyen(idbando)
+            if phuongan and phuongan[0] == CHUDICHTRAM and idbando != BANDO_CHUQUOC:
+                for idphutoi in DICHUYENTANTHUTIENCO_MAP:
+                    if idphutoi is None:
+                        continue
+                    solan = 0 if idphutoi == idbando else get_solanchuyenbando(idphutoi, idbando, is_chicongclienttudi = True)
+                    if solan is not None and (kq is None or solan < kq[1]):
+                        kq = (idphutoi, solan)
+                if kq and kq[1] > phuongan[3] + SOCONGTHEMTHAYDICHTRAM:
+                    kq = None
+        _bandotanthutiencogan_cache[idbando] = kq
+    return _bandotanthutiencogan_cache[idbando]
 
 
 def layduonguutien(idbandodich, toadodich):
@@ -1911,7 +1984,22 @@ QUAITINHANH_MAP = {
     529: (('Yên Quốc Tinh Vệ', 61, 64),), 530: (('Yên Quốc Tinh Vệ', 61, 64),), 531: (('Thần Binh', 111, 114),),
     532: (('Thần Binh', 111, 114),), 549: (('Tôm Hùm Chúa Đông Hải', 60, 65), ('Cua Đại Tướng', 60, 65)),
 }
-QUAITINHANHs = frozenset(ten for ds in QUAITINHANH_MAP.values() for ten, _, _ in ds)
+# 27 bản đồ tips không ghi Tinh Anh (Khốn Ma Trận, Tướng Quân Cổ Mộ, Hư Lăng Động, Cầu Cửu Khúc...; cấp quái thường đã gặp ở
+# bando_xq.CAPQUAI_DAGAP_MAP) cũng cho Săn Tinh Anh (người dùng 16/11). Chưa biết tên => tên rỗng TENTINHANHCHUARO, khoảng cấp Tinh Anh
+# ĐOÁN = cấp cao nhất quái thường +1 .. +15 (người dùng 16/11): bản đồ có tips chỉ hơn +1~+5 (Yên Trường Thành quái 56~58 / Tinh Anh 61~63, Vu Sơn 32~34 /
+# 35~38) nhưng Hầm Vạn Nhân 1 quái 80~83 mà Tinh Binh Oan Linh cấp 93 (+10, người dùng 16/11 ảnh chụp; khoảng +1~+5 cũ bỏ sót).
+# Đoán rộng thì tự sửa: con nhận theo cấp chết không rơi Lam Kim bị ghi "khong" ở _internal/tinhanhhoc.json; con cao hơn khoảng thì log
+# "Nghi Tinh Anh" để chỉnh lại khoảng ở đây. Bản đồ đã thấy tên thật ghi ở QUAITINHANHDATHAY_MAP (nhận theo tên, giết xong là xong bản đồ)
+TENTINHANHCHUARO = ""
+SOCAPTINHANHDOAN = (1, 15)
+QUAITINHANHDATHAY_MAP = {
+    331: (('Tinh Binh Oan Linh', 84, 98),),     # Hầm Vạn Nhân 1: thấy cấp 93 (16/11)
+}
+for _idbando, _ds in QUAITINHANHDATHAY_MAP.items():
+    QUAITINHANH_MAP.setdefault(_idbando, _ds)
+for _idbando, (_capthap, _capcao) in CAPQUAI_DAGAP_MAP.items():
+    QUAITINHANH_MAP.setdefault(_idbando, ((TENTINHANHCHUARO, _capcao + SOCAPTINHANHDOAN[0], _capcao + SOCAPTINHANHDOAN[1]),))
+QUAITINHANHs = frozenset(ten for ds in QUAITINHANH_MAP.values() for ten, _, _ in ds if ten != TENTINHANHCHUARO)
 
 
 # Tên trong tips khác tên thật trong game (đối chiếu _internal/vitridoituong 16/11): tips "Thủ Lĩnh Lang Yêu" -> game "Lang Yêu Thủ Lĩnh",
@@ -1934,6 +2022,13 @@ def _chuanhoatentinhanh(ten):
 
 
 _QUAITINHANHCHUANHOAs = frozenset(_chuanhoatentinhanh(ten) for ten in QUAITINHANHs)
+# Tên Tinh Anh của RIÊNG từng bản đồ (đã chuẩn hoá)
+_TENTINHANHBANDO_MAP = {idbando: frozenset(_chuanhoatentinhanh(ten) for ten, _, _ in ds if ten) for idbando, ds in QUAITINHANH_MAP.items()}
+
+
+def is_tentinhanhcuabando(ten, idbando):
+    # Tên đúng là Tinh Anh ghi cho chính bản đồ này (không phải tên Tinh Anh của bản đồ khác trùng tên quái thường ở đây)
+    return bool(ten) and _chuanhoatentinhanh(ten) in _TENTINHANHBANDO_MAP.get(idbando, ())
 
 
 # Mỗi loại quái thường của bản đồ đều có thể ra 1 biến thể Tinh Anh (người dùng 16/11), tên đủ kiểu => nhận thêm theo CẤP: Tinh Anh cao
@@ -1945,6 +2040,7 @@ CAPTINHANH_MAP = {idbando: (min(a for _, a, _ in ds), max(b for _, _, b in ds)) 
                   if all(a for _, a, _ in ds)}
 TENKHONGPHAITINHANHs = frozenset(("Hung Nô Tàn Bạo", "Kỵ Binh Tướng Lĩnh", "Chiến Quốc Tống Bảo Tiểu Yêu"))
 _MAUCAPTINHANH = re.compile(r"[Cc]ấp\s*(\d+)")
+_MAUBAOTHUCOCHU = re.compile(r"\(\s*(?![Cc]ấp)\S")
 
 
 def laycaptrongten(tenthucte):
@@ -1958,11 +2054,21 @@ def is_quaitinhanh(ten, idbando = None, cap = None):
     if not ten:
         return False
     tenchuan = _chuanhoatentinhanh(ten)
-    if tenchuan in _QUAITINHANHCHUANHOAs or any(tenchuan.endswith(" " + hauto) for hauto in _HAUTOTINHANHs):
+    if tenchuan in _TENTINHANHBANDO_MAP.get(idbando, ()):
         return True
+    # Tên Tinh Anh của bản đồ KHÁC / tên đuôi "Thủ Lĩnh"...: biết bản đồ + cấp thì phải đúng khoảng cấp Tinh Anh bản đồ này. Log 342
+    # (Thỏ) 16/11 19:05: Linh Cốc Động 2 có quái THƯỜNG "Võng Lượng Quỷ" (Tinh Anh ở Trường Bạch Sơn 171-174 cấp 56~59) => giết 22 con
+    # tưởng Tinh Anh, báo xong bản đồ, sang Linh Cốc Động 3 khi chưa tìm thấy Tinh Anh thật
+    if tenchuan in _QUAITINHANHCHUANHOAs or any(tenchuan.endswith(" " + hauto) for hauto in _HAUTOTINHANHs):
+        if cap is None or idbando not in CAPTINHANH_MAP:
+            return True
     if cap is None or idbando not in CAPTINHANH_MAP:
         return False
     if tenchuan in TENKHONGPHAITINHANHs or "Bảo Bảo" in ten or "Quốc Kính" in ten or "Tàn Phách" in ten:
+        return False
+    # Bảo thú người chơi "Cương Thi ( Gold-1 )" (ngoặc ghi tên chủ, không phải "(cấp ..)"): không phải Tinh Anh (log 342 / 418 16/11:
+    # Cương Thi cấp 100 ở Linh Cốc Động 2, cấp 40-50 ở Ranh Giới Đầm Lầy; khoảng đoán rộng thì kẻo đánh nhầm)
+    if _MAUBAOTHUCOCHU.search(ten):
         return False
     capthap, capcao = CAPTINHANH_MAP[idbando]
     return capthap <= cap <= capcao

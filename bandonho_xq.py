@@ -358,6 +358,19 @@ class CuaSoBanDoNho:
     def hienlen(self):
         self.top.deiconify()
         self.top.lift()
+        self._duaratrencung()
+
+    def _duaratrencung(self):
+        # Bấm Ctrl+M khi đang ở cửa sổ game thì tiến trình bot không phải cửa sổ trước nên Windows chặn lift() / SetForegroundWindow:
+        # bản đồ mở nhưng nằm dưới game và cửa sổ khác (người dùng tưởng phím không ăn, 2026-11-16). Đổi thứ tự Z bằng
+        # TOPMOST rồi NOTOPMOST thì không cần quyền cửa sổ trước: bản đồ lên trên cùng, game vẫn giữ bàn phím (SWP_NOACTIVATE)
+        try:
+            khung = int(self.top.wm_frame(), 16)
+            co = 0x0001 | 0x0002 | 0x0010 | 0x0040  # SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE | SWP_SHOWWINDOW
+            ctypes.windll.user32.SetWindowPos(khung, -1, 0, 0, 0, 0, co)  # HWND_TOPMOST
+            ctypes.windll.user32.SetWindowPos(khung, -2, 0, 0, 0, 0, co)  # HWND_NOTOPMOST
+        except Exception:
+            pass
 
     # --- vòng cập nhật ---------------------------------------------------------------------------------------------------------------
     def _theocuasoactive(self):
@@ -650,6 +663,10 @@ def mobandonho(giaodien):
         except tk.TclError:
             pass
     giaodien._bandonho = CuaSoBanDoNho(giaodien)
+    # Cửa sổ mới chỉ hiện sau vòng sự kiện, vị trí đặt lại ở 150ms (_datvitri) nên đưa lên trên cùng sau khi đã hiện
+    cuaso = giaodien._bandonho
+    cuaso.top.after(50, cuaso._duaratrencung)
+    cuaso.top.after(400, cuaso._duaratrencung)
 
 
 def battatbandonho(giaodien):

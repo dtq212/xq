@@ -18,7 +18,7 @@ import uuid
 from collections import Counter
 
 from hangso_xq import *
-from luattuido_xq import tailuat
+from luattuido_xq import tailuat, HANHDONG_BAN
 from moitruong_xq import DOUUTIEN_KHANCAP
 from thongbao_xq import baosuco
 from tienich_xq import phatam
@@ -28,8 +28,10 @@ LYDOCATKHO_LENHTAY = "lenhtay"
 # Kéo cấp xong: acc chính cất sách "Nhập Môn" thu hồi từ acc gà (tactu_keocap_xq._catsachthuhoikc), việc giữ trong trạng thái kéo cấp
 LYDOCATKHO_KEOCAP = "keocap"
 KHOANGCACHQUANKHO = 3.
-# Các ô hành trang đầu bỏ qua (ô dùng nhanh)
-VITRICATKHODAUTIEN = 6
+# Săn Tinh Anh: bán đồ trắng ở Chủ Tiệm Tạp Hóa trước khi cất kho, quá chừng này giây chưa xong thì bỏ bán
+THOIGIANBANTRANGTINHANHTOIDA = 90.
+# Xét từ ô đầu hành trang: 6 ô dòng đầu không còn là ô dùng nhanh phải chừa (người dùng 16/11 bỏ, từng bỏ qua từ 29/10)
+VITRICATKHODAUTIEN = 0
 GIANCACHBUOCCATKHO = 0.5
 # Gửi lệnh mở rương xong chờ chừng này giây cho game nạp dữ liệu rương; mở chừng ấy lần không thấy đổi rương thì bỏ
 THOIGIANCHOMORUONG = 1.5
@@ -88,7 +90,7 @@ class TacTuCatKho:
     def _taoviec(lydo):
         return {"id": uuid.uuid4().hex[:8], "lydo": lydo, "batdau": time.time(), "trangthai": "bắt đầu", "lucbuoc": 0., "ruong": 1,
                 "soruong": 1, "ruongdamo": 0, "lucmo": 0., "solanmo": 0, "ruongday": set(), "khongmo": set(), "khonggop": set(), "odadung": set(),
-                "solanloi": {}, "boqua": {}, "dangcho": None, "dacat": {}, "is_damokho": False}
+                "mohinh": {}, "solanloi": {}, "boqua": {}, "dangcho": None, "dacat": {}, "is_damokho": False}
 
     def _laytengiutuihethan(self):
         # Tên món bot cần dùng, không đem cất kho dù nằm trong túi hết hạn (vẫn dùng được từ túi hết hạn, chuyển về túi còn hạn trước):
@@ -236,7 +238,8 @@ class TacTuCatKho:
         # (không phân biệt hoa thường), rương tự động
         # Không có tientos thì luôn cất thêm cả chồng trong túi hết hạn (_laymontuihethan, bảng Cất kho chỉ xét các túi còn hạn);
         # is_chituihethan (việc tạo vì túi hết hạn khi tắt "Tự cất sau bán rác"): chỉ cất đồ túi hết hạn
-        # mamaus (việc của Săn Tinh Anh, viec["mamaus"]): cất thêm trang bị tên màu này dù không khớp bảng Cất kho (_is_cattheomau)
+        # mamaus (việc của Săn Tinh Anh, viec["mamaus"]): CHỈ cất trang bị tên màu này (_is_cattheomau), bỏ bảng Cất kho (người dùng
+        # 16/11: lúc săn về cất mà cất cả món không phải Lam Kim). Đồ túi hết hạn vẫn cất (không dùng được, chiếm chỗ)
         if tientos:
             return self._laymoncatkhotheoluat(tientos)
         # Còn chuyển được về túi còn hạn thì chưa cất đồ túi hết hạn (action_dontuihethan chuyển trước, _buoccatkho chờ)
@@ -254,7 +257,7 @@ class TacTuCatKho:
             luatmau = {"ruong": 0, "giulai": 0}
 
             def layluat(ten, vitri):
-                return self._layluatcatkho(ten, vitri) or (luatmau if self._is_cattheomau(ten, vitri, mamaus) else None)
+                return luatmau if self._is_cattheomau(ten, vitri, mamaus) else None
         if tientos:
             tientos = tuple(unicodedata.normalize("NFC", t).lower() for t in tientos)
             luatrieng = {"ruong": 0, "giulai": 0}
@@ -285,25 +288,103 @@ class TacTuCatKho:
     def _is_cattheomau(self, ten, vitri, mamaus):
         # Săn Tinh Anh cất đồ rơi (Lam Kim) không cần luật trong bảng Cất kho. Chỉ việc của Săn Tinh Anh dùng: luật chung "Màu tên" sẽ
         # chặn bán rác Phong Yêu Kính bán bớt Lam Kim / kéo cấp give đồ Lam Kim (tactu_langlyson_xq: món khớp Cất kho không bán).
-        # Bỏ món bot cần dùng (bảo thú vật phẩm, Bùa Giấy, kỵ thú giữ, Mua bù) và Pháp Bảo (Trảo kéo cấp...); chưa đọc được thì chưa cất
+        # Bỏ món bot cần dùng (bảo thú vật phẩm, Bùa Giấy, kỵ thú giữ, Mua bù), món đã giám định / không phải trang bị và Pháp Bảo (Trảo kéo cấp...);
+        # chưa đọc được thì chưa cất
         if self._chuanhoatenvatpham(ten) in self._laytengiutuihethan() or self._is_kythugiu(ten):
             return False
         if self._laymautenluat(ten, vitri) not in mamaus:
             return False
+        # Chỉ đồ Lam Kim rơi ra (mô tả có "Chưa giám định", chưa có dòng Độ bền): Tiểu Huyết Thạch / Tiểu Pháp Lực Thạch tên cũng màu
+        # Lam Kim mà là vật phẩm dùng, trước bị cất theo (người dùng 16/11)
         mota = self._laymotaluat(ten, vitri)
-        return bool(mota) and "pháp bảo" not in unicodedata.normalize("NFC", mota[0] or "").lower()
+        if not mota or "chưa giám định" not in unicodedata.normalize("NFC", mota[1] or "").lower():
+            return False
+        return "pháp bảo" not in unicodedata.normalize("NFC", mota[0] or "").lower()
+
+    def _is_dotrangtinhanh(self, ten, vitri):
+        # Trang bị trắng (tên không màu, mô tả có "Độ bền" / "Chưa giám định") Săn Tinh Anh nhặt về bán gỡ vốn (người dùng 16/11). Theo luật túi đồ: chỉ món
+        # không khớp luật hoặc luật Bán, không khớp Cất kho; bỏ món bot cần dùng, kỵ thú giữ, Pháp Bảo, đồ có sao. Chưa đọc được thì không bán
+        if self._chuanhoatenvatpham(ten) in self._laytengiutuihethan() or self._is_kythugiu(ten):
+            return False
+        if self._layhanhdongluat(ten, vitri) not in (None, HANHDONG_BAN) or self._is_catkhovatpham(ten, vitri):
+            return False
+        if self._laymautenluat(ten, vitri) != "":
+            return False
+        # Món trắng không phải trang bị nhặt vì Săn Tinh Anh (vật liệu rác: Tử Giả Di Vật, Khô Đầu Lâu...): bán luôn (người dùng 16/11).
+        # Món người dùng cần thì đặt luật Giữ / Cất kho ở tab Hành trang
+        if self._chuanhoatenvatpham(ten) in self._tenractinhanhs:
+            return not self._is_dosaokhongban(vitri, ten)
+        # Trang bị: có "Độ bền", hoặc "Chưa giám định" (đồ trắng cấp >= 30 rơi ra cũng chưa giám định, chưa có dòng Độ bền)
+        mota = self._laymotaluat(ten, vitri)
+        chu = unicodedata.normalize("NFC", (mota or ("", ""))[1] or "")
+        if "Độ bền" not in chu and "chưa giám định" not in chu.lower():
+            return False
+        if "pháp bảo" in unicodedata.normalize("NFC", mota[0] or "").lower():
+            return False
+        return not self._is_dosaokhongban(vitri, ten)
+
+    def _buocbantrangtinhanh(self, viec):
+        # 1 bước bán đồ trắng (Săn Tinh Anh) ở Chủ Tiệm Tạp Hóa. viec["banrac"]: "cho" -> "dagui" (lệnh bán đã xếp, action_xulybanracvasuado
+        # gửi dần) -> "xong". -> ("dichuyen", x, y) / "dang" / "xong". Quá THOIGIANBANTRANGTINHANHTOIDA giây chưa xong thì bỏ, đi cất kho
+        moitruong = self.moitruong
+        viec.setdefault("lucbanrac", time.time())
+        if viec["banrac"] == "dagui":
+            if self.get_is_dangbanrac() or time.time() < self._thoidiemguibanractieptheo:
+                return "dang"
+            viec["banrac"] = "xong"
+            return "xong"
+        if time.time() - viec["lucbanrac"] > THOIGIANBANTRANGTINHANHTOIDA:
+            print("[CẤT KHO] Săn Tinh Anh: quá lâu chưa tới được Chủ Tiệm Tạp Hóa, bỏ bán đồ trắng, đi cất kho")
+            viec["banrac"] = "xong"
+            return "xong"
+        diachinpc = moitruong.action_timkiemnhanvat(tennhanvat = CHUTIEMTAPHOA)
+        if not diachinpc or moitruong.get_khoangcach(diachinpc) > 3.:
+            if not diachinpc and moitruong.get_idbandohientai() != BANDO_TANTHUTHON:
+                # Chu Quốc không có tiệm này: thôi bán, cất luôn
+                viec["banrac"] = "xong"
+                return "xong"
+            viec["trangthai"] = f"đang tới {CHUTIEMTAPHOA} bán đồ trắng"
+            x, y = moitruong.get_toado(diachinpc) if diachinpc else (X_CHUTIEMTAPHOA_TANTHUTHON, Y_CHUTIEMTAPHOA_TANTHUTHON)
+            return "dichuyen", round(x), round(y)
+        moitruong.action_ngatdichuyen()
+        idnpc = moitruong.get_iddoituong(diachinpc)
+        lenhs, tens = [], []
+        for vitri in range(moitruong.get_soluongvatphamhanhtrangtoida() + 1):
+            iddoituong = moitruong.get_iddoituongvatphamhanhtrang(vitri)
+            ten = moitruong.get_tenvatphamhanhtrang(vitri) if iddoituong and iddoituong > 0 else None
+            if ten and self._is_dotrangtinhanh(ten, vitri):
+                lenhs.append(f"sell ! {idnpc:x}# {iddoituong:x}# 255")
+                tens.append(ten)
+        print(f"[CẤT KHO] Săn Tinh Anh: bán {len(lenhs)} đồ trắng ({', '.join(tens[:8])}{'...' if len(tens) > 8 else ''})")
+        if not lenhs:
+            viec["banrac"] = "xong"
+            return "xong"
+        viec["trangthai"] = f"bán {len(lenhs)} đồ trắng"
+        self._datnhangdoibanrac(lenhs)
+        viec["banrac"] = "dagui"
+        return "dang"
 
     def _chonokho(self, viec, kho, mon):
-        # (ô rương từ 0, is_gop) cho món, (None, False) khi rương này không còn chỗ. Gộp chỉ với món xếp chồng được (số lượng > 0)
+        # (ô rương từ 0, is_gop, số gửi, (tên, số lượng) ô kho sau khi cất) cho món, (None, False, 0, None) khi rương này không còn chỗ.
+        # Gộp chỉ với món xếp chồng được (số lượng > 0) và chồng kho còn chỗ: 1 ô kho cũng chỉ chồng tối đa như hành trang
+        # (_get_soluongxepchongtoida, 100). Bản đầu gộp không xét trần => gộp vào chồng 100 bị máy chủ từ chối, 3 lần là bỏ cả món;
+        # chồng 70 mà gửi 60 thì máy chủ chỉ nhận 30 cho đủ 100, 30 còn lại ở túi (người dùng xác nhận 2026-11-17). Vẫn gửi đúng số
+        # còn chứa được để kiểm tra "đã cất xong" theo số lượng túi khớp, phần dư lượt sau sang chồng / ô trống khác.
+        # Dữ liệu rương chỉ làm mới khi mở lại rương => cất xong ghi ô đó vào viec["mohinh"] (đè dữ liệu đọc được), mở lại rương thì xoá
         ruong = kho["ruong"]
+        mohinh = viec["mohinh"]
+        os = [mohinh.get((ruong, o), (ten, soluong)) for o, (ten, soluong, _) in enumerate(kho["os"])]
         if mon["soluong"] > 0:
-            for o, (ten, soluong, _) in enumerate(kho["os"]):
-                if soluong > 0 and (ruong, o) not in viec["khonggop"] and is_trungtenkho(ten, mon["ten"]):
-                    return o, True
-        for o, (ten, _, _) in enumerate(kho["os"]):
+            toida = self._get_soluongxepchongtoida(mon["ten"])
+            for o, (ten, soluong) in enumerate(os):
+                if 0 < soluong < toida and (ruong, o) not in viec["khonggop"] and is_trungtenkho(ten, mon["ten"]):
+                    gui = min(mon["cat"], toida - soluong)
+                    return o, True, gui, (ten, soluong + gui)
+        for o, (ten, _) in enumerate(os):
             if not ten and (ruong, o) not in viec["odadung"]:
-                return o, False
-        return None, False
+                gui = min(mon["cat"], self._get_soluongxepchongtoida(mon["ten"])) if mon["soluong"] > 0 else mon["cat"]
+                return o, False, gui, (mon["ten"], gui if mon["soluong"] > 0 else 0)
+        return None, False, 0, None
 
     def _ketthuccatkho(self, viec, loi = None):
         # Báo kết quả (Telegram + log), xoá việc, đóng cửa sổ kho bot đã mở. -> "xong" / "lỗi"
@@ -362,6 +443,7 @@ class TacTuCatKho:
             if is_xong:
                 viec["dacat"][dangcho["ten"]] = viec["dacat"].get(dangcho["ten"], 0) + dangcho["cat"]
                 viec["odadung"].add((dangcho["ruong"], dangcho["o"]))
+                viec["mohinh"][(dangcho["ruong"], dangcho["o"])] = dangcho["okho"]
             else:
                 viec["solanloi"][dangcho["ten"]] = viec["solanloi"].get(dangcho["ten"], 0) + 1
                 (viec["khonggop"] if dangcho["is_gop"] else viec["odadung"]).add((dangcho["ruong"], dangcho["o"]))
@@ -423,6 +505,8 @@ class TacTuCatKho:
                 return "dang"
             if viec["lucmo"] and kho and kho["ruong"] == viec["ruong"]:
                 viec["ruongdamo"], viec["lucmo"], viec["solanmo"] = viec["ruong"], 0., 0
+                # Dữ liệu rương vừa mở là thật: bỏ mô hình cũ của rương này
+                viec["mohinh"] = {k: v for k, v in viec["mohinh"].items() if k[0] != viec["ruong"]}
                 return "dang"
             if viec["solanmo"] >= SOLANMORUONG:
                 # Phòng hờ số rương đọc từ game lệch: rương không mở được thì coi như không có rương đó và các rương sau nó (món chỉ định
@@ -442,17 +526,17 @@ class TacTuCatKho:
             moitruong.action_thucthicaulenh(f"pawn {manpc} {viec['ruong']}", douutien = DOUUTIEN_KHANCAP)
             return "dang"
 
-        o, is_gop = self._chonokho(viec, kho, mon)
+        o, is_gop, cat, okho = self._chonokho(viec, kho, mon)
         if o is None:
             # Rương này hết chỗ: lượt sau chọn lại rương (món chỉ định rương này thì bỏ món)
             viec["ruongday"].add(viec["ruong"])
             return "dang"
-        viec["trangthai"] = f"cất {mon['ten']} ×{mon['cat']} vào rương {viec['ruong']} ô {o + 1}"
-        lenh = f"pawn + {manpc} {mon['id']:x}#{mon['cat']} {o + 1}"
-        print(f"[CẤT KHO] {lenh} ({mon['ten']}{', gộp chồng' if is_gop else ''})")
+        viec["trangthai"] = f"cất {mon['ten']} ×{cat} vào rương {viec['ruong']} ô {o + 1}"
+        lenh = f"pawn + {manpc} {mon['id']:x}#{cat} {o + 1}"
+        print(f"[CẤT KHO] {lenh} ({mon['ten']}{f', gộp chồng thành {okho[1]}' if is_gop else ''})")
         moitruong.action_thucthicaulenh(lenh, douutien = DOUUTIEN_KHANCAP)
-        viec["dangcho"] = {"id": mon["id"], "ten": mon["ten"], "soluong": mon["soluong"], "cat": mon["cat"], "ruong": viec["ruong"], "o": o,
-                           "is_gop": is_gop, "lucgui": now}
+        viec["dangcho"] = {"id": mon["id"], "ten": mon["ten"], "soluong": mon["soluong"], "cat": cat, "ruong": viec["ruong"], "o": o,
+                           "is_gop": is_gop, "okho": okho, "lucgui": now}
         return "dang"
 
     # ---------------- Sắp xếp kho ----------------
@@ -902,6 +986,12 @@ class TacTuCatKho:
             buoc = self._lapbuocditoibando(BANDO_TANTHUTHON, is_hoithanhphu = True)
             if buoc["loai"] != "toinoi":
                 return self._thuchienbuocditoibando(buoc, BANDO_TANTHUTHON, None, "[CẤT KHO] Tân Thủ Thôn")
+        # Săn Tinh Anh: bán đồ trắng nhặt được ở Chủ Tiệm Tạp Hóa trước rồi mới tới Quản Khố cất Lam Kim
+        if viec.get("banrac") and viec["banrac"] != "xong":
+            kq = self._buocbantrangtinhanh(viec)
+            if isinstance(kq, tuple):
+                return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (kq[1], kq[2], idbando), "khoangcachtoida": 2.}
+            return None
         kq = self._buoccatkho(viec)
         if isinstance(kq, tuple):
             return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (kq[1], kq[2], idbando), "khoangcachtoida": KHOANGCACHQUANKHO - 1}

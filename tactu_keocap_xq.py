@@ -12,6 +12,8 @@
 #   bai     : acc chính tới bãi (Hồi Thành Phù / phù Tân Thủ Tiên Cô / chạy bộ theo Đi tới bản đồ) đánh theo lộ trình điểm đánh của bản đồ (chưa
 #           có mẫu thì tự đề xuất / dò); acc gà bật Theo sau acc chính (tự tìm đường / phù sang bản đồ khác). Cấp thấp nhất của acc gà đủ
 #           cấp đích thì sang bãi kế: Ba Khâu -> 10, Thuý Hoa Sơn -> 20, Cự Lộc -> 30, Ranh Giới Đầm Lầy -> 35
+#   gomdo   : trước Phong Yêu Kính (người dùng dặn 2026-11-16): acc chính đứng yên, mọi acc gà tới cạnh give hết đồ Lam Kim về acc
+#           chính (quá THOIGIANGOMDOKC giây thì thôi), rồi mới sang phongyeu; acc chính chia dần cho acc đốt (SOMONCHIAMOILUOTKC món/lượt)
 #   phongyeu: Phong Yêu Kính (tactu_langlyson_xq) tới khi mọi acc gà cấp CAPKETTHUC: người give (lập nhóm, đốt đồ) là 1 ACC GÀ có đồ Lam
 #           Kim (quái theo cấp người mở thì acc gà mới có kinh nghiệm), acc chính là thành viên dò bản đồ đánh quái. Trong phó bản acc gà
 #           bật "Tự động sử dụng kỹ năng" thì dò đánh như mọi người, tắt thì đứng yên cạnh Truyền Tống Thỏ Yêu; người give ra mở vòng mới
@@ -21,7 +23,7 @@
 #   thuhoi  : mọi acc gà tới cấp kết thúc (người dùng dặn): trước khi xong, acc chính đứng yên (đang trong Phong Yêu Kính thì Thỏ Yêu về
 #           Chu Quốc), acc gà còn đồ Lam Kim tới cạnh give trả hết về acc chính; mọi acc gà báo đã trả (quá THOIGIANTHUHOIKC giây thì
 #           thôi); acc gà trả cả Tạo Hoá Đơn / Bổ Tâm Đơn / Phi Hành - Hồi Thành - Hồi Bang Phù + toàn bộ ngân lượng, acc chính đem
-#           bán ở Chủ Tiệm Y Dược (phù chỉ bán phần nhận thêm, Lam Kim cấp 25 giữ 4 món), trả cả sách "Nhập Môn" để acc chính cất
+#           bán ở Chủ Tiệm Y Dược (phù bán hết, Lam Kim cấp 25 giữ 8 món), trả cả sách "Nhập Môn" để acc chính cất
 #           kho (_catsachthuhoikc) rồi mới sang xong
 #   acc phụ (máy khác nối LAN, bật "Làm acc phụ"): tự nhận acc chính đang kéo cấp thấy qua LAN; tập hợp / bãi (cấp 1 -> 35) vào nhóm
 #           acc chính (còn chỗ sau acc gà) và theo sau như acc gà (người dùng dặn 2026-11-03), Phong Yêu Kính làm thành viên dò đánh quái
@@ -163,13 +165,14 @@ THOIGIANTHUHOIKC = 300.
 # dùng, không bán (người dùng dặn 2026-11-14): muốn bán lại thì thêm "Bổ Tâm Đơn" vào VATPHAMTHUHOIBANKCs
 VATPHAMTHUHOIKCs = ("Tạo Hoá Đơn", "Tạo Hóa Đơn", "Bổ Tâm Đơn")
 VATPHAMTHUHOIBANKCs = ("Tạo Hoá Đơn", "Tạo Hóa Đơn")
-# Phù acc gà còn trong túi cũng trả về bán (người dùng dặn 2026-11-14). Acc chính cần phù để đi lại nên chỉ bán phần nhận thêm: giữ đúng
-# số phù có lúc bắt đầu thu hồi, bán nguyên chồng (lệnh sell bán cả chồng) miễn tổng bán không vượt phần nhận thêm
+# Phù acc gà còn trong túi cũng trả về bán (người dùng dặn 2026-11-14). Bán hết mọi chồng, kể cả phù acc chính có sẵn trước đó, không
+# giữ lại (người dùng dặn 2026-11-16)
 PHUTHUHOIBANKCs = (PHIHANHPHU, HOITHANHPHU, HOIBANGPHU)
 # Đồ Lam Kim cấp này (acc gà trả về sau kéo cấp): acc chính luôn chỉ giữ tối đa SOLAMKIMGIULAIKC món (rẻ nhất, để đốt Phong Yêu Kính),
 # còn lại bán lúc thu hồi xong (người dùng dặn 2026-11-14). Chỉ xét món đem đốt được (_chondolamkim: không khoá, không ★)
 CAPLAMKIMBANKC = 25
-SOLAMKIMGIULAIKC = 4
+# Tăng 4 -> 8 món (người dùng dặn 2026-11-16)
+SOLAMKIMGIULAIKC = 8
 # Sách "Nhập Môn ..." (tên bắt đầu như vậy, game viết cả "Nhập Môn" lẫn "Nhập môn", vd Nhập Môn Tu Tâm, Nhập môn Khổ Luyện): acc gà trả
 # về, acc chính bán đồ xong thì tới Quản Khố cất hết vào rương (người dùng dặn 2026-11-14; dùng bộ cất kho tactu_catkho_xq, rương tự
 # động). Đang ở Chu Quốc cất ở Quản Khố Chu Quốc (X_KHO_CHU, Y_KHO_CHU), Tân Thủ Thôn ở Quản Khố, nơi khác thì về Chu Quốc
@@ -177,7 +180,18 @@ TIENTOSACHTHUHOIKCs = ("Nhập Môn",)
 NPCBANTHUHOIKCs = {BANDO_CHUQUOC: ("Chủ Tiệm Y Dược", 250, 176), BANDO_TANTHUTHON: ("Chủ Tiệm Y Dược", 135, 170)}
 KHOANGCACHBANTHUHOIKC = 3.
 THOIGIANBANTHUHOIKC = 300.
-TENGIAIDOANKEOCAP = {"tanthu": "nhận thưởng tân thủ", "taphop": "tập hợp Tân Thủ Thôn", "phongyeu": "Phong Yêu Kính", "xuatsu": "xuất sư",
+# Gom đồ (người dùng dặn 2026-11-16): trước khi bắt đầu Phong Yêu Kính, mọi acc gà give hết đồ Lam Kim đang có về acc chính (acc chính
+# đứng yên chờ, mỗi lần bắt đầu có mã "magomdo" riêng, acc gà give xong báo "dagomdo" = mã đó). Quá THOIGIANGOMDOKC giây thì vẫn vào
+# Phong Yêu Kính. Sau đó acc chính chia dần cho acc đốt (người give): mỗi lượt tối đa SOMONCHIAMOILUOTKC món, acc đốt nhận (báo có đồ)
+# rồi đốt hết thì lượt sau đưa tiếp; đưa từng ít một để chọn món theo cấp acc đốt lúc đó (lên cấp thì món cấp thấp không đốt được nữa)
+THOIGIANGOMDOKC = 300.
+SOMONCHIAMOILUOTKC = 5
+# Acc gà tự thêm (không có trong danh sách bấm tay, tự báo idchinh là mình) mà không thấy online quá chừng này giây thì bỏ khỏi danh
+# sách. 2026-11-16: Luyen Don (511) còn lưu "acc gà của 364" từ tối 15/11, cửa sổ nó mở thoáng qua lúc 10:57 tự bật lại -> 364 thêm vào
+# rồi chờ "ID 511 chưa online" ở gom đồ (và sẽ kẹt "chờ acc gà out vào lại" lúc xong) dù 4 acc gà thật đủ cả
+THOIGIANBOGATUTHEMKC = 180.
+TENGIAIDOANKEOCAP = {"tanthu": "nhận thưởng tân thủ", "taphop": "tập hợp Tân Thủ Thôn", "gomdo": "gom đồ Lam Kim về acc chính",
+                     "phongyeu": "Phong Yêu Kính", "xuatsu": "xuất sư",
                      "thuhoi": "thu hồi + bán đồ", "xong": "xong"}
 # Nhận đồ đệ (tuỳ chọn): trước khi lập nhóm / mời bang, acc chính lập nhóm riêng với acc gà đồ đệ, Mạnh Tử "2. Ta đem đệ tử đến làm lễ bái
 # sư" -> "1. Xác nhận", acc gà "1. Xác nhận" (tallk 17e5# welcome.13); mọi acc gà tới cấp kết thúc thì về Mạnh Tử "3. ... lễ xuất sư" như vậy.
@@ -198,7 +212,8 @@ def _chuanhoa(ten):
 class TacTuKeoCap:
     # --- Bật / tắt, trạng thái cho giao diện ---------------------------------------------------------------------------------------
     def batdau_keocap(self, vaitro, idchinh = 0, idgas = (), dabang = False, xongtanthu = False, tuychoncu = None, muctieutheosaucu = None,
-                      iddode = 0, dabaisu = False, daxuatsu = False, capketthuc = CAPKETTHUCKEOCAP, tendode = "", moibang = True, **_):
+                      iddode = 0, dabaisu = False, daxuatsu = False, capketthuc = CAPKETTHUCKEOCAP, tendode = "", moibang = True,
+                      gatuthem = (), **_):
         # moibang (acc chính, ô "Mời acc gà vào bang" trên giao diện): tắt khi acc chính không có bang / không muốn mời -> bỏ hẳn bước mời bang
         # iddode (acc chính): ID acc gà nhận làm đồ đệ (0 = không); dabaisu / daxuatsu: đã xong (mở lại bot giữa chừng)
         # tendode (acc chính): đồ đệ là acc gà máy khác (chưa biết ID lúc bấm): thấy acc gà tên này qua LAN thì lấy ID nó
@@ -215,6 +230,8 @@ class TacTuKeoCap:
         self._keocap.update(iddode = int(iddode or 0), dabaisu = bool(dabaisu), daxuatsu = bool(daxuatsu),
                             capketthuc = int(capketthuc or CAPKETTHUCKEOCAP), tendode = "" if iddode else _chuanhoa(tendode),
                             moibang = bool(moibang))
+        # Acc gà tự thêm qua _laygaonline (lưu lại để mở lại bot vẫn biết, THOIGIANBOGATUTHEMKC)
+        self._keocap["gatuthem"] = [int(i) for i in gatuthem if int(i) in self._keocap["idgas"]]
         # Mở lại bot giữa chừng: ô gốc của người dùng lưu từ lần trước (get_keocapluu)
         if tuychoncu:
             self._keocap["tuychoncu"] = dict(tuychoncu)
@@ -227,7 +244,7 @@ class TacTuKeoCap:
         if vaitro in ("chinh", "ga") and self._is_trongphongyeu():
             # Mở lại bot khi đang trong Phong Yêu Kính: vào thẳng giai đoạn Phong Yêu Kính. Không thì acc gà thấy acc chính "tập hợp", rời
             # nhóm sang nhóm acc chính -> bị đưa ra khỏi phó bản, lập tổ đội mới
-            self._keocap.update(giaidoan = "phongyeu", xongtanthu = True)
+            self._keocap.update(giaidoan = "phongyeu", xongtanthu = True, xonggomdo = True)
             self._logkc("Đang ở trong Phong Yêu Kính: làm tiếp Phong Yêu Kính")
         capdo = self.moitruong.get_capdonhanvat() or 0
         if vaitro == "ga" and not self._keocap["xongtanthu"] and capdo >= 8:
@@ -279,7 +296,7 @@ class TacTuKeoCap:
                 "codolamkim": s["codolamkim"], "nhompy": s.get("nhompy") or [], "chuyendo": s.get("chuyendo") or 0,
                 "chinhtoi": bool(s.get("chuyendo") and (s.get("luotdi") or {}).get("ai") == "chinh"),
                 "iddode": s["iddode"], "dabaisu": s["dabaisu"], "daxuatsu": s["daxuatsu"], "capketthuc": s["capketthuc"],
-                "dathuhoi": s["dathuhoi"], "trao": s.get("trao")}
+                "dathuhoi": s["dathuhoi"], "trao": s.get("trao"), "magomdo": s.get("magomdo") or 0., "dagomdo": s.get("dagomdo") or 0.}
 
     def get_keocapluu(self):
         # Lưu thiết lập: dis / mở lại bot thì tự bật tiếp đúng vai
@@ -290,7 +307,8 @@ class TacTuKeoCap:
         # chính) là gốc, xong kéo cấp "trả lại" đúng Theo sau đó, acc mới vào cùng cửa sổ tự chạy theo acc chính (gacon7_3 2026-11-01)
         luu = {"vaitro": s["vaitro"], "idchinh": s["idchinh"], "idgas": s["idgas"], "dabang": s["dabang"], "xongtanthu": s["xongtanthu"],
                "tuychoncu": dict(s.get("tuychoncu") or {}), "iddode": s["iddode"], "dabaisu": s["dabaisu"], "daxuatsu": s["daxuatsu"],
-               "capketthuc": s["capketthuc"], "tendode": s.get("tendode") or "", "moibang": s.get("moibang", True)}
+               "capketthuc": s["capketthuc"], "tendode": s.get("tendode") or "", "moibang": s.get("moibang", True),
+               "gatuthem": list(s.get("gatuthem") or [])}
         if "muctieutheosaucu" in s:
             luu["muctieutheosaucu"] = tuple(s["muctieutheosaucu"])
         return luu
@@ -377,11 +395,28 @@ class TacTuKeoCap:
         # (máy khác, tự tìm acc chính) báo idchinh là mình thì thêm vào danh sách
         cuasos = self._laycuasokeocap()
         idtoi = self.moitruong.get_idnguoichoi()
+        tuthem = s.setdefault("gatuthem", [])
         for i, info in sorted(cuasos.items()):
             if idtoi and i not in s["idgas"] and info["_keocap"].get("vaitro") == "ga" and info["_keocap"].get("idchinh") == idtoi:
                 s["idgas"].append(i)
+                tuthem.append(i)
                 self._logkc(f"Thêm acc gà {info.get('tennhanvat') or ''} (ID {i}" + (f", máy {info['_tenmay']}" if info.get("_tenmay") else "") + ")")
-        return {i: cuasos[i] for i in s["idgas"] if i in cuasos and cuasos[i]["_keocap"].get("vaitro") == "ga"}
+        gas = {i: cuasos[i] for i in s["idgas"] if i in cuasos and cuasos[i]["_keocap"].get("vaitro") == "ga"}
+        # Acc gà tự thêm mất tín hiệu quá THOIGIANBOGATUTHEMKC giây: bỏ khỏi danh sách (online lại vẫn tự thêm lại). Acc gà trong danh sách
+        # bấm tay thì giữ như cũ (dis vào lại được chờ)
+        now = time.time()
+        lucthay = s.setdefault("lucthaygatuthem", {})
+        for i in list(tuthem):
+            if i in gas:
+                lucthay[i] = now
+            elif now - lucthay.setdefault(i, now) > THOIGIANBOGATUTHEMKC:
+                tuthem.remove(i)
+                lucthay.pop(i, None)
+                if i in s["idgas"]:
+                    s["idgas"].remove(i)
+                ten = (s.get("tengas") or {}).get(i) or ""
+                self._logkc(f"Bỏ acc gà tự thêm {ten} (ID {i}): quá {int(THOIGIANBOGATUTHEMKC)}s không online")
+        return gas
 
     def _layphukc(self, s):
         # {ID acc phụ: info} các acc phụ online nhận mình làm acc chính
@@ -487,6 +522,10 @@ class TacTuKeoCap:
         if s["giaidoan"] == "taphop":
             return self._buoctaphopchinh(s, gas)
         if capthap >= BAIKEOCAPs[-1][1]:
+            if not s.get("xonggomdo"):
+                # Trước Phong Yêu Kính: mọi acc gà give hết đồ Lam Kim về mình, sau đó mình chia dần cho acc đốt (người dùng dặn)
+                self._sanggiaidoankc(s, "gomdo")
+                return self._buocgomdochinh(s, gas)
             self._sanggiaidoankc(s, "phongyeu")
             return self._buocphongyeuchinh(s, gas)
         idbai = next(b for b, cap in BAIKEOCAPs if capthap < cap)
@@ -523,6 +562,39 @@ class TacTuKeoCap:
             f"{gas[i].get('tennhanvat') or i} {c}" for i, c in sorted(caps.items(), key = lambda x: x[1])) + ")"
         return False
 
+    def _buocgomdochinh(self, s, gas):
+        # Đứng yên chờ mọi acc gà tới cạnh give hết đồ Lam Kim (acc gà báo dagomdo = magomdo). Xong / quá THOIGIANGOMDOKC giây thì sang
+        # Phong Yêu Kính, từ đó đồ Lam Kim chỉ do mình chia cho acc đốt (_chuyendolamkimkc)
+        now = time.time()
+        if not s.get("magomdo"):
+            s["magomdo"] = round(now, 3)
+            s.update(idgive = 0, chuyendo = 0)
+            s.pop("bogive", None)
+            self._logkc("Trước Phong Yêu Kính: chờ mọi acc gà give hết đồ Lam Kim về mình")
+        if self._is_tudongtheosau:
+            self._datkc(s, "_is_tudongtheosau", False, "Theo sau")
+        if self._is_trongphongyeu():
+            return self._raphongyeukc(s)
+        if self._langlyson:
+            self.huy_langlyson()
+        chuaxongs = [info.get("tennhanvat") or str(i) for i, info in gas.items() if info["_keocap"].get("dagomdo") != s["magomdo"]]
+        chuaxongs += [f"ID {i} chưa online" for i in s["idgas"] if i not in gas]
+        if chuaxongs and now - s["magomdo"] <= THOIGIANGOMDOKC:
+            s["trangthai"] = f"gom đồ Lam Kim: đứng yên chờ acc gà tới give ({', '.join(chuaxongs)}, còn " \
+                             f"{int(THOIGIANGOMDOKC - (now - s['magomdo']))}s)"
+            return None
+        if chuaxongs:
+            noidung = f"Quá {int(THOIGIANGOMDOKC)}s chưa gom xong đồ Lam Kim ({', '.join(chuaxongs)}): vẫn vào Phong Yêu Kính"
+            self._logkc("⚠️ " + noidung)
+            baosuco(self.moitruong, "vatpham", f"Kéo cấp: {noidung}", khoa = "gomdokc", giancach = 0.)
+        else:
+            self._logkc("Mọi acc gà đã give hết đồ Lam Kim về mình: vào Phong Yêu Kính, chia dần cho acc đốt")
+        s["xonggomdo"] = True
+        # Đọc lại túi mình ngay (vừa nhận thêm đồ)
+        s["dolamkimchinh"] = "doc"
+        self._sanggiaidoankc(s, "phongyeu")
+        return self._buocphongyeuchinh(s, gas)
+
     def _buocthuhoichinh(self, s, gas):
         # Mọi acc gà đã tới cấp kết thúc: ra khỏi Phong Yêu Kính (nếu đang trong) rồi đứng yên chờ acc gà tới cạnh give trả hết đồ Lam Kim.
         # Mọi acc gà báo đã trả (hoặc quá THOIGIANTHUHOIKC giây) thì sang "xong"
@@ -532,8 +604,6 @@ class TacTuKeoCap:
             # Số Trảo trong túi mình lúc bắt đầu thu hồi và acc gà đang giữ Trảo: thu hồi xong đếm lại (_kiemtratraothuhoikc)
             s["sotraodauthuhoi"] = self._demtraokc()
             s["gacotraothuhoi"] = list(s.get("gacotrao") or [])
-            # Số phù của mình lúc bắt đầu thu hồi: bán phù chỉ bán phần acc gà trả thêm (_laydsbanthuhoikc)
-            s["phudauthuhoi"] = {ten: self._demvatphamkc((ten,)) for ten in PHUTHUHOIBANKCs}
         if self._is_trongphongyeu():
             return self._raphongyeukc(s)
         if self._langlyson:
@@ -654,7 +724,7 @@ class TacTuKeoCap:
     def _laydsbanthuhoikc(self, s):
         # Đồ thu hồi đem bán: [(id, mô tả)], "doc" khi còn ô chưa đọc được mô tả (cần để nhận đồ Lam Kim)
         #   - mọi chồng VATPHAMTHUHOIBANKCs (Tạo Hoá Đơn; Bổ Tâm Đơn tạm giữ lại dùng)
-        #   - phù (PHUTHUHOIBANKCs) phần nhận thêm so với lúc bắt đầu thu hồi: bán nguyên chồng, chồng lớn trước, tổng không vượt phần thêm
+        #   - mọi chồng phù (PHUTHUHOIBANKCs), kể cả phù acc chính có sẵn
         #   - đồ Lam Kim cấp CAPLAMKIMBANKC quá SOLAMKIMGIULAIKC món: giữ món rẻ nhất, bán món giá cao
         moitruong = self.moitruong
         lamkims = self._chondolamkim(s, captoithieu = CAPLAMKIMBANKC, is_tatca = True)
@@ -664,15 +734,9 @@ class TacTuKeoCap:
         for vitri, idmon in self._timcacvatphamkc(VATPHAMTHUHOIBANKCs):
             soluong = max(1, moitruong.get_soluongvatphamhanhtrang(vitri) or 1)
             ketquas.append((idmon, f"{moitruong.get_tenvatphamhanhtrang(vitri) or 'Đơn'} x{soluong}"))
-        dau = s.get("phudauthuhoi") or {}
         for ten in PHUTHUHOIBANKCs:
-            chongs = sorted(((max(1, moitruong.get_soluongvatphamhanhtrang(vitri) or 1), idmon)
-                             for vitri, idmon in self._timcacvatphamkc((ten,))), reverse = True)
-            thua = sum(sl for sl, _ in chongs) - dau.get(ten, 0)
-            for soluong, idmon in chongs:
-                if 0 < soluong <= thua:
-                    thua -= soluong
-                    ketquas.append((idmon, f"{ten} x{soluong}"))
+            for vitri, idmon in self._timcacvatphamkc((ten,)):
+                ketquas.append((idmon, f"{ten} x{max(1, moitruong.get_soluongvatphamhanhtrang(vitri) or 1)}"))
         cap25s = [mon for mon in (lamkims or []) if mon[0] == CAPLAMKIMBANKC
                   and (moitruong.get_motathovatphamhanhtrangcosan(mon[2]) or "").startswith(MAMAULAMKIM)]
         # Đã sắp (cấp, giá): giữ SOLAMKIMGIULAIKC món đầu (rẻ nhất), bán phần còn lại
@@ -1109,6 +1173,14 @@ class TacTuKeoCap:
             self._logkc(f"{tennhan} hết đồ Lam Kim, mình còn {len(ds)} món: chờ {tennhan} tới để đưa")
             s.update(chuyendo = idnhan, solangiaodo = 0, sodagiaovong = 0)
             s.pop("luotdi", None)
+        if s.get("sodagiaovong", 0) >= SOMONCHIAMOILUOTKC:
+            # Chia dần: đủ SOMONCHIAMOILUOTKC món thì chờ acc đốt báo có đồ (đốt hết lượt này thì lượt sau đưa tiếp). Quá
+            # THOIGIANCHONHANDOKC giây vẫn báo không có (món vừa đưa không hợp cấp?) thì đưa thêm lượt nữa
+            if now - s.get("lucgiaodo", 0.) < THOIGIANCHONHANDOKC:
+                s["trangthai"] = f"Phong Yêu Kính: đã đưa {s['sodagiaovong']} món, chờ {tennhan} nhận đồ Lam Kim"
+                return None
+            self._logkc(f"⚠️ Đã đưa {s['sodagiaovong']} món mà quá {int(THOIGIANCHONHANDOKC)}s {tennhan} chưa báo có đồ Lam Kim: đưa thêm")
+            s.update(sodagiaovong = 0, solangiaodo = 0)
         diachi = moitruong.action_timkiemnhanvat(idnguoichoi = idnhan)
         if not diachi:
             if not moitruong.get_is_cungbando(nhan):
@@ -1234,6 +1306,9 @@ class TacTuKeoCap:
         if giaidoan == "thuhoi":
             self._tatsautheokc(s)
             return self._buocthuhoiga(s, chinh)
+        if giaidoan == "gomdo":
+            self._tatsautheokc(s)
+            return self._buocgomdoga(s, chinh)
         if giaidoan == "phongyeu":
             self._tatsautheokc(s)
             s["is_dangnhando"] = chinh["_keocap"].get("chuyendo") == moitruong.get_idnguoichoi() and not self._is_trongphongyeu()
@@ -1322,7 +1397,72 @@ class TacTuKeoCap:
         # Acc chính đang đưa đồ Lam Kim / acc gà đang tới nhận: không chọn quái (trước đây acc chính "đứng yên chờ" mà Tự động sử dụng kỹ
         # năng vẫn đuổi quái chạy đi, give quá xa hỏng 3 lần là bỏ đưa đồ, log 2026-11-08 18:58 ở Ranh Giới Đầm Lầy)
         s = self._keocap
+        if s and s.get("giaidoan") == "gomdo" and s.get("vaitro") in ("chinh", "ga"):
+            # Gom đồ Lam Kim về acc chính: acc chính đứng yên, acc gà tới cạnh give
+            return True
         return bool(s) and s.get("giaidoan") == "phongyeu" and bool(s.get("chuyendo") or s.get("is_dangnhando"))
+
+    def _buocgomdoga(self, s, chinh):
+        # Trước Phong Yêu Kính: tới cạnh acc chính give hết đồ Lam Kim (lọc như lúc chọn đồ đốt, mọi cấp), hết thì báo dagomdo = mã gom
+        # của acc chính. Give SOLANGIAODOKC lần mà số món không giảm (đồ khoá / acc chính đầy túi) thì thôi, vẫn báo xong
+        moitruong = self.moitruong
+        now = time.time()
+        ma = chinh["_keocap"].get("magomdo") or 0.
+        if not ma:
+            s["trangthai"] = "gom đồ Lam Kim: chờ acc chính"
+            return None
+        if s.get("dagomdo") == ma:
+            s["trangthai"] = "gom đồ Lam Kim: đã give hết về acc chính, chờ vào Phong Yêu Kính"
+            return None
+        if s.get("magomdodang") != ma:
+            s.update(magomdodang = ma, sodogom = None, solankhonggiamgom = 0, lucgomdo = 0.)
+        if self._is_trongphongyeu():
+            return self._raphongyeukc(s)
+        if self._langlyson:
+            self.huy_langlyson()
+        if self._is_dangban() or now - s["lucgomdo"] < GIANCACHGIAODOKC:
+            return None
+        ds = self._chondolamkim(s, captoithieu = 0, is_tatca = True)
+        if ds == "doc":
+            s["trangthai"] = "gom đồ Lam Kim: đọc túi tìm đồ Lam Kim give acc chính"
+            return None
+        tenchinh = chinh.get("tennhanvat") or str(s["idchinh"])
+
+        def xong(is_conthua):
+            s["dagomdo"] = ma
+            # Hết đồ thì báo luôn không còn đồ (acc chính chia đồ cho mình ngay); còn sót (đồ khoá...) thì đọc lại túi
+            s["codolamkim"] = None if is_conthua else False
+            s["lucdocdo"] = 0.
+            return None
+
+        if not ds:
+            self._logkc(f"Đã give hết đồ Lam Kim cho {tenchinh}" if s["sodogom"] is not None else "Không có đồ Lam Kim phải give acc chính")
+            return xong(False)
+        truoc = s["sodogom"]
+        if truoc is None or len(ds) < truoc:
+            s["solankhonggiamgom"] = 0
+        elif s["solankhonggiamgom"] >= SOLANGIAODOKC:
+            self._logkc(f"⚠️ Give {SOLANGIAODOKC} lần mà đồ Lam Kim không giảm (đồ khoá / {tenchinh} đầy túi?): thôi give, còn {len(ds)} món")
+            return xong(True)
+        nhan = f"gom đồ Lam Kim: tới {tenchinh} give {len(ds)} món"
+        s["trangthai"] = nhan
+        diachi = moitruong.action_timkiemnhanvat(idnguoichoi = s["idchinh"])
+        if not diachi:
+            x, y = chinh.get("x"), chinh.get("y")
+            if not chinh.get("tenbando"):
+                return None
+            return self._ditoikc(s, chinh["tenbando"], (x, y) if x and y else None, nhan)
+        if moitruong.get_khoangcach(diachi) > KHOANGCACHGIAODOKC - 1:
+            x, y = moitruong.get_toado(diachi)
+            return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (round(x), round(y), moitruong.get_idbandohientai()), "khoangcachtoida": 1.}
+        moitruong.action_ngatdichuyen()
+        for lenh in taolenhgiao(str(s["idchinh"]), [(mon[3], 1) for mon in ds], 0):
+            moitruong.action_thucthicaulenh(lenh)
+            self._logkc(f"Give đồ Lam Kim cho {tenchinh}: {lenh}")
+        self._logkc(f"Đã gửi {len(ds)} món Lam Kim: " + ", ".join(f"{mon[4]} (cấp {mon[0]})" for mon in ds))
+        s.update(lucgomdo = now, sodogom = len(ds), solankhonggiamgom = s["solankhonggiamgom"] + 1)
+        s["trangthai"] = f"gom đồ Lam Kim: give {len(ds)} món cho {tenchinh}"
+        return None
 
     def _buocthuhoiga(self, s, chinh):
         # Acc chính sắp xong kéo cấp: tới cạnh acc chính give trả hết đồ Lam Kim (lọc như lúc chọn đồ đốt, mọi cấp), hết đồ thì báo dathuhoi.
