@@ -281,9 +281,12 @@ class MoiTruong:
         self._is_dasetupautoassemblekhoitaothongtinbando = False
         # (vị trí con trỏ cửa sổ trong thông tin game, hiện?) -> đoạn mã gọi vtable[1] ẩn / hiện cửa sổ (_goivtableanhien)
         self._diachivtableanhien_map = {}
+        # Hook ẩn / hiện cửa sổ trên luồng chính (action_thietlaphookanhiencuaso): địa chỉ bảng yêu cầu (None = chưa có hook),
+        # (vị trí, hiện?) -> ô trong bảng, (địa chỉ đếm lượt, giá trị đếm lần trước, lúc đếm đổi)
+        self._bangvtableanhien = None
+        self._ovtableanhien_map = {}
+        self._nhipvtableanhien = (0, None, 0.)
         self._is_dasetupactionthietlaphooknoidungtrochuyen = False
-        # Giữ chân sau chiêu delay 0 tới khi có số bay (action_giuchansauchieudelay0): {diachi, id, sobay, batdau} hoặc None
-        self._giuchandelay0 = None
         # Cắt hoạt ảnh khi có số bay (action_cathoatanhkhicosobay): None hoặc {nhanvat, diachi, id, sobay, batdau} của lượt tư thế xuất chiêu hiện tại
         self._cathoatanh = None
         # Đo mã hoạt ảnh chiêu (_dohoatanhchieu): None hoặc {nhanvat, ghi}; (id kỹ năng, lúc gửi) chiêu đo gần nhất bot gửi
@@ -1046,6 +1049,25 @@ class MoiTruong:
         phan = lenh.split("team + ")
         if len(phan) > 1 and phan[1].strip().isdigit():
             self._loimoinhom_map[int(phan[1])] = time.time()
+
+    def action_tudongdongytrieutap(self):
+        # Menu "X sử dụng Thiên Lý Hữu Tình tìm thấy bạn đang ở ... và kêu gọi bạn đến bên cạnh anh ấy, bạn muốn đến không ?"
+        # (cửa sổ tuỳ chọn, 2 lựa chọn "1.Xác nhận" / "2.Huỷ bỏ"): người dùng muốn luôn tự chọn Xác nhận cho đội tập hợp nhanh
+        # (2026-11-17). Chọn theo nhãn "xác nhận", nhãn chưa đọc được thì lấy lựa chọn đầu không phải CLOSE. Gửi xong xoá lời thoại
+        # + ẩn menu nên không gửi lại
+        if not self.get_is_danghiencuasotuychon():
+            return False
+        noidung = unicodedata.normalize("NFC", self.get_noidungcuasotuychon()).lower()
+        if "thiên lý hữu" not in noidung or "đến bên cạnh" not in noidung:
+            return False
+        capdu = [(l, unicodedata.normalize("NFC", n).lower()) for l, n in
+                 zip(self.get_lenhcuasotuychons(), self.get_nhanluachoncuasotuychons()) if l.strip() and l.strip().upper() != "CLOSE"]
+        if not capdu:
+            return False
+        lenh = next((l for l, n in capdu if "xác nhận" in n), capdu[0][0])
+        self._inlog(f"[TRIỆU TẬP] Tự đồng ý Thiên Lý Hữu Tình: {noidung[:80]!r} -> {lenh}")
+        self.xoa_noidungcuasotuychon()
+        return self.action_thucthicaulenh(lenh)
 
     def action_kiemtravadongyloimoinhom(self, idtruongnhoms, delay = 0.2):
         if time.time() - self._thoidiemthaotacnhomgannhat < delay:
@@ -1846,6 +1868,152 @@ class MoiTruong:
         write_bytes(self.tientrinh, diachihook, b"\xE9" + struct.pack("<i", kichban - (diachihook + 5)), 5)
         self._inlog("[CHẶN CRASH] đã vá chỗ vẽ cửa sổ (bỏ qua cửa sổ vừa tự đóng)")
         return True
+
+    # Bảng yêu cầu ẩn / hiện cửa sổ cho luồng chính (action_thietlaphookanhiencuaso), nằm trong khối kịch bản đã cấp phát:
+    # + LECHBANGANHIEN: SOOANHIEN ô x 12 byte {cờ chờ, vị trí con trỏ cửa sổ trong thông tin game, hiện?}; + LECHNHIPANHIEN: đếm lượt hook chạy
+    LECHBANGANHIEN = 0x100
+    SOOANHIEN = 16
+    LECHNHIPANHIEN = 0x1F0
+    # Đếm lượt không tăng quá ngần này giây (game không vẽ giao diện, vd đang tải) thì gọi bằng luồng riêng như cũ
+    THOIGIANNHIPANHIEN = 2.
+
+    def action_thietlaphookanhiencuaso(self):
+        # Crash xq+0x17D64F (Thk 354 ngày 18/11 lúc 00:06:22, dump C:\CrashDumps\XQ.exe.1048600.dmp): vòng vẽ cửa sổ ở luồng chính đọc ô
+        # [esi], gọi vtable[0] rồi đọc lại [esi] để gọi vẽ (xq+0x17D640) thì ô đã NULL (số cửa sổ còn 3, ô thứ 4 = 0). Lúc đó bot đang
+        # look / talk NPC mỗi 0.4s, mỗi lần look gọi xoa_noidungcuasotuychon -> _goivtableanhien bằng CreateRemoteThread: vtable[1] gỡ
+        # cửa sổ khỏi mảng (mảng dồn lại) trên luồng khác ĐÚNG lúc luồng chính đang duyệt => tranh chấp do bot. Crash 13/11 (xq+0x4B2B0,
+        # 2s sau tallk Tân Thủ Tiên Cô) nhiều khả năng cùng nguyên nhân.
+        # Sửa: hook đầu vòng vẽ cửa sổ (HOOK_DAUVONGVECUASO, trước khi đọc số cửa sổ) chạy các yêu cầu ẩn / hiện đang chờ trong bảng,
+        # tức là trên luồng chính, ngoài lúc duyệt mảng. Thêm chặn ô NULL ngay sau vtable[0] (HOOK_KIEMTRACUASO) cho chắc.
+        # Kịch bản không giải phóng; lần chạy sau thấy E9 thì lấy lại bảng từ đích jmp.
+        diachihook = self.diachixq + DC.HOOK_DAUVONGVECUASO
+        try:
+            mahook = read_bytes(self.tientrinh, diachihook, 6)
+        except Exception:
+            return False
+        ketqua = True
+        if mahook[0] == 0xE9:
+            kichban = diachihook + 5 + struct.unpack("<i", mahook[1:5])[0]
+        elif mahook != bytes.fromhex("8B 85 40 FD AD 00"):
+            self._inlog(f"[CHẶN CRASH] đầu vòng vẽ cửa sổ không như dự kiến: {mahook.hex(' ')}")
+            kichban = None
+            ketqua = False
+        else:
+            kichban = self.tientrinh.allocate(0x200)
+            bang = kichban + self.LECHBANGANHIEN
+            write_bytes(self.tientrinh, bang, b"\0" * (0x200 - self.LECHBANGANHIEN), 0x200 - self.LECHBANGANHIEN)
+            asm_script = f"""
+                pushad
+                pushfd
+                mov ebx, {hex(bang)}
+                mov edi, {hex(self.SOOANHIEN)}
+            vong:
+                cmp dword ptr [ebx], 0
+                je tiep
+                mov dword ptr [ebx], 0
+                mov eax, dword ptr [{hex(self.diachixq + DC.THONGTINGAME)}]
+                test eax, eax
+                je tiep
+                add eax, dword ptr [ebx + 4]
+                mov ecx, dword ptr [eax]
+                test ecx, ecx
+                je tiep
+                push dword ptr [ebx + 8]
+                mov eax, dword ptr [ecx]
+                call dword ptr [eax + 4]
+            tiep:
+                add ebx, 0xC
+                dec edi
+                jne vong
+                inc dword ptr [{hex(kichban + self.LECHNHIPANHIEN)}]
+                popfd
+                popad
+                mov eax, dword ptr [ebp + 0xADFD40]
+                push {hex(diachihook + 6)}
+                ret
+            """
+            encoding, _ = asm_x86(asm_script)
+            if not encoding or len(encoding) > self.LECHBANGANHIEN:
+                kichban = None
+                ketqua = False
+            else:
+                write_bytes(self.tientrinh, kichban, bytes(encoding), len(encoding))
+                write_bytes(self.tientrinh, diachihook, b"\xE9" + struct.pack("<i", kichban - (diachihook + 5)) + b"\x90", 6)
+                self._inlog("[CHẶN CRASH] đã đặt hook ẩn / hiện cửa sổ trên luồng chính (đầu vòng vẽ cửa sổ)")
+        if kichban:
+            # Lấy lại các ô đã gán ở lần chạy trước (cùng kịch bản)
+            self._bangvtableanhien = kichban + self.LECHBANGANHIEN
+            self._nhipvtableanhien = (kichban + self.LECHNHIPANHIEN, None, 0.)
+            self._ovtableanhien_map = {}
+            for k in range(self.SOOANHIEN):
+                _, vitritg, is_hien = struct.unpack("<III", read_bytes(self.tientrinh, self._bangvtableanhien + k * 12, 12))
+                if vitritg:
+                    self._ovtableanhien_map[(vitritg, bool(is_hien))] = k
+
+        # Ô NULL ngay sau vtable[0] (cửa sổ bị gỡ trong lời gọi đó) thì nhảy tới cuối thân vòng như nhánh "không vẽ" của game
+        diachikiemtra = self.diachixq + DC.HOOK_KIEMTRACUASO
+        try:
+            makiemtra = read_bytes(self.tientrinh, diachikiemtra, 8)
+        except Exception:
+            return False
+        if makiemtra[0] != 0xE9:
+            if makiemtra[:4] != bytes.fromhex("84 C0 0F 84"):
+                self._inlog(f"[CHẶN CRASH] chỗ kiểm tra cửa sổ không như dự kiến: {makiemtra.hex(' ')}")
+                return False
+            dichboqua = diachikiemtra + 8 + struct.unpack("<i", makiemtra[4:8])[0]
+            asm_script = f"""
+                test al, al
+                je boqua
+                cmp dword ptr [esi], 0
+                je boqua
+                push {hex(diachikiemtra + 8)}
+                ret
+            boqua:
+                push {hex(dichboqua)}
+                ret
+            """
+            encoding, _ = asm_x86(asm_script)
+            if not encoding:
+                return False
+            kichbankt = self.tientrinh.allocate(64)
+            write_bytes(self.tientrinh, kichbankt, bytes(encoding), len(encoding))
+            write_bytes(self.tientrinh, diachikiemtra, b"\xE9" + struct.pack("<i", kichbankt - (diachikiemtra + 5)) + b"\x90" * 3, 8)
+            self._inlog("[CHẶN CRASH] đã vá chỗ kiểm tra cửa sổ (bỏ qua ô NULL sau vtable[0])")
+        return ketqua
+
+    def _datyeucauanhienluongchinh(self, vitritg, is_hien):
+        # Đặt yêu cầu ẩn / hiện cho hook luồng chính. -> False khi chưa có hook / game không vẽ giao diện (gọi bằng luồng riêng như cũ)
+        bang = self._bangvtableanhien
+        if not bang:
+            return False
+        try:
+            diachinhip, nhipcu, lucdoi = self._nhipvtableanhien
+            nhip = read_int(self.tientrinh, diachinhip)
+            now = time.time()
+            if nhip != nhipcu:
+                self._nhipvtableanhien = (diachinhip, nhip, now)
+            elif now - lucdoi > self.THOIGIANNHIPANHIEN:
+                # Bỏ yêu cầu cũ còn chờ của cửa sổ này để khi game vẽ lại không chạy lệnh đã lỗi thời
+                for k in ((vitritg, True), (vitritg, False)):
+                    if k in self._ovtableanhien_map:
+                        write_bytes(self.tientrinh, bang + self._ovtableanhien_map[k] * 12, b"\0\0\0\0", 4)
+                return False
+            khoa = (vitritg, bool(is_hien))
+            o = self._ovtableanhien_map.get(khoa)
+            if o is None:
+                if len(self._ovtableanhien_map) >= self.SOOANHIEN:
+                    return False
+                o = len(self._ovtableanhien_map)
+                write_bytes(self.tientrinh, bang + o * 12 + 4, struct.pack("<II", vitritg, 1 if is_hien else 0), 8)
+                self._ovtableanhien_map[khoa] = o
+            # Yêu cầu ngược lại còn chờ thì bỏ: yêu cầu sau cùng thắng
+            onguoc = self._ovtableanhien_map.get((vitritg, not is_hien))
+            if onguoc is not None:
+                write_bytes(self.tientrinh, bang + onguoc * 12, b"\0\0\0\0", 4)
+            write_bytes(self.tientrinh, bang + o * 12, b"\1\0\0\0", 4)
+            return True
+        except Exception:
+            return False
 
     # Thông báo giữa màn hình bỏ qua luôn: chuỗi chứa ĐỦ các mẩu ASCII trong 1 nhóm thì không hiện. So phần ASCII để khỏi lệ thuộc
     # dạng mã hoá dấu tiếng Việt. "Kinh nghiệm đã đạt hạn mức cao nhất" (16/11): máy chủ báo liên tục khi kinh nghiệm chạm trần,
@@ -3524,8 +3692,17 @@ class MoiTruong:
             self._xulydongthongtinnguoichoi(noidungtrochuyen)
         for dongkhungchat in self._docdongkhungchatmois():
             self._xulydongtinmat(now, dongkhungchat)
+            self._xulydongchetao(dongkhungchat)
 
         self._lichsutrochuyen5s = [msg for msg in self._lichsutrochuyen5s if now - msg[0] <= 5.0]
+
+    def _xulydongchetao(self, noidung):
+        # Kết quả chế / luyện / ghép chỉ hiện ở khung chat (ảnh người dùng 2026-11-17, Từ Tâm Đơn tỉ lệ 80%):
+        #   thành: "Bạn sử dụng “Từ Tâm Đơn Luyện Chế” luyện ra Từ Tâm Đơn"   xịt: "Sử dụng “Từ Tâm Đơn Luyện Chế” thất bại."
+        # Ghi nguyên dòng vào log ([CHẾ TẠO]) để đếm tỉ lệ thật / dò hàm random (ghép Tinh Thạch máy chủ trả cả số random)
+        thuong = noidung.lower()
+        if any(tu in thuong for tu in TUKHOADONGCHETAOs) and not any(tu in thuong for tu in TUKHOADONGCHETAOBOQUAs):
+            self._inlog(f"[CHẾ TẠO] {noidung.strip()}")
 
     def _xulydongtinmat(self, now, noidung):
         # Tin mật đến hiện ở khung trò chuyện "Gạ nói thầm với bạn : abc" (ảnh người dùng 2026-11-10); tên là liên kết có sẵn ID
@@ -5176,7 +5353,11 @@ class MoiTruong:
 
     def _goivtableanhien(self, vitritg, is_hien):
         # Gọi vtable[1](is_hien) (ẩn / hiện + cập nhật danh sách cửa sổ) của cửa sổ có con trỏ ở [thông tin game] + vitritg, bằng luồng
-        # trong game. Đoạn mã mỗi (vitritg, is_hien) cấp phát 1 lần
+        # trong game. Có hook luồng chính (action_thietlaphookanhiencuaso) thì đặt yêu cầu cho luồng chính chạy ở đầu vòng vẽ cửa sổ:
+        # gọi bằng luồng riêng thì vtable[1] gỡ cửa sổ khỏi mảng đúng lúc luồng chính đang duyệt => crash (18/11, Thk 354).
+        # Đoạn mã mỗi (vitritg, is_hien) cấp phát 1 lần
+        if self._datyeucauanhienluongchinh(vitritg, is_hien):
+            return
         khoa = (vitritg, bool(is_hien))
         diachi = self._diachivtableanhien_map.get(khoa)
         if not diachi:
@@ -5312,6 +5493,29 @@ class MoiTruong:
                 return True
         return False
 
+    def _get_hamnhanvung(self, x, y):
+        # -> (lay(x, y) -> nhãn vùng liên thông 8 hướng của ô, frozenset nhãn vùng của ô (x, y) hoặc các ô kề khi nó là vật cản). Chưa
+        # đọc được lưới thì (hàm trả 0, frozenset())
+        luoi, nhan, cao = self._get_nhanvunglienthong(True)
+        if not luoi:
+            return (lambda x_, y_: 0), frozenset()
+        rong = len(luoi)
+
+        def lay(x_, y_):
+            return nhan[x_ * cao + y_] if 0 <= x_ < rong and 0 <= y_ < cao else 0
+
+        vung = {lay(x, y)} - {0} or {lay(x + dx, y + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1)} - {0}
+        return lay, frozenset(vung)
+
+    def _is_coodiduocquanh(self, x, y, khoangcachtoida):
+        # Có ô đi được nào cách (x, y) không quá khoangcachtoida không (chưa đọc được lưới thì coi như có)
+        r = int(max(0., khoangcachtoida))
+        luoi = self._get_luoivatcan(x - r, y - r, x + r, y + r)
+        if not luoi:
+            return True
+        return any(not luoi[dx + r][dy + r] for dx in range(-r, r + 1) for dy in range(-r, r + 1)
+                   if math.hypot(dx, dy) <= khoangcachtoida)
+
     def get_oditduocganhat(self, x, y, bankinhtoida = BANKINHKEODICH):
         # Đích (x, y) của bản đồ hiện tại rơi vào vật cản (toạ độ nhiệm vụ / NPC lệch vào tường, nước...) thì trả ô đi được gần nhất trong
         # bankinhtoida ô (cùng khoảng cách thì ô gần mình hơn, kẻo lấy ô bên kia tường); đi được / không thấy ô nào thì giữ nguyên.
@@ -5320,20 +5524,24 @@ class MoiTruong:
         luoi = self._get_luoivatcan(x, y, x, y)
         if not luoi or not luoi[0][0]:
             return x, y
-        khoa = (self.get_idbandohientai(), x, y)
+        toado = self.get_toado()
+        # Ưu tiên ô cùng vùng liên thông với mình (lưới cả bản đồ, 8 hướng): Mao Sơn 2026-11-17 Võ Lâm Bại Hoại đứng (133, 131) trên mép
+        # vách, ô gần nhất phía dưới vách (mình đang đứng) chỉ cách vài ô mà phải đi vòng ~92 bước => lấy ô bên kia vách là đứng chân vách
+        lay, vungminh = self._get_hamnhanvung(round(toado[0]), round(toado[1]))
+        khoa = (self.get_idbandohientai(), x, y, vungminh)
         if khoa in self._oditduoc_cache:
             return self._oditduoc_cache[khoa]
         r = bankinhtoida
         luoi = self._get_luoivatcan(x - r, y - r, x + r, y + r)
         if not luoi:
             return x, y
-        toado = self.get_toado()
         tot = None
         for dx in range(-r, r + 1):
             for dy in range(-r, r + 1):
                 if luoi[dx + r][dy + r]:
                     continue
-                diem = (round(math.hypot(dx, dy)), math.dist((x + dx, y + dy), toado))
+                diem = (bool(vungminh) and lay(x + dx, y + dy) not in vungminh, round(math.hypot(dx, dy)),
+                        math.dist((x + dx, y + dy), toado))
                 if tot is None or diem < tot[0]:
                     tot = (diem, (x + dx, y + dy))
         ketqua = tot[1] if tot else (x, y)
@@ -5436,7 +5644,9 @@ class MoiTruong:
             return False
         if not self._get_is_duocbatdaudichuyen():
             return False
-        if khoangcachtoida < 1:
+        # Giữ khoảng cách mà mọi ô trong tầm đó quanh đích đều là vật cản (Mao Sơn 2026-11-17: Võ Lâm Bại Hoại (133, 131) giữ ≤1, cả 4 ô
+        # kề là vách => A* cả bản đồ "không ra đường" dù có đường vòng ~92 bước, lùi về đi theo ô, đứng chân vách) thì cũng kéo đích
+        if khoangcachtoida < 1 or not self._is_coodiduocquanh(round(x2), round(y2), khoangcachtoida):
             x2, y2 = self.get_oditduocganhat(x2, y2)
         diachinhanvat = self.get_diachicosothongtinnhanvat1()
         if not diachinhanvat:
@@ -6911,8 +7121,6 @@ class MoiTruong:
         # hoặc mục tiêu đã hiện số bay (server báo trúng, _is_muctieudatrungchieu); không thấy thì giữ tối đa THOIGIANKHUNGSAUXUATCHIEU
         thoidiemhientai = time.time()
         self._dohoatanhchieu()
-        if self._is_giuchandelay0():
-            return True
         idtuthe = self.get_idtuthenhanvat()
         # Đã bỏ ghi tư thế về đứng im khi mục tiêu hiện số bay (thêm 2026-11-07, bỏ 2026-11-09 theo người dùng): không cắt được hoạt
         # ảnh nên game đặt lại tư thế 6 (Lạc Kích ~45% lần), tua hoạt ảnh thì hình nhân vật vẽ lệch chỗ thật
@@ -6931,8 +7139,7 @@ class MoiTruong:
 
     def action_cathoatanhkhicosobay(self):
         # Đang tư thế xuất chiêu (6 / 9) mà mục tiêu hiện số bay mới so với lúc vào tư thế (máy chủ đã tính đòn) hoặc mục tiêu chết / mất
-        # => ghi tư thế khựng sau tấn công 11 (xem IS_CATHOATANHKHICOSOBAY). Hàng đợi hành động +0x100 (100 ô x 0x28, đọc +0x10A0, ghi +0x10A4): chỉ bỏ
-        # các ô đòn đánh (mã >= 0x28) liền nhau từ chỉ số đọc, gặp ô bước đi / quay hướng thì dừng => không mất bước đi, hình không lệch
+        # => ghi tư thế khựng sau tấn công 11 (xem IS_CATHOATANHKHICOSOBAY). Không sửa hàng đợi hoạt ảnh (đã bỏ 2026-11-17)
         if not IS_CATHOATANHKHICOSOBAY:
             return False
         try:
@@ -6972,61 +7179,15 @@ class MoiTruong:
         if not lydo:
             return False
         try:
-            doc, ghi = struct.unpack("<II", read_bytes(self.tientrinh, nhanvat + DC.NV_HOATANH, 8))
-            if not (0 <= doc < 100 and 0 <= ghi < 100):
-                return False
-            moi, sobo = doc, 0
-            while moi != ghi and read_bytes(self.tientrinh, nhanvat + 0x100 + moi * 0x28, 1)[0] >= 0x28:
-                moi = (moi + 1) % 100
-                sobo += 1
-            # Client có thể vừa đọc tiếp 1 ô trong lúc dò: chỉ ghi khi chỉ số đọc chưa đổi
-            if sobo and read_int(self.tientrinh, nhanvat + DC.NV_HOATANH) == doc:
-                write_int(self.tientrinh, nhanvat + DC.NV_HOATANH, moi)
-            # Ghi tư thế khựng sau tấn công 11 (người dùng chốt 2026-11-15), không ghi thẳng đứng im: LoopBoKhungSauTanCong tự đổi 11 -> 1
-            # sau THOIGIANCHOBOKHUNGSAUTANCONG giây
+            # Không đụng hàng đợi hoạt ảnh +0x100 (người dùng 2026-11-17: bỏ phần bỏ ô đòn đầu hàng; log 347 cho thấy nó chưa từng bỏ được
+            # ô nào). Chỉ ghi tư thế khựng sau tấn công 11 (người dùng chốt 2026-11-15), không ghi thẳng đứng im: LoopBoKhungSauTanCong
+            # tự đổi 11 -> 1 sau THOIGIANCHOBOKHUNGSAUTANCONG giây
             write_int(self.tientrinh, nhanvat + DC.NV_TUTHE, TUTHENHANVAT_DELAYSAUTANCONG)
         except Exception:
             return False
-        self._inlog(f"[CẮT HOẠT ẢNH] {lydo} sau {thoidiemhientai - cat['batdau']:.2f}s tư thế {idtuthe} => tư thế 11, bỏ {sobo} ô đòn"
-                    f" (còn {(ghi - moi) % 100} ô khác)")
+        self._inlog(f"[CẮT HOẠT ẢNH] {lydo} sau {thoidiemhientai - cat['batdau']:.2f}s tư thế {idtuthe} => tư thế 11")
         self._cathoatanh = None
         return True
-
-    def action_giuchansauchieudelay0(self, diachimuctieu, tenchieu = ""):
-        # Chiêu delay 0 vừa vào hồi chiêu: giữ chân (get_is_dangxuatchieu True => mọi hàm đi bị chặn, đang đi thì bị ngắt) tới khi mục
-        # tiêu hiện số bay mới, tối đa THOIGIANGIUCHANDELAY0 giây (xem _is_giuchandelay0)
-        if not diachimuctieu:
-            return
-        self._giuchandelay0 = {"diachi": diachimuctieu, "id": self.get_iddoituong(diachimuctieu), "ten": tenchieu,
-                               "sobay": self._docsobaydoituong(diachimuctieu), "batdau": time.time()}
-
-    def get_is_giuchandelay0(self):
-        return self._giuchandelay0 is not None
-
-    def _is_giuchandelay0(self):
-        giu = self._giuchandelay0
-        if not giu:
-            return False
-        thoigian = time.time() - giu["batdau"]
-        diachi = giu["diachi"]
-        lydo = None
-        if self.get_iddoituong(diachi) != giu["id"] or self.get_is_nhanvatdachet(diachi):
-            lydo = "mục tiêu chết / mất"
-        elif thoigian >= THOIGIANGIUCHANDELAY0:
-            lydo = "hết giờ, không thấy số bay"
-        else:
-            sobay = self._docsobaydoituong(diachi)
-            if sobay:
-                (giatri, dem), cu = sobay, giu["sobay"]
-                for i in range(10):
-                    if giatri[i] > 0 and (dem[i] <= DEMSOBAYMOI or not cu or giatri[i] != cu[0][i] or dem[i] < cu[1][i]):
-                        lydo = f"thấy số bay {giatri[i]}"
-                        break
-        if not lydo:
-            return True
-        self._giuchandelay0 = None
-        self._inlog(f"[GIỮ CHÂN DELAY 0] {giu['ten']}: {lydo} sau {thoigian:.2f}s => thả")
-        return False
 
     def _is_muctieuxuatchieudahet(self):
         if not self._diachimuctieuxuatchieu:

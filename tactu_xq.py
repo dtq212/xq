@@ -452,7 +452,6 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._solanchuyenotrongthatbai = 0
         self._thoidiemchuyenotronggannhat = 0.
         self._thoidiemhetboquaotrong_map = {}
-        self._thoidiemphatamchuyenotronggannhat = 0.
         self._thoidiemvutvatphamgannhat = time.time()
         self._diachicosovatphamkhongnhat_map = {}
         self._thoidiemthaydoivatphamdangnhatgannhat = time.time()

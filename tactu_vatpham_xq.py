@@ -2492,10 +2492,7 @@ class TacTuVatPham:
             if self._idvatphamotrongdangchuyen != idvatpham:
                 print("{}: chuyển {} từ ô cuối hành trang 1 sang hành trang {}".format(
                     self.moitruong.get_tendoituong(), self.moitruong.get_tenvatphamhanhtrang(vitricuoi), tuidich))
-                # Chế đồ liên tục thì món nào cũng rơi vào ô này: chỉ đọc thông báo tối đa 10 giây 1 lần
-                if time.time() - self._thoidiemphatamchuyenotronggannhat > 10.:
-                    self._thoidiemphatamchuyenotronggannhat = time.time()
-                    phatam("Chuyển vật phẩm ô cuối sang hành trang {}".format(tuidich))
+                # Không phát âm: chế đồ liên tục thì món nào cũng rơi vào ô này, đọc mãi điếc tai (bỏ 17/11)
             self._idvatphamotrongdangchuyen = idvatpham
             self._thoidiemchuyenotronggannhat = time.time()
 

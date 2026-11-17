@@ -159,6 +159,7 @@ class CuaSo:
         self.moitruong.action_thietlaphookvehieuungdat()
         self.moitruong.action_thietlaphookvetilenen()
         self.moitruong.action_thietlaphookvecuaso()
+        self.moitruong.action_thietlaphookanhiencuaso()
         self.moitruong.action_thietlaphookthongbao()
         self.moitruong.action_thietlaphookverle()
         self.moitruong.action_thietlaphookdochimucgoi()

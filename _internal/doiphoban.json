@@ -17,9 +17,11 @@
         "thanhkieu",
         "phongyeukinh"
       ],
-      "chon": [],
+      "chon": [
+        "langlyson"
+      ],
       "vong": {},
-      "phai": ""
+      "phai": "maoson"
     },
     {
       "ma": "1794373815001",
@@ -49,8 +51,7 @@
         364,
         1163,
         1041,
-        1040,
-        418
+        1040
       ],
       "thutu": [
         "sugia",
@@ -62,10 +63,8 @@
       "chon": [
         "tapkich"
       ],
-      "vong": {
-        "tapkich": 1
-      },
-      "phai": "daohoanguyen"
+      "vong": {},
+      "phai": "maoson"
     }
   ]
 }

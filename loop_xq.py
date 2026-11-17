@@ -9,7 +9,7 @@ import unicodedata
 import pymem.exception
 
 from hangso_xq import IS_BOKHUNGSAUTANCONG, CHUKYBOKHUNGSAUTANCONG, THOIGIANCHOBOKHUNGSAUTANCONG, TUTHENHANVAT_DELAYSAUTANCONG, TUTHENHANVAT_LOI, CHUKYGIUOTRONGHANHTRANG
-from hangso_xq import BANDO_BANGPHAI, TRUONGPHONGTIENSINH, RUONGDUTRU
+from hangso_xq import BANDO_BANGPHAI, TRUONGPHONGTIENSINH, RUONGDUTRU, IS_TUDONGHOPTHANHTINHTHACH
 from hangso_xq import BANDO_CHIENTRUONG, BANDO_TANTHUTHON, TUTHENHANVAT_DUNGIM, BANDO_YENTRUONGTHANH3, BANDO_YENTRUONGTHANH2, BANDO_YENTRUONGTHANH1, TANGBAODO, LAMCAU, HACCAU, HIEUUNGKYNANG_TRONGTHUONG
 from moitruong_xq import MoiTruong
 from tactu_xq import TacTu
@@ -212,8 +212,8 @@ class LoopChinh:
                 ten = "".join(c for c in unicodedata.normalize("NFD", ten) if not unicodedata.combining(c))
                 return " ".join(ten.replace("đ", "d").replace("Đ", "D").split()).lower()
 
-            # Hợp thành Tinh Thạch khi có >= 5 viên cùng tên
-            for tenvatphamhanhtrang, vatphams in self.moitruong.get_danhsachvatphamhanhtrang_map().items():
+            # Hợp thành Tinh Thạch khi có >= 5 viên cùng tên (tắt bằng IS_TUDONGHOPTHANHTINHTHACH)
+            for tenvatphamhanhtrang, vatphams in (self.moitruong.get_danhsachvatphamhanhtrang_map().items() if IS_TUDONGHOPTHANHTINHTHACH else ()):
                 tenchuanhoa = chuanhoaten(tenvatphamhanhtrang)
                 if "tinh thach" not in tenchuanhoa:
                     continue
@@ -390,6 +390,8 @@ class LoopPhu:
         self.moitruong.action_vohieuhoaphimspace()
         self.moitruong.action_vohieuhieuungmuloa()
         self.moitruong.action_ghiloimoinhom()
+        # Có người dùng Thiên Lý Hữu Tình gọi tới: luôn chọn Xác nhận
+        self.moitruong.action_tudongdongytrieutap()
 
         # Thấy người chơi ẩn thân, hoặc người lạ ở map train, khi đang di chuyển theo lộ trình điểm đánh, hoặc thấy ẩn thân trong phó bản:
         # ngưng mọi hoạt động, báo Telegram (có nút Bật lại trên bảng điều khiển)

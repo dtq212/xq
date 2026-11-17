@@ -77,6 +77,8 @@ CHUKY = {
     "HOOK_VEDOITUONG": ("ma", "64 A1 00 00 00 00 6A FF 68 ?? ?? ?? ?? 50 A0 ?? ?? ?? ?? 64 89 25 00 00 00 00 8B 15 ?? ?? ?? ??", 0, 0x14200),  # đầu hàm vẽ 1 đối tượng (thiscall, ecx = đối tượng, ret 8): mov eax,fs:[0] (6 byte)
     "HAMDATTHONGBAO": ("ma", "8B 44 24 04 56 68 C7 00 00 00 8B F1 50 E8", 0, 0xa4350),  # đặt thông báo giữa màn hình: thiscall [TG + TG_THONGBAO], (chuỗi), ret 4; chép vào +0x24, +0x174 = 0x1FE thời gian hiện, +0x17C = 1 hiện
     "HOOK_VECUASO": ("ma", "8B 06 39 78 1C 7E 3E", 0, 0x4b2ae),  # vòng vẽ cửa sổ giao diện: sau call vẽ cửa sổ, mov eax,[esi]; cmp [eax+0x1C],edi (5 byte), esi = ô mảng cửa sổ
+    "HOOK_DAUVONGVECUASO": ("ma", "7C E4 8B 85 40 FD AD 00", 2, 0x4b22e),  # đầu vòng vẽ cửa sổ (luồng chính, mỗi khung hình): mov eax,[ebp+0xADFD40] (6 byte, số cửa sổ), chưa duyệt mảng
+    "HOOK_KIEMTRACUASO": ("ma", "BF 14 00 00 00 8B 0E 8B 11 FF 12 84 C0", 11, 0x4b255),  # vòng vẽ cửa sổ: sau call vtable[0] của ô [esi], test al,al; je cuối thân vòng (8 byte)
     "DSHIEUUNGDAT": ("bien", "8B 3D ?? ?? ?? ?? 39 1F 75 2C", 2, 0x376ca4),  # đầu danh sách hiệu ứng mặt đất (trận pháp...), nút 0x2C byte, kế tiếp +0x28
     "MAHIEUUNGDAT": ("bien", "53 55 57 B8 ?? ?? ?? ?? 39 30", 4, 0x376a48),  # bộ đệm 100 mã hiệu ứng (perform/<mã>) đã nạp sprite, ô i ứng với BANGSPRITEHIEUUNG[i + 1]
     "BANGSPRITEHIEUUNG": ("bien", "8B 04 85 ?? ?? ?? ?? 8B 48 1C", 3, 0x1be614),  # bảng con trỏ sprite hiệu ứng theo chỉ số (chỉ số = ô bộ đệm + 1)

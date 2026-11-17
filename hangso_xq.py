@@ -437,6 +437,16 @@ VITRIPHIMTATKYNANG_THUCANBAOTHU = VITRIPHIMTATKYNANG_X
 # Bộ đệm vòng hook trò chuyện (MoiTruong.action_thietlaphooknoidungtrochuyen): số ô (lũy thừa của 2, asm lấy dư bằng and) và số
 # byte mỗi ô (dòng dài hơn bị cắt)
 SOLUONGDONGTROCHUYEN = 64
+# Dòng khung chat chứa các từ này (so chữ thường) thì log [CHẾ TẠO] (MoiTruong._xulydongchetao): đo tỉ lệ chế / luyện / ghép thật
+TUKHOADONGCHETAOs = ("luyện ra", "luyện chế", "thất bại", "thành công", "hợp thành", "tinh thạch", "khảm", "ngẫu nhiên", "random",
+                     # Hợp thành Tinh Thạch (ảnh 2026-11-17): "Số lượng 5, tỉ lệ thành công 20 xác xuất 93" rồi "Hợp thành thất bại, ..."
+                     # -> số random (xác xuất) > tỉ lệ thì xịt
+                     "xác xuất", "xác suất", "tỉ lệ")
+# Dòng khớp từ khoá nhưng không phải kết quả chế (log 17/11: loa "<ai đó> đã mở Túi Linh Thạch ... nhận được X Tinh Thạch", vứt đá)
+TUKHOADONGCHETAOBOQUAs = ("đã mở", "quăng")
+# Tự hợp thành Tinh Thạch dưới cấp 3 đủ 5 viên (loop_xq, acc 342/347/354/359/364). Tắt tạm 2026-11-17: giữ đá để người dùng
+# tự ghép 2-5 viên đo tỉ lệ / số random máy chủ (2/3/4/5 viên = 20/30/50/90%). Test xong đặt lại True
+IS_TUDONGHOPTHANHTINHTHACH = False
 # Dò lệnh client tự gửi lên máy chủ (MoiTruong.action_thietlaphooklenhgame, vd bấm xác nhận lên cấp): bật thì log [LỆNH GAME] mọi lệnh
 # game gửi mà bot không gửi. Bộ đệm vòng SOLUONGDONGLENHGAME ô (lũy thừa của 2) x KICHTHUOCDONGLENHGAME byte
 IS_LOGLENHGAME = True
@@ -689,16 +699,12 @@ KHOANGCACHTOITHIEUBADONG = 3.
 # (đi 1 ô gần hơn 1.3 ô vô ích) => chỉ tính khi con kế cách mục tiêu chính <= KHOANGCACHMUCTIEUKEDELAY0 ô, ngưỡng 1 -> 1.5
 # Hook bỏ hoạt ảnh chiêu delay 0 ở client (2026-11-09) đã GỠ 2026-11-12: người dùng thấy lâu lâu toạ độ đứng ở client lệch so với
 # máy chủ. Bot chỉ còn trả byte gốc nếu client mang bản vá cũ (MoiTruong.action_gohookhoatanhtancong)
-# Giữ chân từ lúc chiêu delay 0 vào hồi chiêu tới khi mục tiêu hiện số bay mới (máy chủ đã tính đòn) - người dùng yêu cầu 2026-11-09,
-# không có hoạt ảnh thì client đi được ngay. Số bay "mới" = ô có bộ đếm khung <= DEMSOBAYMOI (~0.3s, đếm 0 -> ~60 trong ~1s) hoặc
-# khác lúc bắt đầu giữ. Tối đa THOIGIANGIUCHANDELAY0 giây (đòn trượt / không có số bay thì vẫn thả). 0.5 -> 0.25 (người dùng 2026-11-11:
-# chiêu delay 0 gần như ra số bay ngay, không cần chờ lâu)
-THOIGIANGIUCHANDELAY0 = 0.25
-DEMSOBAYMOI = 20
+# Giữ chân sau chiêu delay 0 chờ số bay (thêm 2026-11-09, tối đa 0.25s) đã GỠ 2026-11-17 theo người dùng: chiêu delay 0 không cần
+# giữ chân. Log 347: 660/800 lần "thấy số bay" ngay 0s (nhiều khả năng số bay đòn trước), 134 lần hết giờ không thấy => vô tác dụng
 # THỬ LẠI 2026-11-15 (người dùng yêu cầu: đánh xong boss hoạt ảnh kéo dài mãi): đang tư thế xuất chiêu 6/9 mà mục tiêu hiện số bay mới
 # (máy chủ đã tính đòn) hoặc mục tiêu chết / mất thì cắt về đứng im (MoiTruong.action_cathoatanhkhicosobay), ghi tư thế khựng 11 (LoopBoKhungSauTanCong tự về 1). Khác bản cũ đã gỡ
-# 2026-11-09: không tua cả hàng đợi (bỏ cả bước đi => hình lệch chỗ thật) mà chỉ bỏ các ô ĐÒN ĐÁNH (mã >= 0x28) liền nhau ở đầu hàng,
-# ô bước đi / quay hướng giữ nguyên; bỏ hết đòn đang xếp nên game không đặt lại tư thế 6. Chiêu lướt (không khựng sau, vd Khai Thiên)
+# 2026-11-09: không tua hàng đợi hoạt ảnh (bỏ cả bước đi => hình lệch chỗ thật). Bản 15/11 có bỏ các ô đòn đánh đầu hàng nhưng log
+# 347 (1.936 lần) chưa từng bỏ được ô nào => gỡ 2026-11-17 theo người dùng, giờ chỉ ghi tư thế 11. Chiêu lướt (không khựng sau, vd Khai Thiên)
 # không cắt. Chỉ cắt khi đã ở tư thế xuất chiêu ít nhất THOIGIANTOITHIEUCATHOATANH giây (số bay của đòn trước đến trễ không cắt nhầm
 # đòn vừa bắt đầu). Lỗi lệch toạ độ / giật thì đặt False
 IS_CATHOATANHKHICOSOBAY = True
