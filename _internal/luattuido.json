@@ -535,7 +535,9 @@
         "Bổ Tâm Đơn",
         "Toái Sa",
         "Nhiếp Hồn Thạch",
-        "Cương Thi Phù"
+        "Cương Thi Phù",
+        "Bắp",
+        "Trứng Gà"
       ],
       "tenchua": [],
       "chibanrac": false,
@@ -693,7 +695,7 @@
       ],
       "sinhluc": 0,
       "matsinhluc": 0,
-      "noiluc": 25,
+      "noiluc": 30,
       "matnoiluc": 0,
       "theluc": -1,
       "giancach": 2.5,
@@ -759,7 +761,7 @@
       "vatpham": [
         "Tiểu Huyết Thạch"
       ],
-      "sinhluc": 25,
+      "sinhluc": 30,
       "matsinhluc": 0,
       "noiluc": 0,
       "matnoiluc": 0,
@@ -1071,8 +1073,7 @@
     {
       "bat": true,
       "vatpham": [
-        "Nhập Môn Y Thuật",
-        "Nhập Môn Tu Tâm"
+        "Nhập Môn Y Thuật"
       ],
       "sinhluc": 0,
       "matsinhluc": 0,
@@ -1093,16 +1094,19 @@
     {
       "bat": true,
       "vatpham": [
-        "Nhập Môn Cơ Bản Thương Pháp",
-        "Nhập Môn Cơ Bản Bổng Pháp",
+        "Nhập Môn Thân Thủ Vô Ảnh",
+        "Nhập Môn Kinh Lạc Học Thuyết",
+        "Nhập Môn Cơ Bản Quyền Cước",
         "Nhập Môn Cơ Bản Đao Pháp",
         "Nhập Môn Cơ Bản Kiếm Pháp",
-        "Nhập Môn Tụng Kinh",
+        "Nhập Môn Cơ Bản Thương Pháp",
+        "Nhập Môn Cơ Bản Bổng Pháp",
+        "Nhập Môn Ám Khí Đầu Xạ",
         "Nhập Môn Chiêu Giá Chi Thuật",
+        "Nhập Môn Tụng Kinh",
         "Nhập Môn Thiền Định",
-        "Nhập Môn Đạo Gia Học Thuyết",
-        "Nhập Môn Kinh Lạc Học Thuyết",
-        "Nhập Môn Tu Tâm"
+        "Nhập Môn Tu Tâm",
+        "Nhập Môn Đạo Gia Học Thuyết"
       ],
       "sinhluc": 0,
       "matsinhluc": 0,

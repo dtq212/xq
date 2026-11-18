@@ -369,6 +369,10 @@ THOIGIANMATDAUMUCTIEU = 3.
 
 # Thấy người chơi ẩn thân quanh mình khi đang di chuyển theo lộ trình điểm đánh thì ngưng mọi hoạt động trong khoảng thời gian này (giây)
 THOIGIANTAMNGUNGANTHAN = 600.
+# Ẩn thân của những tên này (ADMIN hay đi kiểm tra: "2D" bị phát hiện 14-17/11) thì ngưng cả khi không đi lộ trình điểm đánh,
+# trừ lúc mình đang bật PK (màu PK khác Hoà bình). So sau khi bỏ dấu, bỏ khoảng trắng, chữ thường: "Chiến Quốc 2D" = "ChienQuoc2D".
+# Khớp nguyên tên, "Sứ Giả 2D" không tính
+TENANTHANLUONNGUNGs = ("2D", "ChienQuoc2D")
 # Thấy người lạ (ngoài danh sách tổ đội) ở map train thì ngưng ngắn hơn (giây)
 THOIGIANTAMNGUNGNGUOILA = 60.
 # Tín hiệu "vừa thấy ẩn thân" của nhân vật khác cùng bản đồ còn hiệu lực trong bấy nhiêu giây (nhân vật thấy sẽ làm mới liên tục mỗi 0.5s)
@@ -748,10 +752,11 @@ HESOTHOANGDELAY0 = 0.25
 NGUONGDICHODELAY0 = 1.5
 
 VIRIKYNANG_NGUYENKHIQUYNGUYEN = 3172
-# Nguyên Khí Quy Nguyên quá ~30 phút thì server cho hết hạn nhưng client vẫn hiện hiệu ứng: bật được chừng này giây thì bấm làm mới
-# (thu hồi rồi bật lại). Người dùng chọn 10 phút cho an toàn
 TENKYNANG_NGUYENKHIQUYNGUYEN = "Nguyên Khí Quy Nguyên"
-THOIGIANLAMMOINGUYENKHIQUYNGUYEN = 10 * 60.
+# Bật xong client ghi thời gian tối đa 1800 (đúng hạn 30 phút của server) và đếm ngược đúng (đo 347 2026-11-18) => tin thời gian còn
+# lại (MoiTruong.get_thoigianconlaihieuung), hết thì mới dùng lại. Có lúc client ghi 30000 (342, chưa rõ sự kiện nào máy chủ gửi lại):
+# số đó không tin được => tắt rồi bật lại cho thành 1800 (người dùng chốt 2026-11-18, bỏ kiểu làm mới mỗi 10 phút)
+THOIGIANHIEULUCNGUYENKHIQUYNGUYEN = 1800
 # Sau mỗi lần gửi Nguyên Khí Quy Nguyên, chừng này giây mới được làm mới lần nữa (chờ tin; lỡ không bắt được tin thì không bấm qua lại)
 THOIGIANCHOTINLAMMOINGUYENKHIQUYNGUYEN = 30.
 VIRIKYNANG_HOTHEKIMCANG = 3173
@@ -827,9 +832,27 @@ HIEUUNGKYNANG_CHOANG = 9002
 # Choáng, Bất Động (Côn Luân), Hôn Mê (Đường Môn) cùng hiệu ứng 9002; tên chỉ có trong ô hiệu ứng sau khi rê chuột xem tooltip nên phân biệt
 # theo thời gian tối đa (đo 2026-10-27 trên Ngọc: choáng 1s, Bất Động 6s, Hôn Mê 30s): <= THOIGIANTOIDACHOANG giây là choáng (không làm gì
 # được), <= THOIGIANTOIDABATDONG là Bất Động (không đi được, vẫn ra chiêu), dài hơn là Hôn Mê (không làm gì được, bị đánh thì tỉnh lại).
-# Chưa chính xác hẳn: có choáng dài 6s (Thiên Cân của bảo thú giang hồ) sẽ bị coi là Bất Động
+# Chưa chính xác hẳn: có choáng dài 6s (Thiên Cân của bảo thú giang hồ) sẽ bị coi là Bất Động => với nhân vật mình nay đọc TÊN hiệu
+# ứng (MoiTruong._get_loaihieuung9002banthan), cách theo thời gian chỉ dùng cho đối tượng khác và trong lúc chờ máy chủ trả tên
 THOIGIANTOIDACHOANG = 3
 THOIGIANTOIDABATDONG = 15
+# Ô hiệu ứng trên đối tượng (DC.NV_HIEUUNG, mỗi ô DC.NV_KICHTHUOCHIEUUNG = 0x13C): +0 vị trí trong bảng id, +4 có lợi, +8 thời gian tối
+# đa (giây), +0xC mốc GetTickCount kết thúc (ms; đo 2026-11-18 acc 418: mốc - tick hiện tại ≈ thời gian còn lại; dính lại thì đổi),
+# +0x10 chữ mô tả (tối đa 0x12B byte). Chữ chỉ có sau lệnh "desc loop <ID mình> <mã hiệu ứng>" (client gửi khi rê chuột lên icon):
+# máy chủ trả gói loại 0x82 (xq+0x4F3A: mã hiệu ứng short ở +2, chữ từ +4) và client chép chữ vào ô có mã đó trên NHÂN VẬT MÌNH
+# ([xq+0x380AF8]) => chỉ đọc được hiệu ứng của chính mình. Chữ dạng " Lạc Tuyết Vô Ngân :\n Tăng thêm 20％ Thân Thủ."
+HIEUUNG_MOCKETTHUC = 0xC
+HIEUUNG_MOTA = 0x10
+HIEUUNG_DODAIMOTA = 0x12B
+# Chưa thấy chữ sau từng ấy giây thì gửi lại "desc loop", tối đa SOLANHOIMOTAHIEUUNG lần mỗi lần dính
+THOIGIANCHOMOTAHIEUUNG = 1.0
+# Bảng hiệu ứng tab Chiến đấu: mã chưa biết tên thì bot tự "desc loop" (MoiTruong.get_hieuungbanthans), mỗi mã 1 lần / chừng này
+# giây, mọi mã cách nhau THOIGIANGIUAHAILANHOITENHIEUUNG giây (tên học được lưu tenhieuung.json, lần sau khỏi hỏi)
+THOIGIANHOILAITENHIEUUNG = 60.
+THOIGIANGIUAHAILANHOITENHIEUUNG = 1.
+SOLANHOIMOTAHIEUUNG = 3
+# Tên hiệu ứng 9002 (trước dấu ":") -> loại; Choáng / Hôn Mê không làm gì được, Bất Động chỉ không đi được
+TENHIEUUNG9002_MAP = {"choáng": "choang", "bất động": "batdong", "hôn mê": "honme"}
 HIEUUNGKYNANG_NHANSAM = 6
 
 HIEUUNGKYNANG_ROILOAN = 9018
@@ -971,13 +994,23 @@ PHAPBAOKHONGHUHONGs = ("Thượng Phương Bảo Kiếm", )
 #   "buyitem desc <tab> <ô>" -> xem mô tả; "buyitem <tab> <ô> <số lượng>" -> mua (ô đếm từ 0 qua các trang, 7 ô / trang)
 #   Client gửi ngay sau lệnh mua "\nzip 123\n" (cùng chuỗi ở mọi acc, không có trong xq.exe: DLL ngoài thêm vào) -> bot gửi giống.
 #   Đã thấy mua 50, 57, 59 cái 1 lần. Niết Bàn (9302) có thêm "buyitem ! <tab> <ô> <số lượng>" (xác nhận) ngay sau lệnh mua.
-#   Bot gửi thẳng 1 lệnh "buyitem ! <tab> <ô> <số lượng>" = mua luôn không qua hộp xác nhận (người dùng xác nhận chạy cả Aegis, 17/11)
+#   Aegis "buyitem ! <tab> <ô> <số lượng>" chỉ hiện hộp "Bạn quyết định mua..." (gõ thử 18/11), phải gửi tiếp "zip 123" (nút Xác Nhận)
+#   mới mua; gộp 2 dòng trong 1 lệnh thì máy chủ bỏ dòng zip (thử 418, 18/11). Bot gửi "buyitem <tab> <ô> <n>", chờ gói hỏi mua rồi
+#   "zip 123". Bot không mở menu "buyitem" nữa: "buyitem paytype 1" một mình đã cho số dư ở cửa sổ (thử 342, 18/11); các cửa sổ bị hook
+#   đầu vòng vẽ ẩn trước khi vẽ (MoiTruong.LECHCOMUANGAM) nên mua không hiện popup
 # Số KNB không lưu thành số nguyên ở TG/KDK (quét 3 acc không có ô chung), chỉ có trong lời thoại menu trên => đọc bằng "buyitem"
 # Hàng KHÔNG ghi cứng ô: bot gửi "buyitem <tab>" rồi đọc gói tin hàng trong heap (MoiTruong.get_hangtranbaokho), tra ô theo tên.
 # Đọc 1 lần cho mỗi phiên bản game (DatVersion trong patch.ini cạnh xq.exe, vd 2.01.10), lưu _internal/hangtranbaokho_cache.json dùng
-# chung mọi nhân vật / tiến trình (quét heap mất vài giây mỗi tab). Mua theo ô đệm mà túi không thêm đủ thì xoá đệm phiên bản đó, lần
-# sau đọc lại (Trân Bảo Khố đổi thứ tự mà không lên phiên bản)
+# chung mọi nhân vật / tiến trình (quét heap mất vài giây mỗi tab). Đệm giữ nguyên suốt phiên bản (hàng mới chỉ thêm khi lên phiên
+# bản, người dùng 18/11); chỉ đọc lại tab nào chưa đọc được. Trước khi "zip 123" đọc tên món trong gói hộp hỏi mua: khác món thì không
+# mua và xoá đệm phiên bản (cách kiểm đệm duy nhất)
 TABTRANBAOKHOs = (1, 2, 3, 4, 5, 6)
+# Lệnh bot gửi mà máy chủ trả menu hội thoại (cửa sổ tuỳ chọn): sau lệnh này THOIGIANMENUNGAM giây hook đầu vòng vẽ ẩn menu trước khi
+# vẽ (người dùng 2026-11-18 không muốn popup che màn hình lúc đang thao tác; menu người dùng tự bấm NPC ngoài khoảng này vẫn hiện).
+# Lời thoại / lệnh / nhãn vẫn đọc được trong bộ nhớ. Dấu "menu đang mở ngầm" quá THOIGIANDAUMENUNGAM giây mà bot chưa đóng thì bỏ
+CAULENHMOMENUs = ("look ", "tallk ", "talk ", "pf2 908", "pf 4181", "pf2 61", "dGludmF0 ", "desc revive")
+THOIGIANMENUNGAM = 4.
+THOIGIANDAUMENUNGAM = 30.
 CAULENHXACNHANTRANBAOKHO = "zip 123"
 # Trân Bảo Khố là cửa hàng KNB mở bằng lệnh, KHÁC NPC kho "Bảo Khố" (mở rương kho đồ, lệnh pawn) - đừng nhầm.
 # Ô "NPC bán" của bảng Mua bù (tab Hành trang) ghi tên này = mua ở Trân Bảo Khố bằng KNB, ở đâu cũng mua, không chạy về Tân Thủ Thôn

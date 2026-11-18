@@ -543,6 +543,36 @@ def luuthongtinquai(dulieu):
         print(f"Lỗi lưu thông tin quái: {err}")
 
 
+def duongdantenhieuung():
+    # Tên hiệu ứng {"<mã>": {"ten": ..., "mota": ...}} học từ "desc loop" trên nhân vật mình (MoiTruong.get_hieuungbanthans),
+    # giao diện ghi (1 tiến trình, không ghi đè nhau), bot đọc lúc khởi động để khỏi hỏi lại mã đã biết
+    return os.path.join(os.path.dirname(_thumucthietlap()), "tenhieuung.json")
+
+
+def taitenhieuung():
+    try:
+        with open(duongdantenhieuung(), "r", encoding = "utf-8") as file:
+            dulieu = json.load(file)
+        return dulieu if isinstance(dulieu, dict) else {}
+    except FileNotFoundError:
+        return {}
+    except Exception as err:
+        print(f"Lỗi đọc tên hiệu ứng: {err}")
+        return {}
+
+
+def luutenhieuung(dulieu):
+    filepath = duongdantenhieuung()
+    try:
+        os.makedirs(os.path.dirname(filepath), exist_ok = True)
+        filetam = filepath + ".tmp"
+        with open(filetam, "w", encoding = "utf-8") as file:
+            json.dump(dulieu, file, ensure_ascii = False, indent = 1, sort_keys = True)
+        thaythefile(filetam, filepath)
+    except Exception as err:
+        print(f"Lỗi lưu tên hiệu ứng: {err}")
+
+
 def _duongdanvitrithoyeu():
     return os.path.join(os.path.dirname(_thumucthietlap()), "vitrithoyeu.json")
 

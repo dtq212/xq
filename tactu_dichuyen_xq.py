@@ -1228,6 +1228,15 @@ class TacTuDiChuyen:
             self._idbandotheosaugannhat = idbandotheosau
             self._thoidiemdoibandotheosau = time.time()
 
+        # Đang về Tân Thủ Thôn (Hồi Môn Phái rồi Xa Phu) vì người được theo sau ở đó, mà người đó đã sang bản đồ khác: huỷ bước Xa Phu.
+        # Từng: Gạ ở Tân Thủ Thôn, Thk Hồi Môn Phái về Vân Mộng Cốc; Gạ cũng về Vân Mộng Cốc, Thk vẫn chạy tới Xa Phu về Tân Thủ Thôn
+        # (2026-11-18 01:03, chỉ còn cách Gạ ~20 ô)
+        if self._xaphunietban and self._xaphunietban == self._xaphunietbantheosau \
+                and idbandotheosau and idbandotheosau != BANDO_TANTHUTHON:
+            self.moitruong._inlog(f"[THEO SAU] Người được theo sau đã sang {laytenbando(idbandotheosau)}, thôi {XAPHU} về Tân Thủ Thôn")
+            self._xaphunietban = None
+            self._xaphunietbantheosau = None
+
         idbandohientai = self.moitruong.get_idbandohientai()
         if not idbandotheosau or idbandotheosau == idbandohientai:
             return False
@@ -1258,7 +1267,11 @@ class TacTuDiChuyen:
             return True
 
         toadotheosau = (info["x"], info["y"]) if info.get("x") and info.get("y") else None
+        xaphutruoc = self._xaphunietban
         yeucau = self._thuchienbuocditoibando(buoc, idbandotheosau, toadotheosau, f"[THEO SAU] Người được theo sau ở {laytenbando(idbandotheosau)}")
+        if self._xaphunietban and self._xaphunietban != xaphutruoc:
+            # Vừa bắt đầu chuyến Hồi Môn Phái + Xa Phu vì theo sau: đánh dấu để huỷ khi người được theo sau rời Tân Thủ Thôn
+            self._xaphunietbantheosau = self._xaphunietban
         if yeucau:
             self._yeucautheosau = yeucau
         return True

@@ -3,6 +3,7 @@
 import math
 import re
 import time
+import unicodedata
 import win32gui
 import win32con
 
@@ -102,6 +103,16 @@ class TacTuHoatDong:
         # Trong phó bản thì luôn kiểm tra (không cần bật lộ trình điểm đánh) nhưng chỉ ngưng vì ẩn thân, người ngoài nhóm trong phó bản là chuyện thường
         is_chianthan = not self._is_tudongdichuyendiemdanhxungquanh
         if is_chianthan and not (self.moitruong.get_idbandohientai() in BANDOPHOBANs or self.moitruong.get_is_phobanmuonbando()):
+            # Không đi lộ trình, ngoài phó bản: vẫn ngưng khi chính mình hoặc nhân vật cùng bản đồ thấy tên trong TENANTHANLUONNGUNGs
+            # ẩn thân, trừ khi mình đang bật PK (người dùng dặn 2026-11-18)
+            if self.moitruong.get_idmaupk():
+                return
+            if phathien and self._is_anthanluonngung(phathien[0]):
+                self._batdautamngung(f"phát hiện {phathien[0]}", phathien[1])
+                return
+            phathienkhac = self._layanthantucuasokhac()
+            if phathienkhac and self._is_anthanluonngung(phathienkhac[0]):
+                self._batdautamngung(*phathienkhac)
             return
         if phathien and (not is_chianthan or "ẩn thân" in phathien[0]):
             self._batdautamngung(f"phát hiện {phathien[0]}", phathien[1])
@@ -109,6 +120,18 @@ class TacTuHoatDong:
         phathienkhac = self._layanthantucuasokhac()
         if phathienkhac and (not (is_chianthan or is_bonguoila or is_chicanhbaonguoila) or "ẩn thân" in phathienkhac[0]):
             self._batdautamngung(*phathienkhac)
+
+    @staticmethod
+    def _is_anthanluonngung(mota):
+        # mota: "<tên> ẩn thân" (tự thấy) hoặc "<nhân vật> phát hiện <tên> ẩn thân" (cửa sổ khác thấy) -> tên có trong TENANTHANLUONNGUNGs
+        if not mota or not mota.endswith(" ẩn thân"):
+            return False
+        ten = mota[:-len(" ẩn thân")].rsplit(" phát hiện ", 1)[-1]
+
+        def gon(chu):
+            chu = "".join(c for c in unicodedata.normalize("NFD", chu) if not unicodedata.combining(c))
+            return "".join(chu.replace("đ", "d").replace("Đ", "D").split()).lower()
+        return gon(ten) in {gon(t) for t in TENANTHANLUONNGUNGs}
 
     def _canhbaonguoila(self, mota):
         # Thấy người lạ khi đã tắt tạm ngưng: phát âm + tin Telegram, tối đa 1 lần mỗi THOIGIANTAMNGUNGNGUOILA giây (quét 0.5s/lần)

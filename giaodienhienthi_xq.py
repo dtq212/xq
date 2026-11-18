@@ -23,6 +23,7 @@ from tienich_xq import duongdantaikhoan, tenmaynay, taicauhinhphongyeu, luucauhi
 from tienich_xq import taidanhsachnhanvat, luudanhsachnhanvat, taicaidatgiaodien, luucaidatgiaodien, taithongtinnguoichoi, luuthongtinnguoichoi, \
     taithongtinquai, luuthongtinquai
 from tienich_xq import laydoiphobans, taidoiphobans, luudoiphobans
+from tienich_xq import taitenhieuung, luutenhieuung
 from keogatudong_xq import taicauhinhkeoga, luucauhinhkeoga, phantichdanhsachtaikhoan, chudanhsachtaikhoan, SOGATOIDA
 from dangnhap_xq import ancuasogame, duongdangamemaynay, focuscuasogame, hiencuasogame, is_batchomaynay, is_cuasogamedaan, luucauhinhdangnhap, taicauhinhdangnhap, taikhoanbatchomaynay
 from thongke_xq import taithongke, gopthongke
@@ -1075,6 +1076,8 @@ class GiaoDienHienThi:
         self._taonhomtamdanh(tab)
         # Mục tiêu đang chọn (Khí Huyết / Kháng ước lượng) ngay dưới Tầm đánh
         self._taonhomthongtinmuctieu(tab)
+        # Hiệu ứng trên mình (tên, thời gian còn lại) và trên mục tiêu đang chọn
+        self._taonhomhieuung(tab)
 
     def _taonhomgiukhoangcach(self, tab):
         # Giữ khoảng cách với đối tượng đang đánh mình (ra đòn và quay mặt về mình): lùi ra, chỉ buff / hồi máu, bỏ chiêu đánh
@@ -2595,6 +2598,89 @@ class GiaoDienHienThi:
         # Hành động hiện tại của bot lên đầu nhân vật mình (danhhieumuctieu_xq.ODauNhanVat), chỉ client mình thấy
         self._create_check(nhom, "Hiện hành động hiện tại trên đầu nhân vật (chỉ mình thấy)", self.vars["hienhanhdongtrendau"],
                            "battat_hienhanhdongtrendau")
+
+    def _taonhomhieuung(self, tab):
+        # Tab Chiến đấu, cuối: hiệu ứng đang dính trên nhân vật đang chọn và trên mục tiêu của nó. Cập nhật trong _capnhatbanghieuung
+        nhom = self._taonhom(tab, "Hiệu ứng")
+        hang = ttk.Frame(nhom)
+        hang.grid(row = 0, column = 0, sticky = tk.EW)
+        self.lbl_hieuung = ttk.Label(hang, text = "", style = "Phu.TLabel")
+        self.lbl_hieuung.pack(side = tk.LEFT)
+        self._taohuongdan(hang, "• Trên mình: tên + thời gian còn lại đọc thẳng từ ô hiệu ứng của client (mốc kết thúc), đúng tới từng giây.\n"
+                                "• Tên học bằng lệnh \"desc loop <ID> <mã>\" như khi rê chuột lên icon: mã chưa biết tên thì bot tự hỏi 1 lần,"
+                                " tên lưu vào _internal/tenhieuung.json nên lần sau không hỏi lại.\n"
+                                "• Trên mục tiêu: máy chủ chỉ gửi mã hiệu ứng, KHÔNG gửi thời gian của người khác / quái. Tên lấy từ tên đã học"
+                                " hoặc tên kỹ năng cùng mã trên bảng kỹ năng của mình, không có thì hiện mã.\n"
+                                "• Choáng / Bất Động / Hôn Mê cùng mã 9002: tên đọc lại mỗi lần dính.")
+        khung = ttk.Frame(nhom)
+        khung.grid(row = 1, column = 0, sticky = tk.EW, pady = (4, 0))
+        cots = (("tren", "Trên", 70, tk.W), ("ten", "Hiệu ứng", 170, tk.W), ("loai", "Loại", 55, tk.CENTER),
+                ("conlai", "Còn lại", 90, tk.E), ("mota", "Mô tả", 260, tk.W))
+        self.tree_hieuung = BangCatChu(khung, columns = [c[0] for c in cots], show = "headings", height = 8, selectmode = "none")
+        for cot, chu, rong, canh in cots:
+            self.tree_hieuung.heading(cot, text = chu)
+            self.tree_hieuung.column(cot, width = self._px(rong), anchor = canh, stretch = cot == "mota")
+        self.tree_hieuung.tag_configure("coloi", foreground = MAUCHU_LUC)
+        self.tree_hieuung.tag_configure("cohai", foreground = MAUCHU_DO)
+        thanhcuon = ttk.Scrollbar(khung, orient = tk.VERTICAL, command = self.tree_hieuung.yview)
+        self.tree_hieuung.configure(yscrollcommand = thanhcuon.set)
+        self.tree_hieuung.pack(side = tk.LEFT, fill = tk.BOTH, expand = True)
+        thanhcuon.pack(side = tk.RIGHT, fill = tk.Y)
+
+    @staticmethod
+    def _dinhdangconlai(giay):
+        # 17 -> "17s", 804 -> "13p 24s", 4000 -> "1g 06p", None -> "∞" (không hết hạn)
+        if giay is None:
+            return "∞"
+        giay = int(giay)
+        if giay >= 3600:
+            return f"{giay // 3600}g {giay % 3600 // 60:02d}p"
+        if giay >= 60:
+            return f"{giay // 60}p {giay % 60:02d}s"
+        return f"{giay}s"
+
+    def _capnhatbanghieuung(self):
+        # Gộp tên hiệu ứng các cửa sổ vừa học ("desc loop") vào tenhieuung.json, rồi vẽ bảng cho cửa sổ đang chọn
+        if not hasattr(self, "_tenhieuung"):
+            self._tenhieuung = taitenhieuung()
+        is_doi = False
+        for info in self.shared_data.values():
+            if not isinstance(info, dict):
+                continue
+            for ma, muc in (info.get("_tenhieuunghoc") or {}).items():
+                if isinstance(muc, dict) and muc.get("ten") and self._tenhieuung.get(str(ma)) != muc:
+                    self._tenhieuung[str(ma)] = muc
+                    is_doi = True
+        if is_doi:
+            luutenhieuung(self._tenhieuung)
+        if not hasattr(self, "tree_hieuung"):
+            return
+        hwnd = self.get_selected_hwnd()
+        info = (self.shared_data.get(hwnd) or {}) if hwnd else {}
+        dongs = []
+        banthans = sorted(info.get("_hieuungbanthan") or [], key = lambda h: h.get("coloi", 0))
+        for h in banthans:
+            dongs.append((("Mình", h.get("ten") or f"Mã {h['id']}", "Có lợi" if h.get("coloi") else "Có hại",
+                           self._dinhdangconlai(h.get("conlai")), h.get("mota") or ""), "coloi" if h.get("coloi") else "cohai"))
+        tenmuctieu = info.get("_tenmuctieu") or "Mục tiêu"
+        for h in sorted(info.get("_hieuungmuctieu") or [], key = lambda h: h.get("coloi", 0)):
+            ten = h.get("ten") or (self._tenhieuung.get(str(h["id"])) or {}).get("ten") or f"Mã {h['id']}"
+            dongs.append(((tenmuctieu, ten, "Có lợi" if h.get("coloi") else "Có hại", "?", ""), "coloi" if h.get("coloi") else "cohai"))
+        self.lbl_hieuung.config(text = "Chưa chọn nhân vật" if not hwnd else
+                                f"Mình {len(banthans)} hiệu ứng · mục tiêu {len(info.get('_hieuungmuctieu') or [])} hiệu ứng")
+        cu = list(self.tree_hieuung.get_children())
+        for i, (giatri, the) in enumerate(dongs):
+            iid = f"hu{i}"
+            if iid in cu:
+                if tuple(self.tree_hieuung.item(iid, "values")) != tuple(str(v) for v in giatri):
+                    self.tree_hieuung.item(iid, values = giatri)
+                if self.tree_hieuung.item(iid, "tags") != (the,):
+                    self.tree_hieuung.item(iid, tags = (the,))
+            else:
+                self.tree_hieuung.insert("", tk.END, iid = iid, values = giatri, tags = (the,))
+        thua = [iid for iid in cu if int(iid[2:]) >= len(dongs)]
+        if thua:
+            self.tree_hieuung.delete(*thua)
 
     def _luukhonguoichoi(self, infos):
         # Gộp ước lượng mọi cửa sổ theo mục tiêu, ghi chỉ số người chơi vào file theo ID (mỗi THOIGIANLUUKHONGUOICHOI giây, chỉ khi
@@ -5136,7 +5222,7 @@ class GiaoDienHienThi:
                     self.shared_data_lan = {}
             thoigians.append(("chup", time.perf_counter() - lucdau))
             for ham in (self._capnhatdanhsachnhanvat, self._capnhatdangnhap, self._capnhatbangdieukhien, self._capnhatthongtinmuctieu,
-                        self._capnhatgiaodo, self._capnhathangviec, self._capnhatkeocap, self._capnhatkeoga, self._capnhatmatac, self._capnhattinhanh,
+                        self._capnhatbanghieuung, self._capnhatgiaodo, self._capnhathangviec, self._capnhatkeocap, self._capnhatkeoga, self._capnhatmatac, self._capnhattinhanh,
                         self._capnhattodoimotlan, self._capnhatcanhbao, self._capnhatangame):
                 batdau = time.perf_counter()
                 try:

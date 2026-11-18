@@ -207,7 +207,7 @@ PHOBAN_MAP = {
 BUOCLANGLYSON_MAP = {
     # Thành Kiều: 4 boss lần lượt hiện, quét sạch thì boss cuối hiện
     BANDO_THANHKIEU: (("danh", "Mã Quỷ", 245, 83), ("danh", "Lương Hưng", 123, 89), ("danh", "Yến Thập Tam", 130, 175),
-                      ("danh", "Tư Tà", 61, 133), ("danh", "Thủ Lĩnh Thành Kiều", 122, 147, True), ("ra",)),
+                      ("danh", "Tư Tà", 61, 133), ("danh", "Thủ Lĩnh Thành Kiều", 116, 148, True), ("ra",)),
     BANDO_LANGLYSON1: (("danh", "Tướng Quân Dũng", 234, 207), ("noichuyen", "Cơ Quan Thạch", 234, 207), ("sangtang", BANDO_LANGLYSON2)),
     BANDO_LANGLYSON2: (("danh", "Đường Truy", 166, 178), ("danh", "Thế Công Minh", 204, 97), ("danh", "Thạch Tướng Quân", 204, 97),
                        ("danh", "Hào Quật", 140, 51), ("sangtang", BANDO_LANGLYSON3)),
@@ -659,7 +659,8 @@ class TacTuLangLySon:
         return vangs
 
     def _chothanhvien(self, s, idbando, vangs):
-        # Đứng ở chỗ vào tầng, không đánh (cả thành viên theo sau: get_is_camdanhlanglyson), mời lại người rời nhóm. -> yêu cầu di chuyển
+        # Đứng chờ tại chỗ, không đánh (cả thành viên theo sau: get_is_camdanhlanglyson), mời lại
+        # người rời nhóm. -> yêu cầu di chuyển
         moitruong = self.moitruong
         now = time.time()
         if s["chedo"] != "cho":
@@ -681,9 +682,8 @@ class TacTuLangLySon:
             self._baolanglyson(s, f"chodoi|{s['sovong']}|{int(s['lucchodoi'])}",
                                f"⚠️ {self._tenpb(s)}: chờ {int(THOIGIANBAOCHOTHANHVIEN // 60)} phút chưa đủ người để đánh boss cuối: "
                                + ", ".join(f"{t} ({l})" for _, t, l in vangs))
-        diemvao = s["diemvao"].get(idbando)
-        if diemvao and moitruong.get_khoangcachdiem(*diemvao) > 3.:
-            return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (diemvao[0], diemvao[1], idbando), "khoangcachtoida": 1.}
+        # Đứng tại chỗ chờ, không bao giờ quay về chỗ vào tầng (thành viên có Theo sau tự chạy tới; người được mời lại cũng tự theo).
+        # Từng chạy ngược về (230, 45) đi ngang ngay Thủ Lĩnh Thành Kiều ở (142, 139) mà không đánh (364 2026-11-18 01:13:29-01:13:52)
         return None
 
     def _buocvao(self, s):
@@ -860,6 +860,11 @@ class TacTuLangLySon:
                 ketqua, yeucau = self._danhboss(s, idbando, tenboss, x, y, is_bosscuoi)
             if ketqua:
                 self._logpb(s, f"{tenbando}: xong {_tenboss(tenboss)} ({ketqua})")
+                if is_bosscuoi and (s.get("boss") or {}).get("vitri"):
+                    # Nhớ chỗ boss cuối chết để tìm npcxong quanh đó (boss bị kéo xa toạ độ cấu hình: Thủ Lĩnh Thành Kiều chết ở
+                    # (156, 133), cấu hình (122, 147) cách ~37 ô > KHOANGCACHNPCXONG, không nhận Tần Quốc Mật Thám, quay lại chờ boss
+                    # mãi, 364 2026-11-18 01:14)
+                    s["vitribosscuoi"] = list(s["boss"]["vitri"])
                 self._sangbuoc(s, idbando)
             return yeucau
         if loai == "noichuyen":
@@ -936,13 +941,21 @@ class TacTuLangLySon:
         return None
 
     def _is_thaynpcxong(self, s, x, y):
-        # NPC chỉ hiện khi boss cuối đã chết (npcxong), đứng gần chỗ boss cuối (x, y)
+        # NPC chỉ hiện khi boss cuối đã chết (npcxong), đứng gần chỗ boss cuối: toạ độ cấu hình (x, y) hoặc chỗ boss cuối chết thật
+        # (s["vitribosscuoi"], boss hay bị kéo xa toạ độ cấu hình)
         tennpc = PHOBAN_MAP[s["phoban"]].get("npcxong")
         diachi = self.moitruong.action_timkiemnhanvat(tennhanvat = tennpc) if tennpc else None
         if not diachi:
             return False
         xnpc, ynpc = self.moitruong.get_toado(diachi)
-        return math.hypot(xnpc - x, ynpc - y) <= KHOANGCACHNPCXONG
+        mocs = [(x, y)]
+        if s.get("vitribosscuoi"):
+            mocs.append(tuple(s["vitribosscuoi"]))
+        is_gan = any(math.hypot(xnpc - xm, ynpc - ym) <= KHOANGCACHNPCXONG for xm, ym in mocs)
+        if not is_gan and time.time() - s.get("luclognpcxongxa", 0.) > 10.:
+            s["luclognpcxongxa"] = time.time()
+            self.moitruong._inlog(f"[PHÓ BẢN] Thấy {tennpc} ở ({xnpc}, {ynpc}) nhưng xa mốc boss cuối {mocs} quá {KHOANGCACHNPCXONG:.0f} ô")
+        return is_gan
 
     def _sangbuoc(self, s, idbando):
         s["buoc"][idbando] = s["buoc"].get(idbando, 0) + 1
@@ -1439,7 +1452,7 @@ class TacTuLangLySon:
                  lucchodoi = 0., lucmoi = {}, diemvao = {}, daxongphoban = False, davao = False)
         # Phong Yêu Kính: vòng mới được give món mới
         for khoa in ("py", "giao", "dagive", "dolamkim", "lucchonvaopy", "solanvaolaipy","dadescpy",
-                     "lucdagive", "lucnhom1", "is_boranpcxong", "lucgiaitanpy", "lucrapy"):
+                     "lucdagive", "lucnhom1", "is_boranpcxong", "lucgiaitanpy", "lucrapy", "vitribosscuoi", "luclognpcxongxa"):
             s.pop(khoa, None)
         self._xoabosspy()
 

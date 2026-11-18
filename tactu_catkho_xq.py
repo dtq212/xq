@@ -22,6 +22,7 @@ from luattuido_xq import tailuat, HANHDONG_BAN
 from moitruong_xq import DOUUTIEN_KHANCAP
 from thongbao_xq import baosuco
 from tienich_xq import phatam
+from tactu_vatpham_xq import cattenhanhtrang
 
 LYDOCATKHO_BANRAC = "banrac"
 LYDOCATKHO_LENHTAY = "lenhtay"
@@ -230,18 +231,18 @@ class TacTuCatKho:
         print(f"[CẤT KHO] Túi Càn Khôn hết hạn còn {len(mons)} món ({', '.join(sorted({m['ten'] for m in mons})[:5])}...), về Tân Thủ Thôn cất kho")
         return True
 
-    def _laymoncatkho(self, tientos = None, is_chituihethan = False, mamaus = ()):
+    def _laymoncatkho(self, tientos = None, is_chituihethan = False, mamaus = (), tenboquas = ()):
         # Chồng trong túi cần cất theo bảng Cất kho, theo thứ tự ô: [{"vitri", "id", "ten", "soluong" (của chồng, 0 = không chồng được),
         # "cat" (số cất từ chồng này), "ruong" (0 = tự động)}]. Tính theo tên: tổng trong túi trừ "giữ lại" của luật, lấy dần từ ô đầu
         # (chồng cuối có thể chỉ cất 1 phần). Luật cần mô tả mà chưa đọc được thì bỏ qua lượt này
         # tientos (việc cất riêng, vd kéo cấp cất sách "Nhập Môn"): bỏ bảng Cất kho, cất hết món có tên bắt đầu bằng 1 trong các tiền tố
-        # (không phân biệt hoa thường), rương tự động
+        # (không phân biệt hoa thường), rương tự động; trừ món có tên trong tenboquas (tên đầy đủ, so theo tên cắt 31 byte như ô hành trang)
         # Không có tientos thì luôn cất thêm cả chồng trong túi hết hạn (_laymontuihethan, bảng Cất kho chỉ xét các túi còn hạn);
         # is_chituihethan (việc tạo vì túi hết hạn khi tắt "Tự cất sau bán rác"): chỉ cất đồ túi hết hạn
         # mamaus (việc của Săn Tinh Anh, viec["mamaus"]): CHỈ cất trang bị tên màu này (_is_cattheomau), bỏ bảng Cất kho (người dùng
         # 16/11: lúc săn về cất mà cất cả món không phải Lam Kim). Đồ túi hết hạn vẫn cất (không dùng được, chiếm chỗ)
         if tientos:
-            return self._laymoncatkhotheoluat(tientos)
+            return self._laymoncatkhotheoluat(tientos, tenboquas = tenboquas)
         # Còn chuyển được về túi còn hạn thì chưa cất đồ túi hết hạn (action_dontuihethan chuyển trước, _buoccatkho chờ)
         montuihethans = [] if self._is_dangdontuihethan() else self._laymontuihethan()
         if is_chituihethan:
@@ -249,7 +250,7 @@ class TacTuCatKho:
         mons = self._laymoncatkhotheoluat(vitriboquas = {m["vitri"] for m in montuihethans}, mamaus = mamaus)
         return sorted(mons + montuihethans, key = lambda m: m["vitri"])
 
-    def _laymoncatkhotheoluat(self, tientos = None, vitriboquas = (), mamaus = ()):
+    def _laymoncatkhotheoluat(self, tientos = None, vitriboquas = (), mamaus = (), tenboquas = ()):
         # vitriboquas: ô không xét theo luật (đồ túi hết hạn, cất riêng cả chồng), "giữ lại" chỉ tính trên các ô còn lại
         moitruong = self.moitruong
         layluat = self._layluatcatkho
@@ -262,8 +263,11 @@ class TacTuCatKho:
             tientos = tuple(unicodedata.normalize("NFC", t).lower() for t in tientos)
             luatrieng = {"ruong": 0, "giulai": 0}
 
+            tenboquas = {unicodedata.normalize("NFC", cattenhanhtrang(t)).lower() for t in tenboquas}
+
             def layluat(ten, vitri):
-                return luatrieng if unicodedata.normalize("NFC", ten).strip().lower().startswith(tientos) else None
+                ten = unicodedata.normalize("NFC", ten).strip().lower()
+                return luatrieng if ten.startswith(tientos) and ten not in tenboquas else None
         soluongo = moitruong.get_soluongvatphamhanhtrangtoida() + 1
         tens = moitruong._docdanhsachtenvatphamhanhtrang(soluongo)
         ids = moitruong._docdanhsachidvatphamhanhtrang(soluongo)
@@ -452,7 +456,8 @@ class TacTuCatKho:
                     viec["boqua"][dangcho["ten"]] = f"thử {SOLANTHUCATKHO} lần không được, đồ khoá?"
             return "dang"
 
-        mons = [m for m in self._laymoncatkho(viec.get("tientos"), viec.get("is_chituihethan", False), viec.get("mamaus", ()))
+        mons = [m for m in self._laymoncatkho(viec.get("tientos"), viec.get("is_chituihethan", False), viec.get("mamaus", ()),
+                                              viec.get("tenboquas", ()))
                 if m["ten"] not in viec["boqua"]]
         if not mons:
             if not viec.get("tientos") and self._is_dangdontuihethan():

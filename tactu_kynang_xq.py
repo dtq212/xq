@@ -34,13 +34,12 @@ class TacTuKyNang:
         return True
 
     def _lammoinguyenkhiquynguyen(self):
-        # Quá ~30 phút server cho Nguyên Khí Quy Nguyên hết hạn mà client vẫn hiện hiệu ứng (người dùng phát hiện 2026-10-28: thiếu nguyên
-        # khí mà không biết). Server báo "Tập trung vận khí “Nguyên Khí Quy Nguyên”." khi bật, "Bạn thu hồi …" khi tắt. Người dùng chốt:
-        # client CÓ hiệu ứng thì chưa chắc server có, client KHÔNG có thì chắc chắn server không có. Nên:
-        #  - không có hiệu ứng: chắc chắn tắt => bấm bật, bị từ chối (đang ra chiêu...) thì THOIGIANCHOTAMPHAPBATTAT giây sau bấm lại
-        #  - có hiệu ứng, tin "Tập trung" chưa quá THOIGIANLAMMOINGUYENKHIQUYNGUYEN: đang bật
-        #  - có hiệu ứng mà chưa có tin / quá hạn: bấm làm mới 1 lần rồi chờ tin (server bật thì thành thu hồi, hiệu ứng mất => nhánh đầu
-        #    bật lại; server đã hết hạn thì thành bật). Chưa có tin thì không bấm tiếp trong THOIGIANCHOTINLAMMOINGUYENKHIQUYNGUYEN
+        # Server cho Nguyên Khí Quy Nguyên hết hạn sau 30 phút. Server báo "Tập trung vận khí “Nguyên Khí Quy Nguyên”." khi bật,
+        # "Bạn thu hồi …" khi tắt. Theo ô hiệu ứng trên client (người dùng chốt 2026-11-18, bỏ kiểu làm mới mỗi 10 phút):
+        #  - không có hiệu ứng: bấm bật, bị từ chối (đang ra chiêu...) thì THOIGIANCHOTAMPHAPBATTAT giây sau bấm lại
+        #  - thời gian tối đa 1800 (vừa bật, client đếm đúng hạn server): còn thời gian là đang bật; hết mà còn icon thì bấm
+        #  - thời gian tối đa khác (30000: máy chủ gửi lại, số không tin được): bấm tắt => hiệu ứng mất => nhánh đầu bật lại, thành 1800
+        # Đã bấm khi đang có hiệu ứng mà server chưa trả tin thì chờ THOIGIANCHOTINLAMMOINGUYENKHIQUYNGUYEN, không bấm dồn (bấm thêm là đảo lại)
         thoidiemhientai = time.time()
         for thoidiem, noidung in self.moitruong.get_lichsutrochuyen5s():
             if thoidiem <= self._thoidiemxettinnguyenkhiquynguyen or TENKYNANG_NGUYENKHIQUYNGUYEN not in noidung:
@@ -53,10 +52,20 @@ class TacTuKyNang:
         # Đọc bảng hiệu ứng chưa chắc (đang tải lại) thì coi như có: chỉ khi chắc chắn không có mới bấm ngay
         is_cohieuung = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NGUYENKHIQUYNGUYEN,), True, is_hieuungcoloi = 1)
         dabat = self._thoidiembatnguyenkhiquynguyen
+        lydo = "không có hiệu ứng"
         if is_cohieuung:
-            if dabat is not None and thoidiemhientai - dabat < THOIGIANLAMMOINGUYENKHIQUYNGUYEN:
+            toidas = [toida for idhu, coloi, toida, _ in self.moitruong.get_danhsachhieuungnhanvats()
+                      if idhu == HIEUUNGKYNANG_NGUYENKHIQUYNGUYEN and coloi == 1]
+            if not toidas:
+                # Coi là có chỉ vì bảng đang tải lại: chờ đọc được
                 return
-            # Chưa chắc trạng thái: đã bấm mà server chưa trả tin thì chờ, không bấm dồn (lỡ đang bật thì bấm thêm là tắt)
+            if THOIGIANHIEULUCNGUYENKHIQUYNGUYEN in toidas:
+                conlai = self.moitruong.get_thoigianconlaihieuung(HIEUUNGKYNANG_NGUYENKHIQUYNGUYEN, is_hieuungcoloi = 1)
+                if conlai is None or conlai > 0:
+                    return
+                lydo = f"hết hạn {THOIGIANHIEULUCNGUYENKHIQUYNGUYEN}s mà còn icon"
+            else:
+                lydo = f"thời gian tối đa {toidas[0]} không tin được, tắt rồi bật lại"
             thoidiemgui = self._thoidiemguitamphapbattat_map.get(VIRIKYNANG_NGUYENKHIQUYNGUYEN, 0.)
             if thoidiemgui > self._thoidiemxettinnguyenkhiquynguyen and thoidiemhientai - thoidiemgui < THOIGIANCHOTINLAMMOINGUYENKHIQUYNGUYEN:
                 return
@@ -66,8 +75,6 @@ class TacTuKyNang:
         if not self._is_kynangdungduoc(VIRIKYNANG_NGUYENKHIQUYNGUYEN) or not self._is_duocguitamphapbattat(VIRIKYNANG_NGUYENKHIQUYNGUYEN):
             return
         if self.moitruong.action_sudungkynangvitri(VIRIKYNANG_NGUYENKHIQUYNGUYEN) and IS_LOGCAULENH:
-            lydo = "không có hiệu ứng" if not is_cohieuung else ("có hiệu ứng, chưa có tin bật" if dabat is None
-                                                                else f"đã bật {(thoidiemhientai - dabat) / 60:.0f} phút, làm mới")
             self.moitruong._inlog(f"[NGUYÊN KHÍ QUY NGUYÊN] bấm: {lydo}")
 
     def _get_thoigianconlaihoichieunhatquyen(self, is_sansang):

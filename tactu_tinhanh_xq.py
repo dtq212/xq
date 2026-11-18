@@ -25,6 +25,11 @@ KHOANGCACHGOPVITRITINHANH = 15.
 GIANCACHGHIVITRITINHANH = 3.
 # Thấy Tinh Anh mà chừng này giây chưa đánh được (bị chắn, chọn mục tiêu bỏ qua...) thì thôi đi tới con đó, dò tiếp
 THOIGIANDUOITINHANHTOIDA = 40.
+# Tinh Anh đang đuổi ra khỏi tầm nhìn (_get_diachidoituongxungquanhs chỉ lấy trong KHOANGCACHTOANMANHINH = 18 ô) thì vẫn nhớ chỗ thấy cuối
+# chừng này giây và đi tiếp tới đó. 18/11 Hầm Vạn Nhân 1: Tinh Binh Oan Linh cách 17~18.6 ô bên kia vách (đường đi 36 ô), mình lùi 1 bước
+# là nó ra ngoài 18 ô -> quên ngay, quay về điểm dò hướng ngược lại; bước lại vào 18 ô thì đuổi tiếp. Hai lệnh "dò" / "tới Tinh Anh" (cộng
+# chọn mục tiêu "Tiếp cận để tấn công") thay nhau mỗi giây, nhân vật kẹt tại chỗ, giờ đuổi 40s cũng bị xoá theo nên không bao giờ hết
+THOIGIANNHOTINHANHKHUAT = 10.
 # Túi đầy lúc săn: về Tân Thủ Thôn cất kho CHỈ đồ Lam Kim rơi từ Tinh Anh (không theo bảng Cất kho), không bán rác; cất xong săn tiếp. Cất xong
 # chưa tới chừng này giây mà túi vẫn đầy (không có món nào cất được) thì dừng săn, kẻo đi về Tân Thủ Thôn mãi
 MAUCATTINHANHs = (MAUTEN["lam kim"],)
@@ -374,7 +379,7 @@ class TacTuTinhAnh:
             duoi = s["duoi"] or {}
             for _, iddoituong, x, y, ten in self._timtinhanhxungquanh(s, idbando):
                 if (self._is_tinhanhchacchan(idbando, ten) and iddoituong not in self._idmuctieubiloi_map
-                        and time.time() - duoi.get(iddoituong, time.time()) <= THOIGIANDUOITINHANHTOIDA):
+                        and time.time() - duoi.get(iddoituong, {}).get("luc", time.time()) <= THOIGIANDUOITINHANHTOIDA):
                     self._logta(f"Thấy {ten} ở {laytenbando(idbando)} ({x}, {y}) trên đường đi: đánh luôn")
                     s["ibando"] = bandos.index(idbando)
                     s["do"] = None
@@ -394,15 +399,28 @@ class TacTuTinhAnh:
         self._batdanhquaitinhanh(s)
         tinhanhs = self._timtinhanhxungquanh(s, idbando)
         # Thấy Tinh Anh còn sống (chưa bị bot đánh dấu lỗi): đi tới nó, chọn mục tiêu / tấn công của bot lo phần đánh (ưu tiên hơn đi dò)
-        # s["duoi"]: id -> lúc bắt đầu đi tới con đó (mỗi con tính riêng, kẻo 2 con không tới được thay nhau đặt lại giờ)
-        duoi = s["duoi"] = {i: luc for i, luc in (s["duoi"] or {}).items() if any(i == t[1] for t in tinhanhs)}
-        for khoangcach, iddoituong, x, y, ten in tinhanhs:
+        # s["duoi"]: id -> {"luc": lúc bắt đầu đi tới con đó, "thay": lúc thấy cuối, x, y, ten} (mỗi con tính riêng, kẻo 2 con không tới
+        # được thay nhau đặt lại giờ). Con ra khỏi tầm nhìn vẫn nhớ THOIGIANNHOTINHANHKHUAT giây, đi tới chỗ thấy cuối; tới gần (nửa màn
+        # hình) mà không thấy (đã chết / đi xa) hoặc đã thấy chết thì bỏ
+        bayh = time.time()
+        duoi = s["duoi"] = s["duoi"] or {}
+        thays = {t[1] for t in tinhanhs}
+        for iddoituong, d in list(duoi.items()):
+            if iddoituong not in thays and (bayh - d["thay"] > THOIGIANNHOTINHANHKHUAT or iddoituong in s["iddachet"]
+                                            or moitruong.get_khoangcachdiem(d["x"], d["y"]) <= KHOANGCACHNUAMANHINH):
+                del duoi[iddoituong]
+        for _, iddoituong, x, y, ten in tinhanhs:
+            duoi.setdefault(iddoituong, {"luc": bayh}).update(thay = bayh, x = x, y = y, ten = ten)
+        dangduois = sorted(tinhanhs + [(moitruong.get_khoangcachdiem(d["x"], d["y"]), i, d["x"], d["y"], d["ten"])
+                                       for i, d in duoi.items() if i not in thays])
+        for khoangcach, iddoituong, x, y, ten in dangduois:
             if iddoituong in self._idmuctieubiloi_map:
                 continue
-            if time.time() - duoi.setdefault(iddoituong, time.time()) > THOIGIANDUOITINHANHTOIDA:
+            if bayh - duoi[iddoituong]["luc"] > THOIGIANDUOITINHANHTOIDA:
                 continue
-            s["trangthai"] = f"đánh {ten} ở {laytenbando(idbando)} ({x}, {y})"
-            self._capnhatbuocdichuyen(f"Săn Tinh Anh: tới {ten} ({x}, {y})")
+            khuat = "" if iddoituong in thays else ", chỗ thấy cuối"
+            s["trangthai"] = f"đánh {ten} ở {laytenbando(idbando)} ({x}, {y}{khuat})"
+            self._capnhatbuocdichuyen(f"Săn Tinh Anh: tới {ten} ({x}, {y}{khuat})")
             return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x, y, idbando), "khoangcachtoida": 2.}
         # Mỗi bản đồ chỉ có 1 con Tinh Anh (người dùng 16/11, ~30 phút mới mọc lại): giết được 1 con là sang bản đồ kế, cứ quay vòng
         if not tinhanhs and s.get("bandogiet") == idbando and s.get("loaidagiet"):

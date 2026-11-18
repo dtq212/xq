@@ -177,6 +177,12 @@ SOLAMKIMGIULAIKC = 8
 # về, acc chính bán đồ xong thì tới Quản Khố cất hết vào rương (người dùng dặn 2026-11-14; dùng bộ cất kho tactu_catkho_xq, rương tự
 # động). Đang ở Chu Quốc cất ở Quản Khố Chu Quốc (X_KHO_CHU, Y_KHO_CHU), Tân Thủ Thôn ở Quản Khố, nơi khác thì về Chu Quốc
 TIENTOSACHTHUHOIKCs = ("Nhập Môn",)
+# Sách "Nhập Môn" acc chính giữ lại trong túi, không cất kho (người dùng dặn 2026-11-18). So theo tên đã cắt 31 byte như trong ô hành
+# trang (cattenhanhtrang), vd "Nhập Môn Cơ Bản Thương Pháp" trong túi là "Nhập Môn Cơ Bản Thương"
+SACHGIULAIKCs = ("Nhập Môn Thân Thủ Vô Ảnh", "Nhập Môn Kinh Lạc Học Thuyết", "Nhập Môn Cơ Bản Quyền Cước", "Nhập Môn Cơ Bản Đao Pháp",
+                 "Nhập Môn Cơ Bản Kiếm Pháp", "Nhập Môn Cơ Bản Thương Pháp", "Nhập Môn Cơ Bản Bổng Pháp", "Nhập Môn Ám Khí Đầu Xạ",
+                 "Nhập Môn Chiêu Giá Chi Thuật", "Nhập Môn Tụng Kinh", "Nhập Môn Thiền Định", "Nhập Môn Tu Tâm",
+                 "Nhập Môn Đạo Gia Học Thuyết")
 NPCBANTHUHOIKCs = {BANDO_CHUQUOC: ("Chủ Tiệm Y Dược", 250, 176), BANDO_TANTHUTHON: ("Chủ Tiệm Y Dược", 135, 170)}
 KHOANGCACHBANTHUHOIKC = 3.
 THOIGIANBANTHUHOIKC = 300.
@@ -697,12 +703,13 @@ class TacTuKeoCap:
             return False
         viec = s.get("catsach")
         if not viec:
-            if not self._laymoncatkho(TIENTOSACHTHUHOIKCs):
+            if not self._laymoncatkho(TIENTOSACHTHUHOIKCs, tenboquas = SACHGIULAIKCs):
                 s["dacatsach"] = True
                 self._logkc("Không có sách Nhập Môn để cất kho")
                 return False
             viec = s["catsach"] = self._taoviec(LYDOCATKHO_KEOCAP)
             viec["tientos"] = TIENTOSACHTHUHOIKCs
+            viec["tenboquas"] = SACHGIULAIKCs
             self._logkc("Cất sách Nhập Môn vào kho")
         idbando = moitruong.get_idbandohientai()
         if idbando not in (BANDO_CHUQUOC, BANDO_TANTHUTHON):

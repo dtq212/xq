@@ -714,7 +714,7 @@ KHOANGCACHTRANHCONG = 12
 
 def _laydiemcong(idbando):
     # Cổng của bản đồ và các điểm xuất hiện khi từ bản đồ khác sang (cạnh đó thường có cổng ngược lại, dữ liệu cổng có thể thiếu:
-    # Hàn Quốc không ghi cổng sang Tuyết Phong Sơn Bí Đạo nhưng điểm xuất hiện từ đó sang (164, 244) nằm ngay trên cổng)
+    # jmp.dat Hàn Quốc không ghi cổng sang Tuyết Phong Sơn Bí Đạo nhưng điểm xuất hiện từ đó sang (164, 244) nằm ngay trên cổng)
     diems = [(xcong, ycong) for _, xcong, ycong, _, _ in (BANDOCONG_MAP.get(idbando) or ("", ()))[1]]
     for _, (_, congs) in BANDOCONG_MAP.items():
         for idke, _, _, xden, yden in congs:

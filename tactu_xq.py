@@ -359,6 +359,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._thoidiemhoithanhphus = []
         # Niết Bàn: lúc bắt đầu về Tân Thủ Thôn bằng Tín Vật + Xa Phu (action_xulyxaphunietban), None khi không về
         self._xaphunietban = None
+        # Giá trị _xaphunietban của chuyến Xa Phu bắt đầu vì theo sau (người được theo sau ở Tân Thủ Thôn); người đó rời Tân Thủ Thôn
+        # (vd. cũng về môn phái, cùng bản đồ với mình) thì huỷ chuyến (_xulyphutheosau)
+        self._xaphunietbantheosau = None
         # Tên vật phẩm -> lần gần nhất báo không đủ tiền mua (5 phút báo 1 lần)
         self._thoidiembaothieutienmuagannhat_map = {}
         # Hội thoại NPC nhiều bước (Tân Thủ Tiên Cô...): các câu lệnh còn chờ gửi, cách nhau 1s, gửi hết thì đóng cửa sổ tuỳ chọn.

@@ -309,7 +309,7 @@ class CuaSo:
                 # (client chỉ đọc được hiệu ứng người trong tầm nhìn). Bảng vừa tụt về 0 (đang tải lại) => None = chưa biết
                 hieuungs = None
                 if self.moitruong.get_is_cohieuungs((), None) is not None:
-                    hieuungs = [(idhieuung, coloi) for idhieuung, coloi, _ in self.moitruong.get_danhsachhieuungnhanvats()]
+                    hieuungs = [(idhieuung, coloi) for idhieuung, coloi, _, _ in self.moitruong.get_danhsachhieuungnhanvats()]
 
                 x, y = self.moitruong.get_toado()
                 vitri = (self.moitruong.get_idbandohientai(), self.moitruong.get_tenphobanmuonbando(), x, y)
@@ -569,6 +569,14 @@ class CuaSo:
                             if info["_idnguoichoimuctieu"] else (None, None)
                 except Exception as err:
                     print(f"Lỗi ước lượng mục tiêu: {err}")
+                # Bảng hiệu ứng tab Chiến đấu: trên mình (tên, thời gian còn lại) và trên mục tiêu đang chọn (chỉ mã / tên, máy chủ không
+                # gửi thời gian hiệu ứng người khác); tên học được qua "desc loop" để giao diện ghi tenhieuung.json
+                try:
+                    info["_hieuungbanthan"] = self.moitruong.get_hieuungbanthans()
+                    info["_hieuungmuctieu"] = self.moitruong.get_hieuungdoituongs(diachimuctieugame) if info["iddoituongmuctieu"] else []
+                    info["_tenhieuunghoc"] = self.moitruong.get_tenhieuunghocs()
+                except Exception as err:
+                    print(f"Lỗi đọc bảng hiệu ứng: {err}")
                 # Môn phái / bang người chơi vừa biết qua "desc user": gửi cho cửa sổ khác (cả máy khác trong LAN) và giao diện ghi file;
                 # nhận của cửa sổ khác để khỏi hỏi lại cùng người
                 try:
