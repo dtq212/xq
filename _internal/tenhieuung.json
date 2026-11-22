@@ -1,0 +1,186 @@
+{
+ "1808": {
+  "mota": "",
+  "ten": "Gia tăng 5％ Khí Huyết"
+ },
+ "1811": {
+  "mota": "",
+  "ten": "Gia tăng 5％ Ngoại Kháng"
+ },
+ "2": {
+  "mota": "Mỗi 2 giây hồi phục 40 Khí Huyết",
+  "ten": "Tiểu Huyết Thạch"
+ },
+ "2114": {
+  "mota": "Vũ khí đang ở trạng thái phong ấn.",
+  "ten": "Không Thủ Nhập Bạch Nhẫn"
+ },
+ "2214": {
+  "mota": "",
+  "ten": "Hiệu ứng PK"
+ },
+ "2222": {
+  "mota": "Miễn nhiễm trạng thái Choáng.",
+  "ten": "Băng Phách Ngân Tâm"
+ },
+ "2516": {
+  "mota": "",
+  "ten": "Trang bị phòng thủ bị phong ấn."
+ },
+ "2614": {
+  "mota": "Ngoại Kháng giảm 40 điểm.",
+  "ten": "Thấu Cốt Đinh"
+ },
+ "298": {
+  "mota": "",
+  "ten": "Thiên Nguyên Đơn：\n    Mỗi 2 giây hồi phục 1 điểm Nguyên Khí."
+ },
+ "3161": {
+  "mota": "Gia tăng 24％ Ngoại Kháng.",
+  "ten": "Kim Chung Tráo"
+ },
+ "3162": {
+  "mota": "Tăng 11％ sát thương công kích.",
+  "ten": "Trấn Cổ Thần Uy"
+ },
+ "3172": {
+  "mota": "Mỗi 2 giây hồi phục 1 điểm Nguyên Khí.",
+  "ten": "Nguyên Khí Quy Nguyên"
+ },
+ "3173": {
+  "mota": "Tự động phản hồi 63 điểm sát thương Ngoại Công cận chiến.",
+  "ten": "Hộ Thể Kim Cang"
+ },
+ "3191": {
+  "mota": "Tăng thêm 480 điểm Ngoại Công nhưng giảm 50％ Ngoại Kháng. Mỗi 2％ Khí Huyết bị mất sẽ tăng thêm 1％ Ngoại Công của bản thân và chịu thêm 0.5％ sát thương khi bị tấn công.",
+  "ten": "Cuồng Bạo"
+ },
+ "3251": {
+  "mota": "",
+  "ten": "Kim chung cháo"
+ },
+ "3254": {
+  "mota": "Tất cả sát thương nhận được chỉ còn 1 điểm Khí Huyết tiêu hao.",
+  "ten": "Tiên Thân Vô Địch"
+ },
+ "3291": {
+  "mota": "",
+  "ten": "Gia tăng Ngoại Kháng."
+ },
+ "3292": {
+  "mota": "",
+  "ten": "Gia tăng Nội Kháng."
+ },
+ "3642": {
+  "mota": "Né tránh hoàn toàn 1 lần tấn công.",
+  "ten": "Ma Tâm Thuật"
+ },
+ "4": {
+  "mota": "Mỗi 2 giây hồi phục 40 Pháp Lực",
+  "ten": "Tiểu Pháp Lực Thạch"
+ },
+ "4033": {
+  "mota": "",
+  "ten": "Chủ nhân gia tăng 5% Ngoại Kháng, 5% Nội Kháng, 5% Khí Huyết, 5% Bạo Kích, 5% Ngoại Công, 5% Nội Công"
+ },
+ "4143": {
+  "mota": "Ngoại Kháng giảm -210, Nội Kháng giảm 0.",
+  "ten": "Thực Giáp"
+ },
+ "4144": {
+  "mota": "",
+  "ten": "Thực Cốt"
+ },
+ "4145": {
+  "mota": "Mỗi 2 giây mất đi -123 điểm Khí Huyết.",
+  "ten": "Thực Tâm"
+ },
+ "4171": {
+  "mota": "Gia tăng 150 điểm Ngoại Kháng.",
+  "ten": "Thần Tuệ Pháp Chú"
+ },
+ "4243": {
+  "mota": "Biến thân Động vật",
+  "ten": "Biến Thân Thuật"
+ },
+ "5011": {
+  "mota": "Tăng thêm 200 điểm Ngoại Công.",
+  "ten": "Ngân Châm Độ Ách"
+ },
+ "5012": {
+  "mota": "Tăng thêm 200 điểm Nội Công.",
+  "ten": "Kim Châm Độ Ách"
+ },
+ "5014": {
+  "mota": "Tăng thêm 410 Khí Huyết.",
+  "ten": "Cường Thể Thuật"
+ },
+ "5911": {
+  "mota": "",
+  "ten": "Linh Khí Hộ Thể"
+ },
+ "6": {
+  "mota": "",
+  "ten": "Nhân Sâm：\n    Trong 1 giờ gia tăng 600 Khí Huyết."
+ },
+ "6061": {
+  "mota": "Gói VIP miễn phí hồi sinh còn 3 lần Gói VIP hiệu lực đến: 2026-12-06 21:51:03",
+  "ten": "Hiệu quả Gói VIP"
+ },
+ "9010": {
+  "mota": "",
+  "ten": "Phong Ấn：\n　　Không thể sử dụng chiêu thức phép thuật."
+ },
+ "9012": {
+  "mota": "",
+  "ten": "Trì Hoãn：\n　　Di chuyển chậm hơn 50％."
+ },
+ "9013": {
+  "mota": "",
+  "ten": "Đóng Băng：\n　　Tốc độ di chuyển và công kích giảm 50％."
+ },
+ "9016": {
+  "mota": "",
+  "ten": "Mộng Du"
+ },
+ "9020": {
+  "mota": "",
+  "ten": "Trọng Thương：\n　　Tấn công và phòng thủ vật lý giảm 30％."
+ },
+ "9022": {
+  "mota": "",
+  "ten": "Xuất Huyết：\n　　Giảm khí huyết mỗi 2 giây."
+ },
+ "9024": {
+  "mota": "",
+  "ten": "Mù Loà：\n　　Tầm nhìn bị thu hẹp, độ chính xác giảm 50％."
+ },
+ "9026": {
+  "mota": "",
+  "ten": "Đốt Cháy：\n　　Trong 12 giây không thể sử dụng kĩ năng hồi máu."
+ },
+ "9096": {
+  "mota": "",
+  "ten": "Trúng độc\n Giảm khí huyết theo thời gian."
+ },
+ "9156": {
+  "mota": "",
+  "ten": "Mỗi 2 giây phục hồi pháp lực."
+ },
+ "9165": {
+  "mota": "",
+  "ten": "Trong 1 giờ Nội Kháng gia tăng 10％"
+ },
+ "9991": {
+  "mota": "",
+  "ten": "Trong 1 giờ tất cả thành viên trong nhóm tăng 20% kinh nghiệm."
+ },
+ "9992": {
+  "mota": "",
+  "ten": "Kinh nghiệm x2 khi tiêu diệt quái vật"
+ },
+ "9993": {
+  "mota": "",
+  "ten": "Kinh nghiệm x3 khi tiêu diệt quái vật"
+ }
+}

@@ -300,6 +300,8 @@ class TacTuHoatDong:
         if idtruongnhommotlan:
             self._xulytodoimotlanthanhvien(idtruongnhommotlan, is_dangmoitoi)
             return True
+        if self._moitieptodoitudong():
+            return True
         # Tổ đội tự động, mình chưa có nhóm: đồng ý lời mời ở đây (0.25s/lượt) thay vì đợi luồng phụ ~1s/lượt. Danh sách luồng phụ ghi
         # quá 3s (luồng phụ nghỉ / Tổ đội tự động tạm nghỉ) thì bỏ
         lucdongy, idsdongy = self._dongytodoitudong
@@ -308,6 +310,29 @@ class TacTuHoatDong:
             self.moitruong.action_kiemtravadongyloimoinhom(idsdongy)
             return True
         return False
+
+    def _moitieptodoitudong(self):
+        # Tổ đội tự động, mình là trưởng nhóm đang mời lần lượt: luồng phụ ~1s/lượt (+ chặn 0.5s) nên người đang mời vào nhóm rồi vẫn
+        # phải chờ lượt sau mới mời người kế, cả nhóm vào rất chậm (người dùng nhắc 2026-11-22). Ở đây (luồng nhanh 0.25s): người đang
+        # mời đã vào nhóm thì mời ngay người kế trong danh sách sẵn sàng luồng phụ vừa ghi (quá 3s thì bỏ, để luồng phụ tính lại).
+        # -> True khi còn người chờ mời (giữ luồng chạy nhanh)
+        s = self._moiluottodoitudong
+        sansangs = s.get("sansangs") or []
+        if not sansangs or time.time() - s.get("lucsansang", 0.) > 3. or not self._is_tudongtodoi:
+            return False
+        moitruong = self.moitruong
+        if not moitruong.get_is_dangnamtrongnhom() or not moitruong.get_is_truongnhom():
+            return False
+        thanhviens = set(moitruong.get_danhsachidnguoichoithanhviennhoms() or ())
+        if len(thanhviens) >= SOLUONGTHANHVIENNHOMTOIDA:
+            s["sansangs"] = []
+            return False
+        conlai = [i for i in sansangs if i not in thanhviens]
+        s["sansangs"] = conlai
+        if conlai:
+            # Người đang mời vừa vào / quá hạn thì _moilanluot mời người kế luôn (botkhacs rỗng: luồng phụ đã lọc người còn kẹt nhóm khác)
+            self._moilanluot(s, conlai, {})
+        return bool(conlai)
 
     def _xulytodoimotlantruongnhom(self):
         # Mình bấm Tổ đội 1 lần: giữ nguyên nhóm hiện tại (không rời / nhường quyền, nhóm đang giữ phó bản), mời các nhân vật cùng danh sách
@@ -532,10 +557,12 @@ class TacTuHoatDong:
                 chuavaos = [i for i in dongdoicanxulys + [id_ for id_ in nguoichoilecungbandos if id_ not in dongdoicanxulys]
                             if i not in danhsachthanhviens]
                 if chuavaos:
-                    self._moilanluot(self._moiluottodoitudong, chuavaos, self._laybotkhacs())
+                    sansangs, _ = self._moilanluot(self._moiluottodoitudong, chuavaos, self._laybotkhacs())
+                    # Luồng tổ đội nhanh (_moitieptodoitudong) mời ngay người kế trong danh sách này khi người đang mời đã vào
+                    self._moiluottodoitudong.update(sansangs = list(sansangs), lucsansang = time.time())
                     self._thoidiemtodoigannhat_map = donbangthoidiem(self._thoidiemtodoigannhat_map, 120.)
                 else:
-                    self._moiluottodoitudong["dangmoi"] = 0
+                    self._moiluottodoitudong.update(dangmoi = 0, sansangs = [])
 
         elif not is_dangtrongnhom:
             self._dongytodoitudong = (time.time(), list(danhsachuutientodoi))

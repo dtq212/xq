@@ -161,6 +161,8 @@ HUYNHQUANGTHACH = "Huỳnh Quang Thạch"
 CAPCUUDON = "Cấp Cứu Đơn"
 HOATTAMDON = "Hoạt Tâm Đơn"
 THIENLYHUUTINH = "Thiên Lý Hữu Tình"
+# Vật phẩm người chơi hay dùng: sắp xếp hành trang luôn đặt đầu hành trang 1 theo đúng thứ tự này (người dùng 2026-11-22 thêm Cao Bộc Tạc Đạn)
+DAUTUI1SAPXEPs = (THIENLYHUUTINH, CAOBOCTACDAN)
 DAIHUYETTHACH = "Đại Huyết Thạch"
 DAIPHAPLUCTHACH = "Đại Pháp Lực Thạch"
 THOHANHCHAU = "Thổ Hành Châu"

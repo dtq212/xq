@@ -321,7 +321,7 @@ class TacTuCatKho:
         if mau is None:
             return "chưa đọc được màu tên"
         if mau != "":
-            return ""
+            return self._lydokhongbanmautinhanh(ten, vitri)
         hanhdong = self._layhanhdongluat(ten, vitri)
         if hanhdong == "chuabiet":
             return "luật túi đồ chưa đọc được mô tả"
@@ -341,6 +341,28 @@ class TacTuCatKho:
                 return ""
             if "pháp bảo" in unicodedata.normalize("NFC", mota[0] or "").lower():
                 return ""
+        if self._is_dosaokhongban(vitri, ten, is_docmoi = False):
+            return "đồ có sao"
+        return None
+
+    def _lydokhongbanmautinhanh(self, ten, vitri):
+        # Đồ tên có màu (Lam Kim...) Săn Tinh Anh mặc định không bán (cất kho). 22/11 Quản Khố + hành trang đầy hết chỗ: bán theo luật túi đồ
+        # ở tab Hành trang, khỏi thêm tuỳ chọn riêng. CHỈ bán khi luật khớp ĐẦU TIÊN là luật Bán CÓ điều kiện "Màu tên": món tên màu không
+        # khớp luật nào vẫn giữ (khác bán rác thường), luật Bán chung không có Màu tên (vd Tên chứa "Kiếm") cũng không tính, kẻo bán nhầm.
+        # Giữ cấp đang cần thì đặt luật Giữ phía TRÊN: Màu tên "Lam Kim" + Mô tả chứa "cấp 70" / "cấp 80" (Niết Bàn "70 cấp")
+        # -> None = bán, "" = không bán (không ghi log), chuỗi khác = lý do chừa (ghi log)
+        luat = self._layluatvatpham(ten, vitri)
+        if luat == "chuabiet":
+            return "luật túi đồ chưa đọc được mô tả"
+        if not isinstance(luat, dict) or luat.get("hanhdong") != HANHDONG_BAN or not luat.get("mau"):
+            return ""
+        if self._is_catkhovatpham(ten, vitri):
+            return "khớp bảng Cất kho"
+        mota = self._laymotaluat(ten, vitri)
+        if mota is None:
+            return "chưa đọc được mô tả"
+        if "pháp bảo" in unicodedata.normalize("NFC", mota[0] or "").lower():
+            return ""
         if self._is_dosaokhongban(vitri, ten, is_docmoi = False):
             return "đồ có sao"
         return None
@@ -414,11 +436,11 @@ class TacTuCatKho:
             return "dang"
         if boquas:
             moitruong._inlog(f"[CẤT KHO] Săn Tinh Anh: chừa {len(boquas)} món trắng: " + ", ".join(boquas))
-        moitruong._inlog(f"[CẤT KHO] Săn Tinh Anh: bán {len(lenhs)} đồ trắng ({', '.join(tens[:10])}{'...' if len(tens) > 10 else ''})")
+        moitruong._inlog(f"[CẤT KHO] Săn Tinh Anh: bán {len(lenhs)} món (đồ trắng + đồ màu theo luật Bán) ({', '.join(tens[:10])}{'...' if len(tens) > 10 else ''})")
         if not lenhs:
             viec["banrac"] = "xong"
             return "xong"
-        viec["trangthai"] = f"bán {len(lenhs)} đồ trắng"
+        viec["trangthai"] = f"bán {len(lenhs)} món ở {CHUTIEMTAPHOA}"
         self._datnhangdoibanrac(lenhs)
         viec["banrac"] = "dagui"
         return "dang"

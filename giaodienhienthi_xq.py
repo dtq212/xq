@@ -28,7 +28,7 @@ from keogatudong_xq import taicauhinhkeoga, luucauhinhkeoga, phantichdanhsachtai
 from dangnhap_xq import ancuasogame, duongdangamemaynay, focuscuasogame, hiencuasogame, is_batchomaynay, is_cuasogamedaan, luucauhinhdangnhap, taicauhinhdangnhap, taikhoanbatchomaynay
 from thongke_xq import taithongke, gopthongke
 from tactu_phangiai_xq import taitenphangiai, luutenphangiai, _bodau as _bodauphangiai
-from luattuido_xq import tailuat, luuluat, motaluat, motanhanvat, TENHANHDONG, DIEUKIENs, TENDIEUKIEN, NHANDIEUKIEN, TRUONGMUABU, TENTRUONGMUABU, TENCHIKHI, CHIKHI_LUON, XEPCHONGMACDINH, \
+from luattuido_xq import tailuat, luuluat, motaluat, motanhanvat, TENHANHDONG, TENVIECLUAT, VIEC_TINHANH, VIEC_PHONGYEU, DIEUKIENs, TENDIEUKIEN, NHANDIEUKIEN, TRUONGMUABU, TENTRUONGMUABU, TENCHIKHI, CHIKHI_LUON, XEPCHONGMACDINH, \
     THAPNHATMACDINH, TENHANHDONGNHAT, DIEUKIENNHATs, DIEUKIENNHATTRANGBI, NHAT_NHAT, TENNOIDUNG, NOI_MOINOI, TENHIEUUNGDUNG, HIEUUNG_KHONG, GIANCACHDUNGMACDINH, \
     motadieukiendung
 from hangso_xq import VIECHANG_MAP, VIECDOI_MAP, VIECCOVONGs, VIECRIENG_MAP, QUAITINHANH_MAP, CAPTINHANH_MAP
@@ -3325,10 +3325,13 @@ class GiaoDienHienThi:
         for ma, ten in (("", "Tất cả"), *TENHANHDONG.items()):
             ttk.Radiobutton(hangloc, text = ten, value = ma, variable = self.var_locluattuido,
                             command = self._doilocluattuido).pack(side = tk.LEFT, padx = (0, 8))
-        self.tree_luattuido = BangCatChu(nhom, columns = ("bat", "bao", "hanhdong", "dieukien", "ghichu"), show = "headings", height = 6, selectmode = "browse")
+        self.tree_luattuido = BangCatChu(nhom, columns = ("bat", "bao", "ta", "pyk", "hanhdong", "dieukien", "ghichu"), show = "headings", height = 6, selectmode = "browse")
         for col, text, width, anchor in (
                 ("bat", "Bật", 40, tk.CENTER),
                 ("bao", "📣", 35, tk.CENTER),
+                # Điều kiện "khi" (luattuido_xq.TENVIECLUAT): chỉ áp dụng lúc Săn Tinh Anh / Phong Yêu Kính, cả 2 trống = mọi lúc
+                ("ta", "TA", 35, tk.CENTER),
+                ("pyk", "PYK", 40, tk.CENTER),
                 ("hanhdong", "Hành động", 105, tk.W),
                 ("dieukien", "Điều kiện", 225, tk.W),
                 ("ghichu", "Ghi chú", 150, tk.W)):
@@ -5087,7 +5090,9 @@ class GiaoDienHienThi:
         for i, luat in enumerate(dulieu["luat"]):
             if loc and luat["hanhdong"] != loc:
                 continue
-            self.tree_luattuido.insert("", tk.END, iid = str(i), values = ("✔" if luat["bat"] else "", "📣" if luat["is_bao"] else "", TENHANHDONG[luat["hanhdong"]],
+            self.tree_luattuido.insert("", tk.END, iid = str(i), values = ("✔" if luat["bat"] else "", "📣" if luat["is_bao"] else "",
+                                                                          "✔" if VIEC_TINHANH in luat["khi"] else "", "✔" if VIEC_PHONGYEU in luat["khi"] else "",
+                                                                          TENHANHDONG[luat["hanhdong"]],
                                                                           motaluat(luat), luat["ghichu"]),
                                        tags = (luat["hanhdong"] if luat["bat"] else "tat",))
         self.tree_catkho.delete(*self.tree_catkho.get_children())
@@ -5312,10 +5317,13 @@ class GiaoDienHienThi:
         luat = {"bat": True, "hanhdong": "giu"} if is_moi else dict(dulieu["luat"][vitri])
         tentheohanhdong = {ten: ma for ma, ten in TENHANHDONG.items()}
         luat["hanhdong"] = TENHANHDONG.get(luat.get("hanhdong"), TENHANHDONG["giu"])
+        # "khi" (luattuido_xq.is_apdungviec): ô tích theo tên việc, lưu theo mã
+        luat["khi"] = [TENVIECLUAT[m] for m in luat.get("khi") or () if m in TENVIECLUAT]
         # Form 2 cột, xếp theo cặp: Bật | 📣, Hành động | Ghi chú, Tên đúng | Tên chứa, Loại chứa | Mô tả chứa
         truongs = [("bat", "Bật", None), ("is_bao", "📣 Báo Telegram khi nhặt được", None),
                    ("hanhdong", "Hành động", list(TENHANHDONG.values())), ("ghichu", "Ghi chú", None)]
-        truongs += [(d, NHANDIEUKIEN[d], None) for d in DIEUKIENs] + [self.TRUONGNHANVATTUIDO]
+        truongs += [(d, NHANDIEUKIEN[d], None) for d in DIEUKIENs] + [self.TRUONGNHANVATTUIDO,
+                                                                       ("khi", "Chỉ áp dụng khi đang (không tích = mọi lúc)", None)]
 
         def kiemtra(kq):
             if kq["hanhdong"] not in tentheohanhdong:
@@ -5325,10 +5333,12 @@ class GiaoDienHienThi:
             return None
 
         kq = self._hopthoaituido("Thêm luật túi đồ" if is_moi else "Sửa luật túi đồ", truongs, luat, kiemtra,
-                                 nhieudongs = {**{d: self.GOIYDIEUKIENTUIDO for d in DIEUKIENs}, "nhanvat": self.GOIYNHANVATTUIDO})
+                                 nhieudongs = {**{d: self.GOIYDIEUKIENTUIDO for d in DIEUKIENs}, "nhanvat": self.GOIYNHANVATTUIDO},
+                                 nhieuchons = {"khi": (list(TENVIECLUAT.values()), 2)})
         if not kq:
             return
         kq["hanhdong"] = tentheohanhdong[kq["hanhdong"]]
+        kq["khi"] = [m for m, ten in TENVIECLUAT.items() if ten in kq["khi"]]
         dulieu = tailuat()
         luats = list(dulieu["luat"])
         if is_moi:

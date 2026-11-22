@@ -31,7 +31,8 @@ THOIGIANDUOITINHANHTOIDA = 40.
 # chọn mục tiêu "Tiếp cận để tấn công") thay nhau mỗi giây, nhân vật kẹt tại chỗ, giờ đuổi 40s cũng bị xoá theo nên không bao giờ hết
 THOIGIANNHOTINHANHKHUAT = 10.
 # Túi đầy lúc săn: về Tân Thủ Thôn cất kho CHỈ đồ Lam Kim rơi từ Tinh Anh (không theo bảng Cất kho), không bán rác; cất xong săn tiếp. Cất xong
-# chưa tới chừng này giây mà túi vẫn đầy (không có món nào cất được) thì dừng săn, kẻo đi về Tân Thủ Thôn mãi
+# chưa tới chừng này giây mà túi vẫn đầy (không có món nào cất được) thì dừng săn, kẻo đi về Tân Thủ Thôn mãi.
+# Đồ Lam Kim khớp luật Bán có "Màu tên" ở tab Hành trang thì bán ở Chủ Tiệm Tạp Hóa cùng đồ trắng (_lydokhongbanmautinhanh, 22/11)
 MAUCATTINHANHs = (MAUTEN["lam kim"],)
 THOIGIANCATLAITINHANH = 300.
 # Giết được con Tinh Anh của bản đồ (mỗi bản đồ 1 con) mà quanh đó không còn con nào sống: sang bản đồ kế luôn, khỏi dò hết các

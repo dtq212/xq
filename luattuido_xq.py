@@ -39,6 +39,9 @@
 #           "giancach": tối thiểu chừng này giây giữa 2 lần dùng của luật, "ghichu": ...}. Có nhiều điều kiện thì phải đủ hết.
 #           File cũ chưa có "dung" thì lấy DUNGMACDINH (đúng các điều kiện viết cứng trước đây, chuyển sang 2026-11-14).
 #           Pháp bảo theo sinh lực, An Xá Phù, bảo thú vật phẩm vẫn viết cứng (có tuỳ chọn riêng)
+#   Luật hành động ("luat") có thêm "khi": [mã việc trong TENVIECLUAT] = chỉ áp dụng khi bot đang làm 1 trong các việc này (Săn Tinh Anh /
+#           Phong Yêu Kính); trống = mọi lúc (người dùng 22/11: bán Lam Kim chỉ lúc Săn Tinh Anh, cho rạch ròi). Lúc không làm việc đó thì
+#           coi như luật không có, xét tiếp luật dưới
 #   Mọi luật / mục ở cả 5 bảng có thêm "nhanvat": [tên nhân vật...] = chỉ áp dụng cho các nhân vật này (so tên đúng, không phân biệt
 #           hoa thường); trống = mọi nhân vật (người dùng 2026-11-15). Nhân vật không nằm trong danh sách thì coi như luật không có
 import copy
@@ -70,6 +73,10 @@ HANHDONG_PHANGIAI = "phangiai"
 HANHDONG_CATKHO = "catkho"
 RUONGTUDONG = 0
 TENHANHDONG = {HANHDONG_GIU: "Giữ", HANHDONG_BAN: "Bán", HANHDONG_VUT: "Vứt", HANHDONG_PHANGIAI: "Phân giải"}
+# Điều kiện "khi" của luật hành động: việc bot đang làm (TacTu._viecluattuido)
+VIEC_TINHANH = "tinhanh"
+VIEC_PHONGYEU = "phongyeu"
+TENVIECLUAT = {VIEC_TINHANH: "Săn Tinh Anh", VIEC_PHONGYEU: "Phong Yêu Kính"}
 DIEUKIENs = ("ten", "tenchua", "loai", "mota", "mau")
 TENDIEUKIEN = {"ten": "Tên đúng", "tenchua": "Tên chứa", "loai": "Loại chứa", "mota": "Mô tả chứa", "mau": "Màu tên"}
 # Nhãn ô nhập ở form sửa luật (giao diện): như TENDIEUKIEN, "Màu tên" kèm các giá trị gõ được
@@ -278,6 +285,11 @@ def is_apdungnhanvat(luat, tennhanvat):
     return bool(tenchuan) and any(chuanhoa(t) == tenchuan for t in luat["nhanvat"])
 
 
+def is_apdungviec(luat, viecs):
+    # Luật có "khi" chỉ áp dụng khi đang làm 1 trong các việc đó; viecs = tập mã việc đang làm (None / rỗng = không làm việc nào)
+    return not luat.get("khi") or bool(viecs and set(luat["khi"]) & set(viecs))
+
+
 def motanhanvat(luat, sohienthi = 2):
     # 'NV: Abc, Xyz +3' cho giao diện, "" khi áp dụng mọi nhân vật
     tens = luat.get("nhanvat") or []
@@ -289,6 +301,7 @@ def motanhanvat(luat, sohienthi = 2):
 def _chuanhoaluat(luat):
     luat = dict(luat)
     luat["nhanvat"] = _danhsach(luat.get("nhanvat"))
+    luat["khi"] = [m for m in _danhsach(luat.get("khi")) if m in TENVIECLUAT]
     luat["bat"] = bool(luat.get("bat", True))
     luat["is_bao"] = bool(luat.get("is_bao", False))
     luat.pop("is_catkho", None)
@@ -521,13 +534,13 @@ def khopluat(luat, ten, laymota, laymau = None):
     return True
 
 
-def timluat(ten, laymota, dulieu = None, tennhanvat = None, laymau = None):
+def timluat(ten, laymota, dulieu = None, tennhanvat = None, laymau = None, viecs = None):
     # Luật đầu tiên khớp món tên ten (dict), None = không luật nào khớp, "chuabiet" = có luật cần mô tả mà chưa đọc được.
-    # tennhanvat: bỏ qua luật chỉ dành cho nhân vật khác (is_apdungnhanvat)
+    # tennhanvat: bỏ qua luật chỉ dành cho nhân vật khác (is_apdungnhanvat); viecs: việc đang làm, bỏ qua luật "khi" việc khác
     if not ten:
         return None
     for luat in (dulieu or tailuat())["luat"]:
-        if not luat["bat"] or not is_apdungnhanvat(luat, tennhanvat):
+        if not luat["bat"] or not is_apdungnhanvat(luat, tennhanvat) or not is_apdungviec(luat, viecs):
             continue
         khop = khopluat(luat, ten, laymota, laymau)
         if khop is None:
@@ -537,10 +550,10 @@ def timluat(ten, laymota, dulieu = None, tennhanvat = None, laymau = None):
     return None
 
 
-def timhanhdong(ten, laymota, dulieu = None, tennhanvat = None, laymau = None):
+def timhanhdong(ten, laymota, dulieu = None, tennhanvat = None, laymau = None, viecs = None):
     # Hành động của luật đầu tiên khớp món tên ten: "giu" / "ban" / "vut", None = không luật nào khớp,
     # "chuabiet" = có luật cần mô tả mà chưa đọc được (lượt này đừng làm gì món đó)
-    luat = timluat(ten, laymota, dulieu, tennhanvat, laymau)
+    luat = timluat(ten, laymota, dulieu, tennhanvat, laymau, viecs)
     return luat["hanhdong"] if isinstance(luat, dict) else luat
 
 

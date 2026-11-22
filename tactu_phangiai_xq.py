@@ -135,7 +135,7 @@ class TacTuPhanGiai:
                 hanhdong = self._layhanhdongluat(ten, vitri)
             else:
                 luat = timluat(self._chuanhoatenvatpham(ten), lambda t = ten, v = vitri: self._laymotaluat(t, v), tennhanvat = tennhanvat,
-                               laymau = lambda t = ten, v = vitri: self._laymautenluat(t, v))
+                               laymau = lambda t = ten, v = vitri: self._laymautenluat(t, v), viecs = self._viecluattuido())
                 hanhdong = luat["hanhdong"] if isinstance(luat, dict) else luat
             if hanhdong == "chuabiet":
                 is_chuabiet = True

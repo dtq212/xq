@@ -21,7 +21,8 @@
       "loai": [],
       "mota": [],
       "nhanvat": [],
-      "mau": []
+      "mau": [],
+      "khi": []
     },
     {
       "bat": true,
@@ -35,7 +36,8 @@
       "loai": [],
       "mota": [],
       "nhanvat": [],
-      "mau": []
+      "mau": [],
+      "khi": []
     },
     {
       "bat": true,
@@ -175,13 +177,22 @@
         "Khoan Kim Cương",
         "Mảnh Kinh Thư Mờ Nét",
         "Mảnh Kinh Thư Cổ Tự",
-        "Kinh Thư Hoàn Chỉnh"
+        "Kinh Thư Hoàn Chỉnh",
+        "Khoai Lang Chiên",
+        "Cháo Gạo",
+        "Chè Khoai Lang Thanh Nhiệt",
+        "Khoai Lang Nướng",
+        "Bột Bắp Hấp",
+        "Súp Bắp",
+        "Khoai Lang Chiên",
+        "Cháo Gạo"
       ],
       "tenchua": [],
       "loai": [],
       "mota": [],
       "mau": [],
-      "nhanvat": []
+      "nhanvat": [],
+      "khi": []
     },
     {
       "bat": true,
@@ -204,7 +215,8 @@
       "loai": [],
       "mota": [],
       "nhanvat": [],
-      "mau": []
+      "mau": [],
+      "khi": []
     },
     {
       "hanhdong": "giu",
@@ -220,7 +232,8 @@
       "tenchua": [],
       "mota": [],
       "nhanvat": [],
-      "mau": []
+      "mau": [],
+      "khi": []
     },
     {
       "bat": true,
@@ -237,7 +250,8 @@
       "loai": [],
       "mota": [],
       "mau": [],
-      "nhanvat": []
+      "nhanvat": [],
+      "khi": []
     },
     {
       "bat": true,
@@ -252,7 +266,8 @@
         "phân giải từ trang bị"
       ],
       "nhanvat": [],
-      "mau": []
+      "mau": [],
+      "khi": []
     },
     {
       "bat": true,
@@ -266,7 +281,8 @@
       "loai": [],
       "mota": [],
       "nhanvat": [],
-      "mau": []
+      "mau": [],
+      "khi": []
     },
     {
       "bat": true,
@@ -295,6 +311,44 @@
       ],
       "nhanvat": [
         "Dieu Khac"
+      ],
+      "khi": []
+    },
+    {
+      "bat": true,
+      "is_bao": false,
+      "hanhdong": "giu",
+      "ghichu": "Giữ Lam Kim cấp 70, 80 (đang cần)",
+      "ten": [],
+      "tenchua": [],
+      "loai": [],
+      "mota": [
+        "cấp 70",
+        "cấp 80",
+        "70 cấp",
+        "80 cấp"
+      ],
+      "mau": [
+        "Lam Kim"
+      ],
+      "nhanvat": [],
+      "khi": []
+    },
+    {
+      "bat": true,
+      "is_bao": false,
+      "hanhdong": "ban",
+      "ghichu": "Bán Lam Kim còn lại, chỉ lúc Săn Tinh Anh",
+      "ten": [],
+      "tenchua": [],
+      "loai": [],
+      "mota": [],
+      "mau": [
+        "Lam Kim"
+      ],
+      "nhanvat": [],
+      "khi": [
+        "tinhanh"
       ]
     }
   ],

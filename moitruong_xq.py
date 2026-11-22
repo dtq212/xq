@@ -1743,6 +1743,11 @@ class MoiTruong:
             if "thầm" in noidung:
                 # Dòng thô (còn mã màu) để dò khi mẫu tin mật không khớp
                 self._inlog(f"[KHUNG CHAT] {tho!r}")
+            elif "hạ sát" in noidung:
+                # Tin thế giới khi người chơi giết nhau: "Nghe nói <bị giết> đã bị <kẻ giết> hạ sát." (ảnh người dùng 2026-11-22).
+                # Giết boss là "... đã bị bằng hữu <tên> tiêu diệt." nên không lẫn. Bộ đệm vòng chỉ 64 dòng, bộ nhớ game không giữ
+                # lịch sử chat => phải ghi lúc đọc thì mới đếm lại trận PK được (grep "[TIN PK]" trong log một nhân vật, mọi client đều thấy)
+                self._inlog(f"[TIN PK] {noidung}")
             if noidung:
                 dongs.append(noidung)
         return dongs
@@ -3228,8 +3233,13 @@ class MoiTruong:
         x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
         if not x:
             return []
+        # Chỉ đọc đúng số mục client đang có (KDK_SODANHHIEU): xoá danh hiệu (xuất sư...) client không xoá ô cuối cũ, đọc cả 16 ô thì
+        # còn thấy "Sư Phụ của <đồ đệ đã xuất sư>" -> Kéo gà A-Z tưởng acc chính còn đồ đệ, bỏ bái sư mọi lượt (2026-11-22)
+        sodanhhieu = read_int(self.tientrinh, x + DC.KDK_SODANHHIEU)
+        if sodanhhieu is None or not 0 <= sodanhhieu <= 0x1E:
+            sodanhhieu = SODANHHIEUTOIDA
         danhsach = []
-        for i in range(SODANHHIEUTOIDA):
+        for i in range(sodanhhieu):
             muc = read_bytes(self.tientrinh, x + DC.KDK_DANHSACHDANHHIEU + i * KICHTHUOCMUCDANHHIEU, KICHTHUOCMUCDANHHIEU)
             ma = muc[:6].split(b"\0")[0].decode("ascii", "ignore").strip()
             if not ma:

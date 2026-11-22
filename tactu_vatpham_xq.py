@@ -10,7 +10,7 @@ import time
 import unicodedata
 
 from hangso_xq import *
-from luattuido_xq import tailuat, is_apdungnhanvat, timluat, timluatbao, timluatcatkho, timhanhdongnhat, HANHDONG_GIU, HANHDONG_BAN, HANHDONG_VUT, CHIKHI_TRIEUHOIBAOTHU, \
+from luattuido_xq import tailuat, is_apdungnhanvat, timluat, VIEC_TINHANH, VIEC_PHONGYEU, timluatbao, timluatcatkho, timhanhdongnhat, HANHDONG_GIU, HANHDONG_BAN, HANHDONG_VUT, CHIKHI_TRIEUHOIBAOTHU, \
     NHAT_NHAT, NHAT_UUTIEN, NHAT_KHONGNHAT, NOI_BANDOPK, NOI_DANGPK, NOI_KHAIKHOANG, NOI_PHOBAN, NOI_KHONGPK
 from thongbao_xq import baosuco, LYDOTAMNGUNGTUXA
 from moitruong_xq import MoiTruong, DOUUTIEN_THAP, DOUUTIEN_KHANCAP, DOUUTIEN_CAO, SOLUONGDOITUONGXUNGQUANHTOIDA, tinh_is_huongmatvediem
@@ -1540,7 +1540,16 @@ class TacTuVatPham:
     def _layluatvatpham(self, ten, vitri):
         # Luật túi đồ đầu tiên khớp món ở ô vitri (dict), None / "chuabiet" như luattuido_xq.timluat
         return timluat(self._chuanhoatenvatpham(ten), lambda: self._laymotaluat(ten, vitri), tennhanvat = self._tennhanvatluattuido(),
-                       laymau = lambda: self._laymautenluat(ten, vitri))
+                       laymau = lambda: self._laymautenluat(ten, vitri), viecs = self._viecluattuido())
+
+    def _viecluattuido(self):
+        # Việc đang làm cho điều kiện "khi" của luật túi đồ (luattuido_xq.TENVIECLUAT)
+        viecs = set()
+        if self.get_is_dangtinhanh():
+            viecs.add(VIEC_TINHANH)
+        if self.get_is_dangphongyeukinh():
+            viecs.add(VIEC_PHONGYEU)
+        return viecs
 
     def _layluatbaovatpham(self, ten, vitri):
         # Luật 📣 đầu tiên khớp món ở ô vitri, xét riêng với hành động (luật khác đứng trên quyết định bán / giữ cũng không chặn báo)
@@ -2132,17 +2141,20 @@ class TacTuVatPham:
     def _khoasapxepvatpham(self, ten):
         # Thứ tự khi sắp xếp hành trang (tên đã có trong _loaivatpham_map): nhóm 0 đồ khác, 1 đồ ［Có thể sử dụng］, 2 thuốc;
         # trong nhóm theo loại (Vũ Khí, Nón, Tinh luyện...) rồi tên, món không ghi loại (nguyên liệu...) để sau.
-        # Thiên Lý Hữu Tình (người chơi hay dùng) xếp đầu nhóm 0 => luôn nằm ô đầu hành trang 1, dù là đồ ［Có thể sử dụng］
+        # Đồ người chơi hay dùng (DAUTUI1SAPXEPs: Thiên Lý Hữu Tình, Cao Bộc Tạc Đạn) xếp đầu nhóm 0 theo thứ tự trong bộ đó
+        # => luôn nằm các ô đầu hành trang 1, dù là đồ ［Có thể sử dụng］
         # Trong nhóm 1, món có mô tả gần giống nhau ("Trong 1 giờ gia tăng ...", "Lập tức hồi phục ...") nằm cạnh nhau: xếp theo
         # dòng mô tả đầu (_khoamotavatpham) trước tên
         # Nhóm 3: đồ có ★ (_tencosaosapxep, người dùng 2026-11-19) nằm sau cả thuốc => ô cuối cùng túi cuối, khó bán nhầm
         loai = self._loaivatpham_map.get(ten, "")
-        is_dautui1 = self._chuanhoatenvatpham(ten) == THIENLYHUUTINH
+        tenchuan = self._chuanhoatenvatpham(ten)
+        thutudautui1 = DAUTUI1SAPXEPs.index(tenchuan) if tenchuan in DAUTUI1SAPXEPs else len(DAUTUI1SAPXEPs)
+        is_dautui1 = thutudautui1 < len(DAUTUI1SAPXEPs)
         nhom = 0 if is_dautui1 else 3 if ten in self._tencosaosapxep else 2 if self._is_thuocsapxep(ten) \
             else 1 if loai == LOAIVATPHAM_COTHESUDUNG else 0
         # Nhóm thuốc (THUOCSAPXEPs: Tiêu Dao Tán, Thí Luyện Quả...) cũng theo công dụng, không thì chỉ còn theo tên => hồi máu nằm giữa buff
         motakhoa = self._khoamotavatpham(ten) if nhom in (1, 2) else (0, "")
-        return nhom, not is_dautui1, not loai, loai.lower(), motakhoa, ten.lower()
+        return nhom, thutudautui1, not loai, loai.lower(), motakhoa, ten.lower()
 
     # Nhóm công dụng đồ ［Có thể sử dụng］ khi sắp xếp, xét theo thứ tự, mẫu khớp trên mô tả đã thường hoá (chữ thường, số -> "#", bỏ từ
     # "Giá bán ra" trở đi). Không xếp theo dòng mô tả đầu được: dòng sau ［Có thể sử dụng］ thường là câu giới thiệu ("Một loại tinh

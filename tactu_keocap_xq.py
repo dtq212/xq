@@ -876,7 +876,7 @@ class TacTuKeoCap:
         return self._noichuyenlls(s, laytenthoyeu(self.moitruong), x, y, is_chovankhi = False, luachon = 0)[1]
 
     def _moinhomkc(self, s, gas):
-        # Acc chính làm trưởng nhóm, mời acc gà chưa ở trong nhóm (mỗi người mỗi GIANCACHMOINHOMKC giây)
+        # Acc chính làm trưởng nhóm, mời lần lượt acc gà chưa ở trong nhóm (vào rồi thì mời người kế ngay)
         moitruong = self.moitruong
         now = time.time()
         idtoi = moitruong.get_idnguoichoi()
@@ -887,18 +887,33 @@ class TacTuKeoCap:
                 self._logkc("Đang ở nhóm người khác: rời để lập nhóm kéo cấp")
                 moitruong.action_thoatkhoinhom()
             return
-        trongnhoms = set(moitruong.get_danhsachidnguoichoithanhviennhoms() or ()) if moitruong.get_is_dangnamtrongnhom() else set()
-        for idga in gas:
-            if idga in trongnhoms or now - s["lucmoi"].get(idga, 0.) < GIANCACHMOINHOMKC:
-                continue
-            s["lucmoi"][idga] = now
-            if not moitruong.get_is_dangnamtrongnhom():
-                # Chưa có nhóm: lập nhóm 1 người trước (như Phong Yêu Kính), lượt sau mới mời
-                moitruong.action_thucthicaulenh(f"team + {idtoi}")
-                return
-            self._logkc(f"Mời {gas[idga].get('tennhanvat') or idga} vào nhóm")
-            moitruong.action_moihoacxinvaonhom(idga)
+        is_conhom = moitruong.get_is_dangnamtrongnhom()
+        trongnhoms = set(moitruong.get_danhsachidnguoichoithanhviennhoms() or ()) if is_conhom else set()
+        chuavaos = [idga for idga in gas if idga not in trongnhoms]
+        if not chuavaos:
+            s["dangmoinhom"] = [0, 0.]
             return
+        if not is_conhom:
+            # Chưa có nhóm: lập nhóm 1 người trước (như Phong Yêu Kính), lượt sau mới mời
+            if now - s.get("luclapnhom", 0.) >= GIANCACHMOINHOMKC:
+                s["luclapnhom"] = now
+                moitruong.action_thucthicaulenh(f"team + {idtoi}")
+            return
+        # Mời lần lượt từng người như Tổ đội (người dùng dặn 2026-11-22: trước mời liền cả đám, ai lỡ lời mời phải chờ 5-8s mời lại):
+        # người đang mời vào nhóm rồi thì mời người kế ngay lượt này, quá THOIGIANCHOMOITHANHVIEN giây chưa vào thì chuyển người kế
+        # (người lâu chưa được mời nhất trước, vòng sau mời lại người lỡ)
+        dangmoi, lucmoi = s.setdefault("dangmoinhom", [0, 0.])
+        if dangmoi and (dangmoi not in chuavaos or now - lucmoi > THOIGIANCHOMOITHANHVIEN):
+            dangmoi = 0
+        if dangmoi:
+            return
+        idga = min(chuavaos, key = lambda i: s["lucmoi"].get(i, 0.))
+        if moitruong.action_moihoacxinvaonhom(idga):
+            s["lucmoi"][idga] = now
+            s["dangmoinhom"] = [idga, now]
+            self._logkc(f"Mời {gas[idga].get('tennhanvat') or idga} vào nhóm")
+        else:
+            s["dangmoinhom"] = [0, 0.]
 
     def _cosudokc(self, tendd):
         # Acc chính có danh hiệu "Sư Phụ của <tên đồ đệ>" không (bảng Nhân Vật > Danh Hiệu; đồ đệ thì có "Đệ Tử của <sư phụ>", ảnh người
