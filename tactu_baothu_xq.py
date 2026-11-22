@@ -1,5 +1,6 @@
 # Phần bảo thú giang hồ: triệu hồi, điều khiển.
 # Mixin của TacTu (tactu_xq.py): chỉ chứa hàm, trạng thái (self._...) khởi tạo trong TacTu.__init__
+
 import time
 
 from hangso_xq import *
@@ -39,6 +40,7 @@ class TacTuBaoThu:
     def action_tudongdieukhienbaothu(self):
         is_baothukynangtrieuhoihetnoiluc = False
         is_baothukynangtrieuhoihetsinhluc = False
+        dsbaothutrieuhoi = []  # (id, toạ độ, khoảng cách) bảo thú kỹ năng triệu hồi cùng bản đồ
         if self._is_tudongdieukhienbaothu:
             while True:
                 if self.moitruong.get_is_nhanvatdachet():
@@ -107,10 +109,14 @@ class TacTuBaoThu:
                         elif iddoituongnhanvatmuctieu:
                             self.moitruong.action_ralenhbaothutancong(iddoituongbaothu, iddoituongnhanvatmuctieu)
                         elif not (self.moitruong.get_is_baothudangtheosau(iddoituongbaothu) and idbandohientaidoituongbaothu == idbandohientai
-                                  and khoangcach <= KHOANGCACHBAOTHUDAVE):
+                                  and khoangcach <= KHOANGCACHBAOTHUDANEO):
                             # Không có mục tiêu: trước đây không ra lệnh gì nên bảo thú cứ đuổi theo quái cũ/đứng im trong khi nhân vật đi chỗ khác.
-                            # Đã ra lệnh theo sau mà nó đang ở gần thì thôi, không gọi lại mỗi 2s
-                            self.moitruong.action_ralenhbaothutheosau(iddoituongbaothu, delay = 2.)
+                            # Kéo về sát cạnh thường xuyên (người dùng 2026-11-19): trước đây theo sau trong 9 ô là thôi gọi, nó tụt lại sau góc
+                            # vách rồi kẹt. Mỗi lệnh Theo sau nó tìm lại đường một đoạn => gọi lại mỗi 1s tới khi về trong KHOANGCACHBAOTHUDANEO ô
+                            self.moitruong.action_ralenhbaothutheosau(iddoituongbaothu, delay = 1.)
+
+                        if idbandohientaidoituongbaothu == idbandohientai:
+                            dsbaothutrieuhoi.append((iddoituongbaothu, toadodoituongbaothu, khoangcach))
 
                     elif is_baothugiangho:
                         if self.moitruong.get_idbandohientai() in BANDOKHONGPKs and self.moitruong.get_trangthaihanhvidoituongbaothu(sothutu) != 3:
@@ -148,3 +154,19 @@ class TacTuBaoThu:
                 break
         self._is_baothukynangtrieuhoihetnoiluc = is_baothukynangtrieuhoihetnoiluc
         self._is_baothukynangtrieuhoihetsinhluc = is_baothukynangtrieuhoihetsinhluc
+        try:
+            self._capnhatbaothutheosau(dsbaothutrieuhoi)
+        except Exception as e:
+            print(f"[BẢO THÚ THEO SAU] Lỗi: {e}")
+            self.moitruong.toadoneobaothu = None
+            self.moitruong.baothutheosaugan = None
+
+    def _capnhatbaothutheosau(self, dsbaothu):
+        # Bỏ quay lại đón bảo thú (người dùng 2026-11-20). Thay bằng: báo cho tầng di chuyển (moitruong) toạ độ bảo thú gần để A* chọn
+        # đường thoáng / lùi chỗ còn thấy nó (toadoneobaothu), và con đang Theo sau / bị gọi về gần nhất (baothutheosaugan) để lúc đi
+        # vòng góc vách thì dừng ở chỗ nó còn thấy mình, gọi nó theo kịp rồi mới rẽ (moitruong._catduongchobaothu): nó chạy thẳng về
+        # mình không vướng vách
+        trongtam = [b for b in dsbaothu if b[2] <= KHOANGCACHGOIBAOTHUVE] if not self.moitruong.get_is_nhanvatdachet() else []
+        self.moitruong.toadoneobaothu = min(trongtam, key = lambda b: b[2])[1] if trongtam else None
+        theosau = [b for b in trongtam if self.moitruong.get_is_baothudangtheosau(b[0]) or b[0] in self._idbaothudanggoive]
+        self.moitruong.baothutheosaugan = min(theosau, key = lambda b: b[2]) if theosau else None

@@ -67,14 +67,18 @@ def doi_luoi(luoi):
     return b"".join(bytes(cot) for cot in luoi).translate(_BANGDOI)
 
 
-def timduong(trong, rong, cao, x1, y1, x2, y2, nguong = 0., is_chocatgoc = False, phats = None):
+def timduong(trong, rong, cao, x1, y1, x2, y2, nguong = 0., is_chocatgoc = False, phats = None, phatnen = None):
     # trong: bytes / bytearray từ doi_luoi (đã trừ ô vật cản ghi tay). Toạ độ là toạ độ TRONG lưới (đã trừ gốc khung).
     # phats: {(x, y): chi phí cộng thêm khi bước vào ô} hoặc None.
+    # phatnen: array("d") rong * cao chi phí cộng thêm từng ô (phạt sát vật cản cho bảo thú) hoặc None; phats cộng chồng lên
     # -> (chuỗi hướng bytes hoặc None, số ô đã mở)
     dll = _nap()
     phat = None
+    if phatnen is not None and len(phatnen) == rong * cao:
+        phat = (ctypes.c_double * (rong * cao)).from_buffer_copy(phatnen)
     if phats:
-        phat = (ctypes.c_double * (rong * cao))()
+        if phat is None:
+            phat = (ctypes.c_double * (rong * cao))()
         for (x, y), v in phats.items():
             if 0 <= x < rong and 0 <= y < cao:
                 phat[x * cao + y] += v

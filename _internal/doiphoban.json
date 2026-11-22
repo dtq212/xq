@@ -17,7 +17,9 @@
         "thanhkieu",
         "phongyeukinh"
       ],
-      "chon": [],
+      "chon": [
+        "langlyson"
+      ],
       "vong": {},
       "phai": "maoson"
     },
@@ -27,7 +29,9 @@
       "thanhviens": [
         364,
         342,
-        347
+        347,
+        359,
+        1451
       ],
       "thutu": [
         "sugia",
@@ -37,7 +41,7 @@
         "phongyeukinh"
       ],
       "chon": [
-        "tapkich"
+        "phongyeukinh"
       ],
       "vong": {},
       "phai": "daohoanguyen"
@@ -60,6 +64,26 @@
       ],
       "chon": [
         "tapkich"
+      ],
+      "vong": {},
+      "phai": "maoson"
+    },
+    {
+      "ma": "1795078864298",
+      "ten": "4",
+      "thanhviens": [
+        342,
+        347
+      ],
+      "thutu": [
+        "sugia",
+        "tapkich",
+        "langlyson",
+        "thanhkieu",
+        "phongyeukinh"
+      ],
+      "chon": [
+        "phongyeukinh"
       ],
       "vong": {},
       "phai": "maoson"

@@ -1,12 +1,13 @@
 # Luật túi đồ: _internal/luattuido.json (sửa ở tab "Hành trang" trên bảng điều khiển, hoặc bằng tay; bot tự đọc lại khi file đổi).
 # Dùng chung mọi nhân vật trên máy; chưa có file thì tạo từ LUATMACDINH / MUABUMACDINH (luật viết cứng trước đây, chuyển sang đây 2026-10-29).
 #   "luat": hành động (Giữ / Bán / Vứt): xét từ trên xuống, luật ĐẦU TIÊN khớp quyết định. Mỗi luật: {"bat": true,
-#           "hanhdong": "giu" | "ban" | "vut", "ten": [tên đúng...], "tenchua": [tên có chứa...], "loai": [loại trong ［］ có chứa...],
+#           "hanhdong": "giu" | "ban" | "vut" | "phangiai", "ten": [tên đúng...], "tenchua": [tên có chứa...], "loai": [loại trong ［］ có chứa...],
 #           "mota": [mô tả có chứa...], "mau": [màu tên: "Lam Kim" / "Hoàng Kim" / "Tím", xem MAUTEN], "ghichu": ...,
 #           "is_bao": true = 📣 nhặt được món khớp luật này thì báo về Telegram kèm ảnh chụp (đồ hiếm), xem thongke_xq; xét riêng với
 #           hành động: có luật bật nào khớp là báo, thứ tự không quan trọng}.
-#           Mỗi điều kiện là danh sách, khớp 1 giá trị bất kỳ là được; để trống là không xét; có nhiều điều kiện thì phải khớp hết;
-#           so không phân biệt hoa thường. Khi về bán rác, món không khớp luật nào thì BÁN (giữ món gì thì phải có luật Giữ).
+#           Mỗi điều kiện là danh sách (mỗi dòng 1 giá trị), khớp 1 dòng bất kỳ là được (HOẶC); trong 1 dòng nối nhiều chữ bằng "&"
+#           thì phải khớp hết (VÀ, người dùng 18/11), vd Mô tả chứa "Chưa Giám Định & Cấp 60" + dòng 2 "Phân giải được"; để trống là
+#           không xét; có nhiều điều kiện (ô) thì phải khớp hết; so không phân biệt hoa thường. Khi về bán rác, món không khớp luật nào thì BÁN (giữ món gì thì phải có luật Giữ).
 #   "catkho": bảng Cất kho (tactu_catkho_xq), xét riêng với "luat": món khớp luật bật đầu tiên ở đây thì không bán / không vứt, đem gửi
 #           Quản Khố ở Tân Thủ Thôn (sau bán rác nếu "is_catkhosauban", hoặc bấm Cất kho ngay / Telegram). Mỗi luật: {"bat": true,
 #           "ten" / "tenchua" / "loai" / "mota" như "luat", "ruong": 0 = tự động (rương còn chỗ) hoặc số rương (từ 1), "giulai": số cái
@@ -41,6 +42,7 @@
 #   Mọi luật / mục ở cả 5 bảng có thêm "nhanvat": [tên nhân vật...] = chỉ áp dụng cho các nhân vật này (so tên đúng, không phân biệt
 #           hoa thường); trống = mọi nhân vật (người dùng 2026-11-15). Nhân vật không nằm trong danh sách thì coi như luật không có
 import copy
+import re
 import functools
 import json
 import time
@@ -61,10 +63,13 @@ from hangso_xq import (HACCAU, LAMCAU, HOACAU, HONGCAU, TUSAMDON, CAPCUUDON, HOA
 HANHDONG_GIU = "giu"
 HANHDONG_BAN = "ban"
 HANHDONG_VUT = "vut"
+# Phân giải (tactu_phangiai_xq, 2026-11-18): không bán / không vứt; bấm nút "Give & phân giải" thì nhân vật thường give các món này cho
+# người phân giải, người phân giải đứng cạnh Chủ Tiệm Sửa Chữa gửi "pf4 <NPC>#  6502 <món>#" từng món
+HANHDONG_PHANGIAI = "phangiai"
 # Chỉ còn để đọc luật cũ (trước khi Cất kho thành bảng riêng "catkho")
 HANHDONG_CATKHO = "catkho"
 RUONGTUDONG = 0
-TENHANHDONG = {HANHDONG_GIU: "Giữ", HANHDONG_BAN: "Bán", HANHDONG_VUT: "Vứt"}
+TENHANHDONG = {HANHDONG_GIU: "Giữ", HANHDONG_BAN: "Bán", HANHDONG_VUT: "Vứt", HANHDONG_PHANGIAI: "Phân giải"}
 DIEUKIENs = ("ten", "tenchua", "loai", "mota", "mau")
 TENDIEUKIEN = {"ten": "Tên đúng", "tenchua": "Tên chứa", "loai": "Loại chứa", "mota": "Mô tả chứa", "mau": "Màu tên"}
 # Nhãn ô nhập ở form sửa luật (giao diện): như TENDIEUKIEN, "Màu tên" kèm các giá trị gõ được
@@ -88,6 +93,10 @@ NHAT_UUTIEN = "uutien"
 NHAT_KHONGNHAT = "khongnhat"
 TENHANHDONGNHAT = {NHAT_NHAT: "Nhặt", NHAT_UUTIEN: "Nhặt ưu tiên", NHAT_KHONGNHAT: "Không nhặt"}
 DIEUKIENNHATs = ("ten", "tenchua")
+# Điều kiện ô tích của luật nhặt: món dưới đất là trang bị (Vũ Khí, Nón, Y Phục, Yêu Đới, Hạng Liên, Giày) theo số hiệu hình
+# (MoiTruong.get_is_trangbiduoidat, HINHTRANGBI_KHOANGs). 18/11 thay luật "Tên chứa" Kiếm / Đao / Bào / Đầu Cân... vừa sót tên lạ
+# vừa nhặt nhầm vật liệu tên giống đồ (Giáp Trụ, Cương Thi Quán). Đi kèm tên đúng / tên chứa thì phải khớp cả hai (Và)
+DIEUKIENNHATTRANGBI = "trangbi"
 # Nơi dùng của luật "dung" (bản đồ PK = không thuộc BANDOKHONGPKs; phó bản = BANDOPHOBANs khi không đang PK ở bản đồ PK)
 # 16/11 (ô tích): 5 vùng KHÔNG chồng nhau, mỗi lúc nhân vật thuộc đúng 1 vùng (tactu_vatpham_xq xét theo thứ tự: đang PK -> phó bản ->
 # bản đồ PK có khai khoáng / không -> bản đồ không PK). Phó bản 701-704, 891-899 cũng là bản đồ PK (không thuộc BANDOKHONGPKs)
@@ -351,7 +360,8 @@ def _chuanhoanhat(luat):
     luat["tenchua"] = _danhsachgiukhoangtrang(luat.get("tenchua"))
     luat["ghichu"] = str(luat.get("ghichu") or "")
     luat["nhanvat"] = _danhsach(luat.get("nhanvat"))
-    return {k: luat[k] for k in ("bat", "hanhdong", *DIEUKIENNHATs, "chibanrac", "nhanvat", "ghichu")}
+    luat[DIEUKIENNHATTRANGBI] = bool(luat.get(DIEUKIENNHATTRANGBI, False))
+    return {k: luat[k] for k in ("bat", "hanhdong", *DIEUKIENNHATs, DIEUKIENNHATTRANGBI, "chibanrac", "nhanvat", "ghichu")}
 
 
 def _chuanhoadung(luat):
@@ -459,6 +469,21 @@ def luuluat(dulieu):
     _cache["lankiemtra"] = 0.
 
 
+def _tachva(giatri):
+    # 1 dòng điều kiện -> các phần nối bằng "&" (phép VÀ). Chỉ cắt khoảng trắng sát dấu & (tên chứa của luật nhặt giữ khoảng trắng đầu /
+    # cuối dòng: " Y & Kiếm" -> [" Y", "Kiếm"]); phần rỗng bỏ đi
+    return [p for p in re.split(r"\s*&\s*", giatri) if p.strip()]
+
+
+def _khopdong(giatris, kiemtra):
+    # Danh sách dòng điều kiện: khớp 1 dòng là đủ (HOẶC); 1 dòng khớp khi mọi phần "&" của nó đều khớp (VÀ). kiemtra(phần) -> bool
+    for giatri in giatris:
+        phans = _tachva(giatri)
+        if phans and all(kiemtra(p) for p in phans):
+            return True
+    return False
+
+
 def is_cancanmota(luat):
     return bool(luat.get("loai") or luat.get("mota"))
 
@@ -471,18 +496,17 @@ def khopluat(luat, ten, laymota, laymau = None):
     if not any(luat.get(d) for d in DIEUKIENs):
         return False
     tenchuan = chuanhoa(ten)
-    if luat["ten"] and not any(chuanhoa(g) == tenchuan for g in luat["ten"]):
+    if luat["ten"] and not _khopdong(luat["ten"], lambda g: chuanhoa(g) == tenchuan):
         return False
-    if luat["tenchua"] and not any(chuanhoa(g) in tenchuan for g in luat["tenchua"]):
+    if luat["tenchua"] and not _khopdong(luat["tenchua"], lambda g: chuanhoa(g) in tenchuan):
         return False
     if luat.get("mau"):
-        mamaus = {MAUTEN.get(chuanhoa(g)) for g in luat["mau"]} - {None}
-        if not mamaus:
+        if not any(MAUTEN.get(chuanhoa(p)) for g in luat["mau"] for p in _tachva(g)):
             return False
         mau = laymau() if laymau else None
         if mau is None:
             return None
-        if mau not in mamaus:
+        if not _khopdong(luat["mau"], lambda g: MAUTEN.get(chuanhoa(g)) == mau):
             return False
     if not is_cancanmota(luat):
         return True
@@ -490,9 +514,9 @@ def khopluat(luat, ten, laymota, laymau = None):
     if mota is None:
         return None
     loai, noidung = chuanhoa(mota[0]), chuanhoa(mota[1])
-    if luat["loai"] and not any(chuanhoa(g) in loai for g in luat["loai"]):
+    if luat["loai"] and not _khopdong(luat["loai"], lambda g: chuanhoa(g) in loai):
         return False
-    if luat["mota"] and not any(chuanhoa(g) in noidung for g in luat["mota"]):
+    if luat["mota"] and not _khopdong(luat["mota"], lambda g: chuanhoa(g) in noidung):
         return False
     return True
 
@@ -543,20 +567,28 @@ def timluatcatkho(ten, laymota, dulieu = None, tennhanvat = None, laymau = None)
     return None
 
 
-def timhanhdongnhat(ten, is_banrac, dulieu = None, tennhanvat = None):
+def timhanhdongnhat(ten, is_banrac, dulieu = None, tennhanvat = None, laytrangbi = None):
     # Hành động nhặt của luật nhặt bật đầu tiên khớp món tên ten dưới đất: "nhat" / "uutien" / "khongnhat", None = không luật nào
-    # khớp. Luật "chibanrac" chỉ xét khi is_banrac (bật Tự động về bán rác). So không phân biệt hoa thường; "tenchua" giữ khoảng trắng
+    # khớp. Luật "chibanrac" chỉ xét khi is_banrac (bật Tự động về bán rác). So không phân biệt hoa thường; "tenchua" giữ khoảng trắng.
+    # laytrangbi(): món là trang bị không (chỉ gọi khi có luật cần); không truyền thì luật "trangbi" không khớp
     if not ten:
         return None
     tenchuan = chuanhoa(ten)
     # Tên chứa: chỉ dựng sẵn dấu + chữ thường, không gộp / cắt khoảng trắng (" Y" ở đầu mỗi từ)
     tenthuong = unicodedata.normalize("NFC", ten).lower()
+    is_trangbi = None
     for luat in (dulieu or tailuat())["nhat"]:
-        if not luat["bat"] or (luat["chibanrac"] and not is_banrac) or not any(luat.get(d) for d in DIEUKIENNHATs)                 or not is_apdungnhanvat(luat, tennhanvat):
+        if not luat["bat"] or (luat["chibanrac"] and not is_banrac) \
+                or not (any(luat.get(d) for d in DIEUKIENNHATs) or luat.get(DIEUKIENNHATTRANGBI)) or not is_apdungnhanvat(luat, tennhanvat):
             continue
-        if luat["ten"] and not any(chuanhoa(g) == tenchuan for g in luat["ten"]):
+        if luat.get(DIEUKIENNHATTRANGBI):
+            if is_trangbi is None:
+                is_trangbi = bool(laytrangbi and laytrangbi())
+            if not is_trangbi:
+                continue
+        if luat["ten"] and not _khopdong(luat["ten"], lambda g: chuanhoa(g) == tenchuan):
             continue
-        if luat["tenchua"] and not any(g.lower() in tenthuong for g in luat["tenchua"]):
+        if luat["tenchua"] and not _khopdong(luat["tenchua"], lambda g: unicodedata.normalize("NFC", g).lower() in tenthuong):
             continue
         return luat["hanhdong"]
     return None
@@ -568,7 +600,7 @@ def is_coluatbao(dulieu = None, tennhanvat = None):
 
 def motaluat(luat, sohienthi = 3):
     # 'Tên chứa "Bí kíp", "Nhập môn", "Bảo Thạch" +5' cho giao diện
-    phans = []
+    phans = ["Là trang bị"] if luat.get(DIEUKIENNHATTRANGBI) else []
     for d in DIEUKIENs:
         if luat.get(d):
             giatris = ", ".join(f'"{g}"' for g in luat[d][:sohienthi]) + (f" +{len(luat[d]) - sohienthi}" if len(luat[d]) > sohienthi else "")

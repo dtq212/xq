@@ -8,7 +8,8 @@ import pymem.process
 
 import diachi_xq
 from diachi_xq import DC
-from tienich_xq import read_int, write_int, write_bytes
+from moitruong_xq import MoiTruong
+from tienich_xq import read_int, write_int, read_bytes
 
 # Tắt / bật tiếng theo tiến trình qua Windows Audio Session API (giống bảng Volume Mixer), gọi COM bằng ctypes thuần
 # để khỏi thêm thư viện (pycaw/comtypes). Mỗi client game là 1 tiến trình có phiên âm thanh riêng trên loa mặc định
@@ -134,10 +135,15 @@ CDTC_AMTHANH = 0x1F0
 
 
 class NhacNenClient:
-    # Bật / tắt nhạc nền từng client: ghi cờ nhạc rồi gọi HAMNHACNEN(cờ) (cdecl, 1 tham số) bằng luồng từ xa; HAMNHACNEN(1) chỉ phát
-    # khi cờ nhạc > 0, đổi bản đồ game cũng tự xét cờ này nên tắt rồi là tắt hẳn tới khi bật lại. Không ghi xq.ini
+    # Bật / tắt nhạc nền từng client: ghi cờ nhạc rồi nhờ hook đầu vòng vẽ cửa sổ (MoiTruong.action_thietlaphookanhiencuaso, bot cài lúc
+    # gắn vào cửa sổ) gọi HAMNHACNEN(cờ) TRÊN LUỒNG CHÍNH. Không gọi bằng luồng từ xa: thiết bị MCI của nhạc chỉ luồng mở nó đóng được
+    # (xem MoiTruong.LECHYEUCAUNHACNEN). HAMNHACNEN(1) chỉ phát khi cờ nhạc > 0, đổi bản đồ game cũng tự xét cờ này nên tắt rồi là tắt hẳn
+    # tới khi bật lại. Không ghi xq.ini
     def __init__(self):
         self._tientrinhs = {}
+        # pid đã gửi yêu cầu ít nhất 1 lần: lần đầu gặp client thì gửi luôn dù cờ đã đúng (vd xq.ini music=0 nhưng nhạc đang phát
+        # do bản cũ tắt bằng luồng từ xa không được)
+        self._daguis = set()
 
     def _mo(self, pid):
         if pid not in self._tientrinhs:
@@ -154,29 +160,36 @@ class NhacNenClient:
     def dong(self, pidconlais = ()):
         # Đóng handle các tiến trình không còn trong pidconlais
         for pid in [pid for pid in self._tientrinhs if pid not in pidconlais]:
+            self._daguis.discard(pid)
             try:
                 self._tientrinhs.pop(pid)[0].close_process()
             except Exception:
                 pass
 
+    def _kichbanhook(self, tientrinh, diachixq):
+        # Kịch bản hook luồng chính đúng phiên bản (có ô yêu cầu nhạc nền), None khi bot chưa cài / đang chạy hook cũ
+        diachihook = diachixq + DC.HOOK_DAUVONGVECUASO
+        mahook = read_bytes(tientrinh, diachihook, 5)
+        if mahook[0] != 0xE9:
+            return None
+        kichban = diachihook + 5 + struct.unpack("<i", mahook[1:5])[0]
+        if read_int(tientrinh, kichban + MoiTruong.LECHPHIENBANHOOK) != MoiTruong.PHIENBANHOOKANHIEN:
+            return None
+        return kichban
+
     def dat(self, pid, is_bat):
-        # True: vừa đổi; False: đã đúng sẵn hoặc chưa vào game (chưa có cửa sổ cài đặt)
+        # True: vừa đặt yêu cầu; False: đã đúng sẵn, chưa vào game (chưa có cửa sổ cài đặt) hoặc chưa có hook luồng chính (thử lại sau)
         tientrinh, diachixq = self._mo(pid)
         tg = read_int(tientrinh, diachixq + DC.THONGTINGAME)
         caidat = read_int(tientrinh, tg + DC.TG_CAIDATTROCHOI) if tg else 0
-        if not caidat or (read_int(tientrinh, caidat + CDTC_NHACNEN) > 0) == is_bat:
+        if not caidat:
+            return False
+        if (read_int(tientrinh, caidat + CDTC_NHACNEN) > 0) == is_bat and pid in self._daguis:
+            return False
+        kichban = self._kichbanhook(tientrinh, diachixq)
+        if not kichban:
             return False
         write_int(tientrinh, caidat + CDTC_NHACNEN, 1 if is_bat else 0)
-        # push cờ; call HAMNHACNEN; add esp, 4; xor eax, eax; ret 4
-        ma = (b"\x6A" + bytes([1 if is_bat else 0]) + b"\xB8" + struct.pack("<I", diachixq + DC.HAMNHACNEN) + b"\xFF\xD0"
-              + b"\x83\xC4\x04" + b"\x33\xC0\xC2\x04\x00")
-        vung = tientrinh.allocate(64)
-        try:
-            write_bytes(tientrinh, vung, ma, len(ma))
-            ctypes.windll.kernel32.CloseHandle(tientrinh.start_thread(vung))
-        finally:
-            try:
-                tientrinh.free(vung)
-            except Exception:
-                pass
+        write_int(tientrinh, kichban + MoiTruong.LECHYEUCAUNHACNEN, 2 if is_bat else 1)
+        self._daguis.add(pid)
         return True

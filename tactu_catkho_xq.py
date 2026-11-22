@@ -12,6 +12,7 @@
 # không thì ô trống đầu tiên. "Giữ lại" của luật: chừa chừng đó cái (theo tên) trong túi, cất phần còn lại. Gửi xong chờ rồi xem món đã
 # rời túi / chồng đã giảm chưa: chưa thì ô đó không gộp được (đầy chồng...) / thử lại, quá SOLANTHUCATKHO lần thì bỏ món đó (đồ khoá...)
 # Mixin của TacTu (tactu_xq.py): chỉ chứa hàm, trạng thái (self._...) khởi tạo trong TacTu.__init__
+import re
 import time
 import unicodedata
 import uuid
@@ -31,6 +32,11 @@ LYDOCATKHO_KEOCAP = "keocap"
 KHOANGCACHQUANKHO = 3.
 # Săn Tinh Anh: bán đồ trắng ở Chủ Tiệm Tạp Hóa trước khi cất kho, quá chừng này giây chưa xong thì bỏ bán
 THOIGIANBANTRANGTINHANHTOIDA = 90.
+# Bán đồ trắng Săn Tinh Anh: mỗi lượt desc tối đa chừng này ô có mô tả chưa khớp tên (không chờ); gửi xong chừng này giây chưa có mô tả
+# thì gửi lại, tối đa SOLANDESCTRANGTINHANH lần rồi chừa món đó (như bán rác Phong Yêu Kính)
+SODESCTRANGTINHANHMOILUOT = 3
+THOIGIANCHODESCTRANGTINHANH = 3.
+SOLANDESCTRANGTINHANH = 3
 # Xét từ ô đầu hành trang: 6 ô dòng đầu không còn là ô dùng nhanh phải chừa (người dùng 16/11 bỏ, từng bỏ qua từ 29/10)
 VITRICATKHODAUTIEN = 0
 GIANCACHBUOCCATKHO = 0.5
@@ -305,27 +311,46 @@ class TacTuCatKho:
             return False
         return "pháp bảo" not in unicodedata.normalize("NFC", mota[0] or "").lower()
 
-    def _is_dotrangtinhanh(self, ten, vitri):
+    def _lydokhongbantrangtinhanh(self, ten, vitri):
         # Trang bị trắng (tên không màu, mô tả có "Độ bền" / "Chưa giám định") Săn Tinh Anh nhặt về bán gỡ vốn (người dùng 16/11). Theo luật túi đồ: chỉ món
-        # không khớp luật hoặc luật Bán, không khớp Cất kho; bỏ món bot cần dùng, kỵ thú giữ, Pháp Bảo, đồ có sao. Chưa đọc được thì không bán
+        # không khớp luật hoặc luật Bán, không khớp Cất kho; bỏ món bot cần dùng, kỵ thú giữ, Pháp Bảo, đồ có sao. Chưa đọc được thì không bán.
+        # -> None = bán, "" = không phải đồ trắng (Lam Kim, vật phẩm...: không cần ghi log), chuỗi khác = lý do chừa món trắng (ghi log)
         if self._chuanhoatenvatpham(ten) in self._laytengiutuihethan() or self._is_kythugiu(ten):
-            return False
-        if self._layhanhdongluat(ten, vitri) not in (None, HANHDONG_BAN) or self._is_catkhovatpham(ten, vitri):
-            return False
-        if self._laymautenluat(ten, vitri) != "":
-            return False
+            return ""
+        mau = self._laymautenluat(ten, vitri)
+        if mau is None:
+            return "chưa đọc được màu tên"
+        if mau != "":
+            return ""
+        hanhdong = self._layhanhdongluat(ten, vitri)
+        if hanhdong == "chuabiet":
+            return "luật túi đồ chưa đọc được mô tả"
+        if hanhdong not in (None, HANHDONG_BAN):
+            return f"luật túi đồ: {hanhdong}"
+        if self._is_catkhovatpham(ten, vitri):
+            return "khớp bảng Cất kho"
         # Món trắng không phải trang bị nhặt vì Săn Tinh Anh (vật liệu rác: Tử Giả Di Vật, Khô Đầu Lâu...): bán luôn (người dùng 16/11).
         # Món người dùng cần thì đặt luật Giữ / Cất kho ở tab Hành trang
-        if self._chuanhoatenvatpham(ten) in self._tenractinhanhs:
-            return not self._is_dosaokhongban(vitri, ten)
-        # Trang bị: có "Độ bền", hoặc "Chưa giám định" (đồ trắng cấp >= 30 rơi ra cũng chưa giám định, chưa có dòng Độ bền)
-        mota = self._laymotaluat(ten, vitri)
-        chu = unicodedata.normalize("NFC", (mota or ("", ""))[1] or "")
-        if "Độ bền" not in chu and "chưa giám định" not in chu.lower():
-            return False
-        if "pháp bảo" in unicodedata.normalize("NFC", mota[0] or "").lower():
-            return False
-        return not self._is_dosaokhongban(vitri, ten)
+        if self._chuanhoatenvatpham(ten) not in self._tenractinhanhs:
+            # Trang bị: có "Độ bền", hoặc "Chưa giám định" (đồ trắng cấp >= 30 rơi ra cũng chưa giám định, chưa có dòng Độ bền)
+            mota = self._laymotaluat(ten, vitri)
+            if mota is None:
+                return "chưa đọc được mô tả"
+            chu = unicodedata.normalize("NFC", mota[1] or "")
+            if "Độ bền" not in chu and "chưa giám định" not in chu.lower():
+                return ""
+            if "pháp bảo" in unicodedata.normalize("NFC", mota[0] or "").lower():
+                return ""
+        if self._is_dosaokhongban(vitri, ten, is_docmoi = False):
+            return "đồ có sao"
+        return None
+
+    def _is_motaokhopten(self, vitri, ten):
+        # Mô tả game đang giữ cho ô vitri là của đúng món này chưa (mô tả theo ô, có thể còn của món trước ở ô đó): dòng đầu khớp tên
+        tenchuan = unicodedata.normalize("NFC", re.sub(r"\x1b.", "", ten or "")).strip()
+        sach = unicodedata.normalize("NFC", re.sub(r"\x1b.", "", self.moitruong.get_motathovatphamhanhtrangcosan(vitri) or ""))
+        dongs = [d.strip() for d in sach.split("\n") if d.strip()]
+        return bool(dongs and tenchuan and dongs[0].startswith(tenchuan))
 
     def _buocbantrangtinhanh(self, viec):
         # 1 bước bán đồ trắng (Săn Tinh Anh) ở Chủ Tiệm Tạp Hóa. viec["banrac"]: "cho" -> "dagui" (lệnh bán đã xếp, action_xulybanracvasuado
@@ -338,7 +363,7 @@ class TacTuCatKho:
             viec["banrac"] = "xong"
             return "xong"
         if time.time() - viec["lucbanrac"] > THOIGIANBANTRANGTINHANHTOIDA:
-            print("[CẤT KHO] Săn Tinh Anh: quá lâu chưa tới được Chủ Tiệm Tạp Hóa, bỏ bán đồ trắng, đi cất kho")
+            moitruong._inlog(f"[CẤT KHO] Săn Tinh Anh: quá {int(THOIGIANBANTRANGTINHANHTOIDA)}s chưa bán xong đồ trắng ở Chủ Tiệm Tạp Hóa, bỏ bán, đi cất kho")
             viec["banrac"] = "xong"
             return "xong"
         diachinpc = moitruong.action_timkiemnhanvat(tennhanvat = CHUTIEMTAPHOA)
@@ -352,14 +377,44 @@ class TacTuCatKho:
             return "dichuyen", round(x), round(y)
         moitruong.action_ngatdichuyen()
         idnpc = moitruong.get_iddoituong(diachinpc)
-        lenhs, tens = [], []
+        if not idnpc or idnpc <= 0:
+            return "dang"
+        # Trước đây quét 1 lượt, mỗi ô desc chờ tối đa 1s: ô nào mô tả chưa về kịp (mô tả theo ô còn của món trước, desc chậm) thì món đó bị
+        # bỏ cả chuyến và ô đó 60s không desc lại => về bán mà vẫn còn 1 đống đồ trắng (người dùng 19/11). Giờ như bán rác Phong Yêu Kính:
+        # desc không chờ các ô chưa khớp tên, chờ đọc đủ rồi mới bán; desc SOLANDESCTRANGTINHANH lần vẫn không được thì chừa, ghi log lý do
+        now = time.time()
+        dadesc = viec.setdefault("dadesctrang", {})
+        lenhs, tens, boquas, sodesc, soguidesc = [], [], [], 0, 0
         for vitri in range(moitruong.get_soluongvatphamhanhtrangtoida() + 1):
             iddoituong = moitruong.get_iddoituongvatphamhanhtrang(vitri)
             ten = moitruong.get_tenvatphamhanhtrang(vitri) if iddoituong and iddoituong > 0 else None
-            if ten and self._is_dotrangtinhanh(ten, vitri):
-                lenhs.append(f"sell ! {idnpc:x}# {iddoituong:x}# 255")
+            if not ten:
+                continue
+            if not self._is_motaokhopten(vitri, ten):
+                lucgui, solan = dadesc.get((vitri, iddoituong), (0., 0))
+                if now - lucgui <= THOIGIANCHODESCTRANGTINHANH:
+                    sodesc += 1
+                elif solan < SOLANDESCTRANGTINHANH:
+                    sodesc += 1
+                    if soguidesc < SODESCTRANGTINHANHMOILUOT:
+                        soguidesc += 1
+                        dadesc[(vitri, iddoituong)] = (now, solan + 1)
+                        moitruong.get_motavatphamhanhtrang(vitri, thoigianchotoida = 0., is_napmoi = True)
+                else:
+                    boquas.append(f"{ten} (ô {vitri}: không đọc được mô tả)")
+                continue
+            lydo = self._lydokhongbantrangtinhanh(ten, vitri)
+            if lydo is None:
+                lenhs.append(self._lenhbanvatpham(idnpc, iddoituong, self._soluongbanvatpham(vitri)))
                 tens.append(ten)
-        print(f"[CẤT KHO] Săn Tinh Anh: bán {len(lenhs)} đồ trắng ({', '.join(tens[:8])}{'...' if len(tens) > 8 else ''})")
+            elif lydo:
+                boquas.append(f"{ten} (ô {vitri}: {lydo})")
+        if sodesc:
+            viec["trangthai"] = f"bán đồ trắng: đọc mô tả hành trang ({sodesc} ô)"
+            return "dang"
+        if boquas:
+            moitruong._inlog(f"[CẤT KHO] Săn Tinh Anh: chừa {len(boquas)} món trắng: " + ", ".join(boquas))
+        moitruong._inlog(f"[CẤT KHO] Săn Tinh Anh: bán {len(lenhs)} đồ trắng ({', '.join(tens[:10])}{'...' if len(tens) > 10 else ''})")
         if not lenhs:
             viec["banrac"] = "xong"
             return "xong"

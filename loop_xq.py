@@ -197,7 +197,7 @@ class LoopChinh:
                     elif not self._guilenhchomenu(lenhs[0]):
                         break
 
-        if self.moitruong.get_idnguoichoi() in (342, 347, 354, 359, 364):
+        if self.moitruong.get_idnguoichoi() in (342, 347, 354, 359, 364, 1163, 1451):
             # Đọc tên hành trang 1 lần rồi chỉ gửi lệnh với món đang có: trước đây mỗi món gọi action_sudungvatphamhanhtrang đọc lại cả
             # ~96 ô (9 lần đọc cả hành trang mỗi lượt kể cả khi không có túi nào; py-spy 2026-11-14: ~8% thời gian bận của tiến trình)
             tenhanhtrangs = set(self.moitruong.get_danhsachtenvatphamhanhtrang())
@@ -433,11 +433,19 @@ class LoopPhu:
         self.tactu.action_tudongnhatvatpham()
         self.tactu.action_tudongvutvatpham()
         self.tactu.action_tudongvutvatphamtheoluat()
+        self.tactu.action_tudongphangiaitheoluat()
         self.tactu.action_tudongdeokythu()
 
         self._thongbaochet()
 
-        if not self.moitruong.get_is_bathanhtrang():
+        # Alt hiện tên đồ dưới đất. Ở ô túi game in nguyên tên đè lên hình, rất khó nhìn => hook thay tên bằng dấu màu phẩm chất
+        # (action_thietlaphookdaumautui) rồi bật Alt luôn, chỉ tắt khi mở bản đồ lớn (chữ đè lên bản đồ). Hook lỗi thì như cũ:
+        # mở hành trang thì không bật Alt.
+        if self.moitruong.action_thietlaphookdaumautui():
+            # Nhả phím Alt không còn tắt cờ (không bị ẩn chốc lát tới vòng lặp sau)
+            self.moitruong.action_giualtkhinhaphim()
+            self.moitruong.set_is_batalt(not self.moitruong.get_is_dangmobando())
+        elif not self.moitruong.get_is_bathanhtrang():
             self.moitruong.set_is_batalt(True)
 
         self.moitruong.action_vohieuhoahookchienquoc2()

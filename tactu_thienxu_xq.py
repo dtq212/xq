@@ -8,7 +8,7 @@
 #                               -> tới toạ độ, NPC tên game "<Bang> Người Đưa Tin" -> look -> "1. Hoàn thành nhiệm vụ"
 #   Gửi Thư Nhà (loại 4?)     : "Gửi thư nhà cho <NPC>" ... "người ấy sống tại <Nước>, ở ..." -> tới NPC -> look -> lựa chọn hoàn thành
 #                               (Vương Thợ Rèn ghi "Không biết tên chỗ", không có trong dữ liệu game: huỷ, NPCHUYGUITHU; người khác
-#                               không rõ chỗ thì dừng báo lỗi - người dùng dặn 2026-11-15)
+#                               không rõ chỗ cũng huỷ luôn cho khỏi đứt chuỗi - người dùng dặn 2026-11-22, trước đó dừng báo lỗi)
 #   Thu Thập (Cơm No Áo Ấm)   : "Thu thập 1 cái Súp Bắp" -> hành trang có đủ thì về Tổng Quản trả (quest.20 -> quest.21);
 #                               không đủ: VATPHAMHUYTHUTHAP huỷ, món khác dừng báo lỗi để người dùng xem
 #   Trừ Ác Giúp Yếu           : "Diệt trừ <Ác Nhân ...>" ... "xuất hiện tại <Nước> (x, y)" -> tới toạ độ, chỉ đánh con đó tới chết,
@@ -714,6 +714,14 @@ class TacTuThienXu:
             diachi, yeucau = self._tinpc(s, tennpc, idbandogoiy)
             if not diachi:
                 if yeucau is None and not idbandogoiy and not self._sovitri.timnpc(tennpc, self._thumucgame()):
+                    # Gửi Thư Nhà cho NPC không rõ chỗ: huỷ luôn cho khỏi đứt chuỗi lượt (người dùng dặn 2026-11-22, vd Bạch Dễ
+                    # bản đồ 886); việc khác (Tổng Quản, Người Đưa Tin...) vẫn dừng báo lỗi
+                    if nv and nv["loai"] == "guithu":
+                        lydohuy = f"Gửi Thư Nhà cho {tennpc} (không biết ở đâu)"
+                        s["khoadangnhan"] = None
+                        s["trangthai"] = f"huỷ {nv['ten']}: {lydohuy}"
+                        self.action_huynhiemvuthatbai(s, MUCTHIENXU, nv, lambda chu: self._logtx(f"Huỷ ({lydohuy}): {chu}"))
+                        return None
                     self._ketthucthienxu(f"không biết {tennpc} ở đâu ({viec}): đứng gần NPC đó 1 lần cho Foxia ghi lại vị trí")
                 return yeucau
         s.pop("luctoitoado", None)
@@ -772,7 +780,8 @@ class TacTuThienXu:
             if not noidung and now - h["luc"] < THOIGIANCHOMENU:
                 return
             lenhs = [l for l in moitruong.get_lenhcuasotuychons() if l.strip() and l.upper() != "CLOSE"] if noidung else []
-            if noidung and chuanhoaten(LOICHONHANLAI) in chuanhoaten(noidung):
+            # Bỏ dấu câu trước khi so: chuanhoaten dồn dấu thanh về cuối từ nên "vội!" không chứa "vội" (21/11 acc 359 chờ hụt 3 lần rồi dừng)
+            if noidung and chuanhoaten(LOICHONHANLAI) in chuanhoaten(re.sub(r"[^\w\s]", " ", unicodedata.normalize("NFC", noidung))):
                 # Vừa huỷ: chờ THOIGIANCHONHANLAI giây rồi nhận lại, không tính lần thử
                 self._logtx(f"Tổng Quản bảo chờ ({(noidung or '')[:80]!r}): {int(THOIGIANCHONHANLAI)}s nữa nhận lại")
                 s["lucchonhan"] = now + THOIGIANCHONHANLAI

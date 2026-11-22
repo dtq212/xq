@@ -420,7 +420,6 @@ class CuaSo:
                     "_mauphapbaovua": self.tactu._mauphapbaovua,
                     "_mauphapbaothap": self.tactu._mauphapbaothap,
                     "_dotrephapbao": self.tactu._dotrephapbao,
-                    "_is_giukhoangcachchimuctieupk": self.tactu._is_giukhoangcachchimuctieupk,
                     "_is_taphoa": self.tactu._is_taphoa,
                     "_is_timmuctieuchung": self.tactu._is_timmuctieuchung,
                     "_is_muctieutheoduongdi": self.tactu._is_muctieutheoduongdi,
@@ -459,6 +458,13 @@ class CuaSo:
                     "_hangchogiaodo": self.tactu.get_hangchogiaodo(),
                     "_trangthaicatkho": self.tactu.get_trangthaicatkho(),
                     "_is_dangcatkho": bool(self.tactu._catkho),
+                    # Give & phân giải (tactu_phangiai_xq): chữ trạng thái / kết quả lần trước, đang chạy không
+                    "_trangthaiphangiai": self.tactu.get_trangthaiphangiai(),
+                    "_is_dangphangiai": self.tactu.get_is_dangphangiai(),
+                    # Ép Đoạn Thạch (tactu_epda_xq, hộp thoại tab Khác): chữ trạng thái, đang chạy không, danh sách món + số đá
+                    "_trangthaiepda": self.tactu.get_trangthaiepda(),
+                    "_is_dangepda": self.tactu.get_is_dangepda(),
+                    "_dsepda": self.tactu.get_dsepda(),
                     # Đang bán rác / sửa đồ ở NPC (cột "Hoạt động")
                     "_is_dangbanrac": self.tactu.get_is_dangbanrac(),
                     "_is_dangsuavatpham": self.tactu.get_is_dangsuavatpham(),
@@ -650,6 +656,22 @@ class CuaSo:
                     yeucaus = json.loads(cmd.split(":", 1)[1])
                     for yeucau in (yeucaus if isinstance(yeucaus, list) else [yeucaus]):
                         self.tactu.them_giaodo(yeucau)
+                elif isinstance(cmd, str) and cmd.startswith("phangiai:"):
+                    # Nút "Give & phân giải": phangiai:<tên / ID người phân giải>; mình là người đó thì phân giải, không thì give
+                    self.tactu.batdau_phangiai(cmd.split(":", 1)[1])
+                elif cmd == "huyphangiai":
+                    self.tactu.huy_phangiai("bấm huỷ")
+                elif cmd == "epda_ds":
+                    # Hộp thoại Ép Đoạn Thạch: đọc lại danh sách trang bị trong túi
+                    self.tactu.lay_dsepda()
+                elif isinstance(cmd, str) and cmd.startswith("epda:"):
+                    # epda:<sao đích>:<1 = lần lượt, 1 món đạt thì cả nhóm dừng>:<1 = giữ 5★ khi còn 1 Cao Cấp>:<mã nhóm>:<ô>,<id>;...
+                    # (ép hàng loạt xoay vòng)
+                    _, saodich, is_lanluot, is_giu5sao, manhom, dsmon = cmd.split(":", 5)
+                    self.tactu.batdau_epda(saodich, is_lanluot == "1", manhom, [m.split(",") for m in dsmon.split(";") if m],
+                                           is_giu5sao == "1")
+                elif cmd == "dungepda":
+                    self.tactu.dung_epda()
                 elif cmd == "vegiao":
                     # Nút "Về giao ngay" / Telegram /vegiao: các yêu cầu giao đang chờ về giao ngay
                     self.tactu.kichhoat_giaodo()
@@ -718,6 +740,18 @@ class CuaSo:
                 elif cmd == "keocapphu":
                     # Vai acc phụ Phong Yêu Kính (máy khác nối LAN): tự tìm acc chính đang kéo cấp
                     self.tactu.batdau_keocap("phu")
+                elif isinstance(cmd, str) and cmd.startswith("keocapphu:"):
+                    # Acc chính 2 của Kéo gà A-Z (vai acc phụ có đồ đệ riêng):
+                    # keocapphu:<ID acc chính>;<ID đồ đệ, trống = không>;<đã bái sư 1/0>;<đã xuất sư 1/0>
+                    phans = (cmd.split(":", 1)[1].split(";") + ["", "", "", ""])[:4]
+                    self.tactu.batdau_keocap("phu", idchinh = int(phans[0]) if phans[0].strip().isdigit() else 0,
+                                             iddode = int(phans[1]) if phans[1].strip().isdigit() else 0,
+                                             dabaisu = phans[2].strip() == "1", daxuatsu = phans[3].strip() == "1", chinh2 = True)
+                elif isinstance(cmd, str) and cmd.startswith("keocapdode:"):
+                    # Kéo gà A-Z giao đồ đệ giữa lượt cho acc chính / acc chính 2 đang kéo cấp chưa có đồ đệ: keocapdode:<ID acc gà>
+                    phan = cmd.split(":", 1)[1].strip()
+                    if phan.isdigit():
+                        self.tactu.datdode_keocap(int(phan))
                 elif cmd == "huykeocap":
                     self.tactu.huy_keocap()
                 elif cmd == "resetthietlap":
@@ -876,8 +910,6 @@ class CuaSo:
                     self.tactu.battat_dilotrinhkhacbando()
                 elif cmd == "battat_giukhoangcachketancong":
                     self.tactu.battat_giukhoangcachketancong()
-                elif cmd == "battat_giukhoangcachchimuctieupk":
-                    self.tactu.battat_giukhoangcachchimuctieupk()
                 elif cmd == "battat_taphoa":
                     self.tactu.battat_taphoa()
                 elif cmd == "battat_chidanhtinhanh":

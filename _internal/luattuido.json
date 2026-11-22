@@ -164,7 +164,18 @@
         "Thần Uy Chiến Khôi",
         "Thần Uy Chiến Ngoa",
         "Đằng Long Khôi Giáp",
-        "Toái Sa"
+        "Đằng Long Chi Ngoa",
+        "Toái Sa",
+        "Lễ Phục",
+        "Hôn Sa",
+        "Hoàng Chi Thạch",
+        "Hỏa Hồng Chi Thạch",
+        "Kim Cương Tinh Xảo",
+        "Dùi Đục Thô",
+        "Khoan Kim Cương",
+        "Mảnh Kinh Thư Mờ Nét",
+        "Mảnh Kinh Thư Cổ Tự",
+        "Kinh Thư Hoàn Chỉnh"
       ],
       "tenchua": [],
       "loai": [],
@@ -218,17 +229,15 @@
       "ghichu": "",
       "ten": [
         "Hoa Cầu",
-        "Hồng Cầu",
-        "Ngọc Kiếm",
-        "Nhập Môn Kiện Thân",
-        "Thạch Điêu Quyền Nhẫn",
-        "Kỳ Lân Ngọc Bội"
+        "Kỳ Lân Ngọc Bội",
+        "Công thức Huyền Thiết Phiến",
+        "Công Thức Huyền Thiết Phiến"
       ],
       "tenchua": [],
       "loai": [],
       "mota": [],
-      "nhanvat": [],
-      "mau": []
+      "mau": [],
+      "nhanvat": []
     },
     {
       "bat": true,
@@ -258,6 +267,35 @@
       "mota": [],
       "nhanvat": [],
       "mau": []
+    },
+    {
+      "bat": true,
+      "is_bao": false,
+      "hanhdong": "phangiai",
+      "ghichu": "",
+      "ten": [],
+      "tenchua": [],
+      "loai": [],
+      "mota": [
+        "Chưa Giám Định & cấp 30",
+        "Chưa Giám Định & cấp 35",
+        "Chưa Giám Định & cấp 40",
+        "Chưa Giám Định & cấp 45",
+        "Chưa Giám Định & cấp 50",
+        "Chưa Giám Định & cấp 55",
+        "Chưa Giám Định & cấp 60",
+        "Chưa Giám Định & cấp 65",
+        "Chưa Giám Định & cấp 70",
+        "Chưa Giám Định & cấp 80",
+        "Chưa Giám Định & cấp 90",
+        "Chưa Giám Định & cấp 100"
+      ],
+      "mau": [
+        "Lam Kim"
+      ],
+      "nhanvat": [
+        "Dieu Khac"
+      ]
     }
   ],
   "muabu": [
@@ -393,7 +431,8 @@
       "nhanvat": [
         "Thk",
         "Gạ",
-        "Thien Dao"
+        "Thien Dao",
+        "Lầy"
       ]
     },
     {
@@ -415,6 +454,24 @@
         "Thk",
         "Atula Dao",
         "Thien Dao"
+      ]
+    },
+    {
+      "vatpham": "Thiên Nguyên Đơn",
+      "tencuahang": "",
+      "npc": "Trân Bảo Khố (Kim Nguyên Bảo)",
+      "xepchong": 100,
+      "duoi": 1,
+      "muatoi": 1,
+      "thapnhat": -1,
+      "monphai": [
+        "daohoanguyen"
+      ],
+      "chikhi": "",
+      "bat": true,
+      "nhanvat": [
+        "Thỏ",
+        "Ngốc"
       ]
     }
   ],
@@ -495,6 +552,7 @@
         "Lễ Bao Khai Quốc"
       ],
       "tenchua": [],
+      "trangbi": false,
       "chibanrac": false,
       "nhanvat": [],
       "ghichu": ""
@@ -516,8 +574,6 @@
         "Khí Mạch Đơn",
         "Tử Tâm Đơn",
         "Hoàng Kim Thánh Y",
-        "Thanh Đồng Bảo Hộp",
-        "Tử Kim Bảo Hộp",
         "Đá Tương Uyên",
         "Tiền Tệ",
         "Vô Song Điểm Phiếu",
@@ -525,7 +581,6 @@
         "Âu Dã Bảo Thạch",
         "Phấn Huỳnh Quang",
         "Thanh Tâm Đơn",
-        "Toái Cẩm",
         "Xá Lợi Tử",
         "Bổ Tâm Đan",
         "Tái Tạo Hoàn",
@@ -537,9 +592,11 @@
         "Nhiếp Hồn Thạch",
         "Cương Thi Phù",
         "Bắp",
-        "Trứng Gà"
+        "Trứng Gà",
+        "Lam Ma Chi Lệ"
       ],
       "tenchua": [],
+      "trangbi": false,
       "chibanrac": false,
       "nhanvat": [],
       "ghichu": "Tự động nhặt (cũ)"
@@ -619,6 +676,7 @@
         "Toái Cẩm"
       ],
       "tenchua": [],
+      "trangbi": false,
       "chibanrac": true,
       "nhanvat": [],
       "ghichu": "Nhặt thêm khi về bán rác (cũ)"
@@ -627,39 +685,23 @@
       "bat": true,
       "hanhdong": "nhat",
       "ten": [],
+      "tenchua": [],
+      "trangbi": true,
+      "chibanrac": true,
+      "nhanvat": [],
+      "ghichu": "Trang bị (theo hình món), khi về bán rác"
+    },
+    {
+      "bat": true,
+      "hanhdong": "nhat",
+      "ten": [],
       "tenchua": [
-        "Kiếm",
-        "Đao",
-        "Mâu",
-        "Thủ",
-        "Thương",
-        "Sáo",
-        "Bổng",
-        " Y",
-        "Giáp",
-        "Côn",
-        "Kích",
-        " Bào",
-        " Lý",
-        " Mạo",
-        "Phi Phong",
-        " Nguyệt",
-        "Quan",
-        " Liên",
-        " Quần",
-        " Hài",
-        " Nhẫn",
-        " Tiêu",
-        "Đầu Cân",
-        "Xú Diêm",
-        "Nghênh Phong Trảm",
-        " Mão",
-        " Tố Quần",
         "Nhập môn",
         "Trứng gà",
         " cấp ",
         "Kim Cương"
       ],
+      "trangbi": false,
       "chibanrac": true,
       "nhanvat": [],
       "ghichu": "Tên có chữ, khi về bán rác (cũ)"
@@ -669,8 +711,10 @@
       "hanhdong": "nhat",
       "ten": [],
       "tenchua": [
-        "Công thức"
+        "Công thức",
+        "Công Thức"
       ],
+      "trangbi": false,
       "chibanrac": false,
       "nhanvat": [],
       "ghichu": ""
@@ -682,6 +726,7 @@
         "Tàng Bảo Đồ"
       ],
       "tenchua": [],
+      "trangbi": false,
       "chibanrac": false,
       "nhanvat": [],
       "ghichu": "Tàng Bảo Đồ"

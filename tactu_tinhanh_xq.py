@@ -425,9 +425,17 @@ class TacTuTinhAnh:
         # Mỗi bản đồ chỉ có 1 con Tinh Anh (người dùng 16/11, ~30 phút mới mọc lại): giết được 1 con là sang bản đồ kế, cứ quay vòng
         if not tinhanhs and s.get("bandogiet") == idbando and s.get("loaidagiet"):
             chuagiet = time.time() - s["lucgiet"]
-            if chuagiet < THOIGIANCHONHATSAUTINHANH or (self._yeucaunhatvatpham and chuagiet < THOIGIANCHONHATSAUTINHANHTOIDA):
+            # Còn món đang nhặt thì chờ tiếp. Trước chỉ xét _yeucaunhatvatpham, mà yêu cầu này chỉ có khi món cách > 1.5 ô: đứng ngay trên
+            # đống đồ nhặt món đầu thì nó là None -> quá 3s bỏ đi, sót món Lam Kim thứ 2 (người dùng 18/11, Hầm Vạn Nhân 4 bỏ lại Hỗn
+            # Thiên Cân Mạo). _diachicosovatphamdangnhat còn khi đứng sát món
+            is_conde = bool(self._yeucaunhatvatpham or self._diachicosovatphamdangnhat)
+            if chuagiet < THOIGIANCHONHATSAUTINHANH or (is_conde and chuagiet < THOIGIANCHONHATSAUTINHANHTOIDA):
                 s["trangthai"] = f"đã giết hết {self._tentinhanhbando(idbando)} ở {laytenbando(idbando)}: chờ nhặt đồ"
                 return None
+            conlai = self._tatcalamkimduoidat()
+            if conlai:
+                self._logta("Bỏ lại Lam Kim dưới đất: " + ", ".join(
+                    f"{self.moitruong.get_tendoituong(d)} {tuple(self.moitruong.get_toado(d))}" for d in conlai))
             self._logta(f"Đã giết hết {self._tentinhanhbando(idbando)} ở {laytenbando(idbando)}, sang bản đồ kế")
             self._sangbandoketinhanh(s, bandos)
             return None

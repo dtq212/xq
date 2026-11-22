@@ -86,6 +86,13 @@ CHUKY = {
     "HOOK_VEDANHHIEU": ("ma", "50 56 E8 ?? ?? ?? ?? 8B 53 20", 2, 0x1d0a8),  # call HAMVECHU vẽ danh hiệu đối tượng (+0x1134) phía trên tên, 5 byte, ebx = đối tượng
     "HOOK_VEDANHHIEU2": ("ma", "E8 ?? ?? ?? ?? 8B 1D ?? ?? ?? ?? 83 BB F0 00 00 00 03", 0, 0x9c34f),  # call HAMVECHU vẽ danh hiệu nhân vật mình (ebx = đối tượng)
     "HOOK_VEDANHHIEU3": ("ma", "56 E8 ?? ?? ?? ?? 80 7F 29 80", 1, 0x9cf52),  # call HAMVECHU vẽ danh hiệu người chơi khác (edi = đối tượng)
+    "VA_TENTUIALT": ("ma", "8D 4C 24 38 8D 54 24 14 51 68 ?? ?? ?? ??", 9, 0x12b5f4),  # vẽ túi hành trang (TG+0xADFE0C, xq+0x12B1F0), bật Alt: push 0x59D320 ('%s') - định dạng tên vật phẩm vẽ đè lên ô (+1 là con trỏ chuỗi định dạng)
+    "HOOK_MAUTENTUITRANG": ("ma", "51 52 EB 15 6A 00", 4, 0x12b673),  # vẽ túi hành trang, bật Alt, ô phẩm chất 0 (trắng): push 0; push 0; push 0x28; push 0xFFFFFF (11 byte) rồi vẽ; [esp+0x18] = ô; bỏ vẽ -> +0x43
+    "VA_TENKHOALT": ("ma", "8D 54 24 34 8D 44 24 10 52 68 ?? ?? ?? ??", 9, 0xb3b48),  # vẽ kho (TG_KHO, xq+0xB3960), bật Alt: push 0x59D320 ('%s') - định dạng tên vật phẩm trong ô kho
+    "HOOK_MAUTENKHOTRANG": ("ma", "6A 2C 68 00 FF 00 00 EB 11 8B 46 18", 9, 0xb3bd0),  # kho, bật Alt, ô phẩm chất 0 (trắng): mov eax,[esi+0x18]; mov ecx,[esi+0x14]; 4 push (17 byte) rồi vẽ; [esp+0x14] = ô; bỏ vẽ -> +0x4F
+    "VA_NHAALT": ("ma", "48 75 15 C6 01 00", 3, 0x17358f),  # nhả phím Alt (VK 0x12): mov byte ptr [ecx], 0 (ecx = [CONTROALT]); byte +2 = 1 thì nhả vẫn giữ cờ Alt
+    "VA_TENTUIALT2": ("ma", "52 68 ?? ?? ?? ?? 50 FF D3 8B 0D ?? ?? ?? ??", 1, 0x13bfbb),  # vẽ cửa sổ TG+0xADFDDC (xq+0x13AE60), bật Alt: push 0x59D320 ('%s') - định dạng tên vật phẩm trong ô
+    "HOOK_MAUTENTUITRANG2": ("ma", "50 52 EB 20 6A 00", 4, 0x13c05e),  # cửa sổ TG+0xADFDDC, bật Alt, ô phẩm chất 0 (trắng): 4 push (11 byte) rồi vẽ; [esp+0x14] = ô; bỏ vẽ -> +0x55
     "HAMVECHU": ("goi", "50 56 E8 ?? ?? ?? ?? 8B 53 20", 3, 0x95ba0),  # vẽ 1 dòng chữ: thiscall ecx = [BIENVECHU], (surface, chữ, x, y, màu, 0), ret 0x18; không xử lý xuống dòng
     "BIENVECHU": ("bien", "56 56 89 72 60 A1 ?? ?? ?? ??", 6, 0x380b34),  # con trỏ bộ vẽ chữ (ecx của HAMVECHU)
     "HAMDORONGCHU": ("goi", "75 1A 50 8B CB E8 ?? ?? ?? ??", 6, 0x22090),  # độ rộng (pixel) 1 dòng chữ: thiscall (ecx không dùng), (chữ), ret 4; game nhớ ở +0x112C tên / +0x1130 danh hiệu

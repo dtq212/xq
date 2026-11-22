@@ -669,8 +669,8 @@ def tainhomtodoitudongs():
 # Đồ đem đốt khi vào Phong Yêu Kính (tactu_langlyson_xq._phantichdolamkim), dùng chung mọi nhân vật trên máy, sửa ở giao diện:
 # màu tên được đốt (Lam Kim / Hoàng Kim), chỉ đồ Chưa giám định, cấp đồ >= cấp nhân vật - caphonnhanvat, tên chứa cụm trong "khongdot"
 # thì không bao giờ đốt, "chidot" không rỗng thì chỉ đốt món có tên chứa 1 cụm trong đó. is_laydothanhvien: người give hết đồ thì xin
-# thành viên cùng nhóm (cùng máy / LAN) còn đồ đúng điều kiện tới give sang thay vì dừng. is_nhatbanrac: trong phó bản nhặt cả luật
-# "chỉ khi về bán rác", ra Chu Quốc thì bán rác ở Chủ Tiệm Y Dược (chừa đồ Lam Kim / Hoàng Kim) rồi mới vào vòng sau; tách hẳn khỏi ô
+# thành viên cùng nhóm (cùng máy / LAN) còn đồ đúng điều kiện tới give sang thay vì dừng. is_nhatbanrac: trong phó bản nhặt thêm trang bị
+# trắng, ra Chu Quốc bán trang bị trắng + Lam Kim dư ở Chủ Tiệm Y Dược (từ 20/11, trước bán theo luật túi đồ) rồi mới vào vòng sau; tách hẳn khỏi ô
 # "Tự động về bán rác" tab Hành trang (tactu_langlyson_xq._banracphongyeu)
 # dieukienrakeocap (giữ tên khoá cũ cho file đã lưu): người give ra Phong Yêu Kính mở vòng mới theo 1 trong các kiểu cố định
 # DIEUKIENRAPYKEOCAPs: (khoá, nhãn giao diện, số boss phải diệt, có chờ hết quái không). Áp dụng cả kéo cấp lẫn Phong Yêu Kính
@@ -684,7 +684,7 @@ DIEUKIENRAPYKEOCAPs = (("2boss", "Diệt đủ 2 boss là ra ngay", 2, False),
                        ("85quai", "Diệt 85% quái là ra ngay (không đánh boss)", 2, False))
 CAUHINHPHONGYEU_MACDINH = {"is_lamkim": True, "is_hoangkim": False, "is_chichuagiamdinh": True, "caphonnhanvat": 25, "khongdot": [], "chidot": [],
                            "is_laydothanhvien": True, "is_nhatbanrac": False, "dieukienrakeocap": "2boss"}
-_cauhinhphongyeu_cache = {"cauhinh": None, "thoidiemsua": None, "thoidiemkiemtra": 0.}
+_cauhinhphongyeu_cache = {"cauhinh": None, "keoga": None, "thoidiemsua": None, "thoidiemkiemtra": 0.}
 
 
 def duongdancauhinhphongyeu():
@@ -722,11 +722,21 @@ def is_ra85quaipy(cauhinh = None):
     return (cauhinh or taicauhinhphongyeu())["dieukienrakeocap"] == "85quai"
 
 
-def taicauhinhphongyeu():
-    # Đọc file (nhớ theo thời điểm sửa file, xét lại mỗi 1s); không có / lỗi thì mặc định
+def taicauhinhphongyeu(is_keoga = False, is_chirieng = False):
+    # Cấu hình Phong Yêu Kính: chung, hoặc bộ Kéo gà (is_keoga; chưa đặt thì dùng chung). is_chirieng: chỉ lấy bộ Kéo gà, chưa đặt
+    # thì None (giao diện biết đang hiện bộ nào)
+    chung, keoga = _doccauhinhphongyeu()
+    if is_keoga:
+        return keoga if is_chirieng else (keoga or chung)
+    return chung
+
+
+def _doccauhinhphongyeu():
+    # -> (chung, keoga): đọc file (nhớ theo thời điểm sửa file, xét lại mỗi 1s); không có / lỗi thì mặc định. keoga = None khi chưa đặt
+    # bộ riêng cho Kéo gà (khoá "keoga" trong phongyeukinh.json, người dùng dặn 2026-11-21: Kéo gà và Phong Yêu Kính thường tách riêng)
     cache = _cauhinhphongyeu_cache
     if cache["cauhinh"] is not None and time.time() - cache["thoidiemkiemtra"] < 1.:
-        return cache["cauhinh"]
+        return cache["cauhinh"], cache["keoga"]
     cache["thoidiemkiemtra"] = time.time()
     filepath = duongdancauhinhphongyeu()
     try:
@@ -741,20 +751,33 @@ def taicauhinhphongyeu():
                     cauhinh = json.load(file)
             except Exception as err:
                 print(err)
-        cache.update(cauhinh = _chuanhoacauhinhphongyeu(cauhinh), thoidiemsua = thoidiemsua)
-    return cache["cauhinh"]
+        keoga = cauhinh.get("keoga") if isinstance(cauhinh, dict) else None
+        cache.update(cauhinh = _chuanhoacauhinhphongyeu(cauhinh), keoga = _chuanhoacauhinhphongyeu(keoga) if isinstance(keoga, dict) else None,
+                     thoidiemsua = thoidiemsua)
+    return cache["cauhinh"], cache["keoga"]
 
 
-def luucauhinhphongyeu(cauhinh):
+def luucauhinhphongyeu(cauhinh, is_keoga = False):
+    # Ghi bộ chung (khoá ở gốc file) hoặc bộ Kéo gà (khoá "keoga"); is_keoga mà cauhinh None thì xoá bộ Kéo gà (Kéo gà dùng lại chung)
     filepath = duongdancauhinhphongyeu()
+    chung, keoga = _doccauhinhphongyeu()
+    if is_keoga:
+        keoga = _chuanhoacauhinhphongyeu(cauhinh) if cauhinh is not None else None
+    else:
+        chung = _chuanhoacauhinhphongyeu(cauhinh)
+    dulieu = dict(chung)
+    if keoga:
+        dulieu["keoga"] = keoga
     try:
         os.makedirs(os.path.dirname(filepath), exist_ok = True)
         filetam = filepath + ".tmp"
         with open(filetam, "w", encoding = "utf-8") as file:
-            json.dump(_chuanhoacauhinhphongyeu(cauhinh), file, ensure_ascii = False, indent = 2)
+            json.dump(dulieu, file, ensure_ascii = False, indent = 2)
         thaythefile(filetam, filepath)
     except Exception as err:
         print(err)
+    # Đọc lại ngay lần sau (thời điểm sửa file có thể trùng trong cùng 1 giây)
+    _cauhinhphongyeu_cache["cauhinh"] = None
 
 
 def _duongdangiaodienkeocap():
