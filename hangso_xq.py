@@ -2,7 +2,7 @@ from collections import defaultdict
 from math import sqrt
 import re
 
-from bando_xq import laytenbandogame, layidbandotheoten, get_solanchuyenbando, BANDOCONG_MAP, SOLANCHUYENBANDOTOIDA, CAPQUAI_DAGAP_MAP
+from bando_xq import laytenbandogame, layidbandotheoten, get_solanchuyenbando, BANDOCONG_MAP, SOLANCHUYENBANDOTOIDA, CAPQUAI_DAGAP_MAP, _laycapquaidahoc
 
 CHUACHONHANVAT = "Chưa chọn nhân vật"
 STRING_ENCODING = "mbcs"
@@ -597,6 +597,12 @@ VITRIKYNANG_AMKICH = 3685
 VITRIKYNANG_BISAT = 3686
 
 VITRIKYNANG_TRANCOTHANUY = 3162
+# Trấn Cổ Thần Uy (Đào Hoa, buff ~60s, hoạt ảnh tư thế 9 ~1.4s): dùng lại giữa trận thì chen chuỗi chiêu (log 347 23/11: 55 lần / 3h,
+# trung bình 1.9s từ lần gửi đầu tới chiêu đánh kế). Người dùng 23/11: không có mục tiêu thì làm mới sớm khi còn dưới
+# THOIGIANLAMMOISOMTRANCO giây; đang kề mục tiêu thì chỉ dùng khi không còn chiêu đánh nào dùng được (cuối danh sách); hết buff quá
+# THOIGIANTRANCOQUAHAN giây mà vẫn chưa có khe thì dùng như cũ (đầu danh sách)
+THOIGIANLAMMOISOMTRANCO = 15.
+THOIGIANTRANCOQUAHAN = 10.
 VITRIKYNANG_KIMTRUNGCHAO = 3161
 VITRIKYNANG_DATINCUONGLUC = 3191
 VITRIKYNANG_KIMCUONGTHANPHAP = 3192
@@ -710,17 +716,39 @@ THOIGIANXACNHANDANHTHUONGPHANTOA = 2.
 # Đào Hoa chỉ "kill" khi đã xong chiêu mở đầu (Thốn Kình / Lạc Ảnh / Lạc Kích / khống chế người chơi); đứng cạnh mục tiêu quá chừng
 # này giây mà vẫn còn chiêu mở đầu chưa dính hiệu ứng (miễn khống chế, máy chủ từ chối...) thì kill luôn
 THOIGIANCHOMODAUKILLTOIDA = 3.
-# Không chen chiêu khi đánh thường đang vung tay (người dùng 2026-11-18: chiêu chen vào làm client đặt lại hàng đợi, đòn đánh thường
-# mất tác dụng): từ lúc máy chủ ép đòn đánh thường tới khi mục tiêu hiện số bay mới, tối đa THOIGIANCHOSOBAYDANHTHUONGTOIDA giây
-# (tư thế đánh ~0.68s). Lỗi chiêu ra chậm / đứng im thì đặt False
-IS_KHONGCHENCHIEUKHIDANHTHUONG = True
-THOIGIANCHOSOBAYDANHTHUONGTOIDA = 0.8
+# Đã bỏ chờ số bay đánh thường trước khi chen chiêu (thêm 18/11, bỏ 24/11, người dùng: kỹ năng ra đều hơn): yêu cầu cũ là do tưởng
+# cú vung dư sau chiêu delay 0 / buff là đòn đánh thường bị chiêu chen làm mất. Đánh thường thật ra số bay 0.65-0.85s sau khi vung
+#
+# Ô mã 0 hiện trong chừng này giây sau lần bot cắt hoạt ảnh (ghi tư thế 11) thì bỏ qua (coi là client phát lại, không tính đánh thường
+# cho Phản Tỏa). Đo 24/11 01:43 (dò ô trước khi cắt): chỉ ~3% lần cắt có ô thật sự hiện sau
+THOIGIANOPHATLAISAUCAT = 0.15
+# Log 342 24/11 14:00-15:13: chiêu delay 0 (Lạc Ảnh, Phản Tỏa, Đại Hải, Ba Động) => máy chủ gửi ô 42/00 (giống hệt đánh thường) CÙNG LÚC
+# với số bay của chiêu (43/57 lần trong ±0.04s). Ô có số bay mới tới cùng lượt đọc, hoặc trong chừng này giây sau ô, là ô vung dư của
+# chiêu đã gây xong sát thương: cắt ngay, không tính là đánh thường (Phản Tỏa)
+THOIGIANSOBAYCUNGLUCO = 0.1
+# Ô chiêu delay 0 đã có số bay (trên) thì cắt hẳn khi nó bắt đầu phát (MoiTruong.action_cathoatanhkhicosobay, người dùng 24/11); quá
+# chừng này giây sau khi ô tới mà chưa thấy phát thì thôi
+THOIGIANCATOCHIEUDELAY0TOIDA = 1.5
+# Người dùng 24/11: các chiêu này vẫn để lại 1 lần vung tay dư (ô 42/00 hiện 0.00-0.11s sau lệnh, buff không có số bay) => ô mã 0 hiện
+# trong THOIGIANOCHIEUSAUGUI giây sau lệnh chiêu là ô vung dư của chiêu: không tính đánh thường, cắt ngay khi bắt đầu phát
+KYNANGCATHOATANHNGAYs = (VITRIKYNANG_DAOHOALACANH, VITRIKYNANG_PHANTOA, VITRIKYNANG_KIMTRUNGCHAO, VITRIKYNANG_TRANCOTHANUY)
+# 24/11: log 342 15:43-15:49, ô sau lệnh các chiêu này (trừ ô có số bay cùng lúc): 0-0.2s 18 ô và 0.2-0.3s 2 ô đều là ô dư (không số
+# bay); 0.3-0.5s 4 ô thì 2 có số bay kiểu đánh thường 0.55-1s (đòn thật) => mốc 0.3 (người dùng duyệt; đã thử 0.5 nhưng cắt nhầm đòn thật)
+THOIGIANOCHIEUSAUGUI = 0.3
 # Chiêu có mã hoạt ảnh 0 giống đánh thường (Lạc Kích): ô đòn mã 0 hiện trong chừng này giây sau khi xếp lệnh chiêu thì không coi là đánh thường
 KYNANGHOATANHMA0s = (VITRIKYNANG_LACKICH, )
 THOIGIANBOQUAHOATANHMA0 = 1.
+# Log chẩn đoán ô mã 0 ([Ô MÃ 0]: byte ô, chiêu gửi gần nhất, tư thế), hàng đợi lúc cắt và [SAU CẮT] (tư thế / hàng đợi 1s sau cắt).
+# Tắt 24/11 sau khi xong việc cắt ô vung dư (log dài); bật lại khi cần dò
+IS_LOGOMA0 = False
 # Ba Động (đánh từ xa) chỉ dùng khi mục tiêu cách ít nhất chừng này ô (max(|dx|, |dy|)): gần hơn thì chạy vào cận chiến, dùng Ba Động
-# vẫn bị máy chủ khoá chiêu kế như chiêu delay 0 mà không chạy tới được (người dùng dặn 2026-11-10)
-KHOANGCACHTOITHIEUBADONG = 3.
+# vẫn bị máy chủ khoá chiêu kế như chiêu delay 0 mà không chạy tới được (người dùng dặn 2026-11-10).
+# 3 -> 5 (người dùng 2026-11-23: cách 2-3 ô vẫn dùng, tới nơi đứng chờ mới được Lạc Kích). Tính: sau Ba Động client đứng tư thế 6
+# ~0.68s không bước, rồi chạy ~0.42s/ô => tới kề sau 0.68 + 0.42 * (d - 1) giây; Lạc Kích (delay 0) bị THOIGIANCHANDELAY0LIENTIEP = 2s
+# chặn, khoá máy chủ 0.8-1.7s => cần d >= 4.1 => 5 ô (tới nơi ~2.36s, vừa hết chặn). Gần hơn chỉ dùng khi mục tiêu đang chạy ra xa
+# (get_is_muctieuchaytron, từ KHOANGCACHTOITHIEUBADONGCHAYTRON ô) hoặc đã kề (chiêu lót cận chiến)
+KHOANGCACHTOITHIEUBADONG = 5.
+KHOANGCACHTOITHIEUBADONGCHAYTRON = 2.
 
 # Dịch chỗ đứng sau chiêu delay 0 của Đào Hoa (người dùng đề xuất 2026-11-09): Ba Động / Lạc Kích / Đại Hải ra dame ngay, không cần đứng
 # yên, nhưng máy chủ khoá chiêu kế 0.8-1.7s => dùng lúc đó đi sang ô kề mục tiêu tốt hơn (tối đa SOBUOCDICHODELAY0 bước, vẫn kề mục
@@ -796,7 +824,8 @@ VITRIKYNANG_DATINHCUONGLUC = 3191
 # "kill" (bật tự động đánh thường lên mục tiêu, không phải kỹ năng) đã bật với mục tiêu này thì chừng này giây mới gửi lại cho chắc
 THOIGIANGUILAITANCONGVATLY = 5.
 # Tự tăng cấp (TacTu._tudongtangcap): mặc định tăng tới cấp này, mỗi lần gửi "gift upgrade" cách nhau chừng này giây
-CAPTUDONGTANGCAPTOIDA = 60
+# 60 -> 75 (người dùng dặn 2026-11-23: acc gà 60 dùng Chén Bạc code welcome2d60 lên ~70)
+CAPTUDONGTANGCAPTOIDA = 75
 THOIGIANGUILAITANGCAP = 3.
 # Lên cấp thì tự quay vòng số ở Bảo Điển (TacTu._tudongquayso): lệnh dò bằng log [LỆNH GAME] khi người chơi tự bấm "Khởi động Game".
 # Mỗi lượt gửi lần lượt (mở Bảo Điển, mở vòng quay, "Khởi động Game") cách nhau THOIGIANGIUALENHQUAYSO giây: gửi riêng
@@ -1417,13 +1446,43 @@ KICHTHUOCKHOIVEDANHHIEU = 8 + SODONGVEDANHHIEU * KICHTHUOCDONGVEDANHHIEU
 # Vùng mã hook; 0x10 byte cuối: dấu hiệu + 5 byte gốc ở chỗ hook (lần chạy bot sau lấy lại, không nối chồng)
 KICHTHUOCKICHBANVEDANHHIEU = 0x200
 DAUHIEUKICHBANVEDANHHIEU = b"XQDH"
-# Hook "bật Alt, ô túi chỉ hiện dấu màu phẩm chất" (MoiTruong.action_thietlaphookdaumautui): vùng mã, 0x20 byte cuối = chuỗi dấu
-# (0x10, tối đa 15 byte) + dấu hiệu & 5 byte gốc (0x10). Dấu là chữ UTF-8 như tên vật phẩm; game tô màu theo phẩm chất, đặt ở góc
-# trên trái ô. Hàm vẽ (xq+0x89D90) hiểu "\n", dòng cao 10 px; cỡ chữ cố định => muốn dấu to thì ghép cụm chấm. 1 chấm "●" người dùng
-# thấy nhỏ (21/11) => cụm 2x2.
-KICHTHUOCKICHBANDAUMAUTUI = 0x80
-DAUHIEUKICHBANDAUMAUTUI = b"XQDM"
-DAUMAUTUI = "●●\n●●".encode("utf-8")
+# Hook "bật Alt, ô túi hiện nhãn riêng từng ô thay cho tên" (MoiTruong.action_thietlaphookdaumautui). Vùng mã mỗi chỗ hook:
+# +0x00 mã nhánh trắng, +0x40 mã chỗ định dạng, +0x60 địa chỉ bảng nhãn (4 byte), +0x70 dấu hiệu & 5 byte gốc, +0x80 mã dời toạ độ.
+# Bảng nhãn: mỗi ô KICHTHUOCNHANOTUI byte chữ UTF-8 kết thúc 0 (bot ghi, MoiTruong.action_capnhatnhanotui); game dùng làm chuỗi
+# định dạng ("%" phải ghi "%%") rồi in, tô màu theo phẩm chất, góc trên trái ô, hiểu "\n" (dòng cao 10 px).
+# Người dùng 23/11: bỏ hẳn dấu chấm, chữ tô màu phẩm chất là đủ: trang bị "Cấp 85", đá "Cấp 2" (từ tên), pháp bảo độ bền
+# còn / tối đa, thuốc lượng hiệu quả ("15%", "1400"); món khác không vẽ gì.
+KICHTHUOCKICHBANDAUMAUTUI = 0xA0
+DAUHIEUKICHBANDAUMAUTUI = b"XQD3"
+# Dấu hiệu các bản cũ (XQDM chuỗi dấu cố định; XQD2 bảng nhãn chưa dời lề): gặp thì đặt đè bằng bản mới
+DAUHIEUKICHBANDAUMAUTUICUs = (b"XQDM", b"XQD2")
+# Chữ vẽ sát mép trên trái ô (ảnh người dùng 23/11) => dời mọi lần vẽ chữ của ô (chữ + bóng) thêm x / y px
+LEXNHANOTUI = 3
+LEYNHANOTUI = 2
+# Lượng hiệu quả của thuốc trong mô tả ［Có thể sử dụng］ (đọc 23/11): "khôi phục 1400 điểm khí huyết" (Cấp Cứu Đơn), "hồi phục 1850
+# điểm Khí Huyết" (Thí Luyện Quả), "gia tăng 15％ Khí Huyết" (Khí Mạch Đơn), "gia tăng lên 8％ Ngoại Công" (Tiêu Dao Tán), "Nâng cao
+# 5％ Ngoại Kháng" (Xá Lợi Tử), "gia tăng 600 Khí Huyết" (Nhân Sâm), "khôi phục 2000 điểm lực pháp lực" (Phục Dược). Không khớp
+# Thần Thú ("tăng 7%", "gia tăng cho chủ nhân"), Song Tử ("gia tăng thêm"), tiềm năng, sát thương. Nhóm 1 = số, nhóm 2 = có %
+MAUHIEUQUATHUOC = (r"(?:khôi phục|hồi phục|gia tăng(?: lên)?|nâng cao)\s*(\d+)\s*([％%])?\s*(?:điểm\s*)?(?:lực\s*)?"
+                   r"(?:khí huyết|pháp lực|ngoại công|nội công|ngoại kháng|nội kháng)")
+KICHTHUOCNHANOTUI = 0x10
+SONHANOTUI = 0x80
+# Phẩm chất ô túi (1 byte / ô) và số hiệu hình (4 byte / ô) tính từ TG_HANHTRANG; kho: tính từ TG_KHO (hình = DC.KHO_MA). Dò 2026-11-21/22
+HT_PHAMCHAT = 0x1DBC4
+HT_HINH = 0x1DA1C
+KHO_PHAMCHAT = 0x1B198
+# Mô tả ô kho (dò 23/11 từ xq+0xB3821, đoạn rê chuột lên ô kho): ô o (từ 0) ở S + KHO_MOTA + (o + 1) * KHO_KICHTHUOCMOTA (game
+# đánh chỉ số từ 1, phần tử 0 trùng đầu cấu trúc), nạp bằng "desc <mã kho># <o + 1>" (chuỗi xq+0x19D8E4; S+0x314 = 1 thì client
+# dùng "desc %d %d", chưa gặp). Đổi rương thì mô tả rương trước vẫn nằm đó => kiểm dòng đầu là tên món
+KHO_MOTA = 0x4C
+KHO_KICHTHUOCMOTA = 0x44C
+# Mỗi 0.5s ghi lại bảng nhãn; món không chồng (số lượng 0) chưa có mô tả thì "desc" độ ưu tiên thấp, cách nhau 0.3s, mỗi món 1 lần
+THOIGIANCAPNHATNHANOTUI = 0.5
+THOIGIANDESCNHANOTUI = 0.3
+# Đồ đang mặc (ô VITRITRANGBIDAUTIEN..+SOLUONGOTRANGBI, vẽ ở bảng Nhân Vật TG+0xADFDDC qua hook "cửa sổ 2", 10 ô đọc từ
+# bảng [ebp+0x2E2CC - 0x2E0C4] trong xq+0x13BF5D): người dùng 23/11 chỉ muốn độ bền "a/\nb". Độ bền trong mô tả không tự
+# cập nhật => "desc <ô - 95>" lại mỗi ô sau chừng này giây
+THOIGIANDESCLAIDOBENTRANGBI = 60.
 # Danh sách danh hiệu đang có ở KDK_DANHSACHDANHHIEU: mỗi mục KICHTHUOCMUCDANHHIEU byte (mã +0, tên +6), đọc tối đa SODANHHIEUTOIDA mục
 KICHTHUOCMUCDANHHIEU = 0x42
 SODANHHIEUTOIDA = 16
@@ -1698,6 +1757,7 @@ CHONMUCTIEUBATTAT_MAP = {
     "_is_muctieutheoduongdi": "chọn mục tiêu theo đường đi",
     "_is_uutiencumquai": "ưu tiên cụm quái",
     "_is_chiamuctieubotkhac": "chia mục tiêu với bot khác",
+    "_is_pkbodanhsachten": "bật PK thì đánh cả người chơi ngoài danh sách",
 }
 
 # Khựng sau đòn (tư thế 11) chỉ là hiệu ứng che mắt ở client (máy chủ không tính): luồng nhanh thấy tư thế 11 là ghi về đứng im ngay
@@ -2114,10 +2174,18 @@ TENTINHANHCHUARO = ""
 SOCAPTINHANHDOAN = (1, 15)
 QUAITINHANHDATHAY_MAP = {
     331: (('Tinh Binh Oan Linh', 84, 98),),     # Hầm Vạn Nhân 1: thấy cấp 93 (16/11)
+    # Tru Tiên Trận 1: Thương Quỷ (con bò) cấp 119, quái thường 110~113 (người dùng 24/11 ảnh chụp). Khoảng đoán cũ 121~135 (cấp quái đã
+    # ghi 110~120 +1~+15) bỏ sót => bot dò hết bản đồ không đánh, sang Tru Tiên Trận 2
+    391: (('Thương Quỷ', 118, 125),),
 }
 for _idbando, _ds in QUAITINHANHDATHAY_MAP.items():
     QUAITINHANH_MAP.setdefault(_idbando, _ds)
 for _idbando, (_capthap, _capcao) in CAPQUAI_DAGAP_MAP.items():
+    QUAITINHANH_MAP.setdefault(_idbando, ((TENTINHANHCHUARO, _capcao + SOCAPTINHANHDOAN[0], _capcao + SOCAPTINHANHDOAN[1]),))
+# Cả bản đồ bot tự ghi cấp quái sau 16/11 (_internal/capquaibando.json, ghicapquaibando đã lọc thành / phó bản): 22/11 Tru Tiên Trận 1
+# (391, tips trống, không có trong CAPQUAI_DAGAP_MAP) đã ghi 110~120 nhưng không hiện trong Săn Tinh Anh. Đọc 1 lần lúc khởi động =>
+# bản đồ mới ghi thì mở lại bot mới hiện. Khoảng ghi có thể gồm cả chính con Tinh Anh nên đoán từ cấp cao nhất vẫn rộng (+1~+15)
+for _idbando, (_capthap, _capcao) in _laycapquaidahoc().items():
     QUAITINHANH_MAP.setdefault(_idbando, ((TENTINHANHCHUARO, _capcao + SOCAPTINHANHDOAN[0], _capcao + SOCAPTINHANHDOAN[1]),))
 QUAITINHANHs = frozenset(ten for ds in QUAITINHANH_MAP.values() for ten, _, _ in ds if ten != TENTINHANHCHUARO)
 
@@ -2185,14 +2253,19 @@ def is_quaitinhanh(ten, idbando = None, cap = None):
             return True
     if cap is None or idbando not in CAPTINHANH_MAP:
         return False
-    if tenchuan in TENKHONGPHAITINHANHs or "Bảo Bảo" in ten or "Quốc Kính" in ten or "Tàn Phách" in ten:
-        return False
-    # Bảo thú người chơi "Cương Thi ( Gold-1 )" (ngoặc ghi tên chủ, không phải "(cấp ..)"): không phải Tinh Anh (log 342 / 418 16/11:
-    # Cương Thi cấp 100 ở Linh Cốc Động 2, cấp 40-50 ở Ranh Giới Đầm Lầy; khoảng đoán rộng thì kẻo đánh nhầm)
-    if _MAUBAOTHUCOCHU.search(ten):
+    if is_tenkhongthetinhanh(ten):
         return False
     capthap, capcao = CAPTINHANH_MAP[idbando]
     return capthap <= cap <= capcao
+
+
+def is_tenkhongthetinhanh(ten):
+    # Quái sự kiện đi khắp nơi, bảo bảo, quái Phong Yêu Kính mượn ID bản đồ: không bao giờ là Tinh Anh dù cấp cao
+    if not ten or _chuanhoatentinhanh(ten) in TENKHONGPHAITINHANHs or "Bảo Bảo" in ten or "Quốc Kính" in ten or "Tàn Phách" in ten:
+        return True
+    # Bảo thú người chơi "Cương Thi ( Gold-1 )" (ngoặc ghi tên chủ, không phải "(cấp ..)"): không phải Tinh Anh (log 342 / 418 16/11:
+    # Cương Thi cấp 100 ở Linh Cốc Động 2, cấp 40-50 ở Ranh Giới Đầm Lầy; khoảng đoán rộng thì kẻo đánh nhầm)
+    return bool(_MAUBAOTHUCOCHU.search(ten))
 
 
 # Bảo thú vật phẩm (cả Thuỷ Bình) không tấn công / không mất máu

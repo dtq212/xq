@@ -78,6 +78,10 @@ class TacTuKyNang:
         elif tin is not None and tin[0] == "bat" and thoidiemhientai - tin[1] < THOIGIANCHOTAMPHAPBATTAT:
             # Vừa có tin bật mà hiệu ứng chưa kịp hiện trên client: chờ, đừng bấm thành tắt
             return
+        # Đang trong hoạt ảnh ra chiêu (tư thế 6 / 9) thì máy chủ bỏ lệnh bấm (log 347 23/11: 09:49:19 → 09:51:19 bấm 5 lần cách 30s,
+        # 4 lần đầu không ăn) => chờ lúc hết tư thế ra chiêu mới bấm
+        if self.moitruong.get_idtuthenhanvat() in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT):
+            return
         if not self._is_kynangdungduoc(VIRIKYNANG_NGUYENKHIQUYNGUYEN) or not self._is_duocguitamphapbattat(VIRIKYNANG_NGUYENKHIQUYNGUYEN):
             return
         if self.moitruong.action_sudungkynangvitri(VIRIKYNANG_NGUYENKHIQUYNGUYEN) and IS_LOGCAULENH:
@@ -105,6 +109,9 @@ class TacTuKyNang:
             if self._is_sansangchieudaohoatruoc_map.get(idkynang) and not is_sansang:
                 self._idchieudaohoavuanhan = idkynang
                 self._thoidiemchieudaohoavuanhan = thoidiemhientai
+                if idkynang in VITRIKYNANGCODELAYDAOHOAs:
+                    diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+                    self._idmuctieudamodau = self.moitruong.get_iddoituong(diachimuctieu) if diachimuctieu else None
             self._is_sansangchieudaohoatruoc_map[idkynang] = is_sansang
         return self._idchieudaohoavuanhan in VITRIKYNANGDELAY0NOICHIEUDAOHOAs \
             and thoidiemhientai - self._thoidiemchieudaohoavuanhan < THOIGIANCHANDELAY0LIENTIEP
@@ -922,9 +929,7 @@ class TacTuKyNang:
                               f" đứng yên {self._tinhtamxahoc(self._tileratamxadungyen):.1f} (tối đa {self._tamxatoida:.0f})")
         self._thongketamxa = {}
 
-    def action_xulyuutiensudungkynang(self, loaikynang, vitrikynang, diachimuctieu, khoangcachyeucau = 0, is_yeucaukhongdichuyen = False, is_ngatdichuyen = False,
-                                      is_duocchendanhthuong = False):
-        # is_duocchendanhthuong: chiêu được chen ngang đòn đánh thường đang vung (không chờ số bay, get_is_chosobaydanhthuong)
+    def action_xulyuutiensudungkynang(self, loaikynang, vitrikynang, diachimuctieu, khoangcachyeucau = 0, is_yeucaukhongdichuyen = False, is_ngatdichuyen = False):
         thoidiemhientai = time.time()
         self._capnhattamxa(thoidiemhientai)
         idtuthenhanvat = self.moitruong.get_idtuthenhanvat()
@@ -1090,11 +1095,8 @@ class TacTuKyNang:
                     and self._is_dangcholenhdanhtruoc(thoidiemhientai):
                 return False, True
 
-            # Máy chủ vừa ép đòn đánh thường mà số bay chưa ra (đang vung tay): chờ, không chen chiêu nào (chiêu chen vào làm đòn đánh
-            # thường mất tác dụng, người dùng báo 2026-11-18). "kill" vẫn gửi được. Chiêu is_duocchendanhthuong thì không chờ
-            if not is_duocchendanhthuong and loaikynang in ("sudungkynangkhongmuctieu", "sudungkynanglenbanthan", "sudungkynangmuctieu", "sudungkynanglendongdoi",
-                              "sudungkynangphudau") and self.moitruong.get_is_chosobaydanhthuong():
-                return False, True
+            # Đã bỏ chờ số bay đòn đánh thường trước khi chen chiêu (thêm 18/11, bỏ 24/11): người dùng từng tưởng cú vung dư sau chiêu
+            # delay 0 / buff là đòn đánh thường bị chiêu chen làm mất; nay cú vung dư được cắt ở MoiTruong.action_cathoatanhkhicosobay
 
             # Chiêu tầm xa vừa trượt: làm mới toạ độ trước, chờ client nhận toạ độ thật rồi mới bắn
             if loaikynang == "sudungkynangmuctieu" and diachimuctieu and khoangcachyeucau >= self._khoangcachsudungkynangtamxa \
@@ -1417,6 +1419,17 @@ class TacTuKyNang:
             thoigianconlaihoichieunhatquyen >= THOIGIANHOICHIEUCONLAICHIEULOT and nguyenkhiconlai >= NGUYENKHITOITHIEUCHIEULOTKHIHOICHIEU)
         # Chiêu vừa được nhận là delay 0 (kể cả Lạc Ảnh) thì lượt này không dùng chiêu delay 0 nào (THOIGIANCHANDELAY0LIENTIEP)
         is_chandelay0 = self._capnhatchieudaohoavuanhan()
+        # Đòn đầu tiên lên mục tiêu phải là chiêu CÓ DELAY (người dùng 23/11): chiêu delay 0 mở đầu làm khoá các chiêu sau, đánh thường
+        # chỉ là đệm. Mục tiêu chưa nhận chiêu có delay nào (_idmuctieudamodau) mà đang có chiêu có delay dùng được (cùng điều kiện vũ khí
+        # như danh sách) => chưa dùng chiêu delay 0 (trừ Ba Động từ xa để đuổi), chưa "kill". Mọi chiêu có delay đang hồi thì thôi chờ
+        chieucodelaymodaus = [vt for vt, dk in (
+            (VITRIKYNANG_THONKINH, True),
+            (VITRIKYNANG_NHATQUYENBATSON, True),
+            (VITRIKYNANG_PHONGMAQUYET, is_muctieulanguoichoi and idloaivukhimuctieu in (IDLOAIVUKHI_DAO, IDLOAIVUKHI_KIEM)),
+            (VITRIKYNANG_KHONGTHUNHAPBACHNHAN, is_muctieulanguoichoi and idloaivukhimuctieu not in (IDLOAIVUKHI_DAO, IDLOAIVUKHI_KIEM, IDLOAIVUKHI_TAYKHONG)),
+            (VITRIKYNANG_METUNGQUYEN, is_muctieulanguoichoi),
+        ) if diachimuctieu and dk and self._is_kynangdungduoc(vt)]
+        is_chuamodau = bool(chieucodelaymodaus) and self.moitruong.get_iddoituong(diachimuctieu) != self._idmuctieudamodau
         # Xả chiêu khi đánh quái không bật PK (màu hoà bình): Đào Hoa Lạc Ảnh khả dụng là dùng, không xét trận Lạc Ảnh khác / giữ chỗ
         # giữa các bot. Phong Ma / Không Thủ / Mê Tung từng xả lên quái "cho đỡ buồn mắt" (2026-11-10); BỎ 2026-11-18 theo người dùng
         # (đã ẩn hiệu ứng client): giờ 3 chiêu này chỉ dùng lên người chơi
@@ -1429,6 +1442,25 @@ class TacTuKyNang:
         def is_muctieucohieuung(*hieuungs):
             return self.moitruong.get_is_cohieuungs(hieuungs, macdinh = True, is_hieuungcoloi = 0, diachicosothongtinnhanvat = diachimuctieu)
 
+        # Trấn Cổ Thần Uy (xem THOIGIANLAMMOISOMTRANCO): không mục tiêu thì làm mới sớm; kề mục tiêu thì để cuối danh sách (khe chờ nguyên
+        # khí / hồi chiêu); đang chạy tới mục tiêu thì chờ, trừ khi đã mất buff quá THOIGIANTRANCOQUAHAN giây
+        is_cotranco = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRANCOTHANUY,), True, is_hieuungcoloi = 1)
+        if is_cotranco:
+            self._thoidiemmattrancothanuy = 0.
+        elif not self._thoidiemmattrancothanuy:
+            self._thoidiemmattrancothanuy = time.time()
+        is_trancoquahan = not is_cotranco and time.time() - self._thoidiemmattrancothanuy >= THOIGIANTRANCOQUAHAN
+        is_lammoisomtranco = False
+        if not diachimuctieu:
+            conlaitranco = self.moitruong.get_thoigianconlaihieuung(HIEUUNGKYNANG_TRANCOTHANUY, is_hieuungcoloi = 1) if is_cotranco else 0.
+            is_lammoisomtranco = conlaitranco is not None and conlaitranco < THOIGIANLAMMOISOMTRANCO
+
+        # Ba Động từ xa (xem KHOANGCACHTOITHIEUBADONG): đủ xa để chạy tới nơi là hết chặn Lạc Kích, hoặc mục tiêu đang chạy ra xa
+        def is_badongtuxa():
+            if khoangcach >= KHOANGCACHTOITHIEUBADONG:
+                return True
+            return khoangcach >= KHOANGCACHTOITHIEUBADONGCHAYTRON and self.moitruong.get_is_muctieuchaytron(diachimuctieu)
+
         # "kill" gửi riêng trước danh sách chiêu (_guikilldaohoa), nhưng chỉ khi đã xong chiêu mở đầu (người dùng chốt 2026-11-18): gửi
         # từ xa thì tới nơi máy chủ vung đánh thường trước, chiêu lấy hiệu ứng phải chen ngang. Chiêu mở đầu = chiêu lấy hiệu ứng dùng
         # được ngay (hết hồi, đủ nguyên khí) mà mục tiêu chưa dính: Thốn Kình (Trọng Thương), Lạc Ảnh, Lạc Kích, Phong Ma / Không Thủ /
@@ -1436,14 +1468,16 @@ class TacTuKyNang:
         if diachimuctieu:
             chieumodaus = (
                 (VITRIKYNANG_THONKINH, (HIEUUNGKYNANG_TRONGTHUONG, ), True),
-                (VITRIKYNANG_DAOHOALACANH, (HIEUUNGKYNANG_DAOHOALACANH, ), is_xahetchieu or not self._is_lacanhlangphi(diachimuctieu)),
-                (VITRIKYNANG_LACKICH, (HIEUUNGKYNANG_LACKICH, ), True),
+                # Bỏ Lạc Ảnh / Lạc Kích (người dùng 23/11): không bao giờ lấy chiêu delay 0 làm chiêu mở đầu
                 (VITRIKYNANG_PHONGMAQUYET, (HIEUUNGKYNANG_TRAMMAC, HIEUUNGKYNANG_CHOANG), is_muctieulanguoichoi and idloaivukhimuctieu in (IDLOAIVUKHI_DAO, IDLOAIVUKHI_KIEM)),
                 (VITRIKYNANG_KHONGTHUNHAPBACHNHAN, (HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN, HIEUUNGKYNANG_CHOANG), is_muctieulanguoichoi and idloaivukhimuctieu not in (IDLOAIVUKHI_DAO, IDLOAIVUKHI_KIEM, IDLOAIVUKHI_TAYKHONG)),
                 (VITRIKYNANG_METUNGQUYEN, (HIEUUNGKYNANG_ROILOAN, HIEUUNGKYNANG_CHOANG), is_muctieulanguoichoi),
             )
             # Chỉ dùng Tự động tấn công thì không có chiêu nào để chờ
             chieuchos = [] if self._is_chidungtudongtancong else                 [vt for vt, hieuungs, dk in chieumodaus if dk and self._is_kynangdungduoc(vt) and not is_muctieucohieuung(*hieuungs)]
+            if is_chuamodau and not self._is_chidungtudongtancong:
+                # Chưa có chiêu có delay nào trúng mục tiêu: chưa kill (kẹt quá THOIGIANCHOMODAUKILLTOIDA giây cạnh mục tiêu thì kill luôn)
+                chieuchos = sorted(set(chieuchos) | set(chieucodelaymodaus))
             self._guikilldaohoa(diachimuctieu, khoangcach, chieuchos, is_cancanchien)
 
         # Thứ tự theo test lôi đài 2026-10-28: chiêu có delay (dame ra sau ~0.4s) đi trước, game nhận chiêu kế ngay lúc dame chiêu
@@ -1459,7 +1493,8 @@ class TacTuKyNang:
         danhsachuutien = [
             # Trấn Cổ Thần Uy / Kim Chung Tráo: buff duy trì, không cần có mục tiêu (người dùng dặn 2026-11-06); ở Tân Thủ Thôn / Chu Quốc
             # đã bị chặn chung trong action_xulyuutiensudungkynang (BANDOKHONGTANCONGs)
-            (VITRIKYNANG_TRANCOTHANUY, "sudungkynangkhongmuctieu", lambda: not is_nhuongbuff and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_TRANCOTHANUY,), True, is_hieuungcoloi = 1), 0, None, False, False),
+            # 23/11: chỉ ở đầu danh sách khi không có mục tiêu (làm mới sớm) hoặc đã mất buff quá lâu; kề mục tiêu thì ở cuối danh sách
+            (VITRIKYNANG_TRANCOTHANUY, "sudungkynangkhongmuctieu", lambda: not is_nhuongbuff and (is_lammoisomtranco or is_trancoquahan), 0, None, False, False),
             # Không tự bật tâm pháp (Dã Tính / Kim Cương): người chơi tự chọn (bỏ tự bật Dã Tính 2026-10-28).
             # Kim Chung Tráo: game không cho dùng khi đang Dã Tính nên bỏ qua lúc đó
             (VITRIKYNANG_KIMTRUNGCHAO, "sudungkynangkhongmuctieu", lambda: not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_DATINCUONGLUC,), True, is_hieuungcoloi = 1) and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KIMTRUNGCHAO,), True, is_hieuungcoloi = 1), 0, None, False, False),
@@ -1467,16 +1502,17 @@ class TacTuKyNang:
             (VIRIKYNANG_HOTHEKIMCANG, "sudungkynanglenbanthan", lambda: not is_nietban and not is_nhuongbuff and not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_HOTHEKIMCANG,), True, is_hieuungcoloi = 1), 0, None, False, False),
             # Nguyên Khí Quy Nguyên: bật / làm mới theo tin server ở _lammoinguyenkhiquynguyen (gọi trước danh sách)
             (VIRIKYNANG_HOTHEKIMCANG, "sudungkynanglendongdoi", lambda: not is_nietban and diachidongdoicanbuff and not is_nhuongbuff, self._khoangcachsudungkynangtamxa, diachidongdoicanbuff, False, False),
-            (VITRIKYNANG_DAIHAIVOLUONG, "sudungkynangkhongmuctieu", lambda: is_cancanchien and self._is_nhieumuctieuganbanthan3 and not is_giunguyenkhinhatquyen and not is_chandelay0, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
-            # Ba Động đánh tầm xa, dame ra ngay: mở đầu / đuổi khi mục tiêu cách ít nhất KHOANGCACHTOITHIEUBADONG ô (gần hơn thì chạy vào)
-            (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: not is_chandelay0 and diachimuctieu and not is_anhhuongboimuctieutheosau and khoangcach >= KHOANGCACHTOITHIEUBADONG and idtuthenhanvat == TUTHENHANVAT_DICHUYEN, self._khoangcachsudungkynangtamxa, None, False, False),
-            (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: not is_chandelay0 and diachimuctieu and is_anhhuongboimuctieutheosau and khoangcach >= KHOANGCACHTOITHIEUBADONG and idtuthenhanvat == TUTHENHANVAT_DICHUYEN and khoangcach < self._khoangcachsudungkynangtamxa - 3, self._khoangcachsudungkynangtamxa, None, False, False),
+            (VITRIKYNANG_DAIHAIVOLUONG, "sudungkynangkhongmuctieu", lambda: not is_chuamodau and is_cancanchien and self._is_nhieumuctieuganbanthan3 and not is_giunguyenkhinhatquyen and not is_chandelay0, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
+            # Ba Động đánh tầm xa, dame ra ngay: mở đầu / đuổi khi mục tiêu cách ít nhất KHOANGCACHTOITHIEUBADONG ô, hoặc đang chạy ra xa
+            # và cách ít nhất KHOANGCACHTOITHIEUBADONGCHAYTRON ô (is_badongtuxa); gần hơn mà mục tiêu đứng im / tiến lại thì chạy vào
+            (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: not is_chandelay0 and diachimuctieu and not is_anhhuongboimuctieutheosau and idtuthenhanvat == TUTHENHANVAT_DICHUYEN and is_badongtuxa(), self._khoangcachsudungkynangtamxa, None, False, False),
+            (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: not is_chandelay0 and diachimuctieu and is_anhhuongboimuctieutheosau and idtuthenhanvat == TUTHENHANVAT_DICHUYEN and khoangcach < self._khoangcachsudungkynangtamxa - 3 and is_badongtuxa(), self._khoangcachsudungkynangtamxa, None, False, False),
             (VITRIKYNANG_THONKINH, "sudungkynangmuctieu", lambda: is_cancanchien and not is_muctieucohieuung(HIEUUNGKYNANG_TRONGTHUONG), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_TRONGTHUONG),
             # Lạc Ảnh: ưu tiên trước Phong Ma / Không Thủ (người dùng dặn 2026-11-10). Dùng cả lên quái (người dùng dặn 2026-11-10, trước chỉ
             # với người chơi). Không dùng khi mục tiêu đã bị nhốt / đang trong trận Đào Hoa Nguyên khác (_is_lacanhlangphi); giữ chỗ hiệu
             # ứng 211 để 2 Đào Hoa Nguyên cùng máy không cùng đặt trận lên 1 mục tiêu trong lúc hiệu ứng chưa kịp hiện.
             # Không cần kề mục tiêu (người dùng dặn 2026-11-12): trận tâm tại mình, mục tiêu trong KHOANGCACHSUDUNGLACANH ô là dính
-            (VITRIKYNANG_DAOHOALACANH, "sudungkynangkhongmuctieu", lambda: is_tamlacanh and not is_chandelay0 and (is_xahetchieu or not self._is_lacanhlangphi(diachimuctieu)),
+            (VITRIKYNANG_DAOHOALACANH, "sudungkynangkhongmuctieu", lambda: not is_chuamodau and is_tamlacanh and not is_chandelay0 and (is_xahetchieu or not self._is_lacanhlangphi(diachimuctieu)),
                 KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False, HIEUUNGKYNANG_DAOHOALACANH),
             (VITRIKYNANG_PHONGMAQUYET, "sudungkynangmuctieu", lambda: is_cancanchien and is_muctieulanguoichoi and idloaivukhimuctieu in (IDLOAIVUKHI_DAO, IDLOAIVUKHI_KIEM) and not is_muctieucohieuung(HIEUUNGKYNANG_TRAMMAC, HIEUUNGKYNANG_CHOANG), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_TRAMMAC),
             (VITRIKYNANG_KHONGTHUNHAPBACHNHAN, "sudungkynangmuctieu", lambda: is_cancanchien and is_muctieulanguoichoi and idloaivukhimuctieu not in (IDLOAIVUKHI_DAO, IDLOAIVUKHI_KIEM, IDLOAIVUKHI_TAYKHONG) and not is_muctieucohieuung(HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN, HIEUUNGKYNANG_CHOANG), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN),
@@ -1485,16 +1521,18 @@ class TacTuKyNang:
             (VITRIKYNANG_NHATQUYENBATSON, "sudungkynangmuctieu", lambda: is_cancanchien, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True),
             # Phản Tỏa: "kill" đã luôn bật (_guikilldaohoa); dùng khi cờ đánh thường đang đúng mục tiêu. Delay 0 nên kẹp sau chiêu có
             # delay (is_chandelay0). Chỉ dùng khi máy chủ đã thật sự ép đòn đánh thường lên mục tiêu này gần đây (gói 0x41 => chắc chắn đánh được vật lý)
-            (VITRIKYNANG_PHANTOA, "sudungkynangkhongmuctieu", lambda: is_phantoasansang and self._is_battudongtancongvatly and self._diachimuctieutancongvatly == diachimuctieu
+            (VITRIKYNANG_PHANTOA, "sudungkynangkhongmuctieu", lambda: not is_chuamodau and is_phantoasansang and self._is_battudongtancongvatly and self._diachimuctieutancongvatly == diachimuctieu
                 and self.moitruong.get_is_vuadanhthuong(diachimuctieu, THOIGIANXACNHANDANHTHUONGPHANTOA), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
             # Lạc Kích (-10% kháng mục tiêu) trước Mê Tung (người dùng dặn 2026-11-10)
-            (VITRIKYNANG_LACKICH, "sudungkynangmuctieu", lambda: is_cancanchien and not is_chandelay0 and not is_muctieucohieuung(HIEUUNGKYNANG_LACKICH), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False, HIEUUNGKYNANG_LACKICH),
+            (VITRIKYNANG_LACKICH, "sudungkynangmuctieu", lambda: not is_chuamodau and is_cancanchien and not is_chandelay0 and not is_muctieucohieuung(HIEUUNGKYNANG_LACKICH), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False, HIEUUNGKYNANG_LACKICH),
             (VITRIKYNANG_METUNGQUYEN, "sudungkynangmuctieu", lambda: is_cancanchien and is_muctieulanguoichoi and not is_muctieucohieuung(HIEUUNGKYNANG_ROILOAN, HIEUUNGKYNANG_CHOANG), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_ROILOAN),
             # Đủ hiệu ứng: Lạc Kích lặp lại (delay 0, đã có hiệu ứng vẫn ra dame ngay) khi không làm thiếu nguyên khí / chậm Nhất Quyền
             # (is_duoclotdelay0) và chiêu vừa nhận không phải delay 0
             # Ba Động cận chiến (đã kề, người dùng bảo đưa lại 2026-11-10: chậm + 40% rối loạn) lót trước Lạc Kích lặp lại, cùng điều kiện
-            (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: is_cancanchien and not is_chandelay0 and is_duoclotdelay0, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
-            (VITRIKYNANG_LACKICH, "sudungkynangmuctieu", lambda: is_cancanchien and not is_chandelay0 and is_duoclotdelay0, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
+            (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: not is_chuamodau and is_cancanchien and not is_chandelay0 and is_duoclotdelay0, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
+            (VITRIKYNANG_LACKICH, "sudungkynangmuctieu", lambda: not is_chuamodau and is_cancanchien and not is_chandelay0 and is_duoclotdelay0, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
+            # Trấn Cổ Thần Uy khi kề mục tiêu: chỉ tới đây khi không còn chiêu đánh nào dùng được
+            (VITRIKYNANG_TRANCOTHANUY, "sudungkynangkhongmuctieu", lambda: not is_nhuongbuff and not is_cotranco and is_cancanchien, 0, None, False, False),
             (None, "dichuyentiepcancanchien", lambda: diachimuctieu and khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN, 0, None, False, False),
         ]
 
@@ -1502,7 +1540,6 @@ class TacTuKyNang:
             # Phần tử thứ 8 (nếu có): hiệu ứng khống chế chiêu này gây ra, giữ chỗ giữa các bot để không cùng gửi lên 1 mục tiêu
             vitrikynang, loaikynang, dieukien, khoangcachyeucau, target, is_yeucaukhongdichuyen, is_ngatdichuyen, *phu = item
             hieuunggiucho = phu[0] if phu else None
-            hieuungchieu = hieuunggiucho
             # Xả chiêu khống chế khi đánh quái không PK: không giữ chỗ giữa các bot
             if is_xahetchieu and vitrikynang in VITRIKYNANGXAHETs:
                 hieuunggiucho = None
@@ -1511,11 +1548,6 @@ class TacTuKyNang:
             if vitrikynang and not self._is_kynangdungduoc(vitrikynang): continue
 
             target = target if target else diachimuctieu
-
-            # Chiêu lấy hiệu ứng (Thốn Kình - Trọng Thương, Lạc Ảnh, Lạc Kích lần đầu, Phong Ma / Không Thủ / Mê Tung lên người chơi)
-            # mà mục tiêu chưa dính thì được chen ngang đòn đánh thường đang vung, không chờ số bay (người dùng chốt 2026-11-18: "kill"
-            # gửi từ xa nên tới nơi máy chủ vung đánh thường trước, chờ thì mở đầu chậm). Các chiêu khác vẫn chờ số bay
-            is_duocchendanhthuong = bool(hieuungchieu) and target == diachimuctieu and not is_muctieucohieuung(hieuungchieu)
 
             # Bot khác vừa gửi chiêu gây cùng hiệu ứng lên mục tiêu này (hiệu ứng chưa kịp hiện) thì dùng chiêu tiếp theo
             idmuctieugiucho = self._get_idmuctieugiucho(target) if hieuunggiucho and target else None
@@ -1527,8 +1559,7 @@ class TacTuKyNang:
                 diachimuctieu = target,
                 khoangcachyeucau = khoangcachyeucau,
                 is_yeucaukhongdichuyen = is_yeucaukhongdichuyen,
-                is_ngatdichuyen = is_ngatdichuyen,
-                is_duocchendanhthuong = is_duocchendanhthuong
+                is_ngatdichuyen = is_ngatdichuyen
             )
 
             if idmuctieugiucho and not is_ok:

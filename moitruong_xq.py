@@ -314,9 +314,18 @@ class MoiTruong:
         self._dohoatanh = None
         self._thoidiembotguidohoatanh = None
         # Theo dõi đòn đánh thường máy chủ ép diễn (_theodoidanhthuong): {nhanvat, ghi} chỉ số ghi hàng đợi đã xét; đòn đánh thường gần
-        # nhất {thoidiem, diachi, id, sobay, is_xong, solanchan}; (id kỹ năng, lúc xếp lệnh) kỹ năng bot gửi gần nhất; mục tiêu "kill" gần nhất
+        # nhất {thoidiem, diachi, id, o, sobay, bienthe, kynang, catngay, dacat, danhthuongthattruoc}; (id kỹ năng, lúc xếp lệnh) kỹ năng
+        # bot gửi gần nhất; mục tiêu "kill" gần nhất
         self._hangdoidanhthuong = None
         self._danhthuong = None
+        # (id mục tiêu, thoidiem) đòn đánh thường THẬT gần nhất (không tính ô vung dư của chiêu)
+        self._danhthuongthat = (None, 0.)
+        # Lúc action_cathoatanhkhicosobay ghi tư thế 11 gần nhất (ô mã 0 hiện ngay sau khi cắt: THOIGIANOPHATLAISAUCAT)
+        self._thoidiemcathoatanh = 0.
+        # (địa chỉ mục tiêu, số bay) chụp ở lượt _theodoidanhthuong trước: mốc so số bay của ô mới (số bay tới cùng lúc với ô = ô chiêu)
+        self._sobaymuctieutruoc = (None, None)
+        # Chẩn đoán sau lần cắt ô chiêu delay 0: {t, cuoi, chuoi, loai} (action_cathoatanhkhicosobay)
+        self._theodoisaucat = None
         self._khoatheodoidanhthuong = threading.Lock()
         self._kynangguigannhat = (None, 0.)
         self._diachimuctieukill = None
@@ -541,6 +550,15 @@ class MoiTruong:
         self._diachidulieuvedanhhieu = 0
         # Đã đặt hook "bật Alt, ô túi chỉ hiện dấu màu" (action_thietlaphookdaumautui): None chưa thử, True xong, False lỗi (không thử lại)
         self._is_dadathookdaumautui = None
+        # Bảng nhãn ô của hook đó ({"tui"/"kho": tập địa chỉ}), bytes đã ghi lần trước theo loại, lúc cập nhật / desc gần nhất,
+        # các (ô, id món) đã desc để lấy nhãn (mỗi món 1 lần) — xem action_capnhatnhanotui
+        self._bangnhanotuis = {"tui": set(), "kho": set()}
+        self._nhanotuidaghi = {}
+        self._lucnhanotui = 0.
+        self._lucdescnhanotui = 0.
+        self._nhanotuidadesc = set()
+        # Lần "desc <ô - 95>" gần nhất theo ô trang bị đang mặc (nhãn độ bền ở bảng Nhân Vật): ô -> (id, thời điểm)
+        self._lucdescnhantrangbi = {}
 
         # Hook dò lệnh game tự gửi (action_thietlaphooklenhgame): bộ đệm vòng, đã đọc tới đâu, lệnh bot vừa gửi (để không log trùng)
         self._diachibodemlenhgame = False
@@ -2003,6 +2021,48 @@ class MoiTruong:
         write_bytes(self.tientrinh, kichban, bytes(encoding), len(encoding))
         write_bytes(self.tientrinh, diachihook, b"\xE9" + struct.pack("<i", kichban - (diachihook + 5)), 5)
         self._inlog("[CHẶN CRASH] đã vá chỗ vẽ cửa sổ (bỏ qua cửa sổ vừa tự đóng)")
+        return True
+
+    def action_thietlaphookchuotcuasodanhsach(self):
+        # Chặn crash xq+0x1279F0 (Thỏ 342 ngày 23/11 lúc 05:47:00, dump C:\CrashDumps\XQ.exe.1504852.dmp; đang dò quái trong Phong Yêu
+        # Kính, bị mất kết nối riêng một mình). Mất kết nối => gói 0xFF mã con 8/9 gọi hàm dọn về màn hình đăng nhập xq+0x528D0, hàm này
+        # nhả và gán 0 đối tượng con [TG+0xAECDD8] / [TG+0xAECDDC] nhưng KHÔNG đóng cửa sổ danh sách [TG+0xAECDD0] (cờ hiện +0x1085 vẫn 1).
+        # Sự kiện chuột kế tiếp trên luồng chính (xq+0x428EB) thấy cửa sổ đang hiện, gọi xq+0x1279F0 với this = [TG+0xAECDDC] = 0 => đọc
+        # [0+0x100C], văng game. Lỗi của client. Vá "mov ecx,[ebp+0xAECDD0]; test ecx,ecx; je" (14 byte): cửa sổ hoặc một trong hai đối
+        # tượng con = 0 thì đi nhánh "không có cửa sổ" của game. Độ lệch TG và đích je đọc từ chính mã gốc. Kịch bản không giải phóng.
+        diachihook = self.diachixq + DC.HOOK_CHUOTCUASODANHSACH
+        try:
+            mahook = read_bytes(self.tientrinh, diachihook, 14)
+        except Exception:
+            return False
+        if mahook[0] == 0xE9:
+            return True
+        if mahook[:2] != b"\x8B\x8D" or mahook[6:10] != b"\x85\xC9\x0F\x84":
+            self._inlog(f"[CHẶN CRASH] chỗ chuột cửa sổ danh sách không như dự kiến: {mahook.hex(' ')}")
+            return False
+        lechcuaso = struct.unpack("<I", mahook[2:6])[0]
+        diachiboqua = diachihook + 14 + struct.unpack("<i", mahook[10:14])[0]
+        asm_script = f"""
+            mov ecx, dword ptr [ebp + {lechcuaso}]
+            test ecx, ecx
+            je boqua
+            cmp dword ptr [ebp + {lechcuaso + 8}], 0
+            je boqua
+            cmp dword ptr [ebp + {lechcuaso + 0xC}], 0
+            je boqua
+            push {diachihook + 14}
+            ret
+        boqua:
+            push {diachiboqua}
+            ret
+        """
+        encoding, _ = asm_x86(asm_script)
+        if not encoding:
+            return False
+        kichban = self.tientrinh.allocate(64)
+        write_bytes(self.tientrinh, kichban, bytes(encoding), len(encoding))
+        write_bytes(self.tientrinh, diachihook, b"\xE9" + struct.pack("<i", kichban - (diachihook + 5)) + b"\x90" * 9, 14)
+        self._inlog("[CHẶN CRASH] đã vá chỗ chuột cửa sổ danh sách (bỏ qua khi đối tượng con đã nhả lúc mất kết nối)")
         return True
 
     # Bảng yêu cầu ẩn / hiện cửa sổ cho luồng chính (action_thietlaphookanhiencuaso), nằm trong khối kịch bản đã cấp phát:
@@ -4006,6 +4066,7 @@ class MoiTruong:
             self._lichsukhungchat5s.append((now, dongkhungchat))
             self._xulydongtinmat(now, dongkhungchat)
             self._xulydongchetao(dongkhungchat)
+            self._xulydongtapkich(dongkhungchat)
 
         self._lichsutrochuyen5s = [msg for msg in self._lichsutrochuyen5s if now - msg[0] <= 5.0]
         self._lichsukhungchat5s = [msg for msg in self._lichsukhungchat5s if now - msg[0] <= 5.0]
@@ -4017,6 +4078,21 @@ class MoiTruong:
         thuong = noidung.lower()
         if any(tu in thuong for tu in TUKHOADONGCHETAOs) and not any(tu in thuong for tu in TUKHOADONGCHETAOBOQUAs):
             self._inlog(f"[CHẾ TẠO] {noidung.strip()}")
+
+    def _xulydongtapkich(self, noidung):
+        # Tin hệ thống báo Tập Kích Môn Phái (2 tiếng đổi 1 lần, ảnh người dùng 2026-11-23): "[Hệ Thống] Võ Lâm Bại Hoại tập kích Đường
+        # Môn , anh hùng tứ phương hãy ra tay trợ giúp Đường Môn tiêu diệt đám bại hoại này." -> lấy tên ngay sau "Bại Hoại tập kích",
+        # lưu môn phái (tienich_xq.luuphaitapkichhomnay) cho giao diện tự điền / Tập Kích dùng. Ghi nguyên dòng vào log [TẬP KÍCH]
+        dong = re.sub(r"\x1b.", "", noidung or "").strip()
+        thuong = unicodedata.normalize("NFC", dong).lower()
+        m = re.search(r"bại hoại\s+tập kích\s+(.+?)\s*(?:,|$)", thuong)
+        if not m:
+            return
+        phais = [ma for ma, ten in TENMONPHAI.items() if m.group(1).startswith(unicodedata.normalize("NFC", ten).lower())]
+        self._inlog(f"[TẬP KÍCH] Tin khung chat: {dong!r} -> môn phái {phais or 'không thấy'}")
+        if len(phais) == 1 and taiphaitapkichhomnay().get("phai") != phais[0]:
+            luuphaitapkichhomnay(phais[0], dong)
+            self._inlog(f"[TẬP KÍCH] Môn phái Tập Kích hôm nay: {TENMONPHAI[phais[0]]}")
 
     def _xulydongtinmat(self, now, noidung):
         # Tin mật đến hiện ở khung trò chuyện "Gạ nói thầm với bạn : abc" (ảnh người dùng 2026-11-10); tên là liên kết có sẵn ID
@@ -5597,47 +5673,181 @@ class MoiTruong:
         # 3 0xF076FC tím, 4 0x00FF00 lục, còn lại HOOK_MAUTENTUITRANG trắng 0xFFFFFF), vẽ bằng xq+0x89D90 (x, y, &chữ, màu, 0x28, 0, 0)
         # rồi vẽ bóng đen lệch 1 px. Cửa sổ TG+0xADFDDC (vtable[2] xq+0x13AE60) có đoạn y hệt (..2). Lần đầu chỉ hook chỗ ..2 tưởng là
         # túi => tên trong túi vẫn hiện. Vá mỗi chỗ, chỉ ở client này:
-        # - VA_: đổi chuỗi định dạng "%s" thành DAUMAUTUI (không có %s nên bỏ tên) => mỗi ô chỉ còn 1 dấu tô màu phẩm chất.
-        # - HOOK_ (nhánh trắng): chỉ vẽ dấu khi hình vật phẩm (TG_HANHTRANG + 0x1DA1C + ô * 4) là trang bị (HINHTRANGBI_KHOANGs),
-        #   không thì nhảy qua cả 2 lần vẽ => thuốc / đồ thường không có dấu trắng.
+        # Bản 2 (23/11, người dùng muốn thấy CẤP chứ không phải cụm chấm): mỗi ô 1 nhãn riêng do bot ghi vào bảng (action_capnhatnhanotui)
+        # - VA_: "push <chuỗi định dạng>" (5 byte) -> jmp sang mã mình: push bảng + ô * KICHTHUOCNHANOTUI rồi quay lại => Format in
+        #   nhãn của ô (nhãn không có "%"). Ô lúc đó: chỗ 1 ở edi (vừa nạp từ [esp+0x18]); chỗ 2 và kho ở [esp+0x18] (sau 1 push).
+        # - HOOK_ (nhánh trắng): nhãn ô rỗng thì nhảy qua cả 2 lần vẽ, có thì vẽ trắng như cũ. Nhánh màu vẽ nhãn rỗng = không thấy gì.
         # Số lượng chồng vẽ sau đó giữ nguyên. Kho (TG_KHO, vtable[2] xq+0xB3960, dò 2026-11-22) giống hệt nhưng: phẩm chất S+0x1B198,
         # hình S+0x1AE98 (bộ nhớ ghi chú cũ gọi là "mã loại", thật ra là số hiệu hình: đá 0x231B, icon vẽ bằng xq+0x453DA0 từ đó),
         # ô rộng 0x2C, nhánh trắng nạp eax/ecx (toạ độ) trước 4 push => hook từ đầu nhánh, chép lại 2 lệnh nạp.
+        # Bản 1 (dấu hiệu DAUHIEUKICHBANDAUMAUTUICU) còn trong client từ lần chạy bot trước thì đặt đè.
         # -> True nếu đặt được chỗ túi hành trang (hoặc đã có từ lần chạy bot trước)
         if self._is_dadathookdaumautui is not None:
             return self._is_dadathookdaumautui
-        hinhtui = f"""
-                mov edx, dword ptr [{self.diachixq + DC.THONGTINGAME:#x}]
-                mov edx, dword ptr [edx + {DC.TG_HANHTRANG:#x}]
-                mov eax, dword ptr [edx + eax * 4 + 0x1DA1C]"""
         lenhtrang = """
                 push 0
                 push 0
                 push {rong}
                 push 0xFFFFFF"""
         # (chỗ định dạng, chỗ nhánh trắng, 5 byte gốc ở nhánh trắng, số byte lệnh gốc bị thay, lệnh gốc (chép sang mã mình),
-        #  ô [esp + ?] chứa số ô, lệch từ nhánh trắng tới sau 2 lần vẽ, mã đổi số ô eax -> số hiệu hình eax (được dùng edx))
+        #  ô [esp + ?] chứa số ô ở nhánh trắng, lệch từ nhánh trắng tới sau 2 lần vẽ, toán hạng số ô ở chỗ định dạng, bảng nhãn nào,
+        #  lệch từ nhánh trắng tới các lệnh "call <hàm vẽ chữ xq+0x89D90>" vẽ chữ ô (chữ + bóng, kho thêm nhánh tím tự gọi riêng),
+        #  dò 23/11 trên client đang chạy)
         chohooks = (
-            (DC.VA_TENTUIALT, DC.HOOK_MAUTENTUITRANG, "6A006A006A", 11, lenhtrang.format(rong = "0x28"), 0x18, 0x43, hinhtui),
-            (DC.VA_TENTUIALT2, DC.HOOK_MAUTENTUITRANG2, "6A006A006A", 11, lenhtrang.format(rong = "0x28"), 0x14, 0x55, hinhtui),
+            (DC.VA_TENTUIALT, DC.HOOK_MAUTENTUITRANG, "6A006A006A", 11, lenhtrang.format(rong = "0x28"), 0x18, 0x43, "edi", "tui",
+             (0x1C, 0x3E)),
+            (DC.VA_TENTUIALT2, DC.HOOK_MAUTENTUITRANG2, "6A006A006A", 11, lenhtrang.format(rong = "0x28"), 0x14, 0x55,
+             "dword ptr [esp + 0x18]", "tui", (0x26, 0x50)),
             (DC.VA_TENKHOALT, DC.HOOK_MAUTENKHOTRANG, "8B46188B4E", 17, """
                 mov eax, dword ptr [esi + 0x18]
-                mov ecx, dword ptr [esi + 0x14]""" + lenhtrang.format(rong = "0x2C"), 0x14, 0x4F, """
-                mov eax, dword ptr [esi + eax * 4 + 0x1AE98]"""),
+                mov ecx, dword ptr [esi + 0x14]""" + lenhtrang.format(rong = "0x2C"), 0x14, 0x4F, "dword ptr [esp + 0x18]", "kho",
+             (-0x18, 0x22, 0x4A)),
         )
         ketquas = []
-        for va, hook, magoc, dodaigoc, lenhgoc, oslot, boqua, dochinh in chohooks:
+        for va, hook, magoc, dodaigoc, lenhgoc, oslot, boqua, oslotva, loai, lechgois in chohooks:
             try:
                 kieu = self._dathookdaumautui(self.diachixq + va, self.diachixq + hook, bytes.fromhex(magoc), dodaigoc, lenhgoc, oslot,
-                                              boqua, dochinh)
+                                              boqua, oslotva, loai, lechgois)
             except Exception as err:
                 kieu = None
                 self._inlog(f"[DẤU MÀU TÚI] lỗi đặt hook ở xq+{hook:#x}: {err}")
             ketquas.append(kieu)
             if kieu == "mới":
-                self._inlog(f"[DẤU MÀU TÚI] xq+{hook:#x}: bật Alt, ô chỉ hiện dấu màu phẩm chất thay cho tên")
+                self._inlog(f"[DẤU MÀU TÚI] xq+{hook:#x}: bật Alt, ô hiện nhãn cấp / độ bền tô màu phẩm chất thay cho tên")
         self._is_dadathookdaumautui = bool(ketquas[0])
         return self._is_dadathookdaumautui
+
+    @staticmethod
+    def get_nhanotui(ten, mota, phamchat, hinh):
+        # Nhãn vẽ trên ô túi / kho (xem action_thietlaphookdaumautui), game tô màu theo phẩm chất. Người dùng 23/11:
+        # pháp bảo (mô tả có "[Pháp Bảo]" và "Độ bền: a / b") -> "a/\nb" (2 dòng: ô rộng 40 px, "168/280" để game tự ngắt thì có thể
+        # gãy giữa số); trang bị -> "Cấp\n85" ("Cấp độ sử dụng: cấp 85" Aegis, "Trang bị yêu cầu: 85 cấp" Niết Bàn); tên có "cấp N"
+        # (Hoả Tinh Thạch cấp 2, Túi Linh Thạch cấp 1) -> "Cấp\nN" (luôn 2 dòng như pháp bảo, người dùng 23/11: "Cấp 86" 1 dòng chật ô); thuốc (［Có thể sử dụng］) -> lượng hiệu quả (MAUHIEUQUATHUOC):
+        # Khí Mạch Đơn "15%", Cấp Cứu Đơn "1400"; còn lại không vẽ gì (phamchat / hinh giữ lại để sau cần thì dùng)
+        ten = re.sub(r'\x1b[a-zA-Z0-9]', '', ten or "").strip()
+        mota = unicodedata.normalize("NFC", re.sub(r'\x1b[a-zA-Z0-9]', '', mota or ""))
+        if mota:
+            if re.search(r"[\[［]\s*Pháp Bảo\s*[\]］]", mota):
+                doben = MoiTruong.get_dobenmota(mota)
+                if doben:
+                    return f"{doben[0]}/\n{doben[1]}"
+            khop = re.search(r"Cấp độ sử dụng\s*[:：]\s*cấp\s*(\d+)", mota, re.IGNORECASE) \
+                or re.search(r"Trang bị yêu cầu\s*[:：]\s*(\d+)\s*cấp", mota, re.IGNORECASE)
+            if khop:
+                return f"Cấp\n{khop.group(1)}"
+        khop = re.search(r"cấp\s*(\d+)\s*$", unicodedata.normalize("NFC", ten), re.IGNORECASE)
+        if khop:
+            return f"Cấp\n{khop.group(1)}"
+        if mota and re.search(r"[\[［]\s*Có thể sử dụng\s*[\]］]", mota):
+            khop = re.search(MAUHIEUQUATHUOC, mota, re.IGNORECASE)
+            if khop:
+                return khop.group(1) + ("%" if khop.group(2) else "")
+        return ""
+
+    def _ghibangnhanotui(self, loai, nhans):
+        # Ghi nhãn (list chữ theo ô) vào các bảng nhãn loai ("tui" / "kho"), chỉ khi khác lần ghi trước. Game dùng nhãn làm chuỗi
+        # định dạng => "%" ghi thành "%%" (để "%" trơn thì Format đọc tham số rác)
+        dulieu = bytearray(len(nhans) * KICHTHUOCNHANOTUI)
+        for o, nhan in enumerate(nhans):
+            ma = nhan.replace("%", "%%").encode("utf-8")
+            while len(ma) > KICHTHUOCNHANOTUI - 1:
+                nhan = nhan[:-1]
+                ma = nhan.replace("%", "%%").encode("utf-8")
+            dulieu[o * KICHTHUOCNHANOTUI:o * KICHTHUOCNHANOTUI + len(ma)] = ma
+        dulieu = bytes(dulieu)
+        if self._nhanotuidaghi.get(loai) == dulieu:
+            return
+        for bang in self._bangnhanotuis[loai]:
+            write_bytes(self.tientrinh, bang, dulieu, len(dulieu))
+        self._nhanotuidaghi[loai] = dulieu
+
+    def action_capnhatnhanotui(self):
+        # Mỗi THOIGIANCAPNHATNHANOTUI: tính nhãn từng ô túi (và kho nếu đang hiện) bằng get_nhanotui, ghi vào bảng của hook.
+        # Món chưa có mô tả (cần cho cấp trang bị, độ bền pháp bảo, hiệu quả thuốc), hoặc mô tả còn của món cũ ở ô (dòng đầu không
+        # bắt đầu bằng tên) thì "desc <id>#" độ ưu tiên thấp, mỗi THOIGIANDESCNHANOTUI 1 món, mỗi món (ô, id) 1 lần
+        if not self._is_dadathookdaumautui or time.time() - self._lucnhanotui < THOIGIANCAPNHATNHANOTUI:
+            return
+        self._lucnhanotui = time.time()
+        try:
+            x = self.get_diachicosothongtinvatphamhanhtrang()
+            if not x:
+                return
+            sotui = VITRITRANGBIDAUTIEN
+            ids = struct.unpack(f"<{SONHANOTUI}i", read_bytes(self.tientrinh, x, SONHANOTUI * 4))
+            hinhs = struct.unpack(f"<{SONHANOTUI}i", read_bytes(self.tientrinh, x + HT_HINH, SONHANOTUI * 4))
+            phamchats = read_bytes(self.tientrinh, x + HT_PHAMCHAT, SONHANOTUI)
+            tens = read_bytes(self.tientrinh, x + DC.HT_TEN, SONHANOTUI * 0x20)
+            nhans = []
+            candesc = None
+            candescmac = None
+            for o in range(SONHANOTUI):
+                if sotui <= o < sotui + SOLUONGOTRANGBI and ids[o] > 0:
+                    # Đồ đang mặc: chỉ độ bền "a/\nb", không có thì để trống. Mô tả thiếu / quá THOIGIANDESCLAIDOBENTRANGBI thì desc lại
+                    ten = tens[o * 0x20:(o + 1) * 0x20].split(b"\0")[0].decode("utf-8", "ignore")
+                    tensach = re.sub(r'\x1b[a-zA-Z0-9]', '', ten).strip()
+                    mota = self.get_motavatphamhanhtrangcosan(o)
+                    if mota and tensach and not unicodedata.normalize("NFC", mota.lstrip()).startswith(unicodedata.normalize("NFC", tensach)):
+                        mota = ""
+                    doben = self.get_dobenmota(mota) if mota else None
+                    nhans.append(f"{doben[0]}/\n{doben[1]}" if doben else "")
+                    idcu, luc = self._lucdescnhantrangbi.get(o, (None, 0.))
+                    if candescmac is None and (idcu != ids[o] or (not mota and time.time() - luc >= 5.)
+                                               or time.time() - luc >= THOIGIANDESCLAIDOBENTRANGBI):
+                        candescmac = o
+                    continue
+                if ids[o] <= 0 or o >= sotui:
+                    nhans.append("")
+                    continue
+                ten = tens[o * 0x20:(o + 1) * 0x20].split(b"\0")[0].decode("utf-8", "ignore")
+                mota = self.get_motavatphamhanhtrangcosan(o)
+                tensach = re.sub(r'\x1b[a-zA-Z0-9]', '', ten).strip()
+                if mota and tensach and not unicodedata.normalize("NFC", mota.lstrip()).startswith(unicodedata.normalize("NFC", tensach)):
+                    mota = ""
+                if not mota and candesc is None and (o, ids[o]) not in self._nhanotuidadesc:
+                    candesc = o
+                nhans.append(self.get_nhanotui(ten, mota, phamchats[o], hinhs[o]))
+            self._ghibangnhanotui("tui", nhans)
+            # Món cần desc: (khoá đánh dấu đã desc, địa chỉ mô tả xoá trước khi desc, lệnh)
+            lenhdesc = None
+            if candesc is not None:
+                lenhdesc = ((candesc, ids[candesc]), x + candesc * DC.HT_KICHTHUOCMOTA + DC.HT_MOTA, "desc {:x}#".format(ids[candesc]))
+            elif candescmac is not None:
+                # Không xoá mô tả cũ: nhãn độ bền giữ số cũ tới khi máy chủ trả số mới (khoá None: không ghi vào _nhanotuidadesc)
+                lenhdesc = (None, None, "desc {}".format(candescmac - VITRITRANGBIDAUTIEN + 1), candescmac, ids[candescmac])
+            makho = self.get_makhodangmo() if self._bangnhanotuis["kho"] else None
+            if makho:
+                # Kho: mô tả từng ô ở KHO_MOTA (xem hangso), thiếu thì "desc <mã kho># <ô + 1>" như client rê chuột. Mỗi (mã kho, rương,
+                # ô, tên) desc 1 lần; túi được ưu tiên trước
+                tg = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
+                kho = read_int(self.tientrinh, tg + DC.TG_KHO) if tg else 0
+                khodangmo = self.get_khodangmo() if kho else None
+                if khodangmo:
+                    phamchatkhos = read_bytes(self.tientrinh, kho + KHO_PHAMCHAT, SOOMOIRUONGKHO)
+                    motakhos = read_bytes(self.tientrinh, kho + KHO_MOTA + KHO_KICHTHUOCMOTA, SOOMOIRUONGKHO * KHO_KICHTHUOCMOTA)
+                    nhankhos = []
+                    for o, (ten, _, ma) in enumerate(khodangmo["os"]):
+                        if not ma:
+                            nhankhos.append("")
+                            continue
+                        mota = motakhos[o * KHO_KICHTHUOCMOTA:(o + 1) * KHO_KICHTHUOCMOTA].split(b"\0")[0].decode("utf-8", "ignore")
+                        mota = re.sub(r'\x1b[a-zA-Z0-9]', '', mota)
+                        if mota and ten and not unicodedata.normalize("NFC", mota.lstrip()).startswith(unicodedata.normalize("NFC", ten)):
+                            mota = ""
+                        khoa = ("kho", makho, khodangmo["ruong"], o, ten)
+                        if not mota and lenhdesc is None and khoa not in self._nhanotuidadesc:
+                            lenhdesc = (khoa, kho + KHO_MOTA + (o + 1) * KHO_KICHTHUOCMOTA, f"desc {makho} {o + 1}")
+                        nhankhos.append(self.get_nhanotui(ten, mota, phamchatkhos[o], ma))
+                    self._ghibangnhanotui("kho", nhankhos)
+            if lenhdesc and time.time() - self._lucdescnhanotui >= THOIGIANDESCNHANOTUI:
+                self._lucdescnhanotui = time.time()
+                if lenhdesc[0] is not None:
+                    self._nhanotuidadesc.add(lenhdesc[0])
+                    write_bytes(self.tientrinh, lenhdesc[1], b"\x00", 1)
+                else:
+                    self._lucdescnhantrangbi[lenhdesc[3]] = (lenhdesc[4], time.time())
+                self.action_thucthicaulenh(lenhdesc[2], douutien = DOUUTIEN_THAP)
+        except (pymem.exception.PymemError, pymem.exception.WinAPIError):
+            pass
 
     def action_giualtkhinhaphim(self):
         # Cờ [CONTROALT] thật ra là "đang giữ Alt": xq+0x1735B0 nhấn phím ghi 1, xq+0x173580 nhả phím (VK 0x12) ghi 0 (dò 2026-11-21).
@@ -5655,51 +5865,69 @@ class MoiTruong:
         except Exception:
             return False
 
-    def _dathookdaumautui(self, diachiva, diachihook, magoc, dodaigoc, lenhgoc, oslot, boqua, dochinh):
-        # Đặt 1 chỗ (xem action_thietlaphookdaumautui) -> "mới" / "có sẵn", None nếu không đặt được. Kịch bản đánh dấu
-        # DAUHIEUKICHBANDAUMAUTUI + 5 byte gốc ở cuối => chạy bot lại thì nhận ra, không đặt chồng
+    def _dathookdaumautui(self, diachiva, diachihook, magoc, dodaigoc, lenhgoc, oslot, boqua, oslotva, loai, lechgois):
+        # Đặt 1 chỗ (xem action_thietlaphookdaumautui) -> "mới" / "có sẵn", None nếu không đặt được. Vùng mã (KICHTHUOCKICHBANDAUMAUTUI):
+        # +0x00 nhánh trắng, +0x40 chỗ định dạng, +0x60 địa chỉ bảng nhãn, +0x70 DAUHIEUKICHBANDAUMAUTUI + 5 byte gốc nhánh trắng,
+        # +0x80 mã dời toạ độ (cộng LEXNHANOTUI / LEYNHANOTUI vào 2 tham số đầu x, y rồi nhảy tới hàm vẽ chữ). Các "call" vẽ chữ ô
+        # (diachihook + lechgois) đổi đích sang +0x80. Chạy bot lại thì nhận ra dấu hiệu, dùng lại bảng cũ, không đặt chồng.
+        # Gặp bản cũ (DAUHIEUKICHBANDAUMAUTUICUs) thì đặt đè
         mava = read_bytes(self.tientrinh, diachiva, 5)
         mahook = read_bytes(self.tientrinh, diachihook, 5)
-        if mava[0] != 0x68:
-            self._inlog(f"[DẤU MÀU TÚI] chỗ định dạng tên lạ: {mava.hex(' ')}")
-            return None
-        chuoicu = struct.unpack("<I", mava[1:5])[0]
+        dichcu = None
         if mahook[0] == 0xE9:
-            dich = diachihook + 5 + struct.unpack("<i", mahook[1:5])[0]
+            dichcu = diachihook + 5 + struct.unpack("<i", mahook[1:5])[0]
             try:
-                danhdau = read_bytes(self.tientrinh, dich + KICHTHUOCKICHBANDAUMAUTUI - 0x10, 4)
+                # Bản cũ (vùng 0x80) cũng để dấu hiệu ở +0x70
+                danhdau = read_bytes(self.tientrinh, dichcu + 0x70, 4)
+                if danhdau not in (DAUHIEUKICHBANDAUMAUTUI, ) + DAUHIEUKICHBANDAUMAUTUICUs:
+                    danhdau = b""
             except Exception:
                 danhdau = b""
-            if danhdau != DAUHIEUKICHBANDAUMAUTUI:
+            if danhdau == DAUHIEUKICHBANDAUMAUTUI:
+                bang = read_int(self.tientrinh, dichcu + 0x60)
+                if mava != b"\xE9" + struct.pack("<i", dichcu + 0x40 - (diachiva + 5)) or not bang:
+                    self._inlog(f"[DẤU MÀU TÚI] chỗ định dạng không trỏ về mã mình: {mava.hex(' ')}")
+                    return None
+                self._bangnhanotuis[loai].add(bang)
+                return "có sẵn"
+            if not danhdau:
                 self._inlog(f"[DẤU MÀU TÚI] chỗ vẽ ô trắng bị chèn lạ: {mahook.hex(' ')}")
                 return None
-            # Dấu đổi giữa các bản bot (vd 1 chấm -> cụm 2x2) thì ghi đè chuỗi dấu
-            diachidau = dich + KICHTHUOCKICHBANDAUMAUTUI - 0x20
-            if read_bytes(self.tientrinh, diachidau, len(DAUMAUTUI) + 1) != DAUMAUTUI + b"\0":
-                write_bytes(self.tientrinh, diachidau, DAUMAUTUI + b"\0", len(DAUMAUTUI) + 1)
-            if chuoicu != diachidau:
-                write_bytes(self.tientrinh, diachiva + 1, struct.pack("<I", diachidau), 4)
-            return "có sẵn"
-        if mahook != magoc:
+        elif mahook != magoc:
             self._inlog(f"[DẤU MÀU TÚI] chỗ vẽ ô trắng lạ: {mahook.hex(' ')}")
             return None
-        if read_bytes(self.tientrinh, chuoicu, 3) != b"%s\x00":
-            self._inlog(f"[DẤU MÀU TÚI] chuỗi định dạng tên không phải %s: {chuoicu:#x}")
+        # Chỗ định dạng: bản gốc / bản 1 là "push <chuỗi>", bản 2 là jmp về +0x40 của mã cũ
+        if not (mava[0] == 0x68 or (dichcu and mava == b"\xE9" + struct.pack("<i", dichcu + 0x40 - (diachiva + 5)))):
+            self._inlog(f"[DẤU MÀU TÚI] chỗ định dạng tên lạ: {mava.hex(' ')}")
             return None
+        # Các call vẽ chữ: phải là E8 cùng 1 đích (hàm vẽ gốc); đích khác hàm gốc chỉ khi là mã dời của bản này (không xảy ra ở đây)
+        diachigois = [diachihook + lech for lech in lechgois]
+        hamve = None
+        for diachigoi in diachigois:
+            ma = read_bytes(self.tientrinh, diachigoi, 5)
+            dich = diachigoi + 5 + struct.unpack("<i", ma[1:5])[0]
+            if ma[0] != 0xE8 or (hamve is not None and dich != hamve):
+                self._inlog(f"[DẤU MÀU TÚI] lệnh vẽ chữ ô lạ ở {diachigoi:#x}: {ma.hex(' ')}")
+                return None
+            hamve = dich
+        if hamve != self.diachixq + 0x89D90:
+            self._inlog(f"[DẤU MÀU TÚI] lệnh vẽ chữ ô không gọi xq+0x89D90: {hamve:#x}")
+            return None
+        bangs = self._bangnhanotuis[loai]
+        if bangs:
+            bang = next(iter(bangs))
+        else:
+            bang = self.tientrinh.allocate(SONHANOTUI * KICHTHUOCNHANOTUI)
+            write_bytes(self.tientrinh, bang, bytes(SONHANOTUI * KICHTHUOCNHANOTUI), SONHANOTUI * KICHTHUOCNHANOTUI)
+            bangs.add(bang)
+            self._nhanotuidaghi.pop(loai, None)
         kichban = self.tientrinh.allocate(KICHTHUOCKICHBANDAUMAUTUI)
-        kiemtra = ""
-        for k, (dau, cuoi) in enumerate(HINHTRANGBI_KHOANGs):
-            kiemtra += f"""
-                cmp eax, {dau:#x}
-                jl khoang{k}
-                cmp eax, {cuoi:#x}
-                jl ve
-            khoang{k}:"""
-        # Quay về bằng push + ret: không đụng thanh ghi (nhánh kho cần eax / ecx toạ độ)
-        asm_script = f"""
+        # Quay về bằng push + ret: không đụng thanh ghi (nhánh kho cần eax / ecx toạ độ; nhánh túi vốn nạp lại sau đó)
+        manhanh = f"""
                 mov eax, dword ptr [esp + {oslot:#x}]
-                {dochinh}
-                {kiemtra}
+                shl eax, 4
+                cmp byte ptr [eax + {bang:#x}], 0
+                jne ve
                 push {diachihook + boqua:#x}
                 ret
             ve:
@@ -5707,16 +5935,36 @@ class MoiTruong:
                 push {diachihook + dodaigoc:#x}
                 ret
         """
-        encoding, _ = asm_x86(asm_script, kichban)
-        if not encoding or len(encoding) > KICHTHUOCKICHBANDAUMAUTUI - 0x20:
+        madinhdang = f"""
+                push {oslotva}
+                shl dword ptr [esp], 4
+                add dword ptr [esp], {bang:#x}
+                push {diachiva + 5:#x}
+                ret
+        """
+        # Vào đây bằng call: [esp] địa chỉ về, [esp+4] x, [esp+8] y; ecx (this) giữ nguyên
+        madoi = f"""
+                add dword ptr [esp + 4], {LEXNHANOTUI:#x}
+                add dword ptr [esp + 8], {LEYNHANOTUI:#x}
+                push {hamve:#x}
+                ret
+        """
+        encnhanh, _ = asm_x86(manhanh, kichban)
+        encdinhdang, _ = asm_x86(madinhdang, kichban + 0x40)
+        encdoi, _ = asm_x86(madoi, kichban + 0x80)
+        if not encnhanh or len(encnhanh) > 0x40 or not encdinhdang or len(encdinhdang) > 0x20 or not encdoi or len(encdoi) > 0x20:
             self._inlog("[DẤU MÀU TÚI] dịch mã lỗi")
             return None
-        write_bytes(self.tientrinh, kichban, bytes(encoding), len(encoding))
-        write_bytes(self.tientrinh, kichban + KICHTHUOCKICHBANDAUMAUTUI - 0x20, DAUMAUTUI + b"\0", len(DAUMAUTUI) + 1)
-        danhdau = DAUHIEUKICHBANDAUMAUTUI + mahook
-        write_bytes(self.tientrinh, kichban + KICHTHUOCKICHBANDAUMAUTUI - 0x10, danhdau, len(danhdau))
-        # Chuỗi định dạng trước, rồi mới nhảy: 5 byte jmp ghi 1 lần; 6 byte sau không ai nhảy vào nên để nguyên
-        write_bytes(self.tientrinh, diachiva + 1, struct.pack("<I", kichban + KICHTHUOCKICHBANDAUMAUTUI - 0x20), 4)
+        write_bytes(self.tientrinh, kichban, bytes(encnhanh), len(encnhanh))
+        write_bytes(self.tientrinh, kichban + 0x40, bytes(encdinhdang), len(encdinhdang))
+        write_bytes(self.tientrinh, kichban + 0x80, bytes(encdoi), len(encdoi))
+        write_bytes(self.tientrinh, kichban + 0x60, struct.pack("<I", bang), 4)
+        danhdau = DAUHIEUKICHBANDAUMAUTUI + magoc
+        write_bytes(self.tientrinh, kichban + 0x70, danhdau, len(danhdau))
+        # Mã xong mới nhảy: call vẽ chữ (chỉ 4 byte đích), chỗ định dạng, rồi nhánh trắng; mỗi chỗ ghi 1 lần
+        for diachigoi in diachigois:
+            write_bytes(self.tientrinh, diachigoi + 1, struct.pack("<i", kichban + 0x80 - (diachigoi + 5)), 4)
+        write_bytes(self.tientrinh, diachiva, b"\xE9" + struct.pack("<i", kichban + 0x40 - (diachiva + 5)), 5)
         write_bytes(self.tientrinh, diachihook, b"\xE9" + struct.pack("<i", kichban - (diachihook + 5)), 5)
         return "mới"
 
@@ -6682,6 +6930,32 @@ class MoiTruong:
             self._inlog(f"[A* CHẬM] Đánh số vùng liên thông bản đồ {self.get_idbandohientai()} ({rong}x{cao}, "
                         f"{'8' if is_chocatgoc else '4'} hướng): {sovung} vùng, {thoigian * 1000:.0f} ms")
         return ketqua
+
+    def get_tilevungdungnhanvat(self):
+        # Vùng liên thông (lưới cả bản đồ, cho cắt góc) chỗ mình đứng chiếm bao nhiêu phần ô đi được của bản đồ, 0..1; None khi chưa đọc
+        # được. Ra khỏi phó bản Tập Kích hay bị thả vào vùng kín nhỏ (Trang Viện (224, 91) / (119, 91), 2026-11-23): tỉ lệ rất nhỏ
+        luoi, nhan, cao = self._get_nhanvunglienthong(True)
+        if not luoi:
+            return None
+        cache = getattr(self, "_demvung_cache", None)
+        if not cache or cache[0] is not nhan:
+            dem = {}
+            for v in nhan:
+                if v:
+                    dem[v] = dem.get(v, 0) + 1
+            cache = self._demvung_cache = (nhan, dem, sum(dem.values()))
+        _, dem, tong = cache
+        x, y = (round(v) for v in self.get_toado())
+        rong = len(luoi)
+        vungs = {nhan[(x + dx) * cao + y + dy] for dx in (-1, 0, 1) for dy in (-1, 0, 1)
+                 if 0 <= x + dx < rong and 0 <= y + dy < cao} - {0}
+        if not tong:
+            return None
+        if not vungs:
+            # Đứng giữa ô vật cản, ±1 ô không có ô đi được (đo luoi_324 2026-11-23: ra Tập Kích bị thả ở (119, 91) / (224, 91), ô đi được
+            # gần nhất cách 2,2 ô, đứng im không đi được) -> 0
+            return 0.
+        return max(dem[v] for v in vungs) / tong
 
     def _get_is_cungvunglienthong(self, x1, y1, x2, y2, khoangcachtoida, is_chocatgoc):
         # Từ (x1, y1) có thể tới (x2, y2) (hoặc ô cách nó không quá khoangcachtoida) trên lưới không. -> True / False / None (chưa biết)
@@ -7881,14 +8155,30 @@ class MoiTruong:
         # Đòn đánh thường do máy chủ ép (dịch ngược 2026-11-18): "kill" chỉ bật cờ ở máy chủ, đủ tầm thì máy chủ gửi gói 0x41 (xq+0xA1F04)
         # => client đẩy ô đòn đánh kiểu 0 vào hàng đợi hành động +0x100 (hàm 0x41A8B0): mã ô = loại vũ khí [+0x1180] + 6, mã hoạt ảnh
         # +0x104 = 0 (chiêu có mã riêng, Thốn Kình 20...). Theo dõi chỉ số ghi hàng đợi của nhân vật mình, thấy ô như vậy thì ghi nhận
-        # 1 đòn đánh thường lên mục tiêu "kill" gần nhất (chờ số bay: get_is_chosobaydanhthuong). Lạc Kích cũng mã 0 => ô xuất hiện
-        # trong THOIGIANBOQUAHOATANHMA0 giây sau khi xếp lệnh chiêu KYNANGHOATANHMA0s thì bỏ qua
+        # 1 đòn lên mục tiêu "kill" gần nhất: đánh thường thật (_danhthuongthat, điều kiện Phản Tỏa) hoặc ô vung dư của chiêu (cắt ngay ở
+        # action_cathoatanhkhicosobay). Lạc Kích cũng mã 0 => ô xuất hiện trong THOIGIANBOQUAHOATANHMA0 giây sau khi xếp lệnh chiêu
+        # KYNANGHOATANHMA0s thì bỏ qua. Đã bỏ chờ số bay đánh thường 24/11 (người dùng: yêu cầu chờ 18/11 là do tưởng ô vung dư là
+        # đòn đánh thường bị mất; tắt chờ thì kỹ năng ra đều hơn)
         if not self._khoatheodoidanhthuong.acquire(False):
             return
         try:
             nhanvat = self.get_diachicosothongtinnhanvat1()
             if not nhanvat:
                 return
+            # Chụp số bay mục tiêu MỖI lượt (luồng 30ms): log 342 24/11 chiêu delay 0 (Lạc Ảnh, Phản Tỏa, Đại Hải, Ba Động) => máy chủ gửi
+            # ô 42/00 CÙNG LÚC với số bay của chiêu (43/57 lần trong ±0.04s). Trước đây mốc số bay đọc lúc thấy ô nên đã chứa số bay đó,
+            # bot chờ số bay khác không bao giờ tới => chặn chiêu tới hết giờ (người dùng thấy vung tay không có sát thương)
+            diachimuctieu = self._diachimuctieukill or self.get_diachicosothongtinnhanvatmuctieudangchon()
+            sobayhientai = self._docsobaydoituong(diachimuctieu) if diachimuctieu else None
+            diachitruoc, sobaytruoc = self._sobaymuctieutruoc
+            self._sobaymuctieutruoc = (diachimuctieu, sobayhientai)
+            # Số bay tới chậm 1-2 lượt đọc sau ô (< THOIGIANSOBAYCUNGLUCO) => vẫn là ô chiêu có số bay sẵn: cắt ngay, không tính đánh thường
+            dt = self._danhthuong
+            if (dt and not dt.get("catngay") and dt.get("diachi") and dt["diachi"] == diachimuctieu
+                    and time.time() - dt["thoidiem"] < THOIGIANSOBAYCUNGLUCO and self._sobaymoi(dt["sobay"], sobayhientai)):
+                dt["kynang"] = "sobaycungluc"
+                dt["catngay"] = True
+                self._danhthuongthat = dt["danhthuongthattruoc"]
             moi = read_int(self.tientrinh, nhanvat + DC.NV_HOATANH + 4)
             td = self._hangdoidanhthuong
             if not td or td["nhanvat"] != nhanvat or not 0 <= td["ghi"] < 100 or not 0 <= moi < 100:
@@ -7907,71 +8197,80 @@ class MoiTruong:
             is_vuaguima0 = kynang in KYNANGHOATANHMA0s and thoidiemhientai - thoidiemkynang < THOIGIANBOQUAHOATANHMA0
             sodon = 0
             bienthe = None
+            odon = None
             dem = 0
             while ghi != moi and dem < 100:
                 o = read_bytes(self.tientrinh, nhanvat + 0x100 + ghi * 0x28, 5)
                 if o[0] == maodanhthuong and o[4] == 0 and not is_vuaguima0:
                     sodon += 1
                     bienthe = o[1]
+                    if odon is None:
+                        odon = ghi
                 ghi = (ghi + 1) % 100
                 dem += 1
             td["ghi"] = moi
             if not sodon:
                 return
-            diachi = self._diachimuctieukill or self.get_diachicosothongtinnhanvatmuctieudangchon()
-            if not diachi:
+            # Ô do client phát lại ngay sau khi bot cắt hoạt ảnh (THOIGIANOPHATLAISAUCAT): không phải đòn, bỏ qua
+            sauluccat = thoidiemhientai - self._thoidiemcathoatanh
+            if sauluccat < THOIGIANOPHATLAISAUCAT:
+                if IS_LOGOMA0 and IS_LOGCAULENH:
+                    self._inlog(f"[Ô MÃ 0] bỏ qua {sodon} ô phát lại sau lần cắt hoạt ảnh {sauluccat:.2f}s (chiêu gửi gần nhất {kynang} "
+                                f"cách {thoidiemhientai - thoidiemkynang:.2f}s, tư thế {self.get_idtuthenhanvat()})")
                 return
-            cu = self._danhthuong
-            if cu and not cu["is_xong"] and IS_LOGCAULENH:
-                self._inlog(f"[ĐÁNH THƯỜNG] đòn trước chưa thấy số bay sau {thoidiemhientai - cu['thoidiem']:.2f}s, chặn chiêu {cu['solanchan']} lượt")
-            self._danhthuong = {"thoidiem": thoidiemhientai, "diachi": diachi, "id": self.get_iddoituong(diachi),
-                                "sobay": self._docsobaydoituong(diachi), "is_xong": False, "solanchan": 0, "bienthe": bienthe}
+            # Người dùng 24/11: Lạc Ảnh, Phản Tỏa, Kim Trung Tráo, Trấn Cổ Thần Uy (KYNANGCATHOATANHNGAYs) vẫn để lại 1 lần vung tay dư. Log
+            # 342 15:33-15:41: ô 42/00 hiện 0.00-0.11s sau lệnh các chiêu này (lệnh spam mỗi ~0.1s); buff (3161/3162) không có số bay
+            # nên cách nhận theo số bay cùng lúc không bắt được. Ô hiện trong THOIGIANOCHIEUSAUGUI giây sau lệnh chiêu = ô của chiêu
+            is_chieucatngay = (kynang in KYNANGCATHOATANHNGAYs and thoidiemhientai - thoidiemkynang < THOIGIANOCHIEUSAUGUI)
+            diachi = diachimuctieu
+            if not diachi and not is_chieucatngay:
+                return
+            # Số bay mới tới cùng lượt với ô (so với lượt trước, cùng mục tiêu) => ô vung dư của chiêu đã gây xong sát thương: cắt ngay,
+            # không tính là đánh thường (Phản Tỏa)
+            mocsobay = sobaytruoc if diachi and diachitruoc == diachi and sobaytruoc else sobayhientai
+            sobaycungluc = self._sobaymoi(mocsobay, sobayhientai) if diachi else None
+            # Chẩn đoán (IS_LOGOMA0): 16 byte đầu ô, chiêu bot gửi gần nhất, tư thế lúc thấy ô, cách nhận ra ô chiêu
+            if IS_LOGOMA0 and IS_LOGCAULENH:
+                try:
+                    byteo = read_bytes(self.tientrinh, nhanvat + 0x100 + odon * 0x28, 16).hex(" ")
+                except Exception:
+                    byteo = "?"
+                self._inlog(f"[Ô MÃ 0] ô {odon} ({sodon} ô) byte {byteo} | chiêu gửi gần nhất {kynang} cách "
+                            f"{thoidiemhientai - thoidiemkynang:.2f}s | tư thế {self.get_idtuthenhanvat()}"
+                            f" | sau lần cắt hoạt ảnh {thoidiemhientai - self._thoidiemcathoatanh:.2f}s"
+                            f"{f' | số bay {sobaycungluc} cùng lúc => ô chiêu' if sobaycungluc else ''}"
+                            f"{f' | ô chiêu {kynang} => cắt ngay' if is_chieucatngay else ''}")
+            # "o": ô hàng đợi của đòn (action_cathoatanhkhicosobay cắt khi chỉ số đọc tới ô); "catngay": ô vung dư của chiêu;
+            # "sobay": mốc số bay từ lượt TRƯỚC khi ô tới (nhận số bay tới chậm 1-2 lượt, đầu hàm)
+            iddoituong = self.get_iddoituong(diachi) if diachi else None
+            is_ochieu = bool(sobaycungluc) or is_chieucatngay
+            self._danhthuong = {"thoidiem": thoidiemhientai, "diachi": diachi, "id": iddoituong, "o": odon, "sobay": mocsobay,
+                                "bienthe": bienthe, "kynang": "sobaycungluc" if sobaycungluc else kynang if is_chieucatngay else None,
+                                "catngay": is_ochieu, "danhthuongthattruoc": self._danhthuongthat}
+            if not is_ochieu:
+                self._danhthuongthat = (iddoituong, thoidiemhientai)
         except Exception:
             self._hangdoidanhthuong = None
         finally:
             self._khoatheodoidanhthuong.release()
 
-    def get_is_chosobaydanhthuong(self):
-        # Máy chủ vừa ép đòn đánh thường (_theodoidanhthuong) mà mục tiêu chưa hiện số bay mới: đang vung tay, chiêu chen vào lúc này
-        # làm client đặt lại hàng đợi (0x41A6E0) => đòn đánh thường mất tác dụng (người dùng báo 2026-11-18). True = chưa nên gửi chiêu.
-        # Hết chờ khi: số bay mới / mục tiêu chết, mất / quá THOIGIANCHOSOBAYDANHTHUONGTOIDA giây (trượt, né)
-        if not IS_KHONGCHENCHIEUKHIDANHTHUONG:
-            return False
-        self._theodoidanhthuong()
-        dt = self._danhthuong
-        if not dt or dt["is_xong"]:
-            return False
-        thoidiemhientai = time.time()
-        diachi = dt["diachi"]
-        lydo = None
-        if thoidiemhientai - dt["thoidiem"] > THOIGIANCHOSOBAYDANHTHUONGTOIDA:
-            lydo = "hết giờ chờ"
-        elif self.get_iddoituong(diachi) != dt["id"] or self.get_is_nhanvatdachet(diachi):
-            lydo = "mục tiêu chết / mất"
-        else:
-            sobay = self._docsobaydoituong(diachi)
-            if sobay and dt["sobay"]:
-                (giatricu, demcu), (giatri, dem) = dt["sobay"], sobay
-                for i in range(10):
-                    if giatri[i] and (giatri[i] != giatricu[i] or dem[i] < demcu[i]):
-                        lydo = f"số bay {giatri[i]}"
-                        break
-                if not lydo:
-                    dt["sobay"] = sobay
-        if lydo:
-            dt["is_xong"] = True
-            if IS_LOGCAULENH and dt["solanchan"]:
-                self._inlog(f"[ĐÁNH THƯỜNG] {lydo} sau {thoidiemhientai - dt['thoidiem']:.2f}s (biến thể {dt['bienthe']}), "
-                            f"đã chặn chiêu {dt['solanchan']} lượt")
-            return False
-        dt["solanchan"] += 1
-        return True
+    @staticmethod
+    def _sobaymoi(sobaycu, sobaymoi):
+        # Giá trị số bay mới xuất hiện giữa hai lần đọc _docsobaydoituong (ô đổi giá trị / bộ đếm chạy lại), None nếu không có
+        if not sobaycu or not sobaymoi:
+            return None
+        (giatricu, demcu), (giatri, dem) = sobaycu, sobaymoi
+        for i in range(10):
+            if giatri[i] and (giatri[i] != giatricu[i] or dem[i] < demcu[i]):
+                return giatri[i]
+        return None
 
     def get_is_vuadanhthuong(self, diachimuctieu, thoigian):
         # Máy chủ đã ép đòn đánh thường lên mục tiêu này trong chừng này giây (= cờ "kill" đang chạy thật, đã đủ tầm đánh)
-        dt = self._danhthuong
-        return bool(dt and diachimuctieu and dt["id"] == self.get_iddoituong(diachimuctieu)
-                    and time.time() - dt["thoidiem"] <= thoigian)
+        # Chỉ đòn đánh thường thật (_danhthuongthat), không tính ô vung dư của chiêu (KYNANGCATHOATANHNGAYs / số bay cùng lúc)
+        iddoituong, thoidiem = self._danhthuongthat
+        return bool(iddoituong is not None and diachimuctieu and iddoituong == self.get_iddoituong(diachimuctieu)
+                    and time.time() - thoidiem <= thoigian)
 
     def action_cathoatanhkhicosobay(self):
         # Đang tư thế xuất chiêu (6 / 9) mà mục tiêu hiện số bay mới so với lúc vào tư thế (máy chủ đã tính đòn) hoặc mục tiêu chết / mất
@@ -7983,10 +8282,47 @@ class MoiTruong:
             idtuthe = self.get_idtuthenhanvat(nhanvat)
         except Exception:
             return False
+        # Chẩn đoán 24/11 (người dùng vẫn thấy hoạt ảnh dư sau khi cắt ô chiêu delay 0): ghi lại tư thế / chỉ số đọc / ghi hàng đợi
+        # mỗi lần đổi trong 1s sau lần cắt, rồi in 1 dòng [SAU CẮT]
+        sc = self._theodoisaucat
+        if sc:
+            try:
+                trangthai = (idtuthe, read_int(self.tientrinh, nhanvat + DC.NV_HOATANH),
+                             read_int(self.tientrinh, nhanvat + DC.NV_HOATANH + 4))
+            except Exception:
+                trangthai = (idtuthe, None, None)
+            dt0 = time.time() - sc["t"]
+            if trangthai != sc["cuoi"]:
+                sc["cuoi"] = trangthai
+                sc["chuoi"].append(f"{dt0:.2f}s tư thế {trangthai[0]} đọc {trangthai[1]} ghi {trangthai[2]}")
+            if dt0 > 1.:
+                self._theodoisaucat = None
+                self._inlog(f"[SAU CẮT] {sc['loai']}: " + " -> ".join(sc["chuoi"][:12]))
         if idtuthe not in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT):
             self._cathoatanh = None
             return False
         thoidiemhientai = time.time()
+        # Người dùng 24/11: ô của chiêu delay 0 (máy chủ gửi kèm số bay, _theodoidanhthuong đánh dấu "sobaycungluc") thì cắt hẳn, đừng
+        # phát hoạt ảnh. Log 342 15:19-15:28: lần cắt cũ chạy đúng lúc số bay tới nên chỉ cắt hoạt ảnh TRƯỚC đó, ô chiêu xếp sau vẫn phát
+        # trọn ~0.7s không số bay (30/55 lần). Nay khi chỉ số đọc hàng đợi tới ô đó (đang phát) thì ghi tư thế 11 ngay; số bay đã có nên
+        # không phạm "không cắt trước số bay" (lệch toạ độ)
+        dt = self._danhthuong
+        if (dt and dt.get("catngay") and not dt.get("dacat") and dt.get("o") is not None
+                and thoidiemhientai - dt["thoidiem"] < THOIGIANCATOCHIEUDELAY0TOIDA):
+            try:
+                doc = read_int(self.tientrinh, nhanvat + DC.NV_HOATANH)
+                if doc is not None and (doc - dt["o"]) % 100 <= 1:
+                    self._thoidiemcathoatanh = time.time()
+                    write_int(self.tientrinh, nhanvat + DC.NV_TUTHE, TUTHENHANVAT_DELAYSAUTANCONG)
+                    dt["dacat"] = True
+                    self._cathoatanh = None
+                    self._inlog(f"[CẮT HOẠT ẢNH] ô chiêu {dt.get('kynang')} sau {thoidiemhientai - dt['thoidiem']:.2f}s "
+                                f"tư thế {idtuthe} => tư thế 11 | ô {dt['o']} đọc {doc}")
+                    if IS_LOGOMA0:
+                        self._theodoisaucat = {"t": self._thoidiemcathoatanh, "cuoi": None, "chuoi": [], "loai": "ô chiêu delay 0"}
+                    return True
+            except Exception:
+                pass
         cat = self._cathoatanh
         if not cat or cat["nhanvat"] != nhanvat:
             # Mục tiêu: mục tiêu chiêu bot gửi gần nhất, không có thì mục tiêu đang chọn (đánh thường / bấm tay)
@@ -8014,14 +8350,37 @@ class MoiTruong:
                     cat["sobay"] = sobay
         if not lydo:
             return False
+        # 24/11: dò ô mới TRƯỚC khi cắt. Trước đây cùng vòng 30ms cắt trước rồi mới dò (get_is_dangxuatchieu) => ô tới cùng lúc số bay
+        # (đòn kế của máy chủ) cũng bị tính là "0.00s sau cắt" và bỏ qua nhầm là ô phát lại. Ghi kèm hàng đợi lúc cắt (chỉ số đọc
+        # +NV_HOATANH, ghi +4, các ô còn chờ) để biết cắt khi còn ô đòn chờ có phải nguyên nhân client vung thêm không
+        self._theodoidanhthuong()
+        hangdoi = ""
+        if IS_LOGOMA0:
+            try:
+                doc = read_int(self.tientrinh, nhanvat + DC.NV_HOATANH)
+                ghi = read_int(self.tientrinh, nhanvat + DC.NV_HOATANH + 4)
+                cho = []
+                if 0 <= doc < 100 and 0 <= ghi < 100:
+                    i = doc
+                    while i != ghi and len(cho) < 6:
+                        o = read_bytes(self.tientrinh, nhanvat + 0x100 + i * 0x28, 5)
+                        cho.append(f"{i}:{o[0]:02x}/{o[4]:02x}")
+                        i = (i + 1) % 100
+                hangdoi = f" | hàng đợi đọc {doc} ghi {ghi} ô [{' '.join(cho)}]"
+            except Exception:
+                hangdoi = " | hàng đợi ?"
         try:
             # Không đụng hàng đợi hoạt ảnh +0x100 (người dùng 2026-11-17: bỏ phần bỏ ô đòn đầu hàng; log 347 cho thấy nó chưa từng bỏ được
             # ô nào). Chỉ ghi tư thế khựng sau tấn công 11 (người dùng chốt 2026-11-15), không ghi thẳng đứng im: LoopBoKhungSauTanCong
-            # tự đổi 11 -> 1 sau THOIGIANCHOBOKHUNGSAUTANCONG giây
+            # tự đổi 11 -> 1 sau THOIGIANCHOBOKHUNGSAUTANCONG giây. Ghi mốc cắt TRƯỚC khi ghi tư thế: luồng nhanh có thể thấy ô phát lại
+            # (THOIGIANOPHATLAISAUCAT) ngay sau lệnh ghi
+            self._thoidiemcathoatanh = time.time()
             write_int(self.tientrinh, nhanvat + DC.NV_TUTHE, TUTHENHANVAT_DELAYSAUTANCONG)
         except Exception:
             return False
-        self._inlog(f"[CẮT HOẠT ẢNH] {lydo} sau {thoidiemhientai - cat['batdau']:.2f}s tư thế {idtuthe} => tư thế 11")
+        self._inlog(f"[CẮT HOẠT ẢNH] {lydo} sau {thoidiemhientai - cat['batdau']:.2f}s tư thế {idtuthe} => tư thế 11{hangdoi}")
+        if IS_LOGOMA0 and not self._theodoisaucat:
+            self._theodoisaucat = {"t": self._thoidiemcathoatanh, "cuoi": None, "chuoi": [], "loai": f"cắt thường ({lydo})"}
         self._cathoatanh = None
         return True
 
