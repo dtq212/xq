@@ -159,6 +159,7 @@ class CuaSo:
         self.moitruong.action_thietlaphookvehieuungdat()
         self.moitruong.action_thietlaphookvetilenen()
         self.moitruong.action_thietlaphookvecuaso()
+        self.moitruong.action_thietlaphookchuotcuasodanhsach()
         self.moitruong.action_thietlaphookanhiencuaso()
         self.moitruong.action_thietlaphookthongbao()
         self.moitruong.action_thietlaphookverle()
@@ -425,6 +426,7 @@ class CuaSo:
                     "_is_muctieutheoduongdi": self.tactu._is_muctieutheoduongdi,
                     "_is_uutiencumquai": self.tactu._is_uutiencumquai,
                     "_is_chiamuctieubotkhac": self.tactu._is_chiamuctieubotkhac,
+                    "_is_pkbodanhsachten": self.tactu._is_pkbodanhsachten,
                     "_chedohienthongtinmuctieugame": self.tactu._chedohienthongtinmuctieugame,
                     "_mauhienthongtinmuctieugame": self.tactu._mauhienthongtinmuctieugame,
                     "_is_hienhanhdongtrendau": self.tactu._is_hienhanhdongtrendau,
@@ -516,6 +518,10 @@ class CuaSo:
                     "_is_dangtinhanh": self.tactu.get_is_dangtinhanh(),
                     "_tinhanh_bandos": list(self.tactu._tinhanh_bandos),
                     "_is_tinhanhthaplencao": self.tactu._is_tinhanhthaplencao,
+                    # Đào khoáng theo bản đồ (tactu_daokhoang_xq): trạng thái, danh sách id bản đồ chọn cho giao diện
+                    "_trangthaidaokhoang": self.tactu.get_trangthaidaokhoang(),
+                    "_is_dangdaokhoang": self.tactu.get_is_dangdaokhoang(),
+                    "_daokhoang_bandos": list(self.tactu._daokhoang_bandos),
                     # Nhiệm vụ Danh Vọng (tactu_danhvong_xq): trạng thái cho giao diện
                     "_trangthaidanhvong": self.tactu.get_trangthaidanhvong(),
                     "_is_dangdanhvong": self.tactu.get_is_dangdanhvong(),
@@ -788,6 +794,14 @@ class CuaSo:
                     self.tactu.thietlap_bandotinhanh(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_tinhanh_thaplencao:"):
                     self.tactu.thietlap_tinhanhthaplencao(cmd.split(":", 1)[1] == "1")
+                elif isinstance(cmd, str) and cmd.startswith("daokhoang:"):
+                    # Đào khoáng theo bản đồ (tactu_daokhoang_xq): "daokhoang:<id bản đồ cách dấu phẩy>" lưu bản đồ chọn rồi bắt đầu
+                    self.tactu.thietlap_bandodaokhoang(cmd.split(":", 1)[1])
+                    self.tactu.batdau_daokhoang()
+                elif cmd == "huydaokhoang":
+                    self.tactu.huy_daokhoang()
+                elif isinstance(cmd, str) and cmd.startswith("set_daokhoang_bando:"):
+                    self.tactu.thietlap_bandodaokhoang(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_matac_bando:"):
                     self.tactu.thietlap_bandomatac(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_matac_tubat:"):

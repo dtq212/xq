@@ -75,6 +75,7 @@ MUCTIEU = [
     ("HOOK_VECUASO", 0x4B2AE, "ma", "vòng vẽ cửa sổ giao diện: sau call vẽ cửa sổ, mov eax,[esi]; cmp [eax+0x1C],edi (5 byte), esi = ô mảng cửa sổ"),
     ("HOOK_DAUVONGVECUASO", 0x4B22E, "ma", "đầu vòng vẽ cửa sổ (luồng chính, mỗi khung hình): mov eax,[ebp+0xADFD40] (6 byte, số cửa sổ), chưa duyệt mảng"),
     ("HOOK_KIEMTRACUASO", 0x4B255, "ma", "vòng vẽ cửa sổ: sau call vtable[0] của ô [esi], test al,al; je cuối thân vòng (8 byte)"),
+    ("HOOK_CHUOTCUASODANHSACH", 0x428EB, "ma", "xử lý chuột cửa sổ danh sách TG+0xAECDD0: mov ecx,[ebp+0xAECDD0]; test ecx,ecx; je (14 byte), đối tượng con +0xAECDD8/+0xAECDDC dùng không kiểm"),
     ("DSHIEUUNGDAT", 0x376CA4, "bien", "đầu danh sách hiệu ứng mặt đất (trận pháp...), nút 0x2C byte, kế tiếp +0x28"),
     ("MAHIEUUNGDAT", 0x376A48, "bien", "bộ đệm 100 mã hiệu ứng (perform/<mã>) đã nạp sprite, ô i ứng với BANGSPRITEHIEUUNG[i + 1]"),
     ("BANGSPRITEHIEUUNG", 0x1BE614, "bien", "bảng con trỏ sprite hiệu ứng theo chỉ số (chỉ số = ô bộ đệm + 1)"),

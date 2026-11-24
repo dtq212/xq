@@ -13,15 +13,14 @@
         "Công thức Ma Tuyến",
         "Khu Thần Lệnh",
         "Chiến Quốc Lệnh",
-        "Linh Tê Hoàn",
         "Hà Thủ Ô",
         "Điền Thất"
       ],
       "tenchua": [],
       "loai": [],
       "mota": [],
-      "nhanvat": [],
       "mau": [],
+      "nhanvat": [],
       "khi": []
     },
     {
@@ -304,7 +303,8 @@
         "Chưa Giám Định & cấp 70",
         "Chưa Giám Định & cấp 80",
         "Chưa Giám Định & cấp 90",
-        "Chưa Giám Định & cấp 100"
+        "Chưa Giám Định & cấp 100",
+        "Chưa Giám Định & cấp 110"
       ],
       "mau": [
         "Lam Kim"
@@ -1222,6 +1222,29 @@
       "khongphobanrieng": false,
       "nhanvat": [],
       "ghichu": "Đọc nhập môn cho Gạ"
+    },
+    {
+      "bat": true,
+      "vatpham": [
+        "Nhập Môn Cơ Bản Kiếm Pháp",
+        "Nhập Môn Tụng Kinh",
+        "Nhập Môn Kiện Thân"
+      ],
+      "sinhluc": 0,
+      "matsinhluc": 0,
+      "noiluc": 0,
+      "matnoiluc": 0,
+      "theluc": -1,
+      "giancach": 30.0,
+      "hieuung": [],
+      "noi": [],
+      "monphai": [],
+      "chikhidanh": false,
+      "khongphobanrieng": false,
+      "nhanvat": [
+        "Lầy"
+      ],
+      "ghichu": ""
     }
   ]
 }

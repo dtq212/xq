@@ -47,6 +47,10 @@ THOIGIANCHOMANGLOI = 30.
 # vẫn không vào được thì thôi giữ chỗ, xử lý như client không đăng nhập (đóng, mở game mới)
 SOLANDANGNHAPLAICUASODIS = 2
 
+# Nhờ máy ảo qua LAN đăng nhập tạm để đè nhân vật treo (dedis_xq). Tắt tạm 2026-11-22: ADMIN đã mở giới hạn 7 client nên không cần,
+# đăng nhập lại / diệt treo như thường. Bật lại thì đặt True (cả máy chính lẫn máy ảo)
+IS_DANGNHAPDEQUALAN = False
+
 # Số client tối đa cùng lúc. Lúc mở, xq.exe đếm mọi tiến trình tên đúng "xq.exe" (so từng byte, cả bản khác như Niết Bàn, cùng mã),
 # quá 4 thì báo "You can not run more client program!" và treo cả quy trình đăng nhập. Niết Bàn được DLL của nó nâng lên 7, Aegis vẫn 4:
 # client bot mở được vá lên số này (mogame), client mở tay qua play.exe vẫn bị giới hạn 4. Đổi file exe Aegis thành "XQ.exe" thì không
@@ -1148,7 +1152,9 @@ class _DangNhapBangHam:
         nhanvats = self._chodanhsachnhanvat()
         print("   -> [Hàm] Các ô nhân vật: " + (", ".join(f"ô {o + 1}: {ten} (ID {idnv}, cấp {cap})" for o, idnv, ten, cap in nhanvats) or "trống"))
         ketqua["caps"] = {idnv: cap for _, idnv, _, cap in nhanvats}
-        chons = [(cap, o, idnv, ten) for o, idnv, ten, cap in nhanvats if cap < capketthuc and idnv not in daxongs]
+        # captoithieu > 0 (ô "Chỉ acc từ cấp" của Kéo gà A-Z, người dùng dặn 2026-11-23): chỉ nhận nhân vật cấp >= mốc, không tạo mới
+        captoithieu = int(taoga.get("captoithieu") or 0)
+        chons = [(cap, o, idnv, ten) for o, idnv, ten, cap in nhanvats if captoithieu <= cap < capketthuc and idnv not in daxongs]
         # Vào lại acc gà đang trong lượt (bị dis) thì đúng nhân vật đó, kể cả đã tới cấp kết thúc (acc chính còn chờ nó trả đồ Lam Kim / Trảo).
         # Trước đây lọc cấp trước: gacon4160 (572) cấp 47 dis lúc thu hồi, vào lại thì tạo nhân vật mới 576, Trảo kẹt ở 572 (2026-11-08)
         cu = next(((cap, o, idnv, ten) for o, idnv, ten, cap in nhanvats if idnv == taoga.get("idchon")), None)
@@ -1158,6 +1164,10 @@ class _DangNhapBangHam:
             cap, o, idnv, ten = next((c for c in chons if c[2] == taoga.get("idchon")), max(chons))
             print(f"   -> [Hàm] Kéo gà: chọn nhân vật cấp {cap} < {capketthuc}: {ten} (ID {idnv})")
             ketqua.update(id = idnv, ten = ten, cap = cap, tao = False)
+        elif captoithieu:
+            print(f"   -> [Hàm] Kéo gà: không có nhân vật cấp {captoithieu}-{capketthuc - 1}, bỏ qua tài khoản (chỉ kéo acc từ cấp {captoithieu})")
+            ketqua["duoicap"] = True
+            return False
         elif len(nhanvats) < SOONHANVAT:
             moi = self.taonhanvat(taoga.get("tiento"), int(taoga.get("gioitinh") or 0))
             if not moi:
@@ -1874,7 +1884,7 @@ class TuDongDangNhap:
             # nhờ máy ảo đăng nhập tạm acc này để đè lên nhân vật treo, rồi đăng nhập lại ở đây đè lên máy ảo (dedis_xq, giữ chỗ, không ai
             # bị out). Không có máy ảo / không đè được thì diệt nhân vật treo bằng cổng cũ (diettreo_xq). Thử nghiệm 2026-11-10
             lan = self._solandangnhaplaicuaso.get(hwnd_dis, 0) if hwnd_dis else 0
-            if hwnd_dis and lan >= 2 and dedis_xq.is_codedis() and self._dangnhapde(taikhoan, hwnd_dis, ten):
+            if IS_DANGNHAPDEQUALAN and hwnd_dis and lan >= 2 and dedis_xq.is_codedis() and self._dangnhapde(taikhoan, hwnd_dis, ten):
                 return
             if not (hwnd_dis and lan <= 1):
                 diettreo_xq.diettreo(taikhoan.get("idnguoichoi"))

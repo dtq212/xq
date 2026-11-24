@@ -412,7 +412,6 @@ class LoopPhu:
         # Túi Càn Khôn hết hạn: chuyển đồ về túi còn hạn còn ô trống, phần dư về cất kho (tactu_catkho_xq)
         self.tactu.action_dontuihethan()
         self.tactu.action_sapxepkho()
-        self.tactu.action_tudongdatvatphammoi()
         self.tactu.action_tudongtodoi()
         self.tactu.action_tudongdoimaupk()
         self.tactu.action_tudonghoibangphai()
@@ -438,10 +437,11 @@ class LoopPhu:
 
         self._thongbaochet()
 
-        # Alt hiện tên đồ dưới đất. Ở ô túi game in nguyên tên đè lên hình, rất khó nhìn => hook thay tên bằng dấu màu phẩm chất
-        # (action_thietlaphookdaumautui) rồi bật Alt luôn, chỉ tắt khi mở bản đồ lớn (chữ đè lên bản đồ). Hook lỗi thì như cũ:
-        # mở hành trang thì không bật Alt.
+        # Alt hiện tên đồ dưới đất. Ở ô túi game in nguyên tên đè lên hình, rất khó nhìn => hook thay tên bằng nhãn cấp / độ bền tô
+        # màu phẩm chất (action_thietlaphookdaumautui, nhãn ghi ở action_capnhatnhanotui) rồi bật Alt luôn, chỉ tắt khi mở bản đồ lớn
+        # (chữ đè lên bản đồ). Hook lỗi thì như cũ: mở hành trang thì không bật Alt.
         if self.moitruong.action_thietlaphookdaumautui():
+            self.moitruong.action_capnhatnhanotui()
             # Nhả phím Alt không còn tắt cờ (không bị ẩn chốc lát tới vòng lặp sau)
             self.moitruong.action_giualtkhinhaphim()
             self.moitruong.set_is_batalt(not self.moitruong.get_is_dangmobando())

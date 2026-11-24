@@ -319,6 +319,8 @@ class TacTuSuMon:
                 if diachi and self._demnpcquanh(KHOANGCACHNPCCUAHANGDUYNHAT) == 1:
                     self._sovitri.ghicuahang(idbando, (moitruong.get_tendoituong(diachi), moitruong.get_danhhieudoituong(diachi)), cuahang["hang"])
         self._sovitri.luu()
+        # Quặng / dược thấy ở bản đồ này (hộp chọn bản đồ Đào khoáng; hầm / động file game không ghi)
+        self._ghitainguyendagap(idbando)
         if capquais and ghicapquaibando(idbando, min(capquais), max(capquais)):
             moitruong._inlog(f"[CẤP QUÁI] {laytenbando(idbando) or idbando}: ghi cấp quái {laycapquaibando(idbando)}")
 

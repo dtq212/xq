@@ -277,6 +277,165 @@ CAPQUAI_MAP = {
     528: (50, 64), 529: (50, 64), 530: (50, 64), 531: (105, 114), 532: (105, 114), 549: (55, 65),
 }
 
+# id bản đồ -> ((dược liệu, ...), (quặng, ...)) lấy từ mục "Dược liệu" / "Quặng" của map/tips/%03d.txt (như CAPQUAI_MAP; ô "－－－" =
+# không có). Hộp chọn bản đồ Đào khoáng hiện và lọc theo bảng này. Sinh 2026-11-23 từ bản Aegis; phó bản / bản đồ tips trống không có
+TAINGUYENBANDO_MAP = {
+    11: (('Xuyên Tâm Liên', 'Hoàng Liên', 'Dương Kim Hoa'), ()),
+    12: (('Xuyên Tâm Liên', 'Hoàng Liên', 'Dương Kim Hoa', 'Trần Bì', 'Táo Đỏ', 'Sinh Địa', 'Cát Cánh'), ()),
+    13: (('Xuyên Tâm Liên', 'Hoàng Liên', 'Dương Kim Hoa', 'Trần Bì', 'Táo Đỏ', 'Sinh Địa', 'Cát Cánh', 'Sơn Sâm'), ()),
+    14: (('La Hán Quả', 'Xuyên Tâm Liên', 'Hoàng Liên', 'Dương Kim Hoa', 'Trần Bì', 'Táo Đỏ', 'Sinh Địa', 'Cát Cánh', 'Sơn Sâm'), ('Thiết Khoáng', 'Quặng sắt tinh chất', 'Quặng vàng', 'Quặng bạc')),
+    15: (('La Hán Quả', 'Xuyên Tâm Liên', 'Hoàng Liên', 'Dương Kim Hoa', 'Trần Bì', 'Táo Đỏ', 'Sinh Địa', 'Cát Cánh', 'Sơn Sâm'), ('Tinh Thiết Khoáng', 'Kim Khoáng', 'Quặng bạc')),
+    21: (('Rễ cây Bản Lam', 'Kim Ngân Hoa'), ('Đồng Khoáng',)),
+    31: (('Cát Cánh', 'Sơn Sâm', 'Cam Thảo'), ()),
+    32: (('Cát Cánh', 'Sơn Sâm', 'Cam Thảo'), ()),
+    33: (('Cát Cánh', 'Sơn Sâm', 'Cam Thảo'), ()),
+    42: (('Rễ cây Bản Lam', 'Kim Ngân Hoa', 'Quả Anh Túc', 'Điền Thất', 'Cúc Dại'), ('Đồng Khoáng', 'Tích Khoáng')),
+    43: (('Rễ cây Bản Lam', 'Kim Ngân Hoa', 'Quả Anh Túc', 'Điền Thất', 'Cúc Dại'), ('Đồng Khoáng', 'Tích Khoáng')),
+    51: (('Sinh Địa', 'Cát Cánh', 'Sơn Sâm', 'Cam Thảo', 'Bạch Kỳ'), ()),
+    52: (('Sinh Địa', 'Cát Cánh', 'Sơn Sâm', 'Cam Thảo', 'Bạch Kỳ'), ()),
+    53: (('Sinh Địa', 'Cát Cánh', 'Sơn Sâm', 'Cam Thảo', 'Bạch Kỳ'), ()),
+    61: (('Rễ cây Bản Lam', 'Kim Ngân Hoa', 'Quả Anh Túc'), ()),
+    62: (('Rễ cây Bản Lam', 'Kim Ngân Hoa', 'Quả Anh Túc'), ()),
+    63: (('Rễ cây Bản Lam', 'Kim Ngân Hoa', 'Quả Anh Túc'), ()),
+    71: (('Trần Bì', 'Táo Đỏ', 'Sinh Địa'), ()),
+    72: (('Trần Bì', 'Táo Đỏ', 'Sinh Địa'), ()),
+    73: (('Trần Bì', 'Táo Đỏ', 'Sinh Địa'), ()),
+    81: (('Rễ cây Bản Lam', 'Kim Ngân Hoa', 'Quả Túc Anh', 'Điền Thất', 'Cúc dại'), ('Đồng Khoáng', 'Tích Khoáng')),
+    82: (('Rễ Cây Bản Lam', 'Kim Ngân Hoa', 'Quả Anh Túc', 'Điền Thất', 'Cúc dại'), ('Đồng Khoáng', 'Tích Khoáng')),
+    111: (('Hoàng Kỳ', 'Hà Thủ Ô', 'La Hán Quả', 'Xuyên Tâm Liên', 'Hoàng Liên', 'Dương Kim Hoa'), ('Thiết Khoáng', 'Ngân Khoáng')),
+    112: (('Hoàng Kỳ', 'Hà Thủ Ô', 'La Hán Quả', 'Xuyên Tâm Liên', 'Hoàng Liên', 'Dương Kim Hoa'), ('Thiết Khoáng', 'Ngân Khoáng')),
+    131: (('Hòang kỳ', 'Hà thủ Ô', 'Quả Anh Túc', 'Điền thất', 'Cúc dại'), ('Tích Khoáng', 'Thiết Khoáng', 'Ngân Khoáng')),
+    132: (('Quả Anh Túc', 'Cúc dại', 'Hòang kỳ', 'Hà thủ ô'), ('Tích Khoáng', 'Thiết Khoáng', 'Ngân Khoáng')),
+    141: (('Rễ Cây Bản Lam', 'Kim ngân hoa', 'Quả Anh Túc', 'Điền thất', 'Cúc Dại'), ('Mỏ đồng', 'Mỏ thiếc')),
+    142: (('Quả Anh Túc', 'Điền thất', 'Cúc dại', 'Hòang kỳ'), ('Tích Khoáng',)),
+    151: (('Xuyên Tâm Liên', 'Trần Bì', 'Táo Đỏ', 'Hoàng Liên'), ()),
+    152: (('Xuyên Tâm Liên', 'Trần Bì', 'Táo Đỏ', 'Hoàng Liên'), ()),
+    153: (('Xuyên Tâm Liên', 'Trần Bì', 'Táo Đỏ', 'Hoàng Liên'), ()),
+    155: ((), ('Thiết Khoáng', 'Ngân Khoáng')),
+    171: (('Trần Bì', 'Táo Đỏ', 'Linh Chi thảo', 'Sinh Địa', 'Cát Cánh', 'Sơn Sâm', 'Cam Thảo'), ('Tinh Thiết Khoáng', 'Kim Khoáng', 'Ngân Khoáng')),
+    172: (('Trần Bì', 'Táo Đỏ', 'Linh Chi Thảo', 'Sinh Địa', 'Cát Cánh', 'Sơn Sâm', 'Cam Thảo'), ('Tinh Thiết Khoáng', 'Kim Khoáng', 'Ngân Khoáng')),
+    173: (('Trần Bì', 'Táo Đỏ', 'Linh Chi Thảo', 'Sinh Địa', 'Cát Cánh', 'Sơn sâm', 'Cam Thảo'), ('Tinh Thiết Khoáng', 'Mỏ vàng', 'Mỏ bạc')),
+    174: (('Trần Bì', 'Táo Đỏ', 'Linh Chi Thảo', 'Sinh Địa', 'Cát Cánh', 'Sơn sâm', 'Cam Thảo'), ('Tinh Thiết Khoáng', 'Kim Khoáng', 'Ngân Khoáng')),
+    181: (('Quả Anh Túc', 'Điền Thất', 'Cúc Dại'), ('Tích Khoáng',)),
+    182: (('Quả Anh Túc', 'Điền Thất', 'Cúc Dại'), ('Tích Khoáng',)),
+    211: (('Rễ Cây Bản Lam', 'Kim Ngân Hoa', 'Quả Anh Túc', 'Điền Thất', 'Cúc Dại'), ('Đồng Khoáng', 'Tích Khoáng')),
+    231: (('Quả Anh Túc', 'Điền Thất', 'Cúc Dại', 'Hoàng Kỳ', 'Hà Thủ Ô', 'La Hán Quả'), ()),
+    241: (('Anh Túc Quả', 'Điền Thất', 'Cúc Dại'), ('Tích Khoáng',)),
+    242: (('Anh Túc Quả', 'Điền Thất', 'Cúc Dại', 'Hà Thủ Ô'), ('Tích Khoáng', 'Thiết Khoáng', 'Ngân Khoáng')),
+    243: (('Quả Anh Túc', 'Điền Thất', 'Cúc Dại'), ('Tích Khoáng',)),
+    251: (('Rễ Cây Bản Lam', 'Kim Ngân Hoa', 'Quả Anh Túc', 'Điền Thất', 'Cúc Dại'), ('Đồng Khoáng', 'Tích Khoáng')),
+    261: (('Hòang Kỳ', 'Hà Thủ Ô', 'La Hán Quả', 'Xuyên Tâm Liên', 'Hoàng Liên', 'Dương Kim Hoa'), ('Thiết Khoáng', 'Tích Khoáng')),
+    262: (('Hòang Kỳ', 'Hà Thủ Ô', 'La Hán Quả', 'Xuyên Tâm Liên', 'Hoàng Liên', 'Dương Kim Hoa'), ('Thiết Khoáng', 'Ngân Khoáng')),
+    263: (('Hòang Kỳ', 'Hà Thủ Ô', 'La Hán Quả', 'Xuyên Tâm Liên', 'Hòang Liên', 'Dương Kim Hoa'), ('Thiết Khoáng', 'Ngân Khoáng')),
+    265: (('Hòang Kỳ', 'Hà Thủ Ô', 'La Hán Quả', 'Xuyên Tâm Liên', 'Hoàng Liên', 'Dương Kim Hoa'), ('Tích Khoáng', 'Ngân Khoáng')),
+    266: (('Hòang Kỳ', 'Hà Thủ Ô', 'La Hán Quả', 'Xuyên Tâm Liên', 'Hoàng Liên', 'Dương Kim Hoa'), ('Thiết Khoáng', 'Tích Khoáng')),
+    271: (('Xuyên Tâm Liên', 'Hoàng Kỳ', 'Hà Thủ Ô', 'Quả Anh Túc', 'Điền Thất', 'Cúc Dại'), ('Tích Khoáng', 'Thiết Khoáng', 'Ngân Khoáng')),
+    272: (('Xuyên Tâm Liên', 'Hoàng Kỳ', 'Hà Thủ Ô', 'Quả Anh Túc', 'Điền Thất', 'Cúc Dại'), ('Tích Khoáng', 'Thiết Khoáng', 'Ngân Khoáng')),
+    281: (('Rễ Cây Bản Lam', 'Kim Ngân Hoa'), ('Mỏ đồng',)),
+    282: (('Rễ Cây Bản Lam', 'Kim Ngân Hoa'), ('Đồng Khoáng',)),
+    283: (('Rễ Cây Bản Lam', 'Kim Ngân Hoa'), ('Đồng Khoáng',)),
+    284: (('Rễ Cây Bản Lam', 'Kim Ngân Hoa'), ('Đồng Khoáng',)),
+    501: (('Trần Bì', 'Táo Đỏ'), ('Huyền Thiết Khoáng', 'Ngân Khoáng')),
+    502: (('Trần Bì\ue342', 'Táo Đỏ'), ('Huyền Thiết Khoáng', 'Ngân Khoáng')),
+    503: (('Trần Bì\ue342', 'Táo Đỏ'), ('Huyền Thiết Khoáng', 'Ngân Khoáng')),
+    504: (('Bạch Kỳ', 'Đương Quy', 'Xuyên Bối', 'Đông Trùng Thảo'), ('Tinh Thiết Khoáng', 'Thiết Khoáng', 'Kim Khoáng')),
+    505: (('Bạch Kỳ\ue342', 'Đương Quy', 'Xuyên Bối', 'Đông Trùng Thảo'), ('Tinh Thiết Khoáng', 'Thiết Khoáng', 'Kim Khoáng')),
+    506: (('Bạch Kỳ', 'Đương Quy', 'Xuyên Bối', 'Đông Trùng Thảo'), ('Tinh Thiết Khoáng', 'Kim Khoáng')),
+    507: (('Bạch Kỳ', 'Đương Quy', 'Xuyên Bối', 'Đông Trùng Thảo'), ('Tinh Thiết Khoáng', 'Kim Khoáng')),
+    508: (('Bạch Kỳ', 'Đương Quy', 'Xuyên Bối', 'Đông Trùng Thảo'), ('Tinh Thiết Khoáng', 'Kim Khoáng')),
+    509: (('Bạch Kỳ', 'Đương Quy', 'Xuyên Bối', 'Đông Trùng Thảo'), ('Tinh Thiết Khoáng', 'Kim Khoáng')),
+    510: (('Linh Chi Thảo', 'Sinh Địa', 'Cát Cánh', 'Sơn sâm', 'Cam Thảo', 'Bạch Kỳ'), ('Huyền Thiết Khoáng', 'Ngân Khoáng')),
+    511: (('Linh Chi Thảo', 'Sinh Địa', 'Cát Cánh', 'Sơn sâm', 'Cam Thảo', 'Bạch Kỳ'), ('Huyền Thiết Khoáng', 'Ngân Khoáng')),
+    512: (('Trần Bì', 'Táo Đỏ', 'Linh Chi Thảo', 'Sinh Địa', 'Cát Cánh', 'Sơn Sâm'), ('Huyền Thiết Khoáng', 'Ngân Khoáng')),
+    513: (('Trần Bì', 'Táo Đỏ', 'Linh Chi Thảo', 'Sinh Địa', 'Cát Cánh', 'Sơn Sâm'), ('Huyền Thiết Khoáng', 'Ngân Khoáng')),
+    514: (('Cam Thảo', 'Bạch Kỳ', 'Đương Quy'), ('Huyền Thiết Khoáng', 'Ngân Khoáng')),
+    515: (('Cam Thảo', 'Bạch Kỳ', 'Đương Quy'), ('Huyền Thiết Khoáng', 'Ngân Khoáng')),
+    516: (('Sơn Sâm', 'Cam Thảo', 'Đương Quy', 'Bạch Kỳ'), ('Huyền Thiết Khoáng', 'Ngân Khoáng')),
+    517: (('Sơn Sâm', 'Cam Thảo', 'Đương Quy', 'Bạch Kỳ'), ('Huyền Thiết Khoáng', 'Ngân Khoáng')),
+    518: (('Đông Trùng Thảo', 'Xuyên Bối'), ('Tinh Thiết Khoáng', 'Kim Khoáng')),
+    519: (('Đông Trùng Thảo', 'Xuyên Bối'), ('Tinh Thiết Khoáng', 'Kim Khoáng')),
+    520: (('Xuyên Bối', 'Đông Trùng Thảo'), ('Tinh Thiết Khoáng', 'Kim Khoáng')),
+    521: (('Xuyên Bối', 'Đông Trùng Thảo'), ('Tinh Thiết Khoáng', 'Kim Khoáng')),
+    522: (('Xuyên Bối', 'Đông Trùng Thảo'), ('Tinh Thiết Khoáng', 'Kim Khoáng')),
+    523: (('Xuyên Bối', 'Đông Trùng Thảo'), ('Tinh Thiết Khoáng', 'Kim Khoáng')),
+    524: (('Sinh Địa', 'Cát Cánh', 'Sơn sâm', 'Cam Thảo', 'Bạch Kỳ'), ('Huyền Thiết Khoáng', 'Ngân Khoáng')),
+    525: (('Sinh Địa', 'Sơn Sâm', 'Cam Thảo', 'Bạch Kỳ', 'Đương Quy'), ('Huyền Thiết Khoáng', 'Ngân Khoáng')),
+    526: (('Sinh Địa', 'Sơn Sâm', 'Cam Thảo', 'Bạch Kỳ', 'Đương Quy'), ('Huyền Thiết Khoáng', 'Ngân Khoáng')),
+    527: (('Sinh Địa', 'Sơn Sâm', 'Cam Thảo', 'Bạch Kỳ', 'Đương Quy'), ('Huyền Thiết Khoáng', 'Ngân Khoáng')),
+    528: (('Linh Chi Thảo', 'Trần Bì', 'Táo Đỏ', 'Cát Cánh', 'Sơn Sâm'), ('Huyền Thiết Khoáng', 'Ngân Khoáng')),
+    529: (('Linh Chi Thảo', 'Trần Bì', 'Táo Đỏ', 'Cát Cánh', 'Sơn Sâm'), ('Huyền Thiết Khoáng', 'Ngân Khoáng')),
+    530: (('Linh Chi Thảo', 'Trần Bì', 'Táo Đỏ', 'Cát Cánh', 'Sơn Sâm'), ('Huyền Thiết Khoáng', 'Ngân Khoáng')),
+    531: (('Xuyên Bối', 'Đông Trùng Thảo'), ('Tinh Thiết Khoáng', 'Kim Khoáng')),
+    532: (('Xuyên Bối', 'Đông Trùng Thảo'), ('Tinh Thiết Khoáng', 'Kim Khoáng')),
+}
+
+
+def laytainguyenbando(idbando):
+    # -> ((dược liệu, ...), (quặng, ...)) theo mô tả bản đồ của game, gộp thêm tên bot tự thấy (ghitainguyendagap: hầm / động có tips
+    # trống), không có thì ((), ())
+    duocs, quangs = TAINGUYENBANDO_MAP.get(idbando, ((), ()))
+    dagap = _laytainguyendagap().get(idbando)
+    if not dagap:
+        return duocs, quangs
+    duocs = tuple(duocs) + tuple(t for t in dagap if not _is_tenquang(t) and t not in duocs)
+    quangs = tuple(quangs) + tuple(t for t in dagap if _is_tenquang(t) and t not in quangs)
+    return duocs, quangs
+
+
+def _is_tenquang(ten):
+    # Quặng đều có chữ "Khoáng" (hangso_xq.CHUTENKHOANG), còn lại là dược liệu
+    return "Khoáng" in ten
+
+
+# Quặng / dược bot tự thấy trong danh sách đối tượng khi đi qua bản đồ (mọi việc, không chỉ Đào khoáng; TacTu._ghitainguyendagap),
+# mọi nhân vật / tiến trình ghi chung 1 file: {id bản đồ: [tên, ...]}. Thêm 2026-11-23: hầm / động (Hầm Vạn Nhân, Cổ Mộ, Khốn Ma
+# Trận...) có map/tips trống, mà quét hết file game (help/, menu/, map/) không chỗ nào ghi quặng / dược của các bản đồ này
+_tainguyendagap = {"luc": None, "bang": {}}
+
+
+def _duongdantainguyendagap():
+    thumucgoc = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(thumucgoc, "_internal", "tainguyendagap.json")
+
+
+def _laytainguyendagap():
+    duongdan = _duongdantainguyendagap()
+    try:
+        luc = os.path.getmtime(duongdan)
+    except OSError:
+        return _tainguyendagap["bang"]
+    if luc != _tainguyendagap["luc"]:
+        try:
+            with open(duongdan, "r", encoding = "utf-8") as file:
+                _tainguyendagap["bang"] = {int(k): tuple(v) for k, v in json.load(file).items()}
+            _tainguyendagap["luc"] = luc
+        except Exception:
+            pass
+    return _tainguyendagap["bang"]
+
+
+def ghitainguyendagap(idbando, tens):
+    # Thấy quặng / dược tên tens ở bản đồ (nơi gọi đã lọc phó bản). Tên mới thì ghi file (đọc lại trước khi ghi để không đè tên tiến
+    # trình khác vừa ghi). -> các tên mới ghi
+    cu = _laytainguyendagap().get(idbando, ())
+    tenmois = sorted(set(t for t in tens if t and t not in cu))
+    if not tenmois:
+        return []
+    from tienich_xq import thaythefile
+    bang = dict(_laytainguyendagap())
+    bang[idbando] = tuple(sorted(set(bang.get(idbando, ())) | set(tenmois)))
+    duongdan = _duongdantainguyendagap()
+    try:
+        with open(duongdan + ".tmp", "w", encoding = "utf-8") as file:
+            json.dump({str(k): list(v) for k, v in sorted(bang.items())}, file, ensure_ascii = False, separators = (",", ":"))
+        thaythefile(duongdan + ".tmp", duongdan)
+    except Exception as err:
+        print(f"[TÀI NGUYÊN] Lỗi ghi {duongdan}: {err}")
+        return []
+    _tainguyendagap.update(bang = bang, luc = None)
+    return tenmois
+
+
 # Bản đồ file tips trống (hang động, trận...) nhưng bot đã gặp quái: cấp ghép từ vị trí quái đã ghi (_internal/vitridoituong) với cấp
 # trong tên quái (thongtinquai.json), 2026-11-16. Đã bỏ thành / môn phái / phó bản và quái Phong Yêu Kính ("<nước> Quốc Kính Yêu/Quỷ/Ma":
 # Phong Yêu Kính mượn ID bản đồ ngoài nên từng bị ghi lẫn vào Thiên Môn Trận, Thần Bí Động, Linh Cốc Động, Hư Lăng Động)
@@ -285,6 +444,9 @@ CAPQUAI_DAGAP_MAP = {
     313: (75, 83), 321: (72, 74), 322: (72, 74), 323: (72, 74), 331: (80, 83), 332: (80, 83), 333: (80, 83), 334: (80, 83), 335: (80, 83),
     341: (85, 88), 342: (85, 88), 343: (85, 88), 344: (85, 88), 345: (85, 88), 372: (100, 103), 373: (100, 103), 374: (100, 103),
     381: (96, 99), 383: (96, 99),
+    # Tru Tiên Trận 1/2/3: quái thường cấp 11x (người dùng 24/11 sửa lại, ghi 12x ngày 22/11 là sai). Đã thấy 110~113; Tinh Anh Tru
+    # Tiên Trận 1 là Thương Quỷ 119 (capquaibando.json ghi 391 tới 120 là gồm cả con Tinh Anh)
+    391: (110, 113), 392: (110, 113), 393: (110, 113),
 }
 
 

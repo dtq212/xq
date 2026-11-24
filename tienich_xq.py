@@ -784,6 +784,36 @@ def _duongdangiaodienkeocap():
     return os.path.join(os.path.dirname(_thumucthietlap()), "keocap.json")
 
 
+# Môn phái Tập Kích đang mở đọc từ tin hệ thống ở khung chat (MoiTruong._xulydongtapkich, người dùng dặn 2026-11-23: hệ thống báo Tập
+# Kích môn phái nào, 2 tiếng đổi 1 lần). Lưu _internal/tapkichhomnay.json {"ngay", "gio", "luc", "phai", "dong"}; quá
+# THOIGIANHIEULUCPHAITAPKICH giây từ lúc báo thì coi như chưa có
+THOIGIANHIEULUCPHAITAPKICH = 2 * 3600. + 300.
+
+
+def _duongdantapkichhomnay():
+    return os.path.join(os.path.dirname(_thumucthietlap()), "tapkichhomnay.json")
+
+
+def luuphaitapkichhomnay(phai, dong):
+    try:
+        with open(_duongdantapkichhomnay(), "w", encoding = "utf-8") as file:
+            json.dump({"ngay": time.strftime("%Y-%m-%d"), "gio": time.strftime("%H:%M:%S"), "luc": time.time(), "phai": phai, "dong": dong},
+                      file, ensure_ascii = False, indent = 1)
+    except Exception:
+        pass
+
+
+def taiphaitapkichhomnay():
+    # -> {"phai", "gio", "dong", ...} của tin báo còn hiệu lực (trong THOIGIANHIEULUCPHAITAPKICH giây), chưa có thì {}
+    try:
+        with open(_duongdantapkichhomnay(), "r", encoding = "utf-8") as file:
+            dulieu = json.load(file)
+        return dulieu if isinstance(dulieu, dict) and dulieu.get("phai") \
+            and time.time() - float(dulieu.get("luc") or 0.) < THOIGIANHIEULUCPHAITAPKICH else {}
+    except Exception:
+        return {}
+
+
 def taigiaodienkeocap():
     # Ô kéo cấp trên giao diện (Kéo tới cấp, Nhận đồ đệ, tên đồ đệ) lưu từ lần trước; không có / lỗi thì {}
     try:

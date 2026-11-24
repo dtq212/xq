@@ -190,6 +190,20 @@ class TacTuMucTieu:
             self._tenbiboqua_map[ten] = ketqua
         return ketqua
 
+    def _is_boqualoctenpk(self, is_muctieupk):
+        # Ô "Bật PK thì vẫn đánh người chơi / bảo thú PK được" (_is_pkbodanhsachten): đang bật PK ở bản đồ cho PK thì mục tiêu PK
+        # (người chơi, bảo thú triệu hồi / giang hồ) không bị danh sách Tấn công / Bỏ qua lọc. TENMUCTIEUKHONGTANCONGs vẫn lọc như cũ
+        if not is_muctieupk or not self._is_pkbodanhsachten:
+            return False
+        return self.moitruong.get_idmaupk() != MAUPK_HOABINH and self.moitruong.get_idbandohientai() not in BANDOKHONGPKs
+
+    def _is_tenbiloc(self, ten, is_muctieupk):
+        # Tên bị danh sách Tấn công (không trống mà không có tên) hoặc Bỏ qua loại
+        if self._is_boqualoctenpk(is_muctieupk):
+            return False
+        tancongs = self._laytenmuctieutancongs()
+        return bool(tancongs and ten not in tancongs) or self._is_tenbiboqua(ten)
+
     def _is_dangchomoixuathien(self, diachidoituong):
         # Như _is_doituongmoixuathien nhưng chỉ đọc, không ghi nhận lần thấy (gọi ngay sau _kiemtramuctieuhople đã ghi)
         v = self._thoidiemthaymuctieu_map.get(self.moitruong.get_iddoituong(diachidoituong))
@@ -213,15 +227,14 @@ class TacTuMucTieu:
         tendoituong = self.moitruong.get_tendoituong(diachidoituong)
         if tendoituong in TENMUCTIEUKHONGTANCONGs or self.moitruong.get_is_quairiengnguoikhac(tendoituong):
             return False
-        if self._laytenmuctieutancongs() and tendoituong not in self._laytenmuctieutancongs():
-            return False
-        if self._is_tenbiboqua(tendoituong):
-            return False
 
         is_nguoichoi = self.moitruong.get_is_nguoichoi(diachidoituong)
         is_baothukynangtrieuhoi = self.moitruong.get_is_baothukynangtrieuhoi(diachidoituong)
         is_baothugiangho = self.moitruong.get_is_baothugiangho(diachidoituong)
         is_muctieupk = is_nguoichoi or is_baothukynangtrieuhoi or is_baothugiangho
+
+        if self._is_tenbiloc(tendoituong, is_muctieupk):
+            return False
 
         if self._is_chidanhnguoichoi and not is_muctieupk:
             return False
@@ -301,12 +314,12 @@ class TacTuMucTieu:
             if thoidiemhientai < self._thoidiemhetboquamuctieuchung_map.get(iddoituong, 0.):
                 continue
             if ten in TENMUCTIEUKHONGTANCONGs or self.moitruong.get_is_quairiengnguoikhac(ten) \
-                    or (self._laytenmuctieutancongs() and ten not in self._laytenmuctieutancongs()) \
-                    or self._is_tenbiboqua(ten):
+                    or self._is_tenbiloc(ten, is_muctieupk):
                 continue
             if (self._is_chidanhnguoichoi and not is_muctieupk) or (is_muctieupk and is_hoabinh):
                 continue
-            if self._is_loctinhanh() and not is_muctieupk and not is_quaitinhanh(ten, idbandotinhanh, cap):
+            if self._is_loctinhanh() and not is_muctieupk and not is_quaitinhanh(ten, idbandotinhanh, cap) \
+                    and not self._is_tinhanhtheocapthay(idbandotinhanh, ten, cap):
                 continue
             khoangcach = math.dist(toadobanthan, (x, y))
             if khoangcach > KHOANGCACHTIMMUCTIEUCHUNGTOIDA:
@@ -632,7 +645,7 @@ class TacTuMucTieu:
         # lại đánh), tới nơi mới đánh
         if self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangphangiai() or self.get_is_dangcatkho() or self.get_is_sumondichuyen() \
                 or self.get_is_langlysondichuyen() \
-                or self.get_is_sugiadichuyen() or self.get_is_tapkichdichuyen() or self.get_is_matacdichuyen() or self.get_is_danhvongdichuyen() or self.get_is_thienxudichuyen()                 or self.get_is_keocapchuyendo() or self.get_is_tinhanhdichuyen():
+                or self.get_is_sugiadichuyen() or self.get_is_tapkichdichuyen() or self.get_is_matacdichuyen() or self.get_is_danhvongdichuyen() or self.get_is_thienxudichuyen()                 or self.get_is_keocapchuyendo() or self.get_is_tinhanhdichuyen() or self.get_is_daokhoangdichuyen():
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             return
 
@@ -1040,13 +1053,11 @@ class TacTuMucTieu:
         tendoituong = self.moitruong.get_tendoituong(diachidoituong)
         if tendoituong in TENMUCTIEUKHONGTANCONGs or self.moitruong.get_is_quairiengnguoikhac(tendoituong):
             return False
-        if self._laytenmuctieutancongs() and tendoituong not in self._laytenmuctieutancongs():
-            return False
-        if self._is_tenbiboqua(tendoituong):
-            return False
         is_nguoichoi = self.moitruong.get_is_nguoichoi(diachidoituong)
         is_baothu = self.moitruong.get_is_baothukynangtrieuhoi(diachidoituong) or self.moitruong.get_is_baothugiangho(diachidoituong)
         is_muctieupk = is_nguoichoi or is_baothu
+        if self._is_tenbiloc(tendoituong, is_muctieupk):
+            return False
 
         if self._is_chidanhnguoichoi and not is_muctieupk:
             return False
@@ -1825,10 +1836,25 @@ class TacTuMucTieu:
             self._idquaidangkeo = 0
             return
 
+        is_ngukiemsansang = False
         if is_gomhetquaithay:
             # Còn con thấy được chưa gom lần nào (idquaicankeogannhat) thì kéo tiếp, không dừng vì đủ số (tới SOQUAIGOMTOIDA)
             is_dusoluongquaigan = idquaicankeogannhat == 0
             is_quatai = soluongquaidagom >= SOQUAIGOMTOIDA
+            # Thục Sơn Kiếm: Ngự Kiếm Phi Tiên đã hồi xong (đủ nội lực, không bị khoá chiêu) và quanh mình (<= 6m) đã có đủ số quái để
+            # chiêu ra (_soluongnhieumuctieu) thì thôi kéo thêm / tụ về neo, dừng gom để ra chiêu ngay, tối đa số lần dùng chiêu
+            # (người dùng 2026-11-23). Chiêu vào hồi thì lượt gom sau kéo tiếp như cũ
+            # get_tenmonphai() chỉ trả "thucson"; Kiếm/Đao phân biệt bằng _is_thucsondao (cập nhật ở action_sudungkynangmonphaithucson)
+            if self.moitruong.get_tenmonphai() == "thucson" and not self._is_thucsondao:
+                is_ngukiemdungduoc = self._is_kynangdungduoc(VITRIKYNANG_NGUKIEMPHITIEN)
+                is_ngukiemsansang = is_ngukiemdungduoc and soluongquaigan >= max(2, self._soluongnhieumuctieu)
+                # Chẩn đoán (print không vào log): đang chạy gom thì 2s ghi 1 dòng trạng thái Ngự Kiếm / số quái quanh mình
+                if self._is_danggomquai and time.time() - self._thoidiemlogngukiemgom > 2.:
+                    self._thoidiemlogngukiemgom = time.time()
+                    self.moitruong._inlog(f"[GOM] Ngự Kiếm {'sẵn sàng' if is_ngukiemdungduoc else 'chưa dùng được'} | quái <=6m: {soluongquaigan}"
+                                          f"/{max(2, self._soluongnhieumuctieu)} | đã gom: {soluongquaidagom} | còn kéo: {hex(idquaicankeogannhat) if idquaicankeogannhat else 'không'}")
+            if is_ngukiemsansang:
+                is_dusoluongquaigan = True
         else:
             # Số tối thiểu đặt cao hơn SOQUAIGOMTOIDA thì quá tải vẫn chặn ở SOQUAIGOMTOIDA
             is_dusoluongquaigan = soluongquaigan >= self._soluongquaigomtoithieu
@@ -1837,7 +1863,7 @@ class TacTuMucTieu:
         # Số tối thiểu chỉ là ngưỡng dưới: đang chạy gom, đủ số mà sát đám đang gom vẫn còn quái chưa kéo thì kéo nốt, chưa dừng lại đánh.
         # Đã dừng lại đánh thì giữ như cũ (quái tự lại gần <= 4.5m vẫn được tính vào đám)
         # Chọn theo khoảng cách tới neo (không phải tới mình), ưu tiên giữ con đang kéo, để không nhảy qua lại giữa kéo thêm và tụ về neo
-        if self._is_danggomquai and is_dusoluongquaigan and not is_quatai and not is_neobirotlai:
+        if self._is_danggomquai and is_dusoluongquaigan and not is_quatai and not is_neobirotlai and not is_ngukiemsansang:
             quaikeothem = quaidangkeo if quaidangkeo and quaidangkeo[3] <= BANKINHKEOTHEMGOMQUAI else quaikeothemgannhat
             if quaikeothem and quaikeothem[3] <= BANKINHKEOTHEMGOMQUAI:
                 idquaicankeogannhat, diachicosoquaicankeo, khoangcachquaicankeo = quaikeothem[:3]
@@ -1850,7 +1876,8 @@ class TacTuMucTieu:
             is_canluive = False
             lydolui = ""
 
-            if diachiquaidautien:
+            # Ngự Kiếm sẵn sàng: không quay về neo, quái đã quanh mình (chiêu đánh 9 ô quanh bản thân, chạy vào giữa cụm ở phần kỹ năng)
+            if diachiquaidautien and not is_ngukiemsansang:
                 if (is_dusoluongquaigan or is_quatai) and khoangcachneohientai > 4.5:
                     is_canluive = True
                     lydolui = "Tụ quái"
@@ -1877,7 +1904,9 @@ class TacTuMucTieu:
                 }
             else:
                 if not is_neobirotlai:
-                    if self._is_danggomquai and is_canghilog:
+                    if is_ngukiemsansang and self._is_danggomquai:
+                        self.moitruong._inlog(f"[GOM] Ngự Kiếm Phi Tiên sẵn sàng, {soluongquaigan} quái gần -> Dừng gom, ra chiêu")
+                    elif self._is_danggomquai and is_canghilog:
                         print(f"[GOM] >>> ĐỦ ({soluongquaigan} gần) & TỤ XONG -> ĐÁNH <<<")
                     self._is_danggomquai = False
                     self._yeucaugomquai = None

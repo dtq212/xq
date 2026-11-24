@@ -95,8 +95,11 @@ class TroChoiManager:
         self.dangnhap.keoga = KeoGaTuDong(self.shared_data, self.command_dict)
         self.dangnhap.batdau()
         # Máy ảo (lan.json "nhuongcho"): nhận yêu cầu đăng nhập tạm acc của máy chính để đè lên nhân vật treo (dedis_xq)
-        from dedis_xq import MayNhuongCho
-        MayNhuongCho(self.dangnhap).batdau()
+        # Tắt tạm cùng cờ IS_DANGNHAPDEQUALAN (dangnhap_xq)
+        from dangnhap_xq import IS_DANGNHAPDEQUALAN
+        if IS_DANGNHAPDEQUALAN:
+            from dedis_xq import MayNhuongCho
+            MayNhuongCho(self.dangnhap).batdau()
         # Lệnh từ Telegram và báo cáo định kỳ (thongbao_xq), 1 luồng cho cả máy
         DieuKhienTelegram(self.shared_data, self.command_dict).batdau()
         # Bán ngân lượng theo chuyển khoản (bannganluong_xq): chỉ máy chạy nhân vật bán mới hỏi SePay
@@ -255,6 +258,9 @@ class TroChoiManager:
                     cmd = "battat_tudongtheosau"
                 elif keyboard.is_pressed("ctrl+alt+b"):
                     cmd = "botoanbo_diemdanhxungquanh"
+                elif keyboard.is_pressed("ctrl+shift+n") and not keyboard.is_pressed("alt"):
+                    # Sắp xếp hành trang (như nút trên tab Vật phẩm), đang xếp thì bấm lại để dừng
+                    cmd = "battat_sapxephanhtrang"
                 elif keyboard.is_pressed("ctrl") and keyboard.is_pressed(17):
                     # Ctrl+W theo mã phím vật lý (17) để bật Unikey (W gõ ra Ư) vẫn nhận
                     cmd = "battat_tatbot"

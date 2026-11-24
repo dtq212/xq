@@ -92,6 +92,16 @@
   ],
   "321": [
    "Thủ Lĩnh Thích Khách"
+  ],
+  "392": [
+   "Đao Quỷ"
+  ],
+  "393": [
+   "Kiếm Quỷ",
+   "Thương Quỷ"
+  ],
+  "391": [
+   "Đao Quỷ"
   ]
  },
  "khong": {
@@ -153,6 +163,9 @@
   "73": [
    "Tam Đao Quỷ",
    "Địa Bĩ Thạch Lục"
+  ],
+  "393": [
+   "Hứa Tiểu Tứ"
   ]
  },
  "nghi": {
@@ -170,6 +183,27 @@
    "Minh Chi Yêu": 1,
    "Hỗn Thế Ma": 1,
    "Tâm Chi Ma": 1
+  },
+  "392": {
+   "Đao Hồn": 1
+  },
+  "311": {
+   "Thị Vệ Vong Linh": 1
+  },
+  "313": {
+   "Cương Thi": 1
+  },
+  "335": {
+   "Đao Thuẫn Khô Lâu": 1
+  },
+  "341": {
+   "Thạch Sư": 1
+  },
+  "93": {
+   "Thủ Trận Thiên Binh": 1
+  },
+  "393": {
+   "Thương Hồn": 1
   }
  }
 }

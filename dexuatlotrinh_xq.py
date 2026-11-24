@@ -37,9 +37,16 @@ SAISODIEMDEN = 3.
 HUONGTIMDUONG_MAP = {"1": (1, 0), "2": (1, -1), "3": (0, -1), "4": (-1, -1), "5": (-1, 0), "6": (-1, 1), "7": (0, 1), "8": (1, 1)}
 
 TENMAUDO = "Dò quái"
-# Lộ trình dò: chia bản đồ thành khối cạnh chừng này ô (~ một tầm màn hình), khối có ít nhất TYLEKHOIDO ô tới được thì đặt 1 điểm
-CANHKHOIDO = 22
+# Lộ trình dò: chia bản đồ thành khối cạnh chừng này ô, khối có ít nhất TYLEKHOIDO ô tới được thì đặt 1 điểm. Tầm nhìn của bot là ô
+# vuông ±18 ô (TAMNHINBANDONHO, rộng 37 ô) nên 2 điểm cách ~34 ô vẫn phủ kín (chồng nhau 2-3 ô), đường đi giữa 2 điểm còn quét thêm
+# 1 dải rộng 37 ô. Trước đây 22 ô: điểm dày sát nhau, tầm nhìn 2 điểm liền nhau chồng hơn nửa (người dùng 23/11 thấy quá dày)
+CANHKHOIDO = 34
 TYLEKHOIDO = 0.15
+# Bù điểm (_phubuchodo): ô tới được cách mọi điểm quá chừng này ô (ô vuông; = nửa CANHKHOIDO nên khối thoáng điểm giữa khối đã phủ
+# kín, không bù; tầm nhìn thật 18) là bị sót; khối sót ít hơn SOOSOTTOITHIEU ô thì bỏ qua. Đo 23/11 trên 37 lưới _internal/luoi_*.json:
+# 16/25 thêm ~45% điểm (bù cả góc khối thoáng), 18/40 thêm ~25%; chậm nhất 0.6-1s (bản đồ 80, tính 1 lần mỗi bản đồ)
+BANKINHPHUDO = 17
+SOOSOTTOITHIEU = 40
 # Thứ tự đi tính theo quãng đi bộ trên lưới thô (gộp HESOLUOITHO x HESOLUOITHO ô) cho nhanh: không nối 2 điểm gần nhau qua sông / vách
 HESOLUOITHO = 3
 
@@ -202,6 +209,39 @@ def layvungtoiduoc(luoi, batdau):
     return _loang(rong, cao, lambda x, y: not luoi[x][y], (bx, by))
 
 
+def _phubuchodo(diems, toiduoc, is_tranh, tam, bankinh):
+    # Bù điểm cho chỗ khối bỏ sót: khối có ít ô tới được (dưới TYLEKHOIDO) thì không đặt điểm, mà một đường hẹp cắt qua góc 2-3 khối thì
+    # khối nào cũng dưới ngưỡng => cả đoạn đường không có điểm. Đo 23/11 Tập Kích Kênh Trịnh Quốc 1 (ID 151): góc (95-119, 85-111) nằm ở
+    # 2 khối 154 + 117 ô (< 173 ô), điểm gần nhất (85, 83) xa (105, 100) 20 ô => bot không bao giờ tới. Ô tới được nằm ngoài ô vuông
+    # ±BANKINHPHUDO của mọi điểm thì gom theo khối nửa cạnh, khối còn nhiều ô sót nhất đặt thêm 1 điểm (ô gần trọng tâm), lặp tới hết;
+    # khối sót dưới SOOSOTTOITHIEU ô thì bỏ (mép vụn, đi ngang qua là thấy). Sửa thẳng vào diems
+    sot = {o for o in toiduoc if not (bankinh and math.dist(o, tam) > bankinh)}
+
+    def bophu(x, y):
+        for dx in range(-BANKINHPHUDO, BANKINHPHUDO + 1):
+            for dy in range(-BANKINHPHUDO, BANKINHPHUDO + 1):
+                sot.discard((x + dx, y + dy))
+
+    for x, y in diems:
+        bophu(x, y)
+    nua = max(CANHKHOIDO // 2, 1)
+    while sot:
+        khois = {}
+        for x, y in sot:
+            khois.setdefault((x // nua, y // nua), []).append((x, y))
+        os_ = max(khois.values(), key = len)
+        if len(os_) < SOOSOTTOITHIEU:
+            break
+        hople = [o for o in os_ if not (is_tranh and is_tranh(*o))]
+        if not hople:
+            sot.difference_update(os_)
+            continue
+        xtam, ytam = sum(o[0] for o in os_) / len(os_), sum(o[1] for o in os_) / len(os_)
+        diem = min(hople, key = lambda o: math.dist(o, (xtam, ytam)))
+        diems.append(diem)
+        bophu(*diem)
+
+
 def dexuatlotrinhdo(luoi, batdau, is_tranh = None, canh = CANHKHOIDO, tam = None, bankinh = None):
     # luoi[x][y]: 0 đi được (MoiTruong.get_luoivatcanbando); batdau: ô đang đứng; is_tranh(x, y): không đặt điểm ở đó (gần cổng, vùng cấm).
     # tam, bankinh: chỉ dò vùng trong bankinh ô quanh tam (toạ độ trong nhiệm vụ), khối xếp để tam nằm giữa 1 khối, vòng bắt đầu từ
@@ -228,6 +268,7 @@ def dexuatlotrinhdo(luoi, batdau, is_tranh = None, canh = CANHKHOIDO, tam = None
             continue
         xtam, ytam = sum(o[0] for o in os_) / len(os_), sum(o[1] for o in os_) / len(os_)
         diems.append(min(hople, key = lambda o: math.dist(o, (xtam, ytam))))
+    _phubuchodo(diems, toiduoc, is_tranh, tam, bankinh)
     if len(diems) <= 1:
         return diems
     # Thứ tự điểm cố định (không theo thứ tự loang từ chỗ đứng): cùng bản đồ, cùng ô bắt đầu thì ra cùng 1 vòng ở mọi nhân vật

@@ -23,7 +23,8 @@ THOIGIANBAODUNGCHO = 60.
 # Bật lộ trình mà chưa có điểm nào: dò bản đồ như Phong Yêu Kính (_dobandokhonglotrinh), tới điểm trong chừng này ô / quá chừng này giây
 # thì sang điểm kế
 KHOANGCACHTOIDIEMDO = 3.
-THOIGIANMOIDIEMDO = 25.
+# (25s -> 35s khi giãn điểm dò từ 22 lên 34 ô: quãng đi mỗi điểm dài hơn, đi vòng vách còn dài nữa)
+THOIGIANMOIDIEMDO = 35.
 # Đồng hồ THOIGIANMOIDIEMDO dừng khi đang có mục tiêu (đánh dọc đường), nhưng 1 điểm dò không giữ quá chừng này giây kể cả khi đánh
 # liên tục (quái ra mãi / không tới được). Trước đây đồng hồ chạy cả lúc đánh: log 364 Cự Lộc đứng đánh quanh (60-70, 100-110) mà điểm
 # dò nhảy từ (74, 102) tới (177, 100), (144, 53) chưa tới điểm nào
@@ -513,7 +514,7 @@ class TacTuDiChuyen:
         is_viectudi = bool(self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangphangiai() or self.get_is_dangcatkho()
                            or self.get_is_sumondichuyen() or self.get_is_langlysondichuyen() or self.get_is_sugiadichuyen()
                            or self.get_is_tapkichdichuyen() or self.get_is_matacdichuyen() or self.get_is_danhvongdichuyen()
-                           or self.get_is_thienxudichuyen() or self.get_is_tinhanhdichuyen())
+                           or self.get_is_thienxudichuyen() or self.get_is_tinhanhdichuyen() or self.get_is_daokhoangdichuyen())
         if self._yeucaugiukhoangcach and not is_sangbandotheosau:
             # Kẻ tấn công lại quá gần: lùi trước mọi việc khác (vẫn sau các khoá vận khí / ra chiêu ở trên)
             yeucauduocchon = self._yeucaugiukhoangcach
@@ -2100,7 +2101,7 @@ class TacTuDiChuyen:
         # (bản đồ không có điểm đánh / quái ngoài tầm điểm đánh vẫn đánh)
         return bool(self._sumon and self._sumon["chedo"] == "danhquai") or self.get_is_langlysondanhquai() or self.get_is_sugiadanhquai() \
             or self.get_is_tapkichdanhquai() or self.get_is_matacdanhquai() or self.get_is_danhvongdanhquai() or self.get_is_thienxudanhquai() \
-            or self.get_is_tinhanhdanhquai()
+            or self.get_is_tinhanhdanhquai() or self.get_is_daokhoangdo()
 
     def _kiemtra_tamdiemdanh(self, x, y):
         # Đang chạy theo lộ trình điểm đánh: mục tiêu phải nằm trong bán kính _bankinhdiemdanh quanh ít nhất 1 điểm đánh của bản đồ hiện tại.
@@ -2311,6 +2312,11 @@ class TacTuDiChuyen:
         # Săn Tinh Anh (tactu_tinhanh_xq): đi lần lượt các bản đồ chọn, dò khắp bản đồ, chỉ đánh quái Tinh Anh, thay lộ trình điểm đánh
         if self.get_is_dangtinhanh():
             self._yeucautudo = self._xulytinhanh()
+            return
+
+        # Đào khoáng theo bản đồ (tactu_daokhoang_xq): đi lần lượt các bản đồ chọn, dò khắp bản đồ, khai khoáng / hái dược lo phần đào
+        if self.get_is_dangdaokhoang():
+            self._yeucautudo = self._xulydaokhoang()
             return
 
         if not self._is_tudongdichuyendiemdanhxungquanh and not self.get_is_sumonfarm():

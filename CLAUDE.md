@@ -34,6 +34,7 @@ bằng Pymem, gửi lệnh game qua hook, giao diện Tkinter.
 | baothu | bảo thú |
 | catkho / giaodo | cất kho, giao tiền/đồ ở Tân Thủ Thôn |
 | sumon / danhvong / sugia | nhiệm vụ sư môn / Danh Vọng / Sư Gia |
+| tinhanh / daokhoang | Săn Tinh Anh / đào khoáng theo các bản đồ chọn (dò khắp bản đồ) |
 | thienxu | nhiệm vụ bang Thiên Xu Viện (Tổng Quản bang, Hồi Bang Phù) |
 | langlyson / tapkich / matac | phó bản Lăng Ly Sơn + Thành Kiều / Tập Kích / Mã Tặc |
 | doiphoban / hangviec / keocap | đội phó bản, hàng việc cá nhân, kéo cấp acc gà |

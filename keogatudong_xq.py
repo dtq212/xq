@@ -36,6 +36,8 @@ THOIGIANCHODONGGA = 60.
 GIANCACHLENHTANGCAP = 10.
 # Acc gà của lượt (acc chính đã bật) chừng này giây không lên cấp thì nhắn Telegram, nhắc lại mỗi chừng ấy (người dùng dặn 2026-11-08: 2 lượt
 # kẹt cấp 0 / 10 tổng ~4,5 giờ lúc ngủ vì tự tăng cấp không bật mà không ai biết)
+# Tự tăng cấp của acc gà kéo gà A-Z đặt tới ít nhất cấp này (người dùng dặn 2026-11-23: Chén Bạc từ 60 lên ~70)
+CAPTANGCAPTOITHIEUAZ = 75
 THOIGIANKHONGLENCAP = 30 * 60.
 # Vừa đóng / kill client của tài khoản thì máy chủ vẫn coi tài khoản đang online thêm một lúc: đăng nhập lại ngay bị báo tài khoản
 # đang online / đầy (người dùng báo 2026-11-08, xong lượt vào lại gacon5 ngay thì hỏng, lượt đó thiếu acc). Chờ chừng này giây
@@ -52,7 +54,9 @@ THOIGIANCHODANHHIEU = 60.
 # Acc chính 2 (ô "Acc chính 2" của Kéo gà A-Z, người dùng dặn 2026-11-21: 2 acc chính, mỗi acc nhận 1 đồ đệ): đi cùng lượt với vai acc phụ
 # (theo bãi, Phong Yêu Kính, tactu_keocap_xq._xulykeocapphu), nhận acc gà cấp thấp thứ hai làm đồ đệ; cùng máy với acc chính
 
-CAUHINHMAU = {"soga": SOGAMACDINH, "tiento": TIENTOMACDINH, "gioitinh": 0, "group": 1, "server": 1, "chinh2": "", "taikhoans": []}
+# captoithieu: ô "Chỉ acc từ cấp" (0 = không lọc, người dùng dặn 2026-11-23): chỉ kéo nhân vật cấp >= mốc, không tạo nhân vật mới; tài khoản
+# không có nhân vật đủ cấp thì bỏ qua trong lần bật này (_boquaduoicap, không ghi "hết chỗ")
+CAUHINHMAU = {"soga": SOGAMACDINH, "tiento": TIENTOMACDINH, "gioitinh": 0, "group": 1, "server": 1, "chinh2": "", "captoithieu": 0, "taikhoans": []}
 
 
 def _duongdan(ten):
@@ -171,6 +175,8 @@ class KeoGaTuDong:
         self._is_chinhdabat = False
         # Tài khoản ("user") -> lúc vừa đóng client của nó (chờ THOIGIANCHOTHOATTAIKHOAN giây rồi mới đăng nhập lại)
         self._lucdong = {}
+        # Tài khoản không có nhân vật cấp >= "captoithieu" (đã đăng nhập xem / tiến độ ghi): bỏ qua tới khi bấm Bắt đầu lại
+        self._boquaduoicap = set()
         # Đăng nhập song song (người dùng dặn 2026-11-14; trước đây lần lượt, mỗi acc gà ~25s và chờ acc trước load xong): "user" ->
         # {"luong", "taikhoan", "ga", "taoga", "xong", "bo"}. Luồng chỉ gọi dangnhap_xq (mở client vẫn lần lượt nhờ _khoamoclient,
         # nhập tài khoản / chọn / tạo nhân vật / vào game chạy song song như tự đăng nhập thường); kết quả xử lý ở mot_luot (luồng tự
@@ -208,6 +214,7 @@ class KeoGaTuDong:
         self._datlaidode()
         self.luot = []
         self._solanloi = {}
+        self._boquaduoicap = set()
         self._is_chinhdabat = False
         self._lucbatchinh = 0.
         self._boluongdangnhap()
@@ -276,6 +283,14 @@ class KeoGaTuDong:
 
     def _is_het(self, user):
         return bool(((self._tiendo().get("taikhoans") or {}).get(user) or {}).get("het"))
+
+    def _is_duoicapdabiet(self, user, captoithieu):
+        # Lọc "Chỉ acc từ cấp": tiến độ đã ghi đủ nhân vật của tài khoản (từng đăng nhập) mà không con nào cấp captoithieu..capketthuc-1
+        # thì khỏi đăng nhập. Chưa ghi nhân vật nào thì phải đăng nhập xem
+        if not captoithieu:
+            return False
+        nvs = ((self._tiendo().get("taikhoans") or {}).get(user) or {}).get("nhanvats") or {}
+        return bool(nvs) and not any(captoithieu <= int(nv.get("cap") or 0) < self.capketthuc for nv in nvs.values())
 
     def _danhdauhet(self, user):
         tiendo = self._tiendo()
@@ -391,8 +406,10 @@ class KeoGaTuDong:
         somoi = sum(1 for v in self._luongdangnhap.values() if not v["ga"] and not v["bo"])
         if not self._is_chinhdabat and len(self.luot) + somoi < soga:
             dangdung = {g["user"] for g in self.luot} | set(self._luongdangnhap)
+            captoithieu = int(cauhinh.get("captoithieu") or 0)
             cho = [t for t in cauhinh["taikhoans"] if t["user"] not in dangdung and not self._is_het(t["user"])
-                   and self._solanloi.get(t["user"], 0) < SOLANLOITOIDA]
+                   and self._solanloi.get(t["user"], 0) < SOLANLOITOIDA and t["user"] not in self._boquaduoicap
+                   and not self._is_duoicapdabiet(t["user"], captoithieu)]
             # Nhân vật của tài khoản đang online sẵn (bấm Bắt đầu lại / mở lại bot giữa lượt): nhận vào lượt luôn, không đăng nhập đè
             # (trước đây đăng nhập lần lượt từ tài khoản đầu dù đang online: client mới đá nhân vật đang chơi, hoặc báo tài khoản
             # đang online, 2026-11-08)
@@ -476,7 +493,8 @@ class KeoGaTuDong:
             def capcua(idnv):
                 return max(int((infos.get(idnv) or (0, {}))[1].get("capdo") or 0), int(nvs[str(idnv)].get("cap") or 0))
 
-            chuaxongs = [i for i in dangons if capcua(i) < self.capketthuc]
+            captoithieu = int(taicauhinhkeoga().get("captoithieu") or 0)
+            chuaxongs = [i for i in dangons if captoithieu <= capcua(i) < self.capketthuc]
             if chuaxongs:
                 idnv = max(chuaxongs, key = capcua)
                 info = (infos.get(idnv) or (0, {}))[1]
@@ -552,10 +570,10 @@ class KeoGaTuDong:
             g["luctangcap"] = now
             self.command_dict[hwnd] = "battat_tudongtangcap"
             print(f"[KÉO GÀ A-Z] Bật Tự tăng cấp cho {g['ten']} (ID {g['id']})")
-        elif int(info.get("_captudongtangcaptoida") or 0) < self.capketthuc:
+        elif int(info.get("_captudongtangcaptoida") or 0) < max(self.capketthuc, CAPTANGCAPTOITHIEUAZ):
             g["luctangcap"] = now
-            self.command_dict[hwnd] = f"set_captudongtangcaptoida:{self.capketthuc}"
-            print(f"[KÉO GÀ A-Z] Đặt Tự tăng cấp tới cấp {self.capketthuc} cho {g['ten']} (ID {g['id']})")
+            self.command_dict[hwnd] = f"set_captudongtangcaptoida:{max(self.capketthuc, CAPTANGCAPTOITHIEUAZ)}"
+            print(f"[KÉO GÀ A-Z] Đặt Tự tăng cấp tới cấp {max(self.capketthuc, CAPTANGCAPTOITHIEUAZ)} cho {g['ten']} (ID {g['id']})")
         elif info.get("_is_tudongsudungkynang"):
             # Tắt "Tự động sử dụng kỹ năng" (người dùng dặn 2026-11-08): bật thì trong Phong Yêu Kính acc gà dò đánh chạy khắp bản đồ,
             # tắt thì đứng cạnh Thỏ Yêu hưởng kinh nghiệm (tactu_keocap_xq._buoctrongphongyeukeocap); ở bãi chỉ theo sau acc chính
@@ -738,6 +756,7 @@ class KeoGaTuDong:
         # Dữ liệu cần (idsdaxong, cấu hình) đọc ở đây (luồng tự đăng nhập), luồng mới chỉ gọi dangnhap_xq
         user = taikhoan["user"]
         taoga = {"capketthuc": self.capketthuc, "idsdaxong": self._idsdaxong(user), "tiento": cauhinh.get("tiento") or TIENTOMACDINH,
+                 "captoithieu": 0 if ga else int(cauhinh.get("captoithieu") or 0),
                  "gioitinh": int(cauhinh.get("gioitinh") or 0), "idchon": ga["id"] if ga else 0}
         config = {"user": user, "pass": taikhoan["pass"], "group": int(taikhoan.get("group") or cauhinh.get("group") or 1),
                   "server": int(taikhoan.get("server") or cauhinh.get("server") or 1), "char_index": 1, "vitricuaso": vitri + 2,
@@ -791,6 +810,12 @@ class KeoGaTuDong:
             # Ghi cấp mọi nhân vật thấy ở màn chọn (nhân vật cũ đã đủ cấp cũng tính là xong)
             if cap >= self.capketthuc:
                 self._ghinhanvat(user, idnv, "", cap, True)
+        if ketqua.get("duoicap"):
+            print(f"[KÉO GÀ A-Z] Tài khoản {user} không có nhân vật đủ cấp (ô Chỉ acc từ cấp): bỏ qua lần bật này")
+            self._boquaduoicap.add(user)
+            self._dongcuaso(ketqua.get("hwnd"))
+            self._lucdong[user] = time.time()
+            return
         if ketqua.get("het"):
             print(f"[KÉO GÀ A-Z] Tài khoản {user} hết chỗ (6 nhân vật đã kéo xong): bỏ qua")
             self._danhdauhet(user)

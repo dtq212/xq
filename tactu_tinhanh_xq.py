@@ -59,6 +59,16 @@ BANKINHDOROITINHANH = 5.
 SOLANKHONGROITINHANH = 2
 # Ảnh chụp đồ Lam Kim dưới đất ở lượt trước (lúc con còn sống) cũ hơn chừng này giây thì không dùng làm "đồ cũ"
 THOIGIANANHCHUPLAMKIM = 3.
+# Nhận Tinh Anh theo chênh cấp với quái THƯỜNG đang thấy trên bản đồ (mọi bản đồ có Tinh Anh, đoán hay đã biết tên). Khoảng đoán cũ =
+# cấp cao nhất đã ghi +1~+15, mà cấp ghi gồm luôn con Tinh Anh => 24/11 Tru Tiên Trận 1: quái thường 110~113, Tinh Anh Thương Quỷ 119,
+# đã ghi 110~120 nên đoán 121~135, bot dò hết bản đồ bỏ qua con bò. Cấp quái thường = cấp cao nhất có >= SOQUAICAPTHUONG con khác
+# nhau thấy trong THOIGIANNHOCAPQUAI giây (Tinh Anh mỗi bản đồ 1 con, ~30 phút mới mọc lại nên không đủ số con). Quái cao hơn quái
+# thường >= CHENHCAPTINHANH cấp là Tinh Anh (đo: Lang Yêu 33~34 / Thủ Lĩnh 37, Yên Trường Thành 56~58 / Tinh Vệ 61~63, Hầm Vạn Nhân 1
+# 80~83 / 93, Tru Tiên Trận 1 110~113 / 119). Đoán nhầm thì giết xong không rơi Lam Kim -> tinhanhhoc.json học "khong" như cũ
+SOQUAICAPTHUONG = 3
+THOIGIANNHOCAPQUAI = 600.
+CHENHCAPTINHANH = 3
+SOQUAINHOCAPTOIDA = 500
 _tinhanhhoc = {"luc": 0., "mtime": None, "bang": {"co": {}, "khong": {}, "nghi": {}}}
 
 
@@ -232,6 +242,9 @@ class TacTuTinhAnh:
         moitruong = self.moitruong
         ten = ten or moitruong.get_tendoituong(diachi)
         idbando = moitruong.get_idbandohientai() if moitruong.get_is_phobanmuonbando() is False else None
+        cap = laycaptrongten(moitruong._get_tenthucte(diachi))
+        if idbando is not None and cap is not None:
+            self._ghicapquaithay(idbando, moitruong.get_iddoituong(diachi), ten, cap)
         if idbando is not None:
             # Đã học (theo đồ rơi): có Lam Kim => Tinh Anh, không => bỏ hẳn, khỏi xét cấp
             bang, khoa, tenhoc = taitinhanhhoc(), str(idbando), tentinhanhhoc(ten)
@@ -239,7 +252,38 @@ class TacTuTinhAnh:
                 return True
             if tenhoc in bang["khong"].get(khoa, ()):
                 return False
-        return is_quaitinhanh(ten, idbando, laycaptrongten(moitruong._get_tenthucte(diachi)))
+        return is_quaitinhanh(ten, idbando, cap) or self._is_tinhanhtheocapthay(idbando, ten, cap)
+
+    def _ghicapquaithay(self, idbando, iddoituong, ten, cap):
+        # Ghi cấp từng con quái thấy (theo id, kẻo 1 con đứng lâu được đếm nhiều lần) cho _capquaithuongthay
+        if is_tenkhongthetinhanh(ten):
+            return
+        bang = self._capquaithay.setdefault(idbando, {})
+        bang[iddoituong] = (cap, time.time())
+        if len(bang) > SOQUAINHOCAPTOIDA:
+            hethan = time.time() - THOIGIANNHOCAPQUAI
+            for i in [i for i, (_, luc) in bang.items() if luc < hethan]:
+                del bang[i]
+            if len(bang) > SOQUAINHOCAPTOIDA:
+                for i in sorted(bang, key = lambda i: bang[i][1])[:len(bang) - SOQUAINHOCAPTOIDA]:
+                    del bang[i]
+
+    def _capquaithuongthay(self, idbando):
+        # Cấp cao nhất có >= SOQUAICAPTHUONG con khác nhau thấy gần đây trên bản đồ = cấp quái thường; chưa đủ số con thì None
+        hethan = time.time() - THOIGIANNHOCAPQUAI
+        dem = {}
+        for cap, luc in self._capquaithay.get(idbando, {}).values():
+            if luc >= hethan:
+                dem[cap] = dem.get(cap, 0) + 1
+        caps = [cap for cap, so in dem.items() if so >= SOQUAICAPTHUONG]
+        return max(caps) if caps else None
+
+    def _is_tinhanhtheocapthay(self, idbando, ten, cap):
+        # Chỉ ở bản đồ có Tinh Anh (QUAITINHANH_MAP) và bản đồ thật (idbando None = phó bản mượn ID)
+        if idbando is None or cap is None or idbando not in QUAITINHANH_MAP or is_tenkhongthetinhanh(ten):
+            return False
+        capthuong = self._capquaithuongthay(idbando)
+        return capthuong is not None and cap >= capthuong + CHENHCAPTINHANH
 
     def _is_tinhanhchacchan(self, idbando, ten):
         # Nhận theo TÊN ghi cho chính bản đồ này hoặc đã học là Tinh Anh nhờ rơi Lam Kim: giết xong là xong bản đồ. Tên Tinh Anh của bản

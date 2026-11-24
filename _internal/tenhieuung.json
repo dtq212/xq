@@ -1,4 +1,8 @@
 {
+ "11": {
+  "mota": "",
+  "ten": "Đội ngũ đi theo"
+ },
  "1808": {
   "mota": "",
   "ten": "Gia tăng 5％ Khí Huyết"
@@ -8,8 +12,8 @@
   "ten": "Gia tăng 5％ Ngoại Kháng"
  },
  "2": {
-  "mota": "Mỗi 2 giây hồi phục 40 Khí Huyết",
-  "ten": "Tiểu Huyết Thạch"
+  "mota": "Mỗi 2 giây hồi phục 90 Khí Huyết",
+  "ten": "Đại Huyết Thạch"
  },
  "2114": {
   "mota": "Vũ khí đang ở trạng thái phong ấn.",
@@ -54,6 +58,10 @@
  "3191": {
   "mota": "Tăng thêm 480 điểm Ngoại Công nhưng giảm 50％ Ngoại Kháng. Mỗi 2％ Khí Huyết bị mất sẽ tăng thêm 1％ Ngoại Công của bản thân và chịu thêm 0.5％ sát thương khi bị tấn công.",
   "ten": "Cuồng Bạo"
+ },
+ "3192": {
+  "mota": "Tăng thêm 35％ Ngoại Kháng và 25％ Nội Kháng, nhưng giảm 50％ Ngoại Công. Bị tấn công cận chiến sẽ phản hồi 30％ Ngoại Công phải chịu.",
+  "ten": "Kim Cương"
  },
  "3251": {
   "mota": "",
@@ -115,6 +123,10 @@
   "mota": "Tăng thêm 410 Khí Huyết.",
   "ten": "Cường Thể Thuật"
  },
+ "5016": {
+  "mota": "",
+  "ten": "Đấu Chuyển Tinh Di \n Gia tăng Nội Công và giảm bớt 20％ sát thương nhận được. Nhưng không thể sử dụng pháp thuật hồi phục hay trị liệu."
+ },
  "5911": {
   "mota": "",
   "ten": "Linh Khí Hộ Thể"
@@ -162,6 +174,10 @@
  "9096": {
   "mota": "",
   "ten": "Trúng độc\n Giảm khí huyết theo thời gian."
+ },
+ "9154": {
+  "mota": "",
+  "ten": "Mỗi 2 giây phục hồi khí huyết."
  },
  "9156": {
   "mota": "",

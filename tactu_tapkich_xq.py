@@ -14,7 +14,7 @@ import time
 from hangso_xq import *
 from nhiemvu_xq import BANDOMONPHAI, chuanhoaten
 from thongbao_xq import baosuco
-from tienich_xq import phatam
+from tienich_xq import phatam, taiphaitapkichhomnay
 
 TENNPCTAPKICH = "Võ Lâm Bại Hoại"
 # Boss cuối trong phó bản: thấy rồi thì thôi đi dò, đứng đánh; khuất tầm nhìn mà cách chỗ thấy lần cuối quá chừng này ô thì quay lại đó
@@ -50,8 +50,20 @@ KHOANGCACHTOIDIEMTAPKICH = 3.
 THOIGIANMOIDIEMTAPKICH = 25.
 # Thành viên / trưởng nhóm tự chọn menu vào, bấm Xác Nhận hộp mua Lễ Bao: mỗi lần cách nhau ít nhất chừng này giây
 GIANCACHCHONMENUTAPKICH = 2.
+# Lệnh hộp xác nhận bắt đầu bằng những chữ này không phải hộp mua Lễ Bao của Tập Kích: không tự bấm
+LENHHOPKHONGPHAITAPKICHs = ("team ", "org ", "friend ", "give ", "trade ", "gift ", "drop ", "sell ")
 # Chọn menu vào xong chừng này giây vẫn coi hộp xác nhận hiện ra là của Tập Kích (Lễ Bao có thể hỏi ngay lúc vừa vào)
 THOIGIANHOPSAUVAO = 60.
+# Trưởng nhóm đứng cạnh NPC chờ thành viên máu >= NGUONGMAUVAOTAPKICH % và có buff Tiểu Chu Thiên (mình Thục Sơn) rồi mới vào, tối đa
+# THOIGIANCHOBUFFTAPKICH giây mỗi vòng (_thanhvienchuasansangtapkich)
+NGUONGMAUVAOTAPKICH = 80
+THOIGIANCHOBUFFTAPKICH = 45.
+# Kẹt vùng kín ngoài phó bản (_thoatvungkintapkich): vùng chỗ đứng nhỏ hơn tỉ lệ này của ô đi được liền THOIGIANKINTAPKICH giây thì Hồi Môn
+# Phù; xét mỗi GIANCACHXETKINTAPKICH giây, 2 lần phù cách nhau ít nhất GIANCACHPHUKINTAPKICH giây
+TILEVUNGKINTAPKICH = 0.05
+THOIGIANKINTAPKICH = 5.
+GIANCACHXETKINTAPKICH = 3.
+GIANCACHPHUKINTAPKICH = 60.
 # Mỗi vòng quá chừng này giây chưa xong thì báo (vẫn chạy tiếp)
 THOIGIANVONGTAPKICHTOIDA = 40 * 60.
 
@@ -59,13 +71,18 @@ THOIGIANVONGTAPKICHTOIDA = 40 * 60.
 class TacTuTapKich:
     # --- Bật / tắt, trạng thái cho giao diện ---------------------------------------------------------------------------------------
     def batdau_tapkich(self, phai = None):
-        phai = phai or self._tapkich_phai or self.moitruong.get_tenmonphai()
+        # Không chọn môn phái cụ thể: theo tin hệ thống ở khung chat (taiphaitapkichhomnay, 2 tiếng đổi 1 lần), đang chạy mà tin đổi thì
+        # đổi theo (_capnhatphaitheochat); chưa có tin thì như cũ (ô đã lưu / phái của mình)
+        theochat = not phai
+        phaichat = taiphaitapkichhomnay().get("phai") if theochat else None
+        phai = phai or phaichat or self._tapkich_phai or self.moitruong.get_tenmonphai()
         if self._tapkich or phai not in BANDOMONPHAI:
             return
         self._tapkich_phai = phai
-        self._tapkich = {"phai": phai, "batdau": time.time(), "trangthai": "bắt đầu", "chedo": "dichuyen", "hoithoai": None, "dabao": set(),
+        self._tapkich = {"phai": phai, "theochat": theochat, "batdau": time.time(), "trangthai": "bắt đầu", "chedo": "dichuyen", "hoithoai": None, "dabao": set(),
                          "sovong": 0, "davao": False, "lucchon": 0., "solanloi": 0, "lucbatdauvong": time.time(), "do": None}
-        self._logtk(f"Bắt đầu tự động đi Tập Kích Môn Phái ({TENMONPHAI.get(phai, phai)})")
+        self._logtk(f"Bắt đầu tự động đi Tập Kích Môn Phái ({TENMONPHAI.get(phai, phai)}"
+                    + (", theo tin hệ thống" if phaichat else "") + ")")
         phatam("Bắt đầu Tập Kích Môn Phái")
 
     def huy_tapkich(self):
@@ -193,8 +210,9 @@ class TacTuTapKich:
                     self._logtk(f"Menu vào phó bản: chọn {lenh!r}")
                     return
         hop = moitruong.get_hopxacnhannpc()
-        # Hộp mời / xin vào nhóm ("team ...") không phải của Tập Kích
-        if hop[0] and not hop[1].startswith("team ") \
+        # Hộp mời / xin vào nhóm ("team ..."), bang ("org ...": 2026-11-23 18:04 Gạ 364 bấm nhầm Xác Nhận "org banish 526" = trục xuất
+        # khỏi bang), bạn hữu / giao dịch không phải của Tập Kích
+        if hop[0] and not hop[1].startswith(LENHHOPKHONGPHAITAPKICHs) \
                 and (moitruong.get_is_bandotapkichmonphai() or now - self._lucchonvaotapkich < THOIGIANHOPSAUVAO):
             self._lucchonmenutapkich = now
             moitruong.action_ngatdichuyen()
@@ -236,9 +254,19 @@ class TacTuTapKich:
                                                      f"({s['trangthai']})")
         idbando = moitruong.get_idbandohientai()
         is_trongphoban = moitruong.get_is_bandotapkichmonphai()
+        if s.get("theochat") and not is_trongphoban and not s["davao"]:
+            # Không chọn phái cụ thể: tin hệ thống báo môn phái mới (2 tiếng đổi 1 lần) thì đổi theo, đọc file mỗi 10 giây
+            if time.time() - s.get("lucdocphaichat", 0.) > 10.:
+                s["lucdocphaichat"] = time.time()
+                phaichat = taiphaitapkichhomnay().get("phai")
+                if phaichat and phaichat != s["phai"]:
+                    self._logtk(f"Tin hệ thống: Tập Kích chuyển sang {TENMONPHAI.get(phaichat, phaichat)}")
+                    self.thietlap_phaitapkich(phaichat)
         if is_trongphoban:
             if not s["davao"]:
                 s.update(davao = True, hoithoai = None, lucchon = 0., solanloi = 0, do = None, vitriboss = None)
+                s.pop("lucchobuff", None)
+                s.pop("dalogchobuff", None)
                 self._logtk(f"Đã vào phó bản (vòng {s['sovong'] + 1}, tên bản đồ game {moitruong.get_tenbandogame()!r})")
             s["chedo"] = "danhquai"
             # Vào phó bản rồi: thôi ép Theo sau trưởng nhóm, trả Theo sau như cũ (đánh tự do)
@@ -283,7 +311,68 @@ class TacTuTapKich:
             self._epthesautapkich(s, moitruong.get_idnguoichoitruongnhom(), "trưởng nhóm")
             s["trangthai"] = "thành viên: đi theo trưởng nhóm" + ("" if self._is_tudongtheosau else " (chưa bật Theo sau!)")
             return None
+        yeucau = self._thoatvungkintapkich(s)
+        if yeucau is not False:
+            return yeucau
         return self._buocvaotapkich(s, idbando)
+
+    def _thanhvienchuasansangtapkich(self):
+        # Thành viên nhóm đang thấy trên màn hình chưa sẵn sàng vào phó bản: máu dưới NGUONGMAUVAOTAPKICH %, hoặc (mình Thục Sơn bật Tự
+        # động sử dụng kỹ năng) chưa có buff Tiểu Chu Thiên (hiệu ứng Nội Kháng). -> ["tên (lý do)"]
+        moitruong = self.moitruong
+        if not moitruong.get_is_dangnamtrongnhom():
+            return []
+        idtoi = moitruong.get_idnguoichoi()
+        ids = set(moitruong.get_danhsachidnguoichoithanhviennhoms() or ()) - {idtoi}
+        is_buff = moitruong.get_tenmonphai() == "thucson" and self._is_tudongsudungkynang
+        chuas = []
+        for addr in moitruong.get_diachinhanvattontais():
+            if not moitruong.get_is_nguoichoi(addr) or moitruong.get_idnguoichoi(addr) not in ids or moitruong.get_is_nhanvatdachet(addr):
+                continue
+            ten = moitruong.get_tendoituong(addr) or "?"
+            if (moitruong.get_phantramsinhlucconlai(addr) or 0) < NGUONGMAUVAOTAPKICH:
+                chuas.append(f"{ten} (máu)")
+            elif is_buff and not moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NOIKHANG,), diachicosothongtinnhanvat = addr, macdinh = True,
+                                                              is_hieuungcoloi = 1):
+                chuas.append(f"{ten} (chưa buff)")
+        return chuas
+
+    def _thoatvungkintapkich(self, s):
+        # Ra khỏi phó bản hay bị thả vào vùng kín nhỏ (Gạ 364 2026-11-23 17:57 Trang Viện (224, 91): "cả bản đồ không có đường" tới mọi
+        # điểm dò, đứng mãi). Vùng chỗ đứng < TILEVUNGKINTAPKICH ô đi được của bản đồ liền THOIGIANKINTAPKICH giây thì Tín Vật về môn
+        # phái (Hồi Môn Phù; Vô Môn Phái về Tân Thủ Thôn) rồi đi lại. -> None khi vừa dùng phù, False khi không kẹt
+        moitruong = self.moitruong
+        now = time.time()
+        if s.get("dangphukin"):
+            # Đã quyết dùng phù: đứng yên gọi lại tới khi sang bản đồ khác (acc khác đang về thành thì phù chỉ được xếp chờ, chạy là huỷ)
+            if moitruong.get_idbandohientai() != s.get("bandokin") or now - s["dangphukin"] > 40.:
+                s.pop("dangphukin", None)
+                s["do"] = None
+                return False
+            moitruong.action_ngatdichuyen()
+            self.action_sudunghoithanhphu(nguon = "[TẬP KÍCH] kẹt vùng kín", is_vemonphai = True)
+            s["trangthai"] = f"kẹt vùng kín ở {moitruong.get_toado()}: chờ dùng Hồi Môn Phù"
+            return None
+        if now - s.get("lucxetkin", 0.) >= GIANCACHXETKINTAPKICH:
+            s["lucxetkin"] = now
+            tile = moitruong.get_tilevungdungnhanvat()
+            toado = moitruong.get_toado()
+            # Phải đứng yên tại chỗ (đang đi được thì không phải kẹt)
+            if tile is not None and tile < TILEVUNGKINTAPKICH and (not s.get("toadokin") or math.dist(s["toadokin"], toado) <= 1.):
+                if "luckin" not in s:
+                    s.update(luckin = now, toadokin = toado)
+                    self._logtk(f"Đứng trong vùng kín / ô vật cản ở {toado} (vùng {tile * 100:.1f}% bản đồ)")
+            else:
+                s.pop("luckin", None)
+                s.pop("toadokin", None)
+        if "luckin" not in s or now - s["luckin"] < THOIGIANKINTAPKICH or now - s.get("lucphukin", 0.) < GIANCACHPHUKINTAPKICH:
+            return False
+        self._logtk(f"Kẹt vùng kín ở {moitruong.get_toado()}: đứng yên dùng Hồi Môn Phù")
+        s.update(lucphukin = now, dangphukin = now, bandokin = moitruong.get_idbandohientai())
+        s.pop("luckin", None)
+        moitruong.action_ngatdichuyen()
+        self.action_sudunghoithanhphu(nguon = "[TẬP KÍCH] kẹt vùng kín", is_vemonphai = True)
+        return None
 
     def _buocvaotapkich(self, s, idbando):
         moitruong = self.moitruong
@@ -322,6 +411,24 @@ class TacTuTapKich:
         if not diachinpc:
             s["hoithoai"] = None
             return self._ditheodiem(s, idbando, f"dò {laytenbando(idbando)} tìm {TENNPCTAPKICH}", is_timnpc = True)
+        if not h and moitruong.get_khoangcach(diachinpc) <= KHOANGCACHNOICHUYENTAPKICH + 2:
+            # Đứng cạnh NPC: chờ thành viên nhóm đủ máu / có buff Tiểu Chu Thiên rồi mới vào (người dùng 2026-11-23: Gạ mới buff được 2/4
+            # acc gà cấp 50 đã vào, quái 67 đánh chết). Tối đa THOIGIANCHOBUFFTAPKICH giây
+            chuas = self._thanhvienchuasansangtapkich()
+            # Kéo cấp báo acc gà chưa vào nhóm (s["thieunhom"]): chờ tới khi đủ, không giới hạn thời gian như chờ buff
+            thieus = list(s.get("thieunhom") or ())
+            if thieus:
+                s["trangthai"] = f"chờ đủ người trong nhóm trước khi vào: {', '.join(thieus)} chưa vào nhóm"
+                moitruong.action_ngatdichuyen()
+                return None
+            s.setdefault("lucchobuff", now)
+            if chuas and now - s["lucchobuff"] < THOIGIANCHOBUFFTAPKICH:
+                s["trangthai"] = f"chờ đồng đội đủ máu / buff trước khi vào: {', '.join(chuas)}"
+                moitruong.action_ngatdichuyen()
+                return None
+            if chuas and not s.get("dalogchobuff"):
+                s["dalogchobuff"] = True
+                self._logtk(f"Chờ buff quá {int(THOIGIANCHOBUFFTAPKICH)}s ({', '.join(chuas)}): vẫn vào")
         # Không ghi toạ độ vào trạng thái: NPC đi lại, mỗi lần đổi là 1 dòng log
         s["trangthai"] = f"vào phó bản (vòng {s['sovong'] + 1}): nói chuyện {TENNPCTAPKICH} (id {idnpc:x})"
         ketqua, yeucau = self._noichuyentapkich(s, diachinpc, idnpc)

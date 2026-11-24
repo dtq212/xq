@@ -13,7 +13,7 @@ import re
 import sys
 import time
 
-from bando_xq import BANDOCONG_MAP, laycapquaibando
+from bando_xq import BANDOCONG_MAP, laycapquaibando, ghitainguyendagap
 from hangso_xq import *
 from tienich_xq import phatam
 
@@ -252,6 +252,26 @@ class TacTuDaoKhoang:
         if vitris and time.time() - s["lucghi"] > GIANCACHGHIVITRIKHOANG:
             s["lucghi"] = time.time()
             self._ghivitrikhoang(idbando, vitris)
+
+    def _ghitainguyendagap(self, idbando):
+        # Tên quặng / dược đang có trong danh sách đối tượng, ghi cho hộp chọn bản đồ Đào khoáng (bando_xq.ghitainguyendagap). Gọi từ
+        # action_ghivitridoituong (mỗi GIANCACHGHIVITRI giây, mọi việc, đã lọc vừa chuyển bản đồ / phó bản mượn ID)
+        if idbando in BANDOPHOBANs:
+            return
+        moitruong = self.moitruong
+        tens = set()
+        i = -1
+        while True:
+            i += 1
+            diachi = moitruong.get_diachicosothongtindoituongx(i)
+            if not diachi:
+                break
+            ten = moitruong.get_tendoituong(diachi)
+            if ten and self._is_doituongkhaikhoang(ten, "") and moitruong.get_iddoituong(diachi) > 0:
+                tens.add(ten)
+        if tens:
+            for ten in ghitainguyendagap(idbando, tens):
+                moitruong._inlog(f"[TÀI NGUYÊN] {laytenbando(idbando) or idbando}: thấy {ten}")
 
     def _ghivitrikhoang(self, idbando, vitris):
         idnguoichoi = self.moitruong.get_idnguoichoi()

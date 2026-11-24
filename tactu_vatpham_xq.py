@@ -22,6 +22,18 @@ from tactu_tinhanh_xq import PHAMCHATNHATTINHANHs, PHAMCHATLAMKIM
 # túi cập nhật rồi bán lại các món còn trong túi, tối đa chừng này lần
 THOIGIANCHOKIEMTRABANRAC = 1.
 SOLANTHULAIBANRAC = 2
+# QuickSell (bán cả loạt ở Chủ Tiệm Tạp Hóa), dò từ log Thk (354) 23/11: "sell @x <NPC>#" huỷ danh sách cũ, "sell @+ <NPC># <id># <sl>"
+# thêm từng món, "sell @? <NPC>#" mở menu (lựa chọn 1 mang lệnh "sell @! <NPC># <N>", N là số đếm phiên tăng mỗi lần @?: đo 4, 5, 7),
+# "sell @!! <NPC># <N>" là bước "ĐỒNG Ý BÁN" (hộp 2/2 chỉ khi có món hiếm). Gửi thẳng @!! không qua @! thì máy chủ báo "Xác nhận
+# QuickSell không hợp lệ hoặc đã hết hạn" (Thỏ 342 23/11) => luôn @! trước, có hộp 2/2 mới @!!. Client gửi @+ cách 0.5s vẫn nhận đủ
+QUICKSELL_XACNHAN = "#QUICKSELL_XACNHAN"  # mục giả trong hàng đợi bán: tới lượt thì đọc N trong menu @? rồi gửi @!
+QUICKSELL_XACNHAN2 = "#QUICKSELL_XACNHAN2"  # mục giả: chờ hộp 2/2 (món hiếm) rồi gửi @!!
+THOIGIANCHOHOP22QUICKSELL = 2.
+GIANCACHLENHQUICKSELL = 0.5
+SOMONQUICKSELLTOIDA = 24  # người dùng 23/11: tối đa 24 món một lượt QuickSell
+THOIGIANCHOMENUQUICKSELL = 3.
+MAULENHQUICKSELL = re.compile(r"sell @! (\w+#) (\d+)")
+MAULENHQUICKSELL2 = re.compile(r"sell @!! (\w+#) (\d+)")
 # Ô hành trang chỉ giữ 31 byte UTF-8 tên (HT_TEN mỗi ô 0x20, có ký tự kết thúc), bot đọc xong còn strip(): vd "Nhập Môn Cơ Bản
 # Thương Pháp" (36 byte) trong túi là "Nhập Môn Cơ Bản Thương" (đo 2026-11-16 trên Gạ, 7/10 sách Nhập Môn bị cắt nên luật dùng ghi tên
 # đầy đủ không bao giờ khớp)
@@ -1396,7 +1408,7 @@ class TacTuVatPham:
         # Vừa về sửa thì THOIGIANCHOVESUADOLAI giây sau mới xét lại (sửa hỏng vì thiếu tiền / không thấy NPC thì khỏi chạy về liên tục)
         self._thoidiemkiemtravesuado = thoidiemhientai + THOIGIANCHOVESUADOLAI
         mota = ", ".join("{} ({}/{})".format(moitruong.get_tentrangbi(vitri), *dobens[vitri]) for vitri in thaps)
-        print(f"[VỀ SỬA ĐỒ] {moitruong.get_tendoituong()}: độ bền dưới {self._phantramvesuado}%: {mota}, về sửa")
+        moitruong._inlog(f"[VỀ SỬA ĐỒ] {moitruong.get_tendoituong()}: độ bền dưới {self._phantramvesuado}%: {mota}, về sửa")
         canhbao(moitruong, "Độ bền thấp, về sửa đồ", is_block = False)
         return True
 
@@ -2342,203 +2354,6 @@ class TacTuVatPham:
             self._anhhanhtrangsapxep = anhtruoclenh
             self._solandichuyensapxep += 1
 
-    def _ghitenvatphamdat(self, thoigiangiu = 15.):
-        # Ghi tên các vật phẩm đang nằm dưới đất quanh nhân vật, món mới vào túi trùng tên 1 món vừa thấy dưới đất mới tính là nhặt
-        thoidiemhientai = time.time()
-        i = -1
-        while True:
-            i += 1
-            diachivatpham = self.moitruong.get_diachicosothongtindoituongx(i)
-            if not diachivatpham:
-                break
-            if not self.moitruong.get_is_vatphamtontai(diachivatpham):
-                continue
-            tenvatpham = (self.moitruong.get_tendoituong(diachivatpham) or "").strip()
-            if tenvatpham:
-                self._tenvatphamdat_map[tenvatpham] = thoidiemhientai
-        self._tenvatphamdat_map = {k: v for k, v in self._tenvatphamdat_map.items() if thoidiemhientai - v <= thoigiangiu}
-
-    def _is_vatphamnhattudat(self, ten):
-        # Tên ô túi chỉ 31 byte (bị cắt) nên so theo đầu tên
-        ten = (ten or "").strip()
-        return bool(ten) and any(tendat == ten or tendat.startswith(ten) for tendat in self._tenvatphamdat_map)
-
-    def action_tudongdatvatphammoi(self, thoigiancho = 3., delay = 0.6, solanchuyentoida = 3, soogiu = 2):
-        # Tự động nhẹ (khác nút Sắp xếp hành trang): so danh sách id mỗi lượt, món MỚI NHẶT TỪ ĐẤT vào hành trang nằm yên thoigiancho
-        # giây thì chèn vào đúng thứ tự với 2 món kề bên (_khoasapxepvatpham), chỗ đang nằm đã đúng thì thôi. Đồ người khác cho, mở
-        # túi, lấy kho, mua, chế... (tên không trùng món vừa thấy dưới đất) thì để nguyên chỗ. Mỗi món chỉ vài lệnh (xem 4 cách bên
-        # dưới), không dồn cả hành trang; món bị rút ra thì để trống, không dồn lại.
-        # Xử lý quá solanchuyentoida lần vẫn chưa đúng chỗ thì bỏ qua món đó
-        if not self._is_tudongdatvatphammoi or self._is_dangsapxephanhtrang:
-            self._idhanhtrangtruoc = None
-            self._vatphammoi_map = {}
-            self._tenvatphamdat_map = {}
-            return
-        self._ghitenvatphamdat()
-        vitrimos = self.moitruong.get_danhsachvitrimohanhtrang()
-        soluongo = vitrimos[-1] + 1
-        ids = self.moitruong._docdanhsachidvatphamhanhtrang(soluongo)
-        if len(ids) < soluongo:
-            return
-        idhientais = {ids[vitri] for vitri in vitrimos if ids[vitri]}
-        # Món trong túi Càn Khôn hết hạn coi như đã có (action_dontuihethan chuyển về túi còn hạn thì không phải đồ mới nhặt)
-        soluongodoc = self.moitruong.get_soluongvatphamhanhtrangtoida() + 1
-        if soluongodoc > soluongo:
-            idhientais |= {i for i in self.moitruong._docdanhsachidvatphamhanhtrang(soluongodoc)[soluongo:] if i}
-        idmois = idhientais - self._idhanhtrangtruoc if self._idhanhtrangtruoc is not None else set()
-        if idmois:
-            tens = self.moitruong._docdanhsachtenvatphamhanhtrang(soluongo)
-            if len(tens) < soluongo:
-                return
-            for idvatpham in idmois:
-                if self._is_vatphamnhattudat(tens[ids.index(idvatpham)]):
-                    # [lúc thấy, số lần đã xử lý, ô đang chờ trống để đưa vào]
-                    self._vatphammoi_map[idvatpham] = [time.time(), 0, None]
-        self._idhanhtrangtruoc = idhientais
-        self._vatphammoi_map = {k: v for k, v in self._vatphammoi_map.items() if k in idhientais}
-        if not self._vatphammoi_map or time.time() - self._thoidiemdatvatphammoigannhat < delay:
-            return
-        if self.moitruong.get_is_dangclickchuottrai() or self.moitruong.get_is_nhanvatdachet() \
-                or self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DICHUYEN:
-            return
-        idvatpham = next((k for k, mon in self._vatphammoi_map.items() if time.time() - mon[0] >= thoigiancho), None)
-        if idvatpham is None:
-            return
-
-        tens = self.moitruong._docdanhsachtenvatphamhanhtrang(soluongo)
-        if len(tens) < soluongo:
-            return
-        vitri = ids.index(idvatpham)
-        ten = tens[vitri]
-        if ten not in self._loaivatpham_map:
-            self._docloaivatpham(ten, vitri)
-            return
-        # Thứ tự ô như Sắp xếp hành trang, bỏ các ô giữ cuối túi 1 (chế đồ) và ô bảo thú cuối cùng (giữ nguyên chỗ)
-        vitrimotui1s = [v for v in vitrimos if v < SOLUONGOMOITUI]
-        ogius = vitrimotui1s[-soogiu:] if len(vitrimotui1s) < len(vitrimos) else []
-        cacvitri = [v for v in vitrimos if v not in ogius]
-        if ids[vitrimos[-1]] and tens[vitrimos[-1]] in BAOTHUVATPHAMs:
-            if vitrimos[-1] == vitri:
-                del self._vatphammoi_map[idvatpham]
-                return
-            cacvitri.remove(vitrimos[-1])
-        # Ô kỵ thú quý đang có kỵ thú thì không đụng (Sắp xếp hành trang đặt nó ở đó)
-        okythu = self._get_okythu(vitrimos)
-        if okythu in cacvitri and ids[okythu] and self._is_kythugiu(tens[okythu]):
-            if okythu == vitri:
-                del self._vatphammoi_map[idvatpham]
-                return
-            cacvitri.remove(okythu)
-
-        khoa = self._khoasapxepvatpham(ten)
-        khoatheoo = {v: self._khoasapxepvatpham(tens[v]) for v in cacvitri if ids[v] and v != vitri}
-        thutu = {v: k for k, v in enumerate(cacvitri)}
-
-        def tui(o):
-            return o // SOLUONGOMOITUI
-
-        def is_hople(o, k, khoatheoo, muc = 4):
-            # Đặt món khoá k ở ô o: món kề trước (bỏ qua ô trống) không đứng sau nó, món kề sau không đứng trước. So muc phần đầu
-            # của khoá: 4 = tới tên, 3 = chỉ nhóm + loại (tự động nhẹ: chèn đúng tên không được thì đúng nhóm, đúng loại là đủ)
-            truoc = next((khoatheoo[v] for v in reversed(cacvitri[:thutu[o]]) if v in khoatheoo), None)
-            sau = next((khoatheoo[v] for v in cacvitri[thutu[o] + 1:] if v in khoatheoo), None)
-            return (truoc is None or truoc[:muc] <= k[:muc]) and (sau is None or k[:muc] <= sau[:muc])
-
-        def is_otrongdau(o, otrongcons):
-            # "to túi" thả vào ô trống đầu tiên của túi (tính cả ô giữ): o phải là ô đó thì mới rơi đúng chỗ
-            return next((v for v in vitrimos if tui(v) == tui(o) and v in otrongcons), None) == o
-
-        mon = self._vatphammoi_map[idvatpham]
-        # Lượt trước đã dời món chắn ở ô mon[2] đi (cách 3 dưới đây): ô đã trống thì đưa món mới vào
-        if mon[2] is not None:
-            ocho, mon[2] = mon[2], None
-            if not ids[ocho] and (tui(ocho) == tui(vitri) or is_otrongdau(ocho, {v for v in vitrimos if not ids[v]})):
-                self._chuyenvatphammoi(idvatpham, ten, vitri, ocho)
-                return
-        mon[1] += 1
-        if mon[1] > solanchuyentoida:
-            print("{}: không đặt được {} vào chỗ hợp lý, bỏ qua".format(self.moitruong.get_tendoituong(), ten))
-            del self._vatphammoi_map[idvatpham]
-            return
-        otrongs = [v for v in cacvitri if not ids[v]]
-        otrongtatcas = {v for v in vitrimos if not ids[v]}
-        if vitri in thutu and is_hople(vitri, khoa, khoatheoo):
-            # Đã đúng thứ tự nhưng còn lạc giữa khúc trống thì vẫn dồn sát về nhóm của nó (đồ khác ô hợp lệ sớm nhất, đồ dùng / thuốc
-            # ô hợp lệ muộn nhất), kẻo chắn đường các món chèn sau
-            ohoples = [v for v in otrongs if is_hople(v, khoa, khoatheoo)
-                       and (thutu[v] < thutu[vitri] if khoa[0] == 0 else thutu[v] > thutu[vitri])]
-            if ohoples:
-                self._chuyenvatphammoi(idvatpham, ten, vitri, ohoples[0] if khoa[0] == 0 else ohoples[-1])
-            else:
-                del self._vatphammoi_map[idvatpham]
-            return
-
-        # Thử chèn đúng tới tên (muc 4) trước, không được thì đúng nhóm + loại (muc 3); món Y bị dời đi chỉ cần đúng nhóm + loại
-        for muc in (4, 3):
-            if muc == 3 and vitri in thutu and is_hople(vitri, khoa, khoatheoo, 3):
-                del self._vatphammoi_map[idvatpham]
-                return
-
-            # 1. Ô trống đúng thứ tự: đồ khác lấy ô sớm nhất, đồ dùng được / thuốc ô muộn nhất
-            ohoples = [v for v in otrongs if is_hople(v, khoa, khoatheoo, muc)]
-            if ohoples:
-                self._chuyenvatphammoi(idvatpham, ten, vitri, ohoples[0] if khoa[0] == 0 else ohoples[-1])
-                return
-
-            # 2. Khúc đó đã kín: đổi chỗ với 1 món Y cùng túi mà sau khi đổi cả 2 đều đúng thứ tự (vd thuốc mới ở khúc trống giữa đổi
-            # với món dùng được cuối cùng ngay trước khúc thuốc). Đá không đè lên đồ: món mới là đá thì cho Y đè sang ô món mới
-            if vitri in thutu:
-                for o in sorted((v for v in khoatheoo if tui(v) == tui(vitri)), key = lambda v: abs(thutu[v] - thutu[vitri])):
-                    khoay = khoatheoo[o]
-                    khoasaudoi = {**{v: k for v, k in khoatheoo.items() if v != o}, vitri: khoay}
-                    if not is_hople(o, khoa, khoasaudoi, muc) or not is_hople(vitri, khoay, khoasaudoi, 3):
-                        continue
-                    if not self._is_dakhongdedo(ten):
-                        self.moitruong.action_dichuyenvatphamhanhtrang(idvatpham, o + 1, delay = 0.)
-                    elif not self._is_dakhongdedo(tens[o]):
-                        self.moitruong.action_dichuyenvatphamhanhtrang(ids[o], vitri + 1, delay = 0.)
-                    else:
-                        continue
-                    self._thoidiemdatvatphammoigannhat = time.time()
-                    del self._vatphammoi_map[idvatpham]
-                    print("{}: đặt vật phẩm mới {} vào ô {} (đổi chỗ với {})".format(self.moitruong.get_tendoituong(), ten, o, tens[o]))
-                    return
-
-            # 3. Khác túi: dời 1 món Y đang chắn chỗ đúng của món mới sang 1 ô trống mà Y vẫn đúng thứ tự, lượt sau đưa món mới vào ô
-            # của Y (mon[2]). Chuyển sang túi khác ("to túi" thả vào ô trống đầu túi) thì ô đích phải là ô trống đầu túi đó
-            for o in sorted(khoatheoo, key = lambda v: (tui(v) != tui(vitri), abs(thutu[v] - thutu.get(vitri, thutu[v])))):
-                conlai = {v: k for v, k in khoatheoo.items() if v != o}
-                if not is_hople(o, khoa, conlai, muc) or (tui(o) != tui(vitri) and not is_otrongdau(o, otrongtatcas | {o})):
-                    continue
-                khoay = khoatheoo[o]
-                e = next((e for e in otrongs if is_hople(e, khoay, {**conlai, o: khoa}, 3)
-                          and (tui(e) == tui(o) or is_otrongdau(e, otrongtatcas))), None)
-                if e is not None:
-                    self._chuyenvatphammoi(ids[o], tens[o], o, e)
-                    mon[2] = o
-                    return
-
-        # 4. Không chèn được: chỉ chuyển 1 lần về phía nhóm của nó (đồ khác ô trống đầu, đồ dùng / thuốc ô trống cuối) nếu thế là gần
-        # hơn. Sang túi khác thì còn theo dõi: tới túi đó rồi lượt sau có thể đổi chỗ trong túi (cách 2); cùng túi thì thôi, không
-        # chuyển qua lại
-        odich = (otrongs[0] if khoa[0] == 0 else otrongs[-1]) if otrongs else None
-        if odich is None or (vitri in thutu and (thutu[odich] > thutu[vitri]) == (khoa[0] == 0)):
-            del self._vatphammoi_map[idvatpham]
-            return
-        if tui(odich) == tui(vitri):
-            del self._vatphammoi_map[idvatpham]
-        self._chuyenvatphammoi(idvatpham, ten, vitri, odich)
-
-    def _chuyenvatphammoi(self, idvatpham, ten, vitri, odich):
-        # Ô trống cùng túi thì chuyển thẳng vào ô, khác túi thì "to túi" (rơi vào ô trống đầu túi đó, lượt sau chỉnh trong túi)
-        if odich // SOLUONGOMOITUI == vitri // SOLUONGOMOITUI:
-            is_ok = self.moitruong.action_dichuyenvatphamhanhtrang(idvatpham, odich + 1, delay = 0.)
-        else:
-            is_ok = self.moitruong.action_dichuyenvatphamsanghanhtrangkhac(idvatpham, odich // SOLUONGOMOITUI + 1, delay = 0.)
-        if is_ok:
-            self._thoidiemdatvatphammoigannhat = time.time()
-            print("{}: đặt vật phẩm mới {} từ ô {} vào ô {}".format(self.moitruong.get_tendoituong(), ten, vitri, odich))
-
     def action_giuotrongcuoihanhtrang(self, soogiu = 2, thoigianchoketqua = 0.5, solanthatbaitoida = 3, thoigianboqua = 60.):
         # Đang vận khí (chế đồ) thì soogiu ô mở cuối của hành trang 1 luôn phải trống (giữ 2 ô cho thong thả, 1 ô dễ không kịp),
         # không thì chế thất bại báo hành trang đầy dù hành trang 2-4 còn chỗ: có vật phẩm thì chuyển sang hành trang khác còn chỗ.
@@ -2755,6 +2570,31 @@ class TacTuVatPham:
                 hangdoi.append(self._lenhbanvatpham(idnpc, iddoituongvatphamhanhtrang, self._soluongbanvatpham(i)))
         self._datnhangdoibanrac(hangdoi)
 
+    @staticmethod
+    def _doisangquicksell(lenhs):
+        # Đổi các lệnh "sell ! <NPC># <id># <sl>" của một đợt thành QuickSell: huỷ danh sách cũ, @+ từng món, @? mở menu, rồi mục giả
+        # QUICKSELL_XACNHAN (đọc N trong menu -> "sell @!! <NPC># <N>"). Một món, hoặc lệnh không cùng một NPC, thì giữ bán từng món
+        if len(lenhs) < 2 or not all(lenh.startswith("sell ! ") for lenh in lenhs):
+            return list(lenhs)
+        npcs = {lenh.split()[2] for lenh in lenhs if len(lenh.split()) >= 5}
+        if len(npcs) != 1:
+            return list(lenhs)
+        npc = npcs.pop()
+        # Mỗi lượt QuickSell tối đa SOMONQUICKSELLTOIDA món (người dùng 23/11), nhiều hơn thì chia thành nhiều lượt nối nhau
+        ketqua = []
+        for dau in range(0, len(lenhs), SOMONQUICKSELLTOIDA):
+            luot = lenhs[dau:dau + SOMONQUICKSELLTOIDA]
+            if len(luot) < 2:
+                ketqua += luot
+                continue
+            ketqua += ([f"sell @x {npc}"] + [lenh.replace("sell ! ", "sell @+ ", 1) for lenh in luot]
+                       + [f"sell @? {npc}", QUICKSELL_XACNHAN])
+        return ketqua
+
+    def get_somonchobanrac(self):
+        # Số món còn chờ bán trong hàng đợi (bỏ qua lệnh phụ @x / @? / xác nhận của QuickSell) để hiện "còn x/y món"
+        return sum(1 for lenh in self._hangdoibanrac if lenh.startswith(("sell ! ", "sell @+ ")))
+
     def _soluongbanvatpham(self, vitri):
         # Số lượng thật của ô hành trang để gửi trong lệnh sell; món không xếp chồng đọc ra 0 => 1
         return max(1, self.moitruong.get_soluongvatphamhanhtrang(vitri) or 1)
@@ -2765,8 +2605,9 @@ class TacTuVatPham:
         return f"sell ! {idnpc:x}# {iddoituong:x}# {max(1, int(soluong or 1))}"
 
     def _datnhangdoibanrac(self, lenhs):
-        # Bắt đầu một đợt bán: hàng đợi lệnh mới, xoá lệnh đã gửi và số lần bán lại của đợt trước
-        self._hangdoibanrac = list(lenhs)
+        # Bắt đầu một đợt bán: hàng đợi lệnh mới (từ 2 món cùng NPC thì đổi sang QuickSell), xoá lệnh đã gửi và số lần bán lại của đợt trước.
+        # Mọi nơi bán đều qua đây: bán rác, cất kho bán đồ trắng, Phong Yêu Kính, đồ thu hồi kéo cấp
+        self._hangdoibanrac = self._doisangquicksell(lenhs)
         self._lenhbanracdagui = []
         self._solanthulaibanrac = 0
         self._thoidiemguibanractieptheo = 0.
@@ -2804,17 +2645,88 @@ class TacTuVatPham:
               f"{self._solanthulaibanrac}/{SOLANTHULAIBANRAC}")
         self._hangdoibanrac = conlai
 
+    def _timlenhmenuquicksell(self, mau):
+        # Lệnh lựa chọn khớp mau trong menu MỚI về (lời thoại đã xoá trước khi gửi, còn rỗng = menu chưa về; danh sách lệnh +0x1070 không
+        # bị xoá nên đọc khi lời thoại rỗng có thể ra lệnh của menu cũ) -> match / None
+        if not self.moitruong.get_noidungcuasotuychon():
+            return None
+        for lenh in self.moitruong.get_lenhcuasotuychons():
+            khop = mau.search(lenh)
+            if khop:
+                return khop
+        return None
+
+    def _xacnhanquicksell2(self, thoidiemhientai):
+        # Tới mục QUICKSELL_XACNHAN2 (đã gửi "sell @! <NPC># <N>"): danh sách có món HIẾM thì máy chủ hỏi thêm "XÁC NHẬN 2/2", lựa chọn
+        # "sell @!! <NPC># <N>" -> gửi. Không hỏi trong THOIGIANCHOHOP22QUICKSELL giây là đã bán xong (3 món thường chỉ cần @!, đo trên Thk)
+        khop = self._timlenhmenuquicksell(MAULENHQUICKSELL2)
+        if not khop and thoidiemhientai < self._thoidiemchomenuquicksell:
+            self._thoidiemguibanractieptheo = thoidiemhientai + 0.2
+            return
+        self._hangdoibanrac.pop(0)
+        if khop:
+            lenh = f"sell @!! {khop.group(1)} {khop.group(2)}"
+            self.moitruong.set_is_danghiencuasotuychon(False)
+            self.moitruong.action_thucthicaulenh(lenh, douutien = DOUUTIEN_THAP)
+            self._lenhbanracdagui.append(lenh)
+            print(f"[BÁN RÁC] {self.moitruong.get_tendoituong()}: QuickSell có món hiếm, xác nhận 2/2 -> {lenh}")
+        # Còn lượt sau thì chờ 1s cho máy chủ xử lý xong lượt này; lượt cuối chờ thêm cho túi cập nhật rồi mới kiểm tra bán lại
+        self._thoidiemguibanractieptheo = thoidiemhientai + 1. + (0. if self._hangdoibanrac else THOIGIANCHOKIEMTRABANRAC)
+
+    def _xacnhanquicksell(self, thoidiemhientai):
+        # Tới mục QUICKSELL_XACNHAN: menu @? về thì lấy N từ lệnh "sell @! <NPC># <N>" của lựa chọn 1 rồi gửi đúng lệnh đó (gửi thẳng @!!
+        # bị máy chủ báo "Xác nhận QuickSell không hợp lệ hoặc đã hết hạn", Thỏ 342 23/11), sau đó chờ hộp 2/2 ở QUICKSELL_XACNHAN2. Quá
+        # THOIGIANCHOMENUQUICKSELL giây không thấy (máy chủ không có QuickSell / lệnh bị bỏ) thì bán từng món như cũ
+        khop = self._timlenhmenuquicksell(MAULENHQUICKSELL)
+        if not khop and thoidiemhientai < self._thoidiemchomenuquicksell:
+            self._thoidiemguibanractieptheo = thoidiemhientai + 0.2
+            return
+        self._hangdoibanrac.pop(0)
+        tennhanvat = self.moitruong.get_tendoituong()
+        # Lượt hiện tại = các lệnh sau "sell @x" cuối cùng đã gửi (đợt nhiều hơn SOMONQUICKSELLTOIDA món chia nhiều lượt)
+        daucualuot = max((k for k, l in enumerate(self._lenhbanracdagui) if l.startswith("sell @x ")), default = -1) + 1
+        luot = self._lenhbanracdagui[daucualuot:]
+        monluots = [l for l in luot if l.startswith("sell @+ ")]
+        if khop:
+            lenh = f"sell @! {khop.group(1)} {khop.group(2)}"
+            # Xoá lời thoại để nhận ra hộp 2/2 mới về (vtable ẩn menu đang hiện)
+            self.moitruong.xoa_noidungcuasotuychon()
+            self.moitruong.action_thucthicaulenh(lenh, douutien = DOUUTIEN_THAP)
+            self._lenhbanracdagui.append(lenh)
+            print(f"[BÁN RÁC] {tennhanvat}: QuickSell {len(monluots)} món -> {lenh}")
+            self._hangdoibanrac.insert(0, QUICKSELL_XACNHAN2)
+            self._thoidiemchomenuquicksell = thoidiemhientai + THOIGIANCHOHOP22QUICKSELL
+            self._thoidiemguibanractieptheo = thoidiemhientai + 0.3
+            return
+        # Không có menu QuickSell: bán từng món các món đã @+ của lượt này (đầu hàng đợi, giữ phần còn lại phía sau); lệnh @+ của lượt
+        # này bỏ khỏi danh sách đã gửi (lệnh "sell !" sẽ thay), lượt trước giữ nguyên để kiểm tra bán lại
+        lenhtungmons = [l.replace("sell @+ ", "sell ! ", 1) for l in monluots]
+        print(f"[BÁN RÁC] {tennhanvat}: không thấy menu QuickSell sau {THOIGIANCHOMENUQUICKSELL:g}s, bán từng món ({len(lenhtungmons)} món)")
+        self._lenhbanracdagui = self._lenhbanracdagui[:daucualuot]
+        self._hangdoibanrac = lenhtungmons + self._hangdoibanrac
+        self._thoidiemguibanractieptheo = thoidiemhientai
+
     def get_is_dangsuavatpham(self):
         return bool(self._thoidiemhetsuavatpham)
 
     def action_xulybanracvasuado(self):
         # Gọi mỗi lượt loop phụ: gửi lệnh bán kế tiếp (cách nhau 1s), và đi tìm/sửa đồ nếu đang có việc sửa
         thoidiemhientai = time.time()
-        if self._hangdoibanrac and thoidiemhientai >= self._thoidiemguibanractieptheo:
+        if self._hangdoibanrac and self._hangdoibanrac[0] in (QUICKSELL_XACNHAN, QUICKSELL_XACNHAN2):
+            if thoidiemhientai >= self._thoidiemguibanractieptheo:
+                if self._hangdoibanrac[0] == QUICKSELL_XACNHAN:
+                    self._xacnhanquicksell(thoidiemhientai)
+                else:
+                    self._xacnhanquicksell2(thoidiemhientai)
+        elif self._hangdoibanrac and thoidiemhientai >= self._thoidiemguibanractieptheo:
             lenh = self._hangdoibanrac.pop(0)
+            if lenh.startswith("sell @?"):
+                # Xoá lời thoại cũ để biết menu QuickSell mới đã về
+                self.moitruong.xoa_noidungcuasotuychon()
+                self._thoidiemchomenuquicksell = thoidiemhientai + THOIGIANCHOMENUQUICKSELL
             self.moitruong.action_thucthicaulenh(lenh, douutien = DOUUTIEN_THAP)
             self._lenhbanracdagui.append(lenh)
-            self._thoidiemguibanractieptheo = thoidiemhientai + 1.
+            self._thoidiemguibanractieptheo = thoidiemhientai + (GIANCACHLENHQUICKSELL if lenh.startswith("sell @") else 1.)
             # Lệnh cuối: chờ thêm cho túi cập nhật rồi mới kiểm tra món nào chưa bán được
             if not self._hangdoibanrac:
                 self._thoidiemguibanractieptheo += THOIGIANCHOKIEMTRABANRAC
