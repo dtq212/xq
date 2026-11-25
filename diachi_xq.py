@@ -79,6 +79,7 @@ CHUKY = {
     "HOOK_VECUASO": ("ma", "8B 06 39 78 1C 7E 3E", 0, 0x4b2ae),  # vòng vẽ cửa sổ giao diện: sau call vẽ cửa sổ, mov eax,[esi]; cmp [eax+0x1C],edi (5 byte), esi = ô mảng cửa sổ
     "HOOK_DAUVONGVECUASO": ("ma", "7C E4 8B 85 40 FD AD 00", 2, 0x4b22e),  # đầu vòng vẽ cửa sổ (luồng chính, mỗi khung hình): mov eax,[ebp+0xADFD40] (6 byte, số cửa sổ), chưa duyệt mảng
     "HOOK_KIEMTRACUASO": ("ma", "BF 14 00 00 00 8B 0E 8B 11 FF 12 84 C0", 11, 0x4b255),  # vòng vẽ cửa sổ: sau call vtable[0] của ô [esi], test al,al; je cuối thân vòng (8 byte)
+    "HOOK_HIENTINKENH": ("ma", "8A 06 C7 44 24 48 ?? ?? ?? ?? 3C 06 C7 44 24 4C", 0, 0xb7c2e),  # hàm hiện 1 dòng tin kênh chat xq+0xB7C00 (esi = gói, byte đầu = kênh): mov al,[esi]; mov [esp+0x48],imm (10 byte), trước khi đọc khung chat [TG+0xADFDD0]
     "HOOK_CHUOTCUASODANHSACH": ("ma", "8B 8D D0 CD AE 00 85 C9", 0, 0x428eb),  # xử lý chuột cửa sổ danh sách TG+0xAECDD0: mov ecx,[ebp+0xAECDD0]; test ecx,ecx; je (14 byte), đối tượng con +0xAECDD8/+0xAECDDC dùng không kiểm
     "DSHIEUUNGDAT": ("bien", "8B 3D ?? ?? ?? ?? 39 1F 75 2C", 2, 0x376ca4),  # đầu danh sách hiệu ứng mặt đất (trận pháp...), nút 0x2C byte, kế tiếp +0x28
     "MAHIEUUNGDAT": ("bien", "53 55 57 B8 ?? ?? ?? ?? 39 30", 4, 0x376a48),  # bộ đệm 100 mã hiệu ứng (perform/<mã>) đã nạp sprite, ô i ứng với BANGSPRITEHIEUUNG[i + 1]

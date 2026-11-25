@@ -498,6 +498,11 @@ class TacTuDiChuyen:
         # mục tiêu), đánh hết rồi mới nhặt; món trong tầm nhặt tại chỗ vẫn nhặt luôn (tactu_vatpham) (người dùng 2026-11-13)
         if is_comuctieu and self.moitruong.get_idbandohientai() == BANDO_BATQUAITRAN:
             is_yeucaunhatvatpham = is_yeucaunhatvatphamganhon = is_yeucaunhatvatphamcholau = is_yeucaunhatvatphamuutien = False
+            # Bị chặn đi nhặt vì đang đánh => không tính 10s "đi mãi không nhặt được" của tactu_vatpham. Trước đây quá 6s chờ thì
+            # is_yeucaunhatvatphamcholau = True nên mốc ở trên không được làm mới, đánh lâu quá 10s là món bị bỏ 60s => đánh xong
+            # không nhặt, sót đồ (người dùng 2026-11-25)
+            if self._yeucaunhatvatpham:
+                self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
 
         # Đang lùi giữ khoảng cách thì không đi nhặt đồ, nên cũng không chặn buff vì nhặt đồ
         self._is_danguutiennhatdo = (is_yeucaunhatvatphamganhon or is_yeucaunhatvatphamuutien or is_yeucaunhatvatphamcholau) and not self._yeucaugiukhoangcach
@@ -511,10 +516,12 @@ class TacTuDiChuyen:
         # cướp quyền. Log 835 (gà gacon7885) 2026-11-14 tới cổng Ba Khâu (244, 254): máu thấp, chạy trốn chọn đích lật qua lại lúc về
         # phía cổng lúc ngược ra xa (207, 223), mất ~75s đi tới đi lui mới qua cổng
         is_sangbandotheosau = bool(self._is_dangphutheosau and self._yeucautheosau)
+        # Mã Tặc / Tinh Anh / Đào khoáng đi lại mà bật PK và đang có mục tiêu PK: tấn công trước, hết mục tiêu mới đi tiếp
         is_viectudi = bool(self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangphangiai() or self.get_is_dangcatkho()
                            or self.get_is_sumondichuyen() or self.get_is_langlysondichuyen() or self.get_is_sugiadichuyen()
-                           or self.get_is_tapkichdichuyen() or self.get_is_matacdichuyen() or self.get_is_danhvongdichuyen()
-                           or self.get_is_thienxudichuyen() or self.get_is_tinhanhdichuyen() or self.get_is_daokhoangdichuyen())
+                           or self.get_is_tapkichdichuyen() or self.get_is_danhvongdichuyen() or self.get_is_thienxudichuyen()
+                           or ((self.get_is_matacdichuyen() or self.get_is_tinhanhdichuyen() or self.get_is_daokhoangdichuyen())
+                               and not (self._is_chidanhpkviecdi and is_muctieupk)))
         if self._yeucaugiukhoangcach and not is_sangbandotheosau:
             # Kẻ tấn công lại quá gần: lùi trước mọi việc khác (vẫn sau các khoá vận khí / ra chiêu ở trên)
             yeucauduocchon = self._yeucaugiukhoangcach
@@ -719,6 +726,10 @@ class TacTuDiChuyen:
                       f"Bỏ qua {THOIGIANBOQUAMUCTIEUKHONGTIEPCAN:.0f}s.")
                 if self.moitruong.get_idbandohientai() in BANDOBOTTUTIMDUONGs:
                     self.moitruong._inlog(f"[ĐI VÒNG] Bỏ quái {hex(iddoituongmuctieudanggom)} {THOIGIANBOQUAMUCTIEUKHONGTIEPCAN:.0f}s: {lydo}")
+                if lydo.startswith("không có đường tới") \
+                        and yeucauduocchon.get("khoangcachtoida", 0.) <= KHOANGCACHSUDUNGKYNANGCANCHIEN:
+                    # Phong Yêu Kính: cận chiến không tới được thì báo người đánh xa cùng nhóm tới bờ bắn
+                    self._ghiquaiketcanchienpy(iddoituongmuctieudanggom, self.moitruong.get_toado(diachimuctieudanggom))
                 # Quái / mình đi xa chỗ cũ thì gỡ sớm (_kiemtrahetboquavatcan)
                 self._boquamuctieuvatcan(iddoituongmuctieudanggom, "Vật cản, không tới gần được", diachimuctieudanggom)
                 self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
@@ -1308,8 +1319,12 @@ class TacTuDiChuyen:
         # Đang về Tân Thủ Thôn (Hồi Môn Phái rồi Xa Phu) vì người được theo sau ở đó, mà người đó đã sang bản đồ khác: huỷ bước Xa Phu.
         # Từng: Gạ ở Tân Thủ Thôn, Thk Hồi Môn Phái về Vân Mộng Cốc; Gạ cũng về Vân Mộng Cốc, Thk vẫn chạy tới Xa Phu về Tân Thủ Thôn
         # (2026-11-18 01:03, chỉ còn cách Gạ ~20 ô)
-        if self._xaphunietban and self._xaphunietban == self._xaphunietbantheosau \
-                and idbandotheosau and idbandotheosau != BANDO_TANTHUTHON:
+        # _xaphunietbantheosau = (mốc chuyến Xa Phu, bản đồ người được theo sau lúc bắt đầu): chỉ huỷ khi người đó đổi bản đồ so với lúc
+        # bắt đầu. Từng so với Tân Thủ Thôn: người theo sau ở Chu Quốc, chuyến "về Tân Thủ Thôn rồi phù tới Chu Quốc" vừa bắt đầu đã bị
+        # huỷ, lặp mỗi 12s, Ngốc / Thk đứng im ở môn phái (2026-11-25 19:27)
+        theosau = self._xaphunietbantheosau
+        if self._xaphunietban and theosau and theosau[0] == self._xaphunietban \
+                and idbandotheosau and idbandotheosau != theosau[1]:
             self.moitruong._inlog(f"[THEO SAU] Người được theo sau đã sang {laytenbando(idbandotheosau)}, thôi {XAPHU} về Tân Thủ Thôn")
             self._xaphunietban = None
             self._xaphunietbantheosau = None
@@ -1347,8 +1362,8 @@ class TacTuDiChuyen:
         xaphutruoc = self._xaphunietban
         yeucau = self._thuchienbuocditoibando(buoc, idbandotheosau, toadotheosau, f"[THEO SAU] Người được theo sau ở {laytenbando(idbandotheosau)}")
         if self._xaphunietban and self._xaphunietban != xaphutruoc:
-            # Vừa bắt đầu chuyến Hồi Môn Phái + Xa Phu vì theo sau: đánh dấu để huỷ khi người được theo sau rời Tân Thủ Thôn
-            self._xaphunietbantheosau = self._xaphunietban
+            # Vừa bắt đầu chuyến Hồi Môn Phái + Xa Phu vì theo sau: đánh dấu để huỷ khi người được theo sau sang bản đồ khác
+            self._xaphunietbantheosau = (self._xaphunietban, idbandotheosau)
         if yeucau:
             self._yeucautheosau = yeucau
         return True
@@ -1743,7 +1758,11 @@ class TacTuDiChuyen:
                 is_tiepcan = khoangcach is not None and toida is not None and khoangcach > toida + 0.5
                 # Yêu cầu "tấn công" cũng dùng để tới gần đồng đội buff / hồi (Mệnh Tế, Hộ Thể...): đừng ghi là tấn công đồng đội
                 is_dongdoi = bool(diachi) and self.moitruong.get_idnguoichoi(diachi) in (self.moitruong.get_danhsachidnguoichoithanhviennhoms() or ())
-                if is_dongdoi:
+                # Bảo thú phe mình cũng vậy (log 2026-11-26: Cam Lộ Trị hồi Đậu Binh mà ghi "Tiếp cận để tấn công Đậu Binh ( Thk )")
+                if bool(diachi) and not is_dongdoi and self.moitruong.get_is_baothuphe(diachi):
+                    hanhdong = f"{'Tới gần' if is_tiepcan else 'Ở cạnh'} bảo thú {muctieu or ''} để buff / hồi{chodich}".replace("  ", " ")
+                    nguon = "Tự động sử dụng kỹ năng (buff / hồi bảo thú)"
+                elif is_dongdoi:
                     hanhdong = f"{'Tới gần' if is_tiepcan else 'Ở cạnh'} đồng đội {muctieu or ''} để buff / hồi{chodich}".replace("  ", " ")
                     nguon = "Tự động sử dụng kỹ năng (buff / hồi đồng đội)"
                 else:

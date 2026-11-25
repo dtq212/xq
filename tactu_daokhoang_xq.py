@@ -172,6 +172,10 @@ class TacTuDaoKhoang:
             return None
         if time.time() - moitruong.get_thoidiemthaydoibandogannhat() < 2.:
             return None
+        if s["chedo"] == "dichuyen" and self.get_is_dangpkviecdi():
+            # Bật PK, đang đánh người chơi gặp trên đường tới bản đồ đào: tạm dừng đi, hết mục tiêu thì đi tiếp
+            s["trangthai"] = "đang PK người chơi, tạm dừng đi"
+            return None
         if moitruong.get_is_dayhanhtrang():
             if self._is_tudongvebanrac:
                 # Quy trình về bán rác (tactu_vatpham_xq) tự bắt đầu khi túi đầy, xong thì đây đi lại bản đồ đang đào

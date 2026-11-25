@@ -405,35 +405,44 @@ class LoopPhu:
             self._thongbaochet()
             return
 
-        self.tactu.action_tudongsudungvatpham()
+        # Đang sắp xếp kho: đồ rút từ kho tạm nằm trong hành trang (tactu_catkho_xq._buocxepquatui) => ngưng mọi việc đụng hành trang
+        # (dùng / xếp chồng / xếp túi / mua / sửa / bán / nhặt / vứt / phân giải...), không thì mất đồ hoặc lệch id món đang giữ
+        is_dangxepkho = bool(self.tactu._sapxepkho)
+        if not is_dangxepkho:
+            self.tactu.action_tudongsudungvatpham()
         self.tactu.action_chantangcapdo()
-        self.tactu.action_tudongxepchongvatpham()
-        self.tactu.action_sapxephanhtrang()
-        # Túi Càn Khôn hết hạn: chuyển đồ về túi còn hạn còn ô trống, phần dư về cất kho (tactu_catkho_xq)
-        self.tactu.action_dontuihethan()
+        if not is_dangxepkho:
+            self.tactu.action_tudongxepchongvatpham()
+            self.tactu.action_sapxephanhtrang()
+            # Túi Càn Khôn hết hạn: chuyển đồ về túi còn hạn còn ô trống, phần dư về cất kho (tactu_catkho_xq)
+            self.tactu.action_dontuihethan()
         self.tactu.action_sapxepkho()
         self.tactu.action_tudongtodoi()
         self.tactu.action_tudongdoimaupk()
         self.tactu.action_tudonghoibangphai()
-        self.tactu.action_tudongmuavatpham()
-        self.tactu.action_tudongsuavatpham()
+        if not is_dangxepkho:
+            self.tactu.action_tudongmuavatpham()
+            self.tactu.action_tudongsuavatpham()
 
         self.tactu.action_xulyhoithoainpc()
         self.tactu.action_xulyxaphunietban()
-        self.tactu.action_xulybanracvasuado()
-        self.tactu.action_tudongxulyvebanrac()
+        if not is_dangxepkho:
+            self.tactu.action_xulybanracvasuado()
+            self.tactu.action_tudongxulyvebanrac()
         self.tactu.action_tudongkhaikhoang()
         self.tactu.action_tudongdaotangbaodo()
 
         self.tactu.action_tudongtrieuhoibaothugiangho()
+        self.tactu.action_tudongeptinhnguyendon()
 
         self.tactu.action_tudongdichientruong()
         self.tactu.action_tudongdichuyentudo()
-        self.tactu.action_tudongnhatvatpham()
-        self.tactu.action_tudongvutvatpham()
-        self.tactu.action_tudongvutvatphamtheoluat()
-        self.tactu.action_tudongphangiaitheoluat()
-        self.tactu.action_tudongdeokythu()
+        if not is_dangxepkho:
+            self.tactu.action_tudongnhatvatpham()
+            self.tactu.action_tudongvutvatpham()
+            self.tactu.action_tudongvutvatphamtheoluat()
+            self.tactu.action_tudongphangiaitheoluat()
+            self.tactu.action_tudongdeokythu()
 
         self._thongbaochet()
 

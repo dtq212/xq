@@ -94,14 +94,18 @@
    "Thủ Lĩnh Thích Khách"
   ],
   "392": [
-   "Đao Quỷ"
-  ],
-  "393": [
+   "Đao Quỷ",
    "Kiếm Quỷ",
    "Thương Quỷ"
   ],
-  "391": [
+  "393": [
+   "Kiếm Quỷ",
+   "Thương Quỷ",
    "Đao Quỷ"
+  ],
+  "391": [
+   "Đao Quỷ",
+   "Kiếm Quỷ"
   ]
  },
  "khong": {
@@ -125,13 +129,16 @@
    "Gian Tặc Võ Chi Chân"
   ],
   "313": [
-   "Mã Tiểu Tam"
+   "Mã Tiểu Tam",
+   "Cương Thi",
+   "Thổ Phỉ Mã Đại"
   ],
   "345": [
    "Ác Bá Trương Thất Long"
   ],
   "291": [
-   "Khô Lâu Yêu Vương"
+   "Khô Lâu Yêu Vương",
+   "Tà Linh"
   ],
   "381": [
    "Chu Lão Ngũ",
@@ -166,6 +173,38 @@
   ],
   "393": [
    "Hứa Tiểu Tứ"
+  ],
+  "372": [
+   "Quán Trung Tiên"
+  ],
+  "391": [
+   "Tắng Cửu"
+  ],
+  "374": [
+   "Quán Trung Tiên"
+  ],
+  "293": [
+   "Oán Linh"
+  ],
+  "331": [
+   "Đao Thuẫn Khô Lâu"
+  ],
+  "341": [
+   "Thạch Hổ",
+   "Thạch Sư"
+  ],
+  "392": [
+   "Triển Ngũ"
+  ],
+  "72": [
+   "Hỗn Thế Ma",
+   "Tâm Chi Ma"
+  ],
+  "343": [
+   "Cung Tiễn Thạch Dũng"
+  ],
+  "373": [
+   "Quán Trung Tiên"
   ]
  },
  "nghi": {
@@ -181,8 +220,8 @@
   },
   "72": {
    "Minh Chi Yêu": 1,
-   "Hỗn Thế Ma": 1,
-   "Tâm Chi Ma": 1
+   "Vô Lại Lý Tiểu Lục": 1,
+   "Diệp Thanh": 1
   },
   "392": {
    "Đao Hồn": 1
@@ -190,20 +229,64 @@
   "311": {
    "Thị Vệ Vong Linh": 1
   },
-  "313": {
-   "Cương Thi": 1
-  },
   "335": {
    "Đao Thuẫn Khô Lâu": 1
   },
-  "341": {
-   "Thạch Sư": 1
-  },
   "93": {
-   "Thủ Trận Thiên Binh": 1
+   "Thủ Trận Thiên Binh": 1,
+   "Thủ Trận Thần Tướng": 1,
+   "Thái Cực Môn Thủ": 1
   },
   "393": {
    "Thương Hồn": 1
+  },
+  "313": {
+   "Cương Thi": 1
+  },
+  "344": {
+   "Cung Tiễn Thạch Dũng": 1,
+   "Đao Dũng": 1
+  },
+  "334": {
+   "Kiếm Thuẫn Khô Lâu": 1,
+   "Đao Thuẫn Khô Lâu": 1
+  },
+  "374": {
+   "Quy Tiên Nhân": 1
+  },
+  "331": {
+   "Kiếm Thuẫn Khô Lâu": 1,
+   "Song Đao Khô Lâu": 1
+  },
+  "333": {
+   "Đao Thuẫn Khô Lâu": 1
+  },
+  "92": {
+   "Thủ Trận Thần Tướng": 1,
+   "Địa Sát Môn Thủ": 1
+  },
+  "383": {
+   "Mộc Tinh": 1
+  },
+  "292": {
+   "Thi Ma": 1
+  },
+  "342": {
+   "Thạch Sư": 1,
+   "Đao Dũng": 1
+  },
+  "71": {
+   "Vô Lại Thạch Cửu": 1
+  },
+  "343": {
+   "Đao Dũng": 1
+  },
+  "345": {
+   "Kiếm Dũng": 1
+  },
+  "381": {
+   "Thuỷ Tinh": 1,
+   "Mộc Tinh": 1
   }
  }
 }

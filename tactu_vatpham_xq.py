@@ -218,7 +218,7 @@ class TacTuVatPham:
             if thoidiemhientai - self._thoidiemkiemtrabaothuvatphamxungquanh > 2.:
                 self._thoidiemkiemtrabaothuvatphamxungquanh = thoidiemhientai
                 # Tên trong hành trang có thể bị cắt ("Thần Thú - Dần (Giới h"), đối tượng thì đủ tên => so phần đầu
-                if any((self.moitruong.get_tendoituong(diachi) or "").startswith(ten) and self.moitruong.get_phantramsinhlucconlai(diachi) > 100
+                if any((self.moitruong.get_tendoituong(diachi) or "").startswith(ten) and self.moitruong.get_is_baothuvatpham(diachi)
                        for diachi in self.moitruong.get_diachinhanvattontais()):
                     self._thoidiemthaybaothuvatpham = thoidiemhientai
                 elif thoidiemhientai - self._thoidiemthaybaothuvatpham > THOIGIANKHONGTHAYBAOTHUVATPHAM:
@@ -659,6 +659,8 @@ class TacTuVatPham:
             # Chạy ở mọi bản đồ, cả thành / quốc gia không PK (người dùng dặn 2026-11-12: làm Sư Môn ở Tề Quốc máu < 50% mà không đổi)
             is_vuadoiphapbao = is_dangchodoiphapbao
             is_daralenhdoi = False
+            # Phó bản Đoạt Bảo Mã Tặc chết không hỏng pháp bảo: máu thấp không tháo / không đổi Thượng Phương Bảo Kiếm (người dùng dặn 2026-11-25)
+            is_khongbaovephapbao = self.get_is_trongphobanmatac()
 
             def is_daohoadatinh():
                 # Chỉ Đào Hoa Nguyên đang Dã Tính Cuồng Lực (không tháo đồ được) mới đổi sang Thượng Phương Bảo Kiếm khi máu thấp
@@ -705,6 +707,9 @@ class TacTuVatPham:
                     is_daxuly = True
                     if not is_dangchodoiphapbao:
                         is_daralenhdoi = doi()
+                elif is_khongbaovephapbao:
+                    # Mức thấp trong Mã Tặc: giữ nguyên món đang đeo
+                    is_daxuly = True
                 elif is_daohoadatinh():
                     if is_cotrongtui:
                         is_daxuly = True
@@ -747,7 +752,7 @@ class TacTuVatPham:
                             self._deophapbaotaivitri(phapbaocu[0], phapbaocu[1])
 
             if ((phantramsinhlucconlai <= 25 and idbandohientai not in (BANDO_CHIENTRUONG, BANDO_COMO, BANDO_TIVO, *BANDOKHONGPKs)) or (phantramsinhlucconlai < 15 and idbandohientai == BANDO_COMO)) \
-                    and not is_dangchodoiphapbao and tenphapbaohientai not in PHAPBAOKHONGHUHONGs:
+                    and not is_dangchodoiphapbao and not is_khongbaovephapbao and tenphapbaohientai not in PHAPBAOKHONGHUHONGs:
                 # Chỉ Đào Hoa đang Dã Tính Cuồng Lực mới đổi sang Kiếm; còn lại tháo thẳng (người dùng dặn 2026-11-13)
                 is_doikiem = is_daohoadatinh()
                 for phapbaokhonghuhong in (PHAPBAOKHONGHUHONGs if is_doikiem else ()):
@@ -1024,6 +1029,8 @@ class TacTuVatPham:
             elif self._kiemtra_divaovungcam(*self.moitruong.get_toado(self._diachicosovatphamdangnhat)):
                 is_vatphamdangnhathople = False
             elif time.time() - self._thoidiemthaydoivatphamdangnhatgannhat > 10:
+                self.moitruong._inlog(f"[NHẶT ĐỒ] Bỏ {tenvatphamhientai} "
+                                      f"{tuple(round(v) for v in self.moitruong.get_toado(self._diachicosovatphamdangnhat))} 60s: quá 10s chưa nhặt được")
                 self._diachicosovatphamkhongnhat_map[self._diachicosovatphamdangnhat] = time.time()
                 self._diachicosovatphamkhongnhat_map = donbangthoidiem(self._diachicosovatphamkhongnhat_map, 120.)
                 is_vatphamdangnhathople = False
@@ -1272,7 +1279,7 @@ class TacTuVatPham:
         for muc in mucs:
             if time.time() - self._thoidiemmuabu_map.get(muc["vatpham"], 0.) < 10.:
                 continue
-            soluong = soluongtheoten.get(muc["vatpham"], 0)
+            soluong = self._demmuabu(soluongtheoten, muc)
             if soluong >= muc["duoi"] or soluong >= muc["muatoi"]:
                 continue
             diachinpc = self._timdoituongxungquanh(muc["npc"])
@@ -1302,6 +1309,13 @@ class TacTuVatPham:
             if damua:
                 self._thoidiemmuabu_map[muc["vatpham"]] = time.time()
                 print(f"[MUA BÙ] {self.moitruong.get_tendoituong()}: mua {damua} {muc['vatpham']} (còn {soluong}, chồng {muc['xepchong']}/ô)")
+
+    @staticmethod
+    def _demmuabu(soluongtheoten, muc):
+        # Số món của dòng mua bù đang có trong túi: đếm theo tên "vatpham" lẫn "tencuahang", lấy số lớn hơn. Túi có thể ghi tên cửa hàng
+        # (Aegis: "Thức Ăn Bảo Thú Cao Cấp" chứ không phải "Cao Cấp Bảo Thú Thực Ph") => trước đây đếm ra 0, cứ 10s mua thêm (acc 364 2026-11-25)
+        tens = {muc["vatpham"], muc.get("tencuahang") or muc["vatpham"]}
+        return max(soluongtheoten.get(t, 0) for t in tens)
 
     def _laymucmuabus(self, is_tranbaokho = False):
         # Các mục mua bù đang dùng được cho nhân vật này (bật, đủ thông tin, đúng môn phái / điều kiện). is_tranbaokho: chỉ lấy dòng TRANBAOKHO
@@ -1338,7 +1352,7 @@ class TacTuVatPham:
             tenmon = muc["tencuahang"] or muc["vatpham"]
             if thoidiemhientai < self._thoidiemchomuatranbaokho_map.get(tenmon, 0.):
                 continue
-            soluong = soluongtheoten.get(muc["vatpham"], 0)
+            soluong = self._demmuabu(soluongtheoten, muc)
             if soluong >= muc["duoi"] or soluong >= muc["muatoi"]:
                 continue
             canmua = muc["muatoi"] - soluong
@@ -1373,7 +1387,7 @@ class TacTuVatPham:
         for muc in self._laymucmuabus():
             if time.time() - self._thoidiemvemuabu_map.get(muc["vatpham"], 0.) < THOIGIANCHOVEMUABULAI:
                 continue
-            soluong = soluongtheoten.get(muc["vatpham"], 0)
+            soluong = self._demmuabu(soluongtheoten, muc)
             if soluong <= muc["thapnhat"] and soluong < muc["muatoi"]:
                 self._thoidiemvemuabu_map[muc["vatpham"]] = time.time()
                 print(f"[MUA BÙ] {self.moitruong.get_tendoituong()}: còn {soluong} {muc['vatpham']} (<= {muc['thapnhat']}), về Tân Thủ Thôn mua")
@@ -1429,7 +1443,7 @@ class TacTuVatPham:
         soluongtheoten = self.moitruong.get_soluongvatphamhanhtrangtheoten()
         if time.time() - self._thoidiembatdauchomuabu < THOIGIANCHOMUABU and soluongtheoten is not None:
             for muc in self._laymucmuabus():
-                soluong = soluongtheoten.get(muc["vatpham"], 0)
+                soluong = self._demmuabu(soluongtheoten, muc)
                 if soluong >= muc["duoi"] or soluong >= muc["muatoi"]:
                     continue
                 diachinpc = self._timdoituongxungquanh(muc["npc"])

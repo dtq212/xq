@@ -183,6 +183,51 @@ DIEMGIUDICHCHAYTRON = 3.
 THOIGIANGHILAICHAYTRON = 1.2
 
 
+def vahookhientinkenh(tientrinh, diachixq, inlog = print):
+    # Chặn crash xq+0xB7D48 (Kng 359 ngày 26/11 01:37-01:42, 9/10 dump C:\CrashDumps\xq.exe.*.dmp, mỗi lần đăng nhập lại ~29s): bị dis
+    # khi đang trong đội, vào lại game thì máy chủ gửi ngay tin kênh Đội ngũ (kênh 7) "Kng(359) đã gia nhập trở lại nhóm." lúc khung chat
+    # [TG+0xADFDD0] chưa tạo (= 0). Hàm hiện tin kênh xq+0xB7C00 đọc [khung + 0x3C..0x58] (ô từng kênh) không kiểm khung => đọc [0+0x54],
+    # văng game; đăng nhập lại vẫn còn trong đội nên lần nào cũng văng. Lỗi của client. Vá "mov al,[esi]; mov [esp+0x48],imm" (10 byte) đầu
+    # hàm: khung chat = 0 thì nhảy về đoạn kết thúc hàm (đích je "ô kênh = 0" của chính game, bỏ dòng tin). Con trỏ TG, độ lệch khung và
+    # đích je đọc từ mã gốc. Phải vá TRƯỚC khi bấm Vào game (đăng nhập gọi), bot gọi lại cho chắc. Kịch bản không giải phóng
+    diachihook = diachixq + DC.HOOK_HIENTINKENH
+    try:
+        ma = read_bytes(tientrinh, diachihook, 0x72)
+    except Exception:
+        return False
+    if ma[0] == 0xE9:
+        return True
+    if ma[:2] != b"\x8A\x06" or ma[0x5A] != 0xA1 or ma[0x5F:0x61] != b"\x8B\x88" or ma[0x6A:0x6C] != b"\x0F\x84":
+        inlog(f"[CHẶN CRASH] chỗ hiện tin kênh không như dự kiến: {ma[:16].hex(' ')}")
+        return False
+    controtg = struct.unpack("<I", ma[0x5B:0x5F])[0]
+    lechkhung = struct.unpack("<I", ma[0x61:0x65])[0]
+    diachiboqua = diachihook + 0x70 + struct.unpack("<i", ma[0x6C:0x70])[0]
+    lechngan, giatri = ma[5], struct.unpack("<I", ma[6:10])[0]
+    asm_script = f"""
+        mov eax, dword ptr [{controtg}]
+        test eax, eax
+        je boqua
+        cmp dword ptr [eax + {lechkhung}], 0
+        je boqua
+        mov al, byte ptr [esi]
+        mov dword ptr [esp + {lechngan}], {giatri}
+        push {diachihook + 10}
+        ret
+    boqua:
+        push {diachiboqua}
+        ret
+    """
+    encoding, _ = asm_x86(asm_script)
+    if not encoding:
+        return False
+    kichban = tientrinh.allocate(64)
+    write_bytes(tientrinh, kichban, bytes(encoding), len(encoding))
+    write_bytes(tientrinh, diachihook, b"\xE9" + struct.pack("<i", kichban - (diachihook + 5)) + b"\x90" * 5, 10)
+    inlog("[CHẶN CRASH] đã vá chỗ hiện tin kênh chat (bỏ tin khi khung chat chưa tạo, vd vào lại đội lúc đăng nhập)")
+    return True
+
+
 class MoiTruong:
     def __init__(self, idcuaso):
         self._is_dasetupautoassemblethucthicaulenh2 = False
@@ -190,6 +235,10 @@ class MoiTruong:
         # Lệnh trực tiếp dùng chung 1 vùng nhớ chứa câu lệnh trong game: nhiều luồng gửi cùng lúc thì ghi đè lệnh của nhau
         self._khoathucthicaulenh2 = threading.Lock()
         self.diachihamthucthicaulenh2 = 0
+        # Luồng thường trực trong client chạy hộ các hàm bot gọi (_chaytrongclient), mỗi kênh 1 luồng: {kênh: dict | False (hỏng, quay về
+        # start_thread)}; khoá theo kênh
+        self._luongclient = {}
+        self._khoaluongclient = {"lenh": threading.Lock(), "timduong": threading.Lock()}
         self.thoidiembatchucnangmoronggannhat = 0.
         self.thoidiemtatchucnangmoronggannhat = 0.
         self.thoidiemcochucnangmoronggannhat = 0.
@@ -314,16 +363,20 @@ class MoiTruong:
         self._dohoatanh = None
         self._thoidiembotguidohoatanh = None
         # Theo dõi đòn đánh thường máy chủ ép diễn (_theodoidanhthuong): {nhanvat, ghi} chỉ số ghi hàng đợi đã xét; đòn đánh thường gần
-        # nhất {thoidiem, diachi, id, o, sobay, bienthe, kynang, catngay, dacat, danhthuongthattruoc}; (id kỹ năng, lúc xếp lệnh) kỹ năng
+        # nhất {thoidiem, diachi, id, o, sobay, bienthe, kynang, catngay, dacat}; (id kỹ năng, lúc xếp lệnh) kỹ năng
         # bot gửi gần nhất; mục tiêu "kill" gần nhất
         self._hangdoidanhthuong = None
         self._danhthuong = None
-        # (id mục tiêu, thoidiem) đòn đánh thường THẬT gần nhất (không tính ô vung dư của chiêu)
+        # (id mục tiêu, thoidiem) ô đánh thường máy chủ gần nhất, kể cả ô vung chèn bị cắt hình (điều kiện Phản Tỏa)
         self._danhthuongthat = (None, 0.)
-        # Lúc action_cathoatanhkhicosobay ghi tư thế 11 gần nhất (ô mã 0 hiện ngay sau khi cắt: THOIGIANOPHATLAISAUCAT)
+        # Lúc action_cathoatanhkhicosobay ghi tư thế 11 gần nhất (chỉ dùng cho log chẩn đoán [Ô MÃ 0] / [SAU CẮT])
         self._thoidiemcathoatanh = 0.
         # (địa chỉ mục tiêu, số bay) chụp ở lượt _theodoidanhthuong trước: mốc so số bay của ô mới (số bay tới cùng lúc với ô = ô chiêu)
         self._sobaymuctieutruoc = (None, None)
+        # Lúc mục tiêu hiện số bay mới gần nhất (_theodoidanhthuong so từng lượt); đợt Lạc Kích {gui, o}: lúc gửi gần nhất, lúc thấy ô
+        # hoạt ảnh của chính Lạc Kích (ô sau số bay của nó là vung dư, THOIGIANVUNGDULACKICH)
+        self._thoidiemsobaymoi = 0.
+        self._lackich = None
         # Chẩn đoán sau lần cắt ô chiêu delay 0: {t, cuoi, chuoi, loai} (action_cathoatanhkhicosobay)
         self._theodoisaucat = None
         self._khoatheodoidanhthuong = threading.Lock()
@@ -557,6 +610,9 @@ class MoiTruong:
         self._lucnhanotui = 0.
         self._lucdescnhanotui = 0.
         self._nhanotuidadesc = set()
+        # True khi đang sắp xếp kho (tactu_catkho_xq): ngưng desc lấy nhãn ô. Lúc xếp, mỗi lần mở lại rương tên ô đổi => desc 2 lệnh/s chen
+        # giữa các lệnh pawn (log 364 2026-11-24 22:35), mà máy chủ chỉ nhận ~1 lệnh/s nên ~15-20% lệnh "pawn &" bị bỏ
+        self._is_tamdungdescnhan = False
         # Lần "desc <ô - 95>" gần nhất theo ô trang bị đang mặc (nhãn độ bền ở bảng Nhân Vật): ô -> (id, thời điểm)
         self._lucdescnhantrangbi = {}
 
@@ -654,7 +710,7 @@ class MoiTruong:
             write_bytes(self.tientrinh, diachidulieu + 4, chuoi_bytes + b"\x00", len(chuoi_bytes) + 1)
 
             self._danhdaulenhmomenu(lenh.caulenh)
-            self.tientrinh.start_thread(self.diachihamthucthicaulenh)
+            self._chaytrongclient(self.diachihamthucthicaulenh)
             self._danhdauguilenhvankhi(lenh.caulenh)
             if lenh.trihoansaulenh > 0.:
                 time.sleep(lenh.trihoansaulenh)
@@ -689,6 +745,121 @@ class MoiTruong:
 
         encoding, _ = asm_x86(asm_code)
         write_bytes(self.tientrinh, self.diachihamthucthicaulenh, bytes(encoding), len(encoding))
+
+    def _timhamnhap(self, tendll, tenhams):
+        # Ô IAT (địa chỉ tuyệt đối trong client) của các hàm xq.exe nhập từ tendll: {tên hàm: địa chỉ ô}. Gọi bằng "call dword ptr [ô]"
+        # nên không cần biết kernel32 32-bit của client nằm đâu (bot là Python 64-bit, không dò được module WOW64 dễ dàng)
+        ketqua = {}
+        base = self.diachixq
+        pe = base + read_int(self.tientrinh, base + 0x3C)
+        mota = base + read_int(self.tientrinh, pe + 0x80)
+        while True:
+            oft, _, _, ten, ft = struct.unpack("<5I", read_bytes(self.tientrinh, mota, 20))
+            if not ten:
+                break
+            if read_bytes(self.tientrinh, base + ten, 64).split(b"\0")[0].decode("ascii", "ignore").lower() == tendll.lower():
+                i = 0
+                while True:
+                    thunk = read_int(self.tientrinh, base + (oft or ft) + 4 * i) & 0xFFFFFFFF
+                    if not thunk:
+                        break
+                    if not thunk & 0x80000000:
+                        tenham = read_bytes(self.tientrinh, base + thunk + 2, 64).split(b"\0")[0].decode("ascii", "ignore")
+                        if tenham in tenhams:
+                            ketqua[tenham] = base + ft + 4 * i
+                    i += 1
+            mota += 20
+        return ketqua
+
+    def _khoitaoluongclient(self, kenh):
+        # Đo 2026-11-26: mỗi CreateRemoteThread (pymem start_thread) để lại 1 handle Thread trong CLIENT không bao giờ đóng (client 19 tiếng
+        # giữ 89.266 handle Thread, chỉ ~15 luồng sống, tăng ~1 handle / lệnh bot gửi) => chạy lâu thì client đơ (Not Responding).
+        # Thay bằng 1 luồng thường trực: chờ sự kiện "yêu cầu", gọi hàm ở ô +0x88, báo sự kiện "xong", lặp lại. Hai sự kiện bot tạo
+        # rồi nhân bản handle sang client. Lưu esp trước khi gọi nên hàm "ret" hay "ret 4" đều được. Bot tắt mở lại thì luồng cũ nằm
+        # chờ mãi trên sự kiện cũ (1 luồng ngủ / lần mở bot, không tốn CPU)
+        k32 = ctypes.WinDLL("kernel32", use_last_error = True)
+        k32.CreateEventW.restype = ctypes.c_void_p
+        k32.CreateEventW.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_void_p]
+        k32.GetCurrentProcess.restype = ctypes.c_void_p
+        k32.DuplicateHandle.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p),
+                                        ctypes.c_ulong, ctypes.c_int, ctypes.c_ulong]
+        k32.SetEvent.argtypes = [ctypes.c_void_p]
+        k32.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_ulong]
+        k32.WaitForSingleObject.restype = ctypes.c_ulong
+        k32.CloseHandle.argtypes = [ctypes.c_void_p]
+        try:
+            iat = self._timhamnhap("kernel32.dll", ("WaitForSingleObject", "SetEvent"))
+            if len(iat) != 2:
+                raise RuntimeError(f"xq.exe không nhập đủ hàm kernel32: {iat}")
+            yeucau = k32.CreateEventW(None, 0, 0, None)
+            xong = k32.CreateEventW(None, 0, 0, None)
+            if not yeucau or not xong:
+                raise RuntimeError(f"CreateEventW lỗi {ctypes.get_last_error()}")
+            handleclient = []
+            for sukien in (yeucau, xong):
+                dich = ctypes.c_void_p()
+                if not k32.DuplicateHandle(k32.GetCurrentProcess(), sukien, self.tientrinh.process_handle, ctypes.byref(dich), 0, 0, 2):
+                    raise RuntimeError(f"DuplicateHandle lỗi {ctypes.get_last_error()}")
+                handleclient.append(dich.value)
+            vung = self.tientrinh.allocate(0x100)
+            o_yeucau, o_xong, o_ham, o_esp = vung + 0x80, vung + 0x84, vung + 0x88, vung + 0x8C
+            write_bytes(self.tientrinh, vung + 0x80, struct.pack("<IIII", handleclient[0], handleclient[1], 0, 0), 16)
+            asm = f"""
+            lap:
+                push 0xFFFFFFFF
+                push dword ptr [{hex(o_yeucau)}]
+                call dword ptr [{hex(iat['WaitForSingleObject'])}]
+                mov eax, dword ptr [{hex(o_ham)}]
+                test eax, eax
+                je bao
+                mov dword ptr [{hex(o_esp)}], esp
+                push 0
+                call eax
+                mov esp, dword ptr [{hex(o_esp)}]
+            bao:
+                push dword ptr [{hex(o_xong)}]
+                call dword ptr [{hex(iat['SetEvent'])}]
+                jmp lap
+            """
+            encoding, _ = asm_x86(asm)
+            if not encoding or len(encoding) > 0x80:
+                raise RuntimeError("dịch asm luồng thường trực lỗi")
+            write_bytes(self.tientrinh, vung, bytes(encoding), len(encoding))
+            # Không dùng pymem.start_thread: nó chờ luồng kết thúc (luồng này không bao giờ kết thúc)
+            k32.CreateRemoteThread.restype = ctypes.c_void_p
+            k32.CreateRemoteThread.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p,
+                                               ctypes.c_ulong, ctypes.c_void_p]
+            luong = k32.CreateRemoteThread(self.tientrinh.process_handle, None, 0, vung, None, 0, None)
+            if not luong:
+                raise RuntimeError(f"CreateRemoteThread lỗi {ctypes.get_last_error()}")
+            k32.CloseHandle(luong)
+            self._luongclient[kenh] = {"k32": k32, "yeucau": yeucau, "xong": xong, "o_ham": o_ham}
+            self._inlog(f"[LUỒNG CLIENT] kênh {kenh}: đã tạo luồng thường trực ở {hex(vung)} (thay start_thread mỗi lần gọi, chống rò handle)")
+        except Exception as err:
+            self._luongclient[kenh] = False
+            self._inlog(f"[LUỒNG CLIENT] kênh {kenh}: không tạo được, dùng start_thread như cũ: {err}")
+
+    def _chaytrongclient(self, diachiham, kenh = "lenh", thoihanms = 10000):
+        # Chạy hàm (đã chép vào client) và chờ xong, như pymem start_thread nhưng không tạo luồng mới. Kênh "lenh": lệnh game, nhặt đồ,
+        # khung chat, khởi tạo bản đồ (nối tiếp nhau); "timduong": tìm đường cục bộ (có thể lâu, không chặn lệnh chiêu). Luồng hỏng /
+        # quá hạn thì kênh đó quay về start_thread (đóng handle phía bot)
+        with self._khoaluongclient[kenh]:
+            if kenh not in self._luongclient:
+                self._khoitaoluongclient(kenh)
+            lc = self._luongclient[kenh]
+            if lc:
+                write_int(self.tientrinh, lc["o_ham"], diachiham)
+                lc["k32"].SetEvent(lc["yeucau"])
+                if lc["k32"].WaitForSingleObject(lc["xong"], thoihanms) == 0:
+                    return True
+                # Quá hạn: luồng có thể đang kẹt trong hàm game; không dùng tiếp kẻo báo "xong" lệch lượt với lần gọi sau
+                self._luongclient[kenh] = False
+                self._inlog(f"[LUỒNG CLIENT] kênh {kenh}: hàm {hex(diachiham)} chạy quá {thoihanms}ms => bỏ luồng thường trực, dùng start_thread")
+                return False
+        luong = self.tientrinh.start_thread(diachiham)
+        if luong:
+            ctypes.windll.kernel32.CloseHandle(ctypes.c_void_p(luong))
+        return True
 
     def _is_chuatoiluotlenh(self, caulenh = None, is_khancap = False):
         # Chiêu có mục tiêu chia lượt theo thời gian giữa các nhân vật: chưa tới lượt nhân vật này thì không gửi (vòng lặp tự gửi lại khi
@@ -735,6 +906,16 @@ class MoiTruong:
         if caulenh.startswith("pf "):
             try:
                 self._kynangguigannhat = (int(caulenh.split()[1].split(".")[0]), self._thoidiemthucthicaulenhgannhat)
+                # Đo mã hoạt ảnh (_dohoatanhchieu): đánh dấu cả lệnh chiêu có mục tiêu ("pf 2119 <id>#"), không qua action_sudungkynang
+                if self._kynangguigannhat[0] in KYNANGDOHOATANHs:
+                    self._thoidiembotguidohoatanh = self._kynangguigannhat
+                # Đợt lệnh Lạc Kích (spam ~0.1s/lần): giữ mốc ô hoạt ảnh của chính nó qua các lần gửi lại trong cùng đợt
+                if self._kynangguigannhat[0] in KYNANGHOATANHMA0s:
+                    lk = self._lackich
+                    if not lk or self._thoidiemthucthicaulenhgannhat - lk["gui"] > THOIGIANBOQUAHOATANHMA0:
+                        self._lackich = {"gui": self._thoidiemthucthicaulenhgannhat, "o": None}
+                    else:
+                        lk["gui"] = self._thoidiemthucthicaulenhgannhat
             except (ValueError, IndexError):
                 pass
         return True
@@ -788,7 +969,7 @@ class MoiTruong:
                 write_bytes(self.tientrinh, self.diachihamthucthicaulenh2 + 19, chuoi + b"\x00", len(chuoi) + 1)
 
         self._danhdaulenhmomenu(caulenh)
-        self.tientrinh.start_thread(self.diachihamthucthicaulenh2)
+        self._chaytrongclient(self.diachihamthucthicaulenh2)
         return True
 
     def _danhdaulenhmomenu(self, caulenh):
@@ -1235,6 +1416,11 @@ class MoiTruong:
         caulenh = "pet {}# show".format(hex(iddoituong)).replace("0x", "")
         return self.action_thucthicaulenh2(caulenh, delay = 0.)
 
+    def action_thuhoibaothu(self, iddoituong):
+        # Cất bảo thú (chuỗi "pet %x# hide" trong xq.exe, cạnh "show" / "lock" / "free")
+        caulenh = "pet {}# hide".format(hex(iddoituong)).replace("0x", "")
+        return self.action_thucthicaulenh2(caulenh, delay = 0.)
+
     def action_sudungthaotacbaothu(self, iddoituong, idkynang, delay = 0.2):
         if time.time() - self._thoidiemsudungthaotacbaothugannhat < delay:
             return False
@@ -1274,7 +1460,7 @@ class MoiTruong:
             write_int(self.tientrinh, self._diachiautoassemblenhatvatpham + 10, self.diachixq + DC.HAMNHATVATPHAM - (self._diachiautoassemblenhatvatpham + 9) - 5)
             write_bytes(self.tientrinh, self._diachiautoassemblenhatvatpham + 14, bytes.fromhex("C3"), 1)
             self._is_dasetupautoassemblenhatvatpham = True
-        self.tientrinh.start_thread(self._diachiautoassemblenhatvatpham)
+        self._chaytrongclient(self._diachiautoassemblenhatvatpham)
 
     def auto_assemble_khoitaothongtinbando(self):
         # Cấu trúc tìm đường / bản đồ [thông tin game] + 0xADFDEC (đích tìm đường + 0x37C534, bản đồ + 0x37C85C) game chỉ tạo khi cần,
@@ -1319,7 +1505,7 @@ class MoiTruong:
                 return
             write_bytes(self.tientrinh, self._diachiautoassemblekhoitaothongtinbando, bytes(encoding), len(encoding))
             self._is_dasetupautoassemblekhoitaothongtinbando = True
-        self.tientrinh.start_thread(self._diachiautoassemblekhoitaothongtinbando)
+        self._chaytrongclient(self._diachiautoassemblekhoitaothongtinbando)
         time.sleep(0.1)
 
     def action_thietlaphooknoidungtrochuyen(self):
@@ -1585,10 +1771,7 @@ class MoiTruong:
         # Cắt theo byte UTF-8 cho vừa bộ đệm, không cắt đôi ký tự
         chuoi_bytes = noidung.encode("utf-8")[:KICHTHUOCDONGKHUNGCHAT - 1].decode("utf-8", errors = "ignore").encode("utf-8")
         write_bytes(self.tientrinh, self._diachithemdongkhungchat + 0x40, chuoi_bytes + b"\x00", len(chuoi_bytes) + 1)
-        luong = self.tientrinh.start_thread(self._diachithemdongkhungchat)
-        if luong:
-            ctypes.windll.kernel32.WaitForSingleObject(luong, 2000)
-            ctypes.windll.kernel32.CloseHandle(luong)
+        self._chaytrongclient(self._diachithemdongkhungchat)
         return True
 
     def action_thietlaphooklenhgame(self):
@@ -2064,6 +2247,10 @@ class MoiTruong:
         write_bytes(self.tientrinh, diachihook, b"\xE9" + struct.pack("<i", kichban - (diachihook + 5)) + b"\x90" * 9, 14)
         self._inlog("[CHẶN CRASH] đã vá chỗ chuột cửa sổ danh sách (bỏ qua khi đối tượng con đã nhả lúc mất kết nối)")
         return True
+
+    def action_thietlaphookhientinkenh(self):
+        return vahookhientinkenh(self.tientrinh, self.diachixq, self._inlog)
+
 
     # Bảng yêu cầu ẩn / hiện cửa sổ cho luồng chính (action_thietlaphookanhiencuaso), nằm trong khối kịch bản đã cấp phát:
     # + LECHBANGANHIEN: SOOANHIEN ô x 12 byte {cờ chờ, vị trí con trỏ cửa sổ trong thông tin game, hiện?}; + LECHNHIPANHIEN: đếm lượt hook chạy
@@ -3468,6 +3655,23 @@ class MoiTruong:
         if not x:
             return False
         return read_string(self.tientrinh, x + 0x188 + 0x6C * (sothutu - 1))
+
+    def get_hinhthucdoituongbaothu(self, sothutu = 1):
+        # +0x1DC ô bảo thú = hình thức: 1 Tấn công, 2 Phòng thủ, 0 Bị động (HINHTHUCBAOTHU_*)
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
+        if not x:
+            return None
+        return read_int(self.tientrinh, x + 0x1DC + 0x6C * (sothutu - 1))
+
+    def action_thietlaphinhthucbaothu(self, sothutu, iddoituongbaothu, hinhthuc):
+        # Như chuột phải nút hình thức ("pet <id># mode N"); lệnh gõ không ghi ô +0x1DC như client => tự ghi để icon đúng và
+        # để lượt sau không gửi lại. Bảo thú gọi ra lại / client làm mới ô thì ô đổi khác => gửi lại
+        if not self.action_thietlapchedobaothu(iddoituongbaothu, hinhthuc, delay = 0.):
+            return False
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
+        if x and read_int(self.tientrinh, x + 0x184 + 0x6C * (sothutu - 1)) == iddoituongbaothu:
+            write_int(self.tientrinh, x + 0x1DC + 0x6C * (sothutu - 1), hinhthuc)
+        return True
 
     def get_trangthaihanhvidoituongbaothu(self, sothutu = 1):
         x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
@@ -5216,15 +5420,24 @@ class MoiTruong:
         # hoặc tên không có chủ nhân trong ngoặc mà lớp +0x29 là bảo thú (0xA0 / 0xA1) hoặc máu hiện > 100% (bảo thú vật phẩm 120%).
         # get_is_npc cũ có nhánh %máu > 100 nên chặn luôn mọi bảo thú vật phẩm; đổi sang +0x29 == 0x80 thì mất nhánh đó, con nào ngoài
         # danh sách tên (Thuỷ Bình) bị chọn làm mục tiêu => xét lại ở đây
+        # Đo 2026-11-26 (mọi client): bảo thú vật phẩm lớp 0xA0, máu 120%, tên không có "(cấp N)"; bảo thú kỹ năng 0xA1 / 0xA2 luôn có
+        # "( chủ ) (cấp N)"; bảo thú giang hồ "Quy (Gạ)" lớp 0x81. Trước đây tên có "(" là loại ngay => "Thần Thú - Dần (Giới hạn)" chỉ
+        # nhờ có trong BAOTHUVATPHAMs, con mới có ngoặc trong tên sẽ bị coi là bảo thú giang hồ chủ "Giới hạn" và bị chọn làm mục tiêu.
+        # Máu > 100% chỉ là dự phòng: buff / hồi máu lên chúng làm % máu đổi (người dùng nhớ lại 2026-11-26), không dựa vào được
         if not diachicosothongtinnhanvat:
             return False
-        if self.get_tendoituong(diachicosothongtinnhanvat) in BAOTHUVATPHAMs:
+        ten = self.get_tendoituong(diachicosothongtinnhanvat) or ""
+        if ten in BAOTHUVATPHAMs or any(ten.startswith(t) for t in BAOTHUVATPHAMs):
             return True
-        lop = read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0x29)
-        # Người chơi (< 0x80) không bao giờ là bảo thú vật phẩm (kẻo máu > 100% vì buff mà bỏ sót mục tiêu PK)
-        if lop < 0x80 or "(" in (self._get_tenthucte(diachicosothongtinnhanvat) or ""):
+        lop = read_short_int(self.tientrinh, diachicosothongtinnhanvat + 0x29) & 0xFF
+        # Người chơi (< 0x80) không bao giờ là bảo thú vật phẩm (kẻo máu > 100% vì buff mà bỏ sót mục tiêu PK); quái / bảo thú kỹ năng
+        # luôn có "(cấp N)"
+        tenthucte = (self._get_tenthucte(diachicosothongtinnhanvat) or "").lower()
+        if lop < 0x80 or "cấp" in tenthucte:
             return False
-        return lop in (0xA0, 0xA1) or self.get_phantramsinhlucconlai(diachicosothongtinnhanvat) > 100
+        if lop in (0xA0, 0xA1):
+            return True
+        return "(" not in tenthucte and self.get_phantramsinhlucconlai(diachicosothongtinnhanvat) > 100
 
     def get_idkynang(self, idvitri_x, idvitri_y = None):
         # idvitri_x là mã kỹ năng (id hoặc vị trí (x, y)) khi không truyền idvitri_y
@@ -5370,7 +5583,8 @@ class MoiTruong:
         tendoituong = self._get_tenthucte(diachicosodoituong)
         if not tendoituong or self._is_quainhiemvu(tendoituong):
             return False
-        return "(" in tendoituong and "cấp" not in tendoituong.lower()
+        # Bảo thú vật phẩm có ngoặc trong tên ("Thần Thú - Dần (Giới hạn)") không phải bảo thú giang hồ chủ "Giới hạn"
+        return "(" in tendoituong and "cấp" not in tendoituong.lower() and not self.get_is_baothuvatpham(diachicosodoituong)
 
     def get_is_baothukynangtrieuhoi(self, diachicosodoituong):
         if not diachicosodoituong:
@@ -5399,6 +5613,32 @@ class MoiTruong:
 
         return False
 
+    def get_is_baothuphe(self, diachicosodoituong):
+        # Bảo thú (triệu hồi / giang hồ, tên "X ( chủ )") của phe mình: của chính mình, đồng đội trong nhóm, nhân vật của mình (tổ đội tự
+        # động / file tài khoản) hoặc người cùng bang (đã biết bang cả hai bên qua "desc user"). Người dùng 2026-11-26: không chỉ bảo thú
+        # của mình mà cả của đồng đội / người cùng bang đều không được chọn làm mục tiêu tấn công.
+        # Chủ không ở gần thì tra ID theo tên đã gặp (_idnguoichoitheoten_map); không biết ID thì không kết luận được => False
+        if not diachicosodoituong or not (self.get_is_baothukynangtrieuhoi(diachicosodoituong) or self.get_is_baothugiangho(diachicosodoituong)):
+            return False
+        tenchunhan = self.get_tenchunhan(diachicosodoituong)
+        if not tenchunhan:
+            return False
+        if tenchunhan == self.get_tendoituong():
+            return True
+        diachichunhan = self.action_timkiemnhanvat(tennhanvat = tenchunhan)
+        if diachichunhan:
+            if self.get_idloainhanvat(diachichunhan) == LOAIMUCTIEU_NGUOICHOICUNGNHOM:
+                return True
+            idchunhan = self.get_idnguoichoi(diachichunhan)
+        else:
+            idchunhan = self._idnguoichoitheoten_map.get(tenchunhan)
+        if not idchunhan:
+            return False
+        if idchunhan in (self.get_danhsachidnguoichoithanhviennhoms() or ()) or idchunhan in laynhanvattodoitudongs() or idchunhan in layidtaikhoans():
+            return True
+        bangminh = self.get_bangphai(self.get_idnguoichoi())
+        return bool(bangminh) and bangminh == self.get_bangphai(idchunhan)
+
     def get_is_cothetancong(self, diachicosothongtinnhanvat):
         if not diachicosothongtinnhanvat or not self.get_is_nhanvattontai(diachicosothongtinnhanvat) or self.get_is_nhanvatdachet(diachicosothongtinnhanvat) or self.get_idtuthenhanvat(diachicosothongtinnhanvat) == TUTHENHANVAT_NAMDUOIDAT:
             return False
@@ -5418,6 +5658,10 @@ class MoiTruong:
         if tenmuctieu:
             if self.get_is_baothukynangtrieuhoi(diachicosothongtinnhanvat) or self.get_is_baothugiangho(diachicosothongtinnhanvat):
                 if idmaupk == MAUPK_HOABINH:
+                    return False
+                # Bảo thú phe mình thì không đánh ở mọi chế độ PK (trước đây chủ không ở gần là chỉ chế độ Bang mới tra, Tự do / Nhóm
+                # vẫn đánh bảo thú của đồng đội / người cùng bang khi chủ chạy ra khỏi tầm nhìn)
+                if self.get_is_baothuphe(diachicosothongtinnhanvat):
                     return False
                 tenchunhan = self.get_tenchunhan(diachicosothongtinnhanvat)
                 if tenchunhan:
@@ -5838,7 +6082,7 @@ class MoiTruong:
                             lenhdesc = (khoa, kho + KHO_MOTA + (o + 1) * KHO_KICHTHUOCMOTA, f"desc {makho} {o + 1}")
                         nhankhos.append(self.get_nhanotui(ten, mota, phamchatkhos[o], ma))
                     self._ghibangnhanotui("kho", nhankhos)
-            if lenhdesc and time.time() - self._lucdescnhanotui >= THOIGIANDESCNHANOTUI:
+            if lenhdesc and not self._is_tamdungdescnhan and time.time() - self._lucdescnhanotui >= THOIGIANDESCNHANOTUI:
                 self._lucdescnhanotui = time.time()
                 if lenhdesc[0] is not None:
                     self._nhanotuidadesc.add(lenhdesc[0])
@@ -6276,8 +6520,8 @@ class MoiTruong:
         with self._khoatimduongcucbo:
             write_bytes(self.tientrinh, self._dulieutimduongcucbo, struct.pack("<iiii", x1, y1, x2, y2), 16)
             write_bytes(self.tientrinh, self._buftimduongcucbo, bytes(100), 100)
-            # pymem không đóng handle luồng, gọi rất nhiều lần (đứng ở vật cản gọi liên tục) thì rò handle
-            ctypes.windll.kernel32.CloseHandle(self.tientrinh.start_thread(self._diachitimduongcucbo))
+            # Gọi rất nhiều lần (đứng ở vật cản gọi liên tục): qua luồng thường trực, không tạo luồng mới mỗi lần (rò handle trong client)
+            self._chaytrongclient(self._diachitimduongcucbo, kenh = "timduong")
             return read_bytes(self.tientrinh, self._buftimduongcucbo, 100).split(b"\0")[0] or None
 
     def get_is_cotimduongcucbo(self):
@@ -8155,8 +8399,8 @@ class MoiTruong:
         # Đòn đánh thường do máy chủ ép (dịch ngược 2026-11-18): "kill" chỉ bật cờ ở máy chủ, đủ tầm thì máy chủ gửi gói 0x41 (xq+0xA1F04)
         # => client đẩy ô đòn đánh kiểu 0 vào hàng đợi hành động +0x100 (hàm 0x41A8B0): mã ô = loại vũ khí [+0x1180] + 6, mã hoạt ảnh
         # +0x104 = 0 (chiêu có mã riêng, Thốn Kình 20...). Theo dõi chỉ số ghi hàng đợi của nhân vật mình, thấy ô như vậy thì ghi nhận
-        # 1 đòn lên mục tiêu "kill" gần nhất: đánh thường thật (_danhthuongthat, điều kiện Phản Tỏa) hoặc ô vung dư của chiêu (cắt ngay ở
-        # action_cathoatanhkhicosobay). Lạc Kích cũng mã 0 => ô xuất hiện trong THOIGIANBOQUAHOATANHMA0 giây sau khi xếp lệnh chiêu
+        # 1 đòn lên mục tiêu "kill" gần nhất (_danhthuongthat, điều kiện Phản Tỏa); ô vung máy chủ chèn vào gói chiêu thì cắt hình ngay
+        # ở action_cathoatanhkhicosobay. Lạc Kích cũng mã 0 => ô xuất hiện trong THOIGIANBOQUAHOATANHMA0 giây sau khi xếp lệnh chiêu
         # KYNANGHOATANHMA0s thì bỏ qua. Đã bỏ chờ số bay đánh thường 24/11 (người dùng: yêu cầu chờ 18/11 là do tưởng ô vung dư là
         # đòn đánh thường bị mất; tắt chờ thì kỹ năng ra đều hơn)
         if not self._khoatheodoidanhthuong.acquire(False):
@@ -8172,13 +8416,15 @@ class MoiTruong:
             sobayhientai = self._docsobaydoituong(diachimuctieu) if diachimuctieu else None
             diachitruoc, sobaytruoc = self._sobaymuctieutruoc
             self._sobaymuctieutruoc = (diachimuctieu, sobayhientai)
-            # Số bay tới chậm 1-2 lượt đọc sau ô (< THOIGIANSOBAYCUNGLUCO) => vẫn là ô chiêu có số bay sẵn: cắt ngay, không tính đánh thường
+            if diachimuctieu and diachitruoc == diachimuctieu and self._sobaymoi(sobaytruoc, sobayhientai):
+                self._thoidiemsobaymoi = time.time()
+            # Số bay tới chậm 1-2 lượt đọc sau ô (< THOIGIANSOBAYCUNGLUCO) => vẫn là ô vung chèn cùng gói chiêu: cắt ngay (vẫn tính là
+            # đánh thường cho Phản Tỏa, xem _danhthuongthat)
             dt = self._danhthuong
             if (dt and not dt.get("catngay") and dt.get("diachi") and dt["diachi"] == diachimuctieu
                     and time.time() - dt["thoidiem"] < THOIGIANSOBAYCUNGLUCO and self._sobaymoi(dt["sobay"], sobayhientai)):
                 dt["kynang"] = "sobaycungluc"
                 dt["catngay"] = True
-                self._danhthuongthat = dt["danhthuongthattruoc"]
             moi = read_int(self.tientrinh, nhanvat + DC.NV_HOATANH + 4)
             td = self._hangdoidanhthuong
             if not td or td["nhanvat"] != nhanvat or not 0 <= td["ghi"] < 100 or not 0 <= moi < 100:
@@ -8194,14 +8440,13 @@ class MoiTruong:
             maodanhthuong = (read_int(self.tientrinh, nhanvat + 0x1180) + 6) & 0xFF
             thoidiemhientai = time.time()
             kynang, thoidiemkynang = self._kynangguigannhat
-            is_vuaguima0 = kynang in KYNANGHOATANHMA0s and thoidiemhientai - thoidiemkynang < THOIGIANBOQUAHOATANHMA0
             sodon = 0
             bienthe = None
             odon = None
             dem = 0
             while ghi != moi and dem < 100:
                 o = read_bytes(self.tientrinh, nhanvat + 0x100 + ghi * 0x28, 5)
-                if o[0] == maodanhthuong and o[4] == 0 and not is_vuaguima0:
+                if o[0] == maodanhthuong and o[4] == 0:
                     sodon += 1
                     bienthe = o[1]
                     if odon is None:
@@ -8211,22 +8456,35 @@ class MoiTruong:
             td["ghi"] = moi
             if not sodon:
                 return
-            # Ô do client phát lại ngay sau khi bot cắt hoạt ảnh (THOIGIANOPHATLAISAUCAT): không phải đòn, bỏ qua
-            sauluccat = thoidiemhientai - self._thoidiemcathoatanh
-            if sauluccat < THOIGIANOPHATLAISAUCAT:
-                if IS_LOGOMA0 and IS_LOGCAULENH:
-                    self._inlog(f"[Ô MÃ 0] bỏ qua {sodon} ô phát lại sau lần cắt hoạt ảnh {sauluccat:.2f}s (chiêu gửi gần nhất {kynang} "
-                                f"cách {thoidiemhientai - thoidiemkynang:.2f}s, tư thế {self.get_idtuthenhanvat()})")
-                return
-            # Người dùng 24/11: Lạc Ảnh, Phản Tỏa, Kim Trung Tráo, Trấn Cổ Thần Uy (KYNANGCATHOATANHNGAYs) vẫn để lại 1 lần vung tay dư. Log
-            # 342 15:33-15:41: ô 42/00 hiện 0.00-0.11s sau lệnh các chiêu này (lệnh spam mỗi ~0.1s); buff (3161/3162) không có số bay
-            # nên cách nhận theo số bay cùng lúc không bắt được. Ô hiện trong THOIGIANOCHIEUSAUGUI giây sau lệnh chiêu = ô của chiêu
-            is_chieucatngay = (kynang in KYNANGCATHOATANHNGAYs and thoidiemhientai - thoidiemkynang < THOIGIANOCHIEUSAUGUI)
+            # Lạc Kích (KYNANGHOATANHMA0s): hoạt ảnh giống hệt đánh thường, sát thương ra ở CUỐI (2 số bay ~0.8-1.15s sau khi vung) => ô đầu
+            # trong THOIGIANBOQUAHOATANHMA0 giây sau lệnh là của chính nó: bỏ qua (không cắt, không tính đánh thường). Log 342 24/11
+            # 16:00-16:15: sau cặp số bay đó 26/30 lần có thêm 1 cụm ô vung (0.13-0.22s sau số bay) không gây sát thương, ngay trước
+            # Nhất Quyền (người dùng thấy vung dư) => ô tới trong THOIGIANVUNGDULACKICH giây sau số bay của Lạc Kích là vung dư: cắt ngay
+            is_vungdulackich = False
+            lk = self._lackich
+            if lk and thoidiemhientai - lk["gui"] < THOIGIANDOTLACKICH:
+                if lk["o"] is None:
+                    if thoidiemhientai - lk["gui"] < THOIGIANBOQUAHOATANHMA0:
+                        lk["o"] = thoidiemhientai
+                        return
+                elif self._thoidiemsobaymoi <= lk["o"]:
+                    return
+                elif thoidiemhientai - self._thoidiemsobaymoi < THOIGIANVUNGDULACKICH and not lk.get("du"):
+                    lk["du"] = True
+                    is_vungdulackich = True
+            # Đã gỡ 24/11 tối: bỏ qua ô mã 0 trong 0.15s sau lần cắt (THOIGIANOPHATLAISAUCAT, giả thuyết client phát lại hoạt ảnh sau khi
+            # cắt). Đo 01:43 chỉ ~3% lần cắt có ô tới sau => ô bị bỏ qua phần lớn là đánh thường thật, làm sai điều kiện Phản Tỏa
+            # Ô mã 0 tới 0.00-0.11s sau lệnh KYNANGCATHOATANHNGAYs (lệnh spam ~0.1s) là đánh thường máy chủ chèn vào gói chiêu do "kill"
+            # đang bật (đo 24/11 tối: tắt "kill" thì gần như không còn), không ra sát thương; buff (3161/3162) không có số bay nên cách
+            # nhận theo số bay cùng lúc không bắt được => ô hiện trong THOIGIANOCHIEUSAUGUI giây sau lệnh các chiêu này thì cắt ngay
+            is_chieucatngay = is_vungdulackich or (kynang in KYNANGCATHOATANHNGAYs and thoidiemhientai - thoidiemkynang < THOIGIANOCHIEUSAUGUI)
+            if is_vungdulackich:
+                kynang = KYNANGHOATANHMA0s[0]
             diachi = diachimuctieu
             if not diachi and not is_chieucatngay:
                 return
-            # Số bay mới tới cùng lượt với ô (so với lượt trước, cùng mục tiêu) => ô vung dư của chiêu đã gây xong sát thương: cắt ngay,
-            # không tính là đánh thường (Phản Tỏa)
+            # Số bay mới tới cùng lượt với ô (so với lượt trước, cùng mục tiêu) => ô vung chèn cùng gói chiêu (số bay là của chiêu): cắt
+            # hình ngay
             mocsobay = sobaytruoc if diachi and diachitruoc == diachi and sobaytruoc else sobayhientai
             sobaycungluc = self._sobaymoi(mocsobay, sobayhientai) if diachi else None
             # Chẩn đoán (IS_LOGOMA0): 16 byte đầu ô, chiêu bot gửi gần nhất, tư thế lúc thấy ô, cách nhận ra ô chiêu
@@ -8246,8 +8504,11 @@ class MoiTruong:
             is_ochieu = bool(sobaycungluc) or is_chieucatngay
             self._danhthuong = {"thoidiem": thoidiemhientai, "diachi": diachi, "id": iddoituong, "o": odon, "sobay": mocsobay,
                                 "bienthe": bienthe, "kynang": "sobaycungluc" if sobaycungluc else kynang if is_chieucatngay else None,
-                                "catngay": is_ochieu, "danhthuongthattruoc": self._danhthuongthat}
-            if not is_ochieu:
+                                "catngay": is_ochieu}
+            # Điều kiện Phản Tỏa tính CẢ ô bị cắt hình: ô vung chèn vào gói chiêu cũng là đánh thường máy chủ thực hiện vì cờ "kill" đang
+            # chạy trên mục tiêu (đo 24/11 tối: tắt "kill" ~18.5 -> ~2 ô/phút), đúng điều Phản Tỏa cần. Trước 24/11 loại ra vì tưởng là
+            # hoạt ảnh dư của chiêu => Phản Tỏa bị hoãn dù "kill" đang chạy
+            if iddoituong is not None:
                 self._danhthuongthat = (iddoituong, thoidiemhientai)
         except Exception:
             self._hangdoidanhthuong = None
@@ -8267,7 +8528,8 @@ class MoiTruong:
 
     def get_is_vuadanhthuong(self, diachimuctieu, thoigian):
         # Máy chủ đã ép đòn đánh thường lên mục tiêu này trong chừng này giây (= cờ "kill" đang chạy thật, đã đủ tầm đánh)
-        # Chỉ đòn đánh thường thật (_danhthuongthat), không tính ô vung dư của chiêu (KYNANGCATHOATANHNGAYs / số bay cùng lúc)
+        # Tính mọi ô đánh thường mã 0 lên mục tiêu, kể cả ô vung chèn bị cắt hình (KYNANGCATHOATANHNGAYs / số bay cùng lúc / vung dư
+        # Lạc Kích); chỉ loại ô của chính Lạc Kích (THOIGIANBOQUAHOATANHMA0)
         iddoituong, thoidiem = self._danhthuongthat
         return bool(iddoituong is not None and diachimuctieu and iddoituong == self.get_iddoituong(diachimuctieu)
                     and time.time() - thoidiem <= thoigian)
@@ -8372,8 +8634,7 @@ class MoiTruong:
         try:
             # Không đụng hàng đợi hoạt ảnh +0x100 (người dùng 2026-11-17: bỏ phần bỏ ô đòn đầu hàng; log 347 cho thấy nó chưa từng bỏ được
             # ô nào). Chỉ ghi tư thế khựng sau tấn công 11 (người dùng chốt 2026-11-15), không ghi thẳng đứng im: LoopBoKhungSauTanCong
-            # tự đổi 11 -> 1 sau THOIGIANCHOBOKHUNGSAUTANCONG giây. Ghi mốc cắt TRƯỚC khi ghi tư thế: luồng nhanh có thể thấy ô phát lại
-            # (THOIGIANOPHATLAISAUCAT) ngay sau lệnh ghi
+            # tự đổi 11 -> 1 sau THOIGIANCHOBOKHUNGSAUTANCONG giây. Mốc cắt (_thoidiemcathoatanh) chỉ còn dùng cho log chẩn đoán
             self._thoidiemcathoatanh = time.time()
             write_int(self.tientrinh, nhanvat + DC.NV_TUTHE, TUTHENHANVAT_DELAYSAUTANCONG)
         except Exception:
@@ -8707,6 +8968,21 @@ class MoiTruong:
         if not x:
             return [False] * soluongo
         return list(struct.unpack("<%di" % soluongo, read_bytes(self.tientrinh, x, soluongo * 4)))
+
+    def get_anhsoluonghanhtrang(self):
+        # {id món: tổng số lượng} mọi ô hành trang (cả túi hết hạn) trong 2 lần đọc, None nếu chưa đọc được. Đồ không chồng được số lượng
+        # có thể là 0 nên xét có / không bằng "id in". Sắp xếp kho qua hành trang so 2 ảnh này để biết lệnh pawn - / + đã ăn chưa
+        x = self.get_diachicosothongtinvatphamhanhtrang()
+        if not x:
+            return None
+        soluongo = self.get_soluongvatphamhanhtrangtoida() + 1
+        ids = struct.unpack("<%di" % soluongo, read_bytes(self.tientrinh, x, soluongo * 4))
+        soluongs = struct.unpack("<%dI" % soluongo, read_bytes(self.tientrinh, x + DC.HT_SOLUONG, soluongo * 4))
+        anh = {}
+        for iddoituong, soluong in zip(ids, soluongs):
+            if iddoituong > 0:
+                anh[iddoituong] = anh.get(iddoituong, 0) + soluong
+        return anh
 
     def action_timkiemvatphamhanhtrang(self, tenvatpham = None, is_ruongdautien = False, is_kiemtrahansudung = False):
         if not tenvatpham: return False

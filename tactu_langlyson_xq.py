@@ -177,6 +177,13 @@ THOIGIANCHODOTHAPPY = 60.
 THOIGIANCHODOTHAPTOITHIEUPY = 3.
 KHOANGCACHTOIDIEMPY = 3.
 THOIGIANMOIDIEMPY = 25.
+# Dò bù (_dobuphongyeu): điểm dò cố định (khối 34 ô) không phủ hết bản đồ (mép vụn < 40 ô bị bỏ, điểm không tới được bỏ sau 25s, đoạn
+# chia vùng không đi đường nối sang đoạn bên cạnh, quái trên ô không thông với chỗ vào). Log 2026-11-25: 2 ván liền giết 99-100 quái, boss 2
+# không ra, từ 21:44 không ai thấy con nào. Nhớ các ô (gộp HESODOBUPY x HESODOBUPY) đã lọt tầm nhìn (ô vuông ±TAMNHINDOBUPY quanh mình,
+# tầm nhìn thật 18); hết 1 lượt đoạn thì lần lượt tới chỗ đứng nhìn được các ô đi được chưa thấy trong vùng mình (ô gần điểm dò của
+# đoạn mình nhất), ô không thông thì đứng ô tới được gần nó nhất trong tầm nhìn; hết ô chưa thấy thì xoá dấu, dò lượt mới
+HESODOBUPY = 3
+TAMNHINDOBUPY = 15
 # "Nhặt và bán rác" (cấu hình Phong Yêu Kính): ra Chu Quốc thì tới Chủ Tiệm Y Dược (gần Tả Khâu Minh nhất) bán rác trước khi vào vòng sau,
 # đứng trong KHOANGCACHBANRACPY ô mới bán (như Về bán rác); quá THOIGIANBANRACPY giây chưa bán xong thì bỏ qua vòng này
 NPCBANRACPY = ("Chủ Tiệm Y Dược", 250, 176)
@@ -202,6 +209,17 @@ SOLAMKIMGIUPY = 10
 SOOTRONGTOITHIEUPY = 6
 # Chia vùng dò: tính lại người cùng dò mỗi chừng này giây (người rớt / vào sau thì chia lại đoạn)
 GIANCACHCHIAVUNGPY = 3.
+# Quái cận chiến không đi bộ tới được (bên kia nước / khác vùng liên thông, _ghiquaiketcanchienpy): người báo nhớ chừng này giây kể từ
+# lần bỏ gần nhất (cận chiến bỏ lại mỗi THOIGIANBOQUAMUCTIEUKHONGTIEPCAN giây khi còn thấy). Người đánh xa đi tới bắn: quá
+# THOIGIANTOIQUAIKETPY giây chưa giết, hoặc tới trong KHOANGCACHTHAYQUAIKETPY ô mà không thấy nó, thì bỏ con đó THOIGIANBOQUAQUAIKETPY giây.
+# Log 2026-11-25 21:09-21:33 (bản đồ có Thỏ Yêu (73, 46)): 342 cận chiến báo Ngô Quốc Kính Ma (73, 79) lúc 21:09:24, 359 / 364 đánh
+# xa nhận nhưng bận đánh quái dọc đường, 364 tới nơi bắn được 1s thì hết 60s (tính từ lúc nhận) => bỏ; báo cũ chỉ nhớ 90s, cận chiến
+# đã đi xa không báo lại => quên hẳn, con đó sống mãi, không đủ 100% quái, boss 2 không ra, cả nhóm dò 23 phút tới hết giờ.
+# Giờ: 60s chỉ tính lúc không bận đánh con khác; báo nhớ 10 phút, người báo đứng gần chỗ đó mà không thấy nó nữa thì mới xoá
+THOIGIANNHOQUAIKETPY = 600.
+THOIGIANTOIQUAIKETPY = 60.
+KHOANGCACHTHAYQUAIKETPY = 10.
+THOIGIANBOQUAQUAIKETPY = 120.
 # Phó bản tự đi được: bandovao tầng đầu, bandonpc + npc nơi vào / nhận thưởng. luachonvao None: vào bằng lối đi NPC (LOIDINPC_MAP, lựa
 # chọn đầu); số: tự nói chuyện NPC chọn lựa chọn thứ luachonvao (đếm từ 0, bỏ CLOSE) rồi Xác nhận, vatphamvao là vật phẩm phải có trong hành trang (không bị trừ).
 # luachonthuong: lựa chọn nhận thưởng (tuple: chọn lần lượt qua từng menu, vd Thành Kiều "4. Nhận thưởng" rồi "1. Nhận thưởng"); is_kiemtrathuong: menu phải có lời chúc mừng mới chọn (Lăng Ly Sơn: NPC đổi menu khi đã xong)
@@ -1471,7 +1489,7 @@ class TacTuLangLySon:
             # (Phong Yêu Kính tự lập nhóm 1 người ở vòng sau). Đội phó bản tự mời lại thành viên; không đi theo đội thì Tổ đội tự động /
             # lập nhóm bằng tay
             s["trangthai"] = "đã giải tán tổ đội, chờ lập tổ đội mới"
-            if not self._doiphoban and not self._is_tudongtodoi:
+            if not self._doiphoban and not self.get_is_tudongtodoi():
                 self._baolanglyson(s, "todoi", f"⚠️ {self._tenpb(s)}: không đi theo đội phó bản, lập tổ đội mới bằng tay để đi vòng sau")
             return None
         self._datlaivongmoi(s)
@@ -2710,6 +2728,16 @@ class TacTuLangLySon:
             do = py["do"] = {"idbando": idbando, "diems": diems, "i": i, "batdau": i, "luc": time.time(), "chieu": chieu, "codinh": True}
             self._logpb(s, f"{len(diems)} điểm dò" + (", đi ngược chiều" if chieu < 0 else ""))
         self._chiavungdophongyeu(s, do)
+        yeucau = self._dentoiquaiketpy(s, idbando)
+        if yeucau:
+            # Đang đi bắn quái kẹt: không tính giờ điểm dò (về lại đi tiếp điểm cũ)
+            do["luc"] = time.time()
+            return yeucau
+        self._danhdaudathaypy(do)
+        if do.get("dobu"):
+            yeucau = self._dobuphongyeu(s, py, do, idbando)
+            if yeucau:
+                return yeucau
         x, y = do["diems"][do["i"]]
         if moitruong.get_khoangcachdiem(x, y) <= KHOANGCACHTOIDIEMPY or time.time() - do["luc"] > THOIGIANMOIDIEMPY:
             do["luc"] = time.time()
@@ -2728,6 +2756,8 @@ class TacTuLangLySon:
                 is_hetluot = do["i"] == do["batdau"]
             if is_hetluot:
                 py["soluotdo"] += 1
+                # Hết lượt đoạn: dò bù chỗ chưa lọt tầm nhìn (_dobuphongyeu) trước khi đi lượt mới
+                do["dobu"] = True
                 # Hết lượt dò: về hỏi số quái Thỏ Yêu (dự phòng khi chưa bắt được tin hệ thống 85% TINDU85PHONGYEUs; đã biết đủ 85% thì
                 # thôi khỏi hỏi)
                 if not py.get("du85"):
@@ -2738,6 +2768,183 @@ class TacTuLangLySon:
         s["trangthai"] = f"{self._tenpb(s)}: {nhan}"
         self._capnhatbuocdichuyen(f"{self._tenpb(s)}: {nhan}")
         return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x, y, idbando), "khoangcachtoida": 1.}
+
+    def _danhdaudathaypy(self, do):
+        # Đánh dấu các ô gộp (HESODOBUPY) có tâm trong ô vuông ±TAMNHINDOBUPY quanh mình là đã lọt tầm nhìn (do["dathay"])
+        toado = self.moitruong.get_toado()
+        if not toado:
+            return
+        h = HESODOBUPY
+        cx, cy = int(toado[0]) // h, int(toado[1]) // h
+        r = TAMNHINDOBUPY // h
+        dathay = do.setdefault("dathay", set())
+        for i in range(cx - r, cx + r + 1):
+            for j in range(cy - r, cy + r + 1):
+                dathay.add((i, j))
+
+    def _layochuathaypy(self, do, idbando):
+        # {ô gộp: chỗ đứng nhìn được (x, y)} mọi ô gộp có ô đi được thuộc vùng mình (điểm dò gần tâm ô nhất nằm trong đoạn của mình,
+        # không chia thì cả vòng). Ô không thông với chỗ vào (bên kia nước / vách) thì chỗ đứng là ô tới được gần nó nhất trong
+        # ±TAMNHINDOBUPY, không có thì bỏ. Tính lại khi đoạn đổi. Không đọc được lưới -> None
+        khoa = (idbando, do.get("dau"), do.get("cuoi"), len(do["diems"]))
+        if do.get("dobukhoa") == khoa:
+            return do["dobuung"]
+        luoi = self.moitruong.get_luoivatcanbando()
+        toiduoc = self._layvungtoiduoc(idbando)
+        if not luoi or not toiduoc:
+            return None
+        batdau = time.time()
+        h = HESODOBUPY
+        rong, cao = len(luoi), len(luoi[0])
+        diems = do["diems"]
+        dau, cuoi = do.get("dau", 0), do.get("cuoi", len(diems) - 1)
+        # Ô đại diện tới được / đi được của từng ô gộp
+        tois, dis = {}, {}
+        for x in range(rong):
+            cot = luoi[x]
+            for y in range(cao):
+                if cot[y]:
+                    continue
+                o = (x // h, y // h)
+                dis.setdefault(o, (x, y))
+                if o not in tois and (x, y) in toiduoc:
+                    tois[o] = (x, y)
+        r = TAMNHINDOBUPY // h
+        ungs = {}
+        for o in dis:
+            tam = (o[0] * h + h // 2, o[1] * h + h // 2)
+            k = min(range(len(diems)), key = lambda k: math.dist(diems[k], tam))
+            if not dau <= k <= cuoi:
+                continue
+            if o in tois:
+                ungs[o] = tois[o]
+                continue
+            gan = [tois[(i, j)] for i in range(o[0] - r, o[0] + r + 1) for j in range(o[1] - r, o[1] + r + 1) if (i, j) in tois]
+            if gan:
+                ungs[o] = min(gan, key = lambda d: math.dist(d, tam))
+        do.update(dobukhoa = khoa, dobuung = ungs)
+        self.moitruong._inlog(f"[PHONG YÊU KÍNH] Dò bù: vùng mình {len(ungs)} ô gộp {h}x{h} đi được ({time.time() - batdau:.2f}s)")
+        return ungs
+
+    def _dobuphongyeu(self, s, py, do, idbando):
+        # Hết 1 lượt đoạn: lần lượt tới chỗ nhìn được ô gộp chưa thấy gần mình nhất (_layochuathaypy), tới nơi / quá THOIGIANMOIDIEMPY
+        # giây / ô đó đã lọt tầm nhìn thì sang ô khác. Hết ô chưa thấy thì xoá dấu, về đi điểm dò như cũ. -> yêu cầu di chuyển hoặc None
+        moitruong = self.moitruong
+        ungs = self._layochuathaypy(do, idbando)
+        now = time.time()
+        dathay = do.setdefault("dathay", set())
+        dang = do.get("dobudiem")
+        if dang:
+            o, (x, y), luc = dang
+            if o in dathay or moitruong.get_khoangcachdiem(x, y) <= KHOANGCACHTOIDIEMPY or now - luc > THOIGIANMOIDIEMPY:
+                dathay.add(o)
+                dang = do["dobudiem"] = None
+        chuathay = [o for o in (ungs or ()) if o not in dathay]
+        if not chuathay:
+            if do.get("dobudem"):
+                self._logpb(s, f"Dò bù xong {do['dobudem']} chỗ chưa thấy, dò lượt mới")
+            do.update(dobu = False, dobudiem = None, dobudem = 0, dathay = set(), luc = now)
+            return None
+        if not dang:
+            toado = moitruong.get_toado()
+            o = min(chuathay, key = lambda k: math.dist(ungs[k], toado))
+            dang = do["dobudiem"] = [o, ungs[o], now]
+            if not do.get("dobudem"):
+                self._logpb(s, f"Dò bù: còn {len(chuathay)} ô gộp chưa lọt tầm nhìn, đi tới trước {ungs[o]}")
+            do["dobudem"] = do.get("dobudem", 0) + 1
+        x, y = dang[1]
+        nhan = f"dò bù chỗ chưa thấy ({x}, {y}), còn {len(chuathay)} ô, boss {len(py['bossdagiet'])}/{laydieukienrapykeocap(self._cauhinhpy())[0]}"
+        s["trangthai"] = f"{self._tenpb(s)}: {nhan}"
+        self._capnhatbuocdichuyen(f"{self._tenpb(s)}: {nhan}")
+        return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x, y, idbando), "khoangcachtoida": 1.}
+
+    def _ghiquaiketcanchienpy(self, iddoituong, toado):
+        # Mình cận chiến bỏ quái vì không đi bộ tới được (đứng bên kia nước / trên đá, khác vùng liên thông của lưới vật cản): báo qua
+        # shared_data ("_quaiketcanchienpy") cho người cùng nhóm đánh xa tới bờ bắn (_dentoiquaiketpy). Log 347 (Ngốc, Đào Hoa) 2026-11-25
+        # 00:56-01:02: Quỷ + Ma ở (116-117, 89) bên kia dòng nước, cách bờ 5-6 ô, cứ 30s lại bỏ 1 lần (27 lần), cả nhóm dò mãi không ra boss
+        if not toado or not self._is_trongphongyeu():
+            return
+        is_moi = iddoituong not in self._quaiketcanchienpy
+        self._quaiketcanchienpy[iddoituong] = (round(toado[0]), round(toado[1]), self.moitruong.get_idbandohientai(), time.time())
+        if is_moi:
+            self.moitruong._inlog(f"[PHONG YÊU KÍNH] Quái {hex(iddoituong)} ở {tuple(map(round, toado))} cận chiến không đi tới được: "
+                                  f"báo người đánh xa cùng nhóm")
+
+    def get_quaiketcanchienpyshare(self):
+        # [[id, x, y, id bản đồ], ...] quái mình báo không đi tới được (còn hạn), không có / không ở Phong Yêu Kính thì None
+        now = time.time()
+        if self._quaiketcanchienpy:
+            # Mình đứng gần chỗ báo mà không còn thấy con đó (đã chết / đi chỗ khác): thôi báo
+            idbando = self.moitruong.get_idbandohientai()
+            idthays = {self.moitruong.get_iddoituong(d) for d in self.moitruong._get_diachidoituongxungquanhs()}
+            for k, v in list(self._quaiketcanchienpy.items()):
+                if v[2] == idbando and k not in idthays and self.moitruong.get_khoangcachdiem(v[0], v[1]) <= KHOANGCACHTHAYQUAIKETPY:
+                    self._quaiketcanchienpy.pop(k, None)
+                    self.moitruong._inlog(f"[PHONG YÊU KÍNH] Quái kẹt {hex(k)} ở ({v[0]}, {v[1]}) không còn thấy: thôi báo")
+        quais = [[k, v[0], v[1], v[2]] for k, v in list(self._quaiketcanchienpy.items()) if now - v[3] <= THOIGIANNHOQUAIKETPY]
+        if len(quais) != len(self._quaiketcanchienpy):
+            self._quaiketcanchienpy = {k: v for k, v in list(self._quaiketcanchienpy.items()) if now - v[3] <= THOIGIANNHOQUAIKETPY}
+        if not quais or not self._is_trongphongyeu():
+            return None
+        return quais
+
+    def _dentoiquaiketpy(self, s, idbando):
+        # Mình đánh xa (tầm đánh đang dùng > cận chiến): đi tới bờ gần quái người cùng nhóm cận chiến báo không đi tới được, tới trong tầm
+        # đánh trừ 1 ô (A* tìm ô đi được trong tầm, như tiếp cận tầm xa). Vào tầm nhìn thì luồng chọn mục tiêu tự chọn và bắn (yêu cầu tấn
+        # công thắng Đi dạo). -> yêu cầu di chuyển, hoặc None khi không có con nào / mình cận chiến
+        moitruong = self.moitruong
+        tam = self._khoangcachvoitoimuctieu
+        if tam <= KHOANGCACHSUDUNGKYNANGCANCHIEN + 1.:
+            self._quaiketdangtoipy = None
+            return None
+        now = time.time()
+        idtoi = moitruong.get_idnguoichoi()
+        thanhviens = set(moitruong.get_danhsachidnguoichoithanhviennhoms() or ()) - {idtoi}
+        try:
+            danhsach = list(self.shared_data.values()) if self.shared_data is not None else []
+        except Exception:
+            danhsach = []
+        ungs = {}
+        for info in danhsach:
+            if not isinstance(info, dict) or info.get("idnguoichoi") not in thanhviens or now - info.get("thoidiemcapnhat", 0.) > 5.:
+                continue
+            for iddoituong, x, y, idbandoquai in info.get("_quaiketcanchienpy") or ():
+                if idbandoquai == idbando and iddoituong not in self._idmuctieubiloi_map \
+                        and now >= self._boquaquaiketpy.get(iddoituong, 0.):
+                    ungs[iddoituong] = (x, y)
+        if not ungs:
+            self._quaiketdangtoipy = None
+            return None
+        toado = moitruong.get_toado()
+        iddoituong = min(ungs, key = lambda k: math.dist(ungs[k], toado))
+        x, y = ungs[iddoituong]
+        dang = self._quaiketdangtoipy
+        is_moi = not dang or dang[0] != iddoituong
+        if is_moi:
+            dang = self._quaiketdangtoipy = [iddoituong, now, now]
+        # Đang bận đánh con khác (tấn công thắng yêu cầu đi bắn): không tính vào THOIGIANTOIQUAIKETPY (dời mốc bắt đầu)
+        idchon = moitruong.get_iddoituongmuctieudangchon()
+        if idchon and idchon != iddoituong:
+            dang[1] += now - dang[2]
+        dang[2] = now
+        lydo = None
+        if now - dang[1] > THOIGIANTOIQUAIKETPY:
+            lydo = f"{THOIGIANTOIQUAIKETPY:.0f}s chưa giết được"
+        elif moitruong.get_khoangcachdiem(x, y) <= KHOANGCACHTHAYQUAIKETPY \
+                and iddoituong not in {moitruong.get_iddoituong(d) for d in moitruong._get_diachidoituongxungquanhs()}:
+            lydo = "tới gần không còn thấy (đã chết / đi chỗ khác)"
+        if lydo:
+            self._boquaquaiketpy = {k: v for k, v in self._boquaquaiketpy.items() if v > now}
+            self._boquaquaiketpy[iddoituong] = now + THOIGIANBOQUAQUAIKETPY
+            self._quaiketdangtoipy = None
+            self._logpb(s, f"Thôi bắn quái kẹt {hex(iddoituong)} ở ({x}, {y}): {lydo}")
+            return None
+        if is_moi:
+            self._logpb(s, f"Đi bắn quái {hex(iddoituong)} ở ({x}, {y}) người cận chiến không đi tới được (tầm {tam:.1f})")
+        nhan = f"bắn quái cận chiến không tới được ({x}, {y})"
+        s["trangthai"] = f"{self._tenpb(s)}: {nhan}"
+        self._capnhatbuocdichuyen(f"{self._tenpb(s)}: {nhan}")
+        return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x, y, idbando), "khoangcachtoida": max(1., tam - 1.)}
 
     def _giaitanraphongyeu(self, s):
         # Ra Phong Yêu Kính bằng rời nhóm: trưởng nhóm rời nhóm (= giải tán) thì game đưa CẢ NHÓM (cả trưởng nhóm) ra Chu Quốc, thành

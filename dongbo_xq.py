@@ -143,24 +143,37 @@ def _otodoi(dulieu):
             thutu.append(ma)
             o[_k("nhom", ma)] = True
     o[_k("nhomthutu")] = thutu
+    # Thành viên vãng lai (tienich_xq.layvanglaitodois): mỗi ID 1 ô để máy này bỏ / máy kia thêm gộp được
+    vanglais = _chuanhoanhoms([dulieu.get("vanglais")]) if isinstance(dulieu, dict) else []
+    for id_ in (vanglais[0] if vanglais else []):
+        o[_k("vanglai", id_)] = True
+    # Nhóm đang tắt Tổ đội tự động (tienich_xq.tainhomtattodois), theo mã nhóm
+    for ma in (dulieu.get("nhomtats") or []) if isinstance(dulieu, dict) else []:
+        if isinstance(ma, str) and ma:
+            o[_k("nhomtat", ma)] = True
     return o
 
 
 def _filetodoi(o):
-    mas, thutu = [], []
+    mas, thutu, vanglais, nhomtats = [], [], [], []
     for khoa, giatri in o.items():
         phan = json.loads(khoa)
-        if phan[0] == "nhom" and giatri is True:
+        if phan[0] == "vanglai" and giatri is True:
+            vanglais.append(int(phan[1]))
+        elif phan[0] == "nhomtat" and giatri is True:
+            nhomtats.append(phan[1])
+        elif phan[0] == "nhom" and giatri is True:
             mas.append(phan[1])
         elif phan[0] == "nhomthutu" and isinstance(giatri, list):
             thutu = giatri
     con = set(mas)
     thutu = [m for m in dict.fromkeys(thutu) if m in con] + sorted(m for m in con if m not in thutu)
-    return {"nhoms": [[int(x) for x in ma.split(",")] for ma in thutu]}
+    return {"nhoms": [[int(x) for x in ma.split(",")] for ma in thutu], "vanglais": sorted(set(vanglais)),
+            "nhomtats": sorted(m for m in set(nhomtats) if m in con)}
 
 
 def _phanfile(khoa):
-    return TODOI if json.loads(khoa)[0] in ("nhom", "nhomthutu") else TAIKHOAN
+    return TODOI if json.loads(khoa)[0] in ("nhom", "nhomthutu", "vanglai", "nhomtat") else TAIKHOAN
 
 
 LOAIFILEs = {

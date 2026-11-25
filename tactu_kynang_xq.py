@@ -782,6 +782,37 @@ class TacTuKyNang:
         self._toadotruoclammoi = self.moitruong.get_toado()
         return True
 
+    def _is_lammoitoadolechcanchien(self, diachimuctieu, khoangcach, idtuthenhanvat):
+        # Đào Hoa Nguyên (người dùng 25/11): client thấy mục tiêu cách 1 sải (3-5 ô, KHOANGCACHLECHCANCHIENTOITHIEU..TOIDA) mà mình
+        # đang tư thế tấn công => máy chủ đã cho mình đứng kề (đánh được) còn client vẽ lệch: gửi lệnh danh hiệu làm mới toạ độ.
+        # Bỏ qua khi chiêu vừa nhận là chiêu không cần kề (Ba Động đánh xa, Đại Hải / Lạc Ảnh quanh mình) và khi mục tiêu đang đi.
+        # True = vừa gửi làm mới
+        thoidiemhientai = time.time()
+        self._dolechlammoitoado(thoidiemhientai)
+        moitruong = self.moitruong
+        is_lech = bool(diachimuctieu) \
+            and KHOANGCACHLECHCANCHIENTOITHIEU <= khoangcach <= KHOANGCACHLECHCANCHIENTOIDA \
+            and idtuthenhanvat in (TUTHENHANVAT_TANCONGVATLY, TUTHENHANVAT_TANCONGPHEPTHUAT) \
+            and not (self._idchieudaohoavuanhan in (VITRIKYNANG_BADONGQUYEN, VITRIKYNANG_DAIHAIVOLUONG, VITRIKYNANG_DAOHOALACANH)
+                     and thoidiemhientai - self._thoidiemchieudaohoavuanhan < THOIGIANBOQUACHIEUXADAOHOA) \
+            and moitruong.get_idtuthenhanvat(diachimuctieu) != TUTHENHANVAT_DICHUYEN
+        if not is_lech:
+            self._thoidiemlechcanchien = 0.
+            return False
+        if not self._thoidiemlechcanchien:
+            self._thoidiemlechcanchien = thoidiemhientai
+        if thoidiemhientai - self._thoidiemlechcanchien < THOIGIANGIULECHCANCHIEN \
+                or thoidiemhientai - self._thoidiemlammoitoado < THOIGIANGIANCACHLAMMOITOADO:
+            return False
+        if not self.action_lammoitrangthai():
+            return False
+        self._thoidiemlammoitoado = thoidiemhientai
+        self._thoidiemlechcanchien = 0.
+        self._toadotruoclammoi = moitruong.get_toado()
+        moitruong._inlog(f"[LÀM MỚI TOẠ ĐỘ] cận chiến: cách mục tiêu {khoangcach:.1f} ô mà đang tư thế tấn công {idtuthenhanvat}"
+                         f" (chiêu vừa nhận {self._idchieudaohoavuanhan}) => làm mới")
+        return True
+
     def _dolechlammoitoado(self, thoidiemhientai):
         # Sau khi làm mới toạ độ: toạ độ client nhảy (lúc mình không di chuyển) là đã lấy lại toạ độ máy chủ, log độ lệch và sau bao lâu
         if not self._toadotruoclammoi:
@@ -929,9 +960,91 @@ class TacTuKyNang:
                               f" đứng yên {self._tinhtamxahoc(self._tileratamxadungyen):.1f} (tối đa {self._tamxatoida:.0f})")
         self._thongketamxa = {}
 
+    def _get_idchuthebuff(self, diachidoituong):
+        # ID người chơi chịu luật chế độ PK khi buff: chính người đó, hoặc chủ của bảo thú triệu hồi (tra theo tên trong tầm nhìn).
+        # Bản thân / bảo thú của mình / không xác định => None
+        if self.moitruong.get_is_nguoichoi(diachidoituong):
+            idnguoichoi = self.moitruong.get_idnguoichoi(diachidoituong)
+            return idnguoichoi if idnguoichoi != self.moitruong.get_idnguoichoi() else None
+        if self.moitruong.get_is_baothukynangtrieuhoi(diachidoituong):
+            tenchunhan = self.moitruong.get_tenchunhan(diachidoituong)
+            if not tenchunhan or tenchunhan == self.moitruong.get_tendoituong():
+                return None
+            for addr in self.moitruong.get_diachinhanvattontais():
+                if self.moitruong.get_is_nguoichoi(addr) and self.moitruong.get_tendoituong(addr) == tenchunhan:
+                    return self.moitruong.get_idnguoichoi(addr)
+        return None
+
+    def _xulytinkhongthebuff(self):
+        # Máy chủ từ chối buff vì khác chế độ PK: khung chat "Đối với đối phương không thể sử dụng<tên chiêu>" (người dùng chụp
+        # 2026-11-25). Tin tới trong THOIGIANCHOTINKHONGTHEBUFF giây sau lần buff lên người khác gần nhất => chặn người đó
+        # THOIGIANCHANBUFFKHACPK giây (gắn với chế độ PK của mình lúc đó, đổi chế độ là hết chặn)
+        buff = self._buffdongdoigannhat
+        if not buff:
+            return
+        thoidiembuff, idnhanbuff, vitrikynang = buff
+        if time.time() - thoidiembuff > THOIGIANCHOTINKHONGTHEBUFF:
+            self._buffdongdoigannhat = None
+            return
+        moc = max(self._thoidiemxettinkhongthebuff, thoidiembuff - 0.2)
+        tins = list(self.moitruong.get_lichsukhungchat5s()) + list(self.moitruong.get_lichsutrochuyen5s())
+        for thoidiem, noidung in tins:
+            if thoidiem <= moc or TINKHONGTHEBUFF not in unicodedata.normalize("NFC", noidung or ""):
+                continue
+            self._thoidiemxettinkhongthebuff = max(self._thoidiemxettinkhongthebuff, thoidiem)
+            self._chanbuffkhacpk_map[idnhanbuff] = (time.time() + THOIGIANCHANBUFFKHACPK, self.moitruong.get_idmaupk())
+            self._chanbuffkhacpk_map = {k: v for k, v in self._chanbuffkhacpk_map.items() if v[0] > time.time()}
+            self._buffdongdoigannhat = None
+            self.moitruong._inlog(f"[BUFF] Máy chủ từ chối buff (kỹ năng {vitrikynang}) lên ID {idnhanbuff}: khác chế độ PK, "
+                                  f"chặn {int(THOIGIANCHANBUFFKHACPK)}s. Tin: {noidung}")
+            return
+
+    def _is_khacmaupkdongdoi(self, diachidoituong):
+        # True khi biết chắc người chơi (hoặc chủ bảo thú triệu hồi) đang khác chế độ PK với mình. Bảng {ID: màu PK} từ shared_data
+        # làm mới mỗi 1s (_maupkcungmay_map, _thoidiemmaupkcungmay)
+        # Mình Hoà Bình thì buff được người ở mọi chế độ PK; mình bật PK thì người kia phải cùng chế độ, không thì máy chủ báo khung
+        # chat "Đối với đối phương không thể sử dụng<chiêu>", Khiết Vân Quyết (vùng) không báo mà không hồi máu (người dùng test 2026-11-25)
+        idmaupkminh = self.moitruong.get_idmaupk()
+        if idmaupkminh == MAUPK_HOABINH:
+            return False
+        # Người máy chủ vừa từ chối buff (tin khung chat, kể cả người không chạy bot): chặn tạm khi mình vẫn giữ chế độ PK lúc đó
+        idchuthe = self._get_idchuthebuff(diachidoituong)
+        if idchuthe:
+            chan = self._chanbuffkhacpk_map.get(idchuthe)
+            if chan and time.time() < chan[0] and chan[1] == idmaupkminh:
+                return True
+        if time.time() - self._thoidiemmaupkcungmay > 1.:
+            self._thoidiemmaupkcungmay = time.time()
+            maupk_map, tenmaupk_map = {}, {}
+            try:
+                danhsach = list(self.shared_data.values()) if self.shared_data is not None else []
+            except Exception:
+                danhsach = []
+            for info in danhsach:
+                if isinstance(info, dict) and time.time() - info.get("thoidiemcapnhat", 0.) <= 5. and info.get("idmaupk") is not None:
+                    if info.get("idnguoichoi"):
+                        maupk_map[info["idnguoichoi"]] = info["idmaupk"]
+                    if info.get("tennhanvat"):
+                        tenmaupk_map[info["tennhanvat"]] = info["idmaupk"]
+            self._maupkcungmay_map, self._tenmaupkcungmay_map = maupk_map, tenmaupk_map
+        if self.moitruong.get_is_nguoichoi(diachidoituong):
+            idnguoichoi = self.moitruong.get_idnguoichoi(diachidoituong)
+            if idnguoichoi == self.moitruong.get_idnguoichoi():
+                return False
+            maupk = self._maupkcungmay_map.get(idnguoichoi)
+        elif self.moitruong.get_is_baothukynangtrieuhoi(diachidoituong):
+            tenchunhan = self.moitruong.get_tenchunhan(diachidoituong)
+            if not tenchunhan or tenchunhan == self.moitruong.get_tendoituong():
+                return False
+            maupk = self._tenmaupkcungmay_map.get(tenchunhan)
+        else:
+            return False
+        return maupk is not None and maupk != self.moitruong.get_idmaupk()
+
     def action_xulyuutiensudungkynang(self, loaikynang, vitrikynang, diachimuctieu, khoangcachyeucau = 0, is_yeucaukhongdichuyen = False, is_ngatdichuyen = False):
         thoidiemhientai = time.time()
         self._capnhattamxa(thoidiemhientai)
+        self._xulytinkhongthebuff()
         idtuthenhanvat = self.moitruong.get_idtuthenhanvat()
         thoigiandungim = 0.
         if idtuthenhanvat == TUTHENHANVAT_DUNGIM:
@@ -970,13 +1083,22 @@ class TacTuKyNang:
         if self._is_chidungtudongtancong and vitrikynang is not None and loaikynang.startswith("sudungkynang"):
             return False, False
 
+        # Buff / hồi máu lên đồng đội: mình bật PK thì người đó phải cùng chế độ PK với mình (người dùng 2026-11-25: mình PK Bang, đồng
+        # đội Hoà Bình thì game không cho buff; mình Hoà Bình thì buff được mọi người). Chỉ biết chế độ PK của nhân vật chạy bot cùng máy / LAN (shared_data);
+        # người ngoài chưa biết thì giữ như cũ
+        if loaikynang in ("sudungkynanglendongdoi", "dichuyentiepcanbuff") and diachimuctieu and self._is_khacmaupkdongdoi(diachimuctieu):
+            return False, False
+
         # Tân Thủ Thôn / Chu Quốc (BANDOKHONGTANCONGs) là thành an toàn: không buff bản thân / đồng đội (Hộ Thể Kim Cang, Tiểu Chu Thiên,
         # Trấn Cổ Thần Uy, Phong Ấn Thuật...) và không chạy lại gần đồng đội để buff. Chiêu đánh ở đây vốn đã không có mục tiêu
         # (action_tudongtimkiemmuctieu bỏ chọn) nên chặn mọi kỹ năng thật là đủ, gồm cả buff dạng "khongmuctieu" / "muctieu"
         # Cả bước tiếp cận gắn với kỹ năng (vitrikynang khác None, vd Mao Sơn "tiếp cận để Mệnh Tế" thành viên nhóm thấp máu ở xa hơn
         # KHOANGCACHSUDUNGMENHTE ô): chiêu đó đằng nào cũng bị chặn ở đây, chạy lại gần vô ích. Trước đây lọt => Kng (359) kéo cấp ở Tân
         # Thủ Thôn cứ chạy về phía acc gà (log ghi "Tiếp cận để tấn công gacon2191"), giành với bước chạy ra cổng Ba Khâu (2026-11-15 19:03)
-        if ((vitrikynang is not None and (loaikynang.startswith("sudungkynang") or loaikynang.startswith("dichuyen")))
+        # Riêng chiêu hồi máu (KYNANGHOIMAUTHANHANTOANs: Cam Lộ Trị, Khiết Vân Quyết, Sơ Trị, Tiên Khí) vẫn dùng khi đồng đội trong tầm
+        # (người dùng 2026-11-25); bước tiếp cận gắn với chúng vẫn chặn để không chạy quanh thành
+        if ((vitrikynang is not None and (loaikynang.startswith("sudungkynang") or loaikynang.startswith("dichuyen"))
+             and not (vitrikynang in KYNANGHOIMAUTHANHANTOANs and loaikynang.startswith("sudungkynang")))
                 or loaikynang == "dichuyentiepcanbuff") \
                 and self.moitruong.get_idbandohientai() in BANDOKHONGTANCONGs and not self.get_is_duocdanhthanhantoan():
             return False, False
@@ -1125,6 +1247,11 @@ class TacTuKyNang:
                                                "is_muctieudi": self.moitruong.get_idtuthenhanvat(diachimuctieu) == TUTHENHANVAT_DICHUYEN}
             elif loaikynang == "sudungkynanglendongdoi":
                 is_dasudung = self.moitruong.action_sudungkynangvitrimuctieu(vitrikynang, diachicosothongtinnhanvatmuctieu = diachimuctieu, is_khongkiemtracothetancong = True)
+                # Ghi lần buff lên người khác gần nhất: máy chủ từ chối thì _xulytinkhongthebuff chặn tạm người này
+                if is_dasudung and diachimuctieu:
+                    idnhanbuff = self._get_idchuthebuff(diachimuctieu)
+                    if idnhanbuff:
+                        self._buffdongdoigannhat = (thoidiemhientai, idnhanbuff, vitrikynang)
             elif loaikynang == "sudungkynangphudau":
                 # Trận pháp Vân Mộng Cốc: game không cho 2 trận chung 1 tâm => tâm đã có trận thì đổi ô (trong tầm xa)
                 self.moitruong.action_sudungkynangvitriphudau(vitrikynang, None, diachimuctieu, khoangcachphudau = khoangcachyeucau,
@@ -1419,6 +1546,8 @@ class TacTuKyNang:
             thoigianconlaihoichieunhatquyen >= THOIGIANHOICHIEUCONLAICHIEULOT and nguyenkhiconlai >= NGUYENKHITOITHIEUCHIEULOTKHIHOICHIEU)
         # Chiêu vừa được nhận là delay 0 (kể cả Lạc Ảnh) thì lượt này không dùng chiêu delay 0 nào (THOIGIANCHANDELAY0LIENTIEP)
         is_chandelay0 = self._capnhatchieudaohoavuanhan()
+        # Cách mục tiêu 1 sải mà đang hoạt ảnh tấn công (không phải Ba Động...): toạ độ client lệch => làm mới toạ độ
+        self._is_lammoitoadolechcanchien(diachimuctieu, khoangcach, idtuthenhanvat)
         # Đòn đầu tiên lên mục tiêu phải là chiêu CÓ DELAY (người dùng 23/11): chiêu delay 0 mở đầu làm khoá các chiêu sau, đánh thường
         # chỉ là đệm. Mục tiêu chưa nhận chiêu có delay nào (_idmuctieudamodau) mà đang có chiêu có delay dùng được (cùng điều kiện vũ khí
         # như danh sách) => chưa dùng chiêu delay 0 (trừ Ba Động từ xa để đuổi), chưa "kill". Mọi chiêu có delay đang hồi thì thôi chờ
@@ -1479,6 +1608,26 @@ class TacTuKyNang:
                 # Chưa có chiêu có delay nào trúng mục tiêu: chưa kill (kẹt quá THOIGIANCHOMODAUKILLTOIDA giây cạnh mục tiêu thì kill luôn)
                 chieuchos = sorted(set(chieuchos) | set(chieucodelaymodaus))
             self._guikilldaohoa(diachimuctieu, khoangcach, chieuchos, is_cancanchien)
+
+        # Chẩn đoán Đại Hải (người dùng 25/11: Phong Yêu Kính quái đông mà không thấy dùng): quanh mình >= 2 quái trong BANKINHDAIHAI ô
+        # mà một điều kiện của Đại Hải sai => ghi từng điều kiện, nguyên khí, tư thế (giãn THOIGIANLOGCHANDOANDAIHAI giây)
+        if self._somuctieuganbanthan3 >= 2 and time.time() - self._thoidiemlogchandoandaihai >= THOIGIANLOGCHANDOANDAIHAI:
+            is_sansangdaihai = self.moitruong.get_is_kynangsansang(VITRIKYNANG_DAIHAIVOLUONG)
+            is_dutieuhaodaihai = self._is_dutieuhao(VITRIKYNANG_DAIHAIVOLUONG)
+            lydos = [ten for ten, is_chan in (
+                ("chưa mở đầu (chờ {})".format(chieucodelaymodaus), is_chuamodau),
+                ("chưa kề mục tiêu (cách {:.1f})".format(khoangcach) if diachimuctieu else "không mục tiêu", not is_cancanchien),
+                ("cờ nhiều quái 3 ô sai (đếm {}, cần {})".format(self._somuctieuganbanthan3, self._soluongnhieumuctieu), not self._is_nhieumuctieuganbanthan3),
+                ("giữ nguyên khí cho Nhất Quyền", is_giunguyenkhinhatquyen),
+                ("vừa dùng chiêu delay 0 ({})".format(self._idchieudaohoavuanhan), is_chandelay0),
+                ("chưa sẵn sàng", not is_sansangdaihai),
+                ("không đủ tiêu hao", not is_dutieuhaodaihai),
+                ("không thể dùng kỹ năng", self.moitruong.get_is_khongthedungkynang()),
+            ) if is_chan]
+            if lydos:
+                self._thoidiemlogchandoandaihai = time.time()
+                self.moitruong._inlog("[ĐẠI HẢI] không dùng ({} quái trong {} ô, nguyên khí {}, tư thế {}): {}".format(
+                    self._somuctieuganbanthan3, BANKINHDAIHAI, nguyenkhiconlai, idtuthenhanvat, "; ".join(lydos)))
 
         # Thứ tự theo test lôi đài 2026-10-28: chiêu có delay (dame ra sau ~0.4s) đi trước, game nhận chiêu kế ngay lúc dame chiêu
         # trước hiện; chiêu delay 0 (Lạc Kích, Ba Động, Đại Hải, Đào Hoa Lạc Ảnh) để sau vì sau nó game khoá chiêu kế ~0.6-1s.
@@ -1683,6 +1832,9 @@ class TacTuKyNang:
         thoidiemhientai = time.time()
         if thoidiemhientai < self._thoidiemhetgiukhaikhoang or self._yeucaugiukhoangcach:
             return
+        # Người dùng 24/11 tối: giữ "kill" mọi lúc. Biết là máy chủ chèn cú vung đánh thường không sát thương vào gói chiêu (~18.5 /
+        # phút, log 342 20:05-20:22), nhưng tắt "kill" thì hết nguyên khí đứng im; bật theo ngưỡng nguyên khí không làm. Cú vung chèn
+        # được cắt hình ở MoiTruong (KYNANGCATHOATANHNGAYs, vung dư Lạc Kích, số bay cùng lúc); bot không chờ đánh thường mới dùng chiêu
         if chieuchos:
             iddoituong = self.moitruong.get_iddoituong(diachimuctieu)
             cho = self._chomodaukill
@@ -2688,13 +2840,16 @@ class TacTuKyNang:
         # -> ([bản thân, đồng đội nhóm trong tầm xa], [bảo thú triệu hồi của mình / thành viên nhóm trong tầm xa])
         # Bảo thú triệu hồi xét chủ nhân như Vân Mộng Cốc (action_tudongtimkiemmuctieumonphai): tên chủ trong ngoặc phải là
         # mình hoặc thành viên nhóm đang thấy trên màn hình (chủ ngoài tầm vẫn được, chỉ cần bảo thú trong tầm).
-        # Không tính bảo thú giang hồ (người dùng 2026-11-14: Tiểu Chu Thiên buff cả bảo thú triệu hồi của đồng đội)
+        # (người dùng 2026-11-14: Tiểu Chu Thiên buff cả bảo thú triệu hồi của đồng đội)
+        # Bảo thú giang hồ (tên "Quy (Gạ)", một cặp ngoặc là tên chủ) của mình / đồng đội cũng buff (người dùng 2026-11-26);
+        # đi một mình vẫn buff bảo thú giang hồ của mình, còn bảo thú triệu hồi thì như cũ chỉ xét khi trong nhóm
         nguoichois = [self.moitruong.get_diachicosothongtinnhanvat1()]
         baothus = []
-        if not self.moitruong.get_is_dangnamtrongnhom():
+        is_trongnhom = self.moitruong.get_is_dangnamtrongnhom()
+        if not is_trongnhom and not self.moitruong.get_is_datrieuhoibaothugiangho():
             return nguoichois, baothus
         idnguoichoi = self.moitruong.get_idnguoichoi()
-        idnguoichoithanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms()
+        idnguoichoithanhviennhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms() if is_trongnhom else ()
         tenchunhanhoples = {self.moitruong.get_tendoituong()}
         baothuxemxets = []
         for addr in self.moitruong.get_diachinhanvattontais():
@@ -2704,7 +2859,10 @@ class TacTuKyNang:
                 if id_nd not in idnguoichoithanhviennhoms or id_nd == idnguoichoi:
                     continue
                 tenchunhanhoples.add(self.moitruong.get_tendoituong(addr))
-            elif not self.moitruong.get_is_baothukynangtrieuhoi(addr):
+            elif self.moitruong.get_is_baothukynangtrieuhoi(addr):
+                if not is_trongnhom:
+                    continue
+            elif not self.moitruong.get_is_baothugiangho(addr):
                 continue
             if self.moitruong.get_is_nhanvatdachet(addr):
                 continue
@@ -2712,6 +2870,9 @@ class TacTuKyNang:
                 continue
             # Đồng đội / bảo thú vừa xuất hiện thì chờ đủ THOIGIANCHOCHONMUCTIEUMOI mới buff / hồi máu
             if self._is_doituongmoixuathien(addr):
+                continue
+            # Khác chế độ PK với mình thì không buff được (người dùng 2026-11-25)
+            if self._is_khacmaupkdongdoi(addr):
                 continue
             if is_nguoichoi:
                 nguoichois.append(addr)

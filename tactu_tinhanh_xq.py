@@ -35,6 +35,9 @@ THOIGIANNHOTINHANHKHUAT = 10.
 # Đồ Lam Kim khớp luật Bán có "Màu tên" ở tab Hành trang thì bán ở Chủ Tiệm Tạp Hóa cùng đồ trắng (_lydokhongbanmautinhanh, 22/11)
 MAUCATTINHANHs = (MAUTEN["lam kim"],)
 THOIGIANCATLAITINHANH = 300.
+# Túi còn chừng này ô trống trở xuống thì về cất sớm (người dùng 26/11): Tinh Anh chết rơi Lam Kim + đồ trắng, 2 ô không chứa hết. Chỉ về
+# lúc rảnh (sắp đi dò / sang bản đồ kế / giết xong nhặt xong), đang đuổi hay chờ nhặt Tinh Anh thì đánh xong nhặt được gì thì nhặt
+SOOTRONGVESOMTINHANH = 2
 # Giết được con Tinh Anh của bản đồ (mỗi bản đồ 1 con) mà quanh đó không còn con nào sống: sang bản đồ kế luôn, khỏi dò hết các
 # điểm. Trước khi đi chờ nhặt đồ rơi: ít nhất chừng này giây (đồ mới hiện dưới đất), còn đồ đang nhặt thì chờ tới tối đa
 THOIGIANCHONHATSAUTINHANH = 3.
@@ -393,22 +396,20 @@ class TacTuTinhAnh:
             return None
         if time.time() - moitruong.get_thoidiemthaydoibandogannhat() < 2.:
             return None
+        if s["chedo"] == "dichuyen" and self.get_is_dangpkviecdi():
+            # Bật PK, đang đánh người chơi gặp trên đường tới bản đồ săn: tạm dừng đi, hết mục tiêu thì đi tiếp
+            s["trangthai"] = "đang PK người chơi, tạm dừng đi"
+            return None
         if moitruong.get_is_dayhanhtrang():
             if self._catkho:
                 return None
             if time.time() - s.get("luccatkho", 0.) < THOIGIANCATLAITINHANH:
                 self._ketthuctinhanh("Túi đầy mà về không có đồ trắng để bán / đồ Lam Kim để cất (dọn túi)")
                 return None
-            s["luccatkho"] = time.time()
-            s["trangthai"] = "túi đầy: về Tân Thủ Thôn bán đồ trắng, cất kho Lam Kim"
-            self._logta("Túi đầy: về Tân Thủ Thôn bán đồ trắng, cất kho đồ Lam Kim, xong săn tiếp")
-            # Việc "Cất kho ngay" (tactu_catkho_xq): vòng di chuyển xét nó trước Săn Tinh Anh, cất xong thì đây tự đi lại bản đồ đang săn.
-            # "banrac": bán trang bị trắng ở Chủ Tiệm Tạp Hóa trước (_buocbantrangtinhanh)
-            self.yeucau_catkho()
-            if self._catkho:
-                self._catkho["mamaus"] = MAUCATTINHANHs
-                self._catkho["banrac"] = "cho"
+            self._vecatkhotinhanh(s, "Túi đầy")
             return None
+        # Túi sắp đầy: chỉ về sớm lúc rảnh (không đang đuổi / chờ nhặt Tinh Anh), xem _is_sapdaytuitinhanh
+        is_sapday = self._is_sapdaytuitinhanh(s)
         idbando = moitruong.get_idbandohientai()
         # Lúc bắt đầu (bấm Bắt đầu / mở lại bot) mà đang đứng ở 1 bản đồ trong danh sách: dò luôn bản đồ đó trước. Chỉ xét 1 lần, kẻo dò
         # xong bản đồ này chuyển sang bản đồ kế lại bị kéo về đây mãi
@@ -431,6 +432,9 @@ class TacTuTinhAnh:
                     bandodich = idbando
                     break
         if idbando != bandodich:
+            if is_sapday:
+                self._vecatkhotinhanh(s, f"Túi còn {moitruong.get_sootronghanhtrang()} ô trống")
+                return None
             s["chedo"] = "dichuyen"
             s["trangthai"] = f"tới {laytenbando(bandodich)} săn {self._tentinhanhbando(bandodich)}"
             buoc = self._lapbuocditoibando(bandodich, is_hoithanhphu = True)
@@ -483,6 +487,11 @@ class TacTuTinhAnh:
                     f"{self.moitruong.get_tendoituong(d)} {tuple(self.moitruong.get_toado(d))}" for d in conlai))
             self._logta(f"Đã giết hết {self._tentinhanhbando(idbando)} ở {laytenbando(idbando)}, sang bản đồ kế")
             self._sangbandoketinhanh(s, bandos)
+            if self._is_sapdaytuitinhanh(s):
+                self._vecatkhotinhanh(s, f"Túi còn {moitruong.get_sootronghanhtrang()} ô trống")
+            return None
+        if is_sapday:
+            self._vecatkhotinhanh(s, f"Túi còn {moitruong.get_sootronghanhtrang()} ô trống")
             return None
         yeucau, is_hetluot = self._ditheodiemtinhanh(s, idbando, f"dò {laytenbando(idbando)} tìm {self._tentinhanhbando(idbando)}")
         if is_hetluot:
@@ -490,6 +499,24 @@ class TacTuTinhAnh:
             self._sangbandoketinhanh(s, bandos)
             return None
         return yeucau
+
+    def _is_sapdaytuitinhanh(self, s):
+        # Còn <= SOOTRONGVESOMTINHANH ô: giết con Tinh Anh kế thì không chứa hết đồ rơi (Lam Kim + đồ trắng) -> về sớm. Vừa về cất trong
+        # THOIGIANCATLAITINHANH giây mà vẫn sắp đầy (không có gì cất / bán được) thì săn tiếp, tới lúc đầy hẳn thì nhánh túi đầy dừng săn
+        if self._catkho or time.time() - s.get("luccatkho", 0.) < THOIGIANCATLAITINHANH:
+            return False
+        return self.moitruong.get_sootronghanhtrang() <= SOOTRONGVESOMTINHANH
+
+    def _vecatkhotinhanh(self, s, lydo):
+        s["luccatkho"] = time.time()
+        s["trangthai"] = f"{lydo.lower()}: về Tân Thủ Thôn bán đồ trắng, cất kho Lam Kim"
+        self._logta(f"{lydo}: về Tân Thủ Thôn bán đồ trắng, cất kho đồ Lam Kim, xong săn tiếp")
+        # Việc "Cất kho ngay" (tactu_catkho_xq): vòng di chuyển xét nó trước Săn Tinh Anh, cất xong thì đây tự đi lại bản đồ đang săn.
+        # "banrac": bán trang bị trắng ở Chủ Tiệm Tạp Hóa trước (_buocbantrangtinhanh)
+        self.yeucau_catkho()
+        if self._catkho:
+            self._catkho["mamaus"] = MAUCATTINHANHs
+            self._catkho["banrac"] = "cho"
 
     def _sangbandoketinhanh(self, s, bandos):
         s["ibando"] = (s["ibando"] + 1) % len(bandos)

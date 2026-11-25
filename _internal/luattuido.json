@@ -100,6 +100,7 @@
         "Thí Luyện Đơn",
         "Thí Luyện Quả",
         "Cao Cấp Bảo Thú Thực Ph",
+        "Thức Ăn Bảo Thú Cao Cấp",
         "Ân Xá Phù",
         "Nhân Sâm",
         "Tái Tạo Hoàn",
@@ -184,7 +185,11 @@
         "Bột Bắp Hấp",
         "Súp Bắp",
         "Khoai Lang Chiên",
-        "Cháo Gạo"
+        "Cháo Gạo",
+        "Thức Ăn Bảo Thú Cao Cấp",
+        "Chuông Hám Thiên Cao Cấp",
+        "Nhiếp Hồn Linh Cao Cấp",
+        "Cửu Long Thần Hỏa Trảo Cao Cấp"
       ],
       "tenchua": [],
       "loai": [],
@@ -243,7 +248,9 @@
         "Hoa Cầu",
         "Kỳ Lân Ngọc Bội",
         "Công thức Huyền Thiết Phiến",
-        "Công Thức Huyền Thiết Phiến"
+        "Công Thức Huyền Thiết Phiến",
+        "Công thức Cẩm Tuyến",
+        "Công thức Cẩm"
       ],
       "tenchua": [],
       "loai": [],
@@ -400,41 +407,41 @@
     },
     {
       "vatpham": "Cao Cấp Bảo Thú Thực Ph",
+      "tencuahang": "Thức Ăn Bảo Thú Cao Cấp",
       "npc": "Chủ Tiệm Tạp Hóa",
-      "duoi": 30,
-      "muatoi": 30,
+      "xepchong": 100,
+      "duoi": 100,
+      "muatoi": 100,
+      "thapnhat": 0,
+      "monphai": [],
       "chikhi": "trieuhoibaothu",
       "bat": true,
-      "monphai": [],
-      "tencuahang": "Thức Ăn Bảo Thú Cao Cấp",
-      "xepchong": 100,
-      "thapnhat": -1,
       "nhanvat": []
     },
     {
       "vatpham": "Lão Tửu",
+      "tencuahang": "",
       "npc": "Chủ Tửu Lâu",
-      "duoi": 30,
-      "muatoi": 30,
+      "xepchong": 100,
+      "duoi": 100,
+      "muatoi": 100,
+      "thapnhat": -1,
+      "monphai": [],
       "chikhi": "trieuhoibaothu",
       "bat": true,
-      "monphai": [],
-      "tencuahang": "",
-      "xepchong": 100,
-      "thapnhat": -1,
       "nhanvat": []
     },
     {
       "vatpham": "Dưa hấu",
+      "tencuahang": "",
       "npc": "Chủ Tửu Lâu",
+      "xepchong": 100,
       "duoi": 30,
       "muatoi": 30,
-      "chikhi": "trieuhoibaothu",
-      "bat": true,
-      "monphai": [],
-      "tencuahang": "",
-      "xepchong": 100,
       "thapnhat": -1,
+      "monphai": [],
+      "chikhi": "trieuhoibaothu",
+      "bat": false,
       "nhanvat": []
     },
     {
@@ -527,6 +534,19 @@
         "Thỏ",
         "Ngốc"
       ]
+    },
+    {
+      "vatpham": "Ân Xá Phù",
+      "tencuahang": "",
+      "npc": "Trân Bảo Khố (Kim Nguyên Bảo)",
+      "xepchong": 100,
+      "duoi": 1,
+      "muatoi": 1,
+      "thapnhat": -1,
+      "monphai": [],
+      "chikhi": "",
+      "bat": true,
+      "nhanvat": []
     }
   ],
   "catkho": [
@@ -603,7 +623,18 @@
       "bat": true,
       "hanhdong": "uutien",
       "ten": [
-        "Lễ Bao Khai Quốc"
+        "Lễ Bao Khai Quốc",
+        "Mảnh Kinh Thư Cổ Tự",
+        "Mảnh Kinh Thư Mờ Nét",
+        "Đỗ Khang Tửu",
+        "Khô Bò",
+        "Que Thịt Nướng",
+        "Túi Ngân Lượng Lớn",
+        "Bánh Đậu Xanh",
+        "Bánh Đậu Đỏ",
+        "Phần Tửu",
+        "Túi Kim Bảo",
+        "Tinh Nguyên Đơn"
       ],
       "tenchua": [],
       "trangbi": false,
@@ -1165,7 +1196,8 @@
       "khongphobanrieng": false,
       "nhanvat": [
         "Thk",
-        "Gạ"
+        "Gạ",
+        "Lầy"
       ],
       "ghichu": ""
     },

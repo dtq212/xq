@@ -4,13 +4,13 @@
 #   cho     : việc kế = việc tích đầu tiên (theo thứ tự) chưa có kết quả hôm nay; chờ mọi thành viên online (thiếu ai cả đội chờ, không
 #             bao giờ đi thiếu người) và báo sẵn sàng. Thành viên (cả trưởng đội) đang làm Sư môn / Danh Vọng thì làm xong lượt đang dở rồi
 #             tạm dừng (get_is_nhuongdoiphoban), đang Mã Tặc / Kéo cấp / giao đồ / cất kho thì đội chờ xong
-#   lapnhom : trưởng đội rời nhóm có người ngoài / không phải mình làm trưởng nhóm, mời lần lượt từng thành viên (như Tổ đội 1 lần, chạy
+#   lapnhom : trưởng đội rời nhóm có người ngoài / không phải mình làm trưởng nhóm, mời lần lượt từng thành viên (chạy
 #             ở luồng nhanh action_doiphobannhanh); thành viên rời nhóm khác, chỉ nhận lời mời của trưởng đội
 #   lam     : trưởng đội bật việc; thành viên bật cùng việc (chế độ thành viên: Phong Yêu Kính cần, việc khác tự đi theo) và Theo sau
 #             trưởng đội (nhớ thiết lập cũ để trả). Phó bản giải tán nhóm giữa các vòng thì đội tự mời lại (ngoài phó bản). Việc dừng ở
 #             trưởng đội (_ghiketthucviecdoi) => ghi kết quả hôm nay, thành viên dừng việc đó, về "cho" làm việc kế
 #   hết việc: giải tán nhóm, thành viên trả Theo sau cũ, quay về Hàng việc cá nhân
-# Đội phó bản đang chạy giữ thành viên (get_idsdoiphobangiu): Tổ đội tự động / Tổ đội 1 lần không đụng tới nhân vật đó, nhân vật ngoài đội
+# Đội phó bản đang chạy giữ thành viên (get_idsdoiphobangiu): Tổ đội tự động không đụng tới nhân vật đó, nhân vật ngoài đội
 # cũng không kéo họ. Trưởng đội mất kết nối: thành viên chờ THOIGIANGIUDOIKHIMAT giây rồi mới tạm về việc cá nhân; trưởng đội vào lại
 # (trạng thái lưu theo nhân vật) thì gọi đội tiếp; trong lúc đó thành viên không tự dẫn đi (get_is_thanhviendoiviec). Sửa đội giữa
 # chừng đổi trưởng đội sang thành viên khác: trưởng đội cũ chuyển đội (_chuyentruongdoi / _nhantruongdoi), việc đang làm giữ nguyên.
@@ -78,13 +78,11 @@ class TacTuDoiPhoBan:
         self._batdaugiaitan("Giải tán đội (bấm tay)")
 
     def _batdaugiaitan(self, lydo):
-        # Tắt Tổ đội tự động / huỷ Tổ đội 1 lần, rời nhóm ngay; THOIGIANBAOXONGDOI giây sau đó còn trong nhóm (bị mời / nhường lại giữa
+        # Tắt Tổ đội tự động, rời nhóm ngay; THOIGIANBAOXONGDOI giây sau đó còn trong nhóm (bị mời / nhường lại giữa
         # chừng) thì rời tiếp (_giunhomgiaitan)
         if self._is_tudongtodoi:
             self._is_tudongtodoi = False
-            self._logdoi(f"{lydo}: tắt Tổ đội tự động (bật lại ở tab Tổ đội)")
-        if self._todoimotlan:
-            self.huy_todoimotlan()
+            self._logdoi(f"{lydo}: tạm tắt Tổ đội tự động nhân vật này (bật lại: nút Bật tự động nhóm ở tab Tổ đội)")
         self._lucgiaitan = time.time()
         self._lucroinhomgiaitan = 0.
         self._giunhomgiaitan()
@@ -216,7 +214,7 @@ class TacTuDoiPhoBan:
         return ids
 
     def get_is_dangtrongdoiphoban(self):
-        # Mình đang là trưởng đội đang chạy hoặc thành viên đang theo đội: Tổ đội tự động / Tổ đội 1 lần nghỉ
+        # Mình đang là trưởng đội đang chạy hoặc thành viên đang theo đội: Tổ đội tự động nghỉ
         return bool(self._doiphoban) or bool(self._doiphobantv)
 
     def get_is_nhuongdoiphoban(self):
@@ -318,7 +316,7 @@ class TacTuDoiPhoBan:
             self._buocthanhviendoi()
 
     def action_doiphobannhanh(self):
-        # Luồng nhanh của Tổ đội 1 lần (0.25s/lượt): trưởng đội đang lập nhóm thì mời, thành viên được gom thì rời nhóm cũ / nhận lời mời
+        # Luồng tổ đội nhanh (0.25s/lượt): trưởng đội đang lập nhóm thì mời, thành viên được gom thì rời nhóm cũ / nhận lời mời
         # ngay. -> True khi đang lập nhóm / được gom
         s = self._doiphoban
         if s and s["giaidoan"] == "lapnhom":

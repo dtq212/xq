@@ -1,6 +1,7 @@
 from collections import defaultdict
 from math import sqrt
 import re
+import unicodedata
 
 from bando_xq import laytenbandogame, layidbandotheoten, get_solanchuyenbando, BANDOCONG_MAP, SOLANCHUYENBANDOTOIDA, CAPQUAI_DAGAP_MAP, _laycapquaidahoc
 
@@ -25,6 +26,10 @@ HYDUONG = "Hỷ Đường"
 TAITAOHOAN = "Tái Tạo Hoàn"
 TIENTE = "Tiền Tệ"
 CAOCAPBAOTHUTHUCPHAM = "Cao Cấp Bảo Thú Thực Ph"
+# Aegis (2026-11-25, acc 364): túi đồ ghi đúng tên cửa hàng "Thức Ăn Bảo Thú Cao Cấp", không phải tên cũ ở trên => tìm / đếm theo cả hai
+# (trước đây mua bù đếm ra 0 nên cứ 10s mua thêm 1 chồng, cho bảo thú ăn cũng không thấy món)
+THUCANBAOTHUCAOCAP = "Thức Ăn Bảo Thú Cao Cấp"
+CAOCAPBAOTHUTHUCPHAMs = (CAOCAPBAOTHUTHUCPHAM, THUCANBAOTHUCAOCAP)
 ANXAPHU = "Ân Xá Phù"
 TUKIMBAOHOP = "Tử Kim Bảo Hộp"
 NHANSAM = "Nhân Sâm"
@@ -281,6 +286,13 @@ VUNGTIEPCANTAMXADUNGYEN = 0.5
 # Log độ lệch toạ độ client đo được trong THOIGIANDOLECHLAMMOI giây sau khi gửi
 THOIGIANCHOLAMMOITOADO = 0.3
 THOIGIANGIANCACHLAMMOITOADO = 5.
+# Đào Hoa Nguyên (cận chiến): client thấy mục tiêu cách 1 sải (người dùng 25/11: 3-4 ô, tính rộng tới 5) mà mình đang tư thế tấn
+# công (không phải Ba Động / Đại Hải / Lạc Ảnh vừa nhận) => toạ độ client lệch máy chủ, làm mới toạ độ. Giữ đủ THOIGIANGIULECHCANCHIEN
+# giây mới gửi (khỏi bắt nhầm khung mục tiêu vừa bước đi), giãn cách chung THOIGIANGIANCACHLAMMOITOADO
+KHOANGCACHLECHCANCHIENTOITHIEU = 3.
+KHOANGCACHLECHCANCHIENTOIDA = 5.
+THOIGIANGIULECHCANCHIEN = 0.2
+THOIGIANBOQUACHIEUXADAOHOA = 1.5
 THOIGIANDOLECHLAMMOI = 1.5
 # Sau lệnh làm mới, bảng đối tượng client chập chờn (mục tiêu bị coi là không hợp lệ ~0.1-0.4s, đo log 2026-11-09): trong
 # THOIGIANGIUMUCTIEUSAULAMMOI giây giữ nguyên mục tiêu theo ID, không chọn lại
@@ -388,11 +400,21 @@ THOIGIANCHIASEANTHAN = 3.
 
 SOLUONGTHANHVIENNHOMTOIDA = 9
 SOLUONGTHANHVIENNHOMTOIDATHUCTE = 9
-# Tổ đội 1 lần (Ctrl+Alt+T): mời thành viên tối đa chừng này giây rồi thôi
-THOIGIANTODOIMOTLAN = 90.
-# Tổ đội 1 lần / đội phó bản lập nhóm mời lần lượt từng người: người đang mời quá chừng này giây chưa vào thì mời người kế (lượt sau
+# Tổ đội tự động / đội phó bản lập nhóm mời lần lượt từng người: người đang mời quá chừng này giây chưa vào thì mời người kế (lượt sau
 # mời lại). Người đồng ý vào nhóm trong 0.3-0.5s (log 364 2026-11-19 22:23); 8s cũ làm mỗi lần ai đó lỡ lời mời đầu tốn trọn 8s (cả vòng ~26s)
 THOIGIANCHOMOITHANHVIEN = 3.
+# Thành viên vãng lai (todoi.json "vanglais", tactu_hoatdong_xq._xulyvanglai): nhóm game đầy ở 5 người (người dùng nói 2026-11-26), cả
+# nhóm giữ đủ 5, người vãng lai đang chiếm slot chỉ nhường khi vãng lai khác cần buff nhóm.
+SOLUONGTHANHVIENNHOMDAY = 5
+# Buff nhóm còn dưới chừng này giây coi như thiếu: người buff chỉ thấy có / không hiệu ứng của người khác (thời gian chỉ đọc được của
+# chính mình), không buff lại trước khi hết, vào sớm chỉ ngồi chờ
+THOIGIANBUFFNHOMSAPHET = 3.
+# Vãng lai vào nhóm quá chừng này giây vẫn chưa đủ buff (người buff bận / hồi chiêu / ở xa) mà có vãng lai khác đang cần thì nhường luôn
+THOIGIANVANGLAICHOBUFF = 30.
+# Vào nhóm ít nhất chừng này giây mới xét nhường (bảng hiệu ứng / shared_data cập nhật sau khi vào)
+THOIGIANVANGLAIOTOITHIEU = 3.
+# Vừa nhường slot thì chừng này giây không nhận lời mời lại (trừ khi chính mình cần buff) để người cần buff vào trước
+THOIGIANVANGLAINGHISAUNHUONG = 20.
 SOLUONGHIEUUNGNHANVATTOIDA = 20
 
 TUTHENHANVAT_DUNGIM = 1
@@ -540,6 +562,17 @@ VITRIKYNANG_VODINHLUUTHUY = 5115
 VITRIKYNANG_CAITUHOANSINH = 5114
 VITRIKYNANG_KHIETVANQUYET = 5113
 VITRIKYNANG_CAMLOTRI = 5116
+
+# Chiêu hồi máu vẫn dùng ở thành an toàn Tân Thủ Thôn / Chu Quốc (BANDOKHONGTANCONGs) (người dùng 2026-11-25): Vân Mộng Cốc
+# Cam Lộ Trị / Khiết Vân Quyết / Sơ Trị, Thục Sơn Tiên Khí. Buff Kháng / buff sát thương và bước chạy lại gần để buff vẫn bị chặn
+# Máy chủ từ chối buff lên người khác chế độ PK (mình đang bật PK): khung chat "Đối với đối phương không thể sử dụng<tên chiêu>"
+# (người dùng chụp 2026-11-25; Khiết Vân Quyết đánh vùng không báo). Tin tới trong THOIGIANCHOTINKHONGTHEBUFF giây sau lần buff thì
+# chặn buff người đó THOIGIANCHANBUFFKHACPK giây (TacTu._xulytinkhongthebuff)
+TINKHONGTHEBUFF = unicodedata.normalize("NFC", "Đối với đối phương không thể sử dụng")
+THOIGIANCHOTINKHONGTHEBUFF = 2.
+THOIGIANCHANBUFFKHACPK = 60.
+
+KYNANGHOIMAUTHANHANTOANs =(VITRIKYNANG_CAMLOTRI, VITRIKYNANG_KHIETVANQUYET, VITRIKYNANG_SOTRI, VITRIKYNANG_TIENKHI)
 
 VITRIKYNANG_RAIDAUTHANHBINH = 5312
 VITRIKYNANG_THOIMIENTHUAT = 5313
@@ -712,6 +745,7 @@ VITRIKYNANG_LACKICH = 2123
 # mục tiêu trước rồi mới dùng (TacTu.action_sudungkynangmonphaidaohoanguyen)
 VITRIKYNANG_PHANTOA = 2124
 # Phản Tỏa chỉ dùng khi máy chủ đã thật sự ép đòn đánh thường (gói 0x41, MoiTruong.get_is_vuadanhthuong) lên mục tiêu trong chừng này giây
+# (từ 24/11 tối tính cả ô vung máy chủ chèn vào gói chiêu bị cắt hình: cũng là đánh thường do cờ "kill" đang chạy)
 THOIGIANXACNHANDANHTHUONGPHANTOA = 2.
 # Đào Hoa chỉ "kill" khi đã xong chiêu mở đầu (Thốn Kình / Lạc Ảnh / Lạc Kích / khống chế người chơi); đứng cạnh mục tiêu quá chừng
 # này giây mà vẫn còn chiêu mở đầu chưa dính hiệu ứng (miễn khống chế, máy chủ từ chối...) thì kill luôn
@@ -719,25 +753,36 @@ THOIGIANCHOMODAUKILLTOIDA = 3.
 # Đã bỏ chờ số bay đánh thường trước khi chen chiêu (thêm 18/11, bỏ 24/11, người dùng: kỹ năng ra đều hơn): yêu cầu cũ là do tưởng
 # cú vung dư sau chiêu delay 0 / buff là đòn đánh thường bị chiêu chen làm mất. Đánh thường thật ra số bay 0.65-0.85s sau khi vung
 #
-# Ô mã 0 hiện trong chừng này giây sau lần bot cắt hoạt ảnh (ghi tư thế 11) thì bỏ qua (coi là client phát lại, không tính đánh thường
-# cho Phản Tỏa). Đo 24/11 01:43 (dò ô trước khi cắt): chỉ ~3% lần cắt có ô thật sự hiện sau
-THOIGIANOPHATLAISAUCAT = 0.15
-# Log 342 24/11 14:00-15:13: chiêu delay 0 (Lạc Ảnh, Phản Tỏa, Đại Hải, Ba Động) => máy chủ gửi ô 42/00 (giống hệt đánh thường) CÙNG LÚC
-# với số bay của chiêu (43/57 lần trong ±0.04s). Ô có số bay mới tới cùng lượt đọc, hoặc trong chừng này giây sau ô, là ô vung dư của
-# chiêu đã gây xong sát thương: cắt ngay, không tính là đánh thường (Phản Tỏa)
+# NGUỒN GỐC CÚ VUNG DƯ (đo 24/11 tối, log 342): gần như mọi ô vung mã 0 không sát thương quanh chiêu là ĐÁNH THƯỜNG máy chủ chèn vào
+# do "kill" đang bật (cùng gói / cùng bộ đếm với ô chiêu), không phải hoạt ảnh của chiêu: bật "kill" ~18.5 ô/phút, tắt ~2/phút. Người
+# dùng chốt giữ "kill" mọi lúc (tắt thì hết nguyên khí đứng im) => chỉ cắt hình các ô này, bot không chờ đánh thường mới dùng chiêu.
+# Đã gỡ THOIGIANOPHATLAISAUCAT (0.15s bỏ qua ô sau lần cắt, giả thuyết client phát lại; đo 01:43 chỉ ~3% => bỏ qua nhầm đánh thường thật)
+#
+# Log 342 24/11 14:00-15:13: chiêu delay 0 (Lạc Ảnh, Phản Tỏa, Đại Hải, Ba Động) => ô 42/00 (đánh thường chèn vào) tới CÙNG LÚC với
+# số bay của chiêu (43/57 lần trong ±0.04s). Ô có số bay mới tới cùng lượt đọc, hoặc trong chừng này giây sau ô, là ô vung không sát
+# thương (sát thương lượt đó là của chiêu): cắt ngay, không tính là đánh thường (Phản Tỏa)
 THOIGIANSOBAYCUNGLUCO = 0.1
 # Ô chiêu delay 0 đã có số bay (trên) thì cắt hẳn khi nó bắt đầu phát (MoiTruong.action_cathoatanhkhicosobay, người dùng 24/11); quá
 # chừng này giây sau khi ô tới mà chưa thấy phát thì thôi
 THOIGIANCATOCHIEUDELAY0TOIDA = 1.5
-# Người dùng 24/11: các chiêu này vẫn để lại 1 lần vung tay dư (ô 42/00 hiện 0.00-0.11s sau lệnh, buff không có số bay) => ô mã 0 hiện
-# trong THOIGIANOCHIEUSAUGUI giây sau lệnh chiêu là ô vung dư của chiêu: không tính đánh thường, cắt ngay khi bắt đầu phát
-KYNANGCATHOATANHNGAYs = (VITRIKYNANG_DAOHOALACANH, VITRIKYNANG_PHANTOA, VITRIKYNANG_KIMTRUNGCHAO, VITRIKYNANG_TRANCOTHANUY)
+# Sau lệnh các chiêu này máy chủ hay chèn 1 ô đánh thường (ô 42/00 tới 0.00-0.11s sau lệnh, không sát thương; buff không có số bay nên
+# cách số bay cùng lúc không bắt được) => ô mã 0 hiện trong THOIGIANOCHIEUSAUGUI giây sau lệnh: không tính đánh thường, cắt ngay khi phát
+# Nhất Quyền (thêm 24/11 tối): ô của nó là mã 90, số bay 0.28-0.59s sau ô (log 342 19:57-19:59, tắt "kill": 13/13 đợt chỉ 1 ô mã 90).
+# Khi bật "kill", 429/947 đợt (342.log.cu) có thêm 1 ô mã 0 tới 0.01-0.1s sau lệnh, xếp TRƯỚC ô mã 90 => vung thừa ~0.7s trước Nhất
+# Quyền. Cắt ô mã 0 đó (20:05-20:22: 53/56 lần); ô mã 90 không bị đụng (chỉ xét ô mã 0)
+KYNANGCATHOATANHNGAYs = (VITRIKYNANG_DAOHOALACANH, VITRIKYNANG_PHANTOA, VITRIKYNANG_KIMTRUNGCHAO, VITRIKYNANG_TRANCOTHANUY,
+                         VITRIKYNANG_NHATQUYENBATSON)
 # 24/11: log 342 15:43-15:49, ô sau lệnh các chiêu này (trừ ô có số bay cùng lúc): 0-0.2s 18 ô và 0.2-0.3s 2 ô đều là ô dư (không số
 # bay); 0.3-0.5s 4 ô thì 2 có số bay kiểu đánh thường 0.55-1s (đòn thật) => mốc 0.3 (người dùng duyệt; đã thử 0.5 nhưng cắt nhầm đòn thật)
 THOIGIANOCHIEUSAUGUI = 0.3
 # Chiêu có mã hoạt ảnh 0 giống đánh thường (Lạc Kích): ô đòn mã 0 hiện trong chừng này giây sau khi xếp lệnh chiêu thì không coi là đánh thường
 KYNANGHOATANHMA0s = (VITRIKYNANG_LACKICH, )
 THOIGIANBOQUAHOATANHMA0 = 1.
+# Lạc Kích: số bay của nó ra ở cuối hoạt ảnh (cặp 2 số, ~0.8-1.15s sau khi vung); log 342 24/11 16:00-16:15 sau cặp số đó 26/30 lần
+# có thêm 1 cụm ô vung dư 0.13-0.22s sau (không sát thương, ngay trước Nhất Quyền). Ô tới trong THOIGIANVUNGDULACKICH giây sau số bay
+# của Lạc Kích (1 ô mỗi đợt) là vung dư: cắt ngay (MoiTruong._theodoidanhthuong). Xét trong THOIGIANDOTLACKICH giây sau lệnh cuối
+THOIGIANVUNGDULACKICH = 0.4
+THOIGIANDOTLACKICH = 2.5
 # Log chẩn đoán ô mã 0 ([Ô MÃ 0]: byte ô, chiêu gửi gần nhất, tư thế), hàng đợi lúc cắt và [SAU CẮT] (tư thế / hàng đợi 1s sau cắt).
 # Tắt 24/11 sau khi xong việc cắt ô vung dư (log dài); bật lại khi cần dò
 IS_LOGOMA0 = False
@@ -774,6 +819,8 @@ THOIGIANTOITHIEUCATHOATANH = 0.1
 # Đo tạm mã hoạt ảnh (2026-11-11, MoiTruong._dohoatanhchieu): danh sách khác rỗng thì log "[ĐO HOẠT ẢNH]" mọi đòn đánh của mình có
 # mã hoạt ảnh ngoài MAHOATANHDABIETs (bắt cả chiêu bấm tay), và mọi đòn trong THOIGIANDOHOATANH giây sau khi bot gửi chiêu trong danh
 # sách.
+# Đo 24/11 tối với (Nhất Quyền, ): tắt "kill" thì gói Nhất Quyền chỉ có ô mã 90; bật "kill" thì máy chủ thêm ô mã 0 (đánh thường,
+# cùng bộ đếm byte 8-11 = cùng gói) xếp trước. Lưu ý: hàm đo đôi lúc quét lại cả vòng hàng đợi cũ (dòng trùng), lọc theo ô + byte
 KYNANGDOHOATANHs = ()
 THOIGIANDOHOATANH = 1.5
 # Thốn Kình 20, Lạc Ảnh 50, Đại Hải 60, Ba Động 70, Nhất Quyền 90, đánh thường / Lạc Kích 0
@@ -803,6 +850,9 @@ THOIGIANDICHODELAY0 = 0.55
 # vào hồi chiêu; quá thì bỏ lượt dịch (còn ít thời gian khoá, đi không kịp)
 THOIGIANCHOBATDAUDICHODELAY0 = 0.35
 BANKINHDAIHAI = 3
+# Log chẩn đoán vì sao không dùng Đại Hải khi quanh mình có >= 2 quái trong BANKINHDAIHAI ô (người dùng 25/11: PYK quái đông mà
+# không thấy dùng). Giãn mỗi dòng chừng này giây cho log khỏi dày
+THOIGIANLOGCHANDOANDAIHAI = 2.
 HESOGOMQUAIDELAY0 = 2.
 PHANTRAMMAUDONMUCTIEUKE = 30
 KHOANGCACHMUCTIEUKEDELAY0 = 4.
@@ -842,8 +892,7 @@ CAPTOIDAQUAYSO = 29
 # 3 = chưa đủ 4 cho Nhất Quyền (để 2 thì nguyên khí 3 + mục tiêu đã có Trọng Thương / Lạc Kích không chiêu nào được dùng, đứng im ~1s)
 NGUYENKHITANCONGVATLYDAOHOA = 3
 # Nguyên khí hồi tới chừng này thì ngắt đánh thường (cách xa ngưỡng bật để không đánh vài chiêu lại phải "kill" lại)
-NGUYENKHINGATTANCONGVATLYDAOHOA = 8
-# Lạc Kích lặp lại (mục tiêu đã có Lạc Kích) là chiêu lót delay 0 duy trì (khôi phục 2026-11-10, kẹp xen chiêu có delay -
+NGUYENKHINGATTANCONGVATLYDAOHOA = 8# Lạc Kích lặp lại (mục tiêu đã có Lạc Kích) là chiêu lót delay 0 duy trì (khôi phục 2026-11-10, kẹp xen chiêu có delay -
 # THOIGIANCHANDELAY0LIENTIEP): dùng khi sau nó còn đủ cho Nhất Quyền (2 + 4 trên mô tả), hoặc khi Nhất Quyền còn hồi ít nhất
 # THOIGIANHOICHIEUCONLAICHIEULOT giây (bước chờ delay 0 -> Nhất Quyền 0.8-1.7s bị hồi chiêu che mất) và nguyên khí còn
 # NGUYENKHITOITHIEUCHIEULOTKHIHOICHIEU. Thời gian còn lại tính từ lúc Nhất Quyền vào hồi chiêu + tái sử dụng trên mô tả
@@ -1136,8 +1185,9 @@ MONPHAICHIBUFFKIMCHAMs = ("vanmongcoc", "maoson", "conluan")
 # Mao Sơn: Ám Ma Nhập Thể chỉ dùng lên người chơi các phái này (biết phái qua "desc user", chưa biết thì hỏi rồi bỏ qua lượt đó)
 MONPHAIAMMANHAPTHEs = ("camvequan", "vanmongcoc", "conluan")
 # Thục Sơn thì theo vũ khí đang đeo: LOAIVUKHITHUCSONCHIBUFF... (đặt cạnh IDLOAIVUKHI_*)
-# Bảo thú triệu hồi (tên bắt đầu bằng): Cương Thi / Thiên Binh / Thiên Tướng không cần Kim Châm, Quỷ Tốt không cần Ngân Châm
-BAOTHUCHIBUFFNGANCHAMs = (CUONGTHI, THIENBINH, THIENTUONG)
+# Bảo thú triệu hồi (tên bắt đầu bằng): Cương Thi / Thiên Binh / Thiên Tướng / Đậu Binh không cần Kim Châm, Quỷ Tốt không cần Ngân Châm
+# (Đậu Binh thêm theo người dùng 2026-11-26). Bảo thú giang hồ không buff cả hai (xử lý ở tactu_muctieu)
+BAOTHUCHIBUFFNGANCHAMs = (CUONGTHI, THIENBINH, THIENTUONG, DAUBINH)
 BAOTHUCHIBUFFKIMCHAMs = (QUYTOT,)
 
 BANDO_TANTHUTHON = 1
@@ -1304,7 +1354,11 @@ CHISONHANVAT_MAP = {
 # Song Tử Anh Minh (nhặt ở Phong Ấn, hạn 7 ngày, người dùng gửi mô tả 2026-11-21): "Khi được triệu hồi, sẽ giúp chủ nhân gia tăng
 # thêm 5% Ngoại Kháng, 5% Nội Kháng, 5% Khí Huyết, 5% Bạo Kích, 5% Ngoại Công, 5% Nội Công". Tự đọc mô tả sẽ lấy Ngoại Kháng
 # (đứng đầu) mà Đào Hoa tự làm Kháng chớp => khai tay theo dõi Ngoại + Nội Công như con Chuột.
+# Thần Thú - Ma Yết (nhặt ở Phong Ấn, người dùng gửi mô tả 2026-11-24): "sau khi triệu hồi tăng 10% Ngoại Công và 10% Nội Công cùng
+# 2% Bạo Kích cho chủ nhân". Tự đọc mô tả chỉ lấy Ngoại Công (đứng đầu) => khai tay Ngoại + Nội Công cho dấu vân tay chắc hơn;
+# không theo dõi Bạo Kích vì chưa đo ô Bạo Kích có đổi theo chiêu (Phản Tỏa Đào Hoa chí mạng 100%) hay không.
 CHISOBAOTHUVATPHAM_MAP = {
+    THANTHUMAYET: ("Ngoại Công", "Nội Công"),
     SONGTUANHMINH: ("Ngoại Công", "Nội Công"),
     CONGIAPCHUOT: ("Ngoại Công", "Nội Công"),
     THANTHUCHUOT: ("Ngoại Công", "Nội Công"),
@@ -1368,6 +1422,23 @@ KHIHUYETTRAOTOITHIEUDEOLAI = 100
 # Thưởng code tân thủ dùng bằng "use2 <id>#" (lệnh nút Xác Nhận của hộp hỏi), không cần "use" trước (người dùng dặn 2026-11-01)
 VATPHAMDUNGUSE2s = (CUULONGTHANHOATRAO, "Cửu Long Thần Hoả Trảo", "Hoàng Sa Chi Tâm", *THUYBINHs)
 TINHNGUYENDON = "Tinh Nguyên Đơn"
+# Tự ép Tinh Nguyên Đơn vào bảo thú giang hồ tới khi bảng "Kỹ năng chiến đấu" có chừng này kỹ năng (bất kỳ, không tính kỹ năng sẵn có ô 0), mỗi lần cách THOIGIANEPTINHNGUYENDON giây
+# để đọc lại số kỹ năng; ép EPTINHNGUYENDONTOIDAKHONGTANG lần liền không tăng thì ngưng con đó (người dùng 2026-11-25)
+SOKYNANGBAOTHUEPTINHNGUYENDON = 5
+THOIGIANEPTINHNGUYENDON = 3.
+EPTINHNGUYENDONTOIDAKHONGTANG = 3
+# Tinh Nguyên Đơn kỹ năng chuẩn => chừa lại, không tự ép (người dùng 2026-11-25). So không phân biệt hoa thường, gộp khoảng trắng.
+# - TINHNGUYENDONGIUs: mô tả chứa chữ này là giữ
+# - TINHNGUYENDONGIU_CHISO5s: mô tả có chỉ số này tăng 5%. Mô tả thật (ảnh người dùng 2026-11-25): "Bao gồm kỹ năng:Khí Huyết Phù Trợ
+#   Kỹ năng của Bảo thú, Sau khi triệu hồi, Khí Huyết của chủ nhân gia tăng 5%, ..." => không có chuỗi "5% Khí Huyết"; so "<chỉ số>
+#   ... 5%" (cách nhau tối đa 40 ký tự, không qua dấu phẩy / chấm) hoặc "5% <chỉ số>"
+# Tên đúng trong game là "Từ Năng DAO Động" (ảnh người dùng 2026-11-25); trước ghi "Giao" nên không khớp, đã ép mất 2 viên xanh (347, 354).
+# Giữ cả "Giao" phòng bản khác. "Từ Năng Dao Động" đã gồm cả bản Cao Cấp
+TINHNGUYENDONGIUs = ("Từ Năng Dao Động", "Từ Năng Giao Động")
+TINHNGUYENDONGIU_CHISO5s = ("Khí Huyết", "Ngoại Công", "Nội Công", "Ngoại Kháng", "Nội Kháng")
+# - Tên vàng (mã màu \x1bY, vd Cao Cấp Từ Năng Giao Động) không bao giờ tự ép; TINHNGUYENDONGIU_KYNANGs: tên kỹ năng ngay sau
+#   "Bao gồm kỹ năng:" (Phục Sinh tên xanh - ảnh người dùng 2026-11-25)
+TINHNGUYENDONGIU_KYNANGs = ("Phục Sinh",)
 HOIBANGPHU = "Hồi Bang Phù"
 NGUYENLIEULUYENDONs = ("Hoàng Kỳ", "Cúc Dại", "Dã Cúc", "Quả Anh Túc", "Điền Thất", "Táo Đỏ", "Trần Bì", "Dương Kim Hoa", "Linh Chi Thảo", "Sơn Sâm", "Cát Cánh", "Cam Thảo", "Sinh Địa", "Xuyên Tâm Liên", "Hoàng Liên", "Hà Thủ Ô", "La Hán Quả", "Bạch Kỳ", "Đương Quy", "Xuyên Bối", "Đông Trùng Thảo")
 CUONGTHIPHU = "Cương Thi Phù"
@@ -1698,6 +1769,30 @@ KHOANGCACHTIMTHANHVIENMENHTE = 18
 PHANTRAMSINHLUCTEBAOTHU = (25, 50)
 PHANTRAMSINHLUCTEBAOTHU_LANGLYSON = (35, 65)
 BANDOTEBAOTHUSOMs = (BANDO_THANHKIEU, BANDO_LANGLYSON1, BANDO_LANGLYSON2, BANDO_LANGLYSON3)
+
+# Hình thức bảo thú (ô +0x1DC, lệnh "pet <id># mode N"): 1 Tấn công, 2 Phòng thủ, 0 Bị động. Bot ép mọi bảo thú về Bị động
+# (người dùng 2026-11-26: Tấn công / Phòng thủ thì bị đánh là nó tự phản kích, chạy đi xa phải quay lại dắt)
+HINHTHUCBAOTHU_TANCONG = 1
+HINHTHUCBAOTHU_PHONGTHU = 2
+HINHTHUCBAOTHU_BIDONG = 0
+# Ô hình thức chưa đúng Bị động thì gửi lại lệnh tối đa mỗi chừng này giây cho mỗi con
+GIANCACHTHIETLAPHINHTHUCBAOTHU = 5.
+# Bảo thú giang hồ dưới % khí huyết này thì thu hồi ("pet <id># hide", chuỗi lệnh trong xq.exe cạnh "show"), cấu hình được ở nhóm
+# Bảo thú, 0 = không thu hồi (người dùng 2026-11-26). Đã thu hồi thì không tự triệu hồi lại tới khi máu đủ ngưỡng, hoặc quá
+# THOIGIANCHOTRIEUHOILAIBAOTHU giây (phòng máu đọc lúc cất không đổi => không bao giờ gọi lại)
+PHANTRAMSINHLUCTHUHOIBAOTHUGIANGHO = 25.
+THOIGIANCHOTRIEUHOILAIBAOTHU = 120.
+# Bảo thú giang hồ độ trung thành dưới mức này thì không tự triệu hồi, cảnh báo + báo Telegram (người dùng 2026-11-26)
+DOTRUNGTHANHTOITHIEUTRIEUHOI = 50
+# Cho bảo thú giang hồ ăn: Lão Tửu khi nội lực <= max(NOILUCBAOTHUCHOANLAOTUU, PHANTRAMNOILUCBAOTHUCHOANLAOTUU % tối đa), Dưa hấu khi
+# khí huyết thiếu >= SINHLUCTHIEUBAOTHUCHOANDUAHAU; đang có hiệu ứng hồi (mã trong _internal/tenhieuung.json) thì không cho ăn thêm.
+# Sau mỗi lần cho ăn chờ CHOHIEUUNGHOIPHUCBAOTHU giây cho hiệu ứng kịp hiện trên bảo thú
+NOILUCBAOTHUCHOANLAOTUU = 120
+PHANTRAMNOILUCBAOTHUCHOANLAOTUU = 30.
+SINHLUCTHIEUBAOTHUCHOANDUAHAU = 1200
+HIEUUNG_HOIPHAPLUCBAOTHU = 9156
+HIEUUNG_HOIKHIHUYETBAOTHU = 9154
+CHOHIEUUNGHOIPHUCBAOTHU = 1.5
 
 # Bảo thú kỹ năng triệu hồi xa nhân vật quá KHOANGCACHGOIBAOTHUVE ô thì gọi theo sau, tới khi về trong KHOANGCACHBAOTHUDAVE ô mới cho đánh tiếp
 KHOANGCACHGOIBAOTHUVE = 18.

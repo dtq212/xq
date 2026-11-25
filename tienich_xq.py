@@ -652,6 +652,33 @@ def _chuanhoanhomtodoitudongs(nhoms):
     return ketqua
 
 
+def taivanglaitodois():
+    # Thành viên vãng lai (todoi.json "vanglais"): không bắt buộc luôn trong nhóm, giữ slot cuối nhóm, người vãng lai khác cần buff
+    # nhóm thì nhường slot (tactu_hoatdong_xq._xulyvanglai). Vẫn nằm trong "nhoms" như mọi thành viên (thứ tự ưu tiên, đồng đội)
+    try:
+        with open(duongdantodoitudong(), "r", encoding = "utf-8") as file:
+            vanglais = _chuanhoanhomtodoitudongs([json.load(file).get("vanglais")])
+        return vanglais[0] if vanglais else []
+    except Exception:
+        return []
+
+
+def manhomtodoi(nhom):
+    # Mã nhóm theo nội dung (giống dongbo_xq._otodoi): "id1,id2,..." theo thứ tự ưu tiên
+    return ",".join(str(i) for i in nhom)
+
+
+def tainhomtattodois():
+    # Nhóm đang TẮT Tổ đội tự động (todoi.json "nhomtats": [mã nhóm]); bật / tắt theo nhóm, không theo nhân vật (người dùng 2026-11-26).
+    # Nhóm mới / không ghi = bật
+    try:
+        with open(duongdantodoitudong(), "r", encoding = "utf-8") as file:
+            nhomtats = json.load(file).get("nhomtats") or []
+        return sorted({str(m) for m in nhomtats if isinstance(m, str) and m})
+    except Exception:
+        return []
+
+
 def tainhomtodoitudongs():
     from hangso_xq import NHANVATTODOITUDONGs_LIST
 
@@ -888,13 +915,19 @@ def luudanhsachnhanvat(dulieu):
         print(err)
 
 
-def luunhomtodoitudongs(nhoms):
+def luunhomtodoitudongs(nhoms, vanglais = None, nhomtats = None):
+    # vanglais / nhomtats None = giữ như trong file; chỉ giữ ID còn trong nhóm nào đó / mã nhóm còn tồn tại
     filepath = duongdantodoitudong()
     try:
+        nhoms = _chuanhoanhomtodoitudongs(nhoms)
+        tatca = {id_ for nhom in nhoms for id_ in nhom}
+        vanglais = sorted({id_ for id_ in (taivanglaitodois() if vanglais is None else vanglais) if id_ in tatca})
+        mas = {manhomtodoi(n) for n in nhoms}
+        nhomtats = sorted({m for m in (tainhomtattodois() if nhomtats is None else nhomtats) if m in mas})
         os.makedirs(os.path.dirname(filepath), exist_ok = True)
         filetam = filepath + ".tmp"
         with open(filetam, "w", encoding = "utf-8") as file:
-            json.dump({"nhoms": _chuanhoanhomtodoitudongs(nhoms)}, file, ensure_ascii = False, indent = 2)
+            json.dump({"nhoms": nhoms, "vanglais": vanglais, "nhomtats": nhomtats}, file, ensure_ascii = False, indent = 2)
         thaythefile(filetam, filepath)
     except Exception as err:
         print(err)
@@ -912,6 +945,8 @@ def _capnhattodoitudong_cache():
         nhoms = tainhomtodoitudongs()
         _todoitudong_cache["nhoms"] = nhoms
         _todoitudong_cache["nhanvats"] = tuple(id_ for nhom in nhoms for id_ in nhom)
+        _todoitudong_cache["vanglais"] = frozenset(taivanglaitodois())
+        _todoitudong_cache["nhomtats"] = frozenset(tainhomtattodois())
         _todoitudong_cache["thoidiemsua"] = thoidiemsua
 
 
@@ -924,6 +959,18 @@ def laynhanvattodoitudongs():
     # Gộp mọi nhóm: nhân vật của mình (coi như đồng đội / cùng bang)
     _capnhattodoitudong_cache()
     return _todoitudong_cache["nhanvats"]
+
+
+def layvanglaitodois():
+    # frozenset ID thành viên vãng lai (đọc lại khi todoi.json đổi, như laynhomtodoitudongs)
+    _capnhattodoitudong_cache()
+    return _todoitudong_cache.get("vanglais") or frozenset()
+
+
+def layis_nhomtodoibat(nhom):
+    # Nhóm (danh sách ID như trong todoi.json) có đang bật Tổ đội tự động không
+    _capnhattodoitudong_cache()
+    return manhomtodoi(nhom) not in (_todoitudong_cache.get("nhomtats") or frozenset())
 
 
 _idtaikhoan_cache = {"ids": frozenset(), "thoidiemsua": None, "thoidiemkiemtra": 0.}

@@ -79,16 +79,16 @@ def khoidong_loopthongke(thongke, moitruong, stop):
             print(f"[Loop THỐNG KÊ] Lỗi: {e}")
         time.sleep(CHUKYLAYMAU)
 
-def khoidong_looptodoimotlan(tactu, moitruong, stop):
-    # Tổ đội 1 lần (Ctrl+Alt+T) chạy riêng: để trong luồng phụ (~1s/lượt) thì mỗi người vào nhóm chậm 3-4s. Đang gom / được gom thì
-    # 0.25s/lượt, rảnh thì 0.5s/lượt
+def khoidong_looptodoinhanh(tactu, moitruong, stop):
+    # Mời / đồng ý vào nhóm nhanh (Tổ đội tự động, đội phó bản lập nhóm) chạy riêng: để trong luồng phụ (~1s/lượt) thì mỗi người vào nhóm
+    # chậm 3-4s. Đang mời / được mời thì 0.25s/lượt, rảnh thì 0.5s/lượt
     while not stop.is_set() and moitruong.get_is_cuasogametontai():
         is_dangchay = False
         try:
             if moitruong.get_is_nhanvattontai():
-                is_dangchay = tactu.action_todoimotlan()
+                is_dangchay = tactu.action_todoinhanh()
         except Exception as e:
-            print(f"[Loop TỔ ĐỘI 1 LẦN] Lỗi: {e}")
+            print(f"[Loop TỔ ĐỘI NHANH] Lỗi: {e}")
             time.sleep(1)
         time.sleep(0.25 if is_dangchay else 0.5)
 
@@ -160,6 +160,7 @@ class CuaSo:
         self.moitruong.action_thietlaphookvetilenen()
         self.moitruong.action_thietlaphookvecuaso()
         self.moitruong.action_thietlaphookchuotcuasodanhsach()
+        self.moitruong.action_thietlaphookhientinkenh()
         self.moitruong.action_thietlaphookanhiencuaso()
         self.moitruong.action_thietlaphookthongbao()
         self.moitruong.action_thietlaphookverle()
@@ -206,7 +207,7 @@ class CuaSo:
             threading.Thread(target = khoidong_loopgiuotrong, args = [self.moitruong, self.tactu, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopthongke, args = [self.thongke, self.moitruong, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopgiamsat, args = [self.giamsat, self.theodoisuco, self.moitruong, self.main_stop], daemon = True),
-            threading.Thread(target = khoidong_looptodoimotlan, args = [self.tactu, self.moitruong, self.main_stop], daemon = True),
+            threading.Thread(target = khoidong_looptodoinhanh, args = [self.tactu, self.moitruong, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopuocluongmuctieu, args = [self.uocluongmuctieu, self.moitruong, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopdanhhieumuctieu, args = [self.danhhieumuctieu, self.tactu, self.moitruong, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopngoaihinh, args = [self.ngoaihinh, self.main_stop], daemon = True),
@@ -332,6 +333,8 @@ class CuaSo:
                     "_phobanmuonbando": vitri[1],
                     # Vân Mộng Cốc cùng máy dùng để biết buff Ngân Châm hay Kim Châm cho nhân vật này
                     "tenmonphai": self.moitruong.get_tenmonphai(),
+                    # Chế độ PK (MAUPK_*): chỉ buff lên đồng đội cùng chế độ PK (TacTu._is_khacmaupkdongdoi)
+                    "idmaupk": self.moitruong.get_idmaupk(),
                     # Loại vũ khí đang đeo: Vân Mộng Cốc buff Thục Sơn kiếm chỉ Kim Châm, đao chỉ Ngân Châm (cả khi ngoài tầm nhìn)
                     "idloaivukhi": self.moitruong.get_idloaivukhi(),
                     # Tổ đội tự động dùng để biết các nhóm khác đang cùng bản đồ
@@ -352,11 +355,10 @@ class CuaSo:
                     "_is_dungimdanh": self.tactu._is_dungimdanh,
                     "_idmuctieutheosau": self.tactu._idmuctieutheosau,
                     "_tenmuctieutheosau": self.tactu._tenmuctieutheosau,
-                    "_is_tudongtodoi": self.tactu._is_tudongtodoi,
-                    # Tổ đội 1 lần: trưởng nhóm đang gom ai (cửa sổ thành viên đọc), trạng thái cho giao diện
-                    "_todoimotlan": self.tactu.get_todoimotlanshare(),
-                    "_is_dangtodoimotlan": bool(self.tactu._todoimotlan),
-                    "_trangthaitodoimotlan": self.tactu._trangthaitodoimotlan,
+                    "_is_tudongtodoi": self.tactu.get_is_tudongtodoi(),
+                    # Thành viên vãng lai: buff nhóm đang thiếu, lúc vào nhóm / nhường slot (trưởng nhóm, vãng lai khác đọc)
+                    "_vanglai": self.tactu.get_vanglaishare(),
+                    "_trangthaivanglai": self.tactu._trangthaivanglai,
                     "_is_tudongsudungkynang": self.tactu._is_tudongsudungkynang,
                     "_is_chidungtudongtancong": self.tactu._is_chidungtudongtancong,
                     "_is_tudongsudungvatpham": self.tactu._is_tudongsudungvatpham,
@@ -393,6 +395,7 @@ class CuaSo:
                     "_danhhieulammoi": self.tactu._danhhieulammoi,
                     "_danhsachdanhhieu": self.tactu.get_danhsachdanhhieu(),
                     "_phantramnoiluckhaithientichdia": self.tactu._phantramnoiluckhaithientichdia,
+                    "_phantramsinhlucthuhoibaothugiangho": self.tactu._phantramsinhlucthuhoibaothugiangho,
 
                     "_is_tudongdichuyendiemdanhxungquanh": self.tactu._is_tudongdichuyendiemdanhxungquanh,
                     "_diemdanhxungquanhs": self.tactu._diemdanhxungquanhs,
@@ -406,6 +409,7 @@ class CuaSo:
                     "_is_tudongtrieuhoibaothugiangho": self.tactu._is_tudongtrieuhoibaothugiangho,
 
                     "_is_tudongsudungkynangbaothu": self.tactu._is_tudongsudungkynangbaothu,
+                    "_is_tudongeptinhnguyendon": self.tactu._is_tudongeptinhnguyendon,
                     "_is_tudongbatnguyenkhiquynguyen": self.tactu._is_tudongbatnguyenkhiquynguyen,
                     "_is_tranhvungcam": self.tactu._is_tranhvungcam,
                     "_is_dilotrinhkhacbando": self.tactu._is_dilotrinhkhacbando,
@@ -492,6 +496,8 @@ class CuaSo:
                     # Phong Yêu Kính: ID boss mình đã giết vòng này, người cùng nhóm cộng vào (boss chết xa họ vẫn được tính)
                     "_bossdagietphongyeu": self.tactu.get_bossdagietphongyeu(),
                     "_dangdanhbossphongyeu": self.tactu.get_is_dangdanhbossphongyeu(),
+                    # Phong Yêu Kính: quái mình (cận chiến) không đi bộ tới được, người đánh xa cùng nhóm tới bắn (tactu_langlyson_xq)
+                    "_quaiketcanchienpy": self.tactu.get_quaiketcanchienpyshare(),
                     # Phong Yêu Kính: người give hết đồ xin đồ Lam Kim ({"can": cấp tối thiểu}), thành viên báo còn đồ không ({"idgive", "co"})
                     "_pylamkim": self.tactu.get_pylamkimshare(),                    # Kéo cấp acc gà (tactu_keocap_xq): vai / giai đoạn / cấp cho cửa sổ cùng máy, trạng thái cho giao diện
                     "_keocap": self.tactu.get_keocapshare(),
@@ -870,6 +876,11 @@ class CuaSo:
                         self.tactu.thietlap_khoangcachsudungkynangtamxa(float(cmd.split(":")[1]))
                     except Exception:
                         pass
+                elif isinstance(cmd, str) and cmd.startswith("set_phantramsinhlucthuhoibaothugiangho:"):
+                    try:
+                        self.tactu.thietlap_phantramsinhlucthuhoibaothugiangho(float(cmd.split(":")[1]))
+                    except Exception:
+                        pass
                 elif isinstance(cmd, str) and cmd.startswith("set_phantramnoiluckhaithientichdia:"):
                     try:
                         self.tactu.thietlap_phantramnoiluckhaithientichdia(float(cmd.split(":")[1]))
@@ -1010,10 +1021,10 @@ class CuaSo:
                     self.tactu.nap_lotrinhan()
                 elif cmd == "battat_tudongtodoi":
                     self.tactu.battat_is_tudongtodoi()
-                elif cmd == "todoimotlan":
-                    self.tactu.batdau_todoimotlan()
-                elif cmd == "huytodoimotlan":
-                    self.tactu.huy_todoimotlan()
+                elif isinstance(cmd, str) and cmd.startswith("set_tudongtodoi:"):
+                    # Nút bật / tắt cho cả nhóm ở tab Tổ đội: đặt hẳn giá trị (không đảo) để bấm lại không lật người đã đúng
+                    if self.tactu._is_tudongtodoi != (cmd.split(":", 1)[1] == "1"):
+                        self.tactu.battat_is_tudongtodoi()
                 elif cmd == "battat_tudongsudungkynang":
                     self.tactu.battat_is_tudongsudungkynang()
                 elif cmd == "battat_tudongsudungvatpham":
@@ -1063,6 +1074,8 @@ class CuaSo:
                     self.tactu.battat_is_uutienbaothukynangtrieuhoi()
                 elif cmd == "battat_tudongdaotangbaodo":
                     self.tactu.battat_tudongdaotangbaodo()
+                elif cmd == "battat_tudongeptinhnguyendon":
+                    self.tactu.battat_tudongeptinhnguyendon()
                 elif cmd == "battat_tudongsudungkynangbaothu":
                     self.tactu.battat_tudongsudungkynangbaothu()
                 elif cmd == "battat_tudongbatnguyenkhiquynguyen":

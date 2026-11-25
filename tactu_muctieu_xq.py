@@ -21,6 +21,10 @@ THOIGIANCHOEPDA = 4.
 SOLANGUIEPDA = 3
 # Đọc mô tả (desc) đôi khi không về trong 1s khi hàng đợi lệnh bận: thử lại vài lần trước khi coi là món mất
 SOLANDOCMOTAEPDA = 3
+# Đi lại cho Mã Tặc / Tinh Anh / Đào khoáng mà bật PK: đánh người chơi gặp dọc đường, nhưng mục tiêu ra xa quá chừng này ô so với chỗ
+# bắt đầu đánh thì thôi đuổi, bỏ qua người đó BOQUAPKVIECDI giây rồi đi tiếp việc (người dùng 2026-11-26)
+KHOANGCACHDUOIPKVIECDI = 15.
+BOQUAPKVIECDI = 30.
 
 
 def _demsao(motavatpham):
@@ -236,7 +240,7 @@ class TacTuMucTieu:
         if self._is_tenbiloc(tendoituong, is_muctieupk):
             return False
 
-        if self._is_chidanhnguoichoi and not is_muctieupk:
+        if (self._is_chidanhnguoichoi or self._is_chidanhpkviecdi) and not is_muctieupk:
             return False
         if self._is_loctinhanh() and not is_muctieupk and not self._is_doituongtinhanh(diachidoituong, tendoituong):
             return False
@@ -245,8 +249,10 @@ class TacTuMucTieu:
         if (idbandohientai in BANDOKHONGPKs) and is_muctieupk:
             return False
 
-        # Sư môn / phó bản / Sư Gia đang đánh quái của việc đó thì không giới hạn theo bản đồ của lộ trình
-        if self._diemdanhxungquanhs and self._is_tudongdichuyendiemdanhxungquanh and not self._is_bolotrinhdiemdanh():
+        # Sư môn / phó bản / Sư Gia đang đánh quái của việc đó thì không giới hạn theo bản đồ của lộ trình. Đi lại cho Mã Tặc / Tinh Anh /
+        # Đào khoáng mà bật PK cũng vậy: bản đồ đang đi qua thường không có điểm đánh
+        if self._diemdanhxungquanhs and self._is_tudongdichuyendiemdanhxungquanh and not self._is_bolotrinhdiemdanh() \
+                and not self._is_chidanhpkviecdi:
             danhsachbandohople = [diem[2] for diem in self._diemdanhxungquanhs if len(diem) >= 3]
             if danhsachbandohople and idbandohientai not in danhsachbandohople:
                 self._nhacbandokhongcodiemdanh()
@@ -263,6 +269,9 @@ class TacTuMucTieu:
 
         # Quái phải nằm trong tầm của một điểm đánh (người chơi/bảo thú PK thì không giới hạn để còn phản công)
         if not is_muctieupk and not self._kiemtra_tamdiemdanh(*toadodoituong):
+            return False
+
+        if self._is_chidanhpkviecdi and self._is_ngoaivungduoipkviecdi(diachidoituong, toadodoituong):
             return False
 
         if is_nguoichoi:
@@ -293,7 +302,8 @@ class TacTuMucTieu:
         if not self._is_timmuctieuchung or not self._is_tudongsudungkynang:
             return None
         # Sư môn / phó bản / Sư Gia đang đánh quái của việc đó thì không giới hạn theo bản đồ của lộ trình
-        if self._diemdanhxungquanhs and self._is_tudongdichuyendiemdanhxungquanh and not self._is_bolotrinhdiemdanh():
+        if self._diemdanhxungquanhs and self._is_tudongdichuyendiemdanhxungquanh and not self._is_bolotrinhdiemdanh() \
+                and not self._is_chidanhpkviecdi:
             danhsachbandohople = [diem[2] for diem in self._diemdanhxungquanhs if len(diem) >= 3]
             if danhsachbandohople and self.moitruong.get_idbandohientai() not in danhsachbandohople:
                 return None
@@ -316,7 +326,10 @@ class TacTuMucTieu:
             if ten in TENMUCTIEUKHONGTANCONGs or self.moitruong.get_is_quairiengnguoikhac(ten) \
                     or self._is_tenbiloc(ten, is_muctieupk):
                 continue
-            if (self._is_chidanhnguoichoi and not is_muctieupk) or (is_muctieupk and is_hoabinh):
+            if ((self._is_chidanhnguoichoi or self._is_chidanhpkviecdi) and not is_muctieupk) or (is_muctieupk and is_hoabinh):
+                continue
+            if self._is_chidanhpkviecdi and (self._boquapkviecdi_map.get(iddoituong, 0.) > thoidiemhientai
+                                             or (self._neopkviecdi and math.dist(self._neopkviecdi[:2], (x, y)) > KHOANGCACHDUOIPKVIECDI)):
                 continue
             if self._is_loctinhanh() and not is_muctieupk and not is_quaitinhanh(ten, idbandotinhanh, cap) \
                     and not self._is_tinhanhtheocapthay(idbandotinhanh, ten, cap):
@@ -610,9 +623,57 @@ class TacTuMucTieu:
         # sang quái khác
         return self.get_is_thienxudanhquai()
 
+    def _is_viecdichopk(self):
+        # Đang đi lại cho Mã Tặc (tìm NPC / tới bản đồ) / Tinh Anh / Đào khoáng (tới bản đồ) mà đang bật PK ở bản đồ cho PK: vẫn đánh
+        # người chơi / bảo thú PK gặp dọc đường, chỉ bỏ quái. Trước đây các việc này bỏ hết mục tiêu, bị đánh cũng không đánh lại
+        # (người dùng 2026-11-26). Việc khác đi kèm (Đi tới bản đồ bấm tay, giao đồ, cất kho, sư môn...) vẫn chặn như cũ
+        if not (self.get_is_matacdichuyen() or self.get_is_tinhanhdichuyen() or self.get_is_daokhoangdichuyen()):
+            return False
+        idbando = self.moitruong.get_idbandohientai()
+        return self.moitruong.get_idmaupk() != MAUPK_HOABINH and idbando not in BANDOKHONGPKs and idbando not in BANDOKHONGTANCONGs
+
+    def _is_muctieupkdiachi(self, diachi):
+        return bool(diachi) and bool(self.moitruong.get_is_nguoichoi(diachi) or self.moitruong.get_is_baothukynangtrieuhoi(diachi)
+                                     or self.moitruong.get_is_baothugiangho(diachi))
+
+    def get_is_dangpkviecdi(self):
+        # Đang đi lại cho Mã Tặc / Tinh Anh / Đào khoáng mà có mục tiêu PK: các việc đó tạm dừng (không look NPC, không đi tiếp, không
+        # tính kẹt điểm dò) tới khi hết mục tiêu
+        return self._is_chidanhpkviecdi and self._is_muctieupkdiachi(self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon())
+
+    def _capnhatneopkviecdi(self):
+        # Chỗ đứng lúc bắt đầu đánh người (đi lại cho việc + bật PK): giới hạn đuổi KHOANGCACHDUOIPKVIECDI ô quanh chỗ này
+        if not self._is_chidanhpkviecdi or not self.get_is_dangpkviecdi():
+            self._neopkviecdi = None
+            return
+        idbando = self.moitruong.get_idbandohientai()
+        if not self._neopkviecdi or self._neopkviecdi[2] != idbando:
+            x, y = self.moitruong.get_toado()
+            self._neopkviecdi = (x, y, idbando)
+
+    def _is_ngoaivungduoipkviecdi(self, diachidoituong, toadodoituong):
+        # Mục tiêu PK chạy ra xa chỗ bắt đầu đánh quá KHOANGCACHDUOIPKVIECDI: thôi đuổi, bỏ qua người đó BOQUAPKVIECDI giây
+        now = time.time()
+        iddoituong = self.moitruong.get_iddoituong(diachidoituong)
+        if self._boquapkviecdi_map.get(iddoituong, 0.) > now:
+            return True
+        neo = self._neopkviecdi
+        if neo and math.dist(neo[:2], toadodoituong) > KHOANGCACHDUOIPKVIECDI:
+            self._boquapkviecdi_map = {k: v for k, v in self._boquapkviecdi_map.items() if v > now}
+            self._boquapkviecdi_map[iddoituong] = now + BOQUAPKVIECDI
+            self.moitruong._inlog(f"[PK] {self.moitruong.get_tendoituong(diachidoituong)} ra xa quá {KHOANGCACHDUOIPKVIECDI:.0f} ô chỗ bắt đầu "
+                                  f"đánh: thôi đuổi {BOQUAPKVIECDI:.0f}s, đi tiếp việc")
+            return True
+        return False
+
     def action_tudongtimkiemmuctieu(self):
         # Yêu cầu đi tới mục tiêu nhân vật khác thấy chỉ tạo lại ở cuối hàm khi mình không có mục tiêu nào
         self._yeucautimmuctieuchung = None
+        is_chipk = self._is_viecdichopk()
+        if is_chipk and not self._is_chidanhpkviecdi:
+            self.moitruong._inlog("[PK] Đang đi lại cho việc (Mã Tặc / Tinh Anh / Đào khoáng) mà bật PK: chỉ đánh người chơi gặp dọc đường")
+        self._is_chidanhpkviecdi = is_chipk
+        self._capnhatneopkviecdi()
         if not self._is_tudongtimkiemmuctieu:
             return
 
@@ -645,7 +706,11 @@ class TacTuMucTieu:
         # lại đánh), tới nơi mới đánh
         if self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangphangiai() or self.get_is_dangcatkho() or self.get_is_sumondichuyen() \
                 or self.get_is_langlysondichuyen() \
-                or self.get_is_sugiadichuyen() or self.get_is_tapkichdichuyen() or self.get_is_matacdichuyen() or self.get_is_danhvongdichuyen() or self.get_is_thienxudichuyen()                 or self.get_is_keocapchuyendo() or self.get_is_tinhanhdichuyen() or self.get_is_daokhoangdichuyen():
+                or self.get_is_sugiadichuyen() or self.get_is_tapkichdichuyen() or self.get_is_danhvongdichuyen() or self.get_is_thienxudichuyen() \
+                or self.get_is_keocapchuyendo() \
+                or (not is_chipk and (self.get_is_matacdichuyen() or self.get_is_tinhanhdichuyen() or self.get_is_daokhoangdichuyen())):
+            # Mã Tặc / Tinh Anh / Đào khoáng đi lại mà bật PK (is_chipk) thì không chặn: chỉ nhận mục tiêu PK (_kiemtramuctieuhople)
+            self._is_chidanhpkviecdi = False
             self.moitruong.set_diachicosothongtinnhanvatmuctieudangchon(0)
             return
 
@@ -1132,7 +1197,8 @@ class TacTuMucTieu:
 
                         # Đồng đội vừa xuất hiện thì chờ đủ THOIGIANCHOCHONMUCTIEUMOI mới buff
                         if idnguoichoixemxet != idnguoichoi and idnguoichoithanhviennhoms and idnguoichoixemxet in idnguoichoithanhviennhoms \
-                                and not self._is_doituongmoixuathien(diachicosothongtindoituongmuctieuxemxet):
+                                and not self._is_doituongmoixuathien(diachicosothongtindoituongmuctieuxemxet) \
+                                and not self._is_khacmaupkdongdoi(diachicosothongtindoituongmuctieuxemxet):
                             if not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_HOTHEKIMCANG,), diachicosothongtinnhanvat = diachicosothongtindoituongmuctieuxemxet, macdinh = True, is_hieuungcoloi = 1):
                                 diachidoituongcanbuff = diachicosothongtindoituongmuctieuxemxet
                                 break
@@ -1357,6 +1423,10 @@ class TacTuMucTieu:
                 is_uutiennhom = priority <= 1
                 is_uutienbang = priority == 2
 
+                # Khác chế độ PK với mình thì game không cho buff / hồi máu / hồi sinh: bỏ để chọn người kế (người dùng 2026-11-25)
+                if self._is_khacmaupkdongdoi(diachidoituongdangxemxet):
+                    continue
+
                 is_nguoichoi_hientai = self.moitruong.get_is_nguoichoi(diachidoituongdangxemxet)
 
                 if self.moitruong.get_is_nhanvatdachet(diachidoituongdangxemxet):
@@ -1420,6 +1490,9 @@ class TacTuMucTieu:
                     # Người chơi trong tầm nhìn đọc được vũ khí (kể cả khác máy)
                     is_canngancham, is_cankimcham = self._loaichamcanbuff(
                         monphaidangxemxet, self.moitruong.get_idloaivukhi(diachidoituongdangxemxet) if is_nguoichoi_hientai else None)
+                    # Bảo thú giang hồ không cần Kim Châm lẫn Ngân Châm Độ Ách (người dùng 2026-11-26)
+                    if not is_nguoichoi_hientai and self.moitruong.get_is_baothugiangho(diachidoituongdangxemxet):
+                        is_canngancham = is_cankimcham = False
                     if not diachidoituongcanbuffngancham and is_canngancham \
                             and not tenbaothu.startswith(BAOTHUCHIBUFFKIMCHAMs):
                         is_thieuhieuung = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NGANCHAMDOACH,), macdinh = True, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 1)

@@ -28,9 +28,9 @@
       "ten": "2",
       "thanhviens": [
         364,
-        342,
-        347,
         359,
+        347,
+        342,
         1451
       ],
       "thutu": [
@@ -45,48 +45,6 @@
       ],
       "vong": {},
       "phai": "daohoanguyen"
-    },
-    {
-      "ma": "1794856201421",
-      "ten": "3",
-      "thanhviens": [
-        364,
-        1163,
-        1041,
-        1040
-      ],
-      "thutu": [
-        "sugia",
-        "tapkich",
-        "langlyson",
-        "thanhkieu",
-        "phongyeukinh"
-      ],
-      "chon": [
-        "tapkich"
-      ],
-      "vong": {},
-      "phai": "maoson"
-    },
-    {
-      "ma": "1795078864298",
-      "ten": "4",
-      "thanhviens": [
-        342,
-        347
-      ],
-      "thutu": [
-        "sugia",
-        "tapkich",
-        "langlyson",
-        "thanhkieu",
-        "phongyeukinh"
-      ],
-      "chon": [
-        "phongyeukinh"
-      ],
-      "vong": {},
-      "phai": "maoson"
     }
   ]
 }

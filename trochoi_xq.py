@@ -253,7 +253,13 @@ class TroChoiManager:
                 elif keyboard.is_pressed("ctrl+alt+x"):
                     cmd = "botoanbo_tenmuctieukhongtancong"
                 elif keyboard.is_pressed("ctrl+alt+t"):
-                    cmd = "todoimotlan"
+                    # Bật / tắt Tổ đội tự động nhóm đầu tiên trong todoi.json (theo nhóm, không theo nhân vật; người dùng 2026-11-26).
+                    # Ghi file + phát âm trong luồng Tk của giao diện
+                    try:
+                        self.gui.root.after(0, lambda: self.gui.battattodoinhom(0))
+                    except Exception as err:
+                        print(f"Lỗi bật/tắt tổ đội tự động: {err}")
+                    time.sleep(0.3)
                 elif keyboard.is_pressed("ctrl+alt+f"):
                     cmd = "battat_tudongtheosau"
                 elif keyboard.is_pressed("ctrl+alt+b"):

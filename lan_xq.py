@@ -29,8 +29,8 @@ KHOACHIASELANS = (
     # Chia mục tiêu giữa các bot (tactu_muctieu_xq._laymuctieubotkhac): bot theo sau tập hỏa không tính là đang giữ quái
     "_is_taphoa",
     "_thoidiemphathienanthan", "_thoigiantamngungphathien", "_tenanthanphathien",
-    "_is_danglanglyson", "_phobanlanglyson", "_khoathuonglanglyson", "_khoathuonglanglysondalanh", "_langlysonchothanhvien", "_langlysontattodoi", "_langlysongiunhom", "_langlysonvankhivao", "_bossdagietphongyeu", "_dangdanhbossphongyeu", "_pylamkim",
-    "_is_dangsugia", "_sugianhiemvu", "_sugiachothanhvien", "_todoimotlan", "_is_dangtapkich", "_is_tapkichdichuyen",
+    "_is_danglanglyson", "_phobanlanglyson", "_khoathuonglanglyson", "_khoathuonglanglysondalanh", "_langlysonchothanhvien", "_langlysontattodoi", "_langlysongiunhom", "_langlysonvankhivao", "_bossdagietphongyeu", "_dangdanhbossphongyeu", "_quaiketcanchienpy", "_pylamkim",
+    "_is_dangsugia", "_sugianhiemvu", "_sugiachothanhvien", "_is_dangtapkich", "_is_tapkichdichuyen",
     # Đội phó bản (tactu_doiphoban_xq): trưởng đội / thành viên ở máy khác
     "_doiphoban", "_doiphobanthanhvien",
     "tamnhin", "iddoituongmuctieu", "_biendongtainguyen",

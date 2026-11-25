@@ -95,6 +95,11 @@ class TacTuMaTac:
         # Trong phó bản: đánh mọi quái (chỉ có Mã Tặc)
         return bool(self._matac) and self._matac["chedo"] == "danhquai"
 
+    def get_is_trongphobanmatac(self):
+        # Đang ở trong phó bản Đoạt Bảo Mã Tặc: bot đang đánh Mã Tặc, hoặc tên bản đồ game có "Mã Tặc" (vào tay không qua bot).
+        # Phó bản này chết không hỏng pháp bảo => không tháo / đổi Thượng Phương Bảo Kiếm khi máu thấp (người dùng dặn 2026-11-25)
+        return self.get_is_matacdanhquai() or TENPHOBANMATAC in chuanhoaten(self.moitruong.get_tenbandogame() or "")
+
     def get_trangthaimatac(self):
         if self._matac:
             return f"Đoạt Bảo Mã Tặc (giết {self._matac['sovong']} con): {self._matac['trangthai']}"
@@ -184,6 +189,14 @@ class TacTuMaTac:
         if time.time() - moitruong.get_thoidiemthaydoibandogannhat() < 2.:
             # Vừa đổi bản đồ (vào / ra phó bản): chưa đánh
             s["chedo"] = "dichuyen"
+            return None
+        if not s["davao"] and self.get_is_dangpkviecdi():
+            # Bật PK, đang đánh người chơi gặp lúc đi tìm Mã Tặc: tạm dừng (không look NPC, không đi, không tính kẹt điểm dò), hết mục tiêu
+            # thì tìm tiếp
+            s["trangthai"] = "đang PK người chơi, tạm dừng tìm Mã Tặc"
+            s["hoithoai"] = None
+            if s["do"]:
+                s["do"]["luc"] = time.time()
             return None
         idbando = moitruong.get_idbandohientai()
         tengame = moitruong.get_tenbandogame()

@@ -62,8 +62,6 @@ class TacTuHangViec:
             self.huy_doiphoban()
         elif self._catkho:
             self.huy_catkho()
-        elif self._todoimotlan:
-            self.huy_todoimotlan()
         elif self._idbandocandi:
             self.thietlap_ditoibando(0)
         elif self._is_tudongtheosau:

@@ -25,7 +25,7 @@ import diachi_xq
 import dedis_xq
 import diettreo_xq
 from diachi_xq import DC
-from moitruong_xq import MoiTruong
+from moitruong_xq import MoiTruong, vahookhientinkenh
 from tienich_xq import read_bytes, read_chuoi, read_int, write_bytes, write_int
 from tienich_xq import duongdantaikhoan, duongdantaikhoantheomay, is_tieudecuasogame, laytamngungdanghieuluc, tenmaynay, xoatamngung
 
@@ -70,8 +70,11 @@ THOIGIANBAOVANG = 600
 # diện bận vài giây không trả lời: trước đây chỉ chờ 1s là kill luôn => vừa vào game đã bị kill
 THOIGIANTREOTOIDA = 60.
 # Vừa bấm vào game xong, chừng này giây chưa thấy nhân vật thì vẫn coi là đang load: không đóng / kill cửa sổ đó, không đăng nhập lại
-# tài khoản đó (luồng đăng nhập của nó chờ hết khoảng này mới xong)
-THOIGIANCHOVAOGAME = 90.
+# tài khoản đó (luồng đăng nhập của nó chờ hết khoảng này mới xong).
+# 2026-11-26 thử rút 90s -> 30s thì hỏng nặng: Kng (359) bị dis, máy chủ còn giữ phiên cũ nên bấm Vào game đứng đồng hồ cát; 30s
+# chưa vào đã bị đóng rồi mở client mới, lại đồng hồ cát -> vòng lặp đăng nhập mỗi ~29s suốt 01:35-01:42 không vào được. Phải chờ
+# máy chủ nhả phiên cũ (đã thấy ~100s) => để 150s. Bình thường vào game vài giây, thấy nhân vật là bỏ đánh dấu ngay nên không chậm
+THOIGIANCHOVAOGAME = 150.
 # Số tài khoản tự đăng nhập cùng lúc tối đa, mỗi tài khoản một luồng (trước đây lần lượt: tài khoản sau chờ tài khoản trước vào hẳn
 # game, 7 acc mất vài phút). Riêng bước mở client vẫn lần lượt (_khoamoclient): đếm / giải phóng chỗ client, đóng cửa sổ chờ và nhận
 # cửa sổ vừa mở không được để hai luồng giành nhau; nhập tài khoản, chọn nhân vật, chờ vào game thì chạy song song
@@ -1089,6 +1092,8 @@ class _DangNhapBangHam:
             print(f"   -> [Hàm] Chọn ô nhân vật {o + 1} không được")
             return False
         print(f"   -> [Hàm] Chọn ô nhân vật {o + 1}, bấm Vào game")
+        # Vá trước khi vào game: máy chủ gửi tin kênh Đội ngũ ngay lúc vào, khung chat chưa tạo => văng game (xem vahookhientinkenh)
+        vahookhientinkenh(self.tientrinh, self.diachixq)
         _chogiancachdangnhap()
         self.goiham("HAMVAOGAME")
         return True
@@ -1682,6 +1687,8 @@ class TuDongDangNhap:
         self._onlinetruoc = {}
         self._lanroigames = {}
         self._tamhoanden = {}
+        # (lúc đọc, có tạm ngưng còn hiệu lực): nhớ tạm cho is_dangtamngung
+        self._tamngungcache = (0., False)
         # Tài khoản ("user") -> luồng đang đăng nhập nó (đăng nhập song song, SODANGNHAPSONGSONG). Luồng chạy tới khi nhân vật vào hẳn
         # game (hoặc hết THOIGIANCHOVAOGAME), còn sống thì không đăng nhập lại tài khoản đó
         self._luongdangnhap = {}
@@ -1728,7 +1735,13 @@ class TuDongDangNhap:
 
     def is_dangtamngung(self):
         # Đang tạm ngưng chung (ẩn thân / người lạ) hoặc có tài khoản đang tạm hoãn (bị đá liên tục): giao diện hiện nút "Tiếp tục"
-        return bool(laytamngungdanghieuluc()) or any(t > time.time() for t in self._tamhoanden.values())
+        # Giao diện gọi mỗi vòng 0,5s; laytamngungdanghieuluc mở + parse mọi file _internal/tamngung/*.json (19 file đo 26/11 ~20%
+        # thời gian vòng giao diện) nên nhớ tạm 2s, nút "Tiếp tục" hiện / ẩn trễ tối đa 2s là chấp nhận được
+        luc, ketqua = self._tamngungcache
+        if time.time() - luc > 2.:
+            ketqua = bool(laytamngungdanghieuluc())
+            self._tamngungcache = (time.time(), ketqua)
+        return ketqua or any(t > time.time() for t in self._tamhoanden.values())
 
     def tieptuc(self):
         # Người dùng bấm "Tiếp tục": bỏ mọi tạm ngưng / tạm hoãn, đăng nhập lại ngay ở lượt quét sau. Đếm rớt game cũng tính lại từ đầu,
@@ -1737,6 +1750,7 @@ class TuDongDangNhap:
             xoatamngung(idnguoichoi)
         self._tamhoanden.clear()
         self._lanroigames.clear()
+        self._tamngungcache = (0., False)
         print("[ĐĂNG NHẬP] Người dùng bấm Tiếp tục: bỏ tạm ngưng / tạm hoãn, đăng nhập lại ngay")
 
     def _capnhatisbat(self, cauhinh):
