@@ -891,8 +891,13 @@ class TacTuMucTieu:
             if self._is_uutienbaothukynangtrieuhoi and (is_baothuxemxettrongtam or is_baothuhientaitrongtam):
                 if is_baothuxemxettrongtam != is_baothuhientaitrongtam:
                     return is_baothuxemxettrongtam
-            elif xemxet["is_nguoichoi"] != hientai["is_nguoichoi"]:
-                return xemxet["is_nguoichoi"]
+            else:
+                # Người chơi và bảo thú kỹ năng triệu hồi (Cương Thi Mao Sơn...) ngang nhau, con nào gần đánh con đó; chỉ hơn quái thường.
+                # Trước đây người chơi luôn hơn bảo thú: log 342 Thỏ 26/11 10:10 bỏ Cương Thi sát bên, chạy ~10 ô đuổi chủ Aquarius
+                is_nhomnguoichoixemxet = xemxet["is_nguoichoi"] or xemxet["is_baothukynangtrieuhoi"]
+                is_nhomnguoichoihientai = hientai["is_nguoichoi"] or hientai["is_baothukynangtrieuhoi"]
+                if is_nhomnguoichoixemxet != is_nhomnguoichoihientai:
+                    return is_nhomnguoichoixemxet
 
             if self._is_khonguutienbaothugiangho and not is_nhanvatbichoang:
                 if (xemxet["is_nguoichoi"] or xemxet["is_baothukynangtrieuhoi"]) and hientai["is_baothugiangho"]:

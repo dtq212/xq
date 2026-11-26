@@ -27,7 +27,7 @@ from tienich_xq import taitenhieuung, luutenhieuung
 from keogatudong_xq import taicauhinhkeoga, luucauhinhkeoga, phantichdanhsachtaikhoan, chudanhsachtaikhoan, SOGATOIDA
 from dangnhap_xq import ancuasogame, duongdangamemaynay, focuscuasogame, hiencuasogame, is_batchomaynay, is_cuasogamedaan, luucauhinhdangnhap, taicauhinhdangnhap, taikhoanbatchomaynay
 from tactu_phangiai_xq import taitenphangiai, luutenphangiai, _bodau as _bodauphangiai
-from luattuido_xq import tailuat, luuluat, motaluat, motanhanvat, TENHANHDONG, TENVIECLUAT, VIEC_TINHANH, VIEC_PHONGYEU, DIEUKIENs, TENDIEUKIEN, NHANDIEUKIEN, TRUONGMUABU, TENTRUONGMUABU, TENCHIKHI, CHIKHI_LUON, XEPCHONGMACDINH, \
+from luattuido_xq import tailuat, luuluat, motaluat, motanhanvat, TENHANHDONG, TENVIECLUAT, VIEC_TINHANH, VIEC_PHONGYEU, DIEUKIENs, TENDIEUKIEN, NHANDIEUKIEN, TRUONGMUABU, TENTRUONGMUABU, TENCHIKHI, CHIKHI_LUON, CHIKHI_KYNANGBAOTHU, XEPCHONGMACDINH, \
     THAPNHATMACDINH, TENHANHDONGNHAT, DIEUKIENNHATs, DIEUKIENNHATTRANGBI, NHAT_NHAT, TENNOIDUNG, NOI_MOINOI, TENHIEUUNGDUNG, HIEUUNG_KHONG, GIANCACHDUNGMACDINH, \
     motadieukiendung
 from hangso_xq import VIECHANG_MAP, VIECDOI_MAP, VIECCOVONGs, VIECRIENG_MAP, QUAITINHANH_MAP, CAPTINHANH_MAP
@@ -494,6 +494,7 @@ class GiaoDienHienThi:
             "diemdanhxungquanh": tk.BooleanVar(),
             "trieuhoibaothu": tk.BooleanVar(),
             "sudungkynangbaothu": tk.BooleanVar(),
+            "epbaothubidong": tk.BooleanVar(),
             "eptinhnguyendon": tk.BooleanVar(),
             "nguyenkhiquynguyen": tk.BooleanVar(),
             "tranhvungcam": tk.BooleanVar(value = True),
@@ -1913,6 +1914,7 @@ class GiaoDienHienThi:
         nhom = self._taonhom(tab, "Bảo thú")
         self._create_check(nhom, "Triệu hồi bảo thú giang hồ", self.vars["trieuhoibaothu"], "battat_tudongtrieuhoibaothugiangho")
         self._create_check(nhom, "Tự động dùng kỹ năng bảo thú giang hồ", self.vars["sudungkynangbaothu"], "battat_tudongsudungkynangbaothu")
+        self._create_check(nhom, "Ép bảo thú triệu hồi / giang hồ ở Bị động", self.vars["epbaothubidong"], "battat_epbaothubidong")
         self._create_check(nhom, "Tự ép Tinh Nguyên Đơn vào bảo thú giang hồ tới 5 kỹ năng (chừa viên vàng / chuẩn)", self.vars["eptinhnguyendon"], "battat_tudongeptinhnguyendon")
         # Bảo thú giang hồ dưới ngưỡng % khí huyết thì thu hồi ("pet <id># hide"), 0 = không thu hồi
         hangthuhoi = ttk.Frame(nhom)
@@ -4173,7 +4175,8 @@ class GiaoDienHienThi:
         self.ent_bandomatac.bind("<FocusOut>", on_luu_bandomatac)
         self.btn_matac = ttk.Button(hangnut, text = "🐎 Bắt đầu Mã Tặc", command = self._battatmatac)
         self.btn_matac.pack(side = tk.LEFT, padx = (8, 0))
-        self._gantooltip(self.btn_matac, "Nhân vật đang chọn đi Đoạt Bảo Mã Tặc ở bản đồ trong ô. Đang làm thì bấm để dừng")
+        self._gantooltip(self.btn_matac, "Nhân vật đang chọn đi Đoạt Bảo Mã Tặc ở bản đồ trong ô. Đang làm thì bấm để dừng. "
+                                          "Phím tắt Ctrl+Alt+M: bật ở bản đồ đang đứng / dừng")
         self.var_tubatmatac = tk.BooleanVar()
         # Vừa bấm: (hwnd, giá trị, thời điểm) để chờ bot nhận, update_ui không nạp lại giá trị cũ đè lên
         self._tubatmatacchoxacnhan = None
@@ -5422,7 +5425,7 @@ class GiaoDienHienThi:
                                                                        muc["vatpham"] + (f" ({muc['tencuahang']})" if muc["tencuahang"] else ""), muc["npc"],
                                                                        muc["xepchong"], muc["duoi"], muc["muatoi"], muc["thapnhat"],
                                                                        " · ".join(p for p in (", ".join(TENMONPHAI.get(m, m) for m in muc["monphai"]), motanhanvat(muc)) if p) or "Tất cả",
-                                                                       "Luôn" if muc["chikhi"] == CHIKHI_LUON else "Triệu hồi bảo thú"))
+                                                                       {CHIKHI_LUON: "Luôn", CHIKHI_KYNANGBAOTHU: "Kỹ năng bảo thú"}.get(muc["chikhi"], "Triệu hồi bảo thú")))
         for tree, chon in ((self.tree_luattuido, chonluat), (self.tree_muabu, chonmuabu), (self.tree_nhat, chonnhat)):
             if chon is not None and tree.exists(str(chon)):
                 tree.selection_set(str(chon))
@@ -6147,6 +6150,7 @@ class GiaoDienHienThi:
                 ("timmuctieu", "_is_tudongtimkiemmuctieu"),
                 ("trieuhoibaothu", "_is_tudongtrieuhoibaothugiangho"),
                 ("sudungkynangbaothu", "_is_tudongsudungkynangbaothu"),
+                ("epbaothubidong", "_is_epbaothubidong"),
                 ("eptinhnguyendon", "_is_tudongeptinhnguyendon"),
                 ("nguyenkhiquynguyen", "_is_tudongbatnguyenkhiquynguyen"),
                 ("tranhvungcam", "_is_tranhvungcam"),

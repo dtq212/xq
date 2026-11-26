@@ -202,7 +202,8 @@ class TacTuBaoThu:
                     if not iddoituongbaothu:
                         continue
 
-                    self._epbaothubidong(sothutu, iddoituongbaothu)
+                    if self._is_epbaothubidong:
+                        self._epbaothubidong(sothutu, iddoituongbaothu)
 
                     # Nhận bảo thú giang hồ theo ID, không đoán theo tên: trước đây tên có "(...)" là triệu hồi, còn lại là giang hồ,
                     # lượt nào đọc tên hụt (rỗng/chưa tải) thì bảo thú triệu hồi bị coi là giang hồ và bị ra lệnh Chờ đợi ("pet ...# 3")
@@ -340,7 +341,8 @@ class TacTuBaoThu:
     def _epbaothubidong(self, sothutu, iddoituongbaothu):
         # Mọi bảo thú (giang hồ, triệu hồi, vật phẩm) giữ hình thức Bị động: Tấn công / Phòng thủ thì bị đánh là tự phản kích,
         # đuổi theo quái đi xa (người dùng 2026-11-26). Bị động vẫn đánh theo lệnh tấn công của bot. Ô +0x1DC khác Bị động
-        # (mới gọi ra, người chơi bấm đổi) thì gửi "pet <id># mode 0", mỗi con tối đa mỗi GIANCACHTHIETLAPHINHTHUCBAOTHU giây
+        # (mới gọi ra, người chơi bấm đổi) thì gửi "pet <id># mode 0", mỗi con tối đa mỗi GIANCACHTHIETLAPHINHTHUCBAOTHU giây.
+        # Chỉ chạy khi tích ô "Ép bảo thú ... Bị động" (_is_epbaothubidong, mặc định tắt)
         hinhthuc = self.moitruong.get_hinhthucdoituongbaothu(sothutu)
         if hinhthuc is None or hinhthuc is False or hinhthuc == HINHTHUCBAOTHU_BIDONG:
             return

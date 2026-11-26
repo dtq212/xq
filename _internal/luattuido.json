@@ -427,7 +427,7 @@
       "muatoi": 100,
       "thapnhat": -1,
       "monphai": [],
-      "chikhi": "trieuhoibaothu",
+      "chikhi": "",
       "bat": true,
       "nhanvat": []
     },
@@ -547,6 +547,21 @@
       "chikhi": "",
       "bat": true,
       "nhanvat": []
+    },
+    {
+      "vatpham": "Bát Tiên Đơn",
+      "tencuahang": "",
+      "npc": "Trân Bảo Khố (Kim Nguyên Bảo)",
+      "xepchong": 100,
+      "duoi": 1,
+      "muatoi": 1,
+      "thapnhat": -1,
+      "monphai": [],
+      "chikhi": "",
+      "bat": true,
+      "nhanvat": [
+        "Thk"
+      ]
     }
   ],
   "catkho": [
@@ -1014,7 +1029,7 @@
         "Cấp Cứu Đơn",
         "Hoạt Lạc Hoàn"
       ],
-      "sinhluc": 15,
+      "sinhluc": 35,
       "matsinhluc": 2500,
       "noiluc": 0,
       "matnoiluc": 0,
@@ -1068,7 +1083,7 @@
         "Thí Luyện Đơn",
         "Thí Luyện Quả"
       ],
-      "sinhluc": 25,
+      "sinhluc": 35,
       "matsinhluc": 2500,
       "noiluc": 0,
       "matnoiluc": 0,

@@ -10,7 +10,7 @@ import time
 import unicodedata
 
 from hangso_xq import *
-from luattuido_xq import tailuat, is_apdungnhanvat, timluat, VIEC_TINHANH, VIEC_PHONGYEU, timluatbao, timluatcatkho, timhanhdongnhat, HANHDONG_GIU, HANHDONG_BAN, HANHDONG_VUT, CHIKHI_TRIEUHOIBAOTHU, \
+from luattuido_xq import tailuat, is_apdungnhanvat, timluat, VIEC_TINHANH, VIEC_PHONGYEU, timluatbao, timluatcatkho, timhanhdongnhat, HANHDONG_GIU, HANHDONG_BAN, HANHDONG_VUT, CHIKHI_TRIEUHOIBAOTHU, CHIKHI_KYNANGBAOTHU, \
     NHAT_NHAT, NHAT_UUTIEN, NHAT_KHONGNHAT, NOI_BANDOPK, NOI_DANGPK, NOI_KHAIKHOANG, NOI_PHOBAN, NOI_KHONGPK
 from thongbao_xq import baosuco, LYDOTAMNGUNGTUXA
 from moitruong_xq import MoiTruong, DOUUTIEN_THAP, DOUUTIEN_KHANCAP, DOUUTIEN_CAO, SOLUONGDOITUONGXUNGQUANHTOIDA, tinh_is_huongmatvediem
@@ -1062,7 +1062,7 @@ class TacTuVatPham:
 
         danhsachvatpham = []
         # Lệnh nhặt xung quanh (= phím Space, hàm xq + 0xB400, dò mã 2026-11-26) KHÔNG di chuyển: chỉ gửi "get x y" cho mọi ô có đồ trong
-        # khung x-3..x+2, y-3..y+2 quanh nhân vật, không xét tên => không lo lọt vùng cấm / cổng; chỉ không dùng khi bot khác có món gần
+        # khung x-3..x+2, y-3..y+2 quanh nhân vật (máy chủ thật ra chỉ nhận ô cách ≤KHOANGCACHNHATTAICHO), không xét tên => không lo lọt vùng cấm / cổng; chỉ không dùng khi bot khác có món gần
         # mình (nhặt mất món của nó). Phá Thiên Tháp: di chuyển nhặt đồ khi có mục tiêu chặn ở tactu_dichuyen (người dùng 2026-11-13)
         idbandohientai = self.moitruong.get_idbandohientai()
         xnhanvat, ynhanvat = self.moitruong.get_toado()
@@ -1128,16 +1128,18 @@ class TacTuVatPham:
                     "khoangcachtoida": 0,
                     "is_uutien": is_vatphamuutien,
                 }
-            if khoangcach <= 3.:
+            # Tầm nhặt tại chỗ theo ô vuông (KHOANGCACHNHATTAICHO, hangso_xq): ngoài tầm này "get" máy chủ không nhận, chỉ đi tới
+            if self.moitruong.get_khoangcachtamdanh(self._diachicosovatphamdangnhat) <= KHOANGCACHNHATTAICHO:
                 self._kiemtranhatkhongvao()
                 if self._is_tudongvebanrac and not is_vatphamuutien and not is_conhomnhat:
                     self.moitruong.action_nhatvatphamxungquanh(delay = 0.2)
                 else:
-                    # Nhặt theo lô: món đang nhặt + mọi món đã lọc khác trong tầm 3 ô, gửi "get x y" liền 1 lượt như phím Space
+                    # Nhặt theo lô: món đang nhặt + mọi món đã lọc khác trong tầm nhặt tại chỗ, gửi "get x y" liền 1 lượt như phím Space
                     # (trước đây mỗi lượt 1 món, lô 5-6 món mất vài giây)
                     bayh = time.time()
                     lo = [self._diachicosovatphamdangnhat] + [m[2] for m in danhsachvatpham
-                                                               if m[2] != self._diachicosovatphamdangnhat and m[1] <= 3.]
+                                                               if m[2] != self._diachicosovatphamdangnhat
+                                                               and self.moitruong.get_khoangcachtamdanh(m[2]) <= KHOANGCACHNHATTAICHO]
                     lo = [d for d in lo if bayh - self._thoidiemnhatvatphamgannhat_map.get(d, 0) > 0.2]
                     if lo and self.moitruong.action_nhatvatphamtheolo(lo):
                         for d in lo:
@@ -1332,7 +1334,8 @@ class TacTuVatPham:
         return [m for m in tailuat()["muabu"] if m["bat"] and m["vatpham"] and m["npc"] and m["muatoi"] and is_apdungnhanvat(m, tennhanvat)
                 and (m["npc"] == TRANBAOKHO) == is_tranbaokho
                 and (not m["monphai"] or tenmonphai in m["monphai"])
-                and (m["chikhi"] != CHIKHI_TRIEUHOIBAOTHU or self._is_tudongtrieuhoibaothugiangho)]
+                and (m["chikhi"] != CHIKHI_TRIEUHOIBAOTHU or self._is_tudongtrieuhoibaothugiangho)
+                and (m["chikhi"] != CHIKHI_KYNANGBAOTHU or self._is_tudongsudungkynangbaothu)]
 
     def _muabutranbaokho(self):
         # Mua bù ở Trân Bảo Khố (dòng Mua bù có NPC = TRANBAOKHO): còn ít hơn "duoi" thì mua cho đủ "muatoi" bằng Kim Nguyên Bảo, ở đâu cũng mua.

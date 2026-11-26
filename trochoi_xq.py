@@ -260,6 +260,9 @@ class TroChoiManager:
                     except Exception as err:
                         print(f"Lỗi bật/tắt tổ đội tự động: {err}")
                     time.sleep(0.3)
+                elif keyboard.is_pressed("ctrl+alt+m"):
+                    # Bật Đoạt Bảo Mã Tặc ở bản đồ đang đứng (thay danh sách bản đồ trong ô), đang chạy thì dừng
+                    cmd = "battat_matacbandohientai"
                 elif keyboard.is_pressed("ctrl+alt+f"):
                     cmd = "battat_tudongtheosau"
                 elif keyboard.is_pressed("ctrl+alt+b"):

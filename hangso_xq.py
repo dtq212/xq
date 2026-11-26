@@ -373,6 +373,13 @@ KHOANGCACHNHATDO = KHOANGCACHTOANMANHINH
 # Vừa mất mục tiêu chưa quá bấy nhiêu giây thì chưa đi nhặt đồ, chờ chọn con kế (món trong tầm nhặt tại chỗ vẫn nhặt luôn, món Nhặt ưu
 # tiên / đồ sư môn không phải chờ): tránh vừa giết xong con này đã chạy đi nhặt rồi lại quay về đánh con kế
 THOIGIANCHOMUCTIEUKETRUOCKHINHATDO = 2.
+# Tầm gửi "get x y" nhặt tại chỗ (không đi tới), theo ô vuông max(|dx|, |dy|). Trước đây ≤3 ô đường thẳng: log 342 26/11 boss Phong Yêu
+# Kính rơi Tịch Tà Kiếm, đứng cách 3~5 ô gửi "get" 4 lần trong 2s đều trượt (bot tưởng trong tầm nên đứng yên), bước tới cách 2 ô là
+# nhặt được ngay cả món kế bên
+KHOANGCACHNHATTAICHO = 2
+# Vừa mất mục tiêu (đang chờ chọn con kế) mà món cách không quá bấy nhiêu ô (ô vuông) thì vẫn đi nhặt luôn: quãng ngắn, nhặt xong quay lại
+# đánh không tốn bao nhiêu; món xa hơn mới chờ THOIGIANCHOMUCTIEUKETRUOCKHINHATDO
+KHOANGCACHNHATDOGANKHIVUAMATMUCTIEU = 5
 # Lượt kỹ năng không ra yêu cầu tấn công mà vẫn chọn đúng con vừa đánh, nó chưa chết: luồng di chuyển giữ yêu cầu cũ tối đa bấy nhiêu
 # giây (không Đi dạo / Tìm mục tiêu chung chạy đi chỗ khác rồi quay lại đánh)
 THOIGIANGIUYEUCAUTANCONG = 1.5
@@ -1781,7 +1788,8 @@ PHANTRAMSINHLUCTEBAOTHU = (25, 50)
 PHANTRAMSINHLUCTEBAOTHU_LANGLYSON = (35, 65)
 BANDOTEBAOTHUSOMs = (BANDO_THANHKIEU, BANDO_LANGLYSON1, BANDO_LANGLYSON2, BANDO_LANGLYSON3)
 
-# Hình thức bảo thú (ô +0x1DC, lệnh "pet <id># mode N"): 1 Tấn công, 2 Phòng thủ, 0 Bị động. Bot ép mọi bảo thú về Bị động
+# Hình thức bảo thú (ô +0x1DC, lệnh "pet <id># mode N"): 1 Tấn công, 2 Phòng thủ, 0 Bị động. Tích ô "Ép bảo thú ... Bị động"
+# (mặc định tắt) thì bot ép mọi bảo thú về Bị động
 # (người dùng 2026-11-26: Tấn công / Phòng thủ thì bị đánh là nó tự phản kích, chạy đi xa phải quay lại dắt)
 HINHTHUCBAOTHU_TANCONG = 1
 HINHTHUCBAOTHU_PHONGTHU = 2

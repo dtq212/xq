@@ -409,6 +409,7 @@ class CuaSo:
                     "_is_tudongtrieuhoibaothugiangho": self.tactu._is_tudongtrieuhoibaothugiangho,
 
                     "_is_tudongsudungkynangbaothu": self.tactu._is_tudongsudungkynangbaothu,
+                    "_is_epbaothubidong": self.tactu._is_epbaothubidong,
                     "_is_tudongeptinhnguyendon": self.tactu._is_tudongeptinhnguyendon,
                     "_is_tudongbatnguyenkhiquynguyen": self.tactu._is_tudongbatnguyenkhiquynguyen,
                     "_is_tranhvungcam": self.tactu._is_tranhvungcam,
@@ -790,6 +791,9 @@ class CuaSo:
                     self.tactu.batdau_matac()
                 elif cmd == "huymatac":
                     self.tactu.huy_matac()
+                elif cmd == "battat_matacbandohientai":
+                    # Ctrl+Alt+M: bật Mã Tặc ở bản đồ đang đứng / đang chạy thì dừng
+                    self.tactu.battat_matacbandohientai()
                 elif isinstance(cmd, str) and cmd.startswith("tinhanh:"):
                     # Săn Tinh Anh (tactu_tinhanh_xq): "tinhanh:<id bản đồ cách dấu phẩy>" lưu bản đồ chọn rồi bắt đầu
                     self.tactu.thietlap_bandotinhanh(cmd.split(":", 1)[1])
@@ -1078,6 +1082,8 @@ class CuaSo:
                     self.tactu.battat_tudongeptinhnguyendon()
                 elif cmd == "battat_tudongsudungkynangbaothu":
                     self.tactu.battat_tudongsudungkynangbaothu()
+                elif cmd == "battat_epbaothubidong":
+                    self.tactu.battat_epbaothubidong()
                 elif cmd == "battat_tudongbatnguyenkhiquynguyen":
                     self.tactu.battat_tudongbatnguyenkhiquynguyen()
                 elif cmd == "dungvongthuoc1gio":

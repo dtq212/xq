@@ -42,7 +42,7 @@ THUOCTINHTHIETLAPs = (
     "_lotrinhmaudangdung", "_is_nguocchieulotrinh", "_is_chiavunglotrinh", "_is_tudonggomquai", "_is_tudongvebanrac", "_is_tudongvesuado", "_phantramvesuado",
     "_idbandoquaylaibanrac", "_is_tudongdichientruong", "_is_tudongkhaikhoang", "_is_tamngungnguoila", "_is_tudongdaotangbaodo", "_tenmuctieutancongs", "_is_uutienbaothukynangtrieuhoi",
     "_tenmuctieukhongtancongs", "_tenvatphamnhats", "_phamchatnhats", "_khoangcachtoidatheosau", "_bankinhdiemdanh", "_tamxatoida",
-    "_danhhieulammoi", "_phantramnoiluckhaithientichdia", "_phantramsinhlucthuhoibaothugiangho", "_is_tudongtrieuhoibaothugiangho", "_is_tudongsudungkynangbaothu", "_is_tudongeptinhnguyendon",
+    "_danhhieulammoi", "_phantramnoiluckhaithientichdia", "_phantramsinhlucthuhoibaothugiangho", "_is_tudongtrieuhoibaothugiangho", "_is_tudongsudungkynangbaothu", "_is_epbaothubidong", "_is_tudongeptinhnguyendon",
     "_is_tudongbatnguyenkhiquynguyen", "_is_tranhvungcam", "_is_giukhoangcachketancong", "_khoangcachgiuketancong", "_mauchaytron",
     "_mauhetchaytron", "_is_doiphapbaotheomau", "_is_xoayvongtrao", "_is_hettraodeomuccao", "_maubommaudongdoi", "_maubommaudatinh", "_mauphapbaovua","_mauphapbaothap", "_dotrephapbao", "_is_taphoa", "_is_timmuctieuchung", "_chedohienthongtinmuctieugame",
     "_is_muctieutheoduongdi", "_is_uutiencumquai", "_is_chiamuctieubotkhac", "_is_pkbodanhsachten", "_mauhienthongtinmuctieugame", "_is_hienhanhdongtrendau", "_is_tutimduongtheosau", "_is_chaytoibuffthanhvien", "_is_diquocgiatanthutienco", "_is_doidokhitrieuhoi", "_bodotrieuhoi", "_baothutrieuhoimaoson",
@@ -975,6 +975,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._thoidiemxetxoaytrao = 0.
 
         self._is_tudongsudungkynangbaothu = False
+        # Ép mọi bảo thú (giang hồ, triệu hồi, vật phẩm) về hình thức Bị động (_epbaothubidong): mặc định tắt (người dùng 2026-11-26)
+        self._is_epbaothubidong = False
         # Tự bật / làm mới Nguyên Khí Quy Nguyên (Đào Hoa): tốn nên mặc định tắt
         self._is_tudongbatnguyenkhiquynguyen = False
 
@@ -1128,6 +1130,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_phantramsinhlucthuhoibaothugiangho": self._phantramsinhlucthuhoibaothugiangho,
             "_is_tudongtrieuhoibaothugiangho": self._is_tudongtrieuhoibaothugiangho,
             "_is_tudongsudungkynangbaothu": self._is_tudongsudungkynangbaothu,
+            "_is_epbaothubidong": self._is_epbaothubidong,
             "_is_tudongeptinhnguyendon": self._is_tudongeptinhnguyendon,
             "_is_tudongbatnguyenkhiquynguyen": self._is_tudongbatnguyenkhiquynguyen,
             "_is_tranhvungcam": self._is_tranhvungcam,
@@ -1283,6 +1286,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if "_phantramsinhlucthuhoibaothugiangho" in thietlap: self.thietlap_phantramsinhlucthuhoibaothugiangho(thietlap["_phantramsinhlucthuhoibaothugiangho"])
             if "_is_tudongtrieuhoibaothugiangho" in thietlap: self._is_tudongtrieuhoibaothugiangho = thietlap["_is_tudongtrieuhoibaothugiangho"]
             if "_is_tudongsudungkynangbaothu" in thietlap: self._is_tudongsudungkynangbaothu = thietlap["_is_tudongsudungkynangbaothu"]
+            if "_is_epbaothubidong" in thietlap: self._is_epbaothubidong = thietlap["_is_epbaothubidong"]
             if "_is_tudongeptinhnguyendon" in thietlap: self._is_tudongeptinhnguyendon = thietlap["_is_tudongeptinhnguyendon"]
             if "_is_tudongbatnguyenkhiquynguyen" in thietlap: self._is_tudongbatnguyenkhiquynguyen = thietlap["_is_tudongbatnguyenkhiquynguyen"]
             if "_is_tranhvungcam" in thietlap: self._is_tranhvungcam = thietlap["_is_tranhvungcam"]
@@ -1502,6 +1506,13 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             phatam("Bật dùng kỹ năng bảo thú")
         else:
             phatam("Tắt dùng kỹ năng bảo thú")
+
+    def battat_epbaothubidong(self):
+        self._is_epbaothubidong = not self._is_epbaothubidong
+        if self._is_epbaothubidong:
+            phatam("Bật ép bảo thú bị động")
+        else:
+            phatam("Tắt ép bảo thú bị động")
 
     def battat_tudongbatnguyenkhiquynguyen(self):
         self._is_tudongbatnguyenkhiquynguyen = not self._is_tudongbatnguyenkhiquynguyen

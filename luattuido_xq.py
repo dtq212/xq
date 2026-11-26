@@ -94,7 +94,9 @@ XEPCHONGMACDINH = 100
 THAPNHATMACDINH = -1
 CHIKHI_LUON = ""
 CHIKHI_TRIEUHOIBAOTHU = "trieuhoibaothu"
-TENCHIKHI = {CHIKHI_LUON: "Luôn", CHIKHI_TRIEUHOIBAOTHU: "Bật triệu hồi bảo thú giang hồ"}
+# Lão Tửu chỉ để hồi nội lực cho bảo thú dùng kỹ năng => chỉ mua khi bật ô "Tự động dùng kỹ năng bảo thú giang hồ" (2026-11-26)
+CHIKHI_KYNANGBAOTHU = "kynangbaothu"
+TENCHIKHI = {CHIKHI_LUON: "Luôn", CHIKHI_TRIEUHOIBAOTHU: "Bật triệu hồi bảo thú giang hồ", CHIKHI_KYNANGBAOTHU: "Bật tự động dùng kỹ năng bảo thú"}
 NHAT_NHAT = "nhat"
 NHAT_UUTIEN = "uutien"
 NHAT_KHONGNHAT = "khongnhat"
@@ -185,7 +187,7 @@ MUABUMACDINH = [
     {"vatpham": BUAGIAY, "npc": CHUTIEMTAPHOA, "duoi": 999, "muatoi": 999, "monphai": "maoson"},
     {"vatpham": CAOCAPBAOTHUTHUCPHAM, "tencuahang": "Thức Ăn Bảo Thú Cao Cấp", "npc": CHUTIEMTAPHOA, "duoi": 30, "muatoi": 30,
      "chikhi": CHIKHI_TRIEUHOIBAOTHU},
-    {"vatpham": LAOTUU, "npc": CHUTUULAU, "duoi": 30, "muatoi": 30, "chikhi": CHIKHI_TRIEUHOIBAOTHU},
+    {"vatpham": LAOTUU, "npc": CHUTUULAU, "duoi": 30, "muatoi": 30, "chikhi": CHIKHI_KYNANGBAOTHU},
     {"vatpham": DUAHAU, "npc": CHUTUULAU, "duoi": 30, "muatoi": 30, "chikhi": CHIKHI_TRIEUHOIBAOTHU},
 ]
 

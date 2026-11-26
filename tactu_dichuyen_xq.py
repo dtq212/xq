@@ -473,14 +473,20 @@ class TacTuDiChuyen:
             # Đang chờ (bận đánh) thì chưa tính 10s "đi mãi không nhặt được" của tactu_vatpham, không thì món bị bỏ qua oan
             self._thoidiemthaydoivatphamdangnhatgannhat = time.time()
 
-        if self._is_vuamatmuctieu and not is_yeucaunhatvatphamcholau:
+        # Món gần (≤KHOANGCACHNHATDOGANKHIVUAMATMUCTIEU ô) thì không chờ: trước đây chờ 2s vì tưởng ≤3 ô "get" tại chỗ đã nhặt được, mà máy
+        # chủ chỉ nhận ≤2 ô => boss Phong Yêu Kính / Tinh Anh rơi đồ cách 3 ô nhân vật đứng yên gửi "get" trượt (log 342 26/11)
+        if self._is_vuamatmuctieu and not is_yeucaunhatvatphamcholau and not (
+                self._diachicosovatphamdangnhat
+                and self.moitruong.get_khoangcachtamdanh(self._diachicosovatphamdangnhat) <= KHOANGCACHNHATDOGANKHIVUAMATMUCTIEU):
             is_yeucaunhatvatpham = False
 
         yeucauduocchon = None
         lydochon = "KHÔNG CÓ"
 
         is_yeucaunhatvatphamganhon = False
-        if is_yeucaunhatvatpham and not is_muctieupk and self._is_tudongvebanrac:
+        # Món gần hơn mục tiêu thì nhặt trước, bật hay không bật Tự động về bán rác (trước chỉ khi bật: Phong Yêu Kính / Săn Tinh Anh
+        # thường tắt ô đó nên món rơi sát bên phải chờ THOIGIANCHONHATDOTOIDA giây, bị kéo đi đánh đệ boss trước)
+        if is_yeucaunhatvatpham and not is_muctieupk:
             khoangcachnhatvatpham = self.moitruong.get_khoangcach(self._diachicosovatphamdangnhat) if self._diachicosovatphamdangnhat else KHOANGCACHTOIDAHOPLE
             khoangcachtancong = KHOANGCACHTOIDAHOPLE
             if self._yeucautancongxuat and self._yeucautancongxuat.get("diachimuctieu"):

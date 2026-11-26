@@ -77,6 +77,18 @@ class TacTuMaTac:
         if self._matac:
             self._ketthucmatac("Đã dừng Đoạt Bảo Mã Tặc (bấm tay)")
 
+    def battat_matacbandohientai(self):
+        # Phím tắt Ctrl+Alt+M: đang đánh Mã Tặc thì dừng; chưa thì lấy bản đồ đang đứng làm danh sách bản đồ (thay danh sách cũ) rồi bắt đầu
+        if self._matac:
+            self.huy_matac()
+            return
+        idbando = self.moitruong.get_idbandohientai()
+        if not idbando:
+            self._logmt("Phím tắt: chưa đọc được bản đồ hiện tại")
+            return
+        self.thietlap_bandomatac(laytenbando(idbando))
+        self.batdau_matac()
+
     def thietlap_bandomatac(self, chuoi):
         ids, loi = tachbandomatac(chuoi)
         self._matac_bandos = ", ".join(laytenbando(i) for i in ids)
