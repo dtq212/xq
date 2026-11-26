@@ -1,29 +1,6 @@
 {
   "dois": [
     {
-      "ma": "1794054012272",
-      "ten": "1",
-      "thanhviens": [
-        364,
-        342,
-        347,
-        354,
-        359
-      ],
-      "thutu": [
-        "sugia",
-        "tapkich",
-        "langlyson",
-        "thanhkieu",
-        "phongyeukinh"
-      ],
-      "chon": [
-        "langlyson"
-      ],
-      "vong": {},
-      "phai": "maoson"
-    },
-    {
       "ma": "1794373815001",
       "ten": "2",
       "thanhviens": [
@@ -45,6 +22,29 @@
       ],
       "vong": {},
       "phai": "daohoanguyen"
+    },
+    {
+      "ma": "1794054012272",
+      "ten": "1",
+      "thanhviens": [
+        364,
+        342,
+        347,
+        354,
+        359
+      ],
+      "thutu": [
+        "sugia",
+        "tapkich",
+        "langlyson",
+        "thanhkieu",
+        "phongyeukinh"
+      ],
+      "chon": [
+        "langlyson"
+      ],
+      "vong": {},
+      "phai": "maoson"
     }
   ]
 }

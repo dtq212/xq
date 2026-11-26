@@ -2393,7 +2393,10 @@ class TacTuLangLySon:
         # Boss Phong Yêu Kính còn sống trong tầm nhìn (tên chứa TUBOSSPHONGYEUs, không phải người chơi / NPC / bảo thú, chưa tính là đã
         # giết). Tên boss có đuôi "(cấp N)" nên không loại theo dấu ngoặc (từng loại hết, không bao giờ thấy boss); bảo thú triệu hồi của
         # người chơi "Đậu Binh ( X ) (cấp 105)" có 2 cặp ngoặc thì loại
+        # Boss đang đánh (py["boss"]) còn sống trong tầm nhìn thì ưu tiên nó, không nhảy sang boss khác giữa chừng
         moitruong = self.moitruong
+        idbosscu = py["boss"]["id"] if py.get("boss") else None
+        dautien = None
         for diachi in moitruong._get_diachidoituongxungquanhs():
             if not moitruong.get_is_nhanvattontai(diachi) or moitruong.get_is_nguoichoi(diachi) or moitruong.get_is_npc(diachi):
                 continue
@@ -2402,10 +2405,21 @@ class TacTuLangLySon:
                 continue
             if moitruong.get_is_baothuvatpham(diachi) or moitruong.get_is_nhanvatdachet(diachi):
                 continue
-            if moitruong.get_iddoituong(diachi) in py["bossdagiet"]:
+            idboss = moitruong.get_iddoituong(diachi)
+            if idboss in py["bossdagiet"]:
                 continue
-            return diachi
-        return None
+            if idbosscu is None or idboss == idbosscu:
+                return diachi
+            dautien = dautien or diachi
+        return dautien
+
+    def _is_bosscondangsongpy(self, idboss):
+        # Boss có ID này còn thấy trong tầm nhìn mà chưa chết (xác còn nằm / không thấy nữa thì False)
+        moitruong = self.moitruong
+        for diachi in moitruong._get_diachidoituongxungquanhs():
+            if moitruong.get_is_nhanvattontai(diachi) and moitruong.get_iddoituong(diachi) == idboss:
+                return not moitruong.get_is_nhanvatdachet(diachi)
+        return False
 
     def _chonhatdoroipy(self, s):
         # Đủ điều kiện ra Phong Yêu Kính: True khi còn phải chờ nhặt đồ (đồ boss / quái vừa rơi). Chờ ít nhất THOIGIANCHORA giây, sau
@@ -2512,6 +2526,14 @@ class TacTuLangLySon:
         is_bodanhboss = self._is_khongdanhbosspykc()
         if diachi:
             idboss = moitruong.get_iddoituong(diachi)
+            if boss and boss["id"] != idboss and not is_bodanhboss and not self._is_bosscondangsongpy(boss["id"]) \
+                    and moitruong.get_khoangcachdiem(*boss["vitri"]) <= KHOANGCACHTOIBOSS:
+                # Boss đang đánh vừa chết (không còn sống trong tầm nhìn, mình đứng gần chỗ nó) mà boss khác đã lọt tầm nhìn: tính boss cũ đã
+                # giết rồi mới chuyển. Trước đây ghi đè luôn nên boss cũ mất: log 2026-11-26 09:32 Ngô Vương Tàn Phách (85%) và Long Nha
+                # Kính Ma (100%) ra cùng lúc, Ngô Vương chết 09:32:35 thì chuyển sang Long Nha, cả nhóm chỉ ghi 1/2 rồi dò bù 20 phút
+                py["bossdagiet"].add(boss["id"])
+                self._logpb(s, f"Đã giết boss {boss['ten']} ({len(py['bossdagiet'])}/{laydieukienrapykeocap(self._cauhinhpy())[0]}), "
+                               f"chuyển sang boss khác")
             if not boss or boss["id"] != idboss:
                 boss = py["boss"] = {"id": idboss, "ten": moitruong.get_tendoituong(diachi), "lucgan": 0.}
                 self._logpb(s, f"Thấy boss {boss['ten']} ở {moitruong.get_toado(diachi)}")
