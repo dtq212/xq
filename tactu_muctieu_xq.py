@@ -231,6 +231,9 @@ class TacTuMucTieu:
         tendoituong = self.moitruong.get_tendoituong(diachidoituong)
         if tendoituong in TENMUCTIEUKHONGTANCONGs or self.moitruong.get_is_quairiengnguoikhac(tendoituong):
             return False
+        # Bắt bảo thú: quái đúng tên + cấp cần bắt thì không đánh (đánh chết là mất), quái khác farm như thường
+        if self._is_quaicanbat(diachidoituong, tendoituong):
+            return False
 
         is_nguoichoi = self.moitruong.get_is_nguoichoi(diachidoituong)
         is_baothukynangtrieuhoi = self.moitruong.get_is_baothukynangtrieuhoi(diachidoituong)
@@ -265,6 +268,10 @@ class TacTuMucTieu:
 
         # Tránh vùng cấm (theo tùy chọn tránh vùng cấm)
         if self._kiemtra_divaovungcam(*toadodoituong):
+            return False
+
+        # Chiến lược người lạ "tranh": bỏ quái gần chỗ người lạ đứng (người chơi / bảo thú PK vẫn đánh để còn phản công)
+        if not is_muctieupk and self._is_gannguoila(*toadodoituong):
             return False
 
         # Quái phải nằm trong tầm của một điểm đánh (người chơi/bảo thú PK thì không giới hạn để còn phản công)
@@ -707,7 +714,7 @@ class TacTuMucTieu:
         if self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangphangiai() or self.get_is_dangcatkho() or self.get_is_sumondichuyen() \
                 or self.get_is_langlysondichuyen() \
                 or self.get_is_sugiadichuyen() or self.get_is_tapkichdichuyen() or self.get_is_danhvongdichuyen() or self.get_is_thienxudichuyen() \
-                or self.get_is_keocapchuyendo() \
+                or self.get_is_keocapchuyendo() or self.get_is_batbaothudichuyen() \
                 or (not is_chipk and (self.get_is_matacdichuyen() or self.get_is_tinhanhdichuyen() or self.get_is_daokhoangdichuyen())):
             # Mã Tặc / Tinh Anh / Đào khoáng đi lại mà bật PK (is_chipk) thì không chặn: chỉ nhận mục tiêu PK (_kiemtramuctieuhople)
             self._is_chidanhpkviecdi = False
@@ -1122,6 +1129,9 @@ class TacTuMucTieu:
             return False
         tendoituong = self.moitruong.get_tendoituong(diachidoituong)
         if tendoituong in TENMUCTIEUKHONGTANCONGs or self.moitruong.get_is_quairiengnguoikhac(tendoituong):
+            return False
+        # Bắt bảo thú: quái đúng tên + cấp cần bắt thì không đánh (đánh chết là mất), quái khác farm như thường
+        if self._is_quaicanbat(diachidoituong, tendoituong):
             return False
         is_nguoichoi = self.moitruong.get_is_nguoichoi(diachidoituong)
         is_baothu = self.moitruong.get_is_baothukynangtrieuhoi(diachidoituong) or self.moitruong.get_is_baothugiangho(diachidoituong)
@@ -1628,6 +1638,9 @@ class TacTuMucTieu:
         # Điểm đánh (x, y) bị nhân vật ID nhỏ hơn giữ: nằm trong BANKINHVUNGNHUONGQUAIDONGDOI quanh chỗ nó đứng (thấy trên màn hình hoặc
         # shared_data) hoặc quanh điểm đánh nó đang đi tới. Tính cả điểm đang tới để các bot cùng lộ trình rải ra dọc lộ trình thay vì
         # cùng chạy một điểm rồi dồn cục (trước chỉ tính chỗ đứng: bot đi trước tới điểm kế, bot sau cũng nhảy điểm kế => sát rạt nhau)
+        # Chiến lược người lạ "tranh": điểm đánh gần chỗ người lạ đứng cũng coi như bị giữ, lộ trình nhảy qua
+        if self._is_gannguoila(x, y):
+            return True
         idbanthan = self.moitruong.get_idnguoichoi()
         if any(iddongdoi < idbanthan and math.dist((x, y), toadodongdoi) <= BANKINHVUNGNHUONGQUAIDONGDOI for toadodongdoi, iddongdoi in dongdois):
             return True
@@ -1644,7 +1657,7 @@ class TacTuMucTieu:
         # Từ điểm idxbatdau đi xuôi lộ trình, lấy điểm đầu tiên không nằm trong vùng nhân vật ID nhỏ hơn (điểm ở bản đồ khác coi như được).
         # Không có điểm nào thì trả None (đứng điểm hiện tại, khỏi nhảy điểm liên tục mỗi giây)
         dongdois = self._laytoadodongdoikhacnhom()
-        if not dongdois and not self._laybotcungbando():
+        if not dongdois and not self._laybotcungbando() and not self._laytoadonguoilatranh():
             return idxbatdau
         sodiem = len(diemdanhxungquanhs)
         for buoc in range(sodiem):

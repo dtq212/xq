@@ -40,6 +40,7 @@ from ngoaihinh_xq import mongoaihinh, taihienthi, luuhienthi
 from tudongrao_xq import motudongrao
 from taythuoctinh_xq import motaythuoctinh
 from hangso_xq import SOLICHSUHANHDONG
+from hangso_xq import CHIENLUOCNGUOILA_MAP, CHIENLUOCNGUOILA_TATCA, THOIGIANTAMNGUNGNGUOILA, BANKINHTRANHNGUOILA
 from hangso_xq import PHAPBAOTHEOMAU_MAP, TENNHOMPHAPBAO_MAP, NGUONGPHAPBAOTHEOMAU_VUA, NGUONGPHAPBAOTHEOMAU_THAP, DOTREPHAPBAOTHEOMAU, THOIGIANONDINHDOIPHAPBAO, \
     NGUONGBOMMAUDONGDOI, NGUONGBOMMAUDATINH
 from dieuphoi_xq import taicauhinhdieuphoi, luucauhinhdieuphoi, chuanhoacauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
@@ -480,7 +481,11 @@ class GiaoDienHienThi:
             "chidanhnguoichoi": tk.BooleanVar(),
             "uutienmaoson": tk.BooleanVar(),
             "khaikhoang": tk.BooleanVar(),
-            "tamngungnguoila": tk.BooleanVar(value = True),
+            "phatamnguoila": tk.BooleanVar(value = True),
+            "telegramnguoila": tk.BooleanVar(value = True),
+            "thoigiantamngungnguoila": tk.IntVar(value = int(THOIGIANTAMNGUNGNGUOILA)),
+            "thoigianphanungnguoila": tk.IntVar(value = 0),
+            "bankinhtranhnguoila": tk.IntVar(value = int(BANKINHTRANHNGUOILA)),
             "daobaodo": tk.BooleanVar(),
             "chientruong": tk.BooleanVar(),
             "chantangcap": tk.BooleanVar(),
@@ -2735,6 +2740,225 @@ class GiaoDienHienThi:
         if self.lbl_daokhoang.cget("text") != chu:
             self.lbl_daokhoang.config(text = chu)
 
+    def _taonhombatbaothu(self, tab):
+        # Bắt bảo thú (tactu_batbaothu_xq) cho nhân vật đang chọn: vừa farm vừa bắt quái đúng tên + cấp, đánh xuống dưới ngưỡng máu rồi
+        # mới dùng Dây Càn Khôn, con tư chất không đạt thì phóng sinh, đủ số con đạt thì dừng. Ô nhập nạp theo nhân vật khi đổi nhân vật;
+        # sửa ô nào thì 0.6s sau gửi thiết lập cho bot (đang bắt cũng đổi ngay, không cần dừng / bật lại)
+        from tactu_batbaothu_xq import TUCHATBAOTHUs, NGUONGMAUBATBAOTHU
+        nhom = self._taonhom(tab, "Bắt bảo thú (vừa farm vừa bắt bằng Dây Càn Khôn, giữ con tư chất đạt, phóng sinh con không đạt)")
+        self._bbt_hwnd = None
+        self._bbt_dangnap = False
+        self._bbt_hengui = None
+        self._bbt_vars = {"ten": tk.StringVar(), "captu": tk.StringVar(value = "0"), "capden": tk.StringVar(value = "0"),
+                          "soluong": tk.StringVar(value = "1"), "nguongmau": tk.StringVar(value = str(NGUONGMAUBATBAOTHU)),
+                          "is_phongsinh": tk.BooleanVar(value = True), "is_batky": tk.BooleanVar(value = False)}
+        for k, _ in TUCHATBAOTHUs:
+            self._bbt_vars["tc_" + k] = tk.StringVar(value = "0")
+
+        def spin(cha, ten, tu, den, buoc, rong):
+            return ttk.Spinbox(cha, from_ = tu, to = den, increment = buoc, width = rong, textvariable = self._bbt_vars[ten])
+
+        # Hàng 1: tên, cấp
+        hang1 = ttk.Frame(nhom)
+        hang1.grid(row = 0, column = 0, sticky = tk.W)
+        ttk.Label(hang1, text = "Tên:").pack(side = tk.LEFT)
+        self._gantooltip(ttk.Entry(hang1, textvariable = self._bbt_vars["ten"], width = 20),
+                         "Tên quái cần bắt, đúng như trên đầu quái (vd Quy Tiên Nhân)").pack(side = tk.LEFT, padx = (4, 12))
+        ttk.Label(hang1, text = "Cấp từ").pack(side = tk.LEFT)
+        spin(hang1, "captu", 0, 200, 1, 4).pack(side = tk.LEFT, padx = (4, 4))
+        ttk.Label(hang1, text = "đến").pack(side = tk.LEFT)
+        self._gantooltip(spin(hang1, "capden", 0, 200, 1, 4),
+                         "Cấp quái theo tên gốc \"( Cấp N )\"; 0 = không giới hạn. Quái cùng tên sai cấp vẫn bị đánh như thường").pack(side = tk.LEFT, padx = (4, 0))
+        # Hàng 2: số con giữ, ngưỡng máu
+        hang2 = ttk.Frame(nhom)
+        hang2.grid(row = 1, column = 0, sticky = tk.W, pady = (4, 0))
+        ttk.Label(hang2, text = "Giữ").pack(side = tk.LEFT)
+        spin(hang2, "soluong", 1, 10, 1, 3).pack(side = tk.LEFT, padx = (4, 2))
+        ttk.Label(hang2, text = "con đạt thì dừng").pack(side = tk.LEFT, padx = (0, 16))
+        ttk.Label(hang2, text = "Bắt khi máu <").pack(side = tk.LEFT)
+        self._gantooltip(spin(hang2, "nguongmau", 1, 100, 5, 4),
+                         "Máu quái từ ngưỡng này trở lên thì đánh từng cái cho giảm máu (chiêu đơn mục tiêu của phái), dưới ngưỡng mới dùng "
+                         "Dây Càn Khôn. Cú đánh kế có thể làm quái chết thì thôi đánh, bắt luôn").pack(side = tk.LEFT, padx = (4, 2))
+        ttk.Label(hang2, text = "%").pack(side = tk.LEFT)
+        # Hàng 3: 5 tư chất xếp lưới 3 cột (2 hàng) cho vừa bề ngang
+        ttk.Label(nhom, text = "Tư chất tối thiểu (0 = bỏ qua):").grid(row = 2, column = 0, sticky = tk.W, pady = (6, 0))
+        luoi = ttk.Frame(nhom)
+        luoi.grid(row = 3, column = 0, sticky = tk.W, padx = (12, 0))
+        for i, (k, ten) in enumerate(TUCHATBAOTHUs):
+            hang, cot = divmod(i, 3)
+            ttk.Label(luoi, text = ten).grid(row = hang, column = cot * 2, sticky = tk.W, padx = (0 if cot == 0 else 16, 4), pady = 1)
+            spin(luoi, "tc_" + k, 0, 2000, 10, 5).grid(row = hang, column = cot * 2 + 1, sticky = tk.W, pady = 1)
+        # Hàng 4: tuỳ chọn; hàng 5: nút
+        hang4 = ttk.Frame(nhom)
+        hang4.grid(row = 4, column = 0, sticky = tk.W, pady = (6, 0))
+        self._gantooltip(ttk.Checkbutton(hang4, text = "Chỉ cần đạt 1 ô", variable = self._bbt_vars["is_batky"]),
+                         "Bật: đạt ngưỡng ở BẤT KỲ ô tư chất nào đã điền là giữ. Tắt: phải đạt TẤT CẢ ô đã điền").pack(side = tk.LEFT)
+        self._gantooltip(ttk.Checkbutton(hang4, text = "Phóng sinh con không đạt", variable = self._bbt_vars["is_phongsinh"]),
+                         "Chỉ phóng sinh con vừa bắt trong lần chạy này, bảo thú có sẵn không bao giờ bị đụng").pack(side = tk.LEFT, padx = (12, 0))
+        hang5 = ttk.Frame(nhom)
+        hang5.grid(row = 5, column = 0, sticky = tk.W, pady = (6, 0))
+        self.btn_batbaothu = ttk.Button(hang5, text = "▶ Bắt đầu bắt", command = self._battatbatbaothu)
+        self.btn_batbaothu.pack(side = tk.LEFT)
+        self._taohuongdan(hang5, "Farm như thường ở bãi có quái cần bắt rồi bấm Bắt đầu (đang bắt thì quái ở bản đồ không có điểm đánh vẫn đánh). "
+                                 "Quái đúng tên / cấp thì không đánh chết; thấy nó trong 15 ô thì bỏ đánh, tới gần đánh từng cái cho máu xuống dưới "
+                                 "ngưỡng rồi dùng Dây Càn Khôn. Bắt được thì đọc Thể Chất / Tinh Thần / Sức Mạnh / Nại Lực / Mẫn Tiệp ở bảng Bảo Thú: "
+                                 "đạt ngưỡng thì giữ, không đạt thì phóng sinh. Đủ số con giữ, hết Dây Càn Khôn, hoặc bắt mãi không ra con mới "
+                                 "(ô bảo thú đầy) thì dừng. Sửa ô nào bot nhận ngay. Log: [BẮT BẢO THÚ]")
+        self.lbl_batbaothu = tk.Label(nhom, text = "", fg = MAUCHU_PHU, anchor = tk.W, justify = tk.LEFT, wraplength = self._px(560))
+        self.lbl_batbaothu.grid(row = 6, column = 0, sticky = tk.W, pady = (2, 0))
+        for bien in self._bbt_vars.values():
+            bien.trace_add("write", lambda *a: self._henguibatbaothu())
+
+    def _henguibatbaothu(self):
+        # Sửa ô: gom các lần gõ, 0.6s sau gửi "set_batbaothu:" cho nhân vật đang chọn (đang nạp ô theo nhân vật thì không gửi)
+        if self._bbt_dangnap:
+            return
+        if self._bbt_hengui:
+            self.root.after_cancel(self._bbt_hengui)
+        self._bbt_hengui = self.root.after(600, self._guibatbaothu)
+
+    def _guibatbaothu(self):
+        self._bbt_hengui = None
+        hwnd = self.get_selected_hwnd()
+        if hwnd and hwnd == self._bbt_hwnd:
+            self.command_dict[int(hwnd)] = "set_batbaothu:" + json.dumps(self._laythietlapbatbaothu(), ensure_ascii = False)
+
+    def _laythietlapbatbaothu(self):
+        from tactu_batbaothu_xq import TUCHATBAOTHUs, chuanhoathietlapbatbaothu
+        v = self._bbt_vars
+
+        def doc(bien, macdinh = 0):
+            try:
+                return bien.get()
+            except tk.TclError:
+                return macdinh
+        return chuanhoathietlapbatbaothu({"ten": doc(v["ten"], ""), "captu": doc(v["captu"]), "capden": doc(v["capden"]),
+                                          "soluong": doc(v["soluong"], 1), "nguongmau": doc(v["nguongmau"], None),
+                                          "is_phongsinh": doc(v["is_phongsinh"], True), "is_batky": doc(v["is_batky"], False),
+                                          "tuchat": {k: doc(v["tc_" + k]) for k, _ in TUCHATBAOTHUs}})
+
+    def _battatbatbaothu(self):
+        hwnd = self.get_selected_hwnd()
+        if not hwnd:
+            hopthoai.showwarning("Bắt bảo thú", "Chọn một nhân vật trong danh sách trước", parent = self.root)
+            return
+        info = self.shared_data.get(hwnd) or {}
+        if info.get("_is_dangbatbaothu"):
+            self.command_dict[int(hwnd)] = "huybatbaothu"
+            return
+        thietlap = self._laythietlapbatbaothu()
+        if not thietlap["ten"]:
+            hopthoai.showwarning("Bắt bảo thú", "Điền tên bảo thú (tên quái) cần bắt", parent = self.root)
+            return
+        self.command_dict[int(hwnd)] = "batbaothu:" + json.dumps(thietlap, ensure_ascii = False)
+
+    def _capnhatbatbaothu(self):
+        from tactu_batbaothu_xq import TUCHATBAOTHUs
+        hwnd = self.get_selected_hwnd()
+        info = (self.shared_data.get(hwnd) or {}) if hwnd else {}
+        # Đổi nhân vật: nạp ô nhập theo thiết lập đã lưu của nhân vật đó (không gửi ngược lại cho bot)
+        if hwnd != self._bbt_hwnd and info.get("_batbaothu_thietlap"):
+            self._bbt_hwnd = hwnd
+            tl = info["_batbaothu_thietlap"]
+            v = self._bbt_vars
+            self._bbt_dangnap = True
+            try:
+                for k in ("ten", "captu", "capden", "soluong", "nguongmau", "is_phongsinh", "is_batky"):
+                    if k in tl:
+                        v[k].set(tl[k])
+                for k, _ in TUCHATBAOTHUs:
+                    v["tc_" + k].set((tl.get("tuchat") or {}).get(k, 0))
+            finally:
+                self._bbt_dangnap = False
+        chunut = "⏹ Dừng bắt" if info.get("_is_dangbatbaothu") else "▶ Bắt đầu bắt"
+        if self.btn_batbaothu.cget("text") != chunut:
+            doichunut(self.btn_batbaothu, chunut)
+        chu = info.get("_trangthaibatbaothu") or ""
+        if self.lbl_batbaothu.cget("text") != chu:
+            self.lbl_batbaothu.config(text = chu)
+
+    def _taonhomnguoila(self, tab):
+        # Chiến lược khi gặp người lạ ở map train lúc đi lộ trình điểm đánh (CHIENLUOCNGUOILA_*, thay ô bật/tắt tạm ngưng cũ, người dùng
+        # 2026-11-26) + thời gian ngưng / phản ứng / bán kính tránh + bật/tắt phát âm, Telegram. Ẩn thân luôn ngưng cả máy và luôn báo
+        nhom = self._taonhom(tab, "Khi gặp người lạ (đang đi lộ trình điểm đánh)")
+        hang = ttk.Frame(nhom)
+        hang.grid(row = 0, column = 0, sticky = tk.W)
+        ttk.Label(hang, text = "Chiến lược:").pack(side = tk.LEFT)
+
+        def on_chienluoc_change(event = None):
+            hwnd = self.get_selected_hwnd()
+            if hwnd:
+                self.command_dict[hwnd] = f"set_chienluocnguoila:{CHIENLUOCNGUOILA_MAP.get(self.cbo_chienluocnguoila.get(), CHIENLUOCNGUOILA_TATCA)}"
+
+        self.cbo_chienluocnguoila = ttk.Combobox(hang, state = "readonly", width = 30, values = list(CHIENLUOCNGUOILA_MAP))
+        self.cbo_chienluocnguoila.set(next(iter(CHIENLUOCNGUOILA_MAP)))
+        self.cbo_chienluocnguoila.pack(side = tk.LEFT, padx = 4)
+        self.cbo_chienluocnguoila.bind("<<ComboboxSelected>>", on_chienluoc_change)
+        self._taohuongdan(hang,
+                          "• Tạm ngưng cả máy: nhân vật thấy ngưng, mọi nhân vật cùng bản đồ (cùng máy / LAN) đang chọn kiểu này ngưng theo; "
+                          "chặn tự đăng nhập cả máy tới khi hết ngưng.\n"
+                          "• Chỉ tạm ngưng nhân vật thấy: chỉ nhân vật đó ngưng, các acc khác đánh tiếp, tự đăng nhập các acc khác vẫn chạy.\n"
+                          "• Tránh xa người lạ: vẫn đánh, bỏ quái và điểm lộ trình trong bán kính tránh quanh chỗ người lạ đứng (nhớ 60 giây "
+                          "sau khi khuất, bot cùng bản đồ chọn kiểu này tránh theo). Người lạ cứ ở sát mình quá 90 giây (bám theo) thì "
+                          "nhân vật này tạm ngưng.\n"
+                          "• Chỉ cảnh báo: không ngưng, chỉ báo (theo 2 ô thông báo).\n"
+                          "• Bỏ qua: không làm gì.\n"
+                          "Đang kéo cấp / khai khoáng thì luôn bỏ qua người lạ. Ẩn thân (ADMIN) luôn ngưng cả máy và luôn báo.")
+
+        hangso = ttk.Frame(nhom)
+        hangso.grid(row = 1, column = 0, sticky = tk.W, pady = (2, 0))
+        self._spin_nguoilas = {}
+
+        def taospin(text, khoa, tu, den, buoc, donvi):
+            def on_change(hwnd = None):
+                hwnd = hwnd or self.get_selected_hwnd()
+                if hwnd:
+                    try:
+                        self.command_dict[hwnd] = f"set_{khoa}:{self.vars[khoa].get()}"
+                    except tk.TclError:
+                        pass
+
+            ttk.Label(hangso, text = text).pack(side = tk.LEFT)
+            spin = ttk.Spinbox(hangso, from_ = tu, to = den, increment = buoc, width = 5, textvariable = self.vars[khoa], command = on_change)
+            spin.pack(side = tk.LEFT, padx = (4, 2))
+            self._ganspinboxapdung(spin, on_change)
+            ttk.Label(hangso, text = donvi, style = "Phu.TLabel").pack(side = tk.LEFT, padx = (0, 10))
+            self._spin_nguoilas[khoa] = spin
+
+        taospin("Tạm ngưng", "thoigiantamngungnguoila", 10, 3600, 30, "giây")
+        taospin("Phản ứng sau", "thoigianphanungnguoila", 0, 600, 5, "giây")
+        taospin("Bán kính tránh", "bankinhtranhnguoila", 5, 40, 1, "ô")
+        self._gantooltip(hangso, "Tạm ngưng: số giây ngưng (cả máy / riêng nhân vật / bị bám theo).\n"
+                                 "Phản ứng sau: người lạ phải ở lại trên màn hình bấy nhiêu giây mới ngưng / cảnh báo (0 = ngay), "
+                                 "người đi ngang qua thì bỏ qua.\nBán kính tránh: dùng cho kiểu Tránh xa người lạ.")
+
+        hangbao = ttk.Frame(nhom)
+        hangbao.grid(row = 2, column = 0, sticky = tk.W, pady = (2, 0))
+
+        def taocheck(text, khoa, lenh):
+            def on_click():
+                hwnd = self.get_selected_hwnd()
+                if hwnd:
+                    self.command_dict[hwnd] = lenh
+            ttk.Checkbutton(hangbao, text = text, variable = self.vars[khoa], command = on_click).pack(side = tk.LEFT, padx = (0, 12))
+
+        taocheck("Phát âm cảnh báo", "phatamnguoila", "battat_phatamnguoila")
+        taocheck("Báo Telegram", "telegramnguoila", "battat_telegramnguoila")
+
+    def _capnhatnhomnguoila(self, info, widgetdangfocus):
+        chu = next((ten for ten, ma in CHIENLUOCNGUOILA_MAP.items() if ma == info.get("_chienluocnguoila", CHIENLUOCNGUOILA_TATCA)), None)
+        if chu and self.cbo_chienluocnguoila.get() != chu:
+            self.cbo_chienluocnguoila.set(chu)
+        for khoa, spin in self._spin_nguoilas.items():
+            if widgetdangfocus == spin or f"_{khoa}" not in info:
+                continue
+            try:
+                giatri = int(round(float(info[f"_{khoa}"])))
+                if self.vars[khoa].get() != giatri:
+                    self.vars[khoa].set(giatri)
+            except (tk.TclError, TypeError, ValueError):
+                pass
+
     def _taotabkhac(self, tab):
         # Nhịp lệnh và các tự động ít dùng (khai khoáng, đào tàng bảo đồ, chiến trường). Chiến trường không chạy khi đang tự đi phó bản
         self._taonhomnhiplenh(tab)
@@ -2742,11 +2966,11 @@ class GiaoDienHienThi:
         self._create_check(nhom, "Tự động khai khoáng/Hái dược", self.vars["khaikhoang"], "battat_tudongkhaikhoang")
         self._create_check(nhom, "Đào tàng bảo đồ", self.vars["daobaodo"], "battat_tudongdaotangbaodo")
         self._create_check(nhom, "Đi chiến trường", self.vars["chientruong"], "battat_tudongdichientruong")
-        # Mặc định bật; tắt thì thấy người lạ ở map train chỉ cảnh báo (phát âm + Telegram), không ngưng. Ẩn thân luôn ngưng
-        self._create_check(nhom, "Tạm ngưng khi gặp người lạ", self.vars["tamngungnguoila"], "battat_tamngungnguoila")
+        self._taonhomnguoila(tab)
         # Săn Tinh Anh chuyển từ tab Chiến đấu sang đây (người dùng 26/11), cạnh Đào khoáng cùng kiểu chọn bản đồ
         self._taonhomtinhanh(tab)
         self._taonhomdaokhoang(tab)
+        self._taonhombatbaothu(tab)
         # Bản đồ nhỏ (bandonho_xq): cửa sổ riêng vẽ quanh nhân vật đang chọn, không đụng phần vẽ của game
         nhombando = self._taonhom(tab, "Tiện ích hiển thị")
         hangbando = ttk.Frame(nhombando)
@@ -5857,7 +6081,7 @@ class GiaoDienHienThi:
                     self.shared_data_lan = {}
             thoigians.append(("chup", time.perf_counter() - lucdau))
             for ham in (self._capnhatdanhsachnhanvat, self._capnhatdangnhap, self._capnhatbangdieukhien, self._capnhatthongtinmuctieu,
-                        self._capnhatbanghieuung, self._capnhatgiaodo, self._capnhathangviec, self._capnhatkeocap, self._capnhatkeoga, self._capnhatmatac, self._capnhattinhanh, self._capnhatdaokhoang,
+                        self._capnhatbanghieuung, self._capnhatgiaodo, self._capnhathangviec, self._capnhatkeocap, self._capnhatkeoga, self._capnhatmatac, self._capnhattinhanh, self._capnhatdaokhoang, self._capnhatbatbaothu,
                         self._capnhatvanglaitodoi, self._capnhatcanhbao, self._capnhatangame):
                 batdau = time.perf_counter()
                 try:
@@ -6169,7 +6393,8 @@ class GiaoDienHienThi:
                 ("diquocgiatanthutienco", "_is_diquocgiatanthutienco"),
                 ("doidotrieuhoi", "_is_doidokhitrieuhoi"),
                 ("khaikhoang", "_is_tudongkhaikhoang"),
-                ("tamngungnguoila", "_is_tamngungnguoila"),
+                ("phatamnguoila", "_is_phatamnguoila"),
+                ("telegramnguoila", "_is_telegramnguoila"),
                 ("chientruong", "_is_tudongdichientruong"),
                 ("daobaodo", "_is_tudongdaotangbaodo"),
                 ("chidanhnguoichoi", "_is_chidanhnguoichoi"),
@@ -6283,6 +6508,8 @@ class GiaoDienHienThi:
                     self.vars["captangcaptoida"].set(cap_moi)
             except tk.TclError:
                 pass
+
+        self._capnhatnhomnguoila(info, widgetdangfocus)
 
         if widgetdangfocus != getattr(self, 'spin_phantramvesuado', None):
             try:

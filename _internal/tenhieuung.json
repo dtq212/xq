@@ -95,6 +95,10 @@
   "mota": "",
   "ten": "Chủ nhân gia tăng 5% Ngoại Kháng, 5% Nội Kháng, 5% Khí Huyết, 5% Bạo Kích, 5% Ngoại Công, 5% Nội Công"
  },
+ "4141": {
+  "mota": "Tiêu hao Pháp Lực và Nguyên Khí gấp bội",
+  "ten": "Ám Ma Nhập Thể"
+ },
  "4143": {
   "mota": "Ngoại Kháng giảm -210, Nội Kháng giảm 0.",
   "ten": "Thực Giáp"
@@ -158,6 +162,10 @@
  "9016": {
   "mota": "",
   "ten": "Mộng Du"
+ },
+ "9018": {
+  "mota": "",
+  "ten": "Hỗn Loạn：\n　　Khi di chuyển bị rối loạn không khống chế."
  },
  "9020": {
   "mota": "",

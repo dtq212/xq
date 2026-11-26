@@ -1584,7 +1584,8 @@ class TacTuSuMon:
         moitruong.action_thucthicaulenh(f"desc {moitruong.get_iddoituong(diachi):x}# {o}")
         return None
 
-    def _danhgiammau(self, s, nv, diachi):
+    def _danhgiammau(self, s, nv, diachi, solanbattruoc = SOLANBATTRUOCKHIDANH, nguongdung = NGUONGMAUDUNGDANH):
+        # solanbattruoc / nguongdung: Bắt bảo thú (tactu_batbaothu_xq) truyền 0 / 50 = đánh ngay từ đầu tới khi máu dưới 50% mới bắt
         # Bắt SOLANBATTRUOCKHIDANH lần chưa được thì đánh thường 1 cái cho quái giảm máu (máu càng thấp càng dễ bắt), rồi bắt tiếp.
         # Đánh chết là mất con đó nên cẩn thận: mỗi lần chỉ 1 cái ("kill", thấy máu tụt là dùng chiêu bắt ngay để ngắt đánh), ghi lại 1 cái
         # làm tụt bao nhiêu % máu (theo tên quái) và chỉ đánh khi máu còn lại sau cú đánh (tính dư x1.5) vẫn trên NGUONGMAUANTOAN%;
@@ -1597,7 +1598,12 @@ class TacTuSuMon:
         if cho and cho["id"] == iddt:
             if mau < cho["mau"]:
                 # Đã trúng: nhớ sức đánh (theo tên quái + cách đánh), ngắt đánh thường nếu đã "kill", bắt ngay
-                satthuong[cho["khoa"]] = max(satthuong.get(cho["khoa"], 0), cho["mau"] - mau)
+                # Bắt bảo thú (nv["is_satthuonggannhat"]): nhớ lần đo gần nhất thay vì lớn nhất. Lần đo có khi gộp cả đòn bảo thú / người
+                # khác cùng lúc (log 354 26/11: Liệt Phong Quy 66% -> 4% = "62%") thì từ đó quái 100% máu cũng bị coi đánh là chết, bắt luôn
+                if nv.get("is_satthuonggannhat"):
+                    satthuong[cho["khoa"]] = cho["mau"] - mau
+                else:
+                    satthuong[cho["khoa"]] = max(satthuong.get(cho["khoa"], 0), cho["mau"] - mau)
                 s["chodanh"] = None
                 moitruong._inlog(f"[SƯ MÔN] Đánh {nv['quai']} ({cho['cach']}): máu {cho['mau']}% -> {mau}% "
                                  f"(1 cái tụt {cho['mau'] - mau}%), bắt tiếp")
@@ -1611,25 +1617,41 @@ class TacTuSuMon:
             moitruong.action_ngatdichuyen()
             self._batdaungatdanhsumon(cho)
             return False
-        if s.get("solanbat", {}).get(iddt, 0) < SOLANBATTRUOCKHIDANH or mau < NGUONGMAUDUNGDANH:
+        # s["lydokhongdanh"]: vì sao lượt này không đánh ("nguyhiem" = mọi cách đánh đều có thể làm chết, "chuatoi" = chiêu chưa tới
+        # lượt) để Bắt bảo thú biết nên bắt luôn hay chờ
+        s["lydokhongdanh"] = None
+        if s.get("solanbat", {}).get(iddt, 0) < solanbattruoc or mau < nguongdung:
             return False
-        # Chiêu đơn mục tiêu của phái (1 đòn rồi thôi); không có chiêu dùng được mới "kill" (đánh thường, phải tự ngắt)
-        idkynang = self._chonchieudanhgiammau()
+        # Chiêu đơn mục tiêu của phái (1 đòn rồi thôi), rồi "kill" (đánh thường, phải tự ngắt): lấy cách đầu tiên mà cú đánh (sức đã đo
+        # x1.5) vẫn để máu trên NGUONGMAUANTOAN%. Trước đây chiêu mạnh bị coi nguy hiểm là thôi đánh luôn, không thử đánh thường yếu hơn
+        idkynang, dukien, khoa = False, None, None
+        for idthu in ([self._chonchieudanhgiammau()] if self._chonchieudanhgiammau() else []) + [None]:
+            khoathu = f"{nv['quai']}|{idthu or 'kill'}"
+            dukienthu = satthuong.get(khoathu)
+            if dukienthu is None or mau - dukienthu * 1.5 >= NGUONGMAUANTOAN:
+                idkynang, dukien, khoa = idthu, dukienthu, khoathu
+                break
+        if idkynang is False:
+            s["lydokhongdanh"] = "nguyhiem"
+            return False
         cach = (moitruong.get_tenkynangtheoid(idkynang) or f"chiêu {idkynang}") if idkynang else "đánh thường (kill)"
-        khoa = f"{nv['quai']}|{idkynang or 'kill'}"
-        dukien = satthuong.get(khoa)
-        if dukien is not None and mau - dukien * 1.5 < NGUONGMAUANTOAN:
-            return False
         if idkynang:
             if not moitruong.action_sudungkynangmuctieukhacnguoichoi(idkynang, iddt):
                 # Chưa tới lượt / đang khoá chiêu: lượt sau thử lại, lượt này cứ bắt
+                s["lydokhongdanh"] = "chuatoi"
                 return False
         else:
+            # "kill" chỉ bật cờ Tự Động Công Kích ở máy chủ, KHÔNG kéo nhân vật đi: máy chủ chỉ đánh thường khi đã kề. Trước đây gửi "kill"
+            # lúc quái còn cách 2-3 ô rồi đứng yên chờ, 3s chưa trúng thì ngắt rồi gửi lại, lặp mãi (log 354 27/11 Cầu Cửu Khúc 2, Quy Tiên
+            # Nhân, chat đầy "Bạn đã ngừng Tự Động Công Kích"). Chưa kề thì báo người gọi chạy tới ô kề (s["lydokhongdanh"] = "xa") trước
+            if moitruong.get_khoangcachtamdanh(diachi) > KHOANGCACHSUDUNGKYNANGCANCHIEN:
+                s["lydokhongdanh"] = "xa"
+                return False
             moitruong.action_thucthicaulenh(f"kill {iddt:x}#")
         # Đánh 1 cái rồi đếm lại SOLANBATTRUOCKHIDANH lần bắt nữa mới đánh tiếp
-        s["solanbat"][iddt] = 0
+        s.setdefault("solanbat", {})[iddt] = 0
         s["chodanh"] = {"id": iddt, "mau": mau, "luc": time.time(), "is_kill": not idkynang, "cach": cach, "khoa": khoa}
-        moitruong._inlog(f"[SƯ MÔN] Bắt {nv['quai']} {SOLANBATTRUOCKHIDANH} lần chưa được, máu {mau}%: đánh 1 cái bằng {cach}"
+        moitruong._inlog(f"[{nv.get('nhanlog', 'SƯ MÔN')}] Bắt {nv['quai']} {solanbattruoc} lần chưa được, máu {mau}%: đánh 1 cái bằng {cach}"
                          f"{f' (1 cái tụt ~{dukien}%)' if dukien is not None else ' (chưa biết sức đánh)'}")
         s["trangthai"] = f"đánh {nv['quai']} 1 cái cho giảm máu ({mau}%)"
         return True
@@ -1713,6 +1735,10 @@ class TacTuSuMon:
             return self._dentoi(s, idbando, x, y, nhan)
         if self._danhgiammau(s, nv, diachi):
             return None
+        if s.get("lydokhongdanh") == "xa":
+            # Cần đánh thường ("kill") mà chưa kề: chạy tới ô kề rồi mới bật
+            x, y = moitruong.get_toado(diachi)
+            return self._dentoi(s, idbando, x, y, nhan, khoangcach = 0.)
         # Tỉ lệ bắt thấp: cứ dùng tới khi được, cách nhau ít nhất 0.25s
         if time.time() - s["lucbat"] >= GIANCACHBATBAOTHU:
             s.setdefault("solanbat", {})

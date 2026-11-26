@@ -29,6 +29,8 @@ KHOACHIASELANS = (
     # Chia mục tiêu giữa các bot (tactu_muctieu_xq._laymuctieubotkhac): bot theo sau tập hỏa không tính là đang giữ quái
     "_is_taphoa",
     "_thoidiemphathienanthan", "_thoigiantamngungphathien", "_tenanthanphathien",
+    # Chỗ người lạ bot đang tránh (chiến lược tranh, tactu_hoatdong_xq._laytoadonguoilabotkhac)
+    "_toadonguoilas",
     "_is_danglanglyson", "_phobanlanglyson", "_khoathuonglanglyson", "_khoathuonglanglysondalanh", "_langlysonchothanhvien", "_langlysontattodoi", "_langlysongiunhom", "_langlysonvankhivao", "_bossdagietphongyeu", "_dangdanhbossphongyeu", "_quaiketcanchienpy", "_pylamkim",
     "_is_dangsugia", "_sugianhiemvu", "_sugiachothanhvien", "_is_dangtapkich", "_is_tapkichdichuyen",
     # Đội phó bản (tactu_doiphoban_xq): trưởng đội / thành viên ở máy khác

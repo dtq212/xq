@@ -371,7 +371,14 @@ class CuaSo:
                     "_phantramvesuado": self.tactu._phantramvesuado,
                     "_idbandoquaylaibanrac": self.tactu._idbandoquaylaibanrac,
                     "_is_tudongkhaikhoang": self.tactu._is_tudongkhaikhoang,
-                    "_is_tamngungnguoila": self.tactu._is_tamngungnguoila,
+                    "_chienluocnguoila": self.tactu._chienluocnguoila,
+                    "_thoigiantamngungnguoila": self.tactu._thoigiantamngungnguoila,
+                    "_thoigianphanungnguoila": self.tactu._thoigianphanungnguoila,
+                    "_bankinhtranhnguoila": self.tactu._bankinhtranhnguoila,
+                    "_is_phatamnguoila": self.tactu._is_phatamnguoila,
+                    "_is_telegramnguoila": self.tactu._is_telegramnguoila,
+                    # Chỗ người lạ mình đang tránh (chiến lược tranh): bot cùng bản đồ tránh theo
+                    "_toadonguoilas": self.tactu.get_toadonguoilatranh(),
                     "_is_tudongdichientruong": self.tactu._is_tudongdichientruong,
                     "_is_tudongdaotangbaodo": self.tactu._is_tudongdaotangbaodo,
 
@@ -529,6 +536,10 @@ class CuaSo:
                     "_trangthaidaokhoang": self.tactu.get_trangthaidaokhoang(),
                     "_is_dangdaokhoang": self.tactu.get_is_dangdaokhoang(),
                     "_daokhoang_bandos": list(self.tactu._daokhoang_bandos),
+                    # Bắt bảo thú (tactu_batbaothu_xq): trạng thái, thiết lập tên / cấp / tư chất cho giao diện
+                    "_trangthaibatbaothu": self.tactu.get_trangthaibatbaothu(),
+                    "_is_dangbatbaothu": self.tactu.get_is_dangbatbaothu(),
+                    "_batbaothu_thietlap": dict(self.tactu._batbaothu_thietlap),
                     # Nhiệm vụ Danh Vọng (tactu_danhvong_xq): trạng thái cho giao diện
                     "_trangthaidanhvong": self.tactu.get_trangthaidanhvong(),
                     "_is_dangdanhvong": self.tactu.get_is_dangdanhvong(),
@@ -810,6 +821,14 @@ class CuaSo:
                     self.tactu.batdau_daokhoang()
                 elif cmd == "huydaokhoang":
                     self.tactu.huy_daokhoang()
+                elif isinstance(cmd, str) and cmd.startswith("batbaothu:"):
+                    # Bắt bảo thú (tactu_batbaothu_xq): "batbaothu:<JSON thiết lập>" lưu thiết lập rồi bắt đầu; "set_batbaothu:" chỉ lưu
+                    self.tactu.thietlap_batbaothu(cmd.split(":", 1)[1])
+                    self.tactu.batdau_batbaothu()
+                elif isinstance(cmd, str) and cmd.startswith("set_batbaothu:"):
+                    self.tactu.thietlap_batbaothu(cmd.split(":", 1)[1])
+                elif cmd == "huybatbaothu":
+                    self.tactu.huy_batbaothu()
                 elif isinstance(cmd, str) and cmd.startswith("set_daokhoang_bando:"):
                     self.tactu.thietlap_bandodaokhoang(cmd.split(":", 1)[1])
                 elif isinstance(cmd, str) and cmd.startswith("set_matac_bando:"):
@@ -1008,8 +1027,27 @@ class CuaSo:
                         pass
                 elif cmd == "battat_tudongkhaikhoang":
                     self.tactu.battat_is_tudongkhaikhoang()
-                elif cmd == "battat_tamngungnguoila":
-                    self.tactu.battat_is_tamngungnguoila()
+                elif cmd == "battat_phatamnguoila":
+                    self.tactu.battat_is_phatamnguoila()
+                elif cmd == "battat_telegramnguoila":
+                    self.tactu.battat_is_telegramnguoila()
+                elif isinstance(cmd, str) and cmd.startswith("set_chienluocnguoila:"):
+                    self.tactu.thietlap_chienluocnguoila(cmd.split(":", 1)[1])
+                elif isinstance(cmd, str) and cmd.startswith("set_thoigiantamngungnguoila:"):
+                    try:
+                        self.tactu.thietlap_thoigiantamngungnguoila(cmd.split(":", 1)[1])
+                    except Exception:
+                        pass
+                elif isinstance(cmd, str) and cmd.startswith("set_thoigianphanungnguoila:"):
+                    try:
+                        self.tactu.thietlap_thoigianphanungnguoila(cmd.split(":", 1)[1])
+                    except Exception:
+                        pass
+                elif isinstance(cmd, str) and cmd.startswith("set_bankinhtranhnguoila:"):
+                    try:
+                        self.tactu.thietlap_bankinhtranhnguoila(cmd.split(":", 1)[1])
+                    except Exception:
+                        pass
                 elif cmd == "botoanbo_tenmuctieutancong":
                     self.tactu.botoanbo_tenmuctieutancong()
                 elif cmd == "botoanbo_tenmuctieukhongtancong":

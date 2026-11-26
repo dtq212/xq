@@ -526,6 +526,7 @@ class TacTuDiChuyen:
         is_viectudi = bool(self._idbandocandi or self.get_is_danggiaodo() or self.get_is_dangphangiai() or self.get_is_dangcatkho()
                            or self.get_is_sumondichuyen() or self.get_is_langlysondichuyen() or self.get_is_sugiadichuyen()
                            or self.get_is_tapkichdichuyen() or self.get_is_danhvongdichuyen() or self.get_is_thienxudichuyen()
+                           or self.get_is_batbaothudichuyen()
                            or ((self.get_is_matacdichuyen() or self.get_is_tinhanhdichuyen() or self.get_is_daokhoangdichuyen())
                                and not (self._is_chidanhpkviecdi and is_muctieupk)))
         if self._yeucaugiukhoangcach and not is_sangbandotheosau:
@@ -926,8 +927,10 @@ class TacTuDiChuyen:
 
         while True:
             if self.moitruong.get_is_dangclickchuottrai():
+                self._logchotheosau("đang giữ chuột trái")
                 break
             if self.moitruong.get_is_dangvankhi():
+                self._logchotheosau("đang vận khí")
                 break
             if self.moitruong.get_is_nhanvatdachet():
                 break
@@ -949,10 +952,12 @@ class TacTuDiChuyen:
                 break
 
             if self._xulyphutheosau():
+                self._logchotheosau("đang hội thoại NPC / lo sang bản đồ khác")
                 break
 
             toadomuctieu = self._laytoadomuctieutheosau()
             if not toadomuctieu:
+                self._logchotheosau("không đọc được toạ độ người được theo sau")
                 break
             xtheosau, ytheosau = toadomuctieu
 
@@ -986,7 +991,17 @@ class TacTuDiChuyen:
                 self._is_dangvevitritheosau = False
 
             if not self._is_dangvevitritheosau:
+                # Ra ngoài khoảng cách theo sau mà vẫn đứng (ngưỡng đã nới vì đang / vừa có mục tiêu): ghi lại để biết vì sao theo chậm
+                if khoangcachtheosau > khoangcachtoidatheosau:
+                    tenmt = self.moitruong.get_tendoituong(diachimuctieudangchon) if is_comuctieu else ""
+                    self._logchotheosau("ngoài khoảng cách mà chưa tới ngưỡng kéo về",
+                                        f"cách {khoangcachtheosau:.1f} ô > {khoangcachtoidatheosau:.1f}, ngưỡng {nguongkeove:.1f}"
+                                        f" ({'đang chọn ' + str(tenmt) if is_comuctieu else 'vừa có mục tiêu' if is_vuacomuctieu else '?'})"
+                                        f" | mình {self.moitruong.get_toado()} | người theo sau ({xtheosau}, {ytheosau})")
+                else:
+                    self._logchotheosau("", is_im = True)
                 break
+            self._logchotheosau("")
 
             # Trong thành / môn phái (Chu Quốc có rào xếp chéo chạm góc cố ý làm kẹt người đi thẳng / tự động tìm đường): bot tự tìm đường
             self._yeucautheosau = {
@@ -1000,6 +1015,22 @@ class TacTuDiChuyen:
         if not self._yeucautheosau:
             self._is_dangvevitritheosau = False
         return
+
+    def _logchotheosau(self, lydo, chitiet = "", is_im = False):
+        # Chẩn đoán "theo sau phản ứng chậm" (người dùng 2026-11-26): log 347/359 ở Phong Yêu Kính đứng 3-6s khi trưởng nhóm cách 5-5.7 ô
+        # (ngưỡng 3.5) mà không có dòng nào nói lý do. Ghi lý do đứng khi đổi lý do / mỗi 2s nếu vẫn thế.
+        # lydo "" = đang đi (ghi đã chờ bao lâu) / is_im: đã về trong khoảng cách, chỉ xoá
+        cu, batdau, langhi = self._logchotheosau_cu
+        now = time.time()
+        if not lydo:
+            if cu and not is_im:
+                self.moitruong._inlog(f"[THEO SAU CHỜ] Hết chờ ({cu}) sau {now - batdau:.1f}s => đi")
+            self._logchotheosau_cu = ("", 0., 0.)
+            return
+        if lydo == cu and now - langhi < 2.:
+            return
+        self.moitruong._inlog(f"[THEO SAU CHỜ] {lydo}{': ' + chitiet if chitiet else ''}")
+        self._logchotheosau_cu = (lydo, batdau if lydo == cu else now, now)
 
     def action_chaytoibuffthanhvien(self):
         # Buff toàn bản đồ: không theo sau ai mà thành viên nhóm / người quen chạy cùng máy, cùng bản đồ, ngoài tầm buff đang cần buff theo
@@ -1728,7 +1759,8 @@ class TacTuDiChuyen:
         for is_dang, ten in ((self.get_is_danggiaodo, "Giao đồ"), (self.get_is_dangphangiai, "Give & phân giải"), (self.get_is_dangcatkho, "Cất kho"), (self.get_is_dangsumon, "Sư môn"),
                              (self.get_is_dangkeocap, "Kéo cấp"), (self.get_is_danglanglyson, None), (self.get_is_dangsugia, "Sư Gia"),
                              (self.get_is_dangtapkich, "Tập Kích"), (self.get_is_matacdichuyen, "Mã Tặc"),
-                             (self.get_is_danhvongdichuyen, "Danh Vọng"), (self.get_is_thienxudichuyen, "Thiên Xu Viện")):
+                             (self.get_is_danhvongdichuyen, "Danh Vọng"), (self.get_is_thienxudichuyen, "Thiên Xu Viện"),
+                             (self.get_is_batbaothudichuyen, "Bắt bảo thú")):
             try:
                 if not is_dang():
                     continue
@@ -2126,7 +2158,7 @@ class TacTuDiChuyen:
         # (bản đồ không có điểm đánh / quái ngoài tầm điểm đánh vẫn đánh)
         return bool(self._sumon and self._sumon["chedo"] == "danhquai") or self.get_is_langlysondanhquai() or self.get_is_sugiadanhquai() \
             or self.get_is_tapkichdanhquai() or self.get_is_matacdanhquai() or self.get_is_danhvongdanhquai() or self.get_is_thienxudanhquai() \
-            or self.get_is_tinhanhdanhquai() or self.get_is_daokhoangdo()
+            or self.get_is_tinhanhdanhquai() or self.get_is_daokhoangdo() or self.get_is_dangbatbaothu()
 
     def _kiemtra_tamdiemdanh(self, x, y):
         # Đang chạy theo lộ trình điểm đánh: mục tiêu phải nằm trong bán kính _bankinhdiemdanh quanh ít nhất 1 điểm đánh của bản đồ hiện tại.
@@ -2344,6 +2376,14 @@ class TacTuDiChuyen:
             self._yeucautudo = self._xulydaokhoang()
             return
 
+        # Bắt bảo thú (tactu_batbaothu_xq): chạy song song với farm. Chỉ khi thấy quái đúng tên / cấp trong tầm thì tới bắt (thay lộ trình
+        # điểm đánh), không thấy thì farm như thường (quái phải chết mới ra con khác đúng loại / cấp)
+        if self.get_is_dangbatbaothu():
+            yeucau = self._xulybatbaothu()
+            if self.get_is_batbaothudichuyen():
+                self._yeucautudo = yeucau
+                return
+
         if not self._is_tudongdichuyendiemdanhxungquanh and not self.get_is_sumonfarm():
             self._yeucautudo = None
             return
@@ -2492,7 +2532,7 @@ class TacTuDiChuyen:
                     # đầu tiên ngoài vùng; không còn điểm nào ngoài vùng thì giữ điểm này (trước nhảy từng điểm mỗi giây, chạy qua chạy lại)
                     idxkhongtrung = self._chondiemkhongtrungdongdoi(self._iddiemdanhxungquanhhientai, diemdanhxungquanhs, idbandohientai)
                     if idxkhongtrung is not None and idxkhongtrung != self._iddiemdanhxungquanhhientai:
-                        print(f"[LỘ TRÌNH] Điểm #{self._iddiemdanhxungquanhhientai + 1} trong vùng bot ưu tiên hơn -> sang điểm #{idxkhongtrung + 1}")
+                        print(f"[LỘ TRÌNH] Điểm #{self._iddiemdanhxungquanhhientai + 1} trong vùng bot ưu tiên hơn / gần người lạ -> sang điểm #{idxkhongtrung + 1}")
                         self._iddiemdanhxungquanhhientai = idxkhongtrung
                         self._diemdanhxungquanhhientai = diemdanhxungquanhs[idxkhongtrung]
                         self._thoidiembatdaudendiem = time.time()

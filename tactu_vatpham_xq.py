@@ -282,6 +282,26 @@ class TacTuVatPham:
             return None
         return NHOMPHAPBAO_NOICONG if he == HE_NOI else NHOMPHAPBAO_NGOAICONG
 
+    @staticmethod
+    def _is_tenphapbaocaocap(ten, tengoc):
+        # ten là bản Cao Cấp của tengoc: "<tengoc> Cao Cấp", chấp nhận đuôi bị cắt ("<tengoc> Cao C") do tên hành trang chỉ 31 byte
+        if not ten or ten == tengoc or not ten.startswith(tengoc):
+            return False
+        duoi = ten[len(tengoc):].strip()
+        return bool(duoi) and PHAPBAOCAOCAP.startswith(duoi)
+
+    def _laytengocphapbao(self, ten, mucphapbaos):
+        # Tên bản thường của pháp bảo Cao Cấp trong bộ mức (để biết món đang đeo thuộc mức nào); không phải Cao Cấp thì trả nguyên
+        for ds in (mucphapbaos or ()):
+            for tengoc in ds:
+                if self._is_tenphapbaocaocap(ten, tengoc):
+                    return tengoc
+        return ten
+
+    def _laytenphapbaocaocaptrongtui(self, tengocs, tenvatphamhanhtrangs):
+        # Các tên Cao Cấp (theo thứ tự tengocs) của các món trong tengocs đang có trong túi
+        return [ten for tengoc in tengocs for ten in sorted(tenvatphamhanhtrangs) if self._is_tenphapbaocaocap(ten, tengoc)]
+
     def _laymucphapbaotheomau(self, phantramsinhluc, muchientai):
         # Mức 0 cao / 1 vừa / 2 thấp. Tụt máu: < _mauphapbaovua% xuống vừa, <= _mauphapbaothap% xuống thấp.
         # Đang đeo món mức thấp hơn thì chỉ đổi lên khi máu vượt ngưỡng + _dotrephapbao%, tránh đổi qua lại liên tục khi máu
@@ -512,8 +532,10 @@ class TacTuVatPham:
         if not doben or doben[0] > 0:
             return False
         tens = [tenphapbaohientai]
+        # Bản Cao Cấp hỏng thì cũng thay bằng món cùng mức (bản thường)
+        tengoc = self._laytengocphapbao(tenphapbaohientai, mucphapbaos)
         for ds in (mucphapbaos or ()):
-            if tenphapbaohientai in ds:
+            if tengoc in ds:
                 tens += [ten for ten in ds if ten not in tens]
         chuchua = next((chu for chu in (PHAPBAOKHAIKHOANG, PHAPBAOHAIDUOC) if chu in tenphapbaohientai), None)
         phapbaomoi = self._timphapbaoconbentrongtui(tens, chuchua)
@@ -695,7 +717,9 @@ class TacTuVatPham:
                 if not tenphapbaohientai or is_cuocliem:
                     muchientai = 2
                 else:
-                    muchientai = next((i for i, ds in enumerate(mucphapbaos) if tenphapbaohientai in ds), None)
+                    # Đang đeo bản Cao Cấp thì tính mức theo tên bản thường
+                    tengochientai = self._laytengocphapbao(tenphapbaohientai, mucphapbaos)
+                    muchientai = next((i for i, ds in enumerate(mucphapbaos) if tengochientai in ds), None)
                 muc = self._laymucphapbaotheomau(phantramsinhlucconlai, muchientai)
                 tenphapbaocans = mucphapbaos[muc]
                 # Mức vừa là Trảo mà mọi Trảo (đang đeo lẫn trong túi) đã hết khí huyết: đeo món mức cao (Nhiếp Hồn Linh / Chuông)
@@ -703,16 +727,32 @@ class TacTuVatPham:
                 if self._is_hettraodeomuccao and muc == 1 and any(ten in PHAPBAOTHEOMAU_TRAO for ten in tenphapbaocans) \
                         and not self._is_contraocokhihuyet(tenphapbaohientai):
                     tenphapbaocans = mucphapbaos[0]
+                # Bản Cao Cấp (người dùng 2026-11-26): đeo là mòn độ bền theo thời gian nên chỉ dùng khi đang bật PK.
+                # - Bật PK: mức cao / vừa ưu tiên bản Cao Cấp còn độ bền trong túi; đang đeo bản thường mà túi có Cao Cấp dùng được thì đổi.
+                #   Không có Cao Cấp (hoặc đều hỏng) thì dùng bản thường như cũ
+                # - Không bật PK: tenphapbaocans chỉ có bản thường => đang đeo Cao Cấp thì đổi về bản thường (túi không có thì giữ)
+                is_doicaocap = False
+                tencaocaps = []
+                if is_dangbatpk and muc < 2:
+                    tencaocaps = self._laytenphapbaocaocaptrongtui(tenphapbaocans, tenvatphamhanhtrangs)
+                    if tencaocaps:
+                        if tenphapbaohientai not in tencaocaps and not is_dangchodoiphapbao \
+                                and self._timphapbaoconbentrongtui(tencaocaps) is not None:
+                            is_doicaocap = True
+                        tenphapbaocans = tuple(tencaocaps) + tuple(tenphapbaocans)
                 is_cotrongtui = any(co(ten) for ten in tenphapbaocans)
 
                 def doi():
                     # Chỉ đeo món còn độ bền (_timphapbaoconbentrongtui bỏ món 0/x); món cần đều hỏng thì giữ nguyên
                     # Trảo: chọn cái còn khí huyết nhiều nhất (_xoayvongtraotheokhihuyet)
-                    phapbaomoi = self._timphapbaoconbentrongtui(tenphapbaocans, is_uutienkhihuyet = self._is_xoayvongtrao) if is_cotrongtui else None
+                    # Bật PK: tìm bản Cao Cấp trước (Trảo chọn theo khí huyết chỉ trong các bản Cao Cấp), không có mới tới bản thường
+                    phapbaomoi = self._timphapbaoconbentrongtui(tencaocaps, is_uutienkhihuyet = self._is_xoayvongtrao) if tencaocaps else None
+                    if not phapbaomoi and is_cotrongtui:
+                        phapbaomoi = self._timphapbaoconbentrongtui(tenphapbaocans, is_uutienkhihuyet = self._is_xoayvongtrao)
                     return bool(phapbaomoi) and self._doiphapbaotheomau(tenphapbaohientai, phapbaomoi, phantramsinhlucconlai)
 
                 is_daxuly = False
-                if (is_cuocliem and muc < 2) or tenphapbaohientai in tenphapbaocans:
+                if (is_cuocliem and muc < 2) or (tenphapbaohientai in tenphapbaocans and not is_doicaocap):
                     is_daxuly = True
                 elif muc < 2:
                     is_daxuly = True

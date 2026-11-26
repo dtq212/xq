@@ -1797,8 +1797,9 @@ class TuDongDangNhap:
                              for taikhoan in cauhinh["taikhoans"]]
             return
 
-        # Nhân vật nào đang tạm ngưng (ẩn thân / người lạ) thì không đăng nhập ai cả cho tới khi hết hạn
-        tamngungs = laytamngungdanghieuluc()
+        # Nhân vật nào đang tạm ngưng chung (ẩn thân / người lạ "cả máy") thì không đăng nhập ai cả cho tới khi hết hạn; tạm ngưng riêng
+        # (chiến lược người lạ "chỉ nhân vật thấy") chỉ không đăng nhập lại chính tài khoản đó
+        tamngungs = laytamngungdanghieuluc(is_chiriengs = False)
         if tamngungs:
             idnguoichoi, thoidiemhet, lydo = tamngungs[0]
             conlai = int(thoidiemhet - time.time())
@@ -1845,7 +1846,9 @@ class TuDongDangNhap:
 
         self._theodoiroigame(taikhoans, online)
         # Tài khoản đang tạm hoãn (bị đá liên tục: máy khác đang đăng nhập cùng tài khoản) thì không đăng nhập lại, kẻo hai máy đá nhau mãi
-        vangs = [taikhoan for taikhoan in taikhoans if _is_taikhoanonline(taikhoan, online) is False and not self._is_dangtamhoan(taikhoan)]
+        idtamngungriengs = {str(i) for i, _, _ in laytamngungdanghieuluc(is_chiriengs = True)}
+        vangs = [taikhoan for taikhoan in taikhoans if _is_taikhoanonline(taikhoan, online) is False and not self._is_dangtamhoan(taikhoan)
+                 and str(taikhoan.get("idnguoichoi") or "") not in idtamngungriengs]
         self._baovanglau(taikhoans, online, vangs)
 
         # Đăng nhập song song: mỗi tài khoản vắng chưa có luồng thì mở một luồng, tối đa SODANGNHAPSONGSONG luồng cùng lúc. Tài khoản

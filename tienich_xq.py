@@ -1179,7 +1179,8 @@ def _thumuctamngung():
     return os.path.join(os.path.dirname(_thumucthietlap()), "tamngung")
 
 
-def ghitamngung(idnguoichoi, thoidiemhet, lydo):
+def ghitamngung(idnguoichoi, thoidiemhet, lydo, is_rieng = False):
+    # is_rieng: chỉ nhân vật này ngưng (chiến lược người lạ "mot"), không chặn tự đăng nhập các tài khoản khác trên máy
     if not idnguoichoi:
         return
     try:
@@ -1188,7 +1189,7 @@ def ghitamngung(idnguoichoi, thoidiemhet, lydo):
         filepath = os.path.join(thumuc, f"{int(idnguoichoi)}.json")
         filetam = filepath + ".tmp"
         with open(filetam, "w", encoding = "utf-8") as file:
-            json.dump({"thoidiemhet": thoidiemhet, "lydo": lydo}, file, ensure_ascii = False)
+            json.dump({"thoidiemhet": thoidiemhet, "lydo": lydo, "is_rieng": bool(is_rieng)}, file, ensure_ascii = False)
         thaythefile(filetam, filepath)
     except Exception as err:
         print(f"Lỗi khi ghi trạng thái tạm ngưng: {err}")
@@ -1205,8 +1206,9 @@ def xoatamngung(idnguoichoi):
         print(f"Lỗi khi xoá trạng thái tạm ngưng: {err}")
 
 
-def laytamngungdanghieuluc():
-    # [(ID người chơi, thời điểm hết, lý do)] còn hiệu lực, hết lâu nhất trước
+def laytamngungdanghieuluc(is_chiriengs = None):
+    # [(ID người chơi, thời điểm hết, lý do)] còn hiệu lực, hết lâu nhất trước.
+    # is_chiriengs: None = mọi file; False = chỉ tạm ngưng chung (chặn cả máy); True = chỉ tạm ngưng riêng một nhân vật
     ketqua = []
     thumuc = _thumuctamngung()
     try:
@@ -1219,6 +1221,8 @@ def laytamngungdanghieuluc():
         try:
             with open(os.path.join(thumuc, tenfile), encoding = "utf-8") as file:
                 dulieu = json.load(file)
+            if is_chiriengs is not None and bool(dulieu.get("is_rieng")) != is_chiriengs:
+                continue
             if dulieu.get("thoidiemhet", 0.) > time.time():
                 ketqua.append((int(tenfile[:-5]), dulieu["thoidiemhet"], dulieu.get("lydo", "")))
         except Exception:

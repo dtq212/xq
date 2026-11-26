@@ -173,7 +173,7 @@ KICHTHUOCKHUNG = 488
 CHUKYVE = 250
 # Mặc định mép dưới cửa sổ bản đồ cao hơn mép dưới game chừng này điểm ảnh (người dùng muốn thấp hơn game "chút xíu xiu")
 BOTCAOBANDONHO = 12
-# Vòng tầm nhìn (ô vuông như tầm đánh): đối tượng xa hơn chừng này bot không thấy
+# Vùng tầm nhìn (ô vuông như bảng đối tượng client, KHOANGCACHTOANMANHINH): đối tượng xa hơn chừng này bot không thấy
 TAMNHINBANDONHO = 18
 PHONGCHU = ("Segoe UI", 8)
 PHONGCHUDAM = ("Segoe UI Semibold", 9)
@@ -500,7 +500,7 @@ class CuaSoBanDoNho:
             py = self._toado(0, gy)[1] + s / 2
             c.create_line(0, py, rong, py, fill = m["luoike"], dash = (1, 3))
 
-        # Vùng tầm nhìn: ô vuông đứt nét quanh nhân vật
+        # Vùng tầm nhìn: ô vuông đứt nét quanh nhân vật (bot lọc đối tượng max(|dx|, |dy|), _get_diachidoituongxungquanhs)
         mx, my = rong / 2, cao / 2
         t = TAMNHINBANDONHO * s + s / 2
         c.create_rectangle(mx - t, my - t, mx + t, my + t, outline = m["tamnhin"], dash = (6, 4))

@@ -71,7 +71,8 @@ class TacTuHoatDong:
         # 1) Tự quét: thấy người chơi lạ ẩn thân, hoặc (ở map train) thấy người ngoài danh sách tổ đội, thì ghi nhận
         #    và công bố cho các cửa sổ khác (qua shared_data)
         # 2) Đang di chuyển theo lộ trình điểm đánh mà mình thấy, hoặc nhân vật khác CÙNG BẢN ĐỒ vừa thấy => ngưng hết mọi hoạt động
-        #    (ẩn thân: THOIGIANTAMNGUNGANTHAN, người lạ: THOIGIANTAMNGUNGNGUOILA)
+        #    (ẩn thân: THOIGIANTAMNGUNGANTHAN, người lạ: _thoigiantamngungnguoila). Người lạ thì làm theo _chienluocnguoila
+        #    (CHIENLUOCNGUOILA_*: ngưng cả máy / chỉ mình / tránh xa / chỉ cảnh báo / bỏ qua)
         thoidiemhientai = time.time()
         if thoidiemhientai - self._thoidiemkiemtraanthangannhat < 0.5:
             return
@@ -82,18 +83,23 @@ class TacTuHoatDong:
         if self.moitruong.get_idbandohientai() in BANDOKHONGTANCONGs:
             return
 
-        phathien =self._quetnguoichoibatthuong()
-        # Đang kéo cấp (mọi vai, kể cả kéo gà A-Z): bãi / Phong Yêu Kính đông người, thấy người lạ không tạm ngưng, không công bố cho cửa sổ
-        # khác (người dùng dặn 2026-11-08); ẩn thân vẫn ngưng như cũ.
-        # Bật Tự động khai khoáng cũng vậy: bãi khoáng đông người, thấy người lạ không ngưng (người dùng dặn 2026-11-10)
-        is_bonguoila = bool(self._keocap) or self._is_tudongkhaikhoang
-        # Tắt ô "Tạm ngưng khi gặp người lạ" (tab Khác): người lạ chỉ cảnh báo, không ngưng, không công bố cho cửa sổ khác.
-        # Ẩn thân (ADMIN kiểm tra) thì luôn ngưng
-        is_chicanhbaonguoila = not self._is_tamngungnguoila
-        if phathien and "ẩn thân" not in phathien[0] and (is_bonguoila or is_chicanhbaonguoila):
-            # Chỉ cảnh báo khi đang đi lộ trình điểm đánh (lúc bật ô cũng chỉ ngưng trong trường hợp này)
-            if not is_bonguoila and self._is_tudongdichuyendiemdanhxungquanh:
-                self._canhbaonguoila(phathien[0])
+        phathien = self._quetnguoichoibatthuong()
+        chienluoc = self._laychienluocnguoila()
+        # Mọi chiến lược trừ "tatca": người lạ không công bố cho cửa sổ khác, chỉ xử lý ở nhân vật này và chỉ khi đang đi lộ trình
+        # điểm đánh (như cũ: ô tạm ngưng cũ cũng chỉ ngưng trong trường hợp này). Ẩn thân (ADMIN kiểm tra) thì luôn ngưng
+        if self._is_tudongdichuyendiemdanhxungquanh and chienluoc == CHIENLUOCNGUOILA_TRANH:
+            # Đã tránh (bỏ quái / đổi điểm đánh) mà người lạ vẫn ở sát mình quá lâu => bám theo, chỉ nhân vật này ngưng
+            bamtheo = self._laynguoilabamtheo()
+            if bamtheo:
+                self._batdautamngung(f"phát hiện người lạ {bamtheo} bám theo", self._thoigiantamngungnguoila, is_rieng = True)
+                return
+        if phathien and "ẩn thân" not in phathien[0] and chienluoc != CHIENLUOCNGUOILA_TATCA:
+            if self._is_tudongdichuyendiemdanhxungquanh:
+                if chienluoc == CHIENLUOCNGUOILA_MOT:
+                    self._batdautamngung(f"phát hiện {phathien[0]}", phathien[1], is_rieng = True)
+                    return
+                if chienluoc in (CHIENLUOCNGUOILA_CANHBAO, CHIENLUOCNGUOILA_TRANH):
+                    self._canhbaonguoila(phathien[0], "tránh xa, đánh tiếp" if chienluoc == CHIENLUOCNGUOILA_TRANH else "không tạm ngưng")
             phathien = None
         if phathien:
             # Chỉ công bố phát hiện trực tiếp (không công bố trạng thái tạm ngưng) để các nhân vật không gia hạn lẫn nhau mãi
@@ -118,8 +124,59 @@ class TacTuHoatDong:
             self._batdautamngung(f"phát hiện {phathien[0]}", phathien[1])
             return
         phathienkhac = self._layanthantucuasokhac()
-        if phathienkhac and (not (is_chianthan or is_bonguoila or is_chicanhbaonguoila) or "ẩn thân" in phathienkhac[0]):
+        # Nhân vật khác thấy người lạ (nó chọn "tatca") thì mình chỉ ngưng theo khi mình cũng chọn "tatca"
+        if phathienkhac and (not (is_chianthan or chienluoc != CHIENLUOCNGUOILA_TATCA) or "ẩn thân" in phathienkhac[0]):
             self._batdautamngung(*phathienkhac)
+
+    def _laychienluocnguoila(self):
+        # Đang kéo cấp (mọi vai, kể cả kéo gà A-Z): bãi / Phong Yêu Kính đông người, thấy người lạ không làm gì, không công bố cho cửa sổ
+        # khác (người dùng dặn 2026-11-08). Bật Tự động khai khoáng cũng vậy: bãi khoáng đông người (người dùng dặn 2026-11-10)
+        if self._keocap or self._is_tudongkhaikhoang:
+            return CHIENLUOCNGUOILA_BOQUA
+        return self._chienluocnguoila
+
+    def _laynguoilabamtheo(self):
+        # Tên người lạ đang thấy (vừa quét) ở trong _bankinhtranhnguoila quanh mình liên tục >= THOIGIANBAMTHEONGUOILA giây, không có thì None
+        thoidiemhientai = time.time()
+        for banghi in self._nguoilas.values():
+            if banghi["gandau"] and thoidiemhientai - banghi["thaycuoi"] <= 1.5 \
+                    and thoidiemhientai - banghi["gandau"] >= THOIGIANBAMTHEONGUOILA:
+                return banghi["ten"]
+        return None
+
+    def get_toadonguoilatranh(self):
+        # Chỗ người lạ mình thấy trong THOIGIANNHONGUOILA giây gần đây, khi đang chọn "tranh" (để tránh và chia sẻ cho bot cùng bản đồ): [(x, y)]
+        if self._laychienluocnguoila() != CHIENLUOCNGUOILA_TRANH:
+            return []
+        thoidiemhientai = time.time()
+        return [banghi["toado"] for banghi in self._nguoilas.values() if thoidiemhientai - banghi["thaycuoi"] <= THOIGIANNHONGUOILA]
+
+    def _laytoadonguoilatranh(self):
+        # Chỗ người lạ cần tránh: của mình + bot khác cùng bản đồ đang tránh (shared_data "_toadonguoilas"); đọc shared_data nhớ 1s
+        toados = self.get_toadonguoilatranh()
+        if self._laychienluocnguoila() != CHIENLUOCNGUOILA_TRANH:
+            return toados
+        thoidiem, toadokhacs = self._bonhonguoilabotkhac
+        if time.time() - thoidiem >= 1.:
+            toadokhacs = []
+            idbando = self.moitruong.get_idbandohientai()
+            try:
+                danhsach = list(self.shared_data.items()) if self.shared_data is not None else []
+            except Exception:
+                danhsach = []
+            for idcuaso, info in danhsach:
+                if idcuaso == self.idcuaso or not isinstance(info, dict) or not info.get("_toadonguoilas"):
+                    continue
+                if time.time() - info.get("thoidiemcapnhat", 0.) > 5. or not self.moitruong.get_is_cungbando(info, idbando):
+                    continue
+                toadokhacs.extend(tuple(toado) for toado in info["_toadonguoilas"])
+            self._bonhonguoilabotkhac = (time.time(), toadokhacs)
+        return toados + toadokhacs
+
+    def _is_gannguoila(self, x, y, toadonguoilas = None):
+        # (x, y) nằm trong _bankinhtranhnguoila quanh chỗ một người lạ cần tránh (chiến lược "tranh"; chiến lược khác luôn False)
+        toadonguoilas = self._laytoadonguoilatranh() if toadonguoilas is None else toadonguoilas
+        return any(math.dist((x, y), toado) <= self._bankinhtranhnguoila for toado in toadonguoilas)
 
     @staticmethod
     def _is_anthanluonngung(mota):
@@ -133,15 +190,17 @@ class TacTuHoatDong:
             return "".join(chu.replace("đ", "d").replace("Đ", "D").split()).lower()
         return gon(ten) in {gon(t) for t in TENANTHANLUONNGUNGs}
 
-    def _canhbaonguoila(self, mota):
-        # Thấy người lạ khi đã tắt tạm ngưng: phát âm + tin Telegram, tối đa 1 lần mỗi THOIGIANTAMNGUNGNGUOILA giây (quét 0.5s/lần)
+    def _canhbaonguoila(self, mota, hanhdong = "không tạm ngưng"):
+        # Thấy người lạ mà không tạm ngưng (chỉ cảnh báo / tránh xa): phát âm + tin Telegram (theo 2 ô tuỳ chọn thông báo), tối đa 1 lần
+        # mỗi THOIGIANTAMNGUNGNGUOILA giây (quét 0.5s/lần)
         thoidiemhientai = time.time()
         if thoidiemhientai - self._thoidiemcanhbaonguoila < THOIGIANTAMNGUNGNGUOILA:
             return
         self._thoidiemcanhbaonguoila = thoidiemhientai
-        print(f"[CẢNH BÁO] Phát hiện {mota} (không tạm ngưng)")
-        canhbao(self.moitruong, "Phát hiện người lạ")
-        baosuco(self.moitruong, "tamngung", f"Phát hiện {mota} (không tạm ngưng)", khoa = mota)
+        print(f"[CẢNH BÁO] Phát hiện {mota} ({hanhdong})")
+        canhbao(self.moitruong, "Phát hiện người lạ", is_phatam = self._is_phatamnguoila)
+        if self._is_telegramnguoila:
+            baosuco(self.moitruong, "tamngung", f"Phát hiện {mota} ({hanhdong})", khoa = mota)
 
     def _layidnguoichoicungmays(self):
         # ID các nhân vật đang chạy ở mọi cửa sổ trên máy này (qua shared_data)
@@ -160,11 +219,22 @@ class TacTuHoatDong:
         return idnguoichoi == idnhanvathientai or idnguoichoi in idcungmays or idnguoichoi in idcungnhoms or idnguoichoi in self.get_idnguoiquens()
 
     def _quetnguoichoibatthuong(self):
-        # Trả về (mô tả, số giây tạm ngưng): ("X ẩn thân", THOIGIANTAMNGUNGANTHAN) / ("người lạ X", THOIGIANTAMNGUNGNGUOILA) hoặc None
+        # Trả về (mô tả, số giây tạm ngưng): ("X ẩn thân", THOIGIANTAMNGUNGANTHAN) / ("người lạ X", _thoigiantamngungnguoila) hoặc None.
+        # Người lạ (map train) được ghi vào _nguoilas (chỗ đứng, lúc thấy đầu / cuối, lúc bắt đầu ở sát mình) cho chiến lược tránh / bám
+        # theo; chỉ trả về người lạ đã ở lại >= _thoigianphanungnguoila giây (người đi ngang qua thì bỏ qua)
         idnhanvathientai = self.moitruong.get_idnguoichoi()
         idcungmays = self._layidnguoichoicungmays()
         idcungnhoms = self.moitruong.get_danhsachidnguoichoithanhviennhoms() or ()
-        is_maptrain = self.moitruong.get_idbandohientai() not in BANDOKHONGPKs
+        idbando = self.moitruong.get_idbandohientai()
+        is_maptrain = idbando not in BANDOKHONGPKs
+        thoidiemhientai = time.time()
+        if idbando != self._idbandonguoilas:
+            self._nguoilas = {}
+            self._idbandonguoilas = idbando
+        else:
+            for idcu in [i for i, banghi in self._nguoilas.items() if thoidiemhientai - banghi["thaycuoi"] > THOIGIANNHONGUOILA]:
+                self._nguoilas.pop(idcu, None)
+        toadobanthan = None
         nguoila = None
         # Bản chụp chỉ có nhân vật còn tồn tại: bỏ được ô đối tượng còn sót (nhân vật đã rời đi / chưa tải xong), không báo nhầm người lạ
         for diachidoituong in self.moitruong.get_diachinhanvattontais():
@@ -179,8 +249,22 @@ class TacTuHoatDong:
             if self.moitruong.get_is_nhanvatanthan(diachidoituong):
                 # Ẩn thân luôn ưu tiên báo trước (thời gian tạm ngưng dài hơn)
                 return f"{tendoituong} ẩn thân", THOIGIANTAMNGUNGANTHAN
-            if is_maptrain and nguoila is None:
-                nguoila = f"người lạ {tendoituong}", THOIGIANTAMNGUNGNGUOILA
+            if not is_maptrain:
+                continue
+            toado = tuple(self.moitruong.get_toado(diachidoituong))
+            if toadobanthan is None:
+                toadobanthan = self.moitruong.get_toado()
+            banghi = self._nguoilas.get(idnguoichoi)
+            if banghi is None or thoidiemhientai - banghi["thaycuoi"] > THOIGIANGIANDOANNGUOILA:
+                banghi = {"thaydau": thoidiemhientai, "gandau": 0.}
+                self._nguoilas[idnguoichoi] = banghi
+            banghi.update(ten = tendoituong, toado = toado, thaycuoi = thoidiemhientai)
+            if math.dist(toado, toadobanthan) <= self._bankinhtranhnguoila:
+                banghi["gandau"] = banghi["gandau"] or thoidiemhientai
+            else:
+                banghi["gandau"] = 0.
+            if nguoila is None and thoidiemhientai - banghi["thaydau"] >= self._thoigianphanungnguoila:
+                nguoila = f"người lạ {tendoituong}", self._thoigiantamngungnguoila
         return nguoila
 
     def _layanthantucuasokhac(self):
@@ -206,32 +290,41 @@ class TacTuHoatDong:
                 ketqua = (f"{info.get('tennhanvat') or idcuaso} phát hiện {info.get('_tenanthanphathien') or 'người lạ'}", thoigian)
         return ketqua
 
-    def _batdautamngung(self, lydo, thoigian = None):
+    def _batdautamngung(self, lydo, thoigian = None, is_rieng = False):
+        # is_rieng: chỉ nhân vật này ngưng (chiến lược người lạ "mot" / bị bám theo), file tạm ngưng không chặn tự đăng nhập acc khác.
+        # Đang ngưng chung thì giữ chung
         thoigian = thoigian or THOIGIANTAMNGUNGANTHAN
         is_moibatdau = time.time() >= self._thoidiemhettamngung
+        is_rieng = is_rieng and (is_moibatdau or self._is_tamngungrieng)
         # Chỉ kéo dài, không rút ngắn (đang ngưng 10 phút vì ẩn thân mà gặp người lạ thì vẫn giữ 10 phút)
         thoidiemhetmoi = time.time() + thoigian
         if is_moibatdau or thoidiemhetmoi >= self._thoidiemhettamngung:
             self._thoidiemhettamngung = thoidiemhetmoi
             self._lydotamngung = lydo
-            util_ghitamngung(self.moitruong.get_idnguoichoi(), thoidiemhetmoi, lydo)
+            self._is_tamngungrieng = is_rieng
+            util_ghitamngung(self.moitruong.get_idnguoichoi(), thoidiemhetmoi, lydo, is_rieng = is_rieng)
         if is_moibatdau:
             thoigianhienthi = f"{int(thoigian // 60)} phút" if thoigian >= 60 else f"{int(thoigian)} giây"
             print(f"[TẠM NGƯNG] {lydo} -> Ngưng mọi hoạt động {thoigianhienthi}")
             if lydo == LYDOTAMNGUNGTUXA:
                 canhbao(self.moitruong, "Tạm ngưng từ xa")
             else:
-                canhbao(self.moitruong, "Phát hiện ẩn thân, tạm ngưng" if "ẩn thân" in lydo else "Phát hiện người lạ, tạm ngưng")
+                # Người lạ: phát âm / Telegram theo 2 ô tuỳ chọn thông báo (người dùng 2026-11-26: điếc tai, phiền). Ẩn thân luôn báo
+                is_anthan = "ẩn thân" in lydo
+                canhbao(self.moitruong, "Phát hiện ẩn thân, tạm ngưng" if is_anthan else "Phát hiện người lạ, tạm ngưng",
+                        is_phatam = is_anthan or self._is_phatamnguoila)
                 # Chỉ nhân vật tự phát hiện ("phát hiện <tên>") báo, các nhân vật ngưng theo ("<ai đó> phát hiện ...") thì không, cho
                 # 1 lần phát hiện chỉ ra 1 tin
-                if lydo.startswith("phát hiện"):
-                    baosuco(self.moitruong, "tamngung", f"Phát hiện {lydo[len('phát hiện '):]}, cả máy tạm ngưng {thoigianhienthi}", khoa = lydo)
+                if lydo.startswith("phát hiện") and (is_anthan or self._is_telegramnguoila):
+                    phamvi = "nhân vật này" if is_rieng else "cả máy"
+                    baosuco(self.moitruong, "tamngung", f"Phát hiện {lydo[len('phát hiện '):]}, {phamvi} tạm ngưng {thoigianhienthi}", khoa = lydo)
             self._dungmoihoatdong()
 
     def tieptuchoatdong(self):
         # Bật lại thủ công: vẫn tiếp tục kiểm tra ẩn thân, gặp người ẩn thân là tạm ngưng tiếp
         self._thoidiemhettamngung = 0.
         self._lydotamngung = ""
+        self._is_tamngungrieng = False
         util_xoatamngung(self.moitruong.get_idnguoichoi())
         print("[TẠM NGƯNG] Bật lại hoạt động thủ công")
         phatam("Bật lại hoạt động")
@@ -567,6 +660,14 @@ class TacTuHoatDong:
         thanhviennhomcuatois = set(danhsachthanhviens) | {idnguoichoi}
         cacnhomkhacs = {idtn: v for idtn, v in cacnhomcungbandos.items()
                         if idtn != idtruongnhomcuatoi and not (v[1] & thanhviennhomcuatois)}
+        # Nhóm khác đã đủ người (Aegis 5): không rời nhóm mình / không xin vào nhóm đó. Trước đây vẫn gửi "team + <trưởng nhóm>" mỗi 5s,
+        # trưởng nhóm cứ hiện "Nhóm đã đạt thành viên tối đa (5)" (ảnh 2026-11-26)
+        sotoida = self.moitruong.get_soluongthanhviennhomtoida()
+        nguoinhomdays = set()
+        for idtn, v in list(cacnhomkhacs.items()):
+            if len(v[1]) >= sotoida:
+                nguoinhomdays |= v[1] | {idtn}
+                del cacnhomkhacs[idtn]
         idtruongnhomtotnhat = min(cacnhomkhacs, key = lambda idtn: cacnhomkhacs[idtn][0]) if cacnhomkhacs else 0
         if is_dangtrongnhom and idtruongnhomtotnhat:
             hangnhomcuatoi = min(xephang_map.get(id_, len(xephang_map)) for id_ in thanhviennhomcuatois)
@@ -596,7 +697,8 @@ class TacTuHoatDong:
         # Loại chính mình và trùng lặp
         dongdoicanxulys = []
         for id_ in danhsachxungquanhs:
-            if id_ != idnguoichoi and id_ in xephang_map and id_ not in dongdoicanxulys:
+            # Người đang ở nhóm khác đã đủ người: mời không được, xin vào cũng không được => bỏ qua
+            if id_ != idnguoichoi and id_ in xephang_map and id_ not in dongdoicanxulys and id_ not in nguoinhomdays:
                 dongdoicanxulys.append(id_)
 
         if not dongdoicanxulys and not is_dangtrongnhom:

@@ -35,11 +35,12 @@ import time
 import unicodedata
 
 from hangso_xq import *
+from dexuatlotrinh_xq import TAMNHINDO
 from giaodo_xq import taolenhgiao
 from luattuido_xq import HANHDONG_BAN
 from thongbao_xq import baosuco
 from tienich_xq import phatam, taicauhinhphongyeu, CAUHINHPHONGYEU_MACDINH, taitiendophoban, luutiendophoban, taivitrithoyeu, \
-    luuvitrithoyeu, taibossphongyeu, luubossphongyeu, laydieukienrapykeocap, is_ra85quaipy
+    luuvitrithoyeu, taibossphongyeu, luubossphongyeu, laydieukienrapykeocap, is_ra85quaipy, khoangcachtamdanh
 
 BANDO_THUYHOASON = 82
 NPCVAOLANGLYSON = ("Đào Vong Khổ Dịch", 137, 117)
@@ -177,13 +178,14 @@ THOIGIANCHODOTHAPPY = 60.
 THOIGIANCHODOTHAPTOITHIEUPY = 3.
 KHOANGCACHTOIDIEMPY = 3.
 THOIGIANMOIDIEMPY = 25.
-# Dò bù (_dobuphongyeu): điểm dò cố định (khối 34 ô) không phủ hết bản đồ (mép vụn < 40 ô bị bỏ, điểm không tới được bỏ sau 25s, đoạn
+# Dò bù (_dobuphongyeu): điểm dò cố định (khối CANHKHOIDO ô) không phủ hết bản đồ (mép vụn < 40 ô bị bỏ, điểm không tới được bỏ sau 25s, đoạn
 # chia vùng không đi đường nối sang đoạn bên cạnh, quái trên ô không thông với chỗ vào). Log 2026-11-25: 2 ván liền giết 99-100 quái, boss 2
-# không ra, từ 21:44 không ai thấy con nào. Nhớ các ô (gộp HESODOBUPY x HESODOBUPY) đã lọt tầm nhìn (ô vuông ±TAMNHINDOBUPY quanh mình,
-# tầm nhìn thật 18); hết 1 lượt đoạn thì lần lượt tới chỗ đứng nhìn được các ô đi được chưa thấy trong vùng mình (ô gần điểm dò của
-# đoạn mình nhất), ô không thông thì đứng ô tới được gần nó nhất trong tầm nhìn; hết ô chưa thấy thì xoá dấu, dò lượt mới
+# không ra, từ 21:44 không ai thấy con nào. Nhớ các ô (gộp HESODOBUPY x HESODOBUPY) đã lọt tầm nhìn: cả ô gộp nằm trong ô vuông
+# ±TAMNHINDOBUPY quanh mình (bộ lọc đối tượng ô vuông 18 như bảng đối tượng client, trừ 3 ô sai số);
+# hết 1 lượt đoạn thì lần lượt tới chỗ đứng nhìn được các ô đi được chưa thấy trong vùng mình (ô gần điểm dò của đoạn mình nhất), ô không
+# thông thì đứng ô tới được gần nó nhất trong tầm nhìn; hết ô chưa thấy thì xoá dấu, dò lượt mới
 HESODOBUPY = 3
-TAMNHINDOBUPY = 15
+TAMNHINDOBUPY = TAMNHINDO
 # "Nhặt và bán rác" (cấu hình Phong Yêu Kính): ra Chu Quốc thì tới Chủ Tiệm Y Dược (gần Tả Khâu Minh nhất) bán rác trước khi vào vòng sau,
 # đứng trong KHOANGCACHBANRACPY ô mới bán (như Về bán rác); quá THOIGIANBANRACPY giây chưa bán xong thì bỏ qua vòng này
 NPCBANRACPY = ("Chủ Tiệm Y Dược", 250, 176)
@@ -2343,7 +2345,8 @@ class TacTuLangLySon:
                 py["bossdagiet"] |= moi
                 if py["boss"] and py["boss"]["id"] in moi:
                     py["boss"] = None
-                self._logpb(s, f"{info.get('tennhanvat') or info.get('idnguoichoi')} đã giết boss ({len(py['bossdagiet'])}/{laydieukienrapykeocap(self._cauhinhpy())[0]})")
+                self._logpb(s, f"{info.get('tennhanvat') or info.get('idnguoichoi')} đã giết boss "
+                               f"{', '.join(hex(k) for k in sorted(moi))} ({len(py['bossdagiet'])}/{laydieukienrapykeocap(self._cauhinhpy())[0]})")
 
     def _luubosspy(self, py, idbando):
         # Ghi boss đã giết ra file khi đổi hoặc mỗi GIANCACHLUUBOSSPY giây (giữ "luc" mới để _khoiphucbosspy biết vẫn là vòng này)
@@ -2532,11 +2535,12 @@ class TacTuLangLySon:
                 # giết rồi mới chuyển. Trước đây ghi đè luôn nên boss cũ mất: log 2026-11-26 09:32 Ngô Vương Tàn Phách (85%) và Long Nha
                 # Kính Ma (100%) ra cùng lúc, Ngô Vương chết 09:32:35 thì chuyển sang Long Nha, cả nhóm chỉ ghi 1/2 rồi dò bù 20 phút
                 py["bossdagiet"].add(boss["id"])
-                self._logpb(s, f"Đã giết boss {boss['ten']} ({len(py['bossdagiet'])}/{laydieukienrapykeocap(self._cauhinhpy())[0]}), "
+                self._luubosspy(py, idbando)
+                self._logpb(s, f"Đã giết boss {boss['ten']} {hex(boss['id'])} ({len(py['bossdagiet'])}/{laydieukienrapykeocap(self._cauhinhpy())[0]}), "
                                f"chuyển sang boss khác")
             if not boss or boss["id"] != idboss:
                 boss = py["boss"] = {"id": idboss, "ten": moitruong.get_tendoituong(diachi), "lucgan": 0.}
-                self._logpb(s, f"Thấy boss {boss['ten']} ở {moitruong.get_toado(diachi)}")
+                self._logpb(s, f"Thấy boss {boss['ten']} {hex(idboss)} ở {moitruong.get_toado(diachi)}")
             boss.update(vitri = moitruong.get_toado(diachi), lucgan = 0.)
             if not is_bodanhboss:
                 s["trangthai"] = f"{tenpb}: đánh boss {boss['ten']} (đã giết {len(py['bossdagiet'])}/{laydieukienrapykeocap(self._cauhinhpy())[0]})"
@@ -2557,7 +2561,10 @@ class TacTuLangLySon:
                 return None
             py["bossdagiet"].add(boss["id"])
             py["boss"] = None
-            self._logpb(s, f"Đã giết boss {boss['ten']} ({len(py['bossdagiet'])}/{laydieukienrapykeocap(self._cauhinhpy())[0]})")
+            # Ghi file ngay (đầu bước chỉ ghi boss của bước trước): log 2026-11-26 16:44:44 342 giết Ngô Vương, 14s sau cả nhóm "Vào đội 2"
+            # chạy lại Phong Yêu Kính trước bước kế => file rỗng, mất boss, cả nhóm 1/2 dò thêm 18 phút
+            self._luubosspy(py, idbando)
+            self._logpb(s, f"Đã giết boss {boss['ten']} {hex(boss['id'])} ({len(py['bossdagiet'])}/{laydieukienrapykeocap(self._cauhinhpy())[0]})")
             return None
         if py["hoisoquai"]:
             if is_thanhvien:
@@ -2792,22 +2799,22 @@ class TacTuLangLySon:
         return {"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x, y, idbando), "khoangcachtoida": 1.}
 
     def _danhdaudathaypy(self, do):
-        # Đánh dấu các ô gộp (HESODOBUPY) có tâm trong ô vuông ±TAMNHINDOBUPY quanh mình là đã lọt tầm nhìn (do["dathay"])
+        # Đánh dấu các ô gộp (HESODOBUPY) nằm trọn trong ô vuông ±TAMNHINDOBUPY quanh mình là đã lọt tầm nhìn (do["dathay"])
         toado = self.moitruong.get_toado()
         if not toado:
             return
         h = HESODOBUPY
-        cx, cy = int(toado[0]) // h, int(toado[1]) // h
-        r = TAMNHINDOBUPY // h
+        x, y = int(toado[0]), int(toado[1])
+        r = TAMNHINDOBUPY
         dathay = do.setdefault("dathay", set())
-        for i in range(cx - r, cx + r + 1):
-            for j in range(cy - r, cy + r + 1):
+        for i in range(-((r - x) // h), (x + r - h + 1) // h + 1):
+            for j in range(-((r - y) // h), (y + r - h + 1) // h + 1):
                 dathay.add((i, j))
 
     def _layochuathaypy(self, do, idbando):
         # {ô gộp: chỗ đứng nhìn được (x, y)} mọi ô gộp có ô đi được thuộc vùng mình (điểm dò gần tâm ô nhất nằm trong đoạn của mình,
         # không chia thì cả vòng). Ô không thông với chỗ vào (bên kia nước / vách) thì chỗ đứng là ô tới được gần nó nhất trong
-        # ±TAMNHINDOBUPY, không có thì bỏ. Tính lại khi đoạn đổi. Không đọc được lưới -> None
+        # ô vuông ±TAMNHINDOBUPY, không có thì bỏ. Tính lại khi đoạn đổi. Không đọc được lưới -> None
         khoa = (idbando, do.get("dau"), do.get("cuoi"), len(do["diems"]))
         if do.get("dobukhoa") == khoa:
             return do["dobuung"]
@@ -2831,7 +2838,9 @@ class TacTuLangLySon:
                 dis.setdefault(o, (x, y))
                 if o not in tois and (x, y) in toiduoc:
                     tois[o] = (x, y)
-        r = TAMNHINDOBUPY // h
+        r = TAMNHINDOBUPY // h + 1
+        # Chỗ đứng thấy trọn ô gộp: cách tâm ô (ô vuông) không quá TAMNHINDOBUPY trừ nửa cạnh ô gộp
+        bankinh = TAMNHINDOBUPY - (h - 1) // 2
         ungs = {}
         for o in dis:
             tam = (o[0] * h + h // 2, o[1] * h + h // 2)
@@ -2841,7 +2850,9 @@ class TacTuLangLySon:
             if o in tois:
                 ungs[o] = tois[o]
                 continue
-            gan = [tois[(i, j)] for i in range(o[0] - r, o[0] + r + 1) for j in range(o[1] - r, o[1] + r + 1) if (i, j) in tois]
+            # Chỗ đứng phải thấy được cả ô gộp (ô vuông như _danhdaudathaypy), không thì đứng đó cũng không đánh dấu được
+            gan = [tois[(i, j)] for i in range(o[0] - r, o[0] + r + 1) for j in range(o[1] - r, o[1] + r + 1)
+                   if (i, j) in tois and khoangcachtamdanh(tois[(i, j)], tam) <= bankinh]
             if gan:
                 ungs[o] = min(gan, key = lambda d: math.dist(d, tam))
         do.update(dobukhoa = khoa, dobuung = ungs)

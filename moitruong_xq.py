@@ -170,6 +170,14 @@ THOIGIANNHONHANVATTONTAI = 0.05
 # Bản chụp đối tượng xung quanh (_get_banchupdoituongxungquanh) dùng lại trong chừng này giây: các chỗ quét trong cùng 1 lượt vòng lặp
 # (cách nhau vài ms) dùng chung 1 lần quét
 THOIGIANNHODOITUONGXUNGQUANH = 0.05
+# Đo tầm nhìn thật của client (_dotamnhin, đo tạm 2026-11-26): đối tượng mới vào / vừa rời bảng đối tượng ở xa hơn DOTAMNHINXATOITHIEU ô
+# (lọt vào / ra ở mép tầm nhìn, không phải quái hồi sinh / chết cạnh mình) thì ghi lệch (dx, dy); mỗi DOTAMNHINGIANCACH giây in
+# thống kê "[ĐO TẦM NHÌN]" vào log để chọn TAMNHINDO / KHOANGCACHTOANMANHINH. Mình dịch quá DOTAMNHINNHAY ô giữa 2 lần chụp (phù,
+# đổi bản đồ) thì bỏ lần đó. Đo xong thì tắt DOTAMNHIN
+DOTAMNHIN = False
+DOTAMNHINXATOITHIEU = 10.
+DOTAMNHINGIANCACH = 120.
+DOTAMNHINNHAY = 6.
 # Con trỏ nhân vật mình (get_diachicosothongtinnhanvat1) dùng lại trong chừng này giây
 THOIGIANNHOCONTRONHANVAT = 0.05
 # Chạy trốn theo đường tính sẵn (get_duongchaytron): xét lưới vật cản trong ô vuông bán kính BANKINHLUOICHAYTRON quanh mình, chọn đích
@@ -327,6 +335,8 @@ class MoiTruong:
         self._nhanvattontai_nho = (-1e9, False)
         # (lúc chụp, tuple địa chỉ đối tượng còn tồn tại trong tầm màn hình) cho _get_banchupdoituongxungquanh
         self._doituongxungquanh_nho = (-1e9, ((0, 0), ()))
+        # Đo tầm nhìn (_dotamnhin, DOTAMNHIN)
+        self._dotamnhin_trangthai = {"truoc": None, "vao": [], "ra": [], "xanhat": [0, 0, 0.], "luc": time.monotonic()}
         # (lúc đọc, con trỏ nhân vật mình) cho get_diachicosothongtinnhanvat1
         self._contronhanvat_nho = (-1e9, 0)
         # (bản đồ, lúc đọc, set ô NPC đang đứng) cho A* né NPC (_get_onpcdung)
@@ -583,6 +593,9 @@ class MoiTruong:
         self._thoidiemhoibangminhphien = 0.
         self._thanhvienbangvuadoc = None
         self._thanhvienbangdaapdung = None
+        # ID thành viên bang mình theo danh sách đã áp (rỗng = chưa đọc được): _is_cungbangtheoid dùng để biết người chưa rõ bang
+        # mà không có trong danh sách là khác bang
+        self._idthanhvienbangs = frozenset()
         # (ID, tên, thời điểm gửi) lần "desc user" đang chờ trả lời; tên người chơi đang gom dòng trả lời (sau dòng "Danh tính") và môn phái đã gom
         self._yeucaubangphai = None
         self._tendanggomthongtin = None
@@ -3784,8 +3797,10 @@ class MoiTruong:
     def _get_diachidoituongxungquanhs(self, is_nguoichoi = False, is_baothukynangtrieuhoi = False):
         # Các đối tượng còn tồn tại trong tầm màn hình, lấy từ bản chụp dùng chung (_get_banchupdoituongxungquanh)
         toadobanthan, doituongs = self._get_banchupdoituongxungquanh()
+        xm, ym = toadobanthan
         for diachi, x, y in doituongs:
-            if math.dist(toadobanthan, (x, y)) > KHOANGCACHTOANMANHINH:
+            # Ô vuông như bảng đối tượng của client (xem KHOANGCACHTOANMANHINH)
+            if max(abs(x - xm), abs(y - ym)) > KHOANGCACHTOANMANHINH:
                 continue
             if is_nguoichoi and not self.get_is_nguoichoi(diachi):
                 continue
@@ -3815,6 +3830,7 @@ class MoiTruong:
         except Exception:
             bang = ()
         diachis = []
+        ids = {} if DOTAMNHIN else None
         loainhanvats = (LOAIDOITUONG_NHANVAT1, LOAIDOITUONG_NHANVATKHAC1)
         for diachi in bang:
             if not diachi:
@@ -3829,9 +3845,63 @@ class MoiTruong:
             if iddoituong <= 0 or idloai not in loainhanvats:
                 continue
             diachis.append((diachi, x, y))
+            if ids is not None:
+                ids[iddoituong] = (x, y)
         ketqua = (toadobanthan, tuple(diachis))
         self._doituongxungquanh_nho = (bayh, ketqua)
+        if ids is not None and toadobanthan:
+            try:
+                self._dotamnhin(bayh, toadobanthan, ids)
+            except Exception as err:
+                self._inlog(f"[ĐO TẦM NHÌN] lỗi {err!r}")
         return ketqua
+
+    def _dotamnhin(self, bayh, toado, ids):
+        # Xem DOTAMNHIN. ids: {id đối tượng: (x, y)} lần chụp này (bỏ chính mình: lệch 0)
+        do = self._dotamnhin_trangthai
+        truoc = do["truoc"]
+        for k in ("vao", "ra"):
+            if len(do[k]) > 20000:
+                del do[k][:10000]
+        do["truoc"] = (toado, ids)
+        mx, my = toado
+        for x, y in ids.values():
+            dx, dy = abs(x - mx), abs(y - my)
+            xn = do["xanhat"]
+            xn[0], xn[1], xn[2] = max(xn[0], dx), max(xn[1], dy), max(xn[2], math.hypot(dx, dy))
+        if truoc and math.dist(truoc[0], toado) <= DOTAMNHINNHAY:
+            (tx, ty), idtruoc = truoc
+            for k, (x, y) in ids.items():
+                if k not in idtruoc and math.dist((x, y), toado) > DOTAMNHINXATOITHIEU:
+                    do["vao"].append((x - mx, y - my))
+            for k, (x, y) in idtruoc.items():
+                if k not in ids and math.dist((x, y), (tx, ty)) > DOTAMNHINXATOITHIEU:
+                    do["ra"].append((x - tx, y - ty))
+        if bayh - do["luc"] < DOTAMNHINGIANCACH:
+            return
+        do["luc"] = bayh
+
+        def thongke(ten, lechs):
+            if not lechs:
+                return f"{ten}: 0"
+            def pv(ds, p):
+                ds = sorted(ds)
+                return ds[min(len(ds) - 1, int(p * len(ds)))]
+            ax = [abs(a) for a, _ in lechs]
+            ay = [abs(b) for _, b in lechs]
+            eu = [math.hypot(a, b) for a, b in lechs]
+            ch = [max(abs(a), abs(b)) for a, b in lechs]
+            # Lệch theo hướng: nằm ngang (|dy| <= 3), dọc (|dx| <= 3), chéo (|dx|, |dy| chênh <= 3) để biết vùng là tròn / vuông / chữ nhật
+            ngang = [abs(a) for a, b in lechs if abs(b) <= 3]
+            doc = [abs(b) for a, b in lechs if abs(a) <= 3]
+            cheo = [math.hypot(a, b) for a, b in lechs if abs(abs(a) - abs(b)) <= 3]
+            tv = lambda ds: f"{pv(ds, 0.5):.1f}/{pv(ds, 0.9):.1f}/{max(ds):.1f}" if ds else "-"
+            return (f"{ten}: {len(lechs)} lần, trung vị/90%/max |dx| {tv(ax)} |dy| {tv(ay)} tròn {tv(eu)} vuông {tv(ch)} | "
+                    f"ngang {tv(ngang)} dọc {tv(doc)} chéo {tv(cheo)}")
+
+        xn = do["xanhat"]
+        self._inlog(f"[ĐO TẦM NHÌN] {thongke('vào', do['vao'])} || {thongke('ra', do['ra'])} || xa nhất đang có |dx| {xn[0]} |dy| {xn[1]} "
+                    f"tròn {xn[2]:.1f}")
 
     def get_diachicosothongtinvatphamhanhtrang(self):
         x = read_int(self.tientrinh, self.diachixq + DC.THONGTINGAME)
@@ -4841,6 +4911,10 @@ class MoiTruong:
     def _is_cungbangtheoid(self, idnguoichoi):
         bangminh = self.get_bangphai(self.get_idnguoichoi())
         bangho = self.get_bangphai(idnguoichoi) if idnguoichoi else None
+        # Chưa rõ bang người kia mà đã có danh sách thành viên bang mình ("org status", có cả mình): không có tên trong đó là khác bang.
+        # Log 364 (Gạ) 2026-11-26 16:07: PK bang, "desc user 360" 5 lần không có trả lời => coi cùng bang, đứng cạnh không đánh
+        if bangho is None and idnguoichoi and bangminh and self.get_idnguoichoi() in self._idthanhvienbangs:
+            return idnguoichoi in self._idthanhvienbangs
         if bangminh is None or bangho is None:
             return True
         return bool(bangminh) and bangminh == bangho
@@ -5030,6 +5104,7 @@ class MoiTruong:
         if khoa == self._thanhvienbangdaapdung:
             return
         self._thanhvienbangdaapdung = khoa
+        self._idthanhvienbangs = frozenset(thanhviens)
         for idtv, ten in thanhviens.items():
             cu = self._bangphainguoichoi_map.get(idtv)
             if ten:
@@ -9040,7 +9115,7 @@ class MoiTruong:
             if tennhanvatchua:
                 ten = self.get_tendoituong(diachi)
                 if not ten or tennhanvatchua not in ten: continue
-            if math.dist(toadobanthan, self.get_toado(diachi)) > KHOANGCACHTOANMANHINH: continue
+            if khoangcachtamdanh(toadobanthan, self.get_toado(diachi)) > KHOANGCACHTOANMANHINH: continue
             return diachi
         return False
 
@@ -9205,6 +9280,34 @@ class MoiTruong:
             if read_int(self.tientrinh, o + 0x47C) > 0:
                 tens.append(read_bytes(self.tientrinh, o + 0x4F5, 0x20).split(b"\0")[0].decode("utf-8", "ignore"))
         return tens
+
+    def get_danhsachbaothugiangho(self, soo = 10):
+        # Các bảo thú giang hồ đang có (cả con chưa triệu hồi), mỗi ô 0x1670 byte như get_danhsachtenbaothugiangho, kèm cấp và 5 tư chất
+        # (tổng đang hiện ở bảng Bảo Thú, đã gồm điểm đã cộng). Đo 26/11 trên "Quy" cấp 100 (Aegis): cấp +0x488, Khí Huyết +0x48C/+0x490,
+        # Pháp Lực +0x494/+0x498, Ngoại Công +0x49C/+0x4A0, Ngoại Kháng +0x4A4/+0x4A8, Nội Công +0x4AC/+0x4B0, Nội Kháng +0x4B4/+0x4B8,
+        # Thân Thủ +0x4BC, Thể Chất +0x4C4 (495), Tinh Thần +0x4C8 (111), Sức Mạnh +0x4CC (110), Nại Lực +0x4D0 (110), Mẫn Tiệp +0x4D4 (124),
+        # kinh nghiệm +0x4E4. -> [{"o", "id", "ten", "cap", "khihuyet", <khoá TUCHATBAOTHUs>...}] hoặc None (chưa đọc được)
+        diachi = self.get_diachicosobaothugiangho()
+        if not diachi:
+            return None
+        ds = []
+        for k in range(soo):
+            o = diachi + 0x1670 * k
+            idbt = read_int(self.tientrinh, o + 0x47C)
+            if idbt <= 0:
+                continue
+            ten = read_bytes(self.tientrinh, o + 0x4F5, 0x20).split(b"\0")[0].decode("utf-8", "ignore")
+            bt = {"o": k, "id": idbt, "ten": ten, "cap": read_int(self.tientrinh, o + 0x488), "khihuyet": read_int(self.tientrinh, o + 0x490)}
+            for i, khoa in enumerate(("thechat", "tinhthan", "sucmanh", "nailuc", "mantiep")):
+                bt[khoa] = read_int(self.tientrinh, o + 0x4C4 + 4 * i)
+            ds.append(bt)
+        return ds
+
+    def action_phongsinhbaothu(self, iddoituong):
+        # Phóng sinh bảo thú giang hồ: "pet %x# free" (xq+0x13A154, cạnh show / hide / lock). Client bấm tay thì hiện hộp xác nhận
+        # (TG+0xADFE10) rồi mới gửi, ở đây gửi thẳng lệnh
+        caulenh = "pet {}# free".format(hex(iddoituong)).replace("0x", "")
+        return self.action_thucthicaulenh2(caulenh, delay = 0.)
 
     def get_dotrungthanhbaothugiangho(self):
         diachi = self.get_diachicosobaothugiangho()

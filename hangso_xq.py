@@ -207,6 +207,10 @@ KHUYENTHAILANG = "Khuyển Thái Lang"
 BAOTHUKYNANGTRIEUHOIs = (CUONGTHI, QUYTOT, DAUBINH, THIENBINH, THIENTUONG, THANTUONG, KHUYENTHAILANG)
 
 KHOANGCACHNUAMANHINH = 9.
+# Tầm thấy đối tượng: bảng đối tượng của client là Ô VUÔNG quanh mình (đo [ĐO TẦM NHÌN] 26/11/2026, 7 acc ~10 phút: đối tượng rời bảng ở
+# max(|dx|, |dy|) 19-21 mọi acc, đường thẳng thì 22-27; vẫn giữ con lệch (22, 21) = 27.7 ô thẳng). Bot lọc max(|dx|, |dy|) <= chừng này
+# (chừa 2-3 ô với mép thật ~20). Trước đây lọc hình tròn 18 => bỏ mất góc client vẫn thấy. Các so sánh get_khoangcach (đường thẳng) với
+# hằng này ở chỗ khác vẫn giữ: chỉ chặt hơn ở góc
 KHOANGCACHTOANMANHINH = 18.
 
 KHOANGCACHHIEUQUAKYNANGLOIDONGCUUTHIEN = 3
@@ -400,8 +404,35 @@ THOIGIANTAMNGUNGANTHAN = 600.
 # trừ lúc mình đang bật PK (màu PK khác Hoà bình). So sau khi bỏ dấu, bỏ khoảng trắng, chữ thường: "Chiến Quốc 2D" = "ChienQuoc2D".
 # Khớp nguyên tên, "Sứ Giả 2D" không tính
 TENANTHANLUONNGUNGs = ("2D", "ChienQuoc2D")
-# Thấy người lạ (ngoài danh sách tổ đội) ở map train thì ngưng ngắn hơn (giây)
+# Thấy người lạ (ngoài danh sách tổ đội) ở map train thì ngưng ngắn hơn (giây); mặc định của ô "Tạm ngưng (giây)" tab Khác
 THOIGIANTAMNGUNGNGUOILA = 60.
+# Chiến lược khi gặp người lạ ở map train (ô chọn tab Khác, theo từng nhân vật; người dùng 2026-11-26: thay ô bật/tắt tạm ngưng cũ).
+# Chỉ áp dụng khi đang đi lộ trình điểm đánh như cũ; ẩn thân (ADMIN) thì luôn ngưng cả máy, không theo chiến lược này.
+#   tatca: mình ngưng + công bố, mọi nhân vật cùng bản đồ (cùng máy / LAN) đang chọn tatca ngưng theo (cách cũ khi bật ô)
+#   mot: chỉ nhân vật thấy ngưng, không công bố; file tạm ngưng đánh dấu riêng nên không chặn tự đăng nhập các acc khác
+#   tranh: vẫn đánh, bỏ quái / điểm đánh trong BANKINHTRANHNGUOILA quanh chỗ người lạ đứng (nhớ THOIGIANNHONGUOILA sau khi khuất,
+#          chia sẻ cho bot cùng bản đồ); người lạ cứ ở sát mình quá THOIGIANBAMTHEONGUOILA (bám theo) thì nhân vật này ngưng như "mot"
+#   canhbao: chỉ phát âm + Telegram (cách cũ khi tắt ô) · boqua: không làm gì
+CHIENLUOCNGUOILA_TATCA = "tatca"
+CHIENLUOCNGUOILA_MOT = "mot"
+CHIENLUOCNGUOILA_TRANH = "tranh"
+CHIENLUOCNGUOILA_CANHBAO = "canhbao"
+CHIENLUOCNGUOILA_BOQUA = "boqua"
+CHIENLUOCNGUOILA_MAP = {
+    "Tạm ngưng cả máy (cùng bản đồ)": CHIENLUOCNGUOILA_TATCA,
+    "Chỉ tạm ngưng nhân vật thấy": CHIENLUOCNGUOILA_MOT,
+    "Tránh xa người lạ, đánh tiếp": CHIENLUOCNGUOILA_TRANH,
+    "Chỉ cảnh báo": CHIENLUOCNGUOILA_CANHBAO,
+    "Bỏ qua": CHIENLUOCNGUOILA_BOQUA,
+}
+# Bán kính (ô, đường chim bay) quanh người lạ mà chiến lược "tranh" bỏ quái / điểm đánh; mặc định = vùng nhường quái đồng đội
+BANKINHTRANHNGUOILA = 15.
+# Chỗ người lạ đứng còn được tránh bấy nhiêu giây sau lần thấy cuối (đi khuất màn hình vẫn có thể quay lại)
+THOIGIANNHONGUOILA = 60.
+# Thấy lại cùng người lạ sau khi khuất quá bấy nhiêu giây thì tính là lần gặp mới (đếm lại "Phản ứng sau" / bám theo)
+THOIGIANGIANDOANNGUOILA = 5.
+# Chiến lược "tranh": người lạ ở trong BANKINHTRANHNGUOILA quanh mình liên tục bấy nhiêu giây (đã đổi điểm đánh mà vẫn sát) => coi là bám theo
+THOIGIANBAMTHEONGUOILA = 90.
 # Tín hiệu "vừa thấy ẩn thân" của nhân vật khác cùng bản đồ còn hiệu lực trong bấy nhiêu giây (nhân vật thấy sẽ làm mới liên tục mỗi 0.5s)
 THOIGIANCHIASEANTHAN = 3.
 
@@ -1399,6 +1430,10 @@ PHAPBAOTHEOMAU_MAP = {
     NHOMPHAPBAO_NOICONG: ((CHUONGHAMTHIEN, ), PHAPBAOTHEOMAU_TRAO, (THUONGPHUONGBAOKIEM, )),
     NHOMPHAPBAO_NGOAICONG: ((NHIEPHONLINH, ), PHAPBAOTHEOMAU_TRAO, (THUONGPHUONGBAOKIEM, )),
 }
+# Bản "Cao Cấp" của pháp bảo trong bảng trên (vd "Chuông Hám Thiên Cao Cấp": chỉ số cao hơn nhưng đeo là mòn độ bền theo thời
+# gian). Người dùng 2026-11-26: chỉ đeo khi đang bật PK (ưu tiên hơn bản thường cùng mức); không bật PK thì đổi về bản thường.
+# Tên hành trang bị cắt 31 byte nên đuôi có thể cụt ("... Cao C"): khớp theo tên gốc + phần đầu của đuôi này
+PHAPBAOCAOCAP = "Cao Cấp"
 TENNHOMPHAPBAO_MAP = {NHOMPHAPBAO_DAOHOA: "Đào Hoa Nguyên", NHOMPHAPBAO_NOICONG: "Phái Nội công", NHOMPHAPBAO_NGOAICONG: "Phái Ngoại công"}
 # Ngưỡng mặc định (chỉnh ở giao diện, lưu theo nhân vật): máu < VUA% xuống mức vừa, <= THAP% xuống mức thấp.
 # Ngưỡng tụt và ngưỡng hồi phải cách nhau, không thì máu dao động quanh 50% / 25% là đổi pháp bảo liên tục

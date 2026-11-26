@@ -120,7 +120,8 @@
    "Lý Tứ"
   ],
   "344": [
-   "Kiếp Phỉ Mã Tiểu Thất"
+   "Kiếp Phỉ Mã Tiểu Thất",
+   "Đao Dũng"
   ],
   "311": [
    "Kiếp Đạo Lý Tam"
@@ -212,6 +213,13 @@
   "334": [
    "Kiếm Thuẫn Khô Lâu",
    "Song Đao Khô Lâu"
+  ],
+  "342": [
+   "Thạch Sư"
+  ],
+  "92": [
+   "Địa Sát Môn Thủ",
+   "Thủ Trận Thần Tướng"
   ]
  },
  "nghi": {
@@ -249,7 +257,7 @@
   },
   "344": {
    "Cung Tiễn Thạch Dũng": 1,
-   "Đao Dũng": 1
+   "Thương Dũng": 1
   },
   "334": {
    "Đao Thuẫn Khô Lâu": 1
@@ -264,10 +272,6 @@
   "333": {
    "Đao Thuẫn Khô Lâu": 1
   },
-  "92": {
-   "Thủ Trận Thần Tướng": 1,
-   "Địa Sát Môn Thủ": 1
-  },
   "383": {
    "Mộc Tinh": 1
   },
@@ -275,7 +279,6 @@
    "Thi Ma": 1
   },
   "342": {
-   "Thạch Sư": 1,
    "Đao Dũng": 1
   },
   "71": {
@@ -290,6 +293,9 @@
   "381": {
    "Thuỷ Tinh": 1,
    "Mộc Tinh": 1
+  },
+  "291": {
+   "Khô Lâu Yêu": 1
   }
  }
 }

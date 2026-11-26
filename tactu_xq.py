@@ -26,6 +26,7 @@ from tactu_tapkich_xq import TacTuTapKich
 from tactu_matac_xq import TacTuMaTac
 from tactu_tinhanh_xq import TacTuTinhAnh, tachbandotinhanh
 from tactu_daokhoang_xq import TacTuDaoKhoang, tachbandodaokhoang
+from tactu_batbaothu_xq import TacTuBatBaoThu, THIETLAPBATBAOTHUMACDINH, chuanhoathietlapbatbaothu
 from tactu_danhvong_xq import TacTuDanhVong
 from tactu_thienxu_xq import TacTuThienXu
 from tactu_keocap_xq import TacTuKeoCap
@@ -40,19 +41,19 @@ THUOCTINHTHIETLAPs = (
     "_is_thucsondao", "_is_chantangcapdo", "_is_tudongtangcap", "_captudongtangcaptoida",
     "_is_tudongdichuyendiemdanhxungquanh", "_diemdanhxungquanhs", "_is_lotrinhphobanmuonbando", "_is_dilotrinhkhacbando",
     "_lotrinhmaudangdung", "_is_nguocchieulotrinh", "_is_chiavunglotrinh", "_is_tudonggomquai", "_is_tudongvebanrac", "_is_tudongvesuado", "_phantramvesuado",
-    "_idbandoquaylaibanrac", "_is_tudongdichientruong", "_is_tudongkhaikhoang", "_is_tamngungnguoila", "_is_tudongdaotangbaodo", "_tenmuctieutancongs", "_is_uutienbaothukynangtrieuhoi",
+    "_idbandoquaylaibanrac", "_is_tudongdichientruong", "_is_tudongkhaikhoang", "_chienluocnguoila", "_thoigiantamngungnguoila", "_thoigianphanungnguoila", "_bankinhtranhnguoila", "_is_phatamnguoila", "_is_telegramnguoila", "_is_tudongdaotangbaodo", "_tenmuctieutancongs", "_is_uutienbaothukynangtrieuhoi",
     "_tenmuctieukhongtancongs", "_tenvatphamnhats", "_phamchatnhats", "_khoangcachtoidatheosau", "_bankinhdiemdanh", "_tamxatoida",
     "_danhhieulammoi", "_phantramnoiluckhaithientichdia", "_phantramsinhlucthuhoibaothugiangho", "_is_tudongtrieuhoibaothugiangho", "_is_tudongsudungkynangbaothu", "_is_epbaothubidong", "_is_tudongeptinhnguyendon",
     "_is_tudongbatnguyenkhiquynguyen", "_is_tranhvungcam", "_is_giukhoangcachketancong", "_khoangcachgiuketancong", "_mauchaytron",
     "_mauhetchaytron", "_is_doiphapbaotheomau", "_is_xoayvongtrao", "_is_hettraodeomuccao", "_maubommaudongdoi", "_maubommaudatinh", "_mauphapbaovua","_mauphapbaothap", "_dotrephapbao", "_is_taphoa", "_is_timmuctieuchung", "_chedohienthongtinmuctieugame",
     "_is_muctieutheoduongdi", "_is_uutiencumquai", "_is_chiamuctieubotkhac", "_is_pkbodanhsachten", "_mauhienthongtinmuctieugame", "_is_hienhanhdongtrendau", "_is_tutimduongtheosau", "_is_chaytoibuffthanhvien", "_is_diquocgiatanthutienco", "_is_doidokhitrieuhoi", "_bodotrieuhoi", "_baothutrieuhoimaoson",
-    "_sumon_npcgiao", "_tapkich_phai", "_matac_bandos", "_is_tubatmatac", "_tinhanh_bandos", "_is_tinhanhthaplencao", "_daokhoang_bandos", "_hangviec_thutu", "_hangviec_chon",
+    "_sumon_npcgiao", "_tapkich_phai", "_matac_bandos", "_is_tubatmatac", "_tinhanh_bandos", "_is_tinhanhthaplencao", "_daokhoang_bandos", "_batbaothu_thietlap", "_hangviec_thutu", "_hangviec_chon",
 )
 
 
 # Các nhóm việc nằm ở các file tactu_*_xq.py (mixin), TacTu giữ trạng thái (__init__), lưu / nạp thiết lập và các lệnh bật / tắt
 class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu, TacTuHoatDong, TacTuGiaoDo, TacTuPhanGiai, TacTuEpDa, TacTuCatKho, TacTuSuMon,
-            TacTuLangLySon, TacTuSuGia, TacTuTapKich, TacTuMaTac, TacTuTinhAnh, TacTuDaoKhoang, TacTuDanhVong, TacTuThienXu, TacTuKeoCap,
+            TacTuLangLySon, TacTuSuGia, TacTuTapKich, TacTuMaTac, TacTuTinhAnh, TacTuDaoKhoang, TacTuBatBaoThu, TacTuDanhVong, TacTuThienXu, TacTuKeoCap,
             TacTuHangViec, TacTuDoiPhoBan):
     def __init__(self, moitruong: MoiTruong):
         self._thoidiemhettangbaodogannhat = 0.
@@ -122,9 +123,24 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._is_tudongchaylenbandovuachet = True
         self._is_tudongxepchongvatpham = True
         self._is_tudongkhaikhoang = False
-        # Thấy người lạ ở map train thì tạm ngưng (ô tích tab Khác, mặc định bật); tắt thì chỉ cảnh báo (phát âm + Telegram), không ngưng.
-        # Ẩn thân luôn ngưng (ẩn thân là ADMIN đi kiểm tra)
-        self._is_tamngungnguoila = True
+        # Thấy người lạ ở map train: làm gì (CHIENLUOCNGUOILA_*, ô chọn tab Khác, mặc định tạm ngưng cả máy như trước). Thay ô bật/tắt
+        # _is_tamngungnguoila cũ (thiết lập cũ: True -> tatca, False -> canhbao). Ẩn thân luôn ngưng (ẩn thân là ADMIN đi kiểm tra)
+        self._chienluocnguoila = CHIENLUOCNGUOILA_TATCA
+        # Số giây tạm ngưng khi gặp người lạ (tatca / mot / bám theo)
+        self._thoigiantamngungnguoila = THOIGIANTAMNGUNGNGUOILA
+        # Người lạ phải ở lại trên màn hình bấy nhiêu giây mới tạm ngưng / cảnh báo (0 = ngay); người đi ngang qua thì bỏ qua
+        self._thoigianphanungnguoila = 0.
+        # Bán kính tránh (ô) của chiến lược "tranh"
+        self._bankinhtranhnguoila = BANKINHTRANHNGUOILA
+        # Người lạ đã thấy ở bản đồ hiện tại: {ID: {"ten", "toado", "thaydau", "thaycuoi", "gandau"}} (gandau: lúc bắt đầu ở sát mình
+        # liên tục, 0 = không sát); đổi bản đồ thì xoá (_idbandonguoilas)
+        self._nguoilas = {}
+        self._idbandonguoilas = None
+        # Chỗ người lạ mà bot cùng bản đồ (chiến lược tranh) thấy, đọc shared_data nhớ 1s: (thời điểm, [(x, y)])
+        self._bonhonguoilabotkhac = (0., [])
+        # Thông báo khi gặp người lạ (2 ô tab Khác, người dùng 2026-11-26: điếc tai, phiền): phát âm / tin Telegram. Ẩn thân luôn báo
+        self._is_phatamnguoila = True
+        self._is_telegramnguoila = True
         self._thoidiemcanhbaonguoila = 0.
         self._thoidiemkhaikhoanggannhat = 0.
         self._yeucaukhaikhoang = None
@@ -218,6 +234,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._is_dangvevitritheosau = False
         # Lúc cuối cùng còn mục tiêu khi đang theo sau: vừa giết xong vẫn giữ vùng đứng đánh rộng THOIGIANGIUVUNGDANHSAUMUCTIEU giây
         self._thoidiemcomuctieutheosau = 0.
+        # Log chẩn đoán theo sau chậm: (lý do đứng, lúc bắt đầu, lần ghi cuối) để chỉ ghi khi đổi lý do / mỗi 2s (_logchotheosau)
+        self._logchotheosau_cu = ("", 0., 0.)
         # Trưởng nhóm (cùng máy) ở bản đồ khác mà phù tới được => đang lo phù sang, lộ trình điểm đánh tạm nhường
         self._is_dangphutheosau = False
         self._idbandotheosaugannhat = None
@@ -354,6 +372,11 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._daokhoang = None
         self._ketquadaokhoang = ""
         self._daokhoang_bandos = []
+        # Bắt bảo thú (tactu_batbaothu_xq, tab Khác): việc đang làm (None = không), kết quả lần gần nhất cho giao diện, thiết lập tên / cấp /
+        # ngưỡng tư chất (lưu theo nhân vật)
+        self._batbaothu = None
+        self._ketquabatbaothu = ""
+        self._batbaothu_thietlap = chuanhoathietlapbatbaothu(THIETLAPBATBAOTHUMACDINH)
         # Nhiệm vụ Danh Vọng (tactu_danhvong_xq): việc đang làm (None = không), kết quả lần gần nhất cho giao diện
         self._danhvong = None
         self._ketquadanhvong = ""
@@ -553,6 +576,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         # Tạm ngưng toàn bộ hoạt động khi phát hiện người chơi ẩn thân xung quanh (đang di chuyển theo lộ trình điểm đánh)
         self._thoidiemhettamngung = 0.
         self._lydotamngung = ""
+        # Tạm ngưng đang có chỉ của riêng nhân vật này (chiến lược người lạ "mot" / bị bám theo): file không chặn tự đăng nhập acc khác
+        self._is_tamngungrieng = False
         # Tắt bot riêng nhân vật này (ô tích trên danh sách nhân vật): ngưng mọi hoạt động như tạm ngưng nhưng không hết hạn,
         # không ghi file tạm ngưng (file đó chặn tự đăng nhập cả máy)
         self._is_tatbot = False
@@ -1060,7 +1085,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self.thietlap_khoangcachsudungkynangtamxa(self._tamxatoida)
         self._yeucaugiukhoangcach = None
         # Việc đang tạm đổi ô nào thì lúc xong sẽ trả về giá trị gốc: đổi giá trị gốc thành mặc định để không trả lại cấu hình cũ
-        for s in (self._sumon, self._sugia, self._tapkich, self._matac, self._tinhanh, self._daokhoang, self._danhvong, self._thienxu, self._langlyson, self._keocap):
+        for s in (self._sumon, self._sugia, self._tapkich, self._matac, self._tinhanh, self._daokhoang, self._batbaothu, self._danhvong, self._thienxu, self._langlyson, self._keocap):
             tuychoncu = (s or {}).get("tuychoncu")
             if tuychoncu:
                 for k in list(tuychoncu):
@@ -1114,7 +1139,12 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_idbandoquaylaibanrac": self._idbandoquaylaibanrac,
             "_is_tudongdichientruong": self._is_tudongdichientruong,
             "_is_tudongkhaikhoang": self._is_tudongkhaikhoang,
-            "_is_tamngungnguoila": self._is_tamngungnguoila,
+            "_chienluocnguoila": self._chienluocnguoila,
+            "_thoigiantamngungnguoila": self._thoigiantamngungnguoila,
+            "_thoigianphanungnguoila": self._thoigianphanungnguoila,
+            "_bankinhtranhnguoila": self._bankinhtranhnguoila,
+            "_is_phatamnguoila": self._is_phatamnguoila,
+            "_is_telegramnguoila": self._is_telegramnguoila,
             "_is_tudongdaotangbaodo": self._is_tudongdaotangbaodo,
             "_tenmuctieutancongs": self._tenmuctieutancongs,
 
@@ -1168,6 +1198,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_tinhanh_bandos": list(self._tinhanh_bandos),
             "_is_tinhanhthaplencao": self._is_tinhanhthaplencao,
             "_daokhoang_bandos": list(self._daokhoang_bandos),
+            "_batbaothu_thietlap": self._batbaothu_thietlap,
             "_is_tatbot": self._is_tatbot,
             "_hangviec": {"thutu": self._hangviec_thutu, "chon": self._hangviec_chon,
                           "chay": self._is_chayhangviec, "dangchay": self._viechangdangchay, "ketqua": self._ketquahangviec},
@@ -1201,7 +1232,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_baothuvatpham": self.get_baothuvatphamluu(),
         }
         # Sư môn / Sư Gia đang tạm đổi ô nào (Theo sau, Tự động sử dụng kỹ năng...) thì lưu giá trị gốc của người dùng, dis vào lại không mất
-        for s in (self._sumon, self._sugia, self._tapkich, self._matac, self._tinhanh, self._daokhoang, self._danhvong, self._thienxu, self._langlyson, self._keocap):
+        for s in (self._sumon, self._sugia, self._tapkich, self._matac, self._tinhanh, self._daokhoang, self._batbaothu, self._danhvong, self._thienxu, self._langlyson, self._keocap):
             thietlap.update({k: v for k, v in ((s or {}).get("tuychoncu") or {}).items() if k in thietlap})
         util_luuthietlap(str(idnguoichoi), thietlap)
         # luuthietlap chạy mỗi giây: vị trí quái thì THOIGIANLUUVITRIQUAI giây mới ghi file một lần (thoát thì luuvitriquai(True))
@@ -1270,7 +1301,15 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if "_idbandoquaylaibanrac" in thietlap: self.thietlap_bandoquaylaibanrac(thietlap["_idbandoquaylaibanrac"])
             if "_is_tudongdichientruong" in thietlap: self._is_tudongdichientruong = thietlap["_is_tudongdichientruong"]
             if "_is_tudongkhaikhoang" in thietlap: self._is_tudongkhaikhoang = thietlap["_is_tudongkhaikhoang"]
-            if "_is_tamngungnguoila" in thietlap: self._is_tamngungnguoila = thietlap["_is_tamngungnguoila"]
+            # Thiết lập cũ chỉ có ô bật/tắt tạm ngưng: bật = tạm ngưng cả máy, tắt = chỉ cảnh báo
+            if "_is_tamngungnguoila" in thietlap and "_chienluocnguoila" not in thietlap:
+                self.thietlap_chienluocnguoila(CHIENLUOCNGUOILA_TATCA if thietlap["_is_tamngungnguoila"] else CHIENLUOCNGUOILA_CANHBAO, is_phatam = False)
+            if "_chienluocnguoila" in thietlap: self.thietlap_chienluocnguoila(thietlap["_chienluocnguoila"], is_phatam = False)
+            if "_thoigiantamngungnguoila" in thietlap: self.thietlap_thoigiantamngungnguoila(thietlap["_thoigiantamngungnguoila"])
+            if "_thoigianphanungnguoila" in thietlap: self.thietlap_thoigianphanungnguoila(thietlap["_thoigianphanungnguoila"])
+            if "_bankinhtranhnguoila" in thietlap: self.thietlap_bankinhtranhnguoila(thietlap["_bankinhtranhnguoila"])
+            if "_is_phatamnguoila" in thietlap: self._is_phatamnguoila = bool(thietlap["_is_phatamnguoila"])
+            if "_is_telegramnguoila" in thietlap: self._is_telegramnguoila = bool(thietlap["_is_telegramnguoila"])
             if "_is_tudongdaotangbaodo" in thietlap: self._is_tudongdaotangbaodo = thietlap["_is_tudongdaotangbaodo"]
             if "_tenmuctieutancongs" in thietlap: self._tenmuctieutancongs = thietlap["_tenmuctieutancongs"]
 
@@ -1322,6 +1361,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if "_is_tinhanhthaplencao" in thietlap: self._is_tinhanhthaplencao = bool(thietlap["_is_tinhanhthaplencao"])
             if "_tinhanh_bandos" in thietlap: self._tinhanh_bandos = tachbandotinhanh(thietlap["_tinhanh_bandos"], self._is_tinhanhthaplencao)
             if "_daokhoang_bandos" in thietlap: self._daokhoang_bandos = tachbandodaokhoang(thietlap["_daokhoang_bandos"])
+            if "_batbaothu_thietlap" in thietlap: self._batbaothu_thietlap = chuanhoathietlapbatbaothu(thietlap["_batbaothu_thietlap"])
             if "_is_tatbot" in thietlap: self._is_tatbot = bool(thietlap["_is_tatbot"])
             if isinstance(thietlap.get("_hangviec"), dict):
                 hangviec = thietlap["_hangviec"]
@@ -1680,12 +1720,28 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         else:
             phatam("Tắt tự động theo sau")
 
-    def battat_is_tamngungnguoila(self):
-        self._is_tamngungnguoila = not self._is_tamngungnguoila
-        if self._is_tamngungnguoila:
-            phatam("Bật tạm ngưng khi gặp người lạ")
-        else:
-            phatam("Tắt tạm ngưng khi gặp người lạ")
+    def thietlap_chienluocnguoila(self, chienluoc, is_phatam = True):
+        if chienluoc not in CHIENLUOCNGUOILA_MAP.values():
+            return
+        self._chienluocnguoila = chienluoc
+        if is_phatam:
+            phatam("Gặp người lạ: " + next(ten for ten, ma in CHIENLUOCNGUOILA_MAP.items() if ma == chienluoc))
+
+    def thietlap_thoigiantamngungnguoila(self, giay):
+        self._thoigiantamngungnguoila = min(3600., max(10., float(giay)))
+
+    def thietlap_thoigianphanungnguoila(self, giay):
+        self._thoigianphanungnguoila = min(600., max(0., float(giay)))
+
+    def thietlap_bankinhtranhnguoila(self, oo):
+        self._bankinhtranhnguoila = min(40., max(5., float(oo)))
+
+    def battat_is_phatamnguoila(self):
+        # Không phát âm câu bật/tắt: chính người dùng đang muốn bớt ồn
+        self._is_phatamnguoila = not self._is_phatamnguoila
+
+    def battat_is_telegramnguoila(self):
+        self._is_telegramnguoila = not self._is_telegramnguoila
 
     def battat_is_tudongkhaikhoang(self):
         self._is_tudongkhaikhoang = not self._is_tudongkhaikhoang

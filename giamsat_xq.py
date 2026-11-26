@@ -6,15 +6,21 @@
 #      nhân vật này quá SOLANKILLTOIDA lần trong 1 giờ (lưu _internal/giamsat.json vì tiến trình bot chết theo client)
 #   2. Luồng bot treo: vòng tổng hợp / vòng phụ quá THOIGIANTREOLUONG giây không chạy hết 1 lượt => thoát tiến trình bot, trochoi_xq tự
 #      mở lại tiến trình mới cho cửa sổ đó
+#   3. Độ bền đồ đang mặc (mỗi CHUKYKIEMTRADOBEN giây "desc" lại 7 ô trang bị, THOIGIANCHODOBEN giây sau đọc mô tả):
+#      - Pháp bảo "Độ bền: 0 / x" = hỏng, mất chỉ số. tactu_vatpham_xq tự đổi món tương tự còn bền trong túi; đọc thấy hỏng 2 lượt liền
+#        (cùng món) là không đổi được => cảnh báo + Telegram
+#      - Trang bị "Độ bền: 0 / 0" = độ bền tối đa đã mòn hết, sửa không lên nữa => cảnh báo + Telegram ngay
+#      Mỗi món (theo id) chỉ báo 1 lần tới khi đổi món; Telegram loại "vatpham"
 import json
 import os
+import re
 import subprocess
 import sys
 import threading
 import time
 
 from dangnhap_xq import taicauhinhdangnhap, taikhoanbatchomaynay
-from hangso_xq import BANDO_CHIENTRUONG
+from hangso_xq import BANDO_CHIENTRUONG, VITRITRANGBIDAUTIEN, VITRITRANGBI_PHAPBAO
 from thongbao_xq import baosuco
 from tienich_xq import canhbao, laytamngungdanghieuluc, laytylesudungram
 
@@ -26,6 +32,8 @@ THOIGIANTREOLUONG = 180.
 CHUKYBAONHIP = 60.
 NGUONGCHAYCHAM = 1.
 NGUONGNGUTRE = 0.05
+CHUKYKIEMTRADOBEN = 120.
+THOIGIANCHODOBEN = 5.
 
 _khoaghi = threading.Lock()
 
@@ -74,7 +82,8 @@ def lydokhongmolaiclient(moitruong):
         return "nhân vật không có trong file tài khoản"
     if not any(str(tk.get("idnguoichoi") or "") == str(idnguoichoi) for tk in taikhoanbatchomaynay(cauhinh)):
         return "tài khoản đang tắt tự đăng nhập trên máy này"
-    if laytamngungdanghieuluc():
+    # Tạm ngưng riêng (chiến lược người lạ "mot") chỉ chặn chính nhân vật đó
+    if laytamngungdanghieuluc(is_chiriengs = False) or any(i == idnguoichoi for i, _, _ in laytamngungdanghieuluc(is_chiriengs = True)):
         return "đang có nhân vật tạm ngưng"
     if _solankillgiogannhat(idnguoichoi) >= SOLANKILLTOIDA:
         return f"đã mở lại {SOLANKILLTOIDA} lần trong 1 giờ"
@@ -134,6 +143,12 @@ class GiamSat:
         # Tên vòng lặp -> thời điểm chạy xong lượt gần nhất (các vòng tự ghi qua danhdau)
         self.nhiploops = {}
         self._datlai()
+        # Watchdog độ bền: thời điểm gửi desc (0 = chưa gửi, chờ tới chu kỳ), lượt kiểm tra gần nhất,
+        # id pháp bảo thấy hỏng lượt trước (cần 2 lượt liền), tập (ô, id món) đã báo
+        self._thoidiemdescdoben = 0.
+        self._thoidiemkiemtradoben = 0.
+        self._phapbaohongtruoc = None
+        self._dabaodobens = set()
 
     def danhdau(self, tenloop):
         self.nhiploops[tenloop] = time.time()
@@ -161,6 +176,10 @@ class GiamSat:
 
     def step(self):
         self._kiemtratreoluong()
+        try:
+            self._kiemtradoben()
+        except Exception as e:
+            self.moitruong._inlog(f"[GIÁM SÁT] Lỗi kiểm tra độ bền: {e}")
 
         moitruong = self.moitruong
         if not moitruong.get_is_nhanvattontai() or not self._is_canxetket():
@@ -196,6 +215,63 @@ class GiamSat:
             canhbao(moitruong, "Nhân vật bị kẹt lâu, cần kiểm tra", is_block = False)
             baosuco(moitruong, "giamsat", f"Kẹt {int(thoigianket) // 60} phút, không tự mở lại client được ({lydo}), cần kiểm tra", khoa = "khongmolai", giancach = 1800.)
         self._datlai()
+
+    def _kiemtradoben(self):
+        # Mục 3 đầu file. Không xoá mô tả cũ trước khi desc (nhãn độ bền bảng Nhân Vật đang dùng): chỉ đọc khi dòng đầu là tên món đang
+        # mặc; mô tả cũ thì độ bền chỉ cao hơn thật => cùng lắm báo trễ 1 chu kỳ
+        moitruong = self.moitruong
+        if not moitruong.get_is_nhanvattontai() or moitruong.get_is_nhanvatdachet():
+            return
+        now = time.time()
+        vitris = range(VITRITRANGBIDAUTIEN, VITRITRANGBI_PHAPBAO + 1)
+        if not self._thoidiemdescdoben:
+            if now - self._thoidiemkiemtradoben < CHUKYKIEMTRADOBEN:
+                return
+            self._thoidiemkiemtradoben = now
+            from moitruong_xq import DOUUTIEN_THAP
+            for vitri in vitris:
+                if moitruong.get_iddoituongvatphamhanhtrang(vitri):
+                    moitruong.action_thucthicaulenh(f"desc {vitri - VITRITRANGBIDAUTIEN + 1}", douutien = DOUUTIEN_THAP)
+            self._thoidiemdescdoben = now
+            return
+        if now - self._thoidiemdescdoben < THOIGIANCHODOBEN:
+            return
+        self._thoidiemdescdoben = 0.
+        phapbaohong = None
+        dangmacs = set()
+        for vitri in vitris:
+            iddoituong = moitruong.get_iddoituongvatphamhanhtrang(vitri)
+            ten = moitruong.get_tentrangbi(vitri)
+            if not iddoituong or not ten:
+                continue
+            dangmacs.add((vitri, iddoituong))
+            mota = re.sub(r'\x1b[a-zA-Z0-9]', '', moitruong.get_motavatphamhanhtrangcosan(vitri) or "").strip()
+            if not mota or ten not in mota.split("\n")[0]:
+                continue
+            doben = moitruong.get_dobenmota(mota)
+            if not doben:
+                continue
+            if vitri == VITRITRANGBI_PHAPBAO:
+                if doben[0] > 0:
+                    continue
+                phapbaohong = iddoituong
+                # Lượt đầu thấy hỏng: chờ tactu_vatpham_xq tự đổi món; lượt sau vẫn món này hỏng mới báo
+                if self._phapbaohongtruoc != iddoituong:
+                    continue
+                noidung = f"Pháp bảo {ten} hỏng ({doben[0]}/{doben[1]}), không có món thay trong túi"
+            elif doben == (0, 0):
+                noidung = f"Trang bị {ten} hết độ bền ({doben[0]}/{doben[1]}), sửa không được nữa, cần thay"
+            else:
+                continue
+            if (vitri, iddoituong) in self._dabaodobens:
+                continue
+            self._dabaodobens.add((vitri, iddoituong))
+            moitruong._inlog(f"[GIÁM SÁT] {noidung}")
+            canhbao(moitruong, noidung, is_block = False)
+            baosuco(moitruong, "vatpham", noidung)
+        self._phapbaohongtruoc = phapbaohong
+        # Món đã tháo / đổi thì quên; mặc lại món cũ vẫn hỏng thì báo lại
+        self._dabaodobens &= dangmacs
 
     def _kiemtratreoluong(self):
         now = time.time()
