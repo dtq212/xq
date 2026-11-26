@@ -5364,6 +5364,10 @@ class MoiTruong:
     def get_is_truongnhom(self):
         return self.get_idnguoichoi(self.get_diachicosothongtinnhanvat1()) == self.get_idnguoichoitruongnhom()
 
+    def get_soluongthanhviennhomtoida(self):
+        # Nhóm game đầy ở bao nhiêu người: Aegis 5, Niết Bàn 9 (hangso_xq)
+        return SOLUONGTHANHVIENNHOMTOIDA_NIETBAN if self.is_nietban else SOLUONGTHANHVIENNHOMTOIDA
+
     def get_danhsachidnguoichoithanhviennhoms(self):
         idthanhviens = []
         diachicosothanhviennhom = self.get_diachicosoidthanhviennhom()
@@ -9376,6 +9380,31 @@ class MoiTruong:
         self._thoidiemnhatvatphamgannhat_map = donbangthoidiem(self._thoidiemnhatvatphamgannhat_map, 120.)
         self.action_nhatvatphamtoado(x, y, delay = delay)
         return True
+
+    def action_nhatvatphamtheolo(self, diachis, delay = 0.05):
+        # Nhặt cả lô món đã lọc trong cùng 1 lượt: như phím Space (xq + 0xB400 gửi liền "get x y" cho mọi ô có đồ quanh mình, không chờ)
+        # nhưng chỉ các ô có món bot chọn. Mỗi ô 1 lệnh (get theo ô, không theo món); mỗi món vẫn giãn 0.4s như action_nhatvatpham.
+        # Trả về số lệnh đã gửi
+        bayh = time.time()
+        if bayh - self._thoidiemnhatvatphamgannhat < delay:
+            return 0
+        daguis = set()
+        for diachi in diachis:
+            if bayh - self._thoidiemnhatvatphamgannhat_map.get(diachi, bayh - 2.) < 0.4:
+                continue
+            x, y = self.get_toado(diachi, )
+            if x <= 0 or y <= 0:
+                continue
+            self._thoidiemnhatvatphamgannhat_map[diachi] = bayh
+            if (x, y) in daguis:
+                continue
+            daguis.add((x, y))
+            self.action_thucthicaulenh("get {} {}".format(x, y), douutien = DOUUTIEN_THAP)
+        if daguis:
+            self._thoidiemnhatvatphamgannhat = bayh
+            self._thoidiemnhatvatphamtoadogannhat = bayh
+            self._thoidiemnhatvatphamgannhat_map = donbangthoidiem(self._thoidiemnhatvatphamgannhat_map, 120.)
+        return len(daguis)
 
     def action_nhatvatphamxungquanh(self, delay = 0.05):
         if time.time() - self._thoidiemnhatvatphamgannhat < delay:

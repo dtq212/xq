@@ -327,7 +327,7 @@ class TacTuHoatDong:
         return max(dem, key = dem.get) if dem else 0
 
     def _xulyvanglai(self, nhom, botkhacs, idbando):
-        # Mình là thành viên vãng lai và có nhóm chính (thường trực) cùng bản đồ: nhóm giữ đủ SOLUONGTHANHVIENNHOMDAY người, vãng lai
+        # Mình là thành viên vãng lai và có nhóm chính (thường trực) cùng bản đồ: nhóm giữ đủ số tối đa (Aegis 5), vãng lai
         # đang trong nhóm chỉ nhường slot (tự rời) khi có vãng lai khác ngoài nhóm cần buff nhóm mà nhóm hết chỗ; ngoài nhóm thì chỉ
         # nhận lời mời của trưởng nhóm chính (không tự xin vào, không lập nhóm phụ), vừa nhường thì nghỉ THOIGIANVANGLAINGHISAUNHUONG
         # giây trừ khi chính mình cần buff. -> True khi đã xử lý (Tổ đội tự động thường bỏ lượt này), False để chạy như thường trực
@@ -378,7 +378,7 @@ class TacTuHoatDong:
         # nhường ngay, không chờ đủ buff. Chỉ tính người đang bật Tổ đội tự động (nhóm bật, không bị tạm tắt riêng)
         ttngoais = [i for i in nhom if i not in vanglais and ngoainhom(i) and botkhacs[i].get("_is_tudongtodoi")]
         canngoais = [i for i in nhom if i in vanglais and ngoainhom(i) and vl(i).get("canbuffs")]
-        controng = max(0, SOLUONGTHANHVIENNHOMDAY - len(thanhviens))
+        controng = max(0, moitruong.get_soluongthanhviennhomtoida() - len(thanhviens))
         thieucho_tt = max(0, len(ttngoais) - controng)
         thieucho_vl = max(0, len(canngoais) - max(0, controng - len(ttngoais)))
         if not thieucho_tt and not thieucho_vl:
@@ -488,7 +488,7 @@ class TacTuHoatDong:
         if not moitruong.get_is_dangnamtrongnhom() or not moitruong.get_is_truongnhom():
             return False
         thanhviens = set(moitruong.get_danhsachidnguoichoithanhviennhoms() or ())
-        if len(thanhviens) >= SOLUONGTHANHVIENNHOMTOIDA:
+        if len(thanhviens) >= moitruong.get_soluongthanhviennhomtoida():
             s["sansangs"] = []
             return False
         conlai = [i for i in sansangs if i not in thanhviens]
@@ -627,7 +627,7 @@ class TacTuHoatDong:
             else:
                 self._idmoihangcaohon = 0
 
-            if len(danhsachthanhviens) < SOLUONGTHANHVIENNHOMTOIDA:
+            if len(danhsachthanhviens) < self.moitruong.get_soluongthanhviennhomtoida():
                 # Mời cả người đang lẻ cùng bản đồ (vd: vừa rời nhóm hạng thấp hơn) dù chưa đứng gần. Mời lần lượt: trước đây mỗi lượt mời
                 # 1 người khác nên lời mời trước bị đè, người trước bấm đồng ý thành "xin vào nhóm" (không ai nhận) => chờ 5s mời lại, nhóm
                 # đông vào rất chậm

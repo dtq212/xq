@@ -1517,8 +1517,11 @@ class TacTuKyNang:
         is_muctieulanguoichoi = self.moitruong.get_is_nguoichoi(diachimuctieu)
         khoangcach = self.moitruong.get_khoangcachtamdanh(diachimuctieu) if diachimuctieu else 0
 
+        # Hộ Thể Kim Cang lên đồng đội cả khi đang có mục tiêu: trước đây chỉ buff lúc không có mục tiêu, mà lúc farm Đào Hoa luôn có
+        # mục tiêu => Ngốc (342) chỉ tự buff mình, vãng lai Thk / Lầy chờ buff mãi (log 2026-11-26 09:10). Lệnh buff gửi theo ID đồng đội,
+        # không đổi mục tiêu đang chọn; đồng đội đã lọc trong tầm buff (action_tudongtimkiemmuctieumonphai) nên không chạy đi
         diachidongdoicanbuff = None
-        if not diachimuctieu and self.moitruong.get_is_dangnamtrongnhom():
+        if self.moitruong.get_is_dangnamtrongnhom():
             diachidongdoicanbuff = self._diachidoituongcanbuffhothekimcangdaohoanguyen
 
         is_anhhuongboimuctieutheosau = bool(self._laytoadomuctieutheosau())
@@ -1654,8 +1657,9 @@ class TacTuKyNang:
             (VITRIKYNANG_DAIHAIVOLUONG, "sudungkynangkhongmuctieu", lambda: not is_chuamodau and is_cancanchien and self._is_nhieumuctieuganbanthan3 and not is_giunguyenkhinhatquyen and not is_chandelay0, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
             # Ba Động đánh tầm xa, dame ra ngay: mở đầu / đuổi khi mục tiêu cách ít nhất KHOANGCACHTOITHIEUBADONG ô, hoặc đang chạy ra xa
             # và cách ít nhất KHOANGCACHTOITHIEUBADONGCHAYTRON ô (is_badongtuxa); gần hơn mà mục tiêu đứng im / tiến lại thì chạy vào
-            (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: not is_chandelay0 and diachimuctieu and not is_anhhuongboimuctieutheosau and idtuthenhanvat == TUTHENHANVAT_DICHUYEN and is_badongtuxa(), self._khoangcachsudungkynangtamxa, None, False, False),
-            (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: not is_chandelay0 and diachimuctieu and is_anhhuongboimuctieutheosau and idtuthenhanvat == TUTHENHANVAT_DICHUYEN and khoangcach < self._khoangcachsudungkynangtamxa - 3 and is_badongtuxa(), self._khoangcachsudungkynangtamxa, None, False, False),
+            # Giữ chỗ KHOAGIUCHO_BADONGTUXA: không để 2 bot cùng tung Ba Động từ xa lên 1 mục tiêu một lúc (lộ bot)
+            (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: not is_chandelay0 and diachimuctieu and not is_anhhuongboimuctieutheosau and idtuthenhanvat == TUTHENHANVAT_DICHUYEN and is_badongtuxa(), self._khoangcachsudungkynangtamxa, None, False, False, KHOAGIUCHO_BADONGTUXA),
+            (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: not is_chandelay0 and diachimuctieu and is_anhhuongboimuctieutheosau and idtuthenhanvat == TUTHENHANVAT_DICHUYEN and khoangcach < self._khoangcachsudungkynangtamxa - 3 and is_badongtuxa(), self._khoangcachsudungkynangtamxa, None, False, False, KHOAGIUCHO_BADONGTUXA),
             (VITRIKYNANG_THONKINH, "sudungkynangmuctieu", lambda: is_cancanchien and not is_muctieucohieuung(HIEUUNGKYNANG_TRONGTHUONG), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_TRONGTHUONG),
             # Lạc Ảnh: ưu tiên trước Phong Ma / Không Thủ (người dùng dặn 2026-11-10). Dùng cả lên quái (người dùng dặn 2026-11-10, trước chỉ
             # với người chơi). Không dùng khi mục tiêu đã bị nhốt / đang trong trận Đào Hoa Nguyên khác (_is_lacanhlangphi); giữ chỗ hiệu
@@ -1700,7 +1704,8 @@ class TacTuKyNang:
 
             # Bot khác vừa gửi chiêu gây cùng hiệu ứng lên mục tiêu này (hiệu ứng chưa kịp hiện) thì dùng chiêu tiếp theo
             idmuctieugiucho = self._get_idmuctieugiucho(target) if hieuunggiucho and target else None
-            if idmuctieugiucho and not self._thugiukynangmuctieu(hieuunggiucho, idmuctieugiucho): continue
+            thoigiangiucho = random.uniform(*THOIGIANGIUBADONGTUXA) if hieuunggiucho == KHOAGIUCHO_BADONGTUXA else THOIGIANGIUKYNANGMUCTIEU
+            if idmuctieugiucho and not self._thugiukynangmuctieu(hieuunggiucho, idmuctieugiucho, thoigiangiucho): continue
 
             is_ok, is_break = self.action_xulyuutiensudungkynang(
                 loaikynang = loaikynang,
@@ -1799,12 +1804,12 @@ class TacTuKyNang:
         iddoituong = self.moitruong.get_iddoituong(diachimuctieu)
         return ("doituong", iddoituong) if iddoituong else None
 
-    def _thugiukynangmuctieu(self, hieuung, idmuctieu):
+    def _thugiukynangmuctieu(self, hieuung, idmuctieu, thoigian = THOIGIANGIUKYNANGMUCTIEU):
         giukynang = self.moitruong.giukynang
         if not giukynang:
             return True
         try:
-            return giukynang.thugiu(hieuung, idmuctieu)
+            return giukynang.thugiu(hieuung, idmuctieu, thoigian)
         except Exception:
             # Mất kết nối Manager (đang tắt chương trình) thì cứ gửi như khi chạy 1 bot
             return True

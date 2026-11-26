@@ -941,7 +941,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._tenphapbaocu = None
         self._mucsinhluckhihoandoi = 0
         self._thoidiemthumaclaiphapbao = 0.
-        # Đổi pháp bảo theo sinh lực (PHAPBAOTHEOMAU_MAP: Đào Hoa, Thục Sơn Kiếm, Vân Mộng Cốc): mặc định bật như trước khi có tuỳ chọn.
+        # Đổi pháp bảo theo sinh lực (PHAPBAOTHEOMAU_MAP: Đào Hoa / Nội công / Ngoại công): mặc định bật như trước khi có tuỳ chọn.
         # Ngưỡng % máu xuống mức vừa / thấp và độ trễ khi đổi lên, chỉnh ở tab Chiến đấu, lưu theo nhân vật
         self._is_doiphapbaotheomau = True
         self._mauphapbaovua = NGUONGPHAPBAOTHEOMAU_VUA

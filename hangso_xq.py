@@ -398,14 +398,17 @@ THOIGIANTAMNGUNGNGUOILA = 60.
 # Tín hiệu "vừa thấy ẩn thân" của nhân vật khác cùng bản đồ còn hiệu lực trong bấy nhiêu giây (nhân vật thấy sẽ làm mới liên tục mỗi 0.5s)
 THOIGIANCHIASEANTHAN = 3.
 
-SOLUONGTHANHVIENNHOMTOIDA = 9
+# Nhóm game đầy theo máy chủ (moitruong.get_soluongthanhviennhomtoida): Aegis 5 ("Nhóm đã đạt thành viên tối đa (5)", ảnh 2026-11-26),
+# Niết Bàn 9 (commit "niết bàn"). Trước đây dùng chung 9 nên trưởng nhóm Aegis đủ 5 người vẫn mời thêm mỗi 3s
+SOLUONGTHANHVIENNHOMTOIDA = 5
+SOLUONGTHANHVIENNHOMTOIDA_NIETBAN = 9
+# Số ô id thành viên đọc trong bộ nhớ (lấy theo bản lớn nhất)
 SOLUONGTHANHVIENNHOMTOIDATHUCTE = 9
 # Tổ đội tự động / đội phó bản lập nhóm mời lần lượt từng người: người đang mời quá chừng này giây chưa vào thì mời người kế (lượt sau
 # mời lại). Người đồng ý vào nhóm trong 0.3-0.5s (log 364 2026-11-19 22:23); 8s cũ làm mỗi lần ai đó lỡ lời mời đầu tốn trọn 8s (cả vòng ~26s)
 THOIGIANCHOMOITHANHVIEN = 3.
-# Thành viên vãng lai (todoi.json "vanglais", tactu_hoatdong_xq._xulyvanglai): nhóm game đầy ở 5 người (người dùng nói 2026-11-26), cả
-# nhóm giữ đủ 5, người vãng lai đang chiếm slot chỉ nhường khi vãng lai khác cần buff nhóm.
-SOLUONGTHANHVIENNHOMDAY = 5
+# Thành viên vãng lai (todoi.json "vanglais", tactu_hoatdong_xq._xulyvanglai): cả nhóm giữ đủ số tối đa (get_soluongthanhviennhomtoida),
+# người vãng lai đang chiếm slot chỉ nhường khi vãng lai khác cần buff nhóm.
 # Buff nhóm còn dưới chừng này giây coi như thiếu: người buff chỉ thấy có / không hiệu ứng của người khác (thời gian chỉ đọc được của
 # chính mình), không buff lại trước khi hết, vào sớm chỉ ngồi chờ
 THOIGIANBUFFNHOMSAPHET = 3.
@@ -1374,17 +1377,22 @@ TUIPHAPBAO = "Túi Pháp Bảo"
 CHIENQUOCLENH = "Chiến Quốc Lệnh"
 CUULONGTHANHOATRAO = "Cửu Long Thần Hỏa Trảo"
 # Đổi pháp bảo theo sinh lực (tuỳ chọn "Đổi pháp bảo theo sinh lực", tab Chiến đấu): 3 mức cao / vừa / thấp, mỗi mức là các
-# cách viết tên của cùng món (Trảo có bản "Hoả"). Khoá phái như _laykhoakynangquantrong ("thucsonkiem" / "thucsondao").
+# cách viết tên của cùng món (Trảo có bản "Hoả"). Khoá theo NHÓM chứ không theo từng phái (người dùng 2026-11-26: các phái
+# dùng chung nhau): Đào Hoa riêng, còn lại chia Nội công / Ngoại công (tactu_vatpham_xq._laynhomphapbaotheomau).
 # - Đào Hoa Nguyên (người dùng 2026-11-12): >= 50% Nhiếp Hồn Linh, 25-50% Cửu Long Thần Hỏa Trảo, <= 25% Thượng Phương Bảo Kiếm
-# - Thục Sơn Kiếm đánh nội công (người dùng 2026-11-12): mức cao đeo Chuông Hám Thiên thay Nhiếp Hồn Linh, hai mức dưới như Đào Hoa
-# - Vân Mộng Cốc (người dùng 2026-11-13): dùng chiến lược như Thục Sơn Kiếm (cùng đánh nội công)
+# - Nội công (Thục Sơn Kiếm 2026-11-12, Vân Mộng Cốc 2026-11-13): mức cao Chuông Hám Thiên thay Nhiếp Hồn Linh, hai mức dưới như Đào Hoa
+# - Ngoại công: như Đào Hoa (Nhiếp Hồn Linh) nhưng không có Dã Tính nên mức thấp luôn tháo
 # Mức thấp thực tế là tháo pháp bảo; món mức thấp ở bảng chỉ đeo khi Đào Hoa đang Dã Tính Cuồng Lực (không tháo được)
 PHAPBAOTHEOMAU_TRAO = (CUULONGTHANHOATRAO, "Cửu Long Thần Hoả Trảo")
+NHOMPHAPBAO_DAOHOA = "daohoanguyen"
+NHOMPHAPBAO_NOICONG = "noicong"
+NHOMPHAPBAO_NGOAICONG = "ngoaicong"
 PHAPBAOTHEOMAU_MAP = {
-    "daohoanguyen": ((NHIEPHONLINH, ), PHAPBAOTHEOMAU_TRAO, (THUONGPHUONGBAOKIEM, )),
-    "thucsonkiem": ((CHUONGHAMTHIEN, ), PHAPBAOTHEOMAU_TRAO, (THUONGPHUONGBAOKIEM, )),
-    "vanmongcoc": ((CHUONGHAMTHIEN, ), PHAPBAOTHEOMAU_TRAO, (THUONGPHUONGBAOKIEM, )),
+    NHOMPHAPBAO_DAOHOA: ((NHIEPHONLINH, ), PHAPBAOTHEOMAU_TRAO, (THUONGPHUONGBAOKIEM, )),
+    NHOMPHAPBAO_NOICONG: ((CHUONGHAMTHIEN, ), PHAPBAOTHEOMAU_TRAO, (THUONGPHUONGBAOKIEM, )),
+    NHOMPHAPBAO_NGOAICONG: ((NHIEPHONLINH, ), PHAPBAOTHEOMAU_TRAO, (THUONGPHUONGBAOKIEM, )),
 }
+TENNHOMPHAPBAO_MAP = {NHOMPHAPBAO_DAOHOA: "Đào Hoa Nguyên", NHOMPHAPBAO_NOICONG: "Phái Nội công", NHOMPHAPBAO_NGOAICONG: "Phái Ngoại công"}
 # Ngưỡng mặc định (chỉnh ở giao diện, lưu theo nhân vật): máu < VUA% xuống mức vừa, <= THAP% xuống mức thấp.
 # Ngưỡng tụt và ngưỡng hồi phải cách nhau, không thì máu dao động quanh 50% / 25% là đổi pháp bảo liên tục
 # (người dùng báo 2026-11-12): đang đeo mức thấp hơn thì phải hồi lên ngưỡng + DOTRE% mới đổi lên (mặc định 75% / 50%)
@@ -1651,8 +1659,6 @@ DIEMDANHXUNGQUANH_MAP = {
 # Vùng cấm (đi vào sẽ bị chuyển bản đồ): mọi cổng chuyển bản đồ (bando_xq.BANDOCONG_MAP, vòng tròn BANKINHVUNGCAMCONG quanh tâm cổng)
 # cộng các vùng cấm khác cổng ghi tay dưới đây (vùng rộng / đường dài, điểm dịch chuyển không có trong jmp.dat)
 BANKINHVUNGCAMCONG = 6.
-# Đứng cách tâm cổng trong khoảng này thì không dùng lệnh nhặt xung quanh của game (nó tự chạy tới vật phẩm, có thể lọt vào cổng)
-KHOANGCACHGANCONGKHONGNHATXUNGQUANH = 15.
 KHUVUCCAM_MAP = {
     BANDO_BACHMATRANG: [
         {"type": "circle", "x": 80, "y": 122, "r": 9.0},
@@ -1738,6 +1744,11 @@ THOIGIANCHOLUOTTOIDA = 2.0
 # các bot khác thấy mục tiêu chưa dính hiệu ứng (chiêu đang bay / chưa cập nhật) cũng không gửi trùng, chuyển sang chiêu khác.
 # Hết khoảng mà mục tiêu vẫn chưa dính (né, kháng) thì bot nào cũng được gửi lại
 THOIGIANGIUKYNANGMUCTIEU = 2.0
+# Ba Động từ xa của Đào Hoa Nguyên (người dùng 26/11): 2 bot cùng tung Ba Động từ xa lên 1 mục tiêu một lúc trông lộ bot. Bot gửi
+# trước giữ chỗ (khoá riêng, không theo hiệu ứng) trong khoảng ngẫu nhiên này; bot khác bỏ qua Ba Động từ xa, chạy bộ vào như thường.
+# Ngắn hơn hồi chiêu Ba Động (6s) để không chặn quá lâu. Ba Động lót cận chiến không giữ chỗ
+KHOAGIUCHO_BADONGTUXA = "badongtuxa"
+THOIGIANGIUBADONGTUXA = (2.5, 4.0)
 
 # Nhiều cửa sổ cùng phát nhạc nghe bị vọng: chỉ để tiếng cửa sổ có nhân vật ưu tiên cao nhất trong danh sách tổ đội tự động
 # (nhóm đầu, ID đứng trước), tính riêng từng bản Aegis / Niết Bàn, các cửa sổ khác tắt tiếng trong Volume Mixer của Windows. Thoát tool thì bật lại tiếng tất cả

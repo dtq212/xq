@@ -17,6 +17,7 @@ from moitruong_xq import MoiTruong, DOUUTIEN_THAP, DOUUTIEN_KHANCAP, DOUUTIEN_CA
 from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam, canhbao
 from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, donbangthoidiem
 from tactu_tinhanh_xq import PHAMCHATNHATTINHANHs, PHAMCHATLAMKIM
+from congthucsatthuong_xq import HEMONPHAI_MAP, HE_NOI
 
 # Bán rác: máy chủ thỉnh thoảng bỏ lệnh sell (chắc do giới hạn tốc độ gửi lệnh) => gửi hết hàng đợi xong, chờ thêm chừng này giây cho
 # túi cập nhật rồi bán lại các món còn trong túi, tối đa chừng này lần
@@ -91,8 +92,9 @@ THOIGIANHIEULUCNHATDOCHUNG = 3.
 THOIGIANDOCNHATDOCHUNG = 0.5
 THOIGIANNHUONGNHATDOTOIDA = 25.
 SOMONNHATDOCHIASETOIDA = 30
-# Lệnh nhặt xung quanh của game tự chạy tới món gần (không chọn được món): có bot khác đăng món trong chừng này ô quanh mình thì không dùng
-KHOANGCACHNHATXUNGQUANHNHOM = 10.
+# Lệnh nhặt xung quanh (phím Space, xq + 0xB400) không di chuyển, gửi "get x y" cho mọi ô có đồ trong khung x-3..x+2, y-3..y+2, không chọn
+# được món: có bot khác đăng món trong chừng này ô quanh mình (khung 3 ô theo đường chéo ~4.3, cộng 1 ô dư phòng lệch toạ độ) thì không dùng
+KHOANGCACHNHATXUNGQUANHNHOM = 5.5
 # Phòng dấu vân tay lệch (đổi đồ / lên cấp làm mức cộng khác): nghĩ đang có mà chừng này giây không thấy con nào cùng tên trong bảng
 # đối tượng thì không chắc nữa, dùng vật phẩm để xét lại (công tắc: tụt thì dùng thêm lần nữa).
 # Trước đây 15s và chỉ xét trong 18 ô (toàn màn hình) => cứ vài phút lại thu hồi rồi gọi lại con đang có (log 347 / 364, 2026-11-13):
@@ -263,13 +265,22 @@ class TacTuVatPham:
             self._trangthaitrieuhoibaothuvatpham = 1
 
     def _laybophapbaotheomau(self, tenmonphai):
-        # Bộ 3 mức pháp bảo (cao, vừa, thấp) của phái trong PHAPBAOTHEOMAU_MAP; None = tắt tuỳ chọn hoặc phái không có bộ.
-        # Thục Sơn Kiếm / Đao cùng tên môn phái "thucson", tách bằng _is_thucsondao như _laykhoakynangquantrong
+        # Bộ 3 mức pháp bảo (cao, vừa, thấp) theo nhóm trong PHAPBAOTHEOMAU_MAP; None = tắt tuỳ chọn hoặc chưa biết nhóm
         if not self._is_doiphapbaotheomau:
             return None
+        return PHAPBAOTHEOMAU_MAP.get(self._laynhomphapbaotheomau(tenmonphai))
+
+    def _laynhomphapbaotheomau(self, tenmonphai):
+        # Đào Hoa riêng (Dã Tính), còn lại Nội công / Ngoại công (người dùng 2026-11-26). Thục Sơn: Đao Ngoại, Kiếm Nội
+        # (_is_thucsondao); các phái khác theo congthucsatthuong_xq.HEMONPHAI_MAP (đủ 7 phái). Chưa biết phái thì None
+        if tenmonphai == "daohoanguyen":
+            return NHOMPHAPBAO_DAOHOA
         if tenmonphai == "thucson":
-            tenmonphai = "thucsondao" if self._is_thucsondao else "thucsonkiem"
-        return PHAPBAOTHEOMAU_MAP.get(tenmonphai)
+            return NHOMPHAPBAO_NGOAICONG if self._is_thucsondao else NHOMPHAPBAO_NOICONG
+        he = HEMONPHAI_MAP.get(tenmonphai)
+        if not he:
+            return None
+        return NHOMPHAPBAO_NOICONG if he == HE_NOI else NHOMPHAPBAO_NGOAICONG
 
     def _laymucphapbaotheomau(self, phantramsinhluc, muchientai):
         # Mức 0 cao / 1 vừa / 2 thấp. Tụt máu: < _mauphapbaovua% xuống vừa, <= _mauphapbaothap% xuống thấp.
@@ -644,7 +655,7 @@ class TacTuVatPham:
                                                         and self.moitruong.get_is_khoavankhitrieuhoibaothu()):
                 is_dangchodoiphapbao = True
 
-            # Đổi pháp bảo theo sinh lực (tuỳ chọn tab Chiến đấu, PHAPBAOTHEOMAU_MAP: Đào Hoa, Thục Sơn Kiếm, Vân Mộng Cốc), thay cho cách
+            # Đổi pháp bảo theo sinh lực (tuỳ chọn tab Chiến đấu, PHAPBAOTHEOMAU_MAP: Đào Hoa / Nội công / Ngoại công), thay cho cách
             # lưu / đeo lại pháp bảo cũ ở dưới.
             # Đổi bằng "use <id>#" như chuột phải: "use2" (lệnh nút Xác Nhận, dùng cho Trảo tân thủ) bị máy chủ chặn khi đang
             # Dã Tính Cuồng Lực - "Trạng thái Cuồng Bạo không thể đổi trang bị" (người dùng báo 2026-11-12), chuột phải thì đổi được.
@@ -1050,18 +1061,11 @@ class TacTuVatPham:
                 self._diachicosovatphamnhatduphong = False
 
         danhsachvatpham = []
-        # Lệnh nhặt xung quanh của game tự đi tới vật phẩm gần đó (không chọn được món nào), nên có món nằm trong vùng cấm ở gần thì không dùng lệnh này
-        # Bản đồ có vùng cấm khác cổng (vùng rộng / đường dài) thì không dùng lệnh nhặt xung quanh, chỉ nhặt đích danh từng món;
-        # cổng chuyển bản đồ thì bản đồ nào cũng có nên chỉ chặn khi đang đứng gần cổng
+        # Lệnh nhặt xung quanh (= phím Space, hàm xq + 0xB400, dò mã 2026-11-26) KHÔNG di chuyển: chỉ gửi "get x y" cho mọi ô có đồ trong
+        # khung x-3..x+2, y-3..y+2 quanh nhân vật, không xét tên => không lo lọt vùng cấm / cổng; chỉ không dùng khi bot khác có món gần
+        # mình (nhặt mất món của nó). Phá Thiên Tháp: di chuyển nhặt đồ khi có mục tiêu chặn ở tactu_dichuyen (người dùng 2026-11-13)
         idbandohientai = self.moitruong.get_idbandohientai()
         xnhanvat, ynhanvat = self.moitruong.get_toado()
-        # Trong phó bản cổng chỉ tượng trưng (_is_bovungcam) nên đứng gần cổng vẫn nhặt xung quanh được
-        is_covatphamvungcamgan = bool(KHUVUCCAM_MAP.get(idbandohientai)) or (not self._is_bovungcam() and any(
-            math.dist((xnhanvat, ynhanvat), (x, y)) <= KHOANGCACHGANCONGKHONGNHATXUNGQUANH for _, x, y, _, _ in BANDOCONG_MAP.get(idbandohientai, ("", ()))[1]))
-        # Phá Thiên Tháp (ID 894) đang có mục tiêu: không dùng lệnh nhặt xung quanh (game tự chạy tới vật phẩm), chỉ nhặt đích danh món
-        # trong tầm tại chỗ; di chuyển nhặt đồ chặn ở tactu_dichuyen (người dùng 2026-11-13)
-        if idbandohientai == BANDO_BATQUAITRAN and self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon():
-            is_covatphamvungcamgan = True
         i = -1
         while True:
             i += 1
@@ -1080,8 +1084,6 @@ class TacTuVatPham:
 
             # Vật phẩm nằm trong vùng cấm (đi vào sẽ bị dịch chuyển sang bản đồ khác) thì bỏ qua, kể cả vật phẩm ưu tiên
             if self._kiemtra_divaovungcam(*self.moitruong.get_toado(diachivatpham)):
-                if khoangcach <= 6.:
-                    is_covatphamvungcamgan = True
                 continue
 
             if kiemtradieukiennhat(tenvatpham, diachivatpham) and khoangcach < KHOANGCACHNHATDO:
@@ -1094,8 +1096,6 @@ class TacTuVatPham:
 
         # Chia nhặt với bot cùng máy: bỏ món bot khác nhận; không còn bot nào khác đăng món thì danh sách giữ nguyên (chạy 1 acc như cũ)
         danhsachvatpham, is_conhomnhat = self._chianhatdo(danhsachvatpham, idbandohientai, (xnhanvat, ynhanvat))
-        if is_conhomnhat:
-            is_covatphamvungcamgan = True
 
         if danhsachvatpham:
             # Vật phẩm ưu tiên lên đầu, sau đó mới xét gần nhất
@@ -1130,15 +1130,22 @@ class TacTuVatPham:
                 }
             if khoangcach <= 3.:
                 self._kiemtranhatkhongvao()
-                if self._is_tudongvebanrac and not is_vatphamuutien and not is_covatphamvungcamgan:
+                if self._is_tudongvebanrac and not is_vatphamuutien and not is_conhomnhat:
                     self.moitruong.action_nhatvatphamxungquanh(delay = 0.2)
-                elif time.time() - self._thoidiemnhatvatphamgannhat_map.get(self._diachicosovatphamdangnhat, 0) > 0.2:
-                    self.moitruong.action_nhatvatpham(self._diachicosovatphamdangnhat)
-                    self._thoidiemnhatvatphamgannhat_map[self._diachicosovatphamdangnhat] = time.time()
-                    self._thoidiemnhatvatphamgannhat_map = donbangthoidiem(self._thoidiemnhatvatphamgannhat_map, 120.)
+                else:
+                    # Nhặt theo lô: món đang nhặt + mọi món đã lọc khác trong tầm 3 ô, gửi "get x y" liền 1 lượt như phím Space
+                    # (trước đây mỗi lượt 1 món, lô 5-6 món mất vài giây)
+                    bayh = time.time()
+                    lo = [self._diachicosovatphamdangnhat] + [m[2] for m in danhsachvatpham
+                                                               if m[2] != self._diachicosovatphamdangnhat and m[1] <= 3.]
+                    lo = [d for d in lo if bayh - self._thoidiemnhatvatphamgannhat_map.get(d, 0) > 0.2]
+                    if lo and self.moitruong.action_nhatvatphamtheolo(lo):
+                        for d in lo:
+                            self._thoidiemnhatvatphamgannhat_map[d] = bayh
+                        self._thoidiemnhatvatphamgannhat_map = donbangthoidiem(self._thoidiemnhatvatphamgannhat_map, 120.)
 
-        elif self._is_tudongvebanrac and not is_chinhatvatphamuutien and not is_covatphamvungcamgan and not self._is_vuamatmuctieu:
-            # Lệnh nhặt xung quanh tự chạy tới vật phẩm => vừa mất mục tiêu thì cũng chờ chọn con kế như di chuyển nhặt đồ
+        elif self._is_tudongvebanrac and not is_chinhatvatphamuutien and not is_conhomnhat:
+            # Không có món nào đạt luật: nhặt xung quanh tại chỗ (không di chuyển nên không cần chờ chọn mục tiêu kế)
             self.moitruong.action_nhatvatphamxungquanh(delay = 0.5)
 
         self._yeucaunhatvatpham = yeucaunhatvatphammoi
@@ -1203,7 +1210,7 @@ class TacTuVatPham:
         khac = self._laynhatdokhac()
         if not khac:
             return danhsachvatpham, False
-        # Lệnh nhặt xung quanh: chỉ chặn khi bot khác có món gần mình (game có thể chạy tới món của nó)
+        # Lệnh nhặt xung quanh: chỉ chặn khi bot khác có món gần mình (lệnh nhặt mọi ô có đồ trong tầm 3 ô, không lọc => mất món của nó)
         is_conhomnhat = False
         for _, _, thaykhac, _ in khac:
             for khoa in thaykhac:

@@ -361,6 +361,25 @@ class TacTuCatKho:
             return "đồ có sao"
         return None
 
+    def _chandoanbantrangtinhanh(self, ten, vitri):
+        # Log chẩn đoán cho món _lydokhongbantrangtinhanh bỏ qua không ghi lý do (""). 26/11 Xí Diễm / Xích Kim Giản / Xích Vân Cân Mạo
+        # trắng chưa giám định (ảnh người dùng) nhặt từ 06h mà chỉ bán được 1, không nằm trong cả danh sách chừa lẫn bán => không biết nhánh nào
+        try:
+            mau = self._laymautenluat(ten, vitri)
+            luat = self._layluatvatpham(ten, vitri)
+            mota = self._laymotaluat(ten, vitri)
+        except Exception as e:
+            return f"{ten} (ô {vitri}: lỗi chẩn đoán {e})"
+        if isinstance(luat, dict):
+            luat = f"{luat.get('hanhdong')}/{luat.get('ghichu') or '-'}"
+        if mota is None:
+            motangan = "chưa đọc"
+        else:
+            chu = unicodedata.normalize("NFC", mota[1] or "")
+            motangan = (f"loại '{mota[0]}', độ bền {'Độ bền' in chu}, chưa GĐ {'chưa giám định' in chu.lower()}, "
+                        f"rác {self._chuanhoatenvatpham(ten) in self._tenractinhanhs}, đầu '{chu[:40]}'")
+        return f"{ten} (ô {vitri}: màu {mau!r}, luật {luat}, {motangan})"
+
     def _lydokhongbanmautinhanh(self, ten, vitri):
         # Đồ tên có màu (Lam Kim...) Săn Tinh Anh mặc định không bán (cất kho). 22/11 Quản Khố + hành trang đầy hết chỗ: bán theo luật túi đồ
         # ở tab Hành trang, khỏi thêm tuỳ chọn riêng. CHỈ bán khi luật khớp ĐẦU TIÊN là luật Bán CÓ điều kiện "Màu tên": món tên màu không
@@ -422,7 +441,7 @@ class TacTuCatKho:
         # desc không chờ các ô chưa khớp tên, chờ đọc đủ rồi mới bán; desc SOLANDESCTRANGTINHANH lần vẫn không được thì chừa, ghi log lý do
         now = time.time()
         dadesc = viec.setdefault("dadesctrang", {})
-        lenhs, tens, boquas, sodesc, soguidesc = [], [], [], 0, 0
+        lenhs, tens, boquas, imlangs, sodesc, soguidesc = [], [], [], [], 0, 0
         for vitri in range(moitruong.get_soluongvatphamhanhtrangtoida() + 1):
             iddoituong = moitruong.get_iddoituongvatphamhanhtrang(vitri)
             ten = moitruong.get_tenvatphamhanhtrang(vitri) if iddoituong and iddoituong > 0 else None
@@ -447,11 +466,15 @@ class TacTuCatKho:
                 tens.append(ten)
             elif lydo:
                 boquas.append(f"{ten} (ô {vitri}: {lydo})")
+            else:
+                imlangs.append(self._chandoanbantrangtinhanh(ten, vitri))
         if sodesc:
             viec["trangthai"] = f"bán đồ trắng: đọc mô tả hành trang ({sodesc} ô)"
             return "dang"
         if boquas:
             moitruong._inlog(f"[CẤT KHO] Săn Tinh Anh: chừa {len(boquas)} món trắng: " + ", ".join(boquas))
+        if imlangs:
+            moitruong._inlog(f"[CẤT KHO] Săn Tinh Anh: không bán {len(imlangs)} món (không phải đồ trắng / luật không Bán): " + ", ".join(imlangs))
         moitruong._inlog(f"[CẤT KHO] Săn Tinh Anh: bán {len(lenhs)} món (đồ trắng + đồ màu theo luật Bán) ({', '.join(tens[:10])}{'...' if len(tens) > 10 else ''})")
         if not lenhs:
             viec["banrac"] = "xong"

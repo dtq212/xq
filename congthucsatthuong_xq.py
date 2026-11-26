@@ -35,12 +35,14 @@ CONGNGUOIDANHTHAMCHIEU_MAP = {HE_NGOAI: 3000, HE_NOI: 2500}
 
 # Môn phái -> hệ đánh chính (không có: lấy hệ có Công cao hơn trên bảng). Đã thấy 2026-11-05: Đào Hoa Ngoại; Mao Sơn, Vân Mộng
 # Nội Công gấp 3-4 lần Ngoại Công. Thục Sơn có cả đao (Ngoại) lẫn kiếm (Nội); Đường Môn là phái Ngoại đánh xa (người dùng nói
-# 2026-11-05); Cẩm Vệ Quân, Côn Luân chưa đo
+# 2026-11-05); Cấm Vệ Quân cận chiến Ngoại, Côn Luân Nội (người dùng nói 2026-11-26)
 HEMONPHAI_MAP = {
     "daohoanguyen": HE_NGOAI,
     "duongmon": HE_NGOAI,
+    "camvequan": HE_NGOAI,
     "maoson": HE_NOI,
     "vanmongcoc": HE_NOI,
+    "conluan": HE_NOI,
 }
 
 

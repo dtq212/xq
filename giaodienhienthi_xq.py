@@ -40,7 +40,7 @@ from ngoaihinh_xq import mongoaihinh, taihienthi, luuhienthi
 from tudongrao_xq import motudongrao
 from taythuoctinh_xq import motaythuoctinh
 from hangso_xq import SOLICHSUHANHDONG
-from hangso_xq import PHAPBAOTHEOMAU_MAP, NGUONGPHAPBAOTHEOMAU_VUA, NGUONGPHAPBAOTHEOMAU_THAP, DOTREPHAPBAOTHEOMAU, THOIGIANONDINHDOIPHAPBAO, \
+from hangso_xq import PHAPBAOTHEOMAU_MAP, TENNHOMPHAPBAO_MAP, NGUONGPHAPBAOTHEOMAU_VUA, NGUONGPHAPBAOTHEOMAU_THAP, DOTREPHAPBAOTHEOMAU, THOIGIANONDINHDOIPHAPBAO, \
     NGUONGBOMMAUDONGDOI, NGUONGBOMMAUDATINH
 from dieuphoi_xq import taicauhinhdieuphoi, luucauhinhdieuphoi, chuanhoacauhinhdieuphoi, KENH_LENH, KENH_DICHUYEN
 
@@ -1072,8 +1072,6 @@ class GiaoDienHienThi:
         # Hồi máu đồng đội hay chỉnh: ngay dưới Chọn mục tiêu
         self._taonhomhoimaudongdoi(tab)
 
-        self._taonhomtinhanh(tab)
-
         # Danh sách Tấn công / Bỏ qua và mục tiêu bot đang tự bỏ qua, ngay dưới các ô chọn mục tiêu
         self._taonhommuctieu(tab)
 
@@ -1164,9 +1162,9 @@ class GiaoDienHienThi:
 
     def _taonhomphapbaotheomau(self, tab):
         # Đổi pháp bảo theo sinh lực (tactu_vatpham_xq._laymucphapbaotheomau): 3 mức cao / vừa / thấp theo PHAPBAOTHEOMAU_MAP,
-        # ở mọi bản đồ. Ngưỡng và độ trễ lưu theo nhân vật; phái không có trong bảng thì ô này không tác dụng
+        # ở mọi bản đồ. Ngưỡng và độ trễ lưu theo nhân vật; bảng theo nhóm Đào Hoa / Nội công / Ngoại công, áp cho mọi phái
         nhom = self._taonhom(tab, "Pháp bảo theo sinh lực")
-        self._create_check(nhom, "Tự đổi pháp bảo theo sinh lực (Đào Hoa, Thục Sơn Kiếm, Vân Mộng Cốc)", self.vars["doiphapbaotheomau"], "battat_doiphapbaotheomau")
+        self._create_check(nhom, "Tự đổi pháp bảo theo sinh lực (mọi phái: Đào Hoa riêng, còn lại theo Nội / Ngoại công)", self.vars["doiphapbaotheomau"], "battat_doiphapbaotheomau")
 
         hangnguong = ttk.Frame(nhom)
         hangnguong.grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W)
@@ -1195,11 +1193,10 @@ class GiaoDienHienThi:
         # Bảng món từng mức theo phái (đọc thẳng PHAPBAOTHEOMAU_MAP để thêm phái mới không phải sửa giao diện)
         bang = ttk.Frame(nhom)
         bang.grid(row = nhom.grid_size()[1], column = 0, columnspan = 2, sticky = tk.W, pady = (4, 0))
-        for cot, tieude in enumerate(("Phái", "Mức cao", "Mức vừa", "Mức thấp")):
+        for cot, tieude in enumerate(("Nhóm", "Mức cao", "Mức vừa", "Mức thấp")):
             ttk.Label(bang, text = tieude, style = "Phu.TLabel").grid(row = 0, column = cot, sticky = tk.W, padx = (0, 12))
-        tenphai_map = {"thucsonkiem": "Thục Sơn Kiếm", "thucsondao": "Thục Sơn Đao"}
         for dong, (phai, mucs) in enumerate(PHAPBAOTHEOMAU_MAP.items(), start = 1):
-            ttk.Label(bang, text = tenphai_map.get(phai) or TENMONPHAI.get(phai, phai)).grid(row = dong, column = 0, sticky = tk.W, padx = (0, 12))
+            ttk.Label(bang, text = TENNHOMPHAPBAO_MAP.get(phai, phai)).grid(row = dong, column = 0, sticky = tk.W, padx = (0, 12))
             for cot, tens in enumerate(mucs, start = 1):
                 # Mức thấp: tháo pháp bảo; chỉ Đào Hoa đang Dã Tính Cuồng Lực mới đổi sang món ở bảng
                 text = tens[0] if cot < 3 else (f"Tháo ({tens[0]} khi Dã Tính)" if phai == "daohoanguyen" else "Tháo pháp bảo")
@@ -2745,6 +2742,8 @@ class GiaoDienHienThi:
         self._create_check(nhom, "Đi chiến trường", self.vars["chientruong"], "battat_tudongdichientruong")
         # Mặc định bật; tắt thì thấy người lạ ở map train chỉ cảnh báo (phát âm + Telegram), không ngưng. Ẩn thân luôn ngưng
         self._create_check(nhom, "Tạm ngưng khi gặp người lạ", self.vars["tamngungnguoila"], "battat_tamngungnguoila")
+        # Săn Tinh Anh chuyển từ tab Chiến đấu sang đây (người dùng 26/11), cạnh Đào khoáng cùng kiểu chọn bản đồ
+        self._taonhomtinhanh(tab)
         self._taonhomdaokhoang(tab)
         # Bản đồ nhỏ (bandonho_xq): cửa sổ riêng vẽ quanh nhân vật đang chọn, không đụng phần vẽ của game
         nhombando = self._taonhom(tab, "Tiện ích hiển thị")

@@ -525,9 +525,9 @@ class TacTuKeoCap:
         return phus
 
     def _nhomkeocapkc(self, s, gas):
-        # Người acc chính mời vào nhóm ở tập hợp / bãi: acc gà trước, acc phụ lấp chỗ còn lại (nhóm tối đa SOLUONGTHANHVIENNHOMTOIDA)
+        # Người acc chính mời vào nhóm ở tập hợp / bãi: acc gà trước, acc phụ lấp chỗ còn lại (nhóm tối đa theo máy chủ)
         phus = self._layphukc(s)
-        conlai = max(0, SOLUONGTHANHVIENNHOMTOIDA - 1 - len(gas))
+        conlai = max(0, self.moitruong.get_soluongthanhviennhomtoida() - 1 - len(gas))
         return {**gas, **{i: phus[i] for i in sorted(phus)[:conlai]}}
 
     def _phusudokc(self, s, gas, caps, capthap):
