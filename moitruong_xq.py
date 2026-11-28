@@ -6097,6 +6097,21 @@ class MoiTruong:
                 return khop.group(1) + ("%" if khop.group(2) else "")
         return ""
 
+    @staticmethod
+    def get_tenviettat(ten):
+        # Nhãn ô kho: chữ cái đầu mỗi từ viết hoa, số giữ nguyên, bỏ chữ "cấp" (Hoả Tinh Thạch cấp 2 -> "HTT2", Kim Sang Dược ->
+        # "KSD"). Ô rộng 40 px nên dài quá 5 ký tự thì ngắt 2 dòng (dòng cao 10 px); bảng nhãn tối đa 15 byte UTF-8
+        ten = unicodedata.normalize("NFC", re.sub(r'\x1b[a-zA-Z0-9]', '', ten or "")).strip()
+        chu = ""
+        for tu in re.findall(r"\w+", ten):
+            if tu.isdigit():
+                chu += tu
+            elif tu.lower() != "cấp":
+                chu += tu[0].upper()
+        if len(chu) > 5:
+            chu = chu[:5] + "\n" + chu[5:10]
+        return chu
+
     def _ghibangnhanotui(self, loai, nhans):
         # Ghi nhãn (list chữ theo ô) vào các bảng nhãn loai ("tui" / "kho"), chỉ khi khác lần ghi trước. Game dùng nhãn làm chuỗi
         # định dạng => "%" ghi thành "%%" (để "%" trơn thì Format đọc tham số rác)
@@ -6175,21 +6190,8 @@ class MoiTruong:
                 kho = read_int(self.tientrinh, tg + DC.TG_KHO) if tg else 0
                 khodangmo = self.get_khodangmo() if kho else None
                 if khodangmo:
-                    phamchatkhos = read_bytes(self.tientrinh, kho + KHO_PHAMCHAT, SOOMOIRUONGKHO)
-                    motakhos = read_bytes(self.tientrinh, kho + KHO_MOTA + KHO_KICHTHUOCMOTA, SOOMOIRUONGKHO * KHO_KICHTHUOCMOTA)
-                    nhankhos = []
-                    for o, (ten, _, ma) in enumerate(khodangmo["os"]):
-                        if not ma:
-                            nhankhos.append("")
-                            continue
-                        mota = motakhos[o * KHO_KICHTHUOCMOTA:(o + 1) * KHO_KICHTHUOCMOTA].split(b"\0")[0].decode("utf-8", "ignore")
-                        mota = re.sub(r'\x1b[a-zA-Z0-9]', '', mota)
-                        if mota and ten and not unicodedata.normalize("NFC", mota.lstrip()).startswith(unicodedata.normalize("NFC", ten)):
-                            mota = ""
-                        khoa = ("kho", makho, khodangmo["ruong"], o, ten)
-                        if not mota and lenhdesc is None and khoa not in self._nhanotuidadesc:
-                            lenhdesc = (khoa, kho + KHO_MOTA + (o + 1) * KHO_KICHTHUOCMOTA, f"desc {makho} {o + 1}")
-                        nhankhos.append(self.get_nhanotui(ten, mota, phamchatkhos[o], ma))
+                    # Người dùng 28/11: ô kho không desc nữa (chậm, chen lệnh), chỉ hiện tên viết tắt từ tên có sẵn (get_tenviettat)
+                    nhankhos = [self.get_tenviettat(ten) if ma else "" for ten, _, ma in khodangmo["os"]]
                     self._ghibangnhanotui("kho", nhankhos)
             if lenhdesc and not self._is_tamdungdescnhan and time.time() - self._lucdescnhanotui >= THOIGIANDESCNHANOTUI:
                 self._lucdescnhanotui = time.time()

@@ -49,8 +49,10 @@
       "ma": "1795784420298",
       "ten": "3",
       "thanhviens": [
+        364,
         342,
-        347
+        347,
+        359
       ],
       "thutu": [
         "sugia",
@@ -60,7 +62,7 @@
         "phongyeukinh"
       ],
       "chon": [
-        "sugia"
+        "phongyeukinh"
       ],
       "vong": {},
       "phai": ""

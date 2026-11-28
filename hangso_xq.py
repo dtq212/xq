@@ -562,8 +562,9 @@ THOIGIANCHIASETHONGTINNGUOICHOI = 120.
 THOIGIANLAMMOITHANHVIENBANG = 600.
 SOTHANHVIENBANGTOIDA = 200
 KICHTHUOCTHANHVIENBANG = 0x48
-# Máy chủ chỉ trả lời "desc user" khi người đó cách mình trong chừng này ô (người dùng thấy), xa hơn thì chờ lại gần mới hỏi
-KHOANGCACHHOIBANGPHAI = 12.
+# Máy chủ chỉ trả lời "desc user" khi người đó cách mình trong chừng này ô, xa hơn thì chờ lại gần mới hỏi. 12 vẫn hay bị báo
+# "người chơi quá xa" (người dùng 28/11) => hạ còn 8
+KHOANGCACHHOIBANGPHAI = 8.
 # Game gửi cả khối nhiều dòng (nối "\n", tới 0x640 byte) vào 1 tin, vd trả lời "desc user": ô 128 byte cắt mất dòng Bang phái
 KICHTHUOCDONGTROCHUYEN = 512
 # Tin mật đến ở khung trò chuyện: "<tên> nói thầm với bạn : <nội dung>" (chữ tím, ảnh 2026-11-10, Aegis); gửi tin mật "tell <ID> <nội dung>"
