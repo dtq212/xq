@@ -1043,6 +1043,14 @@ class TacTuKyNang:
         return maupk is not None and maupk != self.moitruong.get_idmaupk()
 
     def action_xulyuutiensudungkynang(self, loaikynang, vitrikynang, diachimuctieu, khoangcachyeucau = 0, is_yeucaukhongdichuyen = False, is_ngatdichuyen = False):
+        ketqua = self._action_xulyuutiensudungkynang(loaikynang, vitrikynang, diachimuctieu, khoangcachyeucau, is_yeucaukhongdichuyen, is_ngatdichuyen)
+        # Chế độ buff toàn bang: ghi lúc gửi buff lên người chơi khác để ước thời gian còn lại (máy chủ không gửi thời gian hiệu ứng của
+        # người khác), còn dưới THOIGIANBUFFTOANBANGBUFFLAI giây thì buff lại (tactu_hoatdong._is_canbufflaitoanbang)
+        if ketqua[0] and vitrikynang in VITRIKYNANGBUFFLAITOANBANGs and loaikynang == "sudungkynanglendongdoi" and diachimuctieu:
+            self._ghilucbufftoanbang(diachimuctieu, vitrikynang)
+        return ketqua
+
+    def _action_xulyuutiensudungkynang(self, loaikynang, vitrikynang, diachimuctieu, khoangcachyeucau = 0, is_yeucaukhongdichuyen = False, is_ngatdichuyen = False):
         thoidiemhientai = time.time()
         self._capnhattamxa(thoidiemhientai)
         self._xulytinkhongthebuff()
@@ -2980,7 +2988,8 @@ class TacTuKyNang:
         # Tiểu Chu Thiên xét cả bảo thú triệu hồi của đồng đội (đứng sau người chơi); Tiên Khí phía dưới chỉ xét người chơi
         for addr in danhsachungviens + baothudongdois:
             is_thieuhieuung = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NOIKHANG,), diachicosothongtinnhanvat = addr, macdinh = True, is_hieuungcoloi = 1)
-            is_quathoigian = False
+            # Chế độ buff toàn bang: còn dưới THOIGIANBUFFTOANBANGBUFFLAI giây (ước theo lúc mình buff) thì buff lại
+            is_quathoigian = self._is_canbufflaitoanbang(addr, HIEUUNGKYNANG_NOIKHANG)
 
             if is_thieuhieuung or is_quathoigian:
                 diachidongdoicanbuff = addr
@@ -3114,7 +3123,8 @@ class TacTuKyNang:
         for addr in danhsachungviens + baothudongdois:
             id_nd = self.moitruong.get_idnguoichoi(addr)
             is_thieuhieuung = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NOIKHANG,), diachicosothongtinnhanvat = addr, macdinh = True, is_hieuungcoloi = 1)
-            is_quathoigian = self.moitruong.get_diachicosothongtinnhanvat1() != addr and self.moitruong.get_is_nguoichoi(addr) and time.time() - self._thoidiembuffnoikhanggannhat_map.get(id_nd, 0) > 60
+            is_quathoigian = self.moitruong.get_diachicosothongtinnhanvat1() != addr and self.moitruong.get_is_nguoichoi(addr) and time.time() - self._thoidiembuffnoikhanggannhat_map.get(id_nd, 0) > 60 \
+                or self._is_canbufflaitoanbang(addr, HIEUUNGKYNANG_NOIKHANG)
             if is_thieuhieuung or is_quathoigian:
                 diachidongdoicanbuff = addr
                 break

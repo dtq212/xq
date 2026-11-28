@@ -842,6 +842,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         # lúc vào nhóm, {ID: lúc thấy đủ buff}, {ID: lúc thấy gần nhất}, lúc rời gần nhất, chuỗi trạng thái ghi log khi đổi
         self._is_chedobufftoanbang = False
         self._bufftoanbang = {"lucvaonhom": 0., "daxongs": {}, "lucthays": {}, "lucroi": 0., "trangthai": ""}
+        # {(ID người chơi, mã hiệu ứng): lúc mình gửi buff} và {mã hiệu ứng: thời gian buff (giây, học từ hiệu ứng trên chính mình)} để
+        # ước thời gian còn lại trên người khác (_is_canbufflaitoanbang)
+        self._lucbufftoanbang_map = {}
+        self._thoigianbufftoida_map = {}
         # Đồng đội hạng cao hơn đang được mời vào nhóm (để biết đã mời bao lâu)
         self._idmoihangcaohon = 0
         self._thoidiembatdaumoihangcaohon = 0.
@@ -1136,6 +1140,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
 
         # Giá trị mặc định của các tuỳ chọn người dùng (chụp lúc khởi tạo, trước khi nạp thiết lập): nút "Reset cấu hình" trả về các giá trị này
         self._thietlapmacdinh = copy.deepcopy({k: getattr(self, k) for k in THUOCTINHTHIETLAPs})
+        # ID nhân vật lần cuối taithietlap nạp: khác ID mới thì là đổi nhân vật cùng cửa sổ -> đặt lại mặc định trước khi nạp
+        self._idthietlapdanap = 0
 
     def resetthietlap(self):
         # Nút "Reset cấu hình" trên giao diện: trả mọi tuỳ chọn của nhân vật về mặc định (luuthietlap mỗi giây ghi xuống file).
@@ -1307,9 +1313,32 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             self._thoidiemluuviquaigannhat = time.time()
             util_luuviquai(self._idnguoichoiviquai, self._bangviquai)
 
+    def _datlaikhidoinhanvat(self):
+        # Gọi sau khi cuaso đã luuthietlap nhân vật cũ (việc đang chạy đã nằm trong file của nó, vào lại thì tự bật tiếp). Bỏ việc im lặng,
+        # không qua huy_*/_ketthuc*: những hàm đó trả ô gốc, báo đội, ghi kết quả... cho nhân vật đã thoát
+        self._sumon = self._sugia = self._tapkich = self._matac = self._tinhanh = self._daokhoang = None
+        self._batbaothu = self._danhvong = self._thienxu = self._langlyson = self._keocap = None
+        self._doiphoban = self._doiphobantv = self._catkho = None
+        self._theosaucudoi = None
+        self._ketquadoiphoban = {"ngay": "", "doi": {}}
+        self._is_chayhangviec = False
+        self._viechangdangchay = ""
+        self._ketquahangviec = {"ngay": "", "viec": {}}
+        self._is_tatbot = False
+        for k, v in self._thietlapmacdinh.items():
+            setattr(self, k, copy.deepcopy(v))
+        self.thietlap_khoangcachsudungkynangtamxa(self._tamxatoida)
+        self._yeucaugiukhoangcach = None
+        print("-> Đổi nhân vật: đặt lại cấu hình mặc định trước khi nạp cấu hình nhân vật mới")
+
     def taithietlap(self, idnguoichoi, tennhanvat = None):
         if not idnguoichoi or idnguoichoi <= 0:
             return
+        # Đăng xuất ra chọn máy chủ rồi vào nhân vật khác cùng cửa sổ: trước đây chỉ ghi đè khoá có trong file, nên nhân vật mới (chưa có
+        # file / file thiếu khoá) ăn nguyên cấu hình + việc đang chạy (sư môn, kéo cấp, đội...) của nhân vật trước (2026-11-28)
+        if self._idthietlapdanap and self._idthietlapdanap != idnguoichoi:
+            self._datlaikhidoinhanvat()
+        self._idthietlapdanap = idnguoichoi
         # Nhân vật khác: bảo thú vật phẩm của nhân vật cũ không còn đúng (kẻo lưu nhầm sang nhân vật mới)
         self._baothuvatphamluu = self._baothuvatphamluucuoi = None
         self._tendauvantaybaothuvatpham = ""

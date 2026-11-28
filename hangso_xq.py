@@ -459,6 +459,14 @@ THOIGIANBUFFTOANBANGCHOTHANHVIEN = 60.
 THOIGIANBUFFTOANBANGTOIDA = 180.
 THOIGIANBUFFTOANBANGBOQUAMOI = 30.
 THOIGIANBUFFTOANBANGGIU = 1.5
+# Chế độ buff toàn bang: Ngân Châm / Kim Châm Độ Ách, Tiểu Chu Thiên trên người khác còn dưới chừng này giây thì buff lại (người dùng
+# 2026-11-28). Máy chủ không gửi thời gian hiệu ứng của người khác => còn lại = thời gian buff (học từ chính mình) - lúc mình gửi buff;
+# chưa từng gửi buff lên người đó (có buff từ trước, không rõ còn bao lâu) thì buff lại 1 lần. {vị trí kỹ năng: mã hiệu ứng}
+THOIGIANBUFFTOANBANGBUFFLAI = 750.
+# (ghi số: VITRIKYNANG_ / HIEUUNGKYNANG_ khai báo bên dưới) Ngân Châm 5011 -> 5011, Kim Châm 5012 -> 5012, Tiểu Chu Thiên 3291 -> Nội Kháng 3292
+VITRIKYNANGBUFFLAITOANBANGs = {5011: 5011, 5012: 5012, 3291: 3292}
+# Gửi buff lại lên cùng người cách nhau ít nhất chừng này giây (phòng gửi rồi không lên, bảng hiệu ứng trễ)
+THOIGIANBUFFTOANBANGGIUALAN = 20.
 # (Bỏ THOIGIANVANGLAICHOBUFF 2026-11-28: chờ 30s chưa được buff — người buff ở xa — vãng lai cũng tự rời; giờ chỉ nhường khi đủ buff)
 # Vào nhóm ít nhất chừng này giây mới xét nhường (bảng hiệu ứng / shared_data cập nhật sau khi vào)
 THOIGIANVANGLAIOTOITHIEU = 3.
@@ -1142,6 +1150,7 @@ KYNANGBAOTHU_THIEUDOT = 74136
 KYNANGBAOTHU_KHIEUCHIEN = 74140
 KYNANGBAOTHU_CAOCAPTHIENCAN = 74234
 KYNANGBAOTHU_XUNHPHONG = 74241
+# Đọc ô kỹ năng bảo thú giang hồ acc 364 28/11: ô 5 = 74233 "Cao Cấp Thêu Đ…" (game ghi "Thêu", tên bị cắt) — khớp mã sẵn có
 KYNANGBAOTHU_CAOCAPTHIEUDOT = 74233
 # Đọc ô kỹ năng bảo thú giang hồ của Lầy (1451) 27/11: ô 4 = 74235 "Cao Cấp Đóng B…" (tên bị cắt). Bản thường chưa đo, nhận theo tên "Đóng"
 KYNANGBAOTHU_CAOCAPDONGBANG = 74235
@@ -2356,8 +2365,12 @@ THOIGIANHIEULUCTAMNHIN = 1.
 THOIGIANDOCTAMNHIN = 0.3
 # Giữ chỗ chiêu lên 1 mục tiêu giữa các bot cùng máy (GiuKyNangMucTieu), theo phái: ô kỹ năng -> khoá hiệu ứng.
 # Bot khác vừa gửi cùng chiêu lên mục tiêu đó (hiệu ứng chưa kịp hiện) thì dùng chiêu tiếp theo, không gửi trùng
+# Hồi máu Vân Mộng Cốc (Cam Lộ Trị / Sơ Trị / Khiết Vân Quyết) chung 1 khoá KHOAGIUCHO_BOMMAU (người dùng 2026-11-28): nhiều acc Vân Mộng
+# Cốc không cùng hồi 1 người 1 lúc; lúc chọn người cần hồi (tactu_muctieu) cũng bỏ người bot khác đang giữ để chọn người thấp máu kế tiếp
+KHOAGIUCHO_BOMMAU = "bommau"
 HIEUUNGGIUCHOKYNANG_MAP = {
-    "vanmongcoc": {VITRIKYNANG_PHONGANTHUAT: HIEUUNGKYNANG_TRAMMAC, VITRIKYNANG_HUYENQUANGTHIEMANH: HIEUUNGKYNANG_MULOA, VITRIKYNANG_CAITUHOANSINH: "caituhoansinh"},
+    "vanmongcoc": {VITRIKYNANG_PHONGANTHUAT: HIEUUNGKYNANG_TRAMMAC, VITRIKYNANG_HUYENQUANGTHIEMANH: HIEUUNGKYNANG_MULOA, VITRIKYNANG_CAITUHOANSINH: "caituhoansinh",
+                   VITRIKYNANG_CAMLOTRI: KHOAGIUCHO_BOMMAU, VITRIKYNANG_SOTRI: KHOAGIUCHO_BOMMAU, VITRIKYNANG_KHIETVANQUYET: KHOAGIUCHO_BOMMAU},
     "maoson": {VITRIKYNANG_THUCCOT: HIEUUNGKYNANG_THUCCOT, VITRIKYNANG_THUCGIAP: HIEUUNGKYNANG_THUCGIAP, VITRIKYNANG_THUCTAM: HIEUUNGKYNANG_THUCTAM},
     "thucsonkiem": {VITRIKYNANG_LANGKHONGCHIHUYET: HIEUUNGKYNANG_CHOANG},
 }

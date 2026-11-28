@@ -639,7 +639,9 @@ class TacTuHoatDong:
         moitruong = self.moitruong
 
         def thieu(idhieuung):
-            return not moitruong.get_is_cohieuungs((idhieuung,), macdinh = True, diachicosothongtinnhanvat = diachi, is_hieuungcoloi = 1)
+            # Ngân / Kim Châm, Tiểu Chu Thiên: còn dưới THOIGIANBUFFTOANBANGBUFFLAI giây cũng là thiếu (chờ buff lại rồi mới rời)
+            return not moitruong.get_is_cohieuungs((idhieuung,), macdinh = True, diachicosothongtinnhanvat = diachi, is_hieuungcoloi = 1) \
+                or self._is_canbufflaitoanbang(diachi, idhieuung)
 
         thieus = []
         if tenmonphai == "vanmongcoc":
@@ -657,6 +659,53 @@ class TacTuHoatDong:
             if moitruong.get_is_kynangdahoc(VIRIKYNANG_HOTHEKIMCANG) and thieu(HIEUUNGKYNANG_HOTHEKIMCANG):
                 thieus.append("Hộ Thể Kim Cang")
         return thieus
+
+    def _ghilucbufftoanbang(self, diachi, vitrikynang):
+        # Vừa gửi Ngân / Kim Châm, Tiểu Chu Thiên lên người chơi khác (action_xulyuutiensudungkynang): ghi lúc buff để ước thời gian còn lại
+        if not self._is_chedobufftoanbang:
+            return
+        moitruong = self.moitruong
+        if not moitruong.get_is_nguoichoi(diachi) or diachi == moitruong.get_diachicosothongtinnhanvat1():
+            return
+        idnguoichoi = moitruong.get_idnguoichoi(diachi)
+        idhieuung = VITRIKYNANGBUFFLAITOANBANGs.get(vitrikynang)
+        if not idnguoichoi or not idhieuung:
+            return
+        now = time.time()
+        self._lucbufftoanbang_map = {k: t for k, t in self._lucbufftoanbang_map.items() if now - t < 7200.}
+        self._lucbufftoanbang_map[(idnguoichoi, idhieuung)] = now
+
+    def _laythoigianbufftoida(self, idhieuung):
+        # Thời gian buff (giây) = thời gian còn lại lớn nhất từng thấy của hiệu ứng đó trên CHÍNH MÌNH (máy chủ chỉ gửi thời gian hiệu
+        # ứng của mình). Vân Mộng Cốc chỉ tự buff Kim Châm (MONPHAICHIBUFFKIMCHAMs) => Ngân Châm chưa thấy thì lấy theo Kim Châm và ngược
+        # lại. Chưa biết -> None
+        conlai = self.moitruong.get_thoigianconlaihieuung(idhieuung, is_hieuungcoloi = 1)
+        if conlai and conlai != math.inf:
+            self._thoigianbufftoida_map[idhieuung] = max(self._thoigianbufftoida_map.get(idhieuung, 0.), conlai)
+        toida = self._thoigianbufftoida_map.get(idhieuung)
+        if not toida and idhieuung in (HIEUUNGKYNANG_NGANCHAMDOACH, HIEUUNGKYNANG_KIMCHAMDOACH):
+            toida = self._thoigianbufftoida_map.get(HIEUUNGKYNANG_KIMCHAMDOACH + HIEUUNGKYNANG_NGANCHAMDOACH - idhieuung)
+        return toida
+
+    def _is_canbufflaitoanbang(self, diachi, idhieuung):
+        # Chế độ buff toàn bang, đang trong nhóm: người chơi khác ĐANG CÓ Ngân / Kim Châm, Tiểu Chu Thiên mà ước còn dưới
+        # THOIGIANBUFFTOANBANGBUFFLAI giây thì buff lại (người dùng 2026-11-28). Còn lại = thời gian buff - (bây giờ - lúc mình gửi buff);
+        # chưa từng gửi buff lên người đó (buff từ trước, không rõ còn bao lâu) thì buff lại 1 lần. Thời gian buff chưa biết / không dài
+        # hơn ngưỡng thì không áp dụng (khỏi buff liên tục); 2 lần gửi cách nhau ít nhất THOIGIANBUFFTOANBANGGIUALAN giây
+        if not self._is_chedobufftoanbang or idhieuung not in VITRIKYNANGBUFFLAITOANBANGs.values():
+            return False
+        moitruong = self.moitruong
+        if not diachi or not moitruong.get_is_nguoichoi(diachi) or diachi == moitruong.get_diachicosothongtinnhanvat1() \
+                or not moitruong.get_is_dangnamtrongnhom():
+            return False
+        toida = self._laythoigianbufftoida(idhieuung)
+        if not toida or toida <= THOIGIANBUFFTOANBANGBUFFLAI:
+            return False
+        luc = self._lucbufftoanbang_map.get((moitruong.get_idnguoichoi(diachi), idhieuung))
+        if not luc:
+            return True
+        daqua = time.time() - luc
+        return daqua >= THOIGIANBUFFTOANBANGGIUALAN and toida - daqua < THOIGIANBUFFTOANBANGBUFFLAI
 
     def _ghitrangthaibufftoanbang(self, trangthai):
         s = self._bufftoanbang

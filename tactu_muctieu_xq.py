@@ -1438,6 +1438,9 @@ class TacTuMucTieu:
 
             danhsachungviens.sort(key = lambda x: x[0])
 
+            # Người bot Vân Mộng Cốc khác (cùng máy / LAN) vừa hồi máu: bỏ để chọn người thấp máu kế tiếp, không cùng hồi 1 người 1 lúc
+            khoabichan = self._get_khoagiuchobichan()
+
             for item in danhsachungviens:
                 priority, diachidoituongdangxemxet = item
                 is_uutiennhom = priority <= 1
@@ -1490,9 +1493,13 @@ class TacTuMucTieu:
                 is_datinhcuongluc = self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_DATINCUONGLUC,), macdinh = False, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 1)
                 is_dangbatpk = self.moitruong.get_idmaupk() != MAUPK_HOABINH
 
+                is_botkhacdanghoimau = (KHOAGIUCHO_BOMMAU, self._get_idmuctieugiucho(diachidoituongdangxemxet)) in khoabichan
                 if is_khongbithieudot and phantramsinhlucconlai <= self._laynguongbommau(is_datinhcuongluc, is_dangbatpk):
-                    danhsachcanbommau.append((diachidoituongdangxemxet, self.moitruong.get_toado(diachidoituongdangxemxet)))
-                    if is_uutiennhom:
+                    # Vẫn tính vào số người Khiết Vân Quyết phủ được, chỉ không làm tâm
+                    danhsachcanbommau.append((diachidoituongdangxemxet, self.moitruong.get_toado(diachidoituongdangxemxet), is_botkhacdanghoimau))
+                    if is_botkhacdanghoimau:
+                        pass
+                    elif is_uutiennhom:
                         if phantramsinhlucconlai < phantramsinhlucthapnhat:
                             phantramsinhlucthapnhat = phantramsinhlucconlai
                             diachidoituongcanbommau = diachidoituongdangxemxet
@@ -1515,13 +1522,16 @@ class TacTuMucTieu:
                         is_canngancham = is_cankimcham = False
                     if not diachidoituongcanbuffngancham and is_canngancham \
                             and not tenbaothu.startswith(BAOTHUCHIBUFFKIMCHAMs):
-                        is_thieuhieuung = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NGANCHAMDOACH,), macdinh = True, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 1)
+                        # Chế độ buff toàn bang: còn dưới THOIGIANBUFFTOANBANGBUFFLAI giây (ước theo lúc mình buff) thì buff lại
+                        is_thieuhieuung = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_NGANCHAMDOACH,), macdinh = True, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 1) \
+                            or self._is_canbufflaitoanbang(diachidoituongdangxemxet, HIEUUNGKYNANG_NGANCHAMDOACH)
                         if is_thieuhieuung:
                             diachidoituongcanbuffngancham = diachidoituongdangxemxet
 
                     if not diachidoituongcanbuffkimcham and is_cankimcham \
                             and not tenbaothu.startswith(BAOTHUCHIBUFFNGANCHAMs):
-                        is_thieuhieuung = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KIMCHAMDOACH,), macdinh = True, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 1)
+                        is_thieuhieuung = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_KIMCHAMDOACH,), macdinh = True, diachicosothongtinnhanvat = diachidoituongdangxemxet, is_hieuungcoloi = 1) \
+                            or self._is_canbufflaitoanbang(diachidoituongdangxemxet, HIEUUNGKYNANG_KIMCHAMDOACH)
                         if is_thieuhieuung:
                             diachidoituongcanbuffkimcham = diachidoituongdangxemxet
 
@@ -1540,8 +1550,10 @@ class TacTuMucTieu:
             # Khiết Vân Quyết hồi máu 3x3 ô quanh mục tiêu: chỉ dùng khi tâm phủ được ít nhất 2 đối tượng cần bơm máu, không thì để Sơ Trị
             diachidoituongkhietvanquyet = None
             soluongphutotnhat = 1
-            for diachitam, (xtam, ytam) in danhsachcanbommau:
-                soluongphu = sum(1 for _, (x, y) in danhsachcanbommau if abs(x - xtam) <= 1 and abs(y - ytam) <= 1)
+            for diachitam, (xtam, ytam), is_tambigiu in danhsachcanbommau:
+                if is_tambigiu:
+                    continue
+                soluongphu = sum(1 for _, (x, y), _ in danhsachcanbommau if abs(x - xtam) <= 1 and abs(y - ytam) <= 1)
                 if soluongphu > soluongphutotnhat:
                     soluongphutotnhat = soluongphu
                     diachidoituongkhietvanquyet = diachitam
