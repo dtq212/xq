@@ -49,11 +49,18 @@ SOLANDANGNHAPLAICUASODIS = 2
 
 # Nhờ máy ảo qua LAN đăng nhập tạm để đè nhân vật treo (dedis_xq). Tắt tạm 2026-11-22: ADMIN đã mở giới hạn 7 client nên không cần.
 # Bật lại 2026-11-28: Gạ (364) / Kng (359) bấm Vào game, máy chủ báo đăng nhập thành công rồi đứng mãi ở màn chọn nhân vật; làm tay
-# đăng nhập ở máy ảo rồi đăng nhập lại ở đây thì vào được. Phải bật cả máy chính lẫn máy ảo (máy ảo mới mở cổng nhận yêu cầu)
-IS_DANGNHAPDEQUALAN = True
-# Bấm Vào game chừng này giây mà nhân vật chưa vào, cửa sổ vẫn ở màn chọn nhân vật => treo ở Vào game, nhờ máy ảo đè (xem
-# TuDongDangNhap._chovaogame). Vào bình thường ~20s kể cả lúc đơ load bản đồ (Gạ 17:45:20 bấm -> 17:45:41 trong game, 2026-11-28)
-THOIGIANTREOVAOGAME = 45.
+# đăng nhập ở máy ảo rồi đăng nhập lại ở đây thì vào được. Phải bật cả máy chính lẫn máy ảo (máy ảo mới mở cổng nhận yêu cầu).
+# Tắt lại cùng ngày (người dùng): treo ở Vào game thì chỉ đóng client rồi đăng nhập lại, không nhờ máy ảo
+IS_DANGNHAPDEQUALAN = False
+# Bấm Vào game chừng này giây mà nhân vật chưa vào, cửa sổ vẫn ở màn chọn nhân vật và vẫn trả lời (treo thật thì hoạt ảnh đồng hồ cát
+# vẫn chạy, không đơ) => treo ở Vào game, nhờ máy ảo đè ngay (xem TuDongDangNhap._chovaogame). Người dùng 2026-11-28: 15s -> 20s, rồi
+# chốt "check 5s là biết". Tính từ lúc bấm; tự đăng nhập không nghỉ 15s sau khi bấm nữa (thoigiannghi = 0)
+THOIGIANTREOVAOGAME = 5.
+# Vào bình thường cửa sổ bắt đầu đơ load bản đồ từ giây ~6 (Gạ 17:45:20 bấm, đơ 17:45:26, trong game giây 21) => sát mốc 5s. Thấy dấu
+# hiệu treo thì xác nhận thêm chừng này giây: suốt thời gian đó vẫn màn chọn nhân vật và không đơ mới kết luận treo
+THOIGIANXACNHANTREO = 3.
+# Cửa sổ đang đơ (load bản đồ) thì chờ thêm tối đa chừng này giây
+THOIGIANCHOTHEMKHILOAD = 30.
 
 # Số client tối đa cùng lúc. Lúc mở, xq.exe đếm mọi tiến trình tên đúng "xq.exe" (so từng byte, cả bản khác như Niết Bàn, cùng mã),
 # quá 4 thì báo "You can not run more client program!" và treo cả quy trình đăng nhập. Niết Bàn được DLL của nó nâng lên 7, Aegis vẫn 4:
@@ -796,7 +803,7 @@ def timcuasogamedangbiket(boquas = (), duongdans = None, pid = None):
     return hwnd_found
 
 
-def mogamevadangnhap(char_name, config, duongdangame, cuasogiuchos = ()):
+def mogamevadangnhap(char_name, config, duongdangame, cuasogiuchos = (), thoigiannghi = 15.):
     # cuasogiuchos: cửa sổ bị dis của nhân vật khác, không đóng / không nhận nhầm là cửa sổ mới mở.
     # Trả về hwnd khi đã bấm vào game, False khi đủ client mà không giải phóng được chỗ, None khi lỗi
     print(f"\n[ĐĂNG NHẬP] >>> BẮT ĐẦU QUY TRÌNH CHO: {char_name}")
@@ -809,7 +816,7 @@ def mogamevadangnhap(char_name, config, duongdangame, cuasogiuchos = ()):
         return hwnd_game
     try:
         print(f"[5] Game đã lên cho {char_name} (HWND: {hwnd_game}). Đăng nhập...")
-        return hwnd_game if dangnhaptrongcuaso(hwnd_game, char_name, config) else None
+        return hwnd_game if dangnhaptrongcuaso(hwnd_game, char_name, config, thoigiannghi) else None
     finally:
         _danhdaudangdangnhap(hwnd_game, False)
 
@@ -1254,17 +1261,18 @@ def menudanghiencua(hwnd):
         dn.dong()
 
 
-def dangnhaptrongcuaso(hwnd_game, char_name, config):
+def dangnhaptrongcuaso(hwnd_game, char_name, config, thoigiannghi = 15.):
+    # thoigiannghi: nghỉ sau khi bấm Vào game (tự đăng nhập truyền 0 để kiểm tra treo ở Vào game ngay, TuDongDangNhap._chovaogame)
     # Từ màn hình chọn cụm / máy chủ (cửa sổ mới mở, hoặc cửa sổ bị dis quay về) tới khi vào game. True: đã bấm vào game.
     # Đánh dấu cửa sổ đang đăng nhập suốt quá trình: luồng đăng nhập song song khác không đóng / kill / nhận nhầm nó
     _danhdaudangdangnhap(hwnd_game, True)
     try:
-        return _dangnhaptrongcuaso(hwnd_game, char_name, config)
+        return _dangnhaptrongcuaso(hwnd_game, char_name, config, thoigiannghi)
     finally:
         _danhdaudangdangnhap(hwnd_game, False)
 
 
-def _dangnhaptrongcuaso(hwnd_game, char_name, config):
+def _dangnhaptrongcuaso(hwnd_game, char_name, config, thoigiannghi = 15.):
     try:
         vitri = config.get("vitricuaso", 1)
         toado = None
@@ -1291,8 +1299,8 @@ def _dangnhaptrongcuaso(hwnd_game, char_name, config):
             if ketqua is not None:
                 if ketqua:
                     _danhdauvaogame(hwnd_game)
-                    print(f"✅ Hoàn tất cho {char_name}. Nghỉ 15s...")
-                    time.sleep(15)
+                    print(f"✅ Hoàn tất cho {char_name}." + (f" Nghỉ {thoigiannghi:.0f}s..." if thoigiannghi else ""))
+                    time.sleep(thoigiannghi)
                 return bool(ketqua)
 
         time.sleep(2)
@@ -1357,9 +1365,9 @@ def _dangnhaptrongcuaso(hwnd_game, char_name, config):
         press_key(hwnd_game, win32con.VK_RETURN)
         _danhdauvaogame(hwnd_game)
 
-        print(f"✅ Hoàn tất cho {char_name}. Nghỉ 15s...")
+        print(f"✅ Hoàn tất cho {char_name}." + (f" Nghỉ {thoigiannghi:.0f}s..." if thoigiannghi else ""))
 
-        time.sleep(15)
+        time.sleep(thoigiannghi)
         return True
 
     except Exception as e:
@@ -2078,9 +2086,9 @@ class TuDongDangNhap:
             if hwnd_dis:
                 # Đăng nhập lại ngay trong cửa sổ bị dis: vào lại tại chỗ (phó bản), không về thành
                 print(f"\n[ĐĂNG NHẬP] {ten} bị dis, đăng nhập lại ngay trong cửa sổ cũ (HWND: {hwnd_dis}, lần {self._solandangnhaplaicuaso.get(hwnd_dis, 0)})")
-                hwnd = hwnd_dis if dangnhaptrongcuaso(hwnd_dis, ten, taikhoan) else None
+                hwnd = hwnd_dis if dangnhaptrongcuaso(hwnd_dis, ten, taikhoan, thoigiannghi = 0.) else None
             else:
-                hwnd = mogamevadangnhap(ten, taikhoan, duongdangamecua(taikhoan, cauhinh), cuasogiuchos = cuasodis)
+                hwnd = mogamevadangnhap(ten, taikhoan, duongdangamecua(taikhoan, cauhinh), cuasogiuchos = cuasodis, thoigiannghi = 0.)
                 if hwnd is False and cuasodis:
                     self._bogiuchocuasodis(ten, cuasodis)
                     return
@@ -2088,9 +2096,22 @@ class TuDongDangNhap:
                 # Treo ở Vào game (máy chủ báo đăng nhập thành công rồi đứng mãi ở màn chọn nhân vật, 2026-11-28 Gạ / Kng): nhờ máy ảo
                 # đăng nhập đè rồi đăng nhập lại ở đây, như cách làm tay
                 if IS_DANGNHAPDEQUALAN and dedis_xq.is_codedis():
-                    self._dangnhapde(taikhoan, hwnd, ten, cauhinh, cuasodis, lydo = "treo ở Vào game")
-                else:
-                    print(f"[ĐĂNG NHẬP] {ten} treo ở Vào game {THOIGIANTREOVAOGAME:.0f}s, không có máy ảo để đè (lan.json \"nhuongcho\")")
+                    if self._dangnhapde(taikhoan, hwnd, ten, cauhinh, cuasodis, lydo = "treo ở Vào game") is None:
+                        # Máy ảo cũng treo y vậy (Gạ 364, 2026-11-28 21:22 / 21:25; người dùng thử máy khác cũng thế: máy chủ báo
+                        # "Gạ đã đăng nhập" rồi "đã offline" ngay) => lỗi phía máy chủ / nhân vật, thử lại chỉ làm máy ảo đóng mở
+                        # acc liên tục: tạm hoãn tự đăng nhập acc này, báo Telegram
+                        import html
+                        from thongbao_xq import guitinmay
+                        self._tamhoanden[taikhoan.get("user")] = time.time() + THOIGIANTAMHOAN
+                        print(f"[ĐÈ DIS] {ten}: máy ảo cũng không vào được, tạm hoãn tự đăng nhập {THOIGIANTAMHOAN // 60} phút")
+                        guitinmay("dangnhap", f"🚫 <b>{html.escape(ten)}</b> treo ở Vào game cả máy này lẫn máy ảo (máy chủ nhận đăng nhập "
+                                              f"rồi rớt ngay): tạm hoãn tự đăng nhập {THOIGIANTAMHOAN // 60} phút", khoa = f"treovaogame{ten}", giancach = 1800.)
+                elif win32gui.IsWindow(hwnd):
+                    # Không nhờ máy ảo: đóng client treo, vòng quét kế thấy vắng thì đăng nhập lại (client mới)
+                    _, pid = win32process.GetWindowThreadProcessId(hwnd)
+                    print(f"[ĐĂNG NHẬP] {ten} treo ở Vào game: đóng client (HWND: {hwnd}, PID {pid}) rồi đăng nhập lại")
+                    _killtientrinh(pid)
+                    chotientrinhthoat({pid})
             # Vừa bấm vào game, nhân vật chưa hiện (đang load bản đồ): luồng còn sống thì vòng quét không tưởng vắng mà đăng nhập lại
             while hwnd and hwnd in laycuasodangvaogame():
                 time.sleep(2)
@@ -2104,30 +2125,57 @@ class TuDongDangNhap:
         idnguoichoi = taikhoan.get("idnguoichoi")
         if not idnguoichoi:
             return None
-        hethan = time.time() + THOIGIANTREOVAOGAME
-        while time.time() < hethan:
-            time.sleep(3)
+        with _khoavaogame:
+            thoidiembam = _thoidiemvaogame.get(hwnd, time.time())
+        hethan = thoidiembam + THOIGIANTREOVAOGAME
+        batdaunghi = None
+        while True:
             if not win32gui.IsWindow(hwnd):
                 return None
-            if laydanhsachnhanvatonlines()["cuaso"].get(hwnd) == int(idnguoichoi):
+            if _is_cuasodadangnhap(hwnd):
                 return "vao"
-        if _is_cuasodadangnhap(hwnd):
-            return "vao"
-        return "treo" if menudanghiencua(hwnd) == "MENUCHONNHANVAT" else None
+            now = time.time()
+            if now >= hethan:
+                if ctypes.windll.user32.IsHungAppWindow(hwnd):
+                    # Đang đơ = đang load bản đồ (vào bình thường), chưa phải treo ở Vào game
+                    batdaunghi = None
+                    if now >= hethan + THOIGIANCHOTHEMKHILOAD:
+                        return None
+                else:
+                    menu = menudanghiencua(hwnd)
+                    if menu != "MENUCHONNHANVAT":
+                        # Menu đã ẩn (đang load) / bị dis về màn khác: chờ tiếp như thường, quá giờ thì thôi
+                        batdaunghi = None
+                        if now >= hethan + THOIGIANCHOTHEMKHILOAD:
+                            return None
+                    else:
+                        batdaunghi = batdaunghi or now
+                        if now - batdaunghi >= THOIGIANXACNHANTREO:
+                            print(f"   -> [ĐĂNG NHẬP] Bấm Vào game {now - thoidiembam:.0f}s vẫn ở màn chọn nhân vật, cửa sổ không đơ: treo")
+                            return "treo"
+            time.sleep(1.)
 
     def _dangnhapde(self, taikhoan, hwnd_cu, ten, cauhinh = None, cuasodis = (), lydo = "vẫn chưa vào lại được"):
         # Nhờ máy ảo đăng nhập tạm acc này (máy chủ giới hạn theo máy nên máy ảo vào đè được lên nhân vật treo), rồi đăng nhập lại ở
         # đây (đè lên phiên ở máy ảo). Cửa sổ cũ đã về màn máy chủ / nhập tài khoản thì đăng nhập lại trong nó; còn kẹt ở màn chọn nhân
-        # vật (treo ở Vào game) thì đóng nó, mở client mới. True: nhân vật đã vào lại ở đây. Xong / hỏng đều báo máy ảo đóng client tạm
+        # vật (treo ở Vào game) thì đóng nó TRƯỚC khi nhờ máy ảo, rồi mở client mới: làm tay phải thoát cửa sổ treo ở máy này rồi mới
+        # đăng nhập ở máy ảo (người dùng 2026-11-28). True: nhân vật đã vào lại ở đây. Xong / hỏng đều báo máy ảo đóng client tạm
         idnguoichoi = taikhoan.get("idnguoichoi")
         if not idnguoichoi:
             print(f"[ĐÈ DIS] {ten}: tài khoản chưa có ID, không đè được")
             return False
         print(f"\n[ĐÈ DIS] {ten} {lydo}: nhờ máy ảo đăng nhập tạm để đè lên nhân vật treo")
+        menu = menudanghiencua(hwnd_cu) if hwnd_cu and win32gui.IsWindow(hwnd_cu) else None
+        if hwnd_cu and win32gui.IsWindow(hwnd_cu) and menu not in ("MENUMAYCHU", "MENUDANGNHAP"):
+            _, pid = win32process.GetWindowThreadProcessId(hwnd_cu)
+            print(f"[ĐÈ DIS] Cửa sổ cũ (HWND: {hwnd_cu}) kẹt ({menu or 'không đọc được menu'}): đóng trước (PID {pid}) rồi mới nhờ máy ảo")
+            _killtientrinh(pid)
+            chotientrinhthoat({pid})
         traloi = dedis_xq.dangnhaptam(taikhoan)
         if not traloi or not traloi.get("ok"):
             print(f"[ĐÈ DIS] Máy ảo không đăng nhập tạm được: {(traloi or {}).get('loi')}")
-            return False
+            # None (khác False): máy ảo cũng không vào được => lỗi ở nhân vật / máy chủ, không phải giới hạn máy này
+            return None
         print(f"[ĐÈ DIS] Máy ảo đã vào game {ten}"
               f"{' (đóng tạm ' + traloi['usernhuong'] + ')' if traloi.get('usernhuong') else ''}, đăng nhập lại ở đây")
         is_vao, hwnd = False, None
@@ -2139,9 +2187,10 @@ class TuDongDangNhap:
             else:
                 if hwnd_cu and win32gui.IsWindow(hwnd_cu):
                     _, pid = win32process.GetWindowThreadProcessId(hwnd_cu)
-                    print(f"[ĐÈ DIS] Cửa sổ cũ (HWND: {hwnd_cu}) vẫn kẹt ({menu or 'không đọc được menu'}): đóng (PID {pid}), mở client mới")
+                    print(f"[ĐÈ DIS] Cửa sổ cũ (HWND: {hwnd_cu}) lại kẹt ({menu or 'không đọc được menu'}): đóng (PID {pid})")
                     _killtientrinh(pid)
                     chotientrinhthoat({pid})
+                print(f"[ĐÈ DIS] Mở client mới đăng nhập lại {ten}")
                 if cauhinh is None:
                     cauhinh = taicauhinhdangnhap()
                 hwnd = mogamevadangnhap(ten, taikhoan, duongdangamecua(taikhoan, cauhinh),

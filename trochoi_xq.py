@@ -212,8 +212,11 @@ class TroChoiManager:
                                 print(f"[NHẠC NỀN] {'Bật' if hwnd in hwndphats else 'Tắt'} nhạc nền cửa sổ {hwnd}")
                             loinhacnens.discard(pid)
                         except Exception as err:
-                            # Client đang mở / đang tắt: báo 1 lần mỗi tiến trình, khỏi lặp log mỗi 2 giây
-                            if pid not in loinhacnens:
+                            # Client đang mở / đang tắt: báo 1 lần mỗi tiến trình, khỏi lặp log mỗi 2 giây. Client vừa thoát (cửa sổ
+                            # còn trong danh sách thêm một nhịp, tiến trình đã đóng => "Could not open process") thì không báo: không
+                            # phải lỗi (người dùng thoát cửa sổ 2026-11-28)
+                            is_vuathoat = not win32gui.IsWindow(hwnd) or "Could not open process" in str(err)
+                            if pid not in loinhacnens and not is_vuathoat:
                                 loinhacnens.add(pid)
                                 print(f"Lỗi chỉnh nhạc nền cửa sổ {hwnd}: {err}")
                     nhacnen.dong(set(pids.values()))
