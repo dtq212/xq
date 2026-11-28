@@ -58,13 +58,17 @@ def _thumucviquai():
 
 
 def taiviquai(idnguoichoi):
+    # File rỗng 0 byte (PyCharm revert 2026-11-22 15:44 làm rỗng 24 file viquai) coi như chưa có: trước đây mỗi lần gộp vị trí quái
+    # (taiviquaibando đọc mọi file) in 24 dòng "Expecting value: line 1 column 1 (char 0)"
+    duongdan = os.path.join(_thumucviquai(), f"{idnguoichoi}.json")
     try:
-        with open(os.path.join(_thumucviquai(), f"{idnguoichoi}.json"), "r", encoding = "utf-8") as file:
-            return json.load(file)
+        with open(duongdan, "r", encoding = "utf-8") as file:
+            noidung = file.read()
+        return json.loads(noidung) if noidung.strip() else {}
     except FileNotFoundError:
         return {}
     except Exception as err:
-        print(err)
+        print(f"Lỗi đọc {duongdan}: {err}")
         return {}
 
 

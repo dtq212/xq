@@ -1,5 +1,11 @@
-"""Hiện thông tin mục tiêu đang chọn ngay trong game, sửa bộ nhớ client của mình (máy chủ / người khác không thấy). 2 chế độ (giao diện
-chọn theo từng cửa sổ ở đầu tab Chiến đấu, hangso_xq.CHEDOHIENMUCTIEU_*):
+"""Vẽ chữ lên đầu đối tượng ngay trong game, sửa bộ nhớ client của mình (máy chủ / người khác không thấy).
+- Từ 2026-11-27 (người dùng yêu cầu): bật ở đầu tab Chiến đấu thì MỌI người chơi xung quanh (trừ mình) có 1 dòng "<tên bang> |
+  <môn phái>" (DanhHieuMucTieu._buocnguoichois, mỗi người 1 khối hook từ OKHOINGUOICHOIDAU, cách ghi như ODauNhanVat: có danh hiệu thật
+  thì vẽ lên trên, ô rỗng thì mượn ô). Bang / phái lấy từ "desc user" (MoiTruong.get_thongtinnguoichoi, nạp sẵn thongtinnguoichoi.json),
+  người chưa biết trong tầm hỏi thì tự hỏi dần. Bỏ hẳn phần vẽ Kết luận / Khí huyết / Công / Kháng lên mục tiêu và chế độ đuôi tên
+  (người dùng thấy không hữu ích); Kết luận / ước lượng mục tiêu (uocluongmuctieu_xq) gỡ hẳn 2026-11-27 cho nhẹ bot. Phần dưới là
+  ghi chú cách làm cũ, giữ để tham khảo.
+Cũ: 2 chế độ (giao diện chọn theo từng cửa sổ ở đầu tab Chiến đấu, hangso_xq.CHEDOHIENMUCTIEU_*):
 - Danh hiệu: game vẽ danh hiệu (+0x1134, 0x3B byte) cả cho quái, ngay trên tên (test 2026-11-05). Hàm vẽ chữ của game không xuống dòng
   => dòng cuối ghi vào danh hiệu, các dòng trên vẽ bằng hook ở chỗ game vẽ danh hiệu (MoiTruong.action_ghidongvedanhhieu; bản Aegis
   nối sau chienquoc2d.dll). Từ trên xuống:
@@ -32,14 +38,18 @@ import re
 import struct
 import time
 
-from congthucsatthuong_xq import HE_NGOAI, HE_NOI, satthuong, chonhe
 from diachi_xq import DC
-from hangso_xq import CHEDOHIENMUCTIEU_DANHHIEU, CHEDOHIENMUCTIEU_TEN, MAUHIENMUCTIEU_THEOMAU, NGUONGMAUHIENMUCTIEU
-from hangso_xq import OKHOIMUCTIEU, OKHOINHANVAT, MAUHANHDONGTRENDAU, KICHTHUOCDONGVEDANHHIEU, CHUTATFOXIATRENDAU, MAUTATFOXIATRENDAU
-from uocluongmuctieu_xq import gopuocluong, gopcongdoithu, khoaquaitheoten, DICHCONG, DICHKHANG, THOIGIANDANGDANH
-from tienich_xq import read_bytes, write_bytes, taithongtinnguoichoi, taithongtinquai, DAUNOITENMUCTIEU_BYTES
+from hangso_xq import CHEDOHIENMUCTIEU_DANHHIEU, CHEDOHIENMUCTIEU_TEN, MAUHIENMUCTIEU_THEOMAU, KHOANGCACHHOIBANGPHAI
+from hangso_xq import OKHOINHANVAT, MAUHANHDONGTRENDAU, KICHTHUOCDONGVEDANHHIEU, CHUTATFOXIATRENDAU, MAUTATFOXIATRENDAU
+from hangso_xq import OKHOINGUOICHOIDAU, SOKHOINGUOICHOI, MAUBANGTRENDAU, MAUPHAITRENDAU, MAUPHUTRENDAU, TENVOMONPHAI
+from tienich_xq import read_bytes, write_bytes, DAUNOITENMUCTIEU_BYTES
 
 CHUKYGHI = 0.3
+# Người chơi xung quanh (bang + phái): ghi lại mỗi chừng này giây (game ghi lại ô danh hiệu khi họ vào tầm nhìn); hỏi "desc user" người
+# chưa biết mỗi CHUKYHOINGUOICHOI giây 1 người, cùng 1 ID cách nhau GIANCACHHOILAINGUOICHOI giây (người không trả lời khỏi hỏi dồn)
+CHUKYNGUOICHOI = 0.6
+CHUKYHOINGUOICHOI = 3.
+GIANCACHHOILAINGUOICHOI = 120.
 # Ô tên +0x10AC tới ô độ rộng tên +0x112C = 0x80 byte; ô danh hiệu 0x3B byte, độ rộng danh hiệu ở +0x1130. Chừa 1 byte NUL
 KICHTHUOCTEN = 0x112C - 0x10AC
 KICHTHUOCDANHHIEU = 0x3B
@@ -47,19 +57,6 @@ DORONGTEN = 0x112C
 DORONGDANHHIEU = 0x1130
 # Màu dòng không phải Khí huyết khi chọn "Theo % máu"
 MAUPHANSAU = "W"
-# Gộp ước lượng mọi cửa sổ (đọc cả shared_data qua Manager, nặng) mỗi chừng này giây; % máu đọc trực tiếp mỗi lần ghi
-CHUKYGOP = 1.
-# Đọc lại số đã lưu (thongtinnguoichoi.json theo ID người chơi, thongtinquai.json theo tên + cấp quái; giao diện ghi) mỗi chừng này giây
-CHUKYDOCKHO = 10.
-# Kết luận: thời gian nó hạ mình / thời gian mình hạ nó >= HESOANTOAN => AN TOÀN, >= HESOCANSUC => CÂN SỨC, nhỏ hơn => NGUY HIỂM
-HESOANTOAN = 1.5
-HESOCANSUC = 1.
-# (chữ, màu) theo mức kết luận; None = chưa đủ số
-KETLUAN_MAP = {"antoan": ("AN TOÀN", "G"), "cansuc": ("CÂN SỨC", "Y"), "nguyhiem": ("NGUY HIỂM", "R")}
-MAUCHUARO = "w"
-# Chưa đo được nhịp đánh của nó: coi như 1 đòn / giây. Chưa có hệ số DPS của mình (chưa đánh mục tiêu nào biết Kháng): 1 đòn thường / giây
-NHIPMACDINH = 1.
-HESODPSMACDINH = 1.
 
 
 def dinhdangso(n):
@@ -76,23 +73,22 @@ def mamau(chu):
     return b"\x1b" + chu.encode("ascii")
 
 
-def _maudongs(mau, chumau):
-    # (màu dòng Khí huyết, màu các dòng khác)
-    if chumau == MAUHIENMUCTIEU_THEOMAU:
-        return ("G" if mau > NGUONGMAUHIENMUCTIEU[0] else ("Y" if mau > NGUONGMAUHIENMUCTIEU[1] else "R")), MAUPHANSAU
-    return chumau, chumau
-
-
-def taodongs(mau, khihuyet, khangs, congs, chumau = MAUHIENMUCTIEU_THEOMAU):
-    # Mục tiêu -> các dòng (bytes UTF-8 có mã màu) từ trên xuống: Khí huyết, Công (nếu có), Kháng (nếu có)
-    maukh, mausau = _maudongs(mau, chumau)
-    dongs = [mamau(maukh) + (f"Khí huyết: {dinhdangso(khihuyet * mau / 100.)}/{dinhdangso(khihuyet)}" if khihuyet
-                             else f"Khí huyết: {mau}%").encode("utf-8")]
-    for bang, tens in ((congs, ("Ngoại công", "Nội công")), (khangs, ("Ngoại kháng", "Nội kháng"))):
-        phans = [f"{ten}: {dinhdangso(bang[he])}" for he, ten in zip(("ngoai", "noi"), tens) if bang.get(he)]
-        if phans:
-            dongs.append(mamau(mausau) + ", ".join(phans).encode("utf-8"))
-    return dongs
+def taodongnguoichoi(monphai, bangphai, chumau = MAUHIENMUCTIEU_THEOMAU):
+    # Dòng trên đầu người chơi: "<tên bang> | <môn phái>" (bytes UTF-8 có mã màu, không nhãn - người dùng yêu cầu 2026-11-27). bangphai
+    # "" = không bang, None = chưa biết; monphai None = chưa biết. Màu "Mặc định": tên bang MAUBANGTRENDAU, phái MAUPHAITRENDAU, dấu ngăn /
+    # chưa biết MAUPHUTRENDAU; màu khác cả dòng 1 màu
+    # Không bang thì chỉ hiện môn phái; phái "-" (chưa vào phái, kể cả số cũ đã lưu) hiện "Vô Môn Phái" (người dùng yêu cầu 2026-11-28)
+    if monphai is not None and not monphai.strip().strip("－-").strip():
+        monphai = TENVOMONPHAI
+    phai = monphai or "?"
+    mauphai = MAUPHAITRENDAU if monphai else MAUPHUTRENDAU
+    if bangphai == "":
+        return mamau(chumau if chumau != MAUHIENMUCTIEU_THEOMAU else mauphai) + phai.encode("utf-8")
+    bang = bangphai or "?"
+    if chumau != MAUHIENMUCTIEU_THEOMAU:
+        return mamau(chumau) + f"{bang} | {phai}".encode("utf-8")
+    return (mamau(MAUBANGTRENDAU if bangphai else MAUPHUTRENDAU) + bang.encode("utf-8")
+            + mamau(MAUPHUTRENDAU) + b" | " + mamau(mauphai) + phai.encode("utf-8"))
 
 
 # Phần cần nhấn trong câu hành động: số đếm "1/4", toạ độ "(320, 144)", tên bản đồ sau "ở " (tới dấu câu / số / ngoặc kế tiếp).
@@ -153,42 +149,6 @@ def taodongtheosau(is_bat, ten = ""):
     if ten:
         dong += mamau(MAUHANHDONGTRENDAU["doituong"]) + f" ({ten})".encode("utf-8")
     return dong
-
-
-def dinhdangthoigian(giay):
-    # 12 -> "12 giây", 65 -> "1 phút 5 giây", quá 10 phút -> "hơn 10 phút"
-    giay = int(round(giay))
-    if giay >= 600:
-        return "hơn 10 phút"
-    if giay < 60:
-        return f"{max(giay, 1)} giây"
-    return f"{giay // 60} phút" + (f" {giay % 60} giây" if giay % 60 else "")
-
-
-def tinhketluan(maunoconlai, dpsminh, mauminhconlai, dpsno):
-    # -> (mức "antoan" / "cansuc" / "nguyhiem" hoặc None, giây mình hạ nó, giây nó hạ mình, lý do chưa rõ)
-    tminh = maunoconlai / dpsminh if maunoconlai and dpsminh else None
-    tno = mauminhconlai / dpsno if mauminhconlai and dpsno else None
-    if tminh is None or tno is None:
-        thieus = []
-        if not maunoconlai:
-            thieus.append("Khí huyết")
-        if not dpsminh:
-            thieus.append("Kháng")
-        if not dpsno:
-            thieus.append("sức đánh")
-        return None, tminh, tno, "chưa biết " + ", ".join(thieus) + " của nó"
-    tile = tno / max(tminh, 0.1)
-    muc = "antoan" if tile >= HESOANTOAN else ("cansuc" if tile >= HESOCANSUC else "nguyhiem")
-    return muc, tminh, tno, ""
-
-
-def taodongketluan(muc, tminh, tno, lydo):
-    # Dòng Kết luận (bytes có mã màu)
-    if not muc:
-        return mamau(MAUCHUARO) + f"Kết luận: chưa rõ - {lydo}".encode("utf-8")
-    chu, mau = KETLUAN_MAP[muc]
-    return mamau(mau) + f"Kết luận: {chu} - hạ nó ~{dinhdangthoigian(tminh)}, nó hạ mình ~{dinhdangthoigian(tno)}".encode("utf-8")
 
 
 def gopmotdong(dongs, sobytetoida):
@@ -363,129 +323,70 @@ class DanhHieuMucTieu:
         self.tactu = tactu
         self.shared_data = shared_data
         self.idcuaso = idcuaso
-        self._muctieu = ODoiTuong(moitruong, OKHOIMUCTIEU)
         self._nhanvat = ODauNhanVat(moitruong, OKHOINHANVAT)
-        self._lucgop = 0.
-        self._gop = {}
-        self._lucdockho = 0.
-        self._kho = {}
-        self._khoquai = {}
-        # Mục tiêu đang chọn cho giao diện: {id, khoaquai, ketluan (chữ không mã màu), muc}
-        self._share = {}
+        # Người chơi xung quanh: địa chỉ -> ODauNhanVat đang dùng; các ô (khối hook) còn rảnh
+        self._nguoichois = {}
+        self._onguoichoirans = [ODauNhanVat(moitruong, OKHOINGUOICHOIDAU + i) for i in range(SOKHOINGUOICHOI)]
+        self._lucnguoichoi = 0.
+        self._luchoinguoichoi = 0.
+        # ID người chơi -> lúc hỏi "desc user" gần nhất (người không trả lời thì khỏi hỏi lại liền)
+        self._dahoi = {}
 
     def khoiphuc(self):
-        self._muctieu.khoiphuc()
+        self._khoiphucnguoichois()
         self._nhanvat.khoiphuc()
 
-    def get_share(self):
-        return dict(self._share)
+    def _khoiphucnguoichois(self, giu = ()):
+        # Trả ô / thôi vẽ cho người chơi không còn trong giu
+        for diachi in [d for d in self._nguoichois if d not in giu]:
+            o = self._nguoichois.pop(diachi)
+            try:
+                o.khoiphuc()
+            except Exception:
+                pass
+            self._onguoichoirans.append(o)
 
-    def _laygop(self, iddoituong, idnguoichoi, khoaquai):
-        # Số đo gộp mọi cửa sổ cùng máy + số đã lưu -> {khihuyet, khangs {hệ: Kháng}, congs {hệ: Công nó}, nhip (đòn / giây nó đánh),
-        # dpsminh (tổng DPS các cửa sổ đang đánh nó, None nếu không ai đang đánh), hesodps (của cửa sổ này), daluu (dùng số quái đã lưu)}
-        luc = time.time()
-        if luc - self._lucgop < CHUKYGOP and self._gop.get("id") == iddoituong:
-            return self._gop
-        self._lucgop = luc
-        try:
-            infos = {k: i for k, i in dict(self.shared_data.items()).items() if isinstance(i, dict)}
-        except Exception:
-            infos = {}
-        if luc - self._lucdockho >= CHUKYDOCKHO:
-            self._lucdockho = luc
-            self._kho = taithongtinnguoichoi()
-            self._khoquai = taithongtinquai()
-        tomtats = [i["_uocluongmuctieu"][iddoituong] for i in infos.values() if iddoituong in (i.get("_uocluongmuctieu") or {})]
-        gop = gopuocluong(tomtats)
-        khihuyet = gop["khihuyet"]
-        khangs = {he: v[0] for he, v in gop["khang"].items()}
-        # DPS các cửa sổ đang đánh nó
-        dpss = [tt["dps"] for tt in tomtats if tt.get("dps") and luc - tt.get("lucdanh", 0) <= THOIGIANDANGDANH]
-        # Nó đánh mình: Công (cụm đông nhất mỗi hệ) + nhịp (nhiều khoảng nhất) từ mọi cửa sổ bị nó đánh
-        bidanhs = [i["_bidanh"][iddoituong] for i in infos.values() if iddoituong in (i.get("_bidanh") or {})]
-        congs = {}
-        for he in (HE_NGOAI, HE_NOI):
-            tot = max((b["cong"][he] for b in bidanhs if he in (b.get("cong") or {})), key = lambda v: v[1], default = None)
-            if tot:
-                congs[he] = tot[0]
-        nhip = max(((b["nhip"], b["sokhoang"]) for b in bidanhs if b.get("nhip")), key = lambda v: v[1], default = (None, 0))[0]
-        if idnguoichoi:
-            # Người chơi: Công lọc theo hệ môn phái (gộp như giao diện), thiếu thì số đã lưu theo ID
-            congdoithus = [i["_congdoithu"][idnguoichoi] for i in infos.values() if idnguoichoi in (i.get("_congdoithu") or {})]
-            congnguoichoi = {he: v[0] for he, v in gopcongdoithu(congdoithus)[0].items()}
-            congs = congnguoichoi or congs
-            muc = self._kho.get(str(idnguoichoi)) or {}
-            if not khihuyet and muc.get("khihuyet"):
-                khihuyet = muc["khihuyet"]["giatri"]
-            for he, khoa in ((HE_NGOAI, "ngoaikhang"), (HE_NOI, "noikhang")):
-                if he not in khangs and muc.get(khoa):
-                    khangs[he] = muc[khoa]["giatri"]
-            for he, khoa in ((HE_NGOAI, "ngoaicong"), (HE_NOI, "noicong")):
-                if he not in congs and muc.get(khoa):
-                    congs[he] = muc[khoa]["giatri"]
-        daluu = False
-        quai = self._khoquai.get(khoaquai) if khoaquai else None
-        if quai:
-            # Quái đã lưu (số chắc): dùng luôn thay số đang đo
-            daluu = True
-            if quai.get("khihuyet"):
-                khihuyet = quai["khihuyet"]["giatri"]
-            for he, khoa in ((HE_NGOAI, "ngoaikhang"), (HE_NOI, "noikhang")):
-                if quai.get(khoa):
-                    khangs[he] = quai[khoa]["giatri"]
-            for he, khoa in ((HE_NGOAI, "ngoaicong"), (HE_NOI, "noicong")):
-                if quai.get(khoa):
-                    congs[he] = quai[khoa]["giatri"]
-            if quai.get("nhip"):
-                nhip = quai["nhip"]["giatri"]
-        hesodps = (infos.get(self.idcuaso) or {}).get("_hesodps")
-        self._gop = {"id": iddoituong, "khihuyet": khihuyet, "khangs": khangs, "congs": congs, "nhip": nhip,
-                     "dpsminh": sum(dpss) if dpss else None, "hesodps": hesodps, "daluu": daluu}
-        return self._gop
-
-    def _ketluan(self, gop, mau):
-        # -> (mức hoặc None, thời gian mình hạ nó, thời gian nó hạ mình, lý do chưa rõ)
-        mt = self.moitruong
-        congminh = mt.get_chisonhanvats(DICHCONG)
-        khangminh = mt.get_chisonhanvats(DICHKHANG)
-        mauminh = mt.get_sinhlucconlai()
-        heminh = chonhe(mt.get_tenmonphai(), {"ngoaicong": congminh[0], "noicong": congminh[1]}) if congminh else None
-        dpsminh = gop["dpsminh"]
-        if not dpsminh and heminh and gop["khangs"].get(heminh):
-            c = congminh[0] if heminh == HE_NGOAI else congminh[1]
-            dpsminh = (gop["hesodps"] or HESODPSMACDINH) * satthuong(c, gop["khangs"][heminh], heminh)
-        dpsno = None
-        if gop["congs"] and khangminh:
-            stno = max(satthuong(cong, khangminh[0] if he == HE_NGOAI else khangminh[1], he) for he, cong in gop["congs"].items())
-            dpsno = stno * (gop["nhip"] or NHIPMACDINH)
-        return tinhketluan(gop["khihuyet"] * mau / 100. if gop["khihuyet"] else None, dpsminh, mauminh or None, dpsno)
-
-    def _buocmuctieu(self, chedo, chumau):
-        mt = self.moitruong
-        diachi = mt._get_diachicosothongtinnhanvatmuctieudangchon()
-        if not diachi or not mt.get_is_nhanvattontai(diachi) or mt.get_is_npc(diachi):
-            self._share = {}
-            self._muctieu.khoiphuc()
-            return
-        iddoituong = mt.get_iddoituong(diachi)
-        idnguoichoi = mt.get_idnguoichoi(diachi) if mt.get_is_nguoichoi(diachi) else 0
-        khoaquai = self._share.get("khoaquai", "") if self._share.get("id") == iddoituong else \
-            (khoaquaitheoten(mt._get_tenthucte(diachi)) if mt.get_is_quai(diachi) else "")
-        gop = self._laygop(iddoituong, idnguoichoi, khoaquai)
-        mau = mt.get_phantramsinhlucconlai(diachi)
-        ketluan = self._ketluan(gop, mau)
-        dongketluan = taodongketluan(*ketluan)
-        self._share = {"id": iddoituong, "khoaquai": khoaquai, "muc": ketluan[0], "daluu": gop["daluu"],
-                       "ketluan": dongketluan[2:].decode("utf-8", "ignore")}
+    def _buocnguoichois(self, chedo, chumau):
+        # Mọi người chơi xung quanh (trừ mình): 1 dòng bang + môn phái (taodongnguoichoi). Nhiều hơn SOKHOINGUOICHOI thì lấy người gần nhất.
+        # Người chưa biết bang / phái trong tầm KHOANGCACHHOIBANGPHAI: hỏi "desc user" người gần nhất, mỗi CHUKYHOINGUOICHOI giây 1 người,
+        # mỗi ID cách nhau ít nhất GIANCACHHOILAINGUOICHOI giây (MoiTruong cũng tự giãn cách / chờ trả lời)
         if not chedo:
-            self._muctieu.khoiphuc()
+            self._khoiphucnguoichois()
             return
-        self._muctieu.ghi(diachi, chedo, [dongketluan] + taodongs(mau, gop["khihuyet"], gop["khangs"], gop["congs"], chumau))
+        luc = time.time()
+        if luc - self._lucnguoichoi < CHUKYNGUOICHOI:
+            return
+        self._lucnguoichoi = luc
+        mt = self.moitruong
+        diachiminh = mt.get_diachicosothongtinnhanvat1()
+        cans = []
+        for diachi in mt._get_diachidoituongxungquanhs(is_nguoichoi = True):
+            if diachi and diachi != diachiminh and mt.get_is_nhanvattontai(diachi):
+                cans.append((mt.get_khoangcach(diachi), diachi))
+        cans.sort()
+        cans = cans[:SOKHOINGUOICHOI]
+        self._khoiphucnguoichois({d for _, d in cans})
+        canhoi = None
+        for khoangcach, diachi in cans:
+            idnguoichoi = mt.get_idnguoichoi(diachi)
+            monphai, bangphai = mt.get_thongtinnguoichoi(idnguoichoi) if idnguoichoi and idnguoichoi > 0 else (None, None)
+            if canhoi is None and (monphai is None or bangphai is None) and idnguoichoi and idnguoichoi > 0 \
+                    and khoangcach <= KHOANGCACHHOIBANGPHAI and luc - self._dahoi.get(idnguoichoi, 0.) >= GIANCACHHOILAINGUOICHOI:
+                canhoi = (idnguoichoi, diachi)
+            o = self._nguoichois.get(diachi)
+            if o is None:
+                if not self._onguoichoirans:
+                    continue
+                o = self._onguoichoirans.pop()
+                self._nguoichois[diachi] = o
+            o.ghi(diachi, [taodongnguoichoi(monphai, bangphai, chumau)])
+        if canhoi and luc - self._luchoinguoichoi >= CHUKYHOINGUOICHOI and mt.action_hoithongtinnguoichoimuctieu(canhoi[1]):
+            self._luchoinguoichoi = luc
+            self._dahoi[canhoi[0]] = luc
 
-    def _buocnhanvat(self, hanhdong, chedomuctieu, is_tatbot = False, theosau = None):
+    def _buocnhanvat(self, hanhdong, is_tatbot = False, theosau = None):
         # Trên đầu nhân vật mình, từ trên xuống: dòng Theo sau (theosau = (is_bật, tên người được theo) / None = không hiện), rồi hành động
-        # hiện tại. Không còn dòng nào thì trả ô. Đang tắt Foxia thì dòng dưới luôn là CHUTATFOXIATRENDAU (màu đỏ) thay hành động. Đang tự
-        # chọn mình làm mục tiêu và đang ghi thông tin mục tiêu thì nhường ô cho phần mục tiêu
+        # hiện tại. Không còn dòng nào thì trả ô. Đang tắt Foxia thì dòng dưới luôn là CHUTATFOXIATRENDAU (màu đỏ) thay hành động
         mt = self.moitruong
         diachi = mt.get_diachicosothongtinnhanvat1()
         dongs = []
@@ -495,12 +396,12 @@ class DanhHieuMucTieu:
             dongs.append(mamau(MAUTATFOXIATRENDAU) + CHUTATFOXIATRENDAU.encode("utf-8"))
         elif hanhdong:
             dongs.append(tomauhanhdong(hanhdong))
-        if not dongs or not diachi or (chedomuctieu == CHEDOHIENMUCTIEU_DANHHIEU and diachi == self._muctieu.get_diachi()):
+        if not dongs or not diachi:
             self._nhanvat.khoiphuc()
             return
         self._nhanvat.ghi(diachi, dongs)
 
     def step(self, chedo, chumau = MAUHIENMUCTIEU_THEOMAU, hanhdong = "", is_tatbot = False, theosau = None):
         chedo = chedo if chedo in (CHEDOHIENMUCTIEU_DANHHIEU, CHEDOHIENMUCTIEU_TEN) else None
-        self._buocmuctieu(chedo, chumau)
-        self._buocnhanvat(hanhdong, chedo, is_tatbot, theosau)
+        self._buocnguoichois(chedo, chumau)
+        self._buocnhanvat(hanhdong, is_tatbot, theosau)

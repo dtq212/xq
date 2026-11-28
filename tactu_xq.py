@@ -1,6 +1,7 @@
 import os
 import copy
 import time
+from collections import deque
 import pymem
 
 from hangso_xq import *
@@ -18,6 +19,7 @@ from tactu_hoatdong_xq import TacTuHoatDong
 from tactu_giaodo_xq import TacTuGiaoDo
 from tactu_phangiai_xq import TacTuPhanGiai
 from tactu_epda_xq import TacTuEpDa
+from tactu_doicau_xq import TacTuDoiCau
 from tactu_catkho_xq import TacTuCatKho
 from tactu_sumon_xq import TacTuSuMon
 from tactu_langlyson_xq import TacTuLangLySon
@@ -46,13 +48,13 @@ THUOCTINHTHIETLAPs = (
     "_danhhieulammoi", "_phantramnoiluckhaithientichdia", "_phantramsinhlucthuhoibaothugiangho", "_is_tudongtrieuhoibaothugiangho", "_is_tudongsudungkynangbaothu", "_is_epbaothubidong", "_is_tudongeptinhnguyendon",
     "_is_tudongbatnguyenkhiquynguyen", "_is_tranhvungcam", "_is_giukhoangcachketancong", "_khoangcachgiuketancong", "_mauchaytron",
     "_mauhetchaytron", "_is_doiphapbaotheomau", "_is_xoayvongtrao", "_is_hettraodeomuccao", "_maubommaudongdoi", "_maubommaudatinh", "_mauphapbaovua","_mauphapbaothap", "_dotrephapbao", "_is_taphoa", "_is_timmuctieuchung", "_chedohienthongtinmuctieugame",
-    "_is_muctieutheoduongdi", "_is_uutiencumquai", "_is_chiamuctieubotkhac", "_is_pkbodanhsachten", "_mauhienthongtinmuctieugame", "_is_hienhanhdongtrendau", "_is_tutimduongtheosau", "_is_chaytoibuffthanhvien", "_is_diquocgiatanthutienco", "_is_doidokhitrieuhoi", "_bodotrieuhoi", "_baothutrieuhoimaoson",
+    "_is_muctieutheoduongdi", "_is_uutiencumquai", "_is_chiamuctieubotkhac", "_is_pkbodanhsachten", "_mauhienthongtinmuctieugame", "_is_hienhanhdongtrendau", "_is_tutimduongtheosau", "_is_theosautunhien", "_is_chaytoibuffthanhvien", "_is_chedobufftoanbang", "_is_diquocgiatanthutienco", "_is_doidokhitrieuhoi", "_bodotrieuhoi", "_baothutrieuhoimaoson",
     "_sumon_npcgiao", "_tapkich_phai", "_matac_bandos", "_is_tubatmatac", "_tinhanh_bandos", "_is_tinhanhthaplencao", "_daokhoang_bandos", "_batbaothu_thietlap", "_hangviec_thutu", "_hangviec_chon",
 )
 
 
 # Các nhóm việc nằm ở các file tactu_*_xq.py (mixin), TacTu giữ trạng thái (__init__), lưu / nạp thiết lập và các lệnh bật / tắt
-class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu, TacTuHoatDong, TacTuGiaoDo, TacTuPhanGiai, TacTuEpDa, TacTuCatKho, TacTuSuMon,
+class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu, TacTuHoatDong, TacTuGiaoDo, TacTuPhanGiai, TacTuEpDa, TacTuDoiCau, TacTuCatKho, TacTuSuMon,
             TacTuLangLySon, TacTuSuGia, TacTuTapKich, TacTuMaTac, TacTuTinhAnh, TacTuDaoKhoang, TacTuBatBaoThu, TacTuDanhVong, TacTuThienXu, TacTuKeoCap,
             TacTuHangViec, TacTuDoiPhoBan):
     def __init__(self, moitruong: MoiTruong):
@@ -73,6 +75,13 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._nhatdodanhuong_map = {}
         self._idquaidautien = 0
         self._thoidiemsudungthaotacbaothugannhat = 0.
+        # Kỹ năng bảo thú giang hồ đã gửi (TacTuBaoThu): id kỹ năng -> {"luc": lúc gửi, "dahoi": đã thấy vào hồi chiêu}; lúc gửi gần nhất bất kỳ
+        self._kynangbaothudagui_map = {}
+        self._thoidiemguikynangbaothugannhat = 0.
+        # Mục tiêu bảo thú mình vừa ném chiêu có giữ chỗ (Từ Năng / Đóng Băng): (nhóm, id giữ chỗ) -> lúc hết giữ
+        self._nhombaothudagui_map = {}
+        # Chẩn đoán mã hiệu ứng cháy sau khi ném Thiêu Đốt: {"diachi", "ten", "truoc": set mã, "luc", "dabao": set}
+        self._chandoanthieudotbaothu = None
         self._thoidiemtamngungsudungkynang = 0.
         self._thoidiemhoiphucbaothugannhat = 0.
         self._is_tudongdieukhienbaothu = True
@@ -221,6 +230,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         # Bảo thú giang hồ dưới % khí huyết này thì thu hồi (0 = không thu hồi); thời điểm thu hồi gần nhất
         self._phantramsinhlucthuhoibaothugiangho = PHANTRAMSINHLUCTHUHOIBAOTHUGIANGHO
         self._thoidiemthuhoibaothugiangho = 0.
+        # % khí huyết bảo thú giang hồ lần đọc trước khi đang ở ngoài (None = chưa gọi ra): chỉ thu hồi khi tụt qua ngưỡng
+        self._phantrambaothugianghotruoc = None
         # Lần cảnh báo gần nhất bảo thú giang hồ trung thành thấp, không triệu hồi
         self._thoidiembaotrungthanhthap = 0.
         # Lần cho bảo thú giang hồ ăn Lão Tửu / Dưa hấu gần nhất (_hoiphucbaothugiangho)
@@ -236,10 +247,31 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._thoidiemcomuctieutheosau = 0.
         # Log chẩn đoán theo sau chậm: (lý do đứng, lúc bắt đầu, lần ghi cuối) để chỉ ghi khi đổi lý do / mỗi 2s (_logchotheosau)
         self._logchotheosau_cu = ("", 0., 0.)
+        # Theo sau tự nhiên (_is_theosautunhien, tactu_dichuyen._laytinhcachtheosau): tính cách cố định theo ID (id, dict),
+        # vài tọa độ gần nhất của người được theo sau (thời điểm, x, y) để biết hướng họ đi, hướng đi gần nhất (radian, None = chưa biết),
+        # họ có đang đi không, độ lệch chỗ đứng hiện tại (góc, hệ số bán kính, lệch x, lệch y) + lúc đổi chỗ kế tiếp,
+        # lúc bắt đầu ra quá ngưỡng kéo về (chờ trễ phản ứng rồi mới đi, 0 = đang trong ngưỡng)
+        self._is_theosautunhien = True
+        self._tinhcachtheosau = (None, None)
+        self._lichsutoadotheosau = deque(maxlen = 20)
+        self._huongditheosau = None
+        self._is_nguoitheosaudangdi = False
+        self._lechchodungtheosau = (0., 1., 0., 0.)
+        self._thoidiemdoichotheosau = 0.
+        self._thoidiemvuotnguongtheosau = 0.
+        # Vết đường người được theo sau đã đi (x, y) cách nhau >= 1 ô và bản đồ của vết (tactu_dichuyen._capnhatvettheosau)
+        self._vettheosau = deque(maxlen = SODIEMVETTHEOSAU)
+        self._idbandovettheosau = None
+        # Thứ tự đứng trong hàng đi theo vết: ((chỗ người được theo sau dừng, các ID thành viên), thứ tự, số thành viên), xáo mỗi lần họ dừng
+        self._thutuhangtheosau = (None, 0, 1)
         # Trưởng nhóm (cùng máy) ở bản đồ khác mà phù tới được => đang lo phù sang, lộ trình điểm đánh tạm nhường
         self._is_dangphutheosau = False
         self._idbandotheosaugannhat = None
         self._thoidiemdoibandotheosau = 0.
+        # Đích chuyến đi sang bản đồ của chính mình (_thuchienbuocditoibando) để cửa sổ theo sau cùng máy đi thẳng tới đích thay vì đuổi
+        # theo bản đồ mình đang đứng: (id bản đồ đích, (x, y) đích hoặc None, (x, y) điểm đang đi tới trong bản đồ hiện tại hoặc None,
+        # id bản đồ hiện tại lúc ghi, lúc ghi). Hết hạn sau 3s không cập nhật (get_dichditoibando)
+        self._dichditoibando = None
         self._thoidiemphutoibandogannhat = 0.
         # Đang nói chuyện NPC để sang bản đồ khác (bando_xq.LOIDINPC_MAP, vd. vào Lăng Ly Sơn): {"idbando", "manpc", "luc", "dachon"} hoặc None
         self._hoithoailoidinpc = None
@@ -262,6 +294,23 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._is_dungepda = False
         self._trangthaiepda = ""
         self._dsepda = None
+        # Đổi Lam Cầu + Hắc Cầu ở Thiên Sứ Trao Đổi (tactu_doicau_xq, nút tab Khác): dict trạng thái đang chạy hoặc None;
+        # _ketquadoicau: chữ kết quả lần trước cho giao diện
+        self._doicau = None
+        self._ketquadoicau = ""
+        # Đổi Lam Cầu + Hắc Cầu lấy Tàng Bảo Đồ trước khi đi đào (tactu_doicau_xq, gọi từ action_tudongdaotangbaodo):
+        # dict trạng thái đang đổi hoặc None
+        self._doitangbaodo = None
+        # Đào hết về Tân Thủ Thôn: bán trang bị trắng ở Chủ Tiệm Tạp Hóa trước khi đổi cầu (dict việc của _buocbantrangtinhanh
+        # hoặc None); _is_dabantrangdaobaodo: chuyến về này đã bán xong, có Tàng Bảo Đồ đi đào lại thì đặt False
+        self._viecbantrangdaobaodo = None
+        self._is_dabantrangdaobaodo = False
+        # Đã báo "Hết tàng bảo đồ" trong chuyến về này (báo 1 lần, trước đây 5 giây 1 lần mãi)
+        self._is_dacanhbaohettangbaodo = False
+        # Sau bán đồ: cất kho Tinh Nguyên Đơn / Bảo Thạch / Ngọc Thạch / Tinh Thạch (việc cất riêng của _buoccatkho hoặc None);
+        # _is_dacatkhodaobaodo: chuyến về này đã cất xong
+        self._vieccatkhodaobaodo = None
+        self._is_dacatkhodaobaodo = False
         # Hàng chờ giao tiền / đồ (tactu_giaodo_xq): [yêu cầu giaodo_xq kèm trạng thái]
         self._hangchogiaodo = []
         # ID người chơi đã nạp yêu cầu giao cố định (giaodo_xq.taicodinh); None = chưa nạp
@@ -476,6 +525,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         # {(ID bảo thú, ID Tinh Nguyên Đơn)} viên sẽ thay năng lực công kích của con đó (máy chủ hỏi xác nhận) => không ép vào con đó
         self._tinhnguyendonboqua = set()
         self._thoidiemsudunghoithanhphugannhat = time.time()
+        # Lần gần nhất bị chặn vì bot khác giữ chỗ về thành: còn trong 3s thì thử lại mỗi ~0.5s (get_is_dangchohoithanh)
+        self._thoidiemchohoithanh = 0.
         # Lần log gần nhất "chờ nhân vật khác về thành" (action_thugiuhoithanh), khỏi log mỗi vòng
         self._thoidiemlogchohoithanh = 0.
         self._thoidiemxepchongvatphamgannhat = time.time()
@@ -740,6 +791,11 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._diachimuctieutancongvatly = 0
         # Đào Hoa chờ chiêu mở đầu rồi mới "kill" (_guikilldaohoa): None hoặc {"id" mục tiêu, "kecan" lúc bắt đầu đứng cạnh mục tiêu}
         self._chomodaukill = None
+        # Chẩn đoán "kill bật, đã kề, đứng yên mà máy chủ không đánh thường" (_chandoankillkhongdanh): thời điểm log gần nhất
+        self._thoidiemlogkillkhongdanh = 0.
+        # Chiêu xoá cờ "kill" (VITRIKYNANGXOAKILLs, _guikilldaohoa): lượt trước từng chiêu còn sẵn sàng không; lúc thấy một chiêu vừa vào hồi
+        self._sansangxoakill_map = {}
+        self._thoidiemxoakill = 0.
         # ID đối tượng mục tiêu lúc máy chủ nhận chiêu CÓ DELAY gần nhất (_capnhatchieudaohoavuanhan): mục tiêu chưa có thì Đào Hoa chưa
         # được "kill" / dùng chiêu delay 0 lên nó (đòn đầu tiên phải là chiêu có delay, người dùng 23/11)
         self._idmuctieudamodau = None
@@ -781,6 +837,11 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._vanglai = {"lucvaonhom": 0., "lucnhuong": 0., "lucroi": 0.}
         self._buffnhomthieu = (0., [])
         self._trangthaivanglai = ""
+        # Chế độ buff toàn bang (làm lại 2026-11-28, bản cũ gỡ 02/11): Vân Mộng Cốc / Thục Sơn / Đào Hoa (Aegis) ai mời nhóm cũng tự
+        # đồng ý, buff cho cả nhóm, thành viên không còn ai cần buff thì tự rời (tactu_hoatdong.action_bufftoanbang). Trạng thái:
+        # lúc vào nhóm, {ID: lúc thấy đủ buff}, {ID: lúc thấy gần nhất}, lúc rời gần nhất, chuỗi trạng thái ghi log khi đổi
+        self._is_chedobufftoanbang = False
+        self._bufftoanbang = {"lucvaonhom": 0., "daxongs": {}, "lucthays": {}, "lucroi": 0., "trangthai": ""}
         # Đồng đội hạng cao hơn đang được mời vào nhóm (để biết đã mời bao lâu)
         self._idmoihangcaohon = 0
         self._thoidiembatdaumoihangcaohon = 0.
@@ -898,7 +959,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         # người chơi vốn ưu tiên hơn quái ở _is_uutienhon). Xem _is_boqualoctenpk
         self._is_pkbodanhsachten = False
         self._bonhomuctieubotkhac = (0., {})
-        # Ghi thông tin ước lượng (Khí Huyết / Kháng / Công) lên mục tiêu đang chọn trong client (danhhieumuctieu_xq): CHEDOHIENMUCTIEU_*
+        # Vẽ bang phái + môn phái lên danh hiệu mọi người chơi xung quanh trong client (danhhieumuctieu_xq): CHEDOHIENMUCTIEU_*
         self._chedohienthongtinmuctieugame = CHEDOHIENMUCTIEU_TAT
         self._mauhienthongtinmuctieugame = MAUHIENMUCTIEU_THEOMAU
         # Hiện hành động hiện tại (_hanhdong) trên đầu nhân vật mình trong client (danhhieumuctieu_xq.ODauNhanVat)
@@ -1166,7 +1227,8 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_is_tranhvungcam": self._is_tranhvungcam,
             "_is_giukhoangcachketancong": self._is_giukhoangcachketancong,
             "_khoangcachgiuketancong": self._khoangcachgiuketancong,
-            "_mauchaytron": self._mauchaytron,
+            # Khoá lưu "_mauchaytron2" (2026-11-28): bỏ giá trị cũ 15 đã tự lưu ở mọi nhân vật để mặc định tắt chạy trốn
+            "_mauchaytron2": self._mauchaytron,
             "_mauhetchaytron": self._mauhetchaytron,
             "_is_doiphapbaotheomau": self._is_doiphapbaotheomau,
             "_is_xoayvongtrao": self._is_xoayvongtrao,
@@ -1186,7 +1248,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             "_mauhienthongtinmuctieugame": self._mauhienthongtinmuctieugame,
             "_is_hienhanhdongtrendau": self._is_hienhanhdongtrendau,
             "_is_tutimduongtheosau": self._is_tutimduongtheosau,
+            "_is_theosautunhien": self._is_theosautunhien,
             "_is_chaytoibuffthanhvien": self._is_chaytoibuffthanhvien,
+            "_is_chedobufftoanbang": self._is_chedobufftoanbang,
             "_is_diquocgiatanthutienco": self._is_diquocgiatanthutienco,
             "_is_doidokhitrieuhoi": self._is_doidokhitrieuhoi,
             "_bodotrieuhoi": self._bodotrieuhoi,
@@ -1331,7 +1395,7 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if "_is_tranhvungcam" in thietlap: self._is_tranhvungcam = thietlap["_is_tranhvungcam"]
             if "_is_giukhoangcachketancong" in thietlap: self._is_giukhoangcachketancong = thietlap["_is_giukhoangcachketancong"]
             if "_khoangcachgiuketancong" in thietlap: self.thietlap_khoangcachgiuketancong(thietlap["_khoangcachgiuketancong"])
-            if "_mauchaytron" in thietlap: self.thietlap_mauchaytron(thietlap["_mauchaytron"])
+            if "_mauchaytron2" in thietlap: self.thietlap_mauchaytron(thietlap["_mauchaytron2"])
             if "_mauhetchaytron" in thietlap: self.thietlap_mauhetchaytron(thietlap["_mauhetchaytron"])
             if "_is_doiphapbaotheomau" in thietlap: self._is_doiphapbaotheomau = bool(thietlap["_is_doiphapbaotheomau"])
             if "_is_xoayvongtrao" in thietlap: self._is_xoayvongtrao = bool(thietlap["_is_xoayvongtrao"])
@@ -1349,7 +1413,9 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             if "_mauhienthongtinmuctieugame" in thietlap: self.thietlap_mauhienthongtinmuctieugame(thietlap["_mauhienthongtinmuctieugame"])
             if "_is_hienhanhdongtrendau" in thietlap: self._is_hienhanhdongtrendau = bool(thietlap["_is_hienhanhdongtrendau"])
             if "_is_tutimduongtheosau" in thietlap: self._is_tutimduongtheosau = thietlap["_is_tutimduongtheosau"]
+            if "_is_theosautunhien" in thietlap: self._is_theosautunhien = bool(thietlap["_is_theosautunhien"])
             if "_is_chaytoibuffthanhvien" in thietlap: self._is_chaytoibuffthanhvien = bool(thietlap["_is_chaytoibuffthanhvien"])
+            if "_is_chedobufftoanbang" in thietlap: self._is_chedobufftoanbang = bool(thietlap["_is_chedobufftoanbang"])
             if "_is_diquocgiatanthutienco" in thietlap: self._is_diquocgiatanthutienco = thietlap["_is_diquocgiatanthutienco"]
             if "_is_doidokhitrieuhoi" in thietlap: self._is_doidokhitrieuhoi = thietlap["_is_doidokhitrieuhoi"]
             if "_bodotrieuhoi" in thietlap: self._bodotrieuhoi = list(thietlap["_bodotrieuhoi"])
@@ -1422,8 +1488,10 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         self._mauhienthongtinmuctieugame = mau if mau in MAUHIENMUCTIEU_MAP.values() else MAUHIENMUCTIEU_THEOMAU
 
     def thietlap_chedohienthongtinmuctieugame(self, chedo):
+        # Bỏ chế độ "Nối vào sau tên" (2026-11-27, giờ vẽ bang + phái cho mọi người chơi): thiết lập cũ còn chế độ đó thì coi như danh hiệu
         chedo = str(chedo).strip()
-        self._chedohienthongtinmuctieugame = chedo if chedo in (CHEDOHIENMUCTIEU_DANHHIEU, CHEDOHIENMUCTIEU_TEN) else CHEDOHIENMUCTIEU_TAT
+        self._chedohienthongtinmuctieugame = CHEDOHIENMUCTIEU_DANHHIEU if chedo in (CHEDOHIENMUCTIEU_DANHHIEU, CHEDOHIENMUCTIEU_TEN) \
+            else CHEDOHIENMUCTIEU_TAT
 
     def battat_chonmuctieu(self, khoa):
         # Ô tích nhóm Chọn mục tiêu (CHONMUCTIEUBATTAT_MAP): đường đi thật / cụm quái / chia mục tiêu giữa các bot
@@ -1524,6 +1592,15 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
         else:
             phatam("Tắt tự tìm đường tới người được theo sau")
 
+    def battat_theosautunhien(self):
+        self._is_theosautunhien = not self._is_theosautunhien
+        self._thoidiemvuotnguongtheosau = 0.
+        self._thoidiemdoichotheosau = 0.
+        if self._is_theosautunhien:
+            phatam("Bật theo sau tự nhiên")
+        else:
+            phatam("Tắt theo sau tự nhiên")
+
     def battat_chaytoibuffthanhvien(self):
         self._is_chaytoibuffthanhvien = not self._is_chaytoibuffthanhvien
         self._yeucauchaytoibuff = None
@@ -1532,6 +1609,14 @@ class TacTu(TacTuDiChuyen, TacTuMucTieu, TacTuKyNang, TacTuVatPham, TacTuBaoThu,
             phatam("Bật buff toàn bản đồ")
         else:
             phatam("Tắt buff toàn bản đồ")
+
+    def battat_chedobufftoanbang(self):
+        self._is_chedobufftoanbang = not self._is_chedobufftoanbang
+        self._bufftoanbang.update(lucvaonhom = 0., daxongs = {}, lucthays = {}, trangthai = "")
+        if self._is_chedobufftoanbang:
+            phatam("Bật chế độ buff toàn bang")
+        else:
+            phatam("Tắt chế độ buff toàn bang")
 
     def battat_diquocgiatanthutienco(self):
         self._is_diquocgiatanthutienco = not self._is_diquocgiatanthutienco

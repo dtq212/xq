@@ -11,7 +11,8 @@ import unicodedata
 from hangso_xq import *
 from moitruong_xq import MoiTruong, DOUUTIEN_THAP, DOUUTIEN_KHANCAP, DOUUTIEN_CAO, SOLUONGDOITUONGXUNGQUANHTOIDA, tinh_is_huongmatvediem
 from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam, canhbao
-from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, donbangthoidiem
+from tienich_xq import laynhomtodoitudongs, laynhanvattodoitudongs, donbangthoidiem, read_bytes
+import struct
 from bando_xq import _laycongs
 
 # Không dùng chiêu lướt (Khai Thiên Tịch Địa / Đằng Vân Giá Vũ) khi điểm rơi / đích cách cổng bản đồ trong chừng này ô (tầm ô vuông):
@@ -1200,8 +1201,10 @@ class TacTuKyNang:
         else:
             # "kill" chỉ bật tự động đánh thường: đã bật với đúng mục tiêu này thì THOIGIANGUILAITANCONGVATLY giây mới gửi lại.
             # Cờ tắt khi di chuyển (trừ Đào Hoa Nguyên) / bị choáng / đổi mục tiêu (xem các chỗ gán _is_battudongtancongvatly = False)
+            # Đường Môn, Cấm Vệ Quân, Thục Sơn đeo đao spam như Đào Hoa (THOIGIANGUILAIKILLDAOHOA, người dùng 28/11): chiêu / choáng xoá cờ
+            thoigianguilaikill = THOIGIANGUILAIKILLDAOHOA if self._is_phaispamkill() else THOIGIANGUILAITANCONGVATLY
             if loaikynang == "tancongvatly" and self._is_battudongtancongvatly and self._diachimuctieutancongvatly == diachimuctieu \
-                    and time.time() - self.moitruong._thoidiemsudungtancongvatlygannhat < THOIGIANGUILAITANCONGVATLY:
+                    and time.time() - self.moitruong._thoidiemsudungtancongvatlygannhat < thoigianguilaikill:
                 return False, False
 
             # Đang xuất chiêu / khựng sau chiêu: không gửi chiêu nhắm mục tiêu ở ngoài KHOANGCACHCHIEUKHIXUATCHIEU. Mục tiêu ngoài tầm thật
@@ -1538,9 +1541,17 @@ class TacTuKyNang:
         if self._xulydichosauchieudelay0(diachimuctieu, is_cancanchien, is_muctieulanguoichoi):
             return
         # Nhất Quyền (dame chính) đã hồi chiêu mà nguyên khí còn thấp: để dành cho nó, không lót chiêu delay 0 (delay 0 -> Nhất Quyền là
-        # bước chậm nhất, 0.8-1.7s). Lạc Kích lặp lại đã cần NGUYENKHITOITHIEUCHIEULOT nên luật này chặn Đại Hải
+        # bước chậm nhất, 0.8-1.7s). Lạc Kích lặp lại đã cần NGUYENKHITOITHIEUCHIEULOT nên luật này chặn Đại Hải (trừ Phong Yêu Kính, xem dưới)
         is_nhatquyensansang = self.moitruong.get_is_kynangsansang(VITRIKYNANG_NHATQUYENBATSON)
         is_giunguyenkhinhatquyen = is_nhatquyensansang and nguyenkhiconlai <= NGUYENKHIGIUCHONHATQUYEN
+        # CHỈ TRONG PHONG YÊU KÍNH (người dùng 28/11: tạm áp riêng ở đây, nơi khác giữ luật cũ): đông quái quanh mình (>= _soluongnhieumuctieu
+        # con trong BANKINHDAIHAI ô) thì Đại Hải ưu tiên hơn Nhất Quyền (người dùng 28/11: Phong Yêu
+        # Kính đứng giữa bầy mà toàn Nhất Quyền, Đại Hải gần như không ra; log [ĐẠI HẢI] 342/347: bị chặn chủ yếu vì "giữ nguyên khí cho
+        # Nhất Quyền" ~75 lần, "không đủ tiêu hao" ~70, "chưa kề mục tiêu" ~50). Khi đó Đại Hải không giữ nguyên khí cho Nhất Quyền, không
+        # cần kề mục tiêu đang chọn (chiêu quanh mình); Nhất Quyền nhường: Đại Hải sẵn sàng mà nguyên khí < NGUYENKHINHUONGDAIHAI thì chờ
+        is_pykdaihai = self.moitruong.get_is_bandophongyeu()
+        is_dongquai = is_pykdaihai and self._is_nhieumuctieuganbanthan3
+        is_nhuongdaihai = is_dongquai and nguyenkhiconlai < NGUYENKHINHUONGDAIHAI and self.moitruong.get_is_kynangsansang(VITRIKYNANG_DAIHAIVOLUONG)
         # Chiêu lót delay 0 (Lạc Kích lặp lại): nguyên khí dư (NGUYENKHITOITHIEUCHIEULOT) thì dùng; hoặc Nhất Quyền còn hồi lâu
         # (THOIGIANHOICHIEUCONLAICHIEULOT) thì bước chờ delay 0 -> Nhất Quyền (0.8-1.7s) bị hồi chiêu che mất, dùng khi còn đủ
         # NGUYENKHITOITHIEUCHIEULOTKHIHOICHIEU
@@ -1611,6 +1622,7 @@ class TacTuKyNang:
                 # Chưa có chiêu có delay nào trúng mục tiêu: chưa kill (kẹt quá THOIGIANCHOMODAUKILLTOIDA giây cạnh mục tiêu thì kill luôn)
                 chieuchos = sorted(set(chieuchos) | set(chieucodelaymodaus))
             self._guikilldaohoa(diachimuctieu, khoangcach, chieuchos, is_cancanchien)
+            self._chandoankillkhongdanh(diachimuctieu, is_cancanchien)
 
         # Chẩn đoán Đại Hải (người dùng 25/11: Phong Yêu Kính quái đông mà không thấy dùng): quanh mình >= 2 quái trong BANKINHDAIHAI ô
         # mà một điều kiện của Đại Hải sai => ghi từng điều kiện, nguyên khí, tư thế (giãn THOIGIANLOGCHANDOANDAIHAI giây)
@@ -1618,10 +1630,11 @@ class TacTuKyNang:
             is_sansangdaihai = self.moitruong.get_is_kynangsansang(VITRIKYNANG_DAIHAIVOLUONG)
             is_dutieuhaodaihai = self._is_dutieuhao(VITRIKYNANG_DAIHAIVOLUONG)
             lydos = [ten for ten, is_chan in (
-                ("chưa mở đầu (chờ {})".format(chieucodelaymodaus), is_chuamodau),
-                ("chưa kề mục tiêu (cách {:.1f})".format(khoangcach) if diachimuctieu else "không mục tiêu", not is_cancanchien),
+                ("chưa mở đầu (chờ {})".format(chieucodelaymodaus), is_chuamodau and not is_dongquai),
+                ("không mục tiêu" if not diachimuctieu else "chưa kề mục tiêu (cách {:.1f})".format(khoangcach),
+                 not diachimuctieu or (not is_pykdaihai and not is_cancanchien)),
                 ("cờ nhiều quái 3 ô sai (đếm {}, cần {})".format(self._somuctieuganbanthan3, self._soluongnhieumuctieu), not self._is_nhieumuctieuganbanthan3),
-                ("giữ nguyên khí cho Nhất Quyền", is_giunguyenkhinhatquyen),
+                ("giữ nguyên khí cho Nhất Quyền", not is_pykdaihai and is_giunguyenkhinhatquyen),
                 ("vừa dùng chiêu delay 0 ({})".format(self._idchieudaohoavuanhan), is_chandelay0),
                 ("chưa sẵn sàng", not is_sansangdaihai),
                 ("không đủ tiêu hao", not is_dutieuhaodaihai),
@@ -1643,6 +1656,9 @@ class TacTuKyNang:
         # Ba Động từ xa: mở đầu / đuổi khi mục tiêu cách >= KHOANGCACHTOITHIEUBADONG ô; đã kề thì là chiêu lót.
         # Đại Hải chỉ dùng khi nhiều mục tiêu (choáng 1s với 1 người không đáng 4 nguyên khí)
         danhsachuutien = [
+            # PHONG YÊU KÍNH: Đại Hải dòng riêng TRÊN CÙNG (người dùng 28/11): có mục tiêu + đông quái quanh mình (>= _soluongnhieumuctieu con
+            # trong BANKINHDAIHAI ô) là dùng ngay, không xét chiêu mở đầu / chiêu delay 0 vừa dùng / kề mục tiêu / giữ nguyên khí
+            (VITRIKYNANG_DAIHAIVOLUONG, "sudungkynangkhongmuctieu", lambda: is_dongquai and diachimuctieu, 0, None, False, False),
             # Trấn Cổ Thần Uy / Kim Chung Tráo: buff duy trì, không cần có mục tiêu (người dùng dặn 2026-11-06); ở Tân Thủ Thôn / Chu Quốc
             # đã bị chặn chung trong action_xulyuutiensudungkynang (BANDOKHONGTANCONGs)
             # 23/11: chỉ ở đầu danh sách khi không có mục tiêu (làm mới sớm) hoặc đã mất buff quá lâu; kề mục tiêu thì ở cuối danh sách
@@ -1671,7 +1687,7 @@ class TacTuKyNang:
             (VITRIKYNANG_KHONGTHUNHAPBACHNHAN, "sudungkynangmuctieu", lambda: is_cancanchien and is_muctieulanguoichoi and idloaivukhimuctieu not in (IDLOAIVUKHI_DAO, IDLOAIVUKHI_KIEM, IDLOAIVUKHI_TAYKHONG) and not is_muctieucohieuung(HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN, HIEUUNGKYNANG_CHOANG), KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True, HIEUUNGKYNANG_KHONGTHUNHAPBACHNHAN),
             # Nhất Quyền: chiêu dame mạnh nhất, ưu tiên duy trì (người dùng dặn 2026-11-10) => hết hồi là dùng, chỉ sau Thốn Kình (Trọng
             # Thương -30% Ngoại Kháng làm Nhất Quyền mạnh hơn) và Phong Ma / Không Thủ
-            (VITRIKYNANG_NHATQUYENBATSON, "sudungkynangmuctieu", lambda: is_cancanchien, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True),
+            (VITRIKYNANG_NHATQUYENBATSON, "sudungkynangmuctieu", lambda: is_cancanchien and not is_nhuongdaihai, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, True),
             # Phản Tỏa: "kill" đã luôn bật (_guikilldaohoa); dùng khi cờ đánh thường đang đúng mục tiêu. Delay 0 nên kẹp sau chiêu có
             # delay (is_chandelay0). Chỉ dùng khi máy chủ đã thật sự ép đòn đánh thường lên mục tiêu này gần đây (gói 0x41 => chắc chắn đánh được vật lý)
             (VITRIKYNANG_PHANTOA, "sudungkynangkhongmuctieu", lambda: not is_chuamodau and is_phantoasansang and self._is_battudongtancongvatly and self._diachimuctieutancongvatly == diachimuctieu
@@ -1682,8 +1698,8 @@ class TacTuKyNang:
             # Đủ hiệu ứng: Lạc Kích lặp lại (delay 0, đã có hiệu ứng vẫn ra dame ngay) khi không làm thiếu nguyên khí / chậm Nhất Quyền
             # (is_duoclotdelay0) và chiêu vừa nhận không phải delay 0
             # Ba Động cận chiến (đã kề, người dùng bảo đưa lại 2026-11-10: chậm + 40% rối loạn) lót trước Lạc Kích lặp lại, cùng điều kiện
-            (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: not is_chuamodau and is_cancanchien and not is_chandelay0 and is_duoclotdelay0, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
-            (VITRIKYNANG_LACKICH, "sudungkynangmuctieu", lambda: not is_chuamodau and is_cancanchien and not is_chandelay0 and is_duoclotdelay0, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
+            (VITRIKYNANG_BADONGQUYEN, "sudungkynangmuctieu", lambda: not is_chuamodau and is_cancanchien and not is_chandelay0 and is_duoclotdelay0 and not is_nhuongdaihai, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
+            (VITRIKYNANG_LACKICH, "sudungkynangmuctieu", lambda: not is_chuamodau and is_cancanchien and not is_chandelay0 and is_duoclotdelay0 and not is_nhuongdaihai, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False, False),
             # Trấn Cổ Thần Uy khi kề mục tiêu: chỉ tới đây khi không còn chiêu đánh nào dùng được
             (VITRIKYNANG_TRANCOTHANUY, "sudungkynangkhongmuctieu", lambda: not is_nhuongbuff and not is_cotranco and is_cancanchien, 0, None, False, False),
             (None, "dichuyentiepcancanchien", lambda: diachimuctieu and khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN, 0, None, False, False),
@@ -1829,7 +1845,7 @@ class TacTuKyNang:
         # đánh thường khi nguyên khí hồi). "kill" không phải kỹ năng: chỉ là cờ đánh dấu ở máy chủ, đủ gần thì máy chủ tự đánh thường
         # => gửi riêng ngoài danh sách ưu tiên chiêu, không bị chiêu nào chọn / chặn (hồi chiêu, đang xuất chiêu, chờ lệnh trước, chờ
         # số bay đánh thường...). Chỉ giữ các chặn không liên quan kỹ năng: đang hái khoáng, người chơi không đánh được, đang lùi giữ
-        # khoảng cách. Đã bật đúng mục tiêu thì THOIGIANGUILAITANCONGVATLY giây mới gửi lại
+        # khoảng cách. Đã bật đúng mục tiêu thì THOIGIANGUILAIKILLDAOHOA giây mới gửi lại
         # chieuchos: chiêu mở đầu còn chờ dùng (mục tiêu chưa dính hiệu ứng) => chưa kill. Kẹt (chiêu "dùng được" mà hiệu ứng mãi không
         # hiện, vd mục tiêu miễn khống chế) thì đứng cạnh mục tiêu quá THOIGIANCHOMODAUKILLTOIDA giây là kill luôn
         if not diachimuctieu or khoangcach > self._khoangcachsudungkynangtamxa:
@@ -1854,25 +1870,72 @@ class TacTuKyNang:
                 self.moitruong._inlog(f"[KILL] chờ chiêu mở đầu {chieuchos} quá {THOIGIANCHOMODAUKILLTOIDA}s => kill luôn")
         if self.moitruong.get_is_nguoichoi(diachimuctieu) and not self.moitruong.get_is_cothetancong(diachimuctieu):
             return
-        if self._is_battudongtancongvatly and self._diachimuctieutancongvatly == diachimuctieu \
-                and thoidiemhientai - self.moitruong._thoidiemsudungtancongvatlygannhat < THOIGIANGUILAITANCONGVATLY:
+        # Chiêu xoá cờ "kill" ở máy chủ (người dùng thử tay 28/11): Đào Hoa Lạc Ảnh, Đại Hải Vô Lượng; choáng / đi / pet / title / desc thì
+        # không. Chiêu trong VITRIKYNANGXOAKILLs vừa vào hồi chiêu (máy chủ đã nhận) sau lần "kill" gần nhất => gửi lại "kill" ngay
+        for vitri in VITRIKYNANGXOAKILLs:
+            is_sansang = self.moitruong.get_is_kynangsansang(vitri)
+            if self._sansangxoakill_map.get(vitri) and not is_sansang:
+                self._thoidiemxoakill = thoidiemhientai
+            self._sansangxoakill_map[vitri] = is_sansang
+        is_killsauxoa = self._thoidiemxoakill > self.moitruong._thoidiemsudungtancongvatlygannhat
+        # Trong trận Lạc Ảnh cờ cũng bị xoá liên tục: không dò trận (đọc trận trên đất không ra, log 28/11), spam THOIGIANGUILAIKILLDAOHOA mọi lúc
+        if self._is_battudongtancongvatly and self._diachimuctieutancongvatly == diachimuctieu and not is_killsauxoa \
+                and thoidiemhientai - self.moitruong._thoidiemsudungtancongvatlygannhat < THOIGIANGUILAIKILLDAOHOA:
             return
+        if is_killsauxoa and IS_LOGCAULENH:
+            self.moitruong._inlog("[KILL] Lạc Ảnh / Đại Hải vừa ra (xoá cờ kill) => kill lại ngay")
         if self.moitruong.action_sudungtancongvatly(diachimuctieu):
             self._is_battudongtancongvatly = True
             self._diachimuctieutancongvatly = diachimuctieu
 
-    def _guikillcamvequan(self, diachimuctieu, khoangcach):
-        # "kill" gửi riêng như Đào Hoa (không phải kỹ năng, không chiếm lượt): mục tiêu trong tầm xa là bật Tự Động Công Kích để đòn
-        # đánh thường hồi nguyên khí (đo 2026-11-03: chỉ dùng chiêu thì nguyên khí luôn 0-3, đứng im 2-3s chờ hồi). Máy chủ tắt đánh
-        # thường khi đi / sau chiêu nên đứng im quá THOIGIANDUNGIMGUILAIKILLCAMVEQUAN giây là gửi lại, tối đa 1 lần / THOIGIANCHOGUILAIKILLCAMVEQUAN giây
+    def _chandoankillkhongdanh(self, diachimuctieu, is_cancanchien):
+        # Chẩn đoán 27/11 (người dùng: Phong Yêu Kính boss Kính Ma Khuyển Thần, bật "kill" rồi mà máy chủ không đánh thường, nghi chưa đủ
+        # sát). Log 347 12:26:42-12:27:05: gói "go 157,101 8" = 1 bước hướng 8 tới (158, 102), boss (159, 103) => máy chủ cũng thấy kề
+        # chéo; Phản Tỏa 12:26:44 có ra (cần ô đánh thường thật) nhưng không biết sau đó máy chủ còn đánh không.
+        # Ghi: "kill" đang bật đúng mục tiêu, kề theo ô bước (+0x18), đứng yên >= 1s, quá 2s không có ô đánh thường thật lên mục tiêu
+        # => ô bước / toạ độ vẽ của cả hai, lệch x/y, lúc kill / chiêu / đánh thường gần nhất. Giãn 2s
+        if not IS_LOGCAULENH or not diachimuctieu or not is_cancanchien:
+            return
+        if not self._is_battudongtancongvatly or self._diachimuctieutancongvatly != diachimuctieu:
+            return
+        mt = self.moitruong
+        thoidiemhientai = time.time()
+        if thoidiemhientai - self._thoidiemlogkillkhongdanh < 2.:
+            return
+        if mt.get_idtuthenhanvat() != TUTHENHANVAT_DUNGIM or thoidiemhientai - mt.get_thoidiemtuthenhanvatdungimgannhat() < 1.:
+            return
+        if mt.get_is_vuadanhthuong(diachimuctieu, 2.):
+            return
+        self._thoidiemlogkillkhongdanh = thoidiemhientai
+        try:
+            nhanvat = mt.get_diachicosothongtinnhanvat1()
+            xb1, yb1 = struct.unpack("<ii", read_bytes(mt.tientrinh, nhanvat + 0x18, 8))
+            xv1, yv1 = struct.unpack("<ii", read_bytes(mt.tientrinh, nhanvat, 8))
+            xb2, yb2 = struct.unpack("<ii", read_bytes(mt.tientrinh, diachimuctieu + 0x18, 8))
+            xv2, yv2 = struct.unpack("<ii", read_bytes(mt.tientrinh, diachimuctieu, 8))
+        except Exception:
+            return
+        iddanhthuong, thoidiemdanhthuong = mt._danhthuongthat
+        kynang, thoidiemkynang = mt._kynangguigannhat
+        mt._inlog(f"[KILL KHÔNG ĐÁNH] mình bước {(xb1, yb1)} vẽ {(xv1, yv1)} | mục tiêu bước {(xb2, yb2)} vẽ {(xv2, yv2)}"
+                  f" lệch ({xb2 - xb1}, {yb2 - yb1}) | đứng yên {thoidiemhientai - mt.get_thoidiemtuthenhanvatdungimgannhat():.1f}s"
+                  f" | kill cách {thoidiemhientai - mt._thoidiemsudungtancongvatlygannhat:.1f}s | chiêu {kynang} cách {thoidiemhientai - thoidiemkynang:.1f}s"
+                  f" | đánh thường gần nhất {'lên mục tiêu này' if iddanhthuong == mt.get_iddoituong(diachimuctieu) else iddanhthuong}"
+                  f" cách {thoidiemhientai - thoidiemdanhthuong:.1f}s")
+
+    def _is_phaispamkill(self):
+        # Phái spam "kill" mỗi THOIGIANGUILAIKILLDAOHOA giây (người dùng 28/11): Đào Hoa (riêng _guikilldaohoa), Đường Môn, Cấm Vệ Quân,
+        # Thục Sơn đeo đao
+        tenmonphai = self.moitruong.get_tenmonphai()
+        return tenmonphai in ("daohoanguyen", "duongmon", "camvequan") or (tenmonphai == "thucson" and self._is_thucsondao)
+
+    def _guikilltamxa(self, diachimuctieu, khoangcach):
+        # "kill" gửi riêng ngoài danh sách chiêu (không phải kỹ năng, không chiếm lượt), dùng cho Cấm Vệ Quân và Thục Sơn đeo đao: mục tiêu
+        # trong tầm xa là bật Tự Động Công Kích, tới gần máy chủ tự đánh thường. Cấm Vệ Quân: đòn đánh thường hồi nguyên khí (đo 2026-11-03:
+        # chỉ dùng chiêu thì nguyên khí luôn 0-3, đứng im 2-3s chờ hồi). Gửi lại mỗi THOIGIANGUILAIKILLDAOHOA giây (người dùng 28/11, thay
+        # cách cũ "đứng im 0.3s mới gửi lại, tối đa 1 lần / 1s") vì chiêu / choáng xoá cờ ở máy chủ
         if not diachimuctieu or khoangcach > self._khoangcachsudungkynangtamxa:
             return
-        thoidiemhientai = time.time()
-        if thoidiemhientai - self.moitruong._thoidiemsudungtancongvatlygannhat < THOIGIANCHOGUILAIKILLCAMVEQUAN:
-            return
-        if self._is_battudongtancongvatly and self.moitruong.get_idtuthenhanvat() == TUTHENHANVAT_DUNGIM \
-                and thoidiemhientai - self.moitruong.get_thoidiemtuthenhanvatdungimgannhat() >= THOIGIANDUNGIMGUILAIKILLCAMVEQUAN:
-            self._is_battudongtancongvatly = False
         self.action_xulyuutiensudungkynang(loaikynang = "tancongvatly", vitrikynang = None, diachimuctieu = diachimuctieu,
                                            khoangcachyeucau = self._khoangcachsudungkynangtamxa + BUKHOANGCACHTAMXA)
 
@@ -1945,7 +2008,7 @@ class TacTuKyNang:
             (None, "dichuyentiepcancanchien", lambda: diachimuctieu and khoangcach > KHOANGCACHSUDUNGKYNANGCANCHIEN, 0, None, False),
         ]
 
-        self._guikillcamvequan(diachimuctieu, khoangcach)
+        self._guikilltamxa(diachimuctieu, khoangcach)
 
         for i, item in enumerate(danhsachuutien):
             vitrikynang, loaikynang, dieukien, khoangcachyeucau, target, is_yeucaukhongdichuyen = item
@@ -2750,7 +2813,10 @@ class TacTuKyNang:
 
     def _tudongsudungkynang(self):
         if self._is_battudongtancongvatly and self.moitruong.get_is_nhanvatbichoang():
+            # Choáng xoá cờ "kill" ở máy chủ (người dùng 28/11): hạ cờ để hết choáng là _guikilldaohoa / chiêu "tancongvatly" kill lại ngay
             self._is_battudongtancongvatly = False
+            if IS_LOGCAULENH:
+                self.moitruong._inlog("[KILL] bị choáng (xoá cờ kill) => hết choáng kill lại")
 
         if self._trangthaiveban != 0:
             return
@@ -3129,8 +3195,9 @@ class TacTuKyNang:
             (VITRIKYNANG_PHAKHONGKICH, "sudungkynangmuctieu", lambda: diachimuctieu and noiluc > 150, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False),
             (VITRIKYNANG_PHAMATRAM, "sudungkynangmuctieu", lambda: diachimuctieu and noiluc > 150, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False),
             (VITRIKYNANG_DONDAOTRUCNHAP, "sudungkynangmuctieu", lambda: diachimuctieu and noiluc > 150, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, False),
-            (None, "tancongvatly", lambda: diachimuctieu and noiluc < 150, KHOANGCACHSUDUNGKYNANGCANCHIEN, None, True),
         ]
+        # "kill" gửi riêng mọi lúc như Cấm Vệ Quân, spam THOIGIANGUILAIKILLDAOHOA (người dùng 28/11; trước chỉ "kill" khi nội lực < 150)
+        self._guikilltamxa(diachimuctieu, khoangcach)
 
         for vitrikynang, loaikynang, dieukien, khoangcachyeucau, target, is_ngat in danhsachuutien:
             if callable(dieukien) and not dieukien(): continue

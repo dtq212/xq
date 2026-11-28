@@ -133,22 +133,31 @@ class TroChoiManager:
         self.stop_all()
 
     def loop_scan(self):
+        # Mọi lỗi trong vòng đều bắt và in ra chinh.log: luồng này chết là cửa sổ game mở sau đó không bao giờ có bot. 2026-11-28 07:40
+        # đóng 3 client acc gà xong lượt -> tiến trình bot của chúng tự xoá shared_data[hwnd] (cuaso_xq) chen giữa "if h in" và "del"
+        # -> KeyError, luồng chết im lặng (traceback ra stderr, không vào chinh.log); 3 acc gà lượt sau không có bot, Kéo gà A-Z đứng chờ
         while True:
-            game_hwnds = self._timcuasogame()
-            for hwnd in game_hwnds:
-                if hwnd not in self.bot_processes:
-                    p = Process(target = run_bot_process, args = (hwnd, self.shared_data, self.command_dict, self.dieuphoi_khoa, self.dieuphoi_trangthai, self.dieuphoi_dangchos, self.dieuphoi_giukynangs, self.shared_data_lan))
-                    p.daemon = True
-                    p.start()
-                    self.bot_processes[hwnd] = p
+            try:
+                game_hwnds = self._timcuasogame()
+                for hwnd in game_hwnds:
+                    if hwnd not in self.bot_processes:
+                        p = Process(target = run_bot_process, args = (hwnd, self.shared_data, self.command_dict, self.dieuphoi_khoa, self.dieuphoi_trangthai, self.dieuphoi_dangchos, self.dieuphoi_giukynangs, self.shared_data_lan))
+                        p.daemon = True
+                        p.start()
+                        self.bot_processes[hwnd] = p
 
-            dead = [h for h, p in self.bot_processes.items() if not p.is_alive()]
-            for h in dead:
-                del self.bot_processes[h]
-                if h in self.shared_data: del self.shared_data[h]
-                if h in self.command_dict: del self.command_dict[h]
-                for kenh in (KENH_LENH, KENH_DICHUYEN):
-                    self.dieuphoi_dangchos.pop((kenh, h), None)
+                dead = [h for h, p in self.bot_processes.items() if not p.is_alive()]
+                for h in dead:
+                    del self.bot_processes[h]
+                    for kho in (self.shared_data, self.command_dict):
+                        try:
+                            del kho[h]
+                        except Exception:
+                            pass
+                    for kenh in (KENH_LENH, KENH_DICHUYEN):
+                        self.dieuphoi_dangchos.pop((kenh, h), None)
+            except Exception:
+                print("[DÒ CỬA SỔ] Lỗi (vòng sau làm tiếp):\n" + traceback.format_exc())
 
             time.sleep(2)
 

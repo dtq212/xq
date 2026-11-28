@@ -1415,6 +1415,12 @@ class MoiTruong:
         self.action_ghiloimoinhom()
         return time.time() - self._loimoinhom_map.get(idtruongnhom, 0.) < 60
 
+    def get_idsloimoinhom(self):
+        # ID người đang mời mình vào nhóm (lời mời còn hạn 60s, chưa đồng ý), lời mời mới nhất trước: chế độ buff toàn bang nhận bất kỳ ai
+        self.action_ghiloimoinhom()
+        now = time.time()
+        return [i for i, t in sorted(self._loimoinhom_map.items(), key = lambda x: -x[1]) if now - t < 60]
+
     def action_sudungvatphambaothu(self, iddoituongvatpham, iddoituongbaothu, delay = 0.2):
         if time.time() - self._thoidiemsudungvatphambaothugannhat < delay:
             return False
@@ -3692,6 +3698,28 @@ class MoiTruong:
             return False
         return read_int(self.tientrinh, x + 0x1E0 + 0x6C * (sothutu - 1))
 
+    def action_hienbaothugianghothanhlenh(self):
+        # Có từ 2 bảo thú trở lên thì thanh lệnh bảo thú (nút Tấn công / Theo sau / Chờ đợi, hình thức, kỹ năng; số thứ tự trên góc)
+        # luôn hiện bảo thú giang hồ (người dùng 27/11). Dịch xq.exe 27/11:
+        #   KDK+0x338 số bảo thú, KDK+0x334 chỉ số ô bảo thú đang hiện trên thanh (0.., -1 không có, 0x63 trạng thái riêng; nút chọn
+        #   xq+0x147FA4.. ghi 0/1/2/3), KDK+0x33C chỉ số đã vẽ: vòng vẽ xq+0x4E1DA thấy +0x334 khác +0x33C thì tự nạp lại icon
+        #   => chỉ cần ghi +0x334. Ô giang hồ = ô có id trùng id ở cấu trúc giang hồ (TG_MONPHAI +0x47C, như client so ở xq+0x6E676)
+        # -> True khi vừa đổi
+        x = read_int(self.tientrinh, self.diachixq + DC.KHOIDIEUKHIEN)
+        if not x or not self.get_is_datrieuhoibaothugiangho():
+            return False
+        soluong = read_int(self.tientrinh, x + 0x338)
+        idgiangho = self.get_iddoituongbaothugiangho()
+        if not idgiangho or not 2 <= soluong <= 4:
+            return False
+        for chiso in range(soluong):
+            if read_int(self.tientrinh, x + 0x184 + 0x6C * chiso) == idgiangho:
+                if read_int(self.tientrinh, x + 0x334) != chiso:
+                    write_int(self.tientrinh, x + 0x334, chiso)
+                    return True
+                return False
+        return False
+
     def _get_diachidoituongbaothu(self, sothutu = 1):
         # Đối tượng bảo thú trong danh sách đối tượng xung quanh (đang trong tầm nhìn), 0 nếu không thấy. Nhớ địa chỉ lần trước
         idbaothu = self.get_iddoituongbaothu(sothutu)
@@ -4481,7 +4509,8 @@ class MoiTruong:
             except Exception:
                 chu = ""
             if chu:
-                ten = re.sub(r"\x1b.", "", chu).split(":")[0].strip().lower()
+                # Tên đứng trước dấu hai chấm, game dùng cả "：" (toàn khổ, log 347 28/11 'choáng：' -> khongro) lẫn ":"
+                ten = re.split(r"[:：\n]", re.sub(r"\x1b.", "", chu))[0].strip().lower()
                 dem["loai"] = TENHIEUUNG9002_MAP.get(ten, "khongro")
                 self._inlog(f"[HIỆU ỨNG 9002] {ten!r} -> {dem['loai']} (sau {now - dem['thoidiemhoi']:.2f}s, còn"
                             f" {(mocketthuc - ctypes.c_uint32(ctypes.windll.kernel32.GetTickCount()).value) / 1000.:.1f}s): {chu.strip()!r}")
@@ -4986,7 +5015,8 @@ class MoiTruong:
             if not ten:
                 continue
             if dong.startswith("Môn phái:"):
-                self._monphaidanggomthongtin = dong.split(":", 1)[1].strip()
+                # Chưa vào phái game in "-" -> lưu "Vô Môn Phái" (người dùng yêu cầu 2026-11-28)
+                self._monphaidanggomthongtin = dong.split(":", 1)[1].strip().strip("－-").strip() or TENVOMONPHAI
             elif dong.startswith("Bang phái:"):
                 # Niết Bàn ghi "－－" khi không có bang (Aegis bỏ hẳn dòng Bang phái)
                 self._ghibangphai(ten, dong.split(":", 1)[1].strip().strip("－-"))
@@ -5017,7 +5047,7 @@ class MoiTruong:
         if tenmonphaigame:
             monphai = self._mamonphaitheoten(tenmonphaigame)
             if self._monphainguoichoi_map.get(idnguoichoi) != monphai:
-                self._inlog(f"[MÔN PHÁI] {ten} ({idnguoichoi}): {tenmonphaigame}" + ("" if monphai in TENMONPHAI else " (chưa có trong TENMONPHAI)"))
+                self._inlog(f"[MÔN PHÁI] {ten} ({idnguoichoi}): {tenmonphaigame}" + ("" if monphai in TENMONPHAI or monphai == TENVOMONPHAI else " (chưa có trong TENMONPHAI)"))
             self._monphainguoichoi_map[idnguoichoi] = monphai
         self._thongtinnguoichoimoi_map[idnguoichoi] = (ten, monphai or self._monphainguoichoi_map.get(idnguoichoi), tenbang, luc)
 

@@ -22,17 +22,12 @@ from thongke_xq import ThongKe, CHUKYLAYMAU
 from giamsat_xq import GiamSat, DoNhip, CHUKYGIAMSAT
 from thongbao_xq import TheoDoiSuCo, LYDOTAMNGUNGTUXA
 from tienich_xq import CANHBAOGANDAYs
-from uocluongmuctieu_xq import UocLuongMucTieu, CHUKYDOC as CHUKYUOCLUONG
 from danhhieumuctieu_xq import DanhHieuMucTieu, CHUKYGHI as CHUKYDANHHIEUMUCTIEU
-from hangso_xq import CHISONHANVAT_MAP
 from bandonho_xq import ThuThapBanDoNho
 from ngoaihinh_xq import NgoaiHinh, khoidong_loopngoaihinh
 from tudongrao_xq import TuDongRao, khoidong_looptudongrao
 from taythuoctinh_xq import TayThuocTinh, khoidong_looptaythuoctinh
 
-# Khí Huyết, Ngoại Kháng, Nội Kháng, Ngoại Công, Nội Công (ô thấp mỗi cặp)
-DICHCHISOPHONGTHU = (CHISONHANVAT_MAP["Khí Huyết"][0], CHISONHANVAT_MAP["Ngoại Kháng"][0], CHISONHANVAT_MAP["Nội Kháng"][0],
-                     CHISONHANVAT_MAP["Ngoại Công"][0], CHISONHANVAT_MAP["Nội Công"][0])
 
 
 def khoidong_looptonghop(moitruong, tactu, stop, giamsat):
@@ -91,18 +86,6 @@ def khoidong_looptodoinhanh(tactu, moitruong, stop):
             print(f"[Loop TỔ ĐỘI NHANH] Lỗi: {e}")
             time.sleep(1)
         time.sleep(0.25 if is_dangchay else 0.5)
-
-def khoidong_loopuocluongmuctieu(uocluong, moitruong, stop):
-    # Ghi số bay lên mục tiêu đang chọn để ước Khí Huyết tối đa / Kháng (uocluongmuctieu_xq): đọc dày (số bay mờ sau ~1s, nhiều đòn
-    # cùng lúc chiếm nhiều ô), chỉ đọc bộ nhớ
-    while not stop.is_set() and moitruong.get_is_cuasogametontai():
-        try:
-            if moitruong.get_is_nhanvattontai():
-                uocluong.step()
-        except Exception as e:
-            print(f"[Loop ƯỚC LƯỢNG MỤC TIÊU] Lỗi: {e}")
-            time.sleep(1)
-        time.sleep(CHUKYUOCLUONG)
 
 def khoidong_loopdanhhieumuctieu(danhhieu, tactu, moitruong, stop):
     # Nối thông tin ước lượng vào đuôi tên mục tiêu đang chọn (danhhieumuctieu_xq), tắt ô / bot dừng thì trả tên gốc
@@ -178,9 +161,8 @@ class CuaSo:
         self.giamsat = GiamSat(self.moitruong, self.tactu)
         # Tin sự cố gửi về Telegram (thongbao_xq): chết, bị người chơi đánh
         self.theodoisuco = TheoDoiSuCo(self.moitruong, self.tactu)
-        # Ước lượng Khí Huyết tối đa / Kháng của mục tiêu đang chọn cho đầu tab Chiến đấu
-        self.uocluongmuctieu = UocLuongMucTieu(self.moitruong)
-        # Hiện số ước lượng đó ngay trong game, nối vào đuôi tên mục tiêu (chỉ client mình thấy)
+        # Ước lượng Khí Huyết tối đa / Kháng mục tiêu (uocluongmuctieu_xq, luồng đọc số bay mỗi 30ms) đã gỡ 2026-11-27: người dùng
+        # không tin số đó, đã ẩn khỏi giao diện, bỏ cho nhẹ bot. Bang + phái người chơi xung quanh vẽ lên đầu (chỉ client mình thấy)
         self.danhhieumuctieu = DanhHieuMucTieu(self.moitruong, self.tactu, shared_data, idcuaso)
         # Dữ liệu cửa sổ Bản đồ nhỏ (bandonho_xq), chỉ gom khi giao diện bật cho nhân vật này
         self.bandonho = ThuThapBanDoNho(self.moitruong, self.tactu)
@@ -208,7 +190,6 @@ class CuaSo:
             threading.Thread(target = khoidong_loopthongke, args = [self.thongke, self.moitruong, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopgiamsat, args = [self.giamsat, self.theodoisuco, self.moitruong, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_looptodoinhanh, args = [self.tactu, self.moitruong, self.main_stop], daemon = True),
-            threading.Thread(target = khoidong_loopuocluongmuctieu, args = [self.uocluongmuctieu, self.moitruong, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopdanhhieumuctieu, args = [self.danhhieumuctieu, self.tactu, self.moitruong, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_loopngoaihinh, args = [self.ngoaihinh, self.main_stop], daemon = True),
             threading.Thread(target = khoidong_looptudongrao, args = [self.tudongrao, self.main_stop], daemon = True),
@@ -342,6 +323,9 @@ class CuaSo:
                     "thanhviennhoms": self.moitruong.get_danhsachidnguoichoithanhviennhoms() if is_dangtrongnhom else [],
                     "x": x,
                     "y": y,
+                    # Đích chuyến đi sang bản đồ (id bản đồ đích, (x, y) đích, điểm đang tới trong bản đồ, bản đồ lúc ghi) | None: theo sau
+                    # cùng máy đi thẳng tới đích, không đuổi theo bản đồ mình vừa đi qua (Thỏ tới Thục Sơn thì Gạ đã lên Đông Hải Đảo)
+                    "dichditoibando": self.tactu.get_dichditoibando(),
                     "status": tentrangthai,
                     "phantramsinhluc": phantramsinhluc,
                     "phantramnoiluc": phantramnoiluc,
@@ -443,7 +427,9 @@ class CuaSo:
                     "_mauhienthongtinmuctieugame": self.tactu._mauhienthongtinmuctieugame,
                     "_is_hienhanhdongtrendau": self.tactu._is_hienhanhdongtrendau,
                     "_is_tutimduongtheosau": self.tactu._is_tutimduongtheosau,
+                    "_is_theosautunhien": self.tactu._is_theosautunhien,
                     "_is_chaytoibuffthanhvien": self.tactu._is_chaytoibuffthanhvien,
+                    "_is_chedobufftoanbang": self.tactu._is_chedobufftoanbang,
                     "_is_diquocgiatanthutienco": self.tactu._is_diquocgiatanthutienco,
                     "_is_dangsapxephanhtrang": self.tactu._is_dangsapxephanhtrang,
                     "_is_dangsapxepkho": self.tactu.get_is_dangsapxepkho(),
@@ -475,6 +461,9 @@ class CuaSo:
                     # Give & phân giải (tactu_phangiai_xq): chữ trạng thái / kết quả lần trước, đang chạy không
                     "_trangthaiphangiai": self.tactu.get_trangthaiphangiai(),
                     "_is_dangphangiai": self.tactu.get_is_dangphangiai(),
+                    # Đổi Lam Cầu + Hắc Cầu (tactu_doicau_xq, tab Khác): chữ trạng thái, đang chạy không
+                    "_trangthaidoicau": self.tactu.get_trangthaidoicau(),
+                    "_is_dangdoicau": self.tactu.get_is_dangdoicau(),
                     # Ép Đoạn Thạch (tactu_epda_xq, hộp thoại tab Khác): chữ trạng thái, đang chạy không, danh sách món + số đá
                     "_trangthaiepda": self.tactu.get_trangthaiepda(),
                     "_is_dangepda": self.tactu.get_is_dangepda(),
@@ -572,33 +561,19 @@ class CuaSo:
                     info["iddoituongmuctieu"] = self.moitruong.get_iddoituong(diachimuctieugame) if diachimuctieugame else 0
                 except Exception:
                     info["iddoituongmuctieu"] = 0
-                # Ước lượng các mục tiêu mình đánh gần đây {id: tóm tắt} + tên / % máu mục tiêu đang chọn: giao diện gộp giữa các
-                # cửa sổ cùng đánh 1 mục tiêu (đầu tab Chiến đấu)
+                # Tên / % máu / môn phái, bang mục tiêu đang chọn cho đầu tab Chiến đấu
                 try:
-                    info["_uocluongmuctieu"] = self.uocluongmuctieu.get_share()
-                    # Công của người chơi đã đánh mình gần đây (đo từ máu mình tụt): {ID người chơi: tóm tắt}
-                    info["_congdoithu"] = self.uocluongmuctieu.get_sharecongdoithu()
-                    # Mọi kẻ đã đánh mình (cả quái): Công + nhịp đánh, cho kết luận Nguy hiểm / An toàn và lưu chỉ số quái
-                    info["_bidanh"] = self.uocluongmuctieu.get_sharebidanh()
-                    # Kháng / Công gom mọi con cùng loại quái (tên + cấp): 1 con chết quá nhanh không đủ đòn
-                    info["_chisoquai"] = self.uocluongmuctieu.get_sharequai()
-                    info["_hesodps"] = self.uocluongmuctieu.get_hesodps()
-                    # Kết luận về mục tiêu đang chọn (danhhieumuctieu_xq): {id, khoaquai, muc, daluu, ketluan}
-                    info["_muctieugame"] = self.danhhieumuctieu.get_share()
-                    # Chỉ số thật của chính mình (Khí Huyết tối đa, Ngoại / Nội Kháng): cửa sổ khác chọn mình làm mục tiêu thì hiện để so
-                    info["_iddoituongbanthan"] = self.moitruong.get_iddoituong()
-                    info["_chisophongthu"] = self.moitruong.get_chisonhanvats(DICHCHISOPHONGTHU)
                     if info["iddoituongmuctieu"]:
                         info["_tenmuctieu"] = self.moitruong.get_tendoituong(diachimuctieugame)
                         info["_phantrammaumuctieu"] = self.moitruong.get_phantramsinhlucconlai(diachimuctieugame)
                         # Người chơi: ID cố định để giao diện hiện số đã lưu (thongtinnguoichoi.json) cả khi chưa đánh lần này
                         info["_idnguoichoimuctieu"] = self.moitruong.get_idnguoichoi(diachimuctieugame) \
                             if self.moitruong.get_is_nguoichoi(diachimuctieugame) else 0
-                        # (môn phái, bang phái) theo "desc user" (uocluongmuctieu_xq tự hỏi khi chọn người chơi): None = chưa biết
+                        # (môn phái, bang phái) theo "desc user" (danhhieumuctieu_xq / tactu_muctieu_xq tự hỏi): None = chưa biết
                         info["_thongtinmuctieu"] = self.moitruong.get_thongtinnguoichoi(info["_idnguoichoimuctieu"]) \
                             if info["_idnguoichoimuctieu"] else (None, None)
                 except Exception as err:
-                    print(f"Lỗi ước lượng mục tiêu: {err}")
+                    print(f"Lỗi đọc mục tiêu đang chọn: {err}")
                 # Bảng hiệu ứng tab Chiến đấu: trên mình (tên, thời gian còn lại) và trên mục tiêu đang chọn (chỉ mã / tên, máy chủ không
                 # gửi thời gian hiệu ứng người khác); tên học được qua "desc loop" để giao diện ghi tenhieuung.json
                 try:
@@ -683,6 +658,12 @@ class CuaSo:
                 elif isinstance(cmd, str) and cmd.startswith("phangiai:"):
                     # Nút "Give & phân giải": phangiai:<tên / ID người phân giải>; mình là người đó thì phân giải, không thì give
                     self.tactu.batdau_phangiai(cmd.split(":", 1)[1])
+                elif cmd == "doicau":
+                    # Nút "Đổi Lam Cầu + Hắc Cầu" tab Khác: đang chạy thì dừng, không thì bắt đầu
+                    if self.tactu.get_is_dangdoicau():
+                        self.tactu.huy_doicau("bấm dừng")
+                    else:
+                        self.tactu.batdau_doicau()
                 elif cmd == "huyphangiai":
                     self.tactu.huy_phangiai("bấm huỷ")
                 elif cmd == "epda_ds":
@@ -1002,8 +983,12 @@ class CuaSo:
                         pass
                 elif cmd == "battat_tutimduongtheosau":
                     self.tactu.battat_tutimduongtheosau()
+                elif cmd == "battat_theosautunhien":
+                    self.tactu.battat_theosautunhien()
                 elif cmd == "battat_chaytoibuffthanhvien":
                     self.tactu.battat_chaytoibuffthanhvien()
+                elif cmd == "battat_chedobufftoanbang":
+                    self.tactu.battat_chedobufftoanbang()
                 elif cmd == "battat_diquocgiatanthutienco":
                     self.tactu.battat_diquocgiatanthutienco()
                 elif cmd == "battat_sapxephanhtrang":

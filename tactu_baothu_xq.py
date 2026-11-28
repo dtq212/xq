@@ -6,8 +6,12 @@ import time
 import unicodedata
 
 from hangso_xq import *
+from nhiemvu_xq import chuanhoaten
 from thongbao_xq import baosuco, LYDOTAMNGUNGTUXA
 from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam, canhbao
+
+# Tên boss dùng kỹ năng bảo thú (QUAIDUNGKYNANGBAOTHUs) chuẩn hoá sẵn 1 lần
+_QUAIDUNGKYNANGBAOTHU_CHUANHOA = frozenset(chuanhoaten(ten) for ten in QUAIDUNGKYNANGBAOTHUs)
 
 
 class TacTuBaoThu:
@@ -183,6 +187,12 @@ class TacTuBaoThu:
         is_baothukynangtrieuhoihetnoiluc = False
         is_baothukynangtrieuhoihetsinhluc = False
         dsbaothutrieuhoi = []  # (id, toạ độ, khoảng cách) bảo thú kỹ năng triệu hồi cùng bản đồ
+        # Từ 2 bảo thú trở lên: thanh lệnh bảo thú luôn hiện bảo thú giang hồ (người dùng 27/11), không phụ thuộc ô Tự động điều khiển
+        self._xulychandoanthieudotbaothu()
+        try:
+            self.moitruong.action_hienbaothugianghothanhlenh()
+        except Exception as e:
+            print(f"[BẢO THÚ] Lỗi hiện bảo thú giang hồ trên thanh lệnh: {e}")
         if self._is_tudongdieukhienbaothu:
             while True:
                 if self.moitruong.get_is_nhanvatdachet():
@@ -195,6 +205,8 @@ class TacTuBaoThu:
                 is_datrieuhoibaothugiangho = bool(iddoituongbaothugiangho) and self.moitruong.get_is_datrieuhoibaothugiangho()
                 if is_datrieuhoibaothugiangho:
                     self._thuhoibaothugianghomauthap(iddoituongbaothugiangho)
+                else:
+                    self._phantrambaothugianghotruoc = None
 
                 for sothutu in range(1, soluongbaothutoida + 1):
                     iddoituongbaothu = self.moitruong.get_iddoituongbaothu(sothutu)
@@ -261,18 +273,87 @@ class TacTuBaoThu:
                             if idbandohientaidoituongbaothu == idbandohientai:
                                 dsbaothutrieuhoi.append((iddoituongbaothu, toadodoituongbaothu, khoangcach))
 
-                            idkynangbaothu_map = {self.moitruong.get_idkynangbaothugiangho(i): i for i in range(11)}
-                            idkynangbaothucothesudungs = {KYNANGBAOTHU_CAOCAPTHIENCAN, }
-                            if set(idkynangbaothu_map.keys()) & idkynangbaothucothesudungs:
-                                diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
-
-                                if diachimuctieu and self.moitruong.get_is_nguoichoi(diachimuctieu) and self.moitruong.get_noilucconlaibaothugiangho() >= 60:
-                                    if KYNANGBAOTHU_CAOCAPTHIENCAN in idkynangbaothu_map and self.moitruong.get_is_kynangbaothugianghosansang(idkynangbaothu_map[KYNANGBAOTHU_CAOCAPTHIENCAN]) and self.moitruong.get_is_cothegaychoang(diachimuctieu):
-                                        if not is_baothudangogan and time.time() - self._thoidiemsudungthaotacbaothugannhat > 0.25:
+                            # Kỹ năng chủ động lên người chơi / boss trong QUAIDUNGKYNANGBAOTHUs đang chọn, theo thứ tự ưu tiên (người dùng 27/11: trước đây chỉ dùng Cao Cấp Thiên Cân):
+                            #   1. Thiên Cân (choáng, chỉ khi mục tiêu gây choáng được): Cao Cấp (Cao Cấp Từ Năng Giao Động, 74234) rồi bản thường
+                            #      (Từ Năng Giao Động, 74137)
+                            #   2. Đóng Băng (chậm di chuyển + đánh 50%, mục tiêu đang dính Đóng Băng thì thôi): Cao Cấp (74235, đo trên Lầy 1451)
+                            #      rồi bản thường (theo tên)
+                            #   (Trói Buộc 74236 / 74139: người dùng 27/11 bảo không dùng nữa, là Trì Hoãn chỉ chậm di chuyển, kém Đóng Băng)
+                            #   4. Thiêu Đốt (mục tiêu đang dính Thiêu Đốt 9026 thì thôi): Cao Cấp (74233) rồi bản thường (74136, game ghi "Thêu đốt")
+                            # Không spam: mỗi chiêu gửi 1 lần rồi khoá tới khi hồi chiêu xong (_is_kynangbaothudangkhoa); 2 chiêu cách nhau GIANCACHKYNANGBAOTHU;
+                            # nhiều cửa sổ: giữ chỗ theo nhóm hiệu ứng trên mục tiêu (KHOAGIUCHO_BAOTHU*), bảo thú khác dùng chiêu nhóm khác
+                            # Ngoài mã còn nhận theo tên ô kỹ năng ("Từ Năng", "Đóng", "đốt") phòng bản Cao Cấp / bản khác chưa đo. Nội lực bảo thú dưới 60 thì thôi
+                            diachimuctieu = self.moitruong.get_diachicosothongtinnhanvatmuctieudangchon()
+                            if diachimuctieu and self._is_muctieukynangbaothu(diachimuctieu) and self.moitruong.get_noilucconlaibaothugiangho() >= 60:
+                                # Quái: get_is_cothegaychoang luôn True (chỉ xét người chơi) => đọc hiệu ứng choáng trên quái
+                                if self.moitruong.get_is_nguoichoi(diachimuctieu):
+                                    is_gaychoang = self.moitruong.get_is_cothegaychoang(diachimuctieu)
+                                else:
+                                    is_gaychoang = not self.moitruong.get_is_cohieuungs((HIEUUNGKYNANG_CHOANG,), False, diachimuctieu)
+                                ungviens = []
+                                for i in range(11):
+                                    idkn = self.moitruong.get_idkynangbaothugiangho(i)
+                                    if not idkn:
+                                        continue
+                                    ten = unicodedata.normalize("NFC", self.moitruong.get_tenkynangbaothugiangho(i) or "")
+                                    if idkn in (KYNANGBAOTHU_CAOCAPTHIENCAN, KYNANGBAOTHU_THIENCAN) or "Từ Năng" in ten:
+                                        if not is_gaychoang:
+                                            continue
+                                        uutien = 0 if idkn == KYNANGBAOTHU_CAOCAPTHIENCAN or "Cao Cấp" in ten else 1
+                                    elif idkn == KYNANGBAOTHU_CAOCAPDONGBANG or "Đóng" in ten:
+                                        if self._is_dinhdongbang(diachimuctieu):
+                                            continue
+                                        uutien = 2 if idkn == KYNANGBAOTHU_CAOCAPDONGBANG or "Cao Cấp" in ten else 3
+                                    elif idkn in (KYNANGBAOTHU_CAOCAPTHIEUDOT, KYNANGBAOTHU_THIEUDOT) or "đốt" in ten.lower():
+                                        if self._is_dinhthieudot(diachimuctieu):
+                                            continue
+                                        uutien = 6 if idkn == KYNANGBAOTHU_CAOCAPTHIEUDOT or "Cao Cấp" in ten else 7
+                                    else:
+                                        continue
+                                    if not self._is_kynangbaothudangkhoa(idkn, self.moitruong.get_is_kynangbaothugianghosansang(i)):
+                                        ungviens.append((uutien, idkn, ten))
+                                if ungviens and time.time() - self._thoidiemguikynangbaothugannhat >= GIANCACHKYNANGBAOTHU:
+                                    if not is_baothudangogan:
+                                        if time.time() - self._thoidiemsudungthaotacbaothugannhat > 0.25:
                                             self._thoidiemsudungthaotacbaothugannhat = time.time()
                                             self.moitruong.action_ralenhbaothutheosau(iddoituongbaothu, delay = 0.)
-                                        elif is_baothudangogan:
-                                            self.moitruong.action_sudungkynangbaothu(KYNANGBAOTHU_CAOCAPTHIENCAN, diachimuctieu)
+                                    else:
+                                        # Theo thứ tự ưu tiên, chiêu đầu tiên mà nhóm hiệu ứng chưa có bảo thú cửa sổ khác giữ chỗ trên mục tiêu này
+                                        idmuctieugiucho = self._get_idmuctieugiucho(diachimuctieu)
+                                        for uutien, idkynang, ten in sorted(ungviens):
+                                            is_khongche = uutien <= 1
+                                            if is_khongche:
+                                                # Cao Cấp choáng 6s, thường 3s, cộng khoảng miễn choáng sau đó
+                                                nhom = KHOAGIUCHO_BAOTHUKHONGCHE
+                                                thoigiangiu = (THOIGIANCHOANGCAOCAPTHIENCANBAOTHU if uutien == 0 else THOIGIANCHOANGTHIENCANBAOTHU) + THOIGIANMIENCHOANGBAOTHU
+                                            elif uutien <= 3:
+                                                # Đóng Băng chắc chắn dính (người dùng 28/11) => 1 bảo thú ném, bảo thú khác nhường
+                                                nhom, thoigiangiu = KHOAGIUCHO_BAOTHUDONGBANG, THOIGIANGIUDONGBANGBAOTHU
+                                            else:
+                                                # Thiêu Đốt không giữ chỗ (người dùng 28/11: chiêu không chắc trúng thì cứ ném, đừng nhường):
+                                                # mục tiêu chưa cháy (đã lọc ở trên) thì bảo thú nào cũng ném
+                                                nhom, thoigiangiu = None, 0.
+                                            if nhom:
+                                                if time.time() < self._nhombaothudagui_map.get((nhom, idmuctieugiucho), 0.):
+                                                    continue
+                                                if idmuctieugiucho and not self._thugiukynangmuctieu(nhom, idmuctieugiucho, thoigiangiu):
+                                                    continue
+                                            if not self.moitruong.action_sudungkynangbaothu(idkynang, diachimuctieu, delay = 0.):
+                                                if nhom and idmuctieugiucho:
+                                                    self._bogiukynangmuctieu(nhom, idmuctieugiucho)
+                                                break
+                                            self._kynangbaothudagui_map[idkynang] = {"luc": time.time(), "dahoi": False}
+                                            self._nhombaothudagui_map = {k: v for k, v in self._nhombaothudagui_map.items() if time.time() < v}
+                                            if nhom:
+                                                self._nhombaothudagui_map[(nhom, idmuctieugiucho)] = time.time() + thoigiangiu
+                                            if not is_khongche and IS_CHANDOANTHIEUDOTBAOTHU:
+                                                self._chandoanthieudotbaothu = {"diachi": diachimuctieu, "ten": self.moitruong.get_tendoituong(diachimuctieu),
+                                                                                "truoc": self._mahieuungs(diachimuctieu), "luc": time.time(), "dabao": set()}
+                                            self._thoidiemguikynangbaothugannhat = time.time()
+                                            self.moitruong._inlog(f"[BẢO THÚ] Dùng {ten or idkynang} ({idkynang}) lên "
+                                                                  f"{self.moitruong.get_tendoituong(diachimuctieu)}, nội lực bảo thú "
+                                                                  f"{self.moitruong.get_noilucconlaibaothugiangho()}")
+                                            break
                 break
         self._is_baothukynangtrieuhoihetnoiluc = is_baothukynangtrieuhoihetnoiluc
         self._is_baothukynangtrieuhoihetsinhluc = is_baothukynangtrieuhoihetsinhluc
@@ -282,6 +363,72 @@ class TacTuBaoThu:
             print(f"[BẢO THÚ THEO SAU] Lỗi: {e}")
             self.moitruong.toadoneobaothu = None
             self.moitruong.baothutheosaugan = None
+
+    def _mahieuungs(self, diachi):
+        # Tập mã hiệu ứng đang có trên đối tượng (đọc thẳng bảng hiệu ứng, bỏ bộ nhớ đệm)
+        try:
+            soluong, hieuungs = self.moitruong._docbanghieuungtubonho(diachi)
+        except Exception:
+            return set()
+        return {h[0] for h in list(hieuungs)[:max(0, soluong)]}
+
+    def _is_dinhdongbang(self, diachi):
+        # Mục tiêu đang dính Đóng Băng: mã trong HIEUUNGDONGBANGBAOTHUs hoặc tên hiệu ứng đã biết có "đóng băng"
+        for ma in self._mahieuungs(diachi):
+            if ma in HIEUUNGDONGBANGBAOTHUs or "đóng băng" in unicodedata.normalize("NFC", self.moitruong.get_tenhieuung(ma) or "").lower():
+                return True
+        return False
+
+    def _is_dinhthieudot(self, diachi):
+        # Mục tiêu đang dính Thiêu Đốt của bảo thú: mã trong HIEUUNGTHIEUDOTBAOTHUs hoặc tên hiệu ứng đã biết có "thiêu đốt"
+        for ma in self._mahieuungs(diachi):
+            if ma in HIEUUNGTHIEUDOTBAOTHUs or "thiêu đốt" in unicodedata.normalize("NFC", self.moitruong.get_tenhieuung(ma) or "").lower():
+                return True
+        return False
+
+    def _xulychandoanthieudotbaothu(self):
+        # Sau khi ném Thiêu Đốt: mã hiệu ứng nào mới xuất hiện trên mục tiêu trong THOIGIANCHANDOANTHIEUDOTBAOTHU giây thì ghi log (lấy mã
+        # hiệu ứng cháy thật cho HIEUUNGTHIEUDOTBAOTHUs). Hết giờ mà không có mã mới thì ghi "không thấy" (trượt, hoặc đã dính từ trước)
+        cd = self._chandoanthieudotbaothu
+        if not cd:
+            return
+        if not self.moitruong.get_is_nhanvattontai(cd["diachi"]):
+            self._chandoanthieudotbaothu = None
+            return
+        moi = self._mahieuungs(cd["diachi"]) - cd["truoc"] - cd["dabao"]
+        if moi:
+            cd["dabao"] |= moi
+            danhsach = ", ".join("{} ({})".format(m, self.moitruong.get_tenhieuung(m) or "?") for m in sorted(moi))
+            self.moitruong._inlog(f"[BẢO THÚ CHẨN ĐOÁN] Sau Thiêu Đốt {time.time() - cd['luc']:.1f}s, {cd['ten']} có hiệu ứng mới: "
+                                  f"{danhsach} (trước đó: {sorted(cd['truoc'])})")
+        if time.time() - cd["luc"] >= THOIGIANCHANDOANTHIEUDOTBAOTHU:
+            if not cd["dabao"]:
+                self.moitruong._inlog(f"[BẢO THÚ CHẨN ĐOÁN] Thiêu Đốt lên {cd['ten']}: {THOIGIANCHANDOANTHIEUDOTBAOTHU:.0f}s không thấy hiệu ứng mới "
+                                      f"(đang có: {sorted(cd['truoc'])})")
+            self._chandoanthieudotbaothu = None
+
+    def _is_muctieukynangbaothu(self, diachi):
+        # Người chơi, hoặc quái có tên trong QUAIDUNGKYNANGBAOTHUs (còn sống, đánh được)
+        if self.moitruong.get_is_nguoichoi(diachi):
+            return True
+        if not self.moitruong.get_is_nhanvattontai(diachi) or not self.moitruong.get_is_cothetancong(diachi):
+            return False
+        return chuanhoaten(self.moitruong.get_tendoituong(diachi)) in _QUAIDUNGKYNANGBAOTHU_CHUANHOA
+
+    def _is_kynangbaothudangkhoa(self, idkynang, is_sansang):
+        # Chiêu bảo thú vừa gửi: khoá tới khi thấy vào hồi chiêu rồi hồi xong; không thấy vào hồi chiêu thì khoá THOIGIANKHOAKYNANGBAOTHU giây
+        gui = self._kynangbaothudagui_map.get(idkynang)
+        if not gui:
+            return not is_sansang
+        if not is_sansang:
+            gui["dahoi"] = True
+            return True
+        if gui["dahoi"] or time.time() - gui["luc"] >= THOIGIANKHOAKYNANGBAOTHU:
+            if not gui["dahoi"]:
+                self.moitruong._inlog(f"[BẢO THÚ] Kỹ năng {idkynang} gửi {THOIGIANKHOAKYNANGBAOTHU:.0f}s chưa thấy vào hồi chiêu, cho dùng lại")
+            self._kynangbaothudagui_map.pop(idkynang, None)
+            return False
+        return True
 
     def _hoiphucbaothugiangho(self, sothutu, iddoituongbaothu):
         # Cho bảo thú giang hồ đang triệu hồi ăn Lão Tửu (nội lực thấp) / Dưa hấu (khí huyết thiếu nhiều) ở mọi bản đồ, không cần kỹ
@@ -319,11 +466,16 @@ class TacTuBaoThu:
 
     def _thuhoibaothugianghomauthap(self, iddoituongbaothugiangho):
         # Bảo thú giang hồ dưới _phantramsinhlucthuhoibaothugiangho % khí huyết thì cất đi (người dùng 2026-11-26), 0 = tắt
+        # Chỉ thu hồi khi máu TỤT qua ngưỡng lúc đang ở ngoài. Máu không hồi khi đã cất, nên gọi ra (người chơi bấm tay hoặc bot gọi lại
+        # sau THOIGIANCHOTRIEUHOILAIBAOTHU) mà máu sẵn dưới ngưỡng thì để nó ở ngoài cho ăn Dưa hấu. Trước đây gọi ra là cất ngay,
+        # log 342 / 354 ngày 27/11 cất "Quy" 24% / 10% đều mỗi ~2 phút, người dùng tự bấm gọi cũng bị cất liền
         nguong = self._phantramsinhlucthuhoibaothugiangho
-        if nguong <= 0 or time.time() - self._thoidiemthuhoibaothugiangho < 2.:
+        if not self.moitruong.get_sinhluctoidabaothugiangho():
             return False
         phantram = self.moitruong.get_phantramsinhlucconlaibaothugiangho()
-        if not self.moitruong.get_sinhluctoidabaothugiangho() or phantram >= nguong:
+        truoc = self._phantrambaothugianghotruoc
+        self._phantrambaothugianghotruoc = phantram
+        if nguong <= 0 or phantram >= nguong or truoc is None or truoc < nguong or time.time() - self._thoidiemthuhoibaothugiangho < 2.:
             return False
         self._thoidiemthuhoibaothugiangho = time.time()
         if not self.moitruong.action_thuhoibaothu(iddoituongbaothugiangho):

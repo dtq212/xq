@@ -34,6 +34,7 @@
 import json
 import math
 import os
+import re
 import time
 import unicodedata
 
@@ -158,7 +159,7 @@ THOIGIANHETMUCTIEUPYKC = 10.
 # (đủ 85% quái là ra, không tìm / đánh boss): người dùng dặn 2026-11-14, acc chính 100 đánh boss 55 trở xuống không rơi đồ, đi tìm boss
 # phí thời gian. Chênh lệch <= mốc (acc gà kéo lên 60-70) thì đánh boss như cấu hình để có đồ Lam Kim đốt tiếp
 CHENHLECHCAPKHONGDANHBOSSKC = 40
-KHOANGCACHNOICHUYENKC = 3.
+KHOANGCACHNOICHUYENKC = KHOANGCACHNOICHUYENNPC
 THOIGIANCHOMENUKC = 3.
 SOLANTHUMENUKC = 3
 GIANCACHMOINHOMKC = 5.
@@ -2014,6 +2015,12 @@ class TacTuKeoCap:
         if self._is_dangban() or now - s.get("luctrado", 0.) < GIANCACHGIAODOKC:
             return None
         is_traocode = self._is_traocodekc(s)
+        if not is_traocode and self._is_traokc(moitruong.get_tenphapbaohientai()) \
+                and self._is_traokhoakc(s, VITRITRANGBI_PHAPBAO) is None and s.get("solandoctraokhoa", 0) < 6:
+            # Chưa đọc được mô tả Trảo đang đeo (khoá hay không): chờ, đọc lại vài lần rồi mới tháo
+            s.update(solandoctraokhoa = s.get("solandoctraokhoa", 0) + 1, luctrado = now)
+            s["trangthai"] = f"thu hồi: đọc mô tả {TRAOKEOCAPs[0]} xem có khoá không"
+            return None
         if not is_traocode and self._is_traokc(moitruong.get_tenphapbaohientai()):
             # Đang đeo Cửu Long Thần Hỏa Trảo của acc chính: tháo ra túi ("remove 7") rồi trả cùng đồ Lam Kim. Trảo từ code welcome2d
             # bị khoá không give được: cứ đeo, không trả (_is_traocodekc)
@@ -2455,12 +2462,46 @@ class TacTuKeoCap:
                                                   "chuacap": f"không có, chưa cấp {CAPDEOTRAOKC} nên chưa nhận"}[trao])
         s["trao"] = trao
 
-    @staticmethod
-    def _is_traocodekc(s):
+    def _is_traocodekc(self, s):
         # Acc gà tích ô "Acc gà nhập code welcome2d": Cửu Long Thần Hỏa Trảo nhận từ code bị khoá, không give được (người dùng dặn
         # 2026-11-14) => lúc thu hồi không tháo / không trả Trảo, acc chính không chờ Trảo về. Code không mở (admin đóng, "codeloi")
-        # thì Trảo là acc chính đưa, vẫn thu hồi như cũ
-        return bool(taigiaodienkeocap().get("dungcode")) and not s.get("codeloi")
+        # thì Trảo là acc chính đưa, vẫn thu hồi như cũ.
+        # Thêm: mô tả Trảo có chữ "Khoá" (_is_traokhoakc) cũng là Trảo code, kể cả khi ô tích đang tắt: acc gà nhập code ở lượt trước
+        # rồi người dùng tắt ô -> lượt sau tháo Trảo ra, give 3 lần không được, acc gà ở trần (người dùng báo 2026-11-28)
+        if bool(taigiaodienkeocap().get("dungcode")) and not s.get("codeloi"):
+            return True
+        return self._is_traokhoakc(s) is True
+
+    def _is_traokhoakc(self, s, vitri = None):
+        # Trảo ở ô vitri (mặc định: đang đeo, không thì cái đầu tiên trong túi) bị khoá không: dòng tên mô tả có "Khoá"/"Khóa" (như
+        # Lăng Ly Sơn bỏ đồ khoá, _is_doduocdot). True / False; None = chưa đọc được mô tả (lệnh desc chờ tối đa 1s). Nhớ theo id món
+        moitruong = self.moitruong
+        if vitri is None:
+            if self._is_traokc(moitruong.get_tenphapbaohientai()):
+                vitri = VITRITRANGBI_PHAPBAO
+            else:
+                mon = self._timvatphamkc(TRAOKEOCAPs)
+                if not mon:
+                    return False
+                vitri = mon[0]
+        idmon = moitruong.get_iddoituongvatphamhanhtrang(vitri)
+        if not idmon:
+            return False
+        nho = s.setdefault("traokhoa", {})
+        if idmon in nho:
+            return nho[idmon]
+        if time.time() - s.get("lucdoctraokhoa", 0.) < 5.:
+            return None
+        s["lucdoctraokhoa"] = time.time()
+        mota = moitruong.get_motavatphamhanhtrang(vitri) or ""
+        dongs = [d.strip() for d in unicodedata.normalize("NFC", re.sub(r"\x1b.", "", mota)).split("\n") if d.strip()]
+        # Mô tả giữ theo ô: dòng tên phải là Trảo (đồ vừa chuyển chỗ có thể còn mô tả món cũ)
+        if not dongs or not any(_chuanhoa(t) in _chuanhoa(dongs[0]) for t in TRAOKEOCAPs):
+            return None
+        nho[idmon] = "Khoá" in dongs[0] or "Khóa" in dongs[0]
+        self._logkc(f"{TRAOKEOCAPs[0]} (id {idmon:x}): {'bị khoá (từ code), không tháo / không trả' if nho[idmon] else 'không khoá'}"
+                    f" (mô tả {dongs[0]!r})")
+        return nho[idmon]
 
     def _is_dudeotraokc(self):
         # Đủ cấp đeo Cửu Long Thần Hỏa Trảo chưa (đọc cấp lỗi / ra 0 thì coi như đủ, giữ cách cũ)
@@ -2718,8 +2759,14 @@ class TacTuKeoCap:
         s["lucdocsot"] = now
         dalam = s.setdefault("dungvatphamsot", {})
         for tens, cach in VATPHAMTANTHUs:
-            if tens[0] == TRAOKEOCAPs[0] and (s.get("giaidoan") in ("thuhoi", "xong") or not self._is_dudeotraokc()):
-                # Thu hồi: Trảo vừa tháo ra để trả acc chính, đừng đeo lại; chưa đủ cấp đeo thì chờ lên cấp
+            if tens[0] == TRAOKEOCAPs[0] and ((s.get("giaidoan") in ("thuhoi", "xong") and not self._is_traocodekc(s))
+                                              or not self._is_dudeotraokc()):
+                # Thu hồi: Trảo vừa tháo ra để trả acc chính, đừng đeo lại (Trảo code bị khoá thì không trả được: đeo lại);
+                # chưa đủ cấp đeo thì chờ lên cấp
+                continue
+            if tens[0] == TRAOKEOCAPs[0] and (self._tenphapbaocu is not None or (self.moitruong.get_phantramsinhlucconlai() or 100) <= 25):
+                # Máu thấp: luật pháp bảo (tactu_vatpham_xq) vừa tháo Trảo cho chết khỏi hỏng, máu hồi thêm 15% nó tự đeo lại. Đeo ở đây
+                # thì hai bên giằng nhau đeo / tháo mỗi 10s (gacon7991 máu 8% lúc 05:14 ngày 2026-11-28)
                 continue
             mon = self._timvatphamkc(tens)
             if mon and dalam.get(tens[0], 0) < SOLANDUNGVATPHAMTANTHU \

@@ -179,7 +179,7 @@ def tachbandotinhanh(chuoi, is_thaplencao = True):
 
 def thutubandotinhanh(idbando, is_thaplencao = True):
     # Khoá xếp thứ tự đi: cấp Tinh Anh tăng dần (is_thaplencao) / giảm dần, cùng cấp thì id bản đồ tăng dần (giao diện chọn bản đồ dùng chung)
-    capthap, capcao = CAPTINHANH_MAP.get(idbando, (0, 0))
+    capthap, capcao = CAPXEPTINHANH_MAP.get(idbando, (0, 0))
     return (capthap, capcao, idbando) if is_thaplencao else (-capthap, -capcao, idbando)
 
 

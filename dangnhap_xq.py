@@ -1249,7 +1249,18 @@ def dangnhaptrongcuaso(hwnd_game, char_name, config):
 def _dangnhaptrongcuaso(hwnd_game, char_name, config):
     try:
         vitri = config.get("vitricuaso", 1)
-        dichuyencuasotheovitri(hwnd_game, vitri)
+        toado = None
+        if config.get("taoga"):
+            # Acc gà Kéo gà A-Z: tự tìm chỗ không bịt kín cửa sổ nào, che acc chính ít nhất (acc chính giữ ô cấu hình như cũ)
+            try:
+                toado = chonvitritrongcuaso(hwnd_game, (int(vitri) - 1) % len(VITRICUASOs) + 1,
+                                            config["taoga"].get("idchinhs") or ())
+            except Exception as e:
+                print(f"   ⚠️ Lỗi chọn chỗ cửa sổ acc gà: {e}")
+        if toado:
+            dichuyencuasotoado(hwnd_game, *toado)
+        else:
+            dichuyencuasotheovitri(hwnd_game, vitri)
 
         if IS_DANGNHAPBANGHAM:
             ketqua = _dangnhapbangham(hwnd_game, char_name, config)
@@ -1523,8 +1534,7 @@ def _vungmanhinhlamviec():
         return 0, 0, win32api.GetSystemMetrics(0), win32api.GetSystemMetrics(1) - 40
 
 
-def dichuyencuasotheovitri(hwnd, vitricuaso):
-    trai, tren, phai, duoi = _vungmanhinhlamviec()
+def _kichthuoccuaso(hwnd):
     window_width, window_height = 810, 630
     try:
         r = win32gui.GetWindowRect(hwnd)
@@ -1532,16 +1542,158 @@ def dichuyencuasotheovitri(hwnd, vitricuaso):
             window_width, window_height = r[2] - r[0], r[3] - r[1]
     except Exception:
         pass
+    return window_width, window_height
+
+
+def _toadovitri(vitricuaso, window_width, window_height):
+    # Góc trái trên của ô vị trí 1..6 (VITRICUASOs) trong vùng làm việc
+    trai, tren, phai, duoi = _vungmanhinhlamviec()
+    cot, socot, hang = VITRICUASOs[(vitricuaso - 1) % len(VITRICUASOs) + 1]
+    # Màn rộng đủ thì các cửa sổ không chồng nhau (bước = bề rộng cửa sổ), hẹp thì dồn đều cho cửa sổ cuối chạm mép phải
+    buocx = min(window_width, (phai - trai - window_width) // (socot - 1)) if socot > 1 else 0
+    return trai + max(0, cot * buocx), tren + max(0, (duoi - tren - window_height) * hang)
+
+
+_chovuachon = {}   # {(x, y, x2, y2): lúc chọn} chỗ chonvitritrongcuaso vừa chọn (cửa sổ có thể chưa dời tới)
+
+
+# Ô lưới (px) khi đo phần còn thấy của cửa sổ; lỗ tối thiểu để bấm chuột vào được (~50x50 px); bước dò vị trí đặt cửa sổ
+BUOCLUOICUASO = 10
+DIENTICHLOTOITHIEU = 2500
+BUOCDOVITRICUASO = 30
+
+
+def _idnguoichoicuaso(h):
+    try:
+        mt = MoiTruong(h)
+        return int(mt.get_idnguoichoi() or 0) if mt.get_is_nhanvattontai() else 0
+    except Exception:
+        return 0
+
+
+def chonvitritrongcuaso(hwnd, vitriuutien, idchinhs = ()):
+    # Acc gà Kéo gà A-Z (người dùng 2026-11-28, kèm ảnh cách xếp tay): acc chính người dùng tự xếp cố định, acc gà mở lên theo ô cấu
+    # hình che mất acc chính. Người dùng xếp acc gà chồng so le, mỗi cái chỉ cần lòi ra 1 mảng / dải đủ bấm chuột vào là focus (không
+    # cần Alt+Tab), không cần hiện hết. => Dò mọi vị trí (bước BUOCDOVITRICUASO, cửa sổ nằm trọn trong vùng làm việc), cửa sổ mới đặt
+    # trên cùng, đo phần còn thấy của từng cửa sổ khác theo thứ tự trên / dưới thật (EnumWindows đi từ trên xuống). Chọn theo thứ tự:
+    # ít cửa sổ được bảo vệ (acc chính idchinhs + bảng bot; không biết acc chính thì mọi cửa sổ đang trong game) bị bịt kín -> ít cửa
+    # sổ khác bị bịt kín -> che ít phần còn thấy của cửa sổ được bảo vệ -> che ít cửa sổ khác -> gần ô cấu hình.
+    # -> (x, y) góc trái trên, None = không có gì để tránh (dùng ô cấu hình)
+    window_width, window_height = _kichthuoccuaso(hwnd)
+    idchinhs = {int(i) for i in idchinhs if i}
+    pidbot = os.getpid()
+    khacs = []   # [(rect, is_baove)] từ trên xuống
+
+    def callback(h, _):
+        if h == hwnd or not win32gui.IsWindowVisible(h) or win32gui.IsIconic(h):
+            return
+        try:
+            rect = win32gui.GetWindowRect(h)
+            if is_tieudecuasogame(win32gui.GetWindowText(h)):
+                if is_cuasogamedaan(h):
+                    return
+                if idchinhs:
+                    is_baove = _idnguoichoicuaso(h) in idchinhs
+                else:
+                    is_baove = _is_cuasodadangnhap(h)
+                khacs.append((rect, is_baove))
+            elif win32process.GetWindowThreadProcessId(h)[1] == pidbot and rect[2] - rect[0] >= 200 and rect[3] - rect[1] >= 150:
+                # Bảng điều khiển bot (Tk) cũng tránh che
+                khacs.append((rect, True))
+        except Exception:
+            pass
+
+    try:
+        win32gui.EnumWindows(callback, None)
+    except Exception:
+        return None
+    now = time.time()
+    # Các luồng đăng nhập acc gà chạy song song: chỗ luồng khác vừa chọn coi như có cửa sổ ở đó, trên cùng
+    giucho = []
+    for rect, luc in list(_chovuachon.items()):
+        if now - luc > 90.:
+            del _chovuachon[rect]
+        elif not any(abs(r[0] - rect[0]) <= 8 and abs(r[1] - rect[1]) <= 8 for r, _ in khacs):
+            giucho.append((rect, False))
+    khacs = giucho + khacs
+    if not khacs:
+        return None
+
+    trai, tren, phai, duoi = _vungmanhinhlamviec()
+    o = BUOCLUOICUASO
+    socot, sohang = max(1, (phai - trai) // o), max(1, (duoi - tren) // o)
+
+    # Ảnh tích phân số ô lưới còn thấy của từng cửa sổ (chưa có cửa sổ mới): tp[h][c] = số ô thấy trong hàng [0,h) x cột [0,c)
+    tichphans, tongs = [], []
+    for i, (rect, _) in enumerate(khacs):
+        trens = [r for r, _ in khacs[:i]]
+        tp = [[0] * (socot + 1) for _ in range(sohang + 1)]
+        for h in range(sohang):
+            py = tren + h * o + o // 2
+            dong, tpt, tpd = 0, tp[h], tp[h + 1]
+            for c in range(socot):
+                px = trai + c * o + o // 2
+                if rect[0] <= px < rect[2] and rect[1] <= py < rect[3] \
+                        and not any(r[0] <= px < r[2] and r[1] <= py < r[3] for r in trens):
+                    dong += 1
+                tpd[c + 1] = tpt[c + 1] + dong
+        tichphans.append(tp)
+        tongs.append(tp[sohang][socot])
+
+    def chiso(toado, goc, so):
+        # Chỉ số ô lưới đầu tiên có tâm >= toado
+        return max(0, min(so, -(-(toado - goc - o // 2) // o)))
+
+    xuu, yuu = _toadovitri(vitriuutien, window_width, window_height)
+    xs = sorted(set(list(range(trai, max(trai, phai - window_width) + 1, BUOCDOVITRICUASO)) + [max(trai, phai - window_width)]))
+    ys = sorted(set(list(range(tren, max(tren, duoi - window_height) + 1, BUOCDOVITRICUASO)) + [max(tren, duoi - window_height)]))
+    lotoithieu = DIENTICHLOTOITHIEU / (o * o)
+    totnhat = None
+    for x in xs:
+        c0, c1 = chiso(x, trai, socot), chiso(x + window_width, trai, socot)
+        for y in ys:
+            h0, h1 = chiso(y, tren, sohang), chiso(y + window_height, tren, sohang)
+            bitbv = bitkhac = chebv = chekhac = 0
+            for (rect, is_baove), tp, tong in zip(khacs, tichphans, tongs):
+                che = tp[h1][c1] - tp[h0][c1] - tp[h1][c0] + tp[h0][c0]
+                if not che:
+                    continue
+                bit = tong - che < lotoithieu
+                if is_baove:
+                    bitbv += bit
+                    chebv += che
+                else:
+                    bitkhac += bit
+                    chekhac += che
+            diem = (bitbv, bitkhac, chebv, chekhac, abs(x - xuu) + abs(y - yuu))
+            if totnhat is None or diem < totnhat[0]:
+                totnhat = (diem, x, y)
+    diem, x, y = totnhat
+    _chovuachon[(x, y, x + window_width, y + window_height)] = now
+    print(f"   -> [GIAO DIỆN] Đặt cửa sổ acc gà ở ({x}, {y}): bịt kín {diem[0]} cửa sổ acc chính / bảng bot, {diem[1]} cửa sổ khác; "
+          f"che {diem[2] * o * o // 1000}k px acc chính / bảng bot, {diem[3] * o * o // 1000}k px cửa sổ khác")
+    if diem[0]:
+        print(f"   ⚠️ [GIAO DIỆN] Chỗ nào cũng bịt kín ít nhất {diem[0]} cửa sổ acc chính / bảng bot")
+    return x, y
+
+
+def dichuyencuasotoado(hwnd, x, y):
+    _bokieuan(hwnd)
+    try:
+        win32gui.SetWindowPos(hwnd, 0, x, y, 0, 0, win32con.SWP_NOSIZE | win32con.SWP_NOZORDER | win32con.SWP_NOACTIVATE)
+    except Exception as e:
+        print(f"   ❌ Lỗi khi di chuyển cửa sổ: {e}")
+
+
+def dichuyencuasotheovitri(hwnd, vitricuaso):
+    window_width, window_height = _kichthuoccuaso(hwnd)
 
     try:
         vitricuaso = int(vitricuaso)
     except (TypeError, ValueError):
         vitricuaso = 1
-    cot, socot, hang = VITRICUASOs[(vitricuaso - 1) % len(VITRICUASOs) + 1]
-    # Màn rộng đủ thì các cửa sổ không chồng nhau (bước = bề rộng cửa sổ), hẹp thì dồn đều cho cửa sổ cuối chạm mép phải
-    buocx = min(window_width, (phai - trai - window_width) // (socot - 1)) if socot > 1 else 0
-    toado_x = trai + max(0, cot * buocx)
-    toado_y = tren + max(0, (duoi - tren - window_height) * hang)
+    vitricuaso = (vitricuaso - 1) % len(VITRICUASOs) + 1
+    toado_x, toado_y = _toadovitri(vitricuaso, window_width, window_height)
 
     _bokieuan(hwnd)
     try:

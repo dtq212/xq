@@ -63,6 +63,11 @@ SOLANTHUSUGIA = 3
 # Trưởng nhóm chờ thành viên cùng máy trả nhiệm vụ trước khi nhận lượt mới / nhận theo sau khi mình nhận, tối đa chừng này giây
 THOIGIANCHOTHANHVIENTRA = 90.
 THOIGIANCHOTHANHVIENNHAN = 20.
+# Trưởng nhóm nhận ở Từ Phúc thì game chỉ hỏi "đã nhận nhiệm vụ rồi... 1. Nhận" thành viên đứng gần. 27/11: Thỏ nhận lúc Ngốc còn cách
+# ~30 ô (theo sau, chờ bảo thú ở góc rào) -> Ngốc không được hỏi, cả lượt chỉ 1 acc có nhiệm vụ. Nên chờ thành viên cùng máy chưa có
+# nhiệm vụ tới trong chừng này ô rồi mới nói chuyện, chờ tối đa THOIGIANCHOTHANHVIENTOI giây (quá thì nhận luôn)
+KHOANGCACHTHANHVIENNHAN = 8.
+THOIGIANCHOTHANHVIENTOI = 60.
 THOIGIANSUGIATOIDA = 6 * 3600.
 GIANCACHGHIHUONG = 5.
 THOIGIANCHOMOTASUGIA = 30.
@@ -334,6 +339,26 @@ class TacTuSuGia:
                 if idcuaso != self.idcuaso and isinstance(info, dict) and info.get("idnguoichoi") in thanhviens
                 and time.time() - info.get("thoidiemcapnhat", 0.) <= 5. and info.get("_sugianhiemvu", "") in trangthais]
 
+    def _laythanhvienxanhan(self):
+        # Tên thành viên cùng máy chưa có nhiệm vụ Sư Gia mà đứng xa mình hơn KHOANGCACHTHANHVIENNHAN ô (hoặc chưa thấy trên bản đồ)
+        moitruong = self.moitruong
+        if self.shared_data is None or not moitruong.get_is_dangnamtrongnhom():
+            return []
+        thanhviens = set(moitruong.get_danhsachidnguoichoithanhviennhoms() or ()) - {moitruong.get_idnguoichoi()}
+        try:
+            danhsach = list(self.shared_data.items())
+        except Exception:
+            return []
+        xas = []
+        for idcuaso, info in danhsach:
+            if (idcuaso == self.idcuaso or not isinstance(info, dict) or info.get("idnguoichoi") not in thanhviens
+                    or time.time() - info.get("thoidiemcapnhat", 0.) > 5. or info.get("_sugianhiemvu", "") != ""):
+                continue
+            diachi = moitruong.action_timkiemnhanvat(idnguoichoi = info["idnguoichoi"])
+            if not diachi or moitruong.get_khoangcach(diachi) > KHOANGCACHTHANHVIENNHAN:
+                xas.append(info.get("tennhanvat") or str(info.get("idnguoichoi")))
+        return xas
+
     def _toitusugia(self, s, nhan):
         # Tới Chu Quốc chỗ Từ Phúc -> yêu cầu di chuyển, hoặc False khi đã ở Chu Quốc
         if self.moitruong.get_idbandohientai() == BANDONPCSUGIA:
@@ -392,6 +417,22 @@ class TacTuSuGia:
                 self._ketthucsugia(f"❌ Sư Gia dừng: nhận {SOLANTHUSUGIA} lần mà không có nhiệm vụ (xem log [PHÓ BẢN] Menu {tennpc})", is_loi = True)
                 return None
             self._logsg(f"Nhận xong {THOIGIANCHONHIEMVUDOISUGIA:.0f}s chưa thấy nhiệm vụ, nói chuyện lại")
+        if not s.get("hoithoai"):
+            xas = self._laythanhvienxanhan()
+            if xas and math.dist(self.moitruong.get_toado(), (x, y)) > 8:
+                # Tới cạnh Từ Phúc trước rồi mới chờ (chờ ở xa thì lúc đi tiếp thành viên lại tụt lại)
+                s["trangthai"] = f"tới {tennpc} nhận nhiệm vụ"
+                return self._khongcatgocchu({"yeucau": YEUCAUDICHUYENDICHUYENTUDO, "toadodich": (x, y, BANDONPCSUGIA), "khoangcachtoida": 6.})
+            if xas and time.time() - s.setdefault("lucchotoi", time.time()) < THOIGIANCHOTHANHVIENTOI:
+                if s.get("xadaghi") != xas:
+                    s["xadaghi"] = xas
+                    self._logsg(f"Chờ {', '.join(xas)} tới gần (trong {KHOANGCACHTHANHVIENNHAN:.0f} ô) rồi mới nhận, để nhận theo được")
+                s["trangthai"] = f"chờ {', '.join(xas)} tới gần rồi mới nhận"
+                return None
+            if xas:
+                self._logsg(f"Chờ {int(THOIGIANCHOTHANHVIENTOI)}s mà {', '.join(xas)} chưa tới gần, nhận luôn")
+            s.pop("lucchotoi", None)
+            s.pop("xadaghi", None)
         s["trangthai"] = f"nhận nhiệm vụ ở {tennpc}"
         ketqua, yeucau = self._noichuyensugia(s, tennpc, x, y, is_chovankhi = False, luachon = (0, 0), kiemtramenu = self._kiemtramenusugia)
         if ketqua == "tuchoi":

@@ -442,10 +442,18 @@ class KeoGaTuDong:
             hwnd, i = info
             kc = i.get("_keocap") or {}
             if not (kc.get("vaitro") == "ga" and kc.get("idchinh") == self.idchinh) and int(g.get("cap") or 0) < self.capketthuc:
-                if now - g.get("lucguilenh", 0.) >= GIANCACHGUILENH:
+                if now - g.get("lucguilenh", 0.) >= GIANCACHGUILENH and not self.command_dict.get(hwnd):
                     g["lucguilenh"] = now
-                    self.command_dict[hwnd] = f"keocapga:{self.idchinh}"
-                    print(f"[KÉO GÀ A-Z] Bật vai acc gà cho {g['ten']} (ID {g['id']})")
+                    if kc:
+                        # Đang kéo cấp sẵn vai khác / của acc chính khác (mở lại bot tự làm tiếp lượt cũ: gacon7726 vai acc gà của 364,
+                        # 2026-11-28): batdau_keocap bỏ qua im lặng khi đang kéo cấp -> gửi keocapga mãi không ăn, acc chính không bao
+                        # giờ được bật. Dừng trước, vòng sau mới bật vai acc gà đúng
+                        self.command_dict[hwnd] = "huykeocap"
+                        print(f"[KÉO GÀ A-Z] {g['ten']} (ID {g['id']}) đang kéo cấp vai {kc.get('vaitro')} của ID {kc.get('idchinh')}: "
+                              f"dừng để bật lại vai acc gà của {self.idchinh}")
+                    else:
+                        self.command_dict[hwnd] = f"keocapga:{self.idchinh}"
+                        print(f"[KÉO GÀ A-Z] Bật vai acc gà cho {g['ten']} (ID {g['id']})")
                 chuasan.append(g["ten"])
                 continue
             self._battangcap(g, hwnd, i, now)
@@ -757,7 +765,9 @@ class KeoGaTuDong:
         user = taikhoan["user"]
         taoga = {"capketthuc": self.capketthuc, "idsdaxong": self._idsdaxong(user), "tiento": cauhinh.get("tiento") or TIENTOMACDINH,
                  "captoithieu": 0 if ga else int(cauhinh.get("captoithieu") or 0),
-                 "gioitinh": int(cauhinh.get("gioitinh") or 0), "idchon": ga["id"] if ga else 0}
+                 "gioitinh": int(cauhinh.get("gioitinh") or 0), "idchon": ga["id"] if ga else 0,
+                 # Cửa sổ acc chính: đặt cửa sổ acc gà tránh che (dangnhap_xq.chonvitritrongcuaso)
+                 "idchinhs": [i for i in (self.idchinh, self.idchinh2) if i]}
         config = {"user": user, "pass": taikhoan["pass"], "group": int(taikhoan.get("group") or cauhinh.get("group") or 1),
                   "server": int(taikhoan.get("server") or cauhinh.get("server") or 1), "char_index": 1, "vitricuaso": vitri + 2,
                   "tennhanvat": ga["ten"] if ga else "", "idnguoichoi": ga["id"] if ga else None, "taoga": taoga}

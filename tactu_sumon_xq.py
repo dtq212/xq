@@ -80,11 +80,11 @@ CHIEUDANHGIAMMAU_MAP = {
 # THOIGIANNGATDANHTOIDA giây thì thôi
 GIANCACHNGATDANH = 1.
 THOIGIANNGATDANHTOIDA = 15.
-KHOANGCACHNOICHUYEN = 3.
+KHOANGCACHNOICHUYEN = KHOANGCACHNOICHUYENNPC
 # Cửa hàng người chơi tự mở chỉ ghi khi trong ngần này ô có đúng 1 NPC (bán / list được từ 6-9 ô, các tiệm một nước đứng sát nhau)
 KHOANGCACHNPCCUAHANGDUYNHAT = 10.
 # Gần NPC dưới chừng này ô mà không đi lại gần hơn được (vật cản) thì vẫn thử nói chuyện
-KHOANGCACHNOICHUYENKET = 6.
+KHOANGCACHNOICHUYENKET = 8.
 # Gửi xong hội thoại chừng này giây mà nhiệm vụ chưa đổi thì thử lại, quá SOLANTHUSUMON lần thì dừng
 THOIGIANCHONHIEMVUDOI = 4.
 # Nhận nhiệm vụ: cửa sổ nhiệm vụ có lúc cập nhật chậm (Luyện tập), chờ lâu hơn trước khi gửi lại

@@ -206,6 +206,9 @@ MAMAUCHUABANPYs = (MAMAULAMKIM, MAMAUHOANGKIM, MAMAUTIM)
 # Bán rác Phong Yêu Kính giữ lại chừng này món Lam Kim đem đốt được (cấp / giá thấp nhất), bán phần dư và món không đem đốt được: túi
 # đầy Lam Kim (người dùng 20/11). Mỗi vòng chỉ đốt 1 món nên 10 món đủ dùng nhiều vòng
 SOLAMKIMGIUPY = 10
+# Bán rác Phong Yêu Kính bán thêm các món không phải trang bị này (khớp tên đầu, bỏ dấu cách thừa): nhặt nhiều, rác (người dùng 27/11).
+# Luật Giữ / Vứt / Cất kho vẫn được tôn trọng
+TENVATPHAMBANRACPYs = ("Phấn Huỳnh Quang",)
 # Bán rác xong mà hành trang còn ít hơn chừng này ô trống thì bán thêm đồ Lam Kim (chữ xanh) cho đủ, không thì vào phó bản đầy túi
 # không nhặt được (2026-11-04). Không bao giờ bán thêm đồ Hoàng Kim / có sao / luật Giữ / Cất kho
 SOOTRONGTOITHIEUPY = 6
@@ -276,7 +279,7 @@ THOIGIANCHONHATDOTOIDAPY = 40.
 THOIGIANCHOTINHOANTHANH = 15.
 # Nói chuyện NPC trong phó bản: chờ menu, chọn rồi chờ vận khí bắt đầu tối đa chừng này giây, không thì nói lại; quá SOLANTHUNOICHUYEN
 # lần thì quay lại bước trước (boss trước đó có thể chưa chết)
-KHOANGCACHNOICHUYENLLS = 3.
+KHOANGCACHNOICHUYENLLS = KHOANGCACHNOICHUYENNPC
 # Give cho NPC đứng xa 6-9 ô vẫn được (chỉ give cho người chơi mới phải trong ~3 ô, người dùng xác nhận 2026-11-03): đội trưởng ra Phong
 # Yêu Kính ở (248, 158) cách Tả Khâu Minh ~4.5 ô là give luôn, khỏi chen qua hàng (249..250, 158) máy chủ hay kéo về
 KHOANGCACHGIVENPC = 6.
@@ -384,7 +387,10 @@ class TacTuLangLySon:
         cauhinh = PHOBAN_MAP[s["phoban"]]
         if cauhinh["luachonvao"] in (None, "give") or self.moitruong.get_idbandohientai() != cauhinh["bandonpc"]:
             return False
-        return bool(s["hoithoai"]) or self.moitruong.get_is_dangvankhi()
+        # Chỉ khi đã chọn menu (buoc "cho": chờ Xác nhận / vận khí) hoặc đang vận khí thật. Hội thoại có từ lúc bắt đầu chạy tới NPC
+        # (buoc "look"): 28/11 04:14 trưởng nhóm 364 còn ở (239, 246) đã báo, thành viên vừa qua cổng Kênh Trịnh Quốc 1 đứng im ~70s
+        h = s["hoithoai"]
+        return bool(h and h.get("buoc") == "cho") or self.moitruong.get_is_dangvankhi()
 
     def get_is_chotruongnhomvankhivao(self):
         # Mình theo sau trưởng nhóm cùng máy / LAN đang vận khí vào phó bản (get_is_langlysonvankhivao) và cùng bản đồ: không di chuyển.
@@ -805,7 +811,15 @@ class TacTuLangLySon:
                                                           f"{tennpc} vào lại")
         if not s["hoithoai"] and not self._is_nhomdu(s):
             return None
-        if not s["hoithoai"] and moitruong.get_khoangcachdiem(x, y) <= KHOANGCACHTRUONGNHOMTOINPC and not self._is_thanhviengannpc(s):
+        # Chưa chọn menu (chưa có hội thoại, hoặc hội thoại tạo từ lúc chạy tới NPC còn ở bước "look") thì luôn chờ thành viên về gần.
+        # Trước chỉ xét khi chưa có hội thoại: 28/11 04:15 trưởng nhóm tới NPC chọn menu luôn khi thành viên còn ở cổng, 3 lần không ra
+        # hộp Xác nhận; chờ đủ người rồi chọn thì vào ngay
+        h = s["hoithoai"]
+        if (not h or h.get("buoc") == "look") and moitruong.get_khoangcachdiem(x, y) <= KHOANGCACHTRUONGNHOMTOINPC \
+                and not self._is_thanhviengannpc(s):
+            if h and moitruong.get_is_danghiencuasotuychon():
+                # Menu NPC đã mở (look xong, chưa chọn) thì đóng, đủ người look lại
+                moitruong.set_is_danghiencuasotuychon(False)
             return None
         s.pop("lucchogan", None)
         s["trangthai"] = f"vào {ten} (vòng {s['sovong'] + 1}): nói chuyện {tennpc}"
@@ -1938,6 +1952,11 @@ class TacTuLangLySon:
             hanhdong = self._layhanhdongluat(ten, vitri)
             if hanhdong not in (None, HANHDONG_BAN) or self._is_catkhovatpham(ten, vitri):
                 continue
+            # Món rác theo tên (TENVATPHAMBANRACPYs): bán luôn, khỏi đọc mô tả
+            tenchuan = unicodedata.normalize("NFC", ten).strip()
+            if any(tenchuan.startswith(unicodedata.normalize("NFC", t)) for t in TENVATPHAMBANRACPYs):
+                monbans.append((vitri, iddoituong))
+                continue
             mota = moitruong.get_motathovatphamhanhtrangcosan(vitri)
             dongs = [d.strip() for d in unicodedata.normalize("NFC", re.sub(r"\x1b.", "", mota)).split("\n") if d.strip()]
             if not dongs or not dongs[0].startswith(unicodedata.normalize("NFC", ten).strip()):
@@ -1986,7 +2005,7 @@ class TacTuLangLySon:
             bans += giu[::-1][:thieu]
         monbans += [(vitri, iddoituong) for _, vitri, iddoituong, _ in bans]
         if not monbans:
-            return xong(f"Không có trang bị trắng / Lam Kim dư để bán, không tới {tennpc}")
+            return xong(f"Không có trang bị trắng / Lam Kim dư / món rác theo tên để bán, không tới {tennpc}")
         diachinpc = moitruong.action_timkiemnhanvat(tennhanvat = tennpc)
         if not diachinpc or moitruong.get_khoangcach(diachinpc) > KHOANGCACHBANRACPY:
             s["trangthai"] = f"bán rác: tới {tennpc} ({x}, {y}), {len(monbans)} món"
@@ -2005,7 +2024,7 @@ class TacTuLangLySon:
             self._logpb(s, f"Bán đồ trắng: chừa {len(boquas)} món: " + ", ".join(boquas))
         b["somon"] = len(lenhs)
         self._datnhangdoibanrac(lenhs)
-        self._logpb(s, f"Bán {len(lenhs)} món (trang bị trắng + Lam Kim dư) ở {tennpc}")
+        self._logpb(s, f"Bán {len(lenhs)} món (trang bị trắng + Lam Kim dư + món rác theo tên) ở {tennpc}")
         s["trangthai"] = f"bán đồ trắng ở {tennpc}: {len(lenhs)} món"
         return None
 
@@ -2302,6 +2321,24 @@ class TacTuLangLySon:
                 or do["idbando"] != self.moitruong.get_idbandohientai() or not self._is_trongphongyeu():
             return None
         return do["diems"][do["i"]]
+
+    def get_is_quaingoaivungphongyeu(self, x, y):
+        # Đang dò Phong Yêu Kính có chia vùng (>= 2 người): quái (x, y) thuộc vùng người khác khi điểm dò gần nó nhất nằm ngoài đoạn
+        # của mình => không chọn làm mục tiêu (tự thấy hay tầm nhìn chung). Trước đây chia vùng chỉ chia điểm dò, chọn mục tiêu không
+        # giới hạn: log 342 (Thỏ) / 347 (Ngốc) 2026-11-28 07:08-07:14 chia 1-12 / 13-25 mà cả hai luôn ở TẤN CÔNG, đánh hết con này sang
+        # con khác cạnh nhau, không lần nào về điểm dò của mình => đi sát nhau khắp bản đồ. Quái sát mình (<= 2 ô, đang đánh mình) vẫn đánh;
+        # đang đuổi boss / không chia / không dò thì không giới hạn
+        s = self._langlyson
+        py = s.get("py") if s and s["phoban"] == "phongyeukinh" and s["giaidoan"] == "vao" else None
+        do = py.get("do") if py else None
+        if not do or "dau" not in do or do.get("sttvung", (0, 0))[1] < 2 or py.get("boss") or self._is_tudongtheosau \
+                or self._lydodungthoyeupy() or do["idbando"] != self.moitruong.get_idbandohientai():
+            return False
+        if khoangcachtamdanh((x, y), self.moitruong.get_toado()) <= 2:
+            return False
+        diems = do["diems"]
+        gannhat = min(range(len(diems)), key = lambda k: math.dist(diems[k], (x, y)))
+        return not do["dau"] <= gannhat <= do["cuoi"]
 
     def get_is_dangdanhbossphongyeu(self):
         # Mình đang đánh / chờ xác nhận boss Phong Yêu Kính (báo qua shared_data: trưởng nhóm không ra khi thành viên đang đánh boss)

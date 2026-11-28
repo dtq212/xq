@@ -677,6 +677,16 @@ class TacTuVatPham:
                                                         and self.moitruong.get_is_khoavankhitrieuhoibaothu()):
                 is_dangchodoiphapbao = True
 
+            # Đang làm Sư Gia (trưởng nhóm lẫn thành viên): luôn đeo Thượng Phương Bảo Kiếm, không đổi theo sinh lực / xoay Trảo /
+            # tháo khi máu thấp (người dùng dặn 2026-11-27). Túi không có Kiếm thì để các kiểu đổi bên dưới chạy như thường.
+            # Xong Sư Gia thì đổi theo sinh lực đưa về món cũ (nếu bật tuỳ chọn đó)
+            if self.get_is_dangsugia() and not is_dangchodoiphapbao and (tenphapbaohientai == THUONGPHUONGBAOKIEM or co(THUONGPHUONGBAOKIEM)):
+                if tenphapbaohientai != THUONGPHUONGBAOKIEM and self.action_sudungvatphamhanhtrang(THUONGPHUONGBAOKIEM, delay = 0.):
+                    self._thoidiemhoandoiphapbao = time.time()
+                    self.moitruong._inlog(f"[PHÁP BẢO] Sư Gia: đổi {tenphapbaohientai or '(không)'} -> {THUONGPHUONGBAOKIEM}")
+                self._tenphapbaocu = None
+                is_dangchodoiphapbao = True
+
             # Đổi pháp bảo theo sinh lực (tuỳ chọn tab Chiến đấu, PHAPBAOTHEOMAU_MAP: Đào Hoa / Nội công / Ngoại công), thay cho cách
             # lưu / đeo lại pháp bảo cũ ở dưới.
             # Đổi bằng "use <id>#" như chuột phải: "use2" (lệnh nút Xác Nhận, dùng cho Trảo tân thủ) bị máy chủ chặn khi đang
@@ -1709,6 +1719,10 @@ class TacTuVatPham:
                 continue
             iddoituongvatpham = self.moitruong.get_iddoituongvatphamhanhtrang(i)
             if not iddoituongvatpham or time.time() < self._thoidiemthulaivut_map.get(iddoituongvatpham, 0.):
+                continue
+            # Đang bật "Đào tàng bảo đồ" thì không vứt Tàng Bảo Đồ dù khớp luật Vứt (log 418 28/11: 2 tấm vừa đổi ở Thiên Sứ
+            # Trao Đổi bị luật "Vứt tàng bảo đồ" vứt ngay 1 giây sau)
+            if tens[i] == TANGBAODO and self._is_tudongdaotangbaodo:
                 continue
             # Món trong bảng Cất kho thì để dành đi cất, không vứt
             if self._layhanhdongluat(tens[i], i) != HANHDONG_VUT or self._is_catkhovatpham(tens[i], i):

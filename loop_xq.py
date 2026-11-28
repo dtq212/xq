@@ -213,6 +213,7 @@ class LoopChinh:
                 return " ".join(ten.replace("đ", "d").replace("Đ", "D").split()).lower()
 
             # Hợp thành Tinh Thạch khi có >= 5 viên cùng tên (tắt bằng IS_TUDONGHOPTHANHTINHTHACH)
+            # Không tự ghép Ngự Thạch: thử 2026-11-28 ghép Ngự Thạch cấp 1 tỉ lệ chỉ ~40%, người dùng bỏ
             for tenvatphamhanhtrang, vatphams in (self.moitruong.get_danhsachvatphamhanhtrang_map().items() if IS_TUDONGHOPTHANHTINHTHACH else ()):
                 tenchuanhoa = chuanhoaten(tenvatphamhanhtrang)
                 if "tinh thach" not in tenchuanhoa:

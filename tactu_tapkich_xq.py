@@ -39,7 +39,7 @@ GIANCACHCHOTHANHVIENTAPKICH = 5.
 LOINPCDANGCHIENDAUs = ("đang cùng chiến đấu", "đang chiến đấu với người khác")
 THOIGIANBOQUANPCTAPKICH = 5 * 60.
 # Đứng cách NPC tối đa chừng này ô mới "look"; look xong chờ menu tối đa THOIGIANCHOMENUTAPKICH giây rồi look lại
-KHOANGCACHNOICHUYENTAPKICH = 3.
+KHOANGCACHNOICHUYENTAPKICH = KHOANGCACHNOICHUYENNPC
 THOIGIANCHOMENUTAPKICH = 3.
 # Chọn xong menu vào chờ được đưa vào phó bản tối đa chừng này giây, không thì nói chuyện lại; quá SOLANTHUVAOTAPKICH lần thì dừng (hết
 # Ngân Bảo / hết lượt trong ngày?)

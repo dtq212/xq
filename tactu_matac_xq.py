@@ -27,7 +27,7 @@ TENPHOBANMATAC = chuanhoaten("Mã Tặc")
 MAUTINBANDOMATAC = re.compile(r"Đoạt Bảo Mã Tặc đã xuất hiện tại\s*(.+?)\s*!?\s*$")
 # Menu NPC: "Ngươi muốn khiêu chiến với ta sao, suy nghĩ kĩ chưa ?" 1. Khiêu chiến 2. Rời khỏi
 LOINPCKHIEUCHIENMATAC = "khiêu chiến"
-KHOANGCACHNOICHUYENMATAC = 3.
+KHOANGCACHNOICHUYENMATAC = KHOANGCACHNOICHUYENNPC
 THOIGIANCHOMENUMATAC = 3.
 # Chọn Khiêu chiến xong chờ được đưa vào phó bản tối đa chừng này giây, không thì nói chuyện lại; con đó quá SOLANTHUVAOMATAC lần (bị
 # người khác giành / NPC từ chối) thì bỏ qua con đó BOQUAMATAC giây

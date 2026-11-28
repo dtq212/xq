@@ -30,7 +30,8 @@
   ],
   "91": [
    "Thiên Tướng",
-   "Thần Binh"
+   "Thần Binh",
+   "Thủ Trận Thần Tướng"
   ],
   "92": [
    "Thiên Tướng",
@@ -139,7 +140,8 @@
   ],
   "291": [
    "Khô Lâu Yêu Vương",
-   "Tà Linh"
+   "Tà Linh",
+   "Hài Cốt Tinh"
   ],
   "381": [
    "Chu Lão Ngũ",
@@ -148,7 +150,8 @@
   ],
   "383": [
    "Thạch Đại Long",
-   "Chu Lão Tứ"
+   "Chu Lão Tứ",
+   "Mộc Tinh"
   ],
   "51": [
    "Phỉ Đồ Võ Tam",
@@ -166,7 +169,8 @@
    "Thích Khách Từ Tứ",
    "Long Cửu",
    "Thái Cửu",
-   "Ác Quan Tự Tam"
+   "Ác Quan Tự Tam",
+   "Thủ Trận Thiên Binh"
   ],
   "73": [
    "Tam Đao Quỷ",
@@ -188,7 +192,8 @@
    "Oán Linh"
   ],
   "331": [
-   "Đao Thuẫn Khô Lâu"
+   "Đao Thuẫn Khô Lâu",
+   "Kiếm Thuẫn Khô Lâu"
   ],
   "341": [
    "Thạch Hổ",
@@ -220,6 +225,13 @@
   "92": [
    "Địa Sát Môn Thủ",
    "Thủ Trận Thần Tướng"
+  ],
+  "292": [
+   "Thi Ma",
+   "Khô Lâu Yêu"
+  ],
+  "333": [
+   "Kiếm Thuẫn Khô Lâu"
   ]
  },
  "nghi": {
@@ -245,7 +257,6 @@
    "Thị Vệ Vong Linh": 1
   },
   "93": {
-   "Thủ Trận Thiên Binh": 1,
    "Thủ Trận Thần Tướng": 1,
    "Thái Cực Môn Thủ": 1
   },
@@ -266,17 +277,11 @@
    "Quy Tiên Nhân": 1
   },
   "331": {
-   "Kiếm Thuẫn Khô Lâu": 1,
    "Song Đao Khô Lâu": 1
   },
   "333": {
-   "Đao Thuẫn Khô Lâu": 1
-  },
-  "383": {
-   "Mộc Tinh": 1
-  },
-  "292": {
-   "Thi Ma": 1
+   "Đao Thuẫn Khô Lâu": 1,
+   "Song Đao Khô Lâu": 1
   },
   "342": {
    "Đao Dũng": 1
@@ -285,10 +290,12 @@
    "Vô Lại Thạch Cửu": 1
   },
   "343": {
-   "Đao Dũng": 1
+   "Đao Dũng": 1,
+   "Thạch Sư": 1
   },
   "345": {
-   "Kiếm Dũng": 1
+   "Kiếm Dũng": 1,
+   "Cung Tiễn Thạch Dũng": 1
   },
   "381": {
    "Thuỷ Tinh": 1,
@@ -296,6 +303,22 @@
   },
   "291": {
    "Khô Lâu Yêu": 1
+  },
+  "332": {
+   "Kiếm Thuẫn Khô Lâu": 1
+  },
+  "335": {
+   "Song Đao Khô Lâu": 1
+  },
+  "293": {
+   "Hài Cốt Tinh": 1
+  },
+  "383": {
+   "Hoả Tinh": 1,
+   "Thổ Tinh": 1
+  },
+  "91": {
+   "Thiên Cương Môn Thủ": 1
   }
  }
 }

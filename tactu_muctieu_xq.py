@@ -627,8 +627,13 @@ class TacTuMucTieu:
         # Tân Thủ Thôn / Chu Quốc (BANDOKHONGTANCONGs) vốn không chọn mục tiêu, không ra chiêu. Ngoại lệ: Thiên Xu Viện Trừ Ác Giúp Yếu
         # có Ác Nhân xuất hiện ở Chu Quốc (log 354 2026-11-16 06:09 Ác Nhân Tương Miêu Nhân (113, 136)): thấy, tự gán mục tiêu nhưng bị
         # bỏ chọn liên tục, đứng cạnh không đánh. Lúc đang đánh quái nhiệm vụ thì danh sách mục tiêu chỉ còn tên ác nhân nên không lan
-        # sang quái khác
-        return self.get_is_thienxudanhquai()
+        # sang quái khác.
+        # Sư Gia: tội phạm có lúc ở Chu Quốc (log 342 2026-11-27 20:49 Hoắc Lão Đương Gia (213, 246): "đánh" 1,5 phút không ra chiêu
+        # nào, nhiệm vụ hết giờ). Trưởng nhóm chỉ khi đang đánh (danh sách mục tiêu chỉ còn tên tội phạm); thành viên theo trưởng
+        # nhóm thì khi Sư Gia không cấm đánh (chờ đủ người)
+        s = self._sugia
+        is_sugia = bool(s) and (s.get("chedodoc") == "danhquai" or (s.get("chedodoc") == "thanhvien" and not self.get_is_camdanhsugia()))
+        return self.get_is_thienxudanhquai() or is_sugia
 
     def _is_viecdichopk(self):
         # Đang đi lại cho Mã Tặc (tìm NPC / tới bản đồ) / Tinh Anh / Đào khoáng (tới bản đồ) mà đang bật PK ở bản đồ cho PK: vẫn đánh

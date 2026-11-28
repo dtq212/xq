@@ -8,6 +8,8 @@ import win32gui
 import win32con
 
 from hangso_xq import *
+from tactu_doicau_xq import SOOTRONGGIUDOITANGBAODO, SOTANGBAODOMOICAP
+from tactu_catkho_xq import LYDOCATKHO_DAOBAODO, TENCHUACATKHODAOBAODOs, KHOANGCACHQUANKHO
 from thongbao_xq import baosuco, LYDOTAMNGUNGTUXA
 from tienich_xq import taithietlap as util_taithietlap, duongdanthietlap as util_duongdanthietlap, phatam, canhbao
 from tienich_xq import laynhomtodoitudongs, donbangthoidiem, layvanglaitodois, layis_nhomtodoibat
@@ -423,19 +425,19 @@ class TacTuHoatDong:
         # Mình là thành viên vãng lai và có nhóm chính (thường trực) cùng bản đồ: nhóm giữ đủ số tối đa (Aegis 5), vãng lai
         # đang trong nhóm chỉ nhường slot (tự rời) khi có vãng lai khác ngoài nhóm cần buff nhóm mà nhóm hết chỗ; ngoài nhóm thì chỉ
         # nhận lời mời của trưởng nhóm chính (không tự xin vào, không lập nhóm phụ), vừa nhường thì nghỉ THOIGIANVANGLAINGHISAUNHUONG
-        # giây trừ khi chính mình cần buff. -> True khi đã xử lý (Tổ đội tự động thường bỏ lượt này), False để chạy như thường trực
+        # giây trừ khi chính mình cần buff. -> luôn True (Tổ đội tự động thường bỏ lượt này)
+        # Vãng lai KHÔNG BAO GIỜ chạy luật Tổ đội tự động thường (người dùng 2026-11-28): trước đây không có nhóm chính cùng bản đồ
+        # (thường trực ở bản đồ khác) thì trả False chạy như thường trực => các vãng lai tự mời nhau lập nhóm riêng (không mời từ xa
+        # để gọi Thiên Lý Hữu Tình được nữa), đang ở nhóm trưởng nhóm thường trực mời từ xa cũng tự rời để "vào nhóm hạng cao hơn"
         moitruong = self.moitruong
         idtoi = moitruong.get_idnguoichoi()
         s = self._vanglai
-        idchinh = self._layidtruongnhomchinh(nhom, botkhacs, idbando)
-        if not idchinh or idchinh == idtoi:
-            s["lucvaonhom"] = 0.
-            self._buffnhomthieu = (0., [])
-            self._ghitrangthaivanglai("")
-            return False
         now = time.time()
-        canbuffs = self._tinhbuffnhomthieu(nhom, botkhacs)
         vanglais = layvanglaitodois()
+        thuongtrucs = [i for i in nhom if i not in vanglais]
+        idchinh = self._layidtruongnhomchinh(nhom, botkhacs, idbando)
+        if idchinh == idtoi:
+            idchinh = 0
 
         def ten(id_):
             return (botkhacs.get(id_) or {}).get("tennhanvat") or str(id_)
@@ -444,10 +446,38 @@ class TacTuHoatDong:
             return (botkhacs.get(id_) or {}).get("_vanglai") or {}
 
         is_trongnhom = moitruong.get_is_dangnamtrongnhom()
-        if is_trongnhom and moitruong.get_idnguoichoitruongnhom() != idchinh:
-            # Đang ở nhóm khác: Tổ đội tự động thường lo rời để vào nhóm hạng cao hơn
+        idtruongnhom = moitruong.get_idnguoichoitruongnhom() if is_trongnhom else 0
+        if is_trongnhom and (not idchinh or idtruongnhom != idchinh):
+            # Không phải nhóm chính cùng bản đồ: ở yên, chỉ rời nhóm do vãng lai tự ghép với nhau (trưởng nhóm là vãng lai cùng nhóm
+            # todoi.json, trong nhóm không có thường trực nào) để thường trực mời được. Nhóm thường trực mời từ xa / người ngoài lập thì giữ
             s["lucvaonhom"] = 0.
-            return False
+            self._buffnhomthieu = (0., [])
+            thanhviens = list(moitruong.get_danhsachidnguoichoithanhviennhoms() or ())
+            is_nhomvanglai = not any(i in thuongtrucs for i in thanhviens) and all(i == idtoi or i in vanglais for i in thanhviens)
+            if is_nhomvanglai and (len(thanhviens) > 1 or idtruongnhom == idtoi):
+                self._ghitrangthaivanglai("rời nhóm vãng lai tự ghép (không có thường trực)")
+                if now - s["lucroi"] > 1.5:
+                    s["lucroi"] = now
+                    moitruong.action_thoatkhoinhom()
+            elif idtruongnhom == idtoi and len(thanhviens) > 1:
+                # Mình là trưởng nhóm có thường trực: nhường quyền cho thường trực đầu tiên (vãng lai không làm trưởng nhóm)
+                idnhan = next((i for i in thuongtrucs if i in thanhviens), 0)
+                self._ghitrangthaivanglai(f"nhường trưởng nhóm cho {ten(idnhan)}")
+                if idnhan and now - s["lucroi"] > 1.5:
+                    s["lucroi"] = now
+                    moitruong.action_nhuongquyentruongnhom(idnhan)
+            else:
+                self._ghitrangthaivanglai(f"ở nhóm {ten(idtruongnhom)} (không phải nhóm chính cùng bản đồ), giữ nguyên")
+            return True
+        if not is_trongnhom and not idchinh:
+            # Chưa có nhóm, không có nhóm chính cùng bản đồ: chỉ nhận lời mời của thường trực (mời từ xa được), không tự mời / xin vào ai
+            s["lucvaonhom"] = 0.
+            self._buffnhomthieu = (0., [])
+            self._ghitrangthaivanglai("chờ thường trực mời")
+            self._dongytodoitudong = (now, list(thuongtrucs))
+            moitruong.action_kiemtravadongyloimoinhom(thuongtrucs)
+            return True
+        canbuffs = self._tinhbuffnhomthieu(nhom, botkhacs)
         if not is_trongnhom:
             s["lucvaonhom"] = 0.
             is_nghi = not canbuffs and now - s["lucnhuong"] < THOIGIANVANGLAINGHISAUNHUONG
@@ -455,8 +485,10 @@ class TacTuHoatDong:
                 self._ghitrangthaivanglai(f"vừa nhường slot, nghỉ {int(THOIGIANVANGLAINGHISAUNHUONG - (now - s['lucnhuong']))}s")
                 return True
             self._ghitrangthaivanglai(f"chờ nhóm {ten(idchinh)} mời" + (f" (cần {', '.join(canbuffs)})" if canbuffs else ""))
-            self._dongytodoitudong = (now, [idchinh])
-            moitruong.action_kiemtravadongyloimoinhom([idchinh])
+            # Nhóm chính trước, rồi tới thường trực khác (mời từ xa để gọi Thiên Lý Hữu Tình)
+            idsdongy = [idchinh] + [i for i in thuongtrucs if i != idchinh]
+            self._dongytodoitudong = (now, idsdongy)
+            moitruong.action_kiemtravadongyloimoinhom(idsdongy)
             return True
         # Trong nhóm chính
         if not s["lucvaonhom"]:
@@ -482,8 +514,9 @@ class TacTuHoatDong:
             return lucvao and now - lucvao >= THOIGIANVANGLAIOTOITHIEU
 
         def duocnhuong(cb, lucvao):
-            # Cho vãng lai cần buff: đã đủ buff, hoặc chờ quá lâu vẫn chưa được buff; vừa vào thì chưa xét
-            return damoivao(lucvao) and (not cb or now - lucvao > THOIGIANVANGLAICHOBUFF)
+            # Cho vãng lai cần buff: chỉ khi đã đủ buff (vừa vào thì chưa xét). Bỏ nhánh "chờ quá THOIGIANVANGLAICHOBUFF giây" 2026-11-28:
+            # người buff ở xa thì vãng lai chưa được buff cũng tự rời (người dùng báo)
+            return damoivao(lucvao) and not cb
 
         # Vãng lai trong nhóm (cả mình), người đủ buff trước rồi người vào sớm nhất: thieucho_tt người đầu (đã vào đủ lâu) nhường cho
         # thường trực, rồi thieucho_vl người kế (đủ điều kiện duocnhuong) nhường cho vãng lai cần buff
@@ -600,12 +633,153 @@ class TacTuHoatDong:
             pass
         return str(idnguoichoi)
 
+    def _buffthieucuathanhvien(self, diachi, tenmonphai):
+        # Buff nhóm mình (phái tenmonphai, đã học chiêu) buff được mà thành viên ở diachi đang thiếu -> [tên buff]. Cùng luật chọn người
+        # buff của từng phái (tactu_muctieu Vân Mộng Cốc, tactu_kynang Thục Sơn / Đào Hoa): đọc hiệu ứng lỗi coi như đã có
+        moitruong = self.moitruong
+
+        def thieu(idhieuung):
+            return not moitruong.get_is_cohieuungs((idhieuung,), macdinh = True, diachicosothongtinnhanvat = diachi, is_hieuungcoloi = 1)
+
+        thieus = []
+        if tenmonphai == "vanmongcoc":
+            is_canngancham, is_cankimcham = self._loaichamcanbuff(moitruong.get_tenmonphai(diachi), moitruong.get_idloaivukhi(diachi))
+            if is_canngancham and moitruong.get_is_kynangdahoc(VITRIKYNANG_NGANCHAMDOACH) and thieu(HIEUUNGKYNANG_NGANCHAMDOACH):
+                thieus.append("Ngân Châm Độ Ách")
+            if is_cankimcham and moitruong.get_is_kynangdahoc(VITRIKYNANG_KIMCHAMDOACH) and thieu(HIEUUNGKYNANG_KIMCHAMDOACH):
+                thieus.append("Kim Châm Độ Ách")
+            if moitruong.get_is_kynangdahoc(VITRIKYNANG_CUONGTHETHUAT) and thieu(HIEUUNGKYNANG_CUONGTHETHUAT):
+                thieus.append("Cường Thể Thuật")
+        elif tenmonphai == "thucson":
+            if moitruong.get_is_kynangdahoc(VITRIKYNANG_TIEUCHUTHIEN) and thieu(HIEUUNGKYNANG_NOIKHANG):
+                thieus.append("Tiểu Chu Thiên")
+        elif tenmonphai == "daohoanguyen" and not moitruong.is_nietban:
+            if moitruong.get_is_kynangdahoc(VIRIKYNANG_HOTHEKIMCANG) and thieu(HIEUUNGKYNANG_HOTHEKIMCANG):
+                thieus.append("Hộ Thể Kim Cang")
+        return thieus
+
+    def _ghitrangthaibufftoanbang(self, trangthai):
+        s = self._bufftoanbang
+        if trangthai != s["trangthai"]:
+            s["trangthai"] = trangthai
+            if trangthai:
+                self.moitruong._inlog(f"[BUFF TOÀN BANG] {trangthai}")
+
+    def action_bufftoanbang(self):
+        # Chế độ buff toàn bang (người dùng 2026-11-28, làm lại bản gỡ 02/11): đứng buff cho người đi phó bản tổ đội đơn (Đoạt Bảo Mã
+        # Tặc...). Chưa có nhóm thì đồng ý lời mời của BẤT KỲ AI (bản cũ chỉ nhận người trong todoi.json); trong nhóm thì để luật kỹ năng
+        # của phái buff thành viên (cần bật Tự động sử dụng kỹ năng, buff theo tầm, không chạy tới); không còn thành viên nào thiếu buff
+        # (đã thấy đủ buff, hoặc vào nhóm / khuất tầm nhìn quá THOIGIANBUFFTOANBANGCHOTHANHVIEN giây) thì tự rời, mình là trưởng nhóm thì
+        # nhường quyền trước (trưởng nhóm rời = giải tán cả nhóm). Chỉ Vân Mộng Cốc / Thục Sơn / Đào Hoa (Aegis), ngoài phó bản / chiến
+        # trường / đội phó bản / Lăng Ly Sơn. -> True khi chế độ đang lo nhóm (Tổ đội tự động bỏ lượt này)
+        if not self._is_chedobufftoanbang:
+            return False
+        moitruong = self.moitruong
+        tenmonphai = moitruong.get_tenmonphai()
+        if tenmonphai not in ("vanmongcoc", "thucson") and not (tenmonphai == "daohoanguyen" and not moitruong.is_nietban):
+            self._ghitrangthaibufftoanbang("phái này không có buff nhóm, chế độ không chạy")
+            return False
+        idbando = moitruong.get_idbandohientai()
+        if idbando in BANDOPHOBANs or idbando == BANDO_CHIENTRUONG or self.get_is_giunhomlanglyson() or self.get_is_dangtrongdoiphoban():
+            self._ghitrangthaibufftoanbang("")
+            return False
+        s = self._bufftoanbang
+        now = time.time()
+        # Đọc toàn bộ đối tượng xung quanh khá tốn: 0.5s xét 1 lần như Tổ đội tự động
+        if now - s.get("lucxet", 0.) < 0.5:
+            return True
+        s["lucxet"] = now
+        s["boquas"] = {i: t for i, t in s.get("boquas", {}).items() if t > now}
+        idtoi = moitruong.get_idnguoichoi()
+
+        if not moitruong.get_is_dangnamtrongnhom():
+            s.update(lucvaonhom = 0., daxongs = {}, lucthays = {}, lucdudieukien = 0.)
+            ids = [i for i in moitruong.get_idsloimoinhom() if i != idtoi and i not in s["boquas"]]
+            if ids:
+                self._ghitrangthaibufftoanbang(f"đồng ý lời mời nhóm của {self._tenidnguoichoi(ids[0])} ({ids[0]})")
+                moitruong.action_kiemtravadongyloimoinhom(ids[:1])
+            else:
+                self._ghitrangthaibufftoanbang("chờ lời mời nhóm")
+            return True
+
+        if not s["lucvaonhom"]:
+            s["lucvaonhom"] = now
+        idtruongnhom = moitruong.get_idnguoichoitruongnhom()
+        thanhviens = [i for i in (moitruong.get_danhsachidnguoichoithanhviennhoms() or ()) if i != idtoi]
+
+        # Thành viên trong tầm nhìn: xét buff thiếu. Khác chế độ PK (game không cho buff) / đã chết thì không tính là đã xong
+        diachis = {}
+        for diachi in moitruong.get_diachinhanvattontais():
+            if moitruong.get_is_nguoichoi(diachi):
+                idxet = moitruong.get_idnguoichoi(diachi)
+                if idxet in thanhviens:
+                    diachis[idxet] = diachi
+        canbuffs = {}
+        for i in thanhviens:
+            diachi = diachis.get(i)
+            if not diachi or moitruong.get_khoangcach(diachi) >= KHOANGCACHTOANMANHINH:
+                continue
+            s["lucthays"][i] = now
+            if moitruong.get_is_nhanvatdachet(diachi) or self._is_khacmaupkdongdoi(diachi):
+                canbuffs[i] = ["(chết / khác chế độ PK)"]
+                continue
+            thieus = self._buffthieucuathanhvien(diachi, tenmonphai)
+            if thieus:
+                canbuffs[i] = thieus
+            else:
+                s["daxongs"].setdefault(i, now)
+
+        def ten(i):
+            # Người lạ không chạy bot: lấy tên đối tượng đang thấy, không thì ID
+            if i in diachis:
+                return moitruong.get_tendoituong(diachis[i]) or str(i)
+            if i == idtoi:
+                return "mình"
+            return self._tenidnguoichoi(i)
+
+        def is_boqua(i):
+            # Chưa từng thấy từ lúc vào nhóm / đã khuất quá lâu mà chưa xong
+            return now - max(s["lucthays"].get(i, 0.), s["lucvaonhom"]) > THOIGIANBUFFTOANBANGCHOTHANHVIEN
+
+        choids = [i for i in thanhviens if i in canbuffs or (i not in s["daxongs"] and not is_boqua(i))]
+        is_quahan = now - s["lucvaonhom"] > THOIGIANBUFFTOANBANGTOIDA
+        if choids and not is_quahan:
+            s["lucdudieukien"] = 0.
+            mota = ", ".join(f"{ten(i)}: {', '.join(canbuffs[i])}" if i in canbuffs
+                             else f"{ten(i)}: chưa thấy" for i in choids)
+            canhbao = "" if self._is_tudongsudungkynang else " — CHƯA BẬT Tự động sử dụng kỹ năng, không buff được"
+            self._ghitrangthaibufftoanbang(f"đang buff nhóm {ten(idtruongnhom)}: {mota}{canhbao}")
+            return True
+        # Đủ điều kiện rời: giữ liên tục THOIGIANBUFFTOANBANGGIU giây (bảng hiệu ứng người khác cập nhật trễ ngay sau khi buff)
+        if not s.get("lucdudieukien"):
+            s["lucdudieukien"] = now
+        if now - s["lucdudieukien"] < THOIGIANBUFFTOANBANGGIU and not is_quahan:
+            return True
+        if now - s["lucroi"] < 1.5:
+            return True
+        s["lucroi"] = now
+        lydo = "ở nhóm quá lâu" if is_quahan else ("nhóm không còn ai" if not thanhviens else "không còn ai cần buff")
+        if idtruongnhom == idtoi and thanhviens:
+            # Trưởng nhóm rời = giải tán: nhường quyền trước, lượt sau mới rời
+            idnhan = next((i for i in thanhviens if i in diachis), thanhviens[0])
+            self._ghitrangthaibufftoanbang(f"{lydo}, nhường trưởng nhóm cho {ten(idnhan)} rồi rời")
+            moitruong.action_nhuongquyentruongnhom(idnhan)
+            return True
+        self._ghitrangthaibufftoanbang(f"{lydo}, rời nhóm {ten(idtruongnhom)}")
+        if idtruongnhom and idtruongnhom != idtoi:
+            s["boquas"][idtruongnhom] = now + THOIGIANBUFFTOANBANGBOQUAMOI
+        moitruong.action_thoatkhoinhom()
+        return True
+
     def action_tudongtodoi(self):
         # Lăng Ly Sơn đang giải tán tổ đội cũ (tactu_langlyson_xq): tạm nghỉ, còn trong nhóm thì rời; xong thì lập nhóm mới như thường
         if self.action_roinhomlanglyson():
             return
         # Đoạt Bảo Mã Tặc chỉ đi nhóm 1 người (tactu_matac_xq tự lo rời / lập nhóm): Tổ đội tự động nghỉ suốt lúc đang bật
         if self._matac:
+            return
+        # Chế độ buff toàn bang lo nhóm (nhận mời bất kỳ ai, buff xong thì rời): Tổ đội tự động nghỉ
+        if self.action_bufftoanbang():
             return
         if not self.get_is_tudongtodoi():
             return
@@ -1171,12 +1345,23 @@ class TacTuHoatDong:
 
         if not self._is_tudongdaotangbaodo:
             self._thoidiemhettangbaodogannhat = 0.
+            self._doitangbaodo = None
+            self._viecbantrangdaobaodo = None
+            self._is_dabantrangdaobaodo = False
+            self._is_dacatkhodaobaodo = False
+            self._vieccatkhodaobaodo = None
+            self._is_dacanhbaohettangbaodo = False
             return
 
         if time.time() < self._thoidiemchodaotangbaodo:
             return
 
         if self.moitruong.get_is_nhanvatdachet() or self.moitruong.get_is_dangvankhi():
+            return
+
+        # Đang đổi Lam + Hắc Cầu lấy Tàng Bảo Đồ (tactu_doicau_xq): đổi tới gần đầy hành trang / hết cầu rồi mới đi đào
+        if self._doitangbaodo:
+            self._xulydoitangbaodo()
             return
 
         idbandohientai = self.moitruong.get_idbandohientai()
@@ -1196,6 +1381,12 @@ class TacTuHoatDong:
 
             timthay = re.search(r"Vị trí: \s*(.*?)\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)", mota)
             if timthay:
+                # Còn tấm để đào: lần hết sau về lại bán đồ trắng
+                self._is_dabantrangdaobaodo = False
+                self._viecbantrangdaobaodo = None
+                self._is_dacatkhodaobaodo = False
+                self._vieccatkhodaobaodo = None
+                self._is_dacanhbaohettangbaodo = False
                 tenbandotrongmota = timthay.group(1).strip()
                 x_dich = int(timthay.group(2))
                 y_dich = int(timthay.group(3))
@@ -1214,7 +1405,9 @@ class TacTuHoatDong:
                         self.moitruong.action_tudongtimduong(x_dich, y_dich, idbandodich)
                     return
 
-        self.moitruong.action_tudongtimduong(0, 0, 0)
+        # Đang đi tới Chủ Tiệm Tạp Hóa bán đồ trắng thì đừng huỷ đường đi (mỗi lượt gọi lại)
+        if not self._viecbantrangdaobaodo and not self._vieccatkhodaobaodo:
+            self.moitruong.action_tudongtimduong(0, 0, 0)
 
         quocgiacanden = None
         soluongvatphamhanhtrangtoida = self.moitruong.get_soluongvatphamhanhtrangtoida()
@@ -1232,17 +1425,70 @@ class TacTuHoatDong:
         if not quocgiacanden:
             self._thoidiemhettangbaodogannhat = time.time()
             if self.moitruong.get_idbandohientai() != BANDO_TANTHUTHON:
-                print(f"[DAOTAOBAODO] Dùng Hồi Thành Phù về Tân Thủ Thôn")
+                # Log 1451 28/11 04:42: đào xong tấm cuối ở Hàn Quốc thì kẹt, chỉ báo "Hết tàng bảo đồ" mãi. Gọi không truyền đích => mỗi lần
+                # Hồi Thành Phù nhảy nước (7 lần 04:17-04:38) bị đếm là lặp, chặn; thêm việc tự ghi _thoidiemsudunghoithanhphugannhat sau mỗi
+                # lần gọi (5s) làm khoá 6s của action_sudunghoithanhphu không bao giờ hết. Đích là Tân Thủ Thôn thì luôn được thử lại
                 self.moitruong.action_ngatdichuyen()
-                self.action_sudunghoithanhphu()
-                self._thoidiemsudunghoithanhphugannhat = time.time()
-                canhbao(self.moitruong, "Hết tàng bảo đồ")
+                if self.action_sudunghoithanhphu(BANDO_TANTHUTHON, nguon = "Đào tàng bảo đồ: hết tấm, về Tân Thủ Thôn"):
+                    self.moitruong._inlog("[ĐÀO TÀNG BẢO ĐỒ] Hết tấm, về Tân Thủ Thôn bán đồ trắng + đổi cầu")
+                if not self._is_dacanhbaohettangbaodo:
+                    canhbao(self.moitruong, "Hết tàng bảo đồ")
+                    self._is_dacanhbaohettangbaodo = True
                 self._thoidiemchodaotangbaodo = time.time() + 5.
             else:
-                if not self.moitruong.action_timkiemvatphamhanhtrang(LAMCAU):
-                    canhbao(self.moitruong, "Hết tàng bảo đồ")
-                    self._thoidiemchodaotangbaodo = time.time() + 5.
+                # Ở Tân Thủ Thôn: bán trang bị trắng đào được ở Chủ Tiệm Tạp Hóa trước (lấy chỗ cho Tàng Bảo Đồ), xong mới đổi cầu
+                if not self._is_dabantrangdaobaodo:
+                    if self._viecbantrangdaobaodo is None:
+                        self._viecbantrangdaobaodo = {"banrac": "cho", "lucdi": 0.}
+                        self.moitruong._inlog("[ĐÀO TÀNG BẢO ĐỒ] Đào hết, bán trang bị trắng + Lam Kim ở Chủ Tiệm Tạp Hóa trước khi đổi cầu")
+                    viec = self._viecbantrangdaobaodo
+                    ketqua = self._buocbantrangtinhanh(viec, nhan = "Đào tàng bảo đồ", is_banlamkim = True)
+                    if isinstance(ketqua, tuple):
+                        if time.time() - viec["lucdi"] > 2.:
+                            self.moitruong.action_tudongtimduong(ketqua[1], ketqua[2], BANDO_TANTHUTHON)
+                            viec["lucdi"] = time.time()
+                        return
+                    if ketqua != "xong":
+                        return
+                    self.moitruong.action_tudongtimduong(0, 0, 0)
+                    self._is_dabantrangdaobaodo = True
+                    self._viecbantrangdaobaodo = None
+                # Bán xong thì cất kho Tinh Nguyên Đơn / Bảo Thạch / Ngọc Thạch / Tinh Thạch ở Quản Khố (TENCHUACATKHODAOBAODOs), rồi mới đổi cầu
+                if not self._is_dacatkhodaobaodo:
+                    if self._vieccatkhodaobaodo is None:
+                        if not self._laymoncatkho(tenchuas = TENCHUACATKHODAOBAODOs):
+                            self._is_dacatkhodaobaodo = True
+                        else:
+                            viec = self._taoviec(LYDOCATKHO_DAOBAODO)
+                            viec["tenchuas"] = TENCHUACATKHODAOBAODOs
+                            self._vieccatkhodaobaodo = viec
+                            self.moitruong._inlog("[ĐÀO TÀNG BẢO ĐỒ] Cất kho " + " / ".join(TENCHUACATKHODAOBAODOs) + " trước khi đổi cầu")
+                    if self._vieccatkhodaobaodo is not None:
+                        ketqua = self._buoccatkho(self._vieccatkhodaobaodo)
+                        if isinstance(ketqua, tuple):
+                            self.moitruong.action_dichuyengiukhoangcachtoidadiem(ketqua[1], ketqua[2], khoangcachtoida = KHOANGCACHQUANKHO - 1)
+                            return
+                        if ketqua not in ("xong", "lỗi"):
+                            return
+                        self._vieccatkhodaobaodo = None
+                        self._is_dacatkhodaobaodo = True
+                # Còn cặp Lam + Hắc Cầu và còn chỗ thì đổi Tàng Bảo Đồ (1 cặp ra 2 tấm, chừa 2 ô trống)
+                soluongs = self.moitruong.get_soluongvatphamhanhtrangtheoten()
+                if soluongs is None:
                     return
+                if min(soluongs.get(LAMCAU, 0), soluongs.get(HACCAU, 0)) > 0:
+                    sootrong = self.moitruong.get_sootronghanhtrang()
+                    if sootrong >= SOOTRONGGIUDOITANGBAODO + SOTANGBAODOMOICAP:
+                        self.batdau_doitangbaodo()
+                        return
+                    canhbao(self.moitruong, f"Hết tàng bảo đồ, hành trang chỉ còn {sootrong} ô trống không đổi được")
+                    self._thoidiemchodaotangbaodo = time.time() + 30.
+                    return
+                if not self._is_dacanhbaohettangbaodo:
+                    canhbao(self.moitruong, "Hết tàng bảo đồ và hết cặp Lam + Hắc Cầu")
+                    self._is_dacanhbaohettangbaodo = True
+                self._thoidiemchodaotangbaodo = time.time() + 5.
+                return
 
                 # print("[DAOTAOBAODO] Tiến hành bán rác & sửa đồ...")
                 # self.action_tudongbanrac()
@@ -1258,8 +1504,8 @@ class TacTuHoatDong:
             if time.time() - self._thoidiemsudunghoithanhphugannhat > 12.0:
                 print(f"[DAOTAOBAODO] Dùng Hồi Thành Phù về Tân Thủ Thôn")
                 self.moitruong.action_ngatdichuyen()
-                self.action_sudunghoithanhphu()
-                self._thoidiemsudunghoithanhphugannhat = time.time()
+                # Đích Tân Thủ Thôn: không bị đếm lặp khi nhảy nhiều nước liền (xem nhánh hết tấm phía trên)
+                self.action_sudunghoithanhphu(BANDO_TANTHUTHON, nguon = f"Đào tàng bảo đồ: sang {quocgiacanden}")
             return
 
         khoangcachdennpc = math.dist((x_hientai, y_hientai), (148, 149))

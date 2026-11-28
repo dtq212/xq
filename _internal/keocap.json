@@ -1,9 +1,9 @@
 {
-  "capketthuc": 80,
+  "capketthuc": 60,
   "nhandode": false,
   "tendode": "Ren Duc",
-  "moibang": false,
+  "moibang": true,
   "dungcode": false,
-  "dungcode60": false,
+  "dungcode60": true,
   "tapkich50": false
 }
